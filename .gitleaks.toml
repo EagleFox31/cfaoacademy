@@ -13,7 +13,7 @@ paths = [
   '''(?i)BACKEND\.md$''',
   '''(?i)docs/ONBOARDING\.md$''',
 ]
-
-[allowlist.regexes]
-demo_password = '''password[=:].*demo'''
-medacap_demo_key = '''demo-cfao-portal'''
+regexes = [
+  '''password[=:].*demo''',
+  '''demo-cfao-portal''',
+]
