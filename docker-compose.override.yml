@@ -1,0 +1,24 @@
+# Override DEV — chargé automatiquement par `docker compose up` (pas en prod).
+# Monte le code source en bind mount → rechargement à chaud, SANS rebuild d'image :
+#   - core (Django) : runserver recharge à chaque modif Python ;
+#   - operations (Node) : `tsx watch` recompile/relance à chaque modif TS.
+#
+# Plus besoin de `--build` pour un simple changement de code.
+# (Rebuild encore nécessaire si on change les DÉPENDANCES — requirements.txt / package.json.
+#  Nouvelles migrations : `docker compose exec core python manage.py migrate`.)
+services:
+  core:
+    volumes:
+      - ./cfao-core:/app
+
+  operations:
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ./cfao-operations/src:/app/src
+      - ./cfao-operations/package.json:/app/package.json:ro
+      - ./cfao-operations/tsconfig.json:/app/tsconfig.json:ro
+
+  cerbos:
+    # Monte les tests de policy → `make test-cerbos` portable (compile lit /policies à frais).
+    volumes:
+      - ./cerbos/tests:/tests:ro
