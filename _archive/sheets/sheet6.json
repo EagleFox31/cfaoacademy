@@ -1,0 +1,269 @@
+[
+  {
+    "A": "Parts &amp; Process Equipment — formations / sessions distinctes 2026"
+  },
+  {
+    "A": "BU",
+    "B": "Code formation",
+    "C": "Nom formation",
+    "D": "Marque",
+    "E": "Date début",
+    "F": "Date fin",
+    "G": "Lieu",
+    "H": "Formateur",
+    "I": "Type",
+    "J": "Nombre de jours"
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "Pièce Com",
+    "C": "Formation pièces",
+    "D": "TOUTES MARQUES",
+    "E": {
+      "num": 46134,
+      "date": "2026-04-22"
+    },
+    "F": {
+      "num": 46135,
+      "date": "2026-04-23"
+    },
+    "G": "Distanciel",
+    "H": "Lucien GAGNE",
+    "I": "Distanciel",
+    "J": 2
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "Pièce Com",
+    "C": "Formation pièces",
+    "D": "TOUTES MARQUES",
+    "E": {
+      "num": 46141,
+      "date": "2026-04-29"
+    },
+    "F": {
+      "num": 46142,
+      "date": "2026-04-30"
+    },
+    "G": "Distanciel",
+    "H": "Idris NKOA",
+    "I": "Distanciel",
+    "J": 2
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "Pièce Com",
+    "C": "Formation pièces",
+    "D": "TOUTES MARQUES",
+    "E": {
+      "num": 46148,
+      "date": "2026-05-06"
+    },
+    "F": {
+      "num": 46149,
+      "date": "2026-05-07"
+    },
+    "G": "Distanciel",
+    "H": "Thierry KOUGHA",
+    "I": "Distanciel",
+    "J": 2
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "TP01",
+    "C": "Argumentaire technique de vente des pièces de maintenance",
+    "D": "TOYOTA FORKLIFT",
+    "E": {
+      "num": 46176,
+      "date": "2026-06-03"
+    },
+    "F": {
+      "num": 46177,
+      "date": "2026-06-04"
+    },
+    "G": "Distanciel",
+    "H": "Thierry KOUGHA",
+    "I": "Distanciel",
+    "J": 2
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "TP01",
+    "C": "Argumentaire technique de vente des pièces de maintenance",
+    "D": "TOUTES MARQUES",
+    "E": {
+      "num": 46195,
+      "date": "2026-06-22"
+    },
+    "F": {
+      "num": 46197,
+      "date": "2026-06-24"
+    },
+    "G": "Distanciel",
+    "H": "Lucien GAGNE",
+    "I": "Distanciel",
+    "J": 3
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "TP02",
+    "C": "Use platform SEO parts JCB",
+    "D": "JCB",
+    "E": {
+      "num": 46209,
+      "date": "2026-07-06"
+    },
+    "F": {
+      "num": 46209,
+      "date": "2026-07-06"
+    },
+    "G": "Distanciel",
+    "H": "Thierry KOUGHA",
+    "I": "Distanciel",
+    "J": 1
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "TP02",
+    "C": "Utilisation plateforme référencement pièces BT",
+    "D": "BT",
+    "E": {
+      "num": 46220,
+      "date": "2026-07-17"
+    },
+    "F": {
+      "num": 46220,
+      "date": "2026-07-17"
+    },
+    "G": "Distanciel",
+    "H": "Idris NKOA",
+    "I": "Distanciel",
+    "J": 1
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "TP02",
+    "C": "Utilisation plateforme référencement pièces TOYOTA FORKLIFT",
+    "D": "TOYOTA FORKLIFT",
+    "E": {
+      "num": 46238,
+      "date": "2026-08-04"
+    },
+    "F": {
+      "num": 46238,
+      "date": "2026-08-04"
+    },
+    "G": "Distanciel",
+    "H": "Thierry KOUGHA",
+    "I": "Distanciel",
+    "J": 1
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "TP02",
+    "C": "Utilisation plateforme référencement pièces KING LONG",
+    "D": "KING LONG",
+    "E": {
+      "num": 46252,
+      "date": "2026-08-18"
+    },
+    "F": {
+      "num": 46252,
+      "date": "2026-08-18"
+    },
+    "G": "Distanciel",
+    "H": "Idris NKOA",
+    "I": "Distanciel",
+    "J": 1
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "TP02",
+    "C": "Utilisation plateforme référencement pièces FUSO",
+    "D": "FUSO",
+    "E": {
+      "num": 46258,
+      "date": "2026-08-24"
+    },
+    "F": {
+      "num": 46258,
+      "date": "2026-08-24"
+    },
+    "G": "Distanciel",
+    "H": "Lucien GAGNE",
+    "I": "Distanciel",
+    "J": 1
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "TP02",
+    "C": "Utilisation plateforme référencement pièces LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46269,
+      "date": "2026-09-04"
+    },
+    "F": {
+      "num": 46269,
+      "date": "2026-09-04"
+    },
+    "G": "Distanciel",
+    "H": "Thierry KOUGHA",
+    "I": "Distanciel",
+    "J": 1
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "TP02",
+    "C": "Utilisation plateforme référencement pièces HINO",
+    "D": "HINO",
+    "E": {
+      "num": 46283,
+      "date": "2026-09-18"
+    },
+    "F": {
+      "num": 46283,
+      "date": "2026-09-18"
+    },
+    "G": "Distanciel",
+    "H": "Lucien GAGNE",
+    "I": "Distanciel",
+    "J": 1
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "TP02",
+    "C": "Utilisation plateforme référencement pièces SINOTRUK",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46297,
+      "date": "2026-10-02"
+    },
+    "F": {
+      "num": 46297,
+      "date": "2026-10-02"
+    },
+    "G": "Distanciel",
+    "H": "Thierry KOUGHA",
+    "I": "Distanciel",
+    "J": 1
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": "TP02",
+    "C": "Utilisation plateforme référencement pièces SINOTRUK",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46310,
+      "date": "2026-10-15"
+    },
+    "F": {
+      "num": 46310,
+      "date": "2026-10-15"
+    },
+    "G": "Distanciel",
+    "H": "Idris NKOA",
+    "I": "Distanciel",
+    "J": 1
+  }
+]

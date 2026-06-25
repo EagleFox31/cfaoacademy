@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CFAO Academy — Sitemap v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --red: #E3001B;
+    --red-deep: #B40015;
+    --red-soft: #FFE5E8;
+    --navy: #1A1F3C;
+    --navy-2: #2A3157;
+    --ink: #0E1126;
+    --paper: #FFFFFF;
+    --paper-2: #FAFAFA;
+    --paper-3: #F5F5F5;
+    --rule: #E7E7EA;
+    --rule-2: #D5D7DE;
+    --muted: #6B6F82;
+    --muted-2: #9499AB;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--paper-2); }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    padding: 56px 48px 80px;
+  }
+  .mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Inter Tight', 'Inter', sans-serif;
+    letter-spacing: -0.025em;
+    font-weight: 600;
+    line-height: 1.05;
+  }
+  em { font-style: italic; color: var(--red); font-weight: 500; }
+
+  .wrap { max-width: 1480px; margin: 0 auto; }
+
+  /* ── DOC HEAD ─────────────────────────────────────── */
+  .doc-head {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 56px;
+  }
+  .doc-head .left { max-width: 720px; }
+  .doc-head .eyebrow { color: var(--red); margin-bottom: 18px; }
+  .doc-head h1 {
+    font-size: 56px; letter-spacing: -0.035em; line-height: .98;
+  }
+  .doc-head h1 em { font-style: italic; }
+  .doc-head .right { text-align: right; }
+  .doc-head .right .mono { color: var(--ink); }
+  .doc-head .right .mono + .mono { color: var(--muted); margin-top: 6px; }
+
+  /* ── LEGEND ─────────────────────────────────────── */
+  .legend {
+    display: flex; gap: 28px; align-items: center;
+    margin-bottom: 56px;
+    padding: 16px 20px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--muted); }
+  .legend-swatch { width: 18px; height: 3px; border-radius: 2px; }
+  .legend-swatch.primary { background: var(--red); }
+  .legend-swatch.support { background: var(--navy); }
+  .legend-swatch.dashed { background: transparent; border-top: 2px dashed var(--rule-2); height: 2px; }
+
+  /* ── SITEMAP CANVAS ─────────────────────────────── */
+  .canvas {
+    position: relative;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    padding: 56px 48px 64px;
+    overflow: hidden;
+  }
+  /* faint grid pattern */
+  .canvas::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--rule) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 80px 80px;
+    opacity: 0.35;
+    pointer-events: none;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  }
+  .canvas > * { position: relative; z-index: 1; }
+
+  /* ── LEVEL: ACCUEIL ─────────────────────────────── */
+  .lvl-home {
+    display: flex; justify-content: center;
+    margin-bottom: 48px;
+  }
+  .node-home {
+    background: var(--ink); color: white;
+    border-radius: 14px;
+    padding: 22px 36px;
+    display: flex; align-items: center; gap: 24px;
+    box-shadow: 0 8px 28px rgba(14,17,38,.18);
+  }
+  .node-home .ix {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; opacity: .55; letter-spacing: 0.12em;
+  }
+  .node-home h2 {
+    font-size: 26px; letter-spacing: -0.02em;
+  }
+  .node-home .pills {
+    display: flex; gap: 8px;
+    border-left: 1px solid rgba(255,255,255,.18);
+    padding-left: 22px;
+  }
+  .node-home .pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 5px 10px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 999px;
+  }
+
+  /* ── CONNECTOR DOWN ─────────────────────────────── */
+  .down {
+    height: 32px; margin: 0 auto; width: 2px;
+    background: linear-gradient(180deg, var(--ink), var(--red));
+  }
+  .down-fork {
+    position: relative;
+    height: 44px;
+    margin: 0 auto 0;
+    max-width: 1080px;
+  }
+  .down-fork::before {
+    content: ''; position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 2px; height: 16px; background: var(--red);
+  }
+  .down-fork::after {
+    content: ''; position: absolute;
+    top: 16px; left: calc(16.667% - 1px); right: calc(16.667% - 1px);
+    height: 2px; background: var(--red);
+  }
+  .down-fork .leg {
+    position: absolute; top: 18px;
+    width: 2px; height: 26px;
+    background: var(--red);
+  }
+  .down-fork .leg.l1 { left: 16.667%; }
+  .down-fork .leg.l2 { left: 50%; transform: translateX(-1px); }
+  .down-fork .leg.l3 { right: 16.667%; }
+
+  /* ── LEVEL: 3 DOORS ─────────────────────────────── */
+  .lvl-doors {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 28px;
+  }
+  .door {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .door .door-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 4px;
+  }
+  .door .door-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--red); letter-spacing: 0.1em;
+  }
+  .door .door-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted-2);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .door h3 {
+    font-size: 28px; margin-top: 10px;
+    letter-spacing: -0.025em;
+  }
+  .door h3 em { color: var(--red); }
+  .door .desc {
+    font-size: 13.5px; color: var(--muted);
+    margin-top: 10px; line-height: 1.5;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .door .children {
+    display: flex; flex-direction: column;
+    margin-top: 16px;
+    gap: 0;
+  }
+  .door .child {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px dashed var(--rule);
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .door .child:last-child { border-bottom: none; }
+  .door .child .role { font-weight: 500; }
+  .door .child .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; color: var(--muted-2);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .door .door-note {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: var(--paper-3);
+    border-radius: 10px;
+    font-size: 12px; color: var(--muted);
+    font-style: italic;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .door .door-note::before {
+    content: '→'; color: var(--red); font-style: normal; font-weight: 600;
+  }
+
+  /* funnel arrows from doors to sessions */
+  .funnel {
+    position: relative;
+    height: 64px;
+    margin: 36px auto 0;
+    max-width: 1080px;
+  }
+  .funnel svg { display: block; width: 100%; height: 100%; }
+
+  /* ── LEVEL: SESSIONS ─────────────────────────────── */
+  .lvl-sessions {
+    display: flex; justify-content: center;
+  }
+  .node-sessions {
+    background: linear-gradient(135deg, var(--red) 0%, var(--red-deep) 100%);
+    color: white;
+    border-radius: 14px;
+    padding: 28px 40px;
+    width: 100%;
+    max-width: 760px;
+    box-shadow: 0 12px 36px rgba(227,0,27,.22);
+  }
+  .node-sessions .ix {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; opacity: .8; letter-spacing: 0.12em;
+    margin-bottom: 12px; display: block;
+  }
+  .node-sessions h2 {
+    font-size: 34px; letter-spacing: -0.025em; line-height: 1;
+  }
+  .node-sessions h2 em { font-style: italic; opacity: .8; }
+  .node-sessions .desc {
+    font-size: 13.5px; opacity: .9; margin-top: 8px; line-height: 1.5;
+  }
+  .node-sessions .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255,255,255,.18);
+  }
+  .node-sessions .row .item {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .node-sessions .row .item .lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    opacity: .7;
+  }
+  .node-sessions .row .item .v {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 16px; font-weight: 500;
+    margin-top: 4px;
+  }
+  .node-sessions .row .item .meta {
+    font-size: 11.5px; opacity: .75; margin-top: 2px;
+  }
+
+  /* ── LEVEL: INSCRIPTION ─────────────────────────── */
+  .down.to-inscription {
+    height: 36px;
+    background: linear-gradient(180deg, var(--red), var(--ink));
+  }
+  .lvl-conv {
+    display: flex; justify-content: center;
+  }
+  .node-conv {
+    background: var(--ink);
+    color: white;
+    border-radius: 999px;
+    padding: 16px 34px;
+    display: flex; align-items: center; gap: 16px;
+    font-family: 'Inter Tight', sans-serif;
+    font-weight: 500; font-size: 18px;
+    box-shadow: 0 8px 24px rgba(14,17,38,.18);
+  }
+  .node-conv .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--red);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(227,0,27,.4); }
+    50% { box-shadow: 0 0 0 8px rgba(227,0,27,0); }
+  }
+  .node-conv .mono-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; opacity: .55; letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* ── SIDE RAILS (Actualités, L'Academy) ─────────── */
+  .side-rails {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    margin-top: 72px;
+    padding-top: 56px;
+    border-top: 1px dashed var(--rule-2);
+  }
+  .rail {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 26px 28px;
+  }
+  .rail .rail-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .rail .rail-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted); letter-spacing: 0.1em;
+  }
+  .rail .rail-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted-2);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .rail h3 {
+    font-size: 22px; letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .rail .desc {
+    font-size: 13px; color: var(--muted); line-height: 1.5;
+  }
+  .rail .rail-sub {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 16px;
+  }
+  .rail .rail-sub span {
+    font-size: 12px;
+    padding: 6px 10px;
+    background: var(--paper-3);
+    border-radius: 999px;
+    color: var(--ink);
+  }
+
+  /* ── FOOTER UTILITAIRES ────────────────────────── */
+  .util {
+    margin-top: 56px;
+    padding-top: 32px;
+    border-top: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 24px;
+  }
+  .util .util-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .util .util-items {
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .util .util-item {
+    font-size: 13.5px; color: var(--ink);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .util .util-item::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--rule-2);
+  }
+  .util .util-item.cta::before { background: var(--red); }
+  .util .util-item .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted-2);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin-left: 4px;
+  }
+
+  /* ── DECISIONS BANNER ────────────────────────── */
+  .decisions {
+    margin-top: 64px;
+    padding: 32px 36px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 36px;
+  }
+  .decisions h4 {
+    font-size: 20px; letter-spacing: -0.02em;
+    margin-top: 12px;
+  }
+  .decisions .eyebrow { color: var(--red); }
+  .decisions .desc { font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+  .decisions ol {
+    list-style: none;
+    counter-reset: dec;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px 32px;
+  }
+  .decisions li {
+    counter-increment: dec;
+    position: relative;
+    padding-left: 32px;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .decisions li::before {
+    content: counter(dec, decimal-leading-zero);
+    position: absolute; left: 0; top: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--red);
+    letter-spacing: 0.08em;
+  }
+  .decisions li strong {
+    display: block; font-weight: 500; color: var(--ink); margin-bottom: 2px;
+  }
+  .decisions li span { color: var(--muted); }
+
+  @media (max-width: 1100px) {
+    .lvl-doors { grid-template-columns: 1fr; }
+    .down-fork { display: none; }
+    .side-rails { grid-template-columns: 1fr; }
+    .decisions { grid-template-columns: 1fr; }
+    .decisions ol { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- DOC HEAD -->
+    <header class="doc-head">
+      <div class="left">
+        <div class="mono eyebrow">Architecture de l'information · v2</div>
+        <h1>Sitemap CFAO Academy<br /><em>3 portes d'entrée</em>, 1 conversion.</h1>
+      </div>
+      <div class="right">
+        <div class="mono">28 mai 2026</div>
+        <div class="mono">15 pages · 5 niveaux</div>
+      </div>
+    </header>
+
+    <!-- LEGEND -->
+    <div class="legend">
+      <div class="legend-item">
+        <span class="legend-swatch primary"></span>
+        <span>Flux principal de conversion</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch support"></span>
+        <span>Pages support</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch dashed"></span>
+        <span>Lien transverse</span>
+      </div>
+      <div class="legend-item" style="margin-left:auto">
+        <span class="mono" style="color: var(--ink)">3</span>
+        <span>chemins d'entrée parallèles vers Sessions</span>
+      </div>
+    </div>
+
+    <!-- SITEMAP CANVAS -->
+    <div class="canvas">
+
+      <!-- ACCUEIL -->
+      <div class="lvl-home">
+        <div class="node-home">
+          <div>
+            <div class="ix">001 · ROOT</div>
+            <h2>Accueil</h2>
+          </div>
+          <div class="pills">
+            <span class="pill">Hero + KPIs</span>
+            <span class="pill">3 portes</span>
+            <span class="pill">Témoignages</span>
+            <span class="pill">CTA catalogue</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FORK -->
+      <div class="down-fork">
+        <div class="leg l1"></div>
+        <div class="leg l2"></div>
+        <div class="leg l3"></div>
+      </div>
+
+      <!-- 3 DOORS -->
+      <div class="lvl-doors">
+
+        <!-- METIERS -->
+        <div class="door">
+          <div class="door-head">
+            <div class="door-num">002 · PORTE A</div>
+            <div class="door-tag">par poste</div>
+          </div>
+          <h3>Métiers</h3>
+          <div class="desc">Le visiteur entre par son poste. Chaque page = parcours de progression + formations recommandées + ROI métier + témoignage pair-à-pair.</div>
+          <div class="children">
+            <div class="child"><span class="role">Technicien</span><span class="meta">G4 → G1</span></div>
+            <div class="child"><span class="role">Carrossier</span><span class="meta">N1 → N5</span></div>
+            <div class="child"><span class="role">Manager SAV / Pièces</span><span class="meta">5 modules</span></div>
+            <div class="child"><span class="role">Chef d'atelier</span><span class="meta">pilotage</span></div>
+            <div class="child"><span class="role">Directeur Pièces &amp; Services</span><span class="meta">stratégie</span></div>
+          </div>
+          <div class="door-note">Page de conversion, pas un index plat.</div>
+        </div>
+
+        <!-- FORMATIONS -->
+        <div class="door">
+          <div class="door-head">
+            <div class="door-num">003 · PORTE B</div>
+            <div class="door-tag">par BU</div>
+          </div>
+          <h3>Formations</h3>
+          <div class="desc">Catalogue pédagogique organisé par Business Unit. Chaque fiche affiche les 2-3 prochaines sessions inline pour éviter l'aller-retour.</div>
+          <div class="children">
+            <div class="child"><span class="role">Techniques Motors</span><span class="meta">113</span></div>
+            <div class="child"><span class="role">Techniques Equipment</span><span class="meta">72</span></div>
+            <div class="child"><span class="role">Techniques Carrosserie</span><span class="meta">29</span></div>
+            <div class="child"><span class="role">Parts &amp; Process Motors</span><span class="meta">25</span></div>
+            <div class="child"><span class="role">Parts &amp; Process Equipment</span><span class="meta">14</span></div>
+          </div>
+          <div class="door-note">Fiche formation ≠ fiche session.</div>
+        </div>
+
+        <!-- MARQUES -->
+        <div class="door">
+          <div class="door-head">
+            <div class="door-num">004 · PORTE C</div>
+            <div class="door-tag">par constructeur</div>
+          </div>
+          <h3>Marques</h3>
+          <div class="desc">Index groupé par catégorie véhicule. Chaque fiche marque = cursus officiel constructeur + niveaux + sessions disponibles.</div>
+          <div class="children">
+            <div class="child"><span class="role">VP &amp; VU</span><span class="meta">Toyota · Suzuki · Stellantis · BYD</span></div>
+            <div class="child"><span class="role">Camions &amp; bus</span><span class="meta">Hino · Renault Trucks · Fuso · Sinotruk</span></div>
+            <div class="child"><span class="role">Engins TP</span><span class="meta">JCB · Lovol · King Long</span></div>
+            <div class="child"><span class="role">Chariots élévateurs</span><span class="meta">Toyota Forklift</span></div>
+          </div>
+          <div class="door-note">Beaucoup de visiteurs cherchent « Toyota G3 » d'abord.</div>
+        </div>
+
+      </div>
+
+      <!-- FUNNEL TO SESSIONS -->
+      <div class="funnel">
+        <svg viewBox="0 0 1080 64" preserveAspectRatio="none" fill="none">
+          <path d="M 180 0 C 180 32, 540 32, 540 64" stroke="#E3001B" stroke-width="2" fill="none" />
+          <path d="M 540 0 L 540 64" stroke="#E3001B" stroke-width="2" fill="none" />
+          <path d="M 900 0 C 900 32, 540 32, 540 64" stroke="#E3001B" stroke-width="2" fill="none" />
+          <circle cx="540" cy="64" r="4" fill="#E3001B" />
+        </svg>
+      </div>
+
+      <!-- SESSIONS -->
+      <div class="lvl-sessions">
+        <div class="node-sessions">
+          <span class="ix">005 · POINT DE CONVERGENCE</span>
+          <h2>Sessions <em>— calendrier transactionnel</em></h2>
+          <div class="desc">Toutes les portes d'entrée convergent ici. Recherche &amp; filtres unifiés · fiche session avec inscription intégrée.</div>
+          <div class="row">
+            <div class="item">
+              <div class="lbl">Filtres</div>
+              <div class="v">Métier · Marque · Pays · Date · Niveau</div>
+              <div class="meta">5 axes de filtrage croisés</div>
+            </div>
+            <div class="item">
+              <div class="lbl">Fiche session</div>
+              <div class="v">Date · lieu · formateur · places</div>
+              <div class="meta">+ formulaire d'inscription intégré</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TO CONVERSION -->
+      <div class="down to-inscription"></div>
+
+      <!-- INSCRIPTION -->
+      <div class="lvl-conv">
+        <div class="node-conv">
+          <span class="dot"></span>
+          <span>Inscription confirmée</span>
+          <span class="mono-tag">006 · END STATE</span>
+        </div>
+      </div>
+
+      <!-- SIDE RAILS -->
+      <div class="side-rails">
+        <div class="rail">
+          <div class="rail-head">
+            <div class="rail-num">007</div>
+            <div class="rail-tag">éditorial</div>
+          </div>
+          <h3>Actualités</h3>
+          <div class="desc">Retours terrain, sessions inaugurales, nouvelles certifications, événements du réseau. Liste filtrable par BU + fiche article.</div>
+          <div class="rail-sub">
+            <span>Liste</span>
+            <span>Article détail</span>
+            <span>Filtre par BU</span>
+          </div>
+        </div>
+        <div class="rail">
+          <div class="rail-head">
+            <div class="rail-num">008</div>
+            <div class="rail-tag">institutionnel</div>
+          </div>
+          <h3>L'Academy</h3>
+          <div class="desc">Une seule page scrollable. Mission, équipe formateurs, 13 pays. Pas de sous-pages — densité plutôt qu'arborescence.</div>
+          <div class="rail-sub">
+            <span>Mission</span>
+            <span>Formateurs</span>
+            <span>13 pays</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- UTILITAIRES -->
+      <div class="util">
+        <div class="util-label">009 · Hors nav principale</div>
+        <div class="util-items">
+          <div class="util-item">Espace apprenant<span class="meta">↗ top-right</span></div>
+          <div class="util-item">Contact &amp; demande<span class="meta">footer</span></div>
+          <div class="util-item cta">Catalogue PDF<span class="meta">CTA récurrent</span></div>
+          <div class="util-item">Mentions légales<span class="meta">footer</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- DECISIONS BANNER -->
+    <div class="decisions">
+      <div>
+        <div class="mono eyebrow">Décisions à trancher</div>
+        <h4>Avant le wireframing.</h4>
+        <p class="desc">Six points ouverts qui changeraient l'arborescence finale.</p>
+      </div>
+      <ol>
+        <li><strong>Ordre de la nav</strong><span>Métiers en premier ou Formations en premier ? À tester en arbre de tri.</span></li>
+        <li><strong>Tarif sur fiche session</strong><span>Public ou interne au réseau ? Conditionne tout le wording d'inscription.</span></li>
+        <li><strong>Espace apprenant visible</strong><span>Top-right persistant si vrai compte avec historique, sinon enfoui en footer.</span></li>
+        <li><strong>Page « Pour les filiales »</strong><span>Cible DRH / Directeur P&amp;S — plan annuel, audit, KPIs. À ajouter ?</span></li>
+        <li><strong>Sessions inline sur fiche formation</strong><span>Afficher les 2-3 prochaines sessions directement, pas seulement un lien.</span></li>
+        <li><strong>Profondeur page Métiers</strong><span>Simple index de cours, ou vraie page de conversion (ROI + témoignage) ?</span></li>
+      </ol>
+    </div>
+
+  </div>
+</body>
+</html>

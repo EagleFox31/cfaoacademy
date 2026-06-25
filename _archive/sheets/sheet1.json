@@ -1,0 +1,45 @@
+[
+  {
+    "A": "Synthèse — formations distinctes par BU / famille 2026"
+  },
+  {
+    "A": "BU",
+    "B": "Nombre de sessions distinctes",
+    "C": "Formateurs principaux",
+    "D": "Observations"
+  },
+  {
+    "A": "Motors",
+    "B": 113,
+    "C": "CÉDRIC PAKO, EUGÈNE EBENE, DAMAS NGUE LAH, BRICE NECHI…",
+    "D": "Formations techniques véhicules / marques VL"
+  },
+  {
+    "A": "Equipment",
+    "B": 72,
+    "C": "Idris NKOA, Thierry KOUGHA, Lucien GAGNE…",
+    "D": "Formations techniques Equipment"
+  },
+  {
+    "A": "Carrosserie",
+    "B": 29,
+    "C": "Thierry TAMO",
+    "D": "Formations carrosserie"
+  },
+  {
+    "A": "Parts &amp; Process Motors",
+    "B": 25,
+    "C": "GEROLD SADIO",
+    "D": "Process SAV/PART Motors"
+  },
+  {
+    "A": "Parts &amp; Process Equipment",
+    "B": 14,
+    "C": "Idris NKOA, Thierry KOUGHA, Lucien GAGNE",
+    "D": "Process pièces / plateformes Equipment"
+  },
+  {
+    "A": "Total",
+    "B": 253
+  }
+]

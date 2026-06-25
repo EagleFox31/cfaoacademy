@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CFAO Academy — Wireframes (print)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #F1EFE7; font-family: 'DM Sans', sans-serif; }
+  #root { width: 100%; }
+
+  .print-doc {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+  }
+  .print-cover {
+    padding: 48px 24px 56px;
+    border-bottom: 2px solid #111;
+    margin-bottom: 32px;
+  }
+  .print-cover .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: #E3001B;
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .print-cover h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 68px; line-height: 0.95;
+    margin: 0; font-weight: 700; color: #111;
+  }
+  .print-cover h1 em { font-style: italic; color: #E3001B; }
+  .print-cover .meta {
+    margin-top: 22px; font-size: 14px; color: #555;
+    max-width: 720px; line-height: 1.5;
+  }
+  .print-cover .meta strong { color: #111; font-weight: 600; }
+
+  .print-section-head {
+    margin: 32px 0 18px;
+    padding-bottom: 8px;
+    border-bottom: 1.5px solid #2A2A2A;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .print-section-head h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 36px; line-height: 1; font-weight: 700; color: #111;
+    margin: 0;
+  }
+  .print-section-head .ix {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: #E3001B;
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .print-section-head .sub {
+    font-size: 13px; color: #777; font-family: 'DM Sans', sans-serif;
+  }
+
+  .print-page {
+    margin-bottom: 28px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .print-page + .print-page { page-break-before: always; break-before: page; }
+  .print-section-head { page-break-before: always; break-before: page; }
+  .print-section-head:first-of-type { page-break-before: avoid; break-before: avoid; }
+
+  @media print {
+    html, body { background: white !important; }
+    .print-doc { max-width: none; margin: 0; padding: 0; }
+    @page { size: A3 landscape; margin: 12mm; }
+    .print-cover { padding: 24mm 8mm 16mm; border-bottom: 2px solid #111; }
+    .print-cover h1 { font-size: 76px; }
+    .print-page {
+      page-break-after: always;
+      break-after: page;
+      margin-bottom: 0;
+    }
+    .print-page:last-child { page-break-after: auto; }
+    .print-section-head {
+      page-break-before: always;
+      break-before: page;
+      page-break-after: avoid;
+      break-after: avoid;
+      margin-top: 0;
+    }
+    /* keep colors */
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="wireframes/components.jsx"></script>
+<script type="text/babel" src="wireframes/pages-cadre.jsx"></script>
+<script type="text/babel" src="wireframes/gabarits.jsx"></script>
+<script type="text/babel" src="wireframes/utilitaires.jsx"></script>
+<script type="text/babel">
+function PrintDoc() {
+  const cadre = [
+    { label: '01 · Accueil', el: <WFAccueil /> },
+    { label: '02 · Publics (index)', el: <WFPublics /> },
+    { label: '03 · Formations (index)', el: <WFFormations /> },
+    { label: '04 · Marques (index)', el: <WFMarques /> },
+    { label: '05 · Sessions', el: <WFSessions /> },
+    { label: '06 · Actualités (index)', el: <WFActualites /> },
+    { label: "07 · L'Academy", el: <WFAcademy /> },
+  ];
+  const gabarits = [
+    { label: 'Gabarit · fiche public', el: <WFFichePublic /> },
+    { label: 'Gabarit · page BU', el: <WFPageBU /> },
+    { label: 'Gabarit · fiche formation', el: <WFFicheFormation /> },
+    { label: 'Gabarit · fiche marque', el: <WFFicheMarque /> },
+    { label: 'Gabarit · fiche session', el: <WFFicheSession /> },
+    { label: 'Gabarit · article actualité', el: <WFArticle /> },
+  ];
+  const utils = [
+    { label: '08 · Contact & demande', el: <WFContact /> },
+    { label: '09 · Espace apprenant', el: <WFEspaceApprenant /> },
+    { label: '10 · Mentions légales', el: <WFMentions /> },
+  ];
+
+  const wrap = { width: '100%', display: 'flex', justifyContent: 'center' };
+
+  return (
+    <div className="print-doc">
+      <div className="print-cover">
+        <div className="eyebrow">CFAO Academy · Wireframes lo-fi · 28 mai 2026</div>
+        <h1>10 pages, 4 gabarits.<br /><em>3 portes d'entrée, 1 conversion.</em></h1>
+        <div className="meta">
+          Document de cadrage de l'architecture du site CFAO Academy.
+          <strong> 16 wireframes</strong> classés en pages-cadre, gabarits réutilisables et pages utilitaires.
+          Chaque wireframe respecte le rythme <strong>Hero + sections (titre + onglets + cards horizontales + voir plus)</strong>.
+        </div>
+      </div>
+
+      <div className="print-section-head">
+        <div>
+          <div className="ix">Section 1 · 7 pages</div>
+          <h2>Pages-cadre</h2>
+        </div>
+        <div className="sub">7 pages structurelles dans la nav principale</div>
+      </div>
+      {cadre.map((w, i) => (
+        <div className="print-page" key={i}>
+          <div style={wrap}>{w.el}</div>
+        </div>
+      ))}
+
+      <div className="print-section-head">
+        <div>
+          <div className="ix">Section 2 · 4 gabarits réutilisables</div>
+          <h2>Gabarits</h2>
+        </div>
+        <div className="sub">Templates pour les fiches dynamiques (~350 pages au total au catalogue plein)</div>
+      </div>
+      {gabarits.map((w, i) => (
+        <div className="print-page" key={i}>
+          <div style={wrap}>{w.el}</div>
+        </div>
+      ))}
+
+      <div className="print-section-head">
+        <div>
+          <div className="ix">Section 3 · 3 pages utilitaires</div>
+          <h2>Utilitaires</h2>
+        </div>
+        <div className="sub">Hors de la nav principale — accessibles depuis le footer + login</div>
+      </div>
+      {utils.map((w, i) => (
+        <div className="print-page" key={i}>
+          <div style={wrap}>{w.el}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<PrintDoc />);
+
+// Auto-print once fonts + JSX are ready
+(async () => {
+  try {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+  } catch(e) {}
+  await new Promise(r => setTimeout(r, 700));
+  window.print();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1313 @@
+[
+  {
+    "A": "Equipment — formations / sessions distinctes 2026"
+  },
+  {
+    "A": "BU",
+    "B": "Code formation",
+    "C": "Nom formation",
+    "D": "Marque",
+    "E": "Date début",
+    "F": "Date fin",
+    "G": "Lieu",
+    "H": "Formateur",
+    "I": "Type",
+    "J": "Nombre de jours"
+  },
+  {
+    "A": "Equipment",
+    "B": "H07",
+    "C": "Diagnostic Moteur WD615 (SINO)",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46034,
+      "date": "2026-01-12"
+    },
+    "F": {
+      "num": 46038,
+      "date": "2026-01-16"
+    },
+    "G": "Togo",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "E01-2026",
+    "C": "CSR FUNDAMENTALS TRAINING",
+    "D": "RENAULT TRUCKS",
+    "E": {
+      "num": 46037,
+      "date": "2026-01-15"
+    },
+    "F": {
+      "num": 46041,
+      "date": "2026-01-19"
+    },
+    "G": "Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "H04",
+    "C": "Réparation Système électrique (SINO)",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46041,
+      "date": "2026-01-19"
+    },
+    "F": {
+      "num": 46045,
+      "date": "2026-01-23"
+    },
+    "G": "TOGO",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL07",
+    "C": "Réparation des Pelles Excavatrices LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46041,
+      "date": "2026-01-19"
+    },
+    "F": {
+      "num": 46045,
+      "date": "2026-01-23"
+    },
+    "G": "RCI",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "QUICK-1769505055346",
+    "C": "PCK (Produit et Connaissances Techniques) TRAINING",
+    "D": "RENAULT TRUCKS",
+    "E": {
+      "num": 46041,
+      "date": "2026-01-19"
+    },
+    "F": {
+      "num": 46045,
+      "date": "2026-01-23"
+    },
+    "G": "Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "H01",
+    "C": "(HOHAN)Maintenance préventive des systèmes du Camion HOWO MMA",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46048,
+      "date": "2026-01-26"
+    },
+    "F": {
+      "num": 46052,
+      "date": "2026-01-30"
+    },
+    "G": "Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL11",
+    "C": "Réparation des Tractopelles LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46048,
+      "date": "2026-01-26"
+    },
+    "F": {
+      "num": 46052,
+      "date": "2026-01-30"
+    },
+    "G": "RCI",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "BT09",
+    "C": "Réparation des chariots à mats rétractable (high performance RRE-H2)",
+    "D": "BT",
+    "E": {
+      "num": 46062,
+      "date": "2026-02-09"
+    },
+    "F": {
+      "num": 46066,
+      "date": "2026-02-13"
+    },
+    "G": "RCI",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "BT13",
+    "C": "Diagnostic des chariots à mats rétractable (Reach Trucks BT REFLEX)",
+    "D": "BT",
+    "E": {
+      "num": 46069,
+      "date": "2026-02-16"
+    },
+    "F": {
+      "num": 46073,
+      "date": "2026-02-20"
+    },
+    "G": "RCI",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "JCB05",
+    "C": "Maintenance préventive des chariots télescopiques JCB 540-170",
+    "D": "JCB",
+    "E": {
+      "num": 46076,
+      "date": "2026-02-23"
+    },
+    "F": {
+      "num": 46080,
+      "date": "2026-02-27"
+    },
+    "G": "Burkina Faso",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "H08",
+    "C": "Diagnostic Boîte de vitesses HW19710",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46083,
+      "date": "2026-03-02"
+    },
+    "F": {
+      "num": 46087,
+      "date": "2026-03-06"
+    },
+    "G": "Togo",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "HI01",
+    "C": "Maintenance préventive des systèmes du camion HINO 300/500",
+    "D": "HINO",
+    "E": {
+      "num": 46083,
+      "date": "2026-03-02"
+    },
+    "F": {
+      "num": 46087,
+      "date": "2026-03-06"
+    },
+    "G": "Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "JCB12",
+    "C": "Diagnostic électrique/électronique des engins JCB",
+    "D": "JCB",
+    "E": {
+      "num": 46083,
+      "date": "2026-03-02"
+    },
+    "F": {
+      "num": 46087,
+      "date": "2026-03-06"
+    },
+    "G": "JCB - Burkina Faso",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "H10",
+    "C": "Diagnostic Système de freinage conventionnel (avec ABS)",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46090,
+      "date": "2026-03-09"
+    },
+    "F": {
+      "num": 46094,
+      "date": "2026-03-13"
+    },
+    "G": "Togo",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "RT09",
+    "C": "Réparation / Révision du moteur DI8",
+    "D": "RENAULT TRUCKS",
+    "E": {
+      "num": 46097,
+      "date": "2026-03-16"
+    },
+    "F": {
+      "num": 46101,
+      "date": "2026-03-20"
+    },
+    "G": "RT09 - Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "TOY12",
+    "C": "Réparation Hydraulique des chariots électriques et thermiques",
+    "D": "TOYOTA FORKLIFT",
+    "E": {
+      "num": 46097,
+      "date": "2026-03-16"
+    },
+    "F": {
+      "num": 46101,
+      "date": "2026-03-20"
+    },
+    "G": "Douala",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL14",
+    "C": "Diagnostic des systèmes des Chargeuses LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46104,
+      "date": "2026-03-23"
+    },
+    "F": {
+      "num": 46108,
+      "date": "2026-03-27"
+    },
+    "G": "Douala",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "S103",
+    "C": "Cummins M10 Training Schedule",
+    "D": "SHACMAN",
+    "E": {
+      "num": 46104,
+      "date": "2026-03-23"
+    },
+    "F": {
+      "num": 46108,
+      "date": "2026-03-27"
+    },
+    "G": "RCI",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "KL07",
+    "C": "Diagnostic Moteur QSC 240",
+    "D": "KING LONG",
+    "E": {
+      "num": 46111,
+      "date": "2026-03-30"
+    },
+    "F": {
+      "num": 46114,
+      "date": "2026-04-02"
+    },
+    "G": "RCI",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 4
+  },
+  {
+    "A": "Equipment",
+    "B": "HI09",
+    "C": "Réparation système de freinage conventionnel (avec ABS)",
+    "D": "HINO",
+    "E": {
+      "num": 46118,
+      "date": "2026-04-06"
+    },
+    "F": {
+      "num": 46122,
+      "date": "2026-04-10"
+    },
+    "G": "Burkina Faso",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "KL01",
+    "C": "Maintenance préventive des systèmes du bus KING LONG",
+    "D": "KING LONG",
+    "E": {
+      "num": 46118,
+      "date": "2026-04-06"
+    },
+    "F": {
+      "num": 46122,
+      "date": "2026-04-10"
+    },
+    "G": "RCI",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL02",
+    "C": "Maintenance préventive Chargeuses LOVOL et TOYOTA Forklift",
+    "D": "LOVOL",
+    "E": {
+      "num": 46118,
+      "date": "2026-04-06"
+    },
+    "F": {
+      "num": 46122,
+      "date": "2026-04-10"
+    },
+    "G": "Nigeria",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "HI16",
+    "C": "Diagnostic Système de freinage conventionnel (avec ABS)",
+    "D": "HINO",
+    "E": {
+      "num": 46125,
+      "date": "2026-04-13"
+    },
+    "F": {
+      "num": 46129,
+      "date": "2026-04-17"
+    },
+    "G": "Burkina Faso",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL01",
+    "C": "Maintenance préventive des Pelles Excavatrices LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46132,
+      "date": "2026-04-20"
+    },
+    "F": {
+      "num": 46136,
+      "date": "2026-04-24"
+    },
+    "G": "Sénégal",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL02",
+    "C": "Maintenance préventive des Chargeuses LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46139,
+      "date": "2026-04-27"
+    },
+    "F": {
+      "num": 46143,
+      "date": "2026-05-01"
+    },
+    "G": "Sénégal",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "KL01",
+    "C": "Maintenance préventive des systèmes Mini bus KING LONG",
+    "D": "KING LONG",
+    "E": {
+      "num": 46146,
+      "date": "2026-05-04"
+    },
+    "F": {
+      "num": 46150,
+      "date": "2026-05-08"
+    },
+    "G": "Douala",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "RT12",
+    "C": "Réparation des systèmes électriques des véhicules",
+    "D": "RENAULT TRUCKS",
+    "E": {
+      "num": 46146,
+      "date": "2026-05-04"
+    },
+    "F": {
+      "num": 46150,
+      "date": "2026-05-08"
+    },
+    "G": "Sénégal",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "H09",
+    "C": "(HOHAN)Diagnostic Système électrique",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46153,
+      "date": "2026-05-11"
+    },
+    "F": {
+      "num": 46157,
+      "date": "2026-05-15"
+    },
+    "G": "Douala",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "RT16",
+    "C": "Diagnostic du moteur DXI13",
+    "D": "RENAULT TRUCKS",
+    "E": {
+      "num": 46153,
+      "date": "2026-05-11"
+    },
+    "F": {
+      "num": 46157,
+      "date": "2026-05-15"
+    },
+    "G": "Sénégal",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL16",
+    "C": "Diagnostic des systèmes des Compacteurs LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46160,
+      "date": "2026-05-18"
+    },
+    "F": {
+      "num": 46164,
+      "date": "2026-05-22"
+    },
+    "G": "RCI",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL17",
+    "C": "Diagnostic des systèmes des Tractopelles LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46167,
+      "date": "2026-05-25"
+    },
+    "F": {
+      "num": 46171,
+      "date": "2026-05-29"
+    },
+    "G": "RCI",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "KL08",
+    "C": "Diagnostic Boîte de vitesses HW 19710",
+    "D": "KING LONG",
+    "E": {
+      "num": 46174,
+      "date": "2026-06-01"
+    },
+    "F": {
+      "num": 46178,
+      "date": "2026-06-05"
+    },
+    "G": "RCI",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "RT22",
+    "C": "Diagnostic Système électrique TEA2+ T2",
+    "D": "RENAULT TRUCKS",
+    "E": {
+      "num": 46174,
+      "date": "2026-06-01"
+    },
+    "F": {
+      "num": 46178,
+      "date": "2026-06-05"
+    },
+    "G": "Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "KL02",
+    "C": "Réparation Moteur QSC 240",
+    "D": "KING LONG",
+    "E": {
+      "num": 46181,
+      "date": "2026-06-08"
+    },
+    "F": {
+      "num": 46185,
+      "date": "2026-06-12"
+    },
+    "G": "Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "S103",
+    "C": "Maintenance préventive - Gamme SHACMAN M3000 (6x4)",
+    "D": "SHACMAN",
+    "E": {
+      "num": 46181,
+      "date": "2026-06-08"
+    },
+    "F": {
+      "num": 46185,
+      "date": "2026-06-12"
+    },
+    "G": "RCI",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL04",
+    "C": "Maintenance préventive des Bulldozers LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46188,
+      "date": "2026-06-15"
+    },
+    "F": {
+      "num": 46192,
+      "date": "2026-06-19"
+    },
+    "G": "Douala",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL09",
+    "C": "Réparation des Niveleuses LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46195,
+      "date": "2026-06-22"
+    },
+    "F": {
+      "num": 46199,
+      "date": "2026-06-26"
+    },
+    "G": "Douala",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "H02",
+    "C": "Réparation Moteur WD615",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46202,
+      "date": "2026-06-29"
+    },
+    "F": {
+      "num": 46206,
+      "date": "2026-07-03"
+    },
+    "G": "Bénin",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "H07",
+    "C": "Diagnostic Moteur WD615",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46209,
+      "date": "2026-07-06"
+    },
+    "F": {
+      "num": 46213,
+      "date": "2026-07-10"
+    },
+    "G": "Bénin",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "TOY01",
+    "C": "Maintenance",
+    "D": "TOYOTA FORKLIFT",
+    "E": {
+      "num": 46216,
+      "date": "2026-07-13"
+    },
+    "F": {
+      "num": 46220,
+      "date": "2026-07-17"
+    },
+    "G": "Ghana",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "TOY07",
+    "C": "Réparation Moteur Hybride Essence et Gaz",
+    "D": "TOYOTA FORKLIFT",
+    "E": {
+      "num": 46216,
+      "date": "2026-07-13"
+    },
+    "F": {
+      "num": 46220,
+      "date": "2026-07-17"
+    },
+    "G": "Togo",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "TOY04",
+    "C": "Maintenance",
+    "D": "TOYOTA FORKLIFT",
+    "E": {
+      "num": 46223,
+      "date": "2026-07-20"
+    },
+    "F": {
+      "num": 46227,
+      "date": "2026-07-24"
+    },
+    "G": "Ghana",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "TOY08",
+    "C": "Réparation Moteur Hybride Essence et Gaz (4Y-ECS a gestion électronique)",
+    "D": "TOYOTA FORKLIFT",
+    "E": {
+      "num": 46223,
+      "date": "2026-07-20"
+    },
+    "F": {
+      "num": 46227,
+      "date": "2026-07-24"
+    },
+    "G": "Togo",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "KL01",
+    "C": "Maintenance préventive des systèmes du bus KING LONG",
+    "D": "KING LONG",
+    "E": {
+      "num": 46230,
+      "date": "2026-07-27"
+    },
+    "F": {
+      "num": 46234,
+      "date": "2026-07-31"
+    },
+    "G": "Sénégal",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "HI16",
+    "C": "Diagnostic Système de freinage conventionnel (avec ABS)",
+    "D": "HINO",
+    "E": {
+      "num": 46237,
+      "date": "2026-08-03"
+    },
+    "F": {
+      "num": 46241,
+      "date": "2026-08-07"
+    },
+    "G": "Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "KL09",
+    "C": "Diagnostic Electrique",
+    "D": "KING LONG",
+    "E": {
+      "num": 46237,
+      "date": "2026-08-03"
+    },
+    "F": {
+      "num": 46241,
+      "date": "2026-08-07"
+    },
+    "G": "Sénégal",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "H04",
+    "C": "(HOHAN)Réparation Système électrique (Climatisation)",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46244,
+      "date": "2026-08-10"
+    },
+    "F": {
+      "num": 46248,
+      "date": "2026-08-14"
+    },
+    "G": "Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "TOY01",
+    "C": "Maintenance préventive des chariots thermiques 8FG(D)10-35",
+    "D": "TOYOTA FORKLIFT",
+    "E": {
+      "num": 46251,
+      "date": "2026-08-17"
+    },
+    "F": {
+      "num": 46255,
+      "date": "2026-08-21"
+    },
+    "G": "Burkina Faso",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "TOY02",
+    "C": "Maintenance préventive des chariots thermiques 8FG(D)40-80",
+    "D": "TOYOTA FORKLIFT",
+    "E": {
+      "num": 46258,
+      "date": "2026-08-24"
+    },
+    "F": {
+      "num": 46262,
+      "date": "2026-08-28"
+    },
+    "G": "Burkina Faso",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "HI09",
+    "C": "Réparation des système de freinage conventionnel (ABS)",
+    "D": "HINO",
+    "E": {
+      "num": 46265,
+      "date": "2026-08-31"
+    },
+    "F": {
+      "num": 46269,
+      "date": "2026-09-04"
+    },
+    "G": "Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "S303",
+    "C": "Diagnostic avancé du système électrique et électronique SHACMAN",
+    "D": "SHACMAN",
+    "E": {
+      "num": 46265,
+      "date": "2026-08-31"
+    },
+    "F": {
+      "num": 46269,
+      "date": "2026-09-04"
+    },
+    "G": "RCI",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "RT10",
+    "C": "Réparation / Révision de la boîte de vitesses Optidriver",
+    "D": "RENAULT TRUCKS",
+    "E": {
+      "num": 46272,
+      "date": "2026-09-07"
+    },
+    "F": {
+      "num": 46276,
+      "date": "2026-09-11"
+    },
+    "G": "Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "S305",
+    "C": "Diagnostic Ponts et Réducteurs HanDe",
+    "D": "SHACMAN",
+    "E": {
+      "num": 46272,
+      "date": "2026-09-07"
+    },
+    "F": {
+      "num": 46276,
+      "date": "2026-09-11"
+    },
+    "G": "RCI",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL10",
+    "C": "Réparation des Bulldozers LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46279,
+      "date": "2026-09-14"
+    },
+    "F": {
+      "num": 46283,
+      "date": "2026-09-18"
+    },
+    "G": "Douala",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "TOY06",
+    "C": "Réparation Unité de traction des chariots électriques",
+    "D": "TOYOTA FORKLIFT",
+    "E": {
+      "num": 46286,
+      "date": "2026-09-21"
+    },
+    "F": {
+      "num": 46290,
+      "date": "2026-09-25"
+    },
+    "G": "Douala",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "KL01",
+    "C": "Maintenance préventive des systèmes du bus KING LONG",
+    "D": "KING LONG",
+    "E": {
+      "num": 46293,
+      "date": "2026-09-28"
+    },
+    "F": {
+      "num": 46297,
+      "date": "2026-10-02"
+    },
+    "G": "Burkina Faso",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "RT21",
+    "C": "Diagnostic du système de freinage avec EBS",
+    "D": "RENAULT TRUCKS",
+    "E": {
+      "num": 46293,
+      "date": "2026-09-28"
+    },
+    "F": {
+      "num": 46297,
+      "date": "2026-10-02"
+    },
+    "G": "Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "KL04",
+    "C": "Réparation Electrique (Climatisation)",
+    "D": "KING LONG",
+    "E": {
+      "num": 46300,
+      "date": "2026-10-05"
+    },
+    "F": {
+      "num": 46304,
+      "date": "2026-10-09"
+    },
+    "G": "Douala",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "KL09",
+    "C": "Diagnostic Electrique",
+    "D": "KING LONG",
+    "E": {
+      "num": 46300,
+      "date": "2026-10-05"
+    },
+    "F": {
+      "num": 46304,
+      "date": "2026-10-09"
+    },
+    "G": "Burkina Faso",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL14",
+    "C": "Diagnostic des systèmes des Chargeuses LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46307,
+      "date": "2026-10-12"
+    },
+    "F": {
+      "num": 46311,
+      "date": "2026-10-16"
+    },
+    "G": "RDC Lubumbashi",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "LVL17",
+    "C": "Diagnostic des systèmes des Tractopelles LOVOL",
+    "D": "LOVOL",
+    "E": {
+      "num": 46314,
+      "date": "2026-10-19"
+    },
+    "F": {
+      "num": 46318,
+      "date": "2026-10-23"
+    },
+    "G": "RDC Lubumbashi",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "BT04",
+    "C": "Maintenance préventive des chariots à mats rétractable (high performance RRE-H2)",
+    "D": "BT",
+    "E": {
+      "num": 46321,
+      "date": "2026-10-26"
+    },
+    "F": {
+      "num": 46325,
+      "date": "2026-10-30"
+    },
+    "G": "Sénégal",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "F02-CAN",
+    "C": "Réparation Moteur 4D33 sur CANTER",
+    "D": "FUSO",
+    "E": {
+      "num": 46321,
+      "date": "2026-10-26"
+    },
+    "F": {
+      "num": 46325,
+      "date": "2026-10-30"
+    },
+    "G": "RCI",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "BT14",
+    "C": "Diagnostic des chariots à mats rétractable (high performance RRE-H2)",
+    "D": "BT",
+    "E": {
+      "num": 46328,
+      "date": "2026-11-02"
+    },
+    "F": {
+      "num": 46332,
+      "date": "2026-11-06"
+    },
+    "G": "Sénégal",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "F04-CAN",
+    "C": "Réparation Boîte de vitesses sur CANTER + FI",
+    "D": "FUSO",
+    "E": {
+      "num": 46328,
+      "date": "2026-11-02"
+    },
+    "F": {
+      "num": 46332,
+      "date": "2026-11-06"
+    },
+    "G": "RCI",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "H04",
+    "C": "Réparation Système électrique",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46349,
+      "date": "2026-11-23"
+    },
+    "F": {
+      "num": 46353,
+      "date": "2026-11-27"
+    },
+    "G": "Madagascar",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "H08",
+    "C": "Diagnostic Boîte de vitesses HW19710",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46349,
+      "date": "2026-11-23"
+    },
+    "F": {
+      "num": 46353,
+      "date": "2026-11-27"
+    },
+    "G": "Sénégal",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "H05",
+    "C": "Réparation Système de freinage conventionnel (avec ABS)",
+    "D": "SINOTRUK",
+    "E": {
+      "num": 46356,
+      "date": "2026-11-30"
+    },
+    "F": {
+      "num": 46360,
+      "date": "2026-12-04"
+    },
+    "G": "Madagascar",
+    "H": "Idris NKOA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "RT18",
+    "C": "Diagnostic de la boîte de vitesses Optidriver",
+    "D": "RENAULT TRUCKS",
+    "E": {
+      "num": 46356,
+      "date": "2026-11-30"
+    },
+    "F": {
+      "num": 46360,
+      "date": "2026-12-04"
+    },
+    "G": "Sénégal",
+    "H": "Lucien GAGNE",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "S305",
+    "C": "Diagnostic Boîte de vitesses Fuller/Fast Gear et commandes",
+    "D": "SHACMAN",
+    "E": {
+      "num": 46357,
+      "date": "2026-12-01"
+    },
+    "F": {
+      "num": 46361,
+      "date": "2026-12-05"
+    },
+    "G": "RCI",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "TOY13",
+    "C": "Diagnostic électrique/électronique des chariots électriques",
+    "D": "TOYOTA FORKLIFT",
+    "E": {
+      "num": 46363,
+      "date": "2026-12-07"
+    },
+    "F": {
+      "num": 46367,
+      "date": "2026-12-11"
+    },
+    "G": "RCI",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  },
+  {
+    "A": "Equipment",
+    "B": "TOY14",
+    "C": "Diagnostic électrique/électronique des chariots thermiques",
+    "D": "TOYOTA FORKLIFT",
+    "E": {
+      "num": 46370,
+      "date": "2026-12-14"
+    },
+    "F": {
+      "num": 46374,
+      "date": "2026-12-18"
+    },
+    "G": "RCI",
+    "H": "Thierry KOUGHA",
+    "I": "Présentiel",
+    "J": 5
+  }
+]

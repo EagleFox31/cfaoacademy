@@ -1,0 +1,197 @@
+/* CFAO Academy — composants alignés wireframe (complète styles.css) */
+
+/* ── NAV active state (multi-pages) ─────────────────── */
+.nav-links a.active { color: var(--red); }
+.nav-links a.active::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -24px;
+  height: 2px; background: var(--red);
+}
+
+/* ── PREVIEW SECTION (aperçu d'une page) ────────────── */
+.pv-head {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  gap: 32px; margin-bottom: 28px; flex-wrap: wrap;
+}
+.pv-head-l { max-width: 720px; }
+.pv-ix {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--red); font-weight: 500;
+  display: inline-flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
+}
+.pv-ix::before { content: ''; width: 24px; height: 1px; background: var(--red); }
+.pv-head h2 {
+  font-size: clamp(30px, 3.6vw, 52px);
+  font-weight: 600; letter-spacing: -0.03em; line-height: 1.0;
+}
+.pv-head h2 em { font-style: italic; color: var(--red); font-family: 'DM Sans', serif; font-weight: 500; }
+.pv-voir {
+  display: inline-flex; align-items: center; gap: 10px;
+  text-decoration: none; color: var(--ink);
+  font-size: 14px; font-weight: 500;
+  padding: 11px 18px; border-radius: 999px;
+  border: 1px solid var(--rule);
+  white-space: nowrap;
+  transition: background .2s, color .2s, border-color .2s, transform .2s;
+  flex-shrink: 0;
+}
+.pv-voir .arrow { transition: transform .2s; }
+.pv-voir:hover { background: var(--ink); color: white; border-color: var(--ink); transform: translateY(-1px); }
+.pv-voir:hover .arrow { transform: translateX(3px); }
+
+/* ── TABS (underline) ───────────────────────────────── */
+.pv-tabs {
+  display: flex; gap: 4px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 28px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pv-tabs::-webkit-scrollbar { display: none; }
+.pv-tab {
+  position: relative;
+  padding: 12px 14px 14px;
+  border: none; background: transparent;
+  font-family: inherit; font-size: 14px; font-weight: 500;
+  cursor: pointer; color: var(--muted);
+  transition: color .15s;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.pv-tab.active { color: var(--ink); border-bottom-color: var(--red); }
+.pv-tab:hover:not(.active) { color: var(--ink); }
+.pv-tab .tab-count {
+  margin-left: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; opacity: 0.5; font-weight: 400; vertical-align: super;
+}
+.pv-filters {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  margin: -8px 0 28px;
+}
+.pv-filters .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted-2); margin-right: 4px;
+}
+.pv-filter {
+  font-size: 12.5px; color: var(--ink);
+  padding: 7px 13px; border-radius: 999px;
+  border: 1px solid var(--rule); background: var(--paper);
+}
+
+/* ── GENERIC PREVIEW CARD GRID ──────────────────────── */
+.pv-grid { display: grid; gap: 16px; }
+.pv-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.pv-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.pv-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+.pv-grid.cols-6 { grid-template-columns: repeat(6, 1fr); }
+
+.pv-card {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 24px 22px 22px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  text-decoration: none; color: inherit;
+  min-height: 168px;
+  position: relative;
+  transition: transform .35s cubic-bezier(.2,.7,.2,1), border-color .25s, box-shadow .35s;
+  animation: fadeUp .4s cubic-bezier(.2,.7,.2,1) both;
+}
+.pv-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--ink);
+  box-shadow: 0 24px 56px -28px rgba(26,31,60,0.30);
+}
+.pv-card .kicker {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--red); font-weight: 500;
+}
+.pv-card h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px; letter-spacing: -0.02em; line-height: 1.12;
+  font-weight: 600; color: var(--ink);
+  text-wrap: pretty;
+}
+.pv-card .meta {
+  font-size: 13px; color: var(--muted); line-height: 1.45;
+  margin-top: auto;
+}
+.pv-card .corner {
+  position: absolute; top: 20px; right: 20px;
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--rule); display: grid; place-items: center;
+  color: var(--ink); font-size: 14px;
+  transition: background .2s, color .2s, border-color .2s, transform .2s;
+}
+.pv-card:hover .corner { background: var(--red); color: white; border-color: var(--red); transform: rotate(-45deg); }
+
+/* quote variant (témoignages) */
+.pv-card--quote h3 {
+  font-family: 'DM Sans', sans-serif; font-weight: 500; font-style: italic;
+  font-size: 17px; line-height: 1.4;
+}
+.pv-card--quote .kicker { color: var(--ink); }
+
+/* stat variant (L'Academy) */
+.pv-card--stat h3 { font-size: 19px; }
+
+/* brand card variant ── logo on top */
+.pv-card--brand { min-height: 188px; padding: 22px; }
+.pv-brand-logo {
+  flex: 1; display: flex; align-items: center; justify-content: flex-start;
+  padding: 6px 0 14px;
+  min-height: 72px;
+}
+.pv-brand-logo img {
+  max-height: 56px; max-width: 130px; width: auto; object-fit: contain;
+  filter: grayscale(1); opacity: .85;
+  transition: filter .35s cubic-bezier(.2,.7,.2,1), transform .35s, opacity .35s;
+}
+.pv-card--brand:hover .pv-brand-logo img { filter: none; opacity: 1; transform: scale(1.06); }
+.pv-brand-wordmark {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700; font-size: 30px; letter-spacing: -0.02em;
+  color: var(--ink); opacity: .85;
+}
+.pv-card--brand .name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink);
+}
+.pv-card--brand .cat {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); margin-top: 2px;
+}
+.pv-card--brand .count {
+  position: absolute; top: 22px; right: 22px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; color: var(--muted-2); letter-spacing: 0.04em;
+}
+.pv-card--brand:hover .count { color: var(--red); }
+
+/* ── PREVIEW SESSIONS (réutilise .sessions/.session de styles.css) ── */
+.pv-sessions-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--rule);
+  flex-wrap: wrap; gap: 16px;
+}
+.pv-sessions-foot .count { color: var(--muted); font-size: 14px; }
+.pv-sessions-foot .count strong { color: var(--ink); font-weight: 600; }
+
+/* ── responsive ─────────────────────────────────────── */
+@media (max-width: 1080px) {
+  .pv-grid.cols-5, .pv-grid.cols-6 { grid-template-columns: repeat(3, 1fr); }
+  .pv-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .pv-grid.cols-3, .pv-grid.cols-4, .pv-grid.cols-5, .pv-grid.cols-6 { grid-template-columns: repeat(2, 1fr); }
+  .pv-head h2 { font-size: 30px; }
+}
+@media (max-width: 480px) {
+  .pv-grid { grid-template-columns: 1fr !important; }
+}

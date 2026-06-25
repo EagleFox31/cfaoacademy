@@ -1,0 +1,21 @@
+{
+  "ki": [
+    { "id": 1, "name": "André YOGBA", "role": "Key Instructor", "lieu": "Douala, Cameroun" },
+    { "id": 2, "name": "Marcia MAVOUALA", "role": "Key Instructor", "lieu": "Congo" },
+    { "id": 3, "name": "Jacques MAVILA", "role": "Key Instructor", "lieu": "RDC" },
+    { "id": 4, "name": "Moïse ABLEFONLIN", "role": "Key Instructor", "lieu": "Bénin" },
+    { "id": 5, "name": "Cheikh NDIAYE", "role": "Key Instructor", "lieu": "Sénégal, Guinée-Bissau & Gambie" },
+    { "id": 6, "name": "Joël RAMIARANTSOA", "role": "Key Instructor", "lieu": "Madagascar" },
+    { "id": 7, "name": "Stanislas IDO", "role": "Key Instructor", "lieu": "Burkina Faso" },
+    { "id": 8, "name": "MAHAMAT ELHADJ", "role": "Key Instructor", "lieu": "Tchad" },
+    { "id": 9, "name": "Fall ABDELLAHI", "role": "Key Instructor", "lieu": "Mauritanie" },
+    { "id": 10, "name": "David NDONG", "role": "Key Instructor", "lieu": "Guinée-Équatoriale" },
+    { "id": 11, "name": "Kossi AFATSAWO", "role": "Key Instructor", "lieu": "Togo" },
+    { "id": 12, "name": "Ibrahim ALTINE", "role": "Key Instructor", "lieu": "Niger" },
+    { "id": 13, "name": "Roland BAMBA", "role": "Key Instructor", "lieu": "Côte d'Ivoire" },
+    { "id": 14, "name": "Sow OUSMANE", "role": "Key Instructor", "lieu": "Guinée-Conakry" },
+    { "id": 15, "name": "Josaphat BONDRAVODE", "role": "Key Instructor", "lieu": "RCA" },
+    { "id": 16, "name": "Mamadou KEITA", "role": "Key Instructor", "lieu": "Mali" },
+    { "id": 17, "name": "Valentin RAMBENA", "role": "Key Instructor", "lieu": "Guinée-Équatoriale" }
+  ]
+}
