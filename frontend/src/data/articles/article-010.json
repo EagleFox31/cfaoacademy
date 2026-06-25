@@ -1,0 +1,21 @@
+{
+  "id":       "carrosserie-session-inaugurale-n1-rci-2026",
+  "cat":      "Evènements",
+  "date":     "2026-04-30",
+  "brand":    null,
+  "tone":     "t4",
+  "titre":    "Atelier carrosserie Côte d'Ivoire — session inaugurale N1, 12 stagiaires",
+  "resume":   "Douze stagiaires ont suivi la première session carrosserie N1 organisée en RCI, avec résultats au-delà des attentes.",
+  "readtime": "4 min",
+  "views":    0,
+  "contenu":  "La première session de formation carrosserie niveau N1 organisée en Côte d'Ivoire s'est tenue fin avril 2026 à Abidjan. Douze stagiaires — carrossiers confirmés souhaitant structurer leur pratique — ont suivi cinq jours de formation sur les techniques de débosselage, redressage et préparation avant peinture.\n\nCette session marque l'extension géographique du programme carrosserie de l'Academy, jusque-là dispensé uniquement à Douala. L'atelier partenaire d'Abidjan a mis à disposition quatre véhicules accidentés réels sur lesquels les stagiaires ont travaillé, reproduisant les conditions exactes d'un atelier en activité.\n\nLes résultats de l'évaluation finale ont dépassé les attentes : dix des douze participants ont validé le niveau N1, et deux ont été directement orientés vers le module N2. L'Academy prévoit d'organiser deux sessions N1 et une session N2 en Côte d'Ivoire d'ici la fin de l'année 2026.",
+  "cover":    "/assets/images_articles/event_carrosserie.jpg",
+  "photos":   {
+    "count": 2,
+    "urls": [
+      "/assets/images_articles/event_carrosserie2.jpg",
+      "/assets/images_articles/event_carrosserie3.jpg"
+    ]
+  },
+  "videos":   { "count": 0, "urls": [] }
+}

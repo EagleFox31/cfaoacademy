@@ -1,0 +1,1908 @@
+﻿{
+  
+  "PROCESS_SAV_PARTS_EQUIPMENT": {
+    "PROCESS_SAV": {
+      "TOUTES_MARQUES_EQUIPMENT": [
+        {
+          "code": "MA01",
+          "name": "Pilotage de l'efficacité opérationnelle de l'accueil client au sein du SAV",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Manager",
+          "prerequisites": null
+        },
+        {
+          "code": "GC01",
+          "name": "Gestion de la clientèle SAV par le Réceptionnaire (FO01 à FO06)",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Front Office",
+          "prerequisites": null
+        },
+        {
+          "code": "FO01",
+          "name": "Appel 1ère maintenance du véhicule client par le SAV",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": null
+        },
+        {
+          "code": "FO02",
+          "name": "Préparation de la réception véhicule client au sein du service SAV",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": null
+        },
+        {
+          "code": "FO03",
+          "name": "Réception du véhicule avec le client au SAV",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": null
+        },
+        {
+          "code": "FO04",
+          "name": "Suivi des travaux du véhicule client au SAV",
+          "duration": "2 jours",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": null
+        },
+        {
+          "code": "FO05",
+          "name": "Restitution du véhicule client par le SAV",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": null
+        },
+        {
+          "code": "FO06",
+          "name": "Mesure de la satisfaction clients après intervention sur son véhicule",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": null
+        },
+        {
+          "code": "IZIFLO01",
+          "name": "Gestion d'atelier avec l'application IZIFLO",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Manager + Front Office + Back office",
+          "prerequisites": null
+        },
+        {
+          "code": "PDI09",
+          "name": "Préparation des véhicules avant la livraison au client (PDI)",
+          "duration": "2 jours",
+          "type": "Distanciel",
+          "public": "Manager + Front Office + Back office",
+          "prerequisites": null
+        },
+        {
+          "code": "SG01",
+          "name": "Soumission de la garantie constructeur",
+          "duration": "1 jour chacune",
+          "type": "Distanciel",
+          "public": "Back office",
+          "marques": [
+            "RT",
+            "LOVOL",
+            "BT",
+            "TOYIE",
+            "MERCEDES TRUCKS",
+            "FUSO",
+            "HINO",
+            "SINOTRUCK",
+            "SHACMAN",
+            "KING LONG",
+            "JCB"
+          ],
+          "prerequisites": null
+        }
+      ]
+    },
+    "PROCESS_PARTS": {
+      "TOUTES_MARQUES_EQUIPMENT": [
+        {
+          "code": "PART01",
+          "name": "Standardisation des processus du département pièces des filiales",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Managers, Back-office, Front-Office",
+          "prerequisites": null
+        },
+        {
+          "code": "TP01",
+          "name": "Développement de l'argumentaire technique de vente des pièces de maintenance TOUTES MARQUES",
+          "duration": "2 jours",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": null
+        },
+        {
+          "code": "TP02",
+          "name": "Utilisation de la plateforme de référencement des pièces constructeur",
+          "duration": "1 jour chacune",
+          "type": "Distanciel",
+          "public": "Manager + Front office + Back office",
+          "marques": [
+            "RENAULT TRUCKS",
+            "BT",
+            "FUSO",
+            "HINO",
+            "TOYIE",
+            "SINOTRUCK",
+            "SHACMAN",
+            "MERCEDES TRUCKS",
+            "KING LONG",
+            "LOVOL",
+            "JCB"
+          ],
+          "prerequisites": null
+        }
+      ]
+    }
+  }
+,
+  "PROCESS_SAV_PARTS_MOTORS": {
+    "PROCESS_SAV": {
+      "TOYOTA": [
+        {
+          "code": "TSKR01",
+          "name": "Proposition d'amélioration d'éléments techniques des véhicules à transmettre au constructeur TOYOTA (SKR)",
+          "duration": "2 jours",
+          "type": "Distanciel",
+          "public": "Manager, Back-office & Front office",
+          "prerequisites": "Inscription à la plateforme SKR"
+        },
+        {
+          "code": "TFT01",
+          "name": "Elaboration d'un rapport d'anomalies techniques à communiquer au constructeur (FTR)",
+          "duration": "3 jours",
+          "type": "Distanciel",
+          "public": "Back-office & Front office",
+          "prerequisites": "Inscription à la plateforme SKR"
+        },
+        {
+          "code": "TTG01",
+          "name": "Traitement et soumission des demandes de garantie",
+          "duration": "3 jours",
+          "type": "Distanciel",
+          "public": "Back-office",
+          "prerequisites": "Accès à GWS"
+        },
+        {
+          "code": "TSA01",
+          "name": "Gestion de la clientèle SAV par le conseiller service (TSA)",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Back-office",
+          "prerequisites": "N/A"
+        },
+        {
+          "code": "TSA02",
+          "name": "Gestion de la clientèle SAV par le conseiller service Advanced (TSA2)",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Back-office",
+          "prerequisites": "Certification Toyota SA"
+        },
+        {
+          "code": "FIR01",
+          "name": "Gestion de la qualité de la réparation véhicule client en une seule intervention (FIR)",
+          "duration": "3 jours",
+          "type": "Présentiel",
+          "public": "Managers",
+          "prerequisites": "RAS"
+        }
+      ],
+      "SUZUKI": [
+        {
+          "code": "SSGF01",
+          "name": "Traitement et soumission des demandes de garantie",
+          "duration": "2 jours",
+          "type": "Distanciel",
+          "public": "Manager, Back-office & Front office",
+          "prerequisites": "Accès à SCAN"
+        },
+        {
+          "code": "FTIR01",
+          "name": "Elaboration d'un rapport d'anomalies techniques à communiquer au constructeur FTIR",
+          "duration": "2 jours",
+          "type": "Distanciel",
+          "public": "Conseiller Technique et/Administrateur Garantie",
+          "prerequisites": "Accès à SCAN"
+        }
+      ],
+      "TOUTES_MARQUES_VL": [
+        {
+          "code": "MA01",
+          "name": "Pilotage de l'efficacité opérationnelle de l'accueil client au sein du SAV",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Manager",
+          "prerequisites": "Gestion clientèle dans les ateliers"
+        },
+        {
+          "code": "GC01",
+          "name": "Gestion de la clientèle SAV par le conseiller service (FO01 à FO06)",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Front Office",
+          "prerequisites": "Expérience conseiller service"
+        },
+        {
+          "code": "FO01",
+          "name": "Appel 1ère maintenance du véhicule client par le SAV",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": "Gestion clientèle dans les ateliers"
+        },
+        {
+          "code": "FO02",
+          "name": "Préparation de la réception véhicule client au sein du service SAV",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": "Gestion clientèle dans les ateliers"
+        },
+        {
+          "code": "FO03",
+          "name": "Réception du véhicule avec le client au SAV",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": "Gestion clientèle dans les ateliers"
+        },
+        {
+          "code": "FO04",
+          "name": "Suivi des travaux du véhicule client au SAV",
+          "duration": "2 jours",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": "Gestion clientèle dans les ateliers"
+        },
+        {
+          "code": "FO05",
+          "name": "Restitution du véhicule client par le SAV",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": "Gestion clientèle dans les ateliers"
+        },
+        {
+          "code": "FO06",
+          "name": "Mesure de la satisfaction clients après intervention sur son véhicule",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Front Office",
+          "prerequisites": "Gestion clientèle dans les ateliers"
+        },
+        {
+          "code": "IZIFLO01",
+          "name": "Gestion d'atelier avec l'application IZIFLO",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Manager + Front Office + Back office",
+          "prerequisites": "Gestion clientèle dans les ateliers"
+        },
+        {
+          "code": "PDI09",
+          "name": "Préparation des véhicules avant la livraison au client (PDI)",
+          "duration": "2 jours",
+          "type": "Présentiel",
+          "public": "Préparateur après-vente, contrôleurs qualité, Chef d'atelier",
+          "prerequisites": "Connaissances de base en mécanique automobile et des outils de diagnostic"
+        }
+      ]
+    },
+    "PROCESS_PARTS": {
+      "TOYOTA": [
+        {
+          "code": "TP01",
+          "name": "Utilisation de la plateforme de référencement des pièces TOYOTA (WEB EPC)",
+          "duration": "3 jours",
+          "type": "Distanciel",
+          "public": "Back-office",
+          "prerequisites": "Accès à la plateforme WEB EPC"
+        },
+        {
+          "code": "TP02",
+          "name": "Développement de l'argumentaire technique de vente des pièces de maintenance",
+          "duration": "2 jours",
+          "type": "Distanciel",
+          "public": "Back-office",
+          "prerequisites": "Aucun"
+        },
+        {
+          "code": "TP03",
+          "name": "Standardisation des processus du département pièces des filiales (DPOK)",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Managers, Back-office, Front-Office",
+          "prerequisites": "Aucun"
+        }
+      ],
+      "SUZUKI": [
+        {
+          "code": "SPC01",
+          "name": "Utilisation de la plateforme de référencement des pièces Suzuki (SNAPON EPC)",
+          "duration": "2 jours",
+          "type": "Distanciel",
+          "public": "Back-office",
+          "prerequisites": "Accès à la plateforme SNAPON EPC"
+        }
+      ],
+      "TOUTES_MARQUES": [
+        {
+          "code": "PART01",
+          "name": "Standardisation des processus du département pièces des filiales (TM01 à TM06)",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Managers, Back-office, Front-Office",
+          "prerequisites": "Aucun"
+        },
+        {
+          "code": "TM01",
+          "name": "Définition du standard de l'organisation opérationnelle du département pièce",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Managers",
+          "prerequisites": "Aucun"
+        },
+        {
+          "code": "TM02",
+          "name": "Audit de l'organisation opérationnelle d'un département pièces",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Managers, Back-office",
+          "prerequisites": "Aucun"
+        },
+        {
+          "code": "TM03",
+          "name": "Elaboration d'un plan d'amélioration opérationnelle d'un département pièces",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Back office",
+          "prerequisites": "Aucun"
+        },
+        {
+          "code": "TM04",
+          "name": "Déploiement d'un plan d'amélioration opérationnelle d'un département pièces",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Back office",
+          "prerequisites": "Aucun"
+        },
+        {
+          "code": "TM05",
+          "name": "Pérennisation des nouvelles actions opérationnelles d'un département pièces",
+          "duration": "1 jour",
+          "type": "Distanciel",
+          "public": "Back office",
+          "prerequisites": "Aucun"
+        }
+      ]
+    }
+  }
+,
+  "CARROSSERIE": [
+    {
+      "level": "JUNIOR",
+      "trainings": [
+        {
+          "code": "01N1",
+          "name": "Débourrage des éléments plans de la carrosserie acier des véhicules",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Carrossier",
+          "prerequisites": "Connaissances travaux de tôlerie"
+        },
+        {
+          "code": "02N1",
+          "name": "Redressage des éléments plans de la carrosserie acier des véhicules avant peinture",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Carrossier",
+          "prerequisites": "Connaissances travaux de tôlerie"
+        },
+        {
+          "code": "03N1",
+          "name": "Rénovation les éléments de la carrosserie en plastique (Optiques, parechocs…) des véhicules",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Carrossier",
+          "prerequisites": "Connaissances travaux de tôlerie"
+        },
+        {
+          "code": "04N1",
+          "name": "Préparation des éléments de carrosserie avant l'application de produits de peinture",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Carrossier",
+          "prerequisites": "Connaissances travaux de tôlerie"
+        },
+        {
+          "code": "05N1",
+          "name": "Remplacement et extrusion des vitrages collés et amovible du véhicule",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Carrossier-peintre, tôlier, mécanicien",
+          "prerequisites": "Avoir suivi la formation initiation ou pratiquer régulièrement"
+        }
+      ]
+    },
+    {
+      "level": "SENIOR",
+      "trainings": [
+        {
+          "code": "01N2",
+          "name": "Débosselage des éléments de la carrosserie acier des véhicules sans peinture",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Carrossier",
+          "prerequisites": "Connaissances travaux de tôlerie"
+        },
+        {
+          "code": "02N2",
+          "name": "Redressage des éléments de carrosserie acier des véhicules",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Carrossier",
+          "prerequisites": "Connaissances travaux de tôlerie"
+        }
+      ]
+    },
+    {
+      "level": "EXPERT",
+      "trainings": [
+        {
+          "code": "01N3",
+          "name": "Débosselage sur véhicule aluminium et acier sans peinture",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Carrossier",
+          "prerequisites": "Connaissances travaux de tôlerie"
+        },
+        {
+          "code": "02N3",
+          "name": "Redressage des éléments de carrosserie aluminium avec reprise peinture",
+          "duration": "5 jours",
+          "type": "Présentiel",
+          "public": "Carrossier",
+          "prerequisites": "Connaissances travaux de tôlerie"
+        }
+      ]
+    }
+  ],
+
+  "TOYOTA": [
+    {
+      "level": "G4",
+      "trainings": [
+        {
+          "code": "TS01-G4",
+          "name": "Maintenance préventive périodique et non-périodique des véhicules",
+          "englishName": "Periodic and Non-periodic maintenance of vehicles",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TS02-G4",
+          "name": "Certification G4 : Maintenance préventive périodique et non-périodique des véhicules",
+          "englishName": "G4 Certification: Periodic and Non-periodic maintenance of vehicles",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "G3",
+      "trainings": [
+        {
+          "code": "TS03-G3",
+          "name": "Révision/réparation Moteur essence et diesel des véhicules",
+          "englishName": "Engine overhaul and repair of gasoline and diesel engines",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TS04-G3",
+          "name": "Révision/réparation des organes châssis des véhicules, partie 1 (Boîtes de vitesses et Différentiel)",
+          "englishName": "Overhaul and repair of vehicle Chassis and drivetrain systems, part 1 (Gearboxes and Differential)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TS05-G3",
+          "name": "Révision/réparation des organes châssis des véhicules, partie 2 (Freinage, suspension, arbre de transmission, direction et autres)",
+          "englishName": "Overhaul and repair of vehicle Chassis and drivetrain systems, part 2 (Braking, suspension, driveshaft, steering and others)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TS06-G3",
+          "name": "Révision/réparation des organes électriques des véhicules (Climatisation, alternateur, démarreur et autres)",
+          "englishName": "Overhaul and repair of vehicle electrical components (Air conditioning, alternator, starter and others)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TS07-G3",
+          "name": "Certification G3 : Révisions et réparations des organes et autres systèmes des véhicules (moteurs, châssis et électricité)",
+          "englishName": "G3 Certification: Revisions and repairs of vehicle components and systems (engines, chassis and electricity)",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "G2",
+      "trainings": [
+        {
+          "code": "TS08-G2",
+          "name": "Diagnostic des systèmes multiplexés des véhicules",
+          "englishName": "Diagnosis of vehicle multiplexed systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TS09-G2",
+          "name": "Diagnostic des systèmes châssis des véhicules",
+          "englishName": "Diagnosis of vehicle chassis systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TS10-G2",
+          "name": "Diagnostic des systèmes électriques/électroniques des véhicules",
+          "englishName": "Diagnosis of vehicle electrical/electronic systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TS11-G2",
+          "name": "Diagnostic des systèmes de climatisation manuelle et automatique des véhicules",
+          "englishName": "Diagnosis of vehicle manual and automatic air conditioning systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TS12-G2",
+          "name": "Certification G2 : Diagnostic des systèmes des véhicules avec DTC",
+          "englishName": "G2 Certification: Diagnosis of vehicle systems with DTC",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "G1",
+      "trainings": [
+        {
+          "code": "TS13-G1",
+          "name": "Diagnostic des défaillances impliquant des interactions entre les systèmes des véhicules",
+          "englishName": "Diagnosis of failures involving interactions between vehicle systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TS14-G1",
+          "name": "Diagnostic des bruits mécaniques des systèmes des véhicules",
+          "englishName": "Diagnosis of mechanical noises in vehicle systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TS15-G1",
+          "name": "Analyse des défaillances et étude des cas des différents systèmes des véhicules",
+          "englishName": "Analysis of failures and case studies of different vehicle systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TS16-G1",
+          "name": "Certification G1 : Diagnostic des bruits et des défaillances inter-systèmes des véhicules (avec et sans DTC)",
+          "englishName": "G1 Certification: Diagnosis of noises and inter-system failures in vehicles (with and without DTC)",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "Autre",
+      "trainings": [
+        {
+          "code": "TSH01",
+          "name": "Intervention en sécurité sur un véhicule hybride TOYOTA",
+          "englishName": "Safe intervention on TOYOTA hybrid vehicle",
+          "type": "Service Technique"
+        }
+      ]
+    }
+ 
+  ],
+  "SUZUKI": [
+    {
+      "level": "BRONZE",
+      "trainings": [
+        {
+          "code": "SS01",
+          "name": "Maintenance préventive périodique et non-périodique des véhicules SUZUKI",
+          "englishName": "Periodic and Non-periodic maintenance of SUZUKI vehicles",
+          "type": "Service"
+        },
+        {
+          "code": "SS02",
+          "name": "Certification BRONZE : Maintenance préventive périodique et non-périodique des véhicules SUZUKI",
+          "englishName": "BRONZE Certification: Periodic and Non-periodic maintenance of SUZUKI vehicles",
+          "type": "Service"
+        }
+      ]
+    },
+    {
+      "level": "SILVER",
+      "trainings": [
+        {
+          "code": "SS03",
+          "name": "Diagnostic des systèmes embarqués des véhicules (Advance Training)",
+          "englishName": "Diagnosis of vehicle embedded systems (Advance Training)",
+          "type": "Service"
+        },
+        {
+          "code": "SS04",
+          "name": "Réparation des systèmes mécaniques, électriques et électroniques",
+          "englishName": "Repair of mechanical, electrical and electronic systems",
+          "type": "Service"
+        },
+        {
+          "code": "SS05",
+          "name": "Certification SILVER : Diagnostic et Réparation des systèmes mécaniques, électriques et électroniques",
+          "englishName": "SILVER Certification: Diagnosis and repair of mechanical, electrical and electronic systems",
+          "type": "Service"
+        }
+      ]
+    },
+    {
+      "level": "GOLD",
+      "trainings": [
+        {
+          "code": "SS06",
+          "name": "Diagnostic des systèmes multiplexés des véhicules",
+          "englishName": "Diagnosis of vehicle multiplexed systems",
+          "type": "Service"
+        },
+        {
+          "code": "SS07",
+          "name": "Révision moteur essence des véhicules",
+          "englishName": "Gasoline engine overhaul of vehicles",
+          "type": "Service"
+        },
+        {
+          "code": "SS08",
+          "name": "Révision boîte de vitesses, boîte de transfert et différentiel des véhicules",
+          "englishName": "Gearbox, transfer case and differential overhaul of vehicles",
+          "type": "Service"
+        },
+        {
+          "code": "SS09",
+          "name": "Certification GOLD : Révisions et diagnostic des systèmes de transmissions de puissance des véhicules",
+          "englishName": "GOLD Certification: Overhaul and diagnosis of vehicle power transmission systems",
+          "type": "Service"
+        }
+      ]
+    },
+    {
+      "level": "Autre",
+      "trainings": [
+        {
+          "code": "SS-DIAG-01",
+          "name": "UTILISATION DE L'OUTIL DE DIAGNOSTIC (SDT-II)",
+          "englishName": "Use of diagnostic tool (SDT-II)",
+          "type": "Service"
+        },
+        {
+          "code": "SNM01",
+          "name": "Le nouveau modèle « GRAND VITARA » et ses spécifications techniques",
+          "englishName": "The new « GRAND VITARA » model and its technical specifications",
+          "type": "Service"
+        },
+        {
+          "code": "SNM02",
+          "name": "Le nouveau modèle « S-PRESSO » et ses spécifications techniques",
+          "englishName": "The new « S-PRESSO » model and its technical specifications",
+          "type": "Service"
+        },
+        {
+          "code": "SSGF01",
+          "name": "Traitement et soumission des demandes de garantie & FTIR",
+          "englishName": "Processing and submission of warranty claims & FTIR",
+          "type": "Process SAV"
+        },
+        {
+          "code": "SSAT01",
+          "name": "Gestion de la clientèle SAV pour les travaux fréquents",
+          "englishName": "SAV customer management for frequent work",
+          "type": "Process SAV"
+        }
+      ]
+    },
+    {
+      "level": "Pièces",
+      "trainings": [
+        {
+          "code": "SPC01",
+          "name": "Utilisation de la plateforme de référencement des pièces Suzuki (SNAPON EPC)",
+          "englishName": "Use of Suzuki parts referencing platform (SNAPON EPC)",
+          "type": "Process Pièces"
+        }
+      ]
+    }
+  ],
+  "BYD": [
+    {
+      "level": "Junior",
+      "trainings": [
+        {
+          "code": "BEV01",
+          "name": "Avis d'intervention sur un véhicule électrique BYD",
+          "englishName": "Intervention notice on BYD electric vehicle",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BEV02",
+          "name": "Maintenance préventive des véhicules électriques BYD",
+          "englishName": "Preventive maintenance of BYD electric vehicles",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BEV03",
+          "name": "Certification : Maintenance préventive des véhicules électriques BYD",
+          "englishName": "Certification: Preventive maintenance of BYD electric vehicles",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ],
+  "MERCEDES": [
+    {
+      "level": "BASIC (MERCEDES)",
+      "trainings": [
+        {
+          "code": "T2116F-CF",
+          "name": "Entretien des véhicules MERCEDES-BENZ",
+          "englishName": "Maintenance of MERCEDES-BENZ vehicles",
+          "type": "Service Technique"
+        },
+        {
+          "code": "T2115F-CF",
+          "name": "Entretien des systèmes électriques",
+          "englishName": "Maintenance of electrical systems",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "BASIC (CFAO)",
+      "trainings": [
+        {
+          "code": "X24015F",
+          "name": "Formation initiale Mercedes-Benz : XENTRY WIS, XENTRY DIAGNOSIS, XOT, DWD, VEDOC",
+          "englishName": "Initial Mercedes-Benz training: XENTRY WIS, XENTRY DIAGNOSIS, XOT, DWD, VEDOC",
+          "type": "Service Technique"
+        },
+        {
+          "code": "X24016F",
+          "name": "Formation initiale Mercedes-Benz : Reception, Maintenance, XENTRY WIS, GTLS",
+          "englishName": "Initial Mercedes-Benz training: Reception, Maintenance, XENTRY WIS, GTLS",
+          "type": "Service Technique"
+        },
+        {
+          "code": "X24017V",
+          "name": "Traitement et soumission des demandes de garantie MB",
+          "englishName": "Processing and submission of MB warranty claims",
+          "type": "Process SAV"
+        },
+        {
+          "code": "X24018F",
+          "name": "Parts process MERCEDES-BENZ",
+          "englishName": "MERCEDES-BENZ parts process",
+          "type": "Process Pièces"
+        }
+      ]
+    }
+  ],
+  "MITSUBISHI": [
+    {
+      "level": "Junior",
+      "trainings": [
+        {
+          "code": "MSTEP01",
+          "name": "Maintenance préventive des véhicules MITSUBISHI",
+          "englishName": "Preventive maintenance of MITSUBISHI vehicles",
+          "type": "Service Technique"
+        },
+        {
+          "code": "MSTEP02-DEM",
+          "name": "Gestion des moteurs Diesel (Diesel Engine Management - DEM)",
+          "englishName": "Diesel engine management (DEM)",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ],
+  "OMODA & JAECCO": [
+    {
+      "level": "Junior",
+      "trainings": [
+        {
+          "code": "OJEV01",
+          "name": "Avis d'intervention sur un véhicule hybride et électrique OMODA & JAECCO",
+          "englishName": "Intervention notice on hybrid and electric vehicles OMODA & JAECCO",
+          "type": "Service Technique"
+        },
+        {
+          "code": "OJEV02",
+          "name": "Maintenance préventive des véhicules électriques OMODA & JAECCO",
+          "englishName": "Preventive maintenance of electric vehicles OMODA & JAECCO",
+          "type": "Service Technique"
+        },
+        {
+          "code": "OJEV03",
+          "name": "Certification : Maintenance préventive des véhicules électriques OMODA & JAECCO",
+          "englishName": "Certification: Preventive maintenance of electric vehicles OMODA & JAECCO",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ], 
+  "STELLANTIS": [
+    {
+      "level": "Induction Level 1",
+      "trainings": [
+        {
+          "code": "SID01",
+          "name": "Maintenance préventive périodique et non-périodique des véhicules",
+          "englishName": "Periodic and Non-periodic maintenance of vehicles",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ], 
+  "JCB": [
+    {
+      "level": "JUNIOR",
+      "trainings": [
+        {
+          "code": "JCB01",
+          "name": "Maintenance Préventive de la Tractopelle JCB",
+          "englishName": "Preventive Maintenance of JCB Backhoe Loader",
+          "type": "Service Technique"
+        },
+        {
+          "code": "JCB02",
+          "name": "Maintenance Préventive des Chargeuses sur Pneumatiques JCB 3CX",
+          "englishName": "Preventive Maintenance of JCB 3CX Wheel Loaders",
+          "type": "Service Technique"
+        },
+        {
+          "code": "JCB03",
+          "name": "Maintenance Préventive des Pelles Excavatrices sur Chenilles JCB Série JS200",
+          "englishName": "Preventive Maintenance of JCB JS200 Series Crawler Excavators",
+          "type": "Service Technique"
+        },
+        {
+          "code": "JCB04",
+          "name": "Maintenance Préventive des Pelles Excavatrices sur Pneumatiques JCB Série JS100W",
+          "englishName": "Preventive Maintenance of JCB JS100W Series Wheeled Excavators",
+          "type": "Service Technique"
+        },
+        {
+          "code": "JCB05",
+          "name": "Maintenance Préventive des Chariots Télescopiques JCB 540-170",
+          "englishName": "Preventive Maintenance of JCB 540-170 Telescopic Handlers",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "SENIOR",
+      "trainings": [
+        {
+          "code": "JCB07",
+          "name": "Réparation Boîte de Vitesses POWERSHIFT PS750/764/766",
+          "englishName": "Repair of POWERSHIFT PS750/764/766 Transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "JCB08",
+          "name": "Réparation Boîte de Vitesses SYNCHROSHIFT SS 600/700",
+          "englishName": "Repair of SYNCHROSHIFT SS 600/700 Transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "JCB09",
+          "name": "Réparation Boîte de Vitesses POWERSHIFT 3/4/6WG ERGOPOWER",
+          "englishName": "Repair of POWERSHIFT 3/4/6WG ERGOPOWER Transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "JCB10",
+          "name": "Réparation Moteur Dieselmax 444 Tier 2 à Injection Mécanique",
+          "englishName": "Repair of Dieselmax 444 Tier 2 Mechanical Injection Engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "JCB11",
+          "name": "Réparation Hydraulique des Engins JCB",
+          "englishName": "Hydraulic Repair of JCB Equipment",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "EXPERT",
+      "trainings": [
+        {
+          "code": "JCB12",
+          "name": "Diagnostic des Systèmes Électriques/Électroniques des Engins JCB",
+          "englishName": "Diagnosis of Electrical/Electronic Systems of JCB Equipment",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ],
+    "LOVOL": [
+    {
+      "level": "JUNIOR",
+      "trainings": [
+        {
+          "code": "LVL01",
+          "name": "Maintenance Préventive des Pelles Excavatrices LOVOL",
+          "englishName": "Preventive Maintenance of LOVOL Excavators",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL02",
+          "name": "Maintenance Préventive des Chargeuses LOVOL",
+          "englishName": "Preventive Maintenance of LOVOL Loaders",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL03",
+          "name": "Maintenance Préventive des Niveleuses LOVOL",
+          "englishName": "Preventive Maintenance of LOVOL Graders",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL04",
+          "name": "Maintenance Préventive des Bulldozers LOVOL",
+          "englishName": "Preventive Maintenance of LOVOL Bulldozers",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL05",
+          "name": "Maintenance Préventive des Compacteurs LOVOL",
+          "englishName": "Preventive Maintenance of LOVOL Compactors",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL06",
+          "name": "Maintenance Préventive des Tractopelles LOVOL",
+          "englishName": "Preventive Maintenance of LOVOL Backhoe Loaders",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "SENIOR",
+      "trainings": [
+        {
+          "code": "LVL07",
+          "name": "Réparation des Pelles Excavatrices LOVOL",
+          "englishName": "Repair of LOVOL Excavators",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL08",
+          "name": "Réparation des Chargeuses LOVOL",
+          "englishName": "Repair of LOVOL Loaders",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL09",
+          "name": "Réparation des Niveleuses LOVOL",
+          "englishName": "Repair of LOVOL Graders",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL10",
+          "name": "Réparation des Bulldozers LOVOL",
+          "englishName": "Repair of LOVOL Bulldozers",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL11",
+          "name": "Réparation des Tractopelles LOVOL",
+          "englishName": "Repair of LOVOL Backhoe Loaders",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL12",
+          "name": "Réparation des Compacteurs LOVOL",
+          "englishName": "Repair of LOVOL Compactors",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "EXPERT",
+      "trainings": [
+        {
+          "code": "LVL13",
+          "name": "Diagnostic des Systèmes des Pelles Excavatrices LOVOL",
+          "englishName": "Diagnosis of LOVOL Excavator Systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL14",
+          "name": "Diagnostic des Systèmes des Chargeuses LOVOL",
+          "englishName": "Diagnosis of LOVOL Loader Systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL15",
+          "name": "Diagnostic des Systèmes des Niveleuses LOVOL",
+          "englishName": "Diagnosis of LOVOL Grader Systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL16",
+          "name": "Diagnostic des Systèmes des Bulldozers LOVOL",
+          "englishName": "Diagnosis of LOVOL Bulldozer Systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL17",
+          "name": "Diagnostic des Systèmes des Tractopelles LOVOL",
+          "englishName": "Diagnosis of LOVOL Backhoe Loader Systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "LVL18",
+          "name": "Diagnostic des Systèmes des Compacteurs LOVOL",
+          "englishName": "Diagnosis of LOVOL Compactor Systems",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ],
+  "TOYOTA FORKLIFT": [
+    {
+      "level": "JUNIOR",
+      "trainings": [
+        {
+          "code": "TOY01",
+          "name": "Maintenance préventive des chariots thermiques 8FG(D)10-35",
+          "englishName": "Preventive maintenance of thermal forklifts 8FG(D)10-35",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TOY02",
+          "name": "Maintenance préventive des chariots thermiques 8FG(D)40-80",
+          "englishName": "Preventive maintenance of thermal forklifts 8FG(D)40-80",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TOY03",
+          "name": "Maintenance préventive des chariots thermiques 4(5) FD100-240",
+          "englishName": "Preventive maintenance of thermal forklifts 4(5) FD100-240",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TOY04",
+          "name": "Maintenance préventive des chariots électriques 8FB10-35",
+          "englishName": "Preventive maintenance of electric forklifts 8FB10-35",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "SENIOR",
+      "trainings": [
+        {
+          "code": "TOY05",
+          "name": "Réparation transmissions automatique et hydrostatique des chariots thermiques",
+          "englishName": "Repair of automatic and hydrostatic transmissions of thermal forklifts",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TOY06",
+          "name": "Réparation unité de traction des chariots électriques",
+          "englishName": "Repair of traction unit of electric forklifts",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TOY07",
+          "name": "Réparation moteur hybride essence et gaz",
+          "englishName": "Repair of gasoline and gas hybrid engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TOY08",
+          "name": "Réparation moteur hybride essence et gaz (4Y-ECS à gestion électronique)",
+          "englishName": "Repair of gasoline and gas hybrid engine (4Y-ECS with electronic management)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TOY09",
+          "name": "Réparation moteur diesel 1ZS",
+          "englishName": "Repair of 1ZS diesel engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TOY10",
+          "name": "Réparation moteur diesel 1DZ II-III",
+          "englishName": "Repair of 1DZ II-III diesel engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TOY11",
+          "name": "Réparation moteur diesel 3Z",
+          "englishName": "Repair of 3Z diesel engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TOY12",
+          "name": "Réparation hydraulique des chariots électriques et thermiques",
+          "englishName": "Hydraulic repair of electric and thermal forklifts",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "EXPERT",
+      "trainings": [
+        {
+          "code": "TOY13",
+          "name": "Diagnostic électrique/électronique des chariots électriques",
+          "englishName": "Electrical/electronic diagnosis of electric forklifts",
+          "type": "Service Technique"
+        },
+        {
+          "code": "TOY14",
+          "name": "Diagnostic électrique/électronique des chariots thermiques",
+          "englishName": "Electrical/electronic diagnosis of thermal forklifts",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ],
+   "FUSO": [
+    {
+      "level": "JUNIOR",
+      "trainings": [
+        {
+          "code": "F01",
+          "name": "Maintenance préventive des systèmes des camions FI/FJ",
+          "englishName": "Preventive maintenance of FI/FJ truck systems",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "SENIOR",
+      "trainings": [
+        {
+          "code": "F02",
+          "name": "Réparation moteur 4D37 (FUSO FI)",
+          "englishName": "Repair of 4D37 engine (FUSO FI)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "F03",
+          "name": "Réparation moteur 6S20 (FUSO FJ)",
+          "englishName": "Repair of 6S20 engine (FUSO FJ)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "F04",
+          "name": "Réparation boîte de vitesses G85",
+          "englishName": "Repair of G85 transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "F05",
+          "name": "Réparation boîte de vitesses G131",
+          "englishName": "Repair of G131 transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "F06",
+          "name": "Réparation électrique",
+          "englishName": "Electrical repair",
+          "type": "Service Technique"
+        },
+        {
+          "code": "F07",
+          "name": "Réparation système de freinage conventionnel (avec ABS)",
+          "englishName": "Repair of conventional braking system (with ABS)",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "EXPERT",
+      "trainings": [
+        {
+          "code": "F08",
+          "name": "Diagnostic moteur 4D37 (FUSO FI)",
+          "englishName": "Diagnosis of 4D37 engine (FUSO FI)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "F09",
+          "name": "Diagnostic moteur 6S20 (FUSO FJ)",
+          "englishName": "Diagnosis of 6S20 engine (FUSO FJ)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "F10",
+          "name": "Diagnostic boîte de vitesses G85",
+          "englishName": "Diagnosis of G85 transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "F11",
+          "name": "Diagnostic boîte de vitesses G131",
+          "englishName": "Diagnosis of G131 transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "F12",
+          "name": "Diagnostic système électrique",
+          "englishName": "Diagnosis of electrical system",
+          "type": "Service Technique"
+        },
+        {
+          "code": "F13",
+          "name": "Diagnostic système de freinage conventionnel (avec ABS)",
+          "englishName": "Diagnosis of conventional braking system (with ABS)",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ], 
+  "HINO": [
+    {
+      "level": "JUNIOR",
+      "trainings": [
+        {
+          "code": "HI01",
+          "name": "Maintenance préventive des systèmes du camion HINO 300/500",
+          "englishName": "Preventive maintenance of HINO 300/500 truck systems",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "SENIOR",
+      "trainings": [
+        {
+          "code": "HI02",
+          "name": "Réparation moteur N04C HINO 300 Euro 3",
+          "englishName": "Repair of N04C engine HINO 300 Euro 3",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI03",
+          "name": "Réparation moteur W04D HINO 300 Euro 1",
+          "englishName": "Repair of W04D engine HINO 300 Euro 1",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI04",
+          "name": "Réparation moteur J08C HINO 500 Euro 2",
+          "englishName": "Repair of J08C engine HINO 500 Euro 2",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI05",
+          "name": "Réparation boîte de vitesses MYY6S HINO 300",
+          "englishName": "Repair of MYY6S transmission HINO 300",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI06",
+          "name": "Réparation boîte de vitesses LX06 HINO 500",
+          "englishName": "Repair of LX06 transmission HINO 500",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI07",
+          "name": "Réparation pont et réducteurs",
+          "englishName": "Repair of axle and reduction gears",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI08",
+          "name": "Réparation électrique",
+          "englishName": "Electrical repair",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI09",
+          "name": "Réparation système de freinage conventionnel (avec ABS)",
+          "englishName": "Repair of conventional braking system (with ABS)",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "EXPERT",
+      "trainings": [
+        {
+          "code": "HI10",
+          "name": "Diagnostic moteur N04C HINO 300 Euro 3",
+          "englishName": "Diagnosis of N04C engine HINO 300 Euro 3",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI11",
+          "name": "Diagnostic moteur W04D HINO 300 Euro 1",
+          "englishName": "Diagnosis of W04D engine HINO 300 Euro 1",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI12",
+          "name": "Diagnostic moteur J08C HINO 500 Euro 2",
+          "englishName": "Diagnosis of J08C engine HINO 500 Euro 2",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI13",
+          "name": "Diagnostic boîte de vitesses MYY6S HINO 300",
+          "englishName": "Diagnosis of MYY6S transmission HINO 300",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI14",
+          "name": "Diagnostic boîte de vitesses LX06 HINO 500",
+          "englishName": "Diagnosis of LX06 transmission HINO 500",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI15",
+          "name": "Diagnostic électrique et électronique HINO 300 Euro 3",
+          "englishName": "Electrical and electronic diagnosis HINO 300 Euro 3",
+          "type": "Service Technique"
+        },
+        {
+          "code": "HI16",
+          "name": "Diagnostic système de freinage conventionnel (avec ABS)",
+          "englishName": "Diagnosis of conventional braking system (with ABS)",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ], 
+   "KING LONG": [
+    {
+      "level": "JUNIOR",
+      "trainings": [
+        {
+          "code": "KL01",
+          "name": "Maintenance préventive des systèmes du bus KING LONG",
+          "englishName": "Preventive maintenance of KING LONG bus systems",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "SENIOR",
+      "trainings": [
+        {
+          "code": "KL02",
+          "name": "Réparation moteur QSC 240",
+          "englishName": "Repair of QSC 240 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "KL03",
+          "name": "Réparation boîte de vitesses HW 19710",
+          "englishName": "Repair of HW 19710 transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "KL04",
+          "name": "Réparation électrique",
+          "englishName": "Electrical repair",
+          "type": "Service Technique"
+        },
+        {
+          "code": "KL05",
+          "name": "Réparation système de freinage conventionnel (avec ABS)",
+          "englishName": "Repair of conventional braking system (with ABS)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "KL06",
+          "name": "Réparation pont et réducteurs à entraînement, série 2401N-010",
+          "englishName": "Repair of drive axle and reduction gears, 2401N-010 series",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "EXPERT",
+      "trainings": [
+        {
+          "code": "KL07",
+          "name": "Diagnostic moteur QSC 240",
+          "englishName": "Diagnosis of QSC 240 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "KL08",
+          "name": "Diagnostic boîte de vitesses HW 19710",
+          "englishName": "Diagnosis of HW 19710 transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "KL09",
+          "name": "Diagnostic électrique",
+          "englishName": "Electrical diagnosis",
+          "type": "Service Technique"
+        },
+        {
+          "code": "KL10",
+          "name": "Diagnostic système de freinage conventionnel (avec ABS)",
+          "englishName": "Diagnosis of conventional braking system (with ABS)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "KL11",
+          "name": "Diagnostic pont et réducteurs à entraînement, série 2401N-010",
+          "englishName": "Diagnosis of drive axle and reduction gears, 2401N-010 series",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ], 
+   "RENAULT TRUCKS": [
+    {
+      "level": "JUNIOR",
+      "trainings": [
+        {
+          "code": "RT01",
+          "name": "Maintenance préventive des systèmes du camion de la Gamme K",
+          "englishName": "Preventive maintenance of K Range truck systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT02",
+          "name": "Maintenance préventive du moteur DXI11",
+          "englishName": "Preventive maintenance of DXI11 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT03",
+          "name": "Maintenance préventive du moteur DXI13",
+          "englishName": "Preventive maintenance of DXI13 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT04",
+          "name": "Maintenance préventive du moteur DXI8",
+          "englishName": "Preventive maintenance of DXI8 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT05",
+          "name": "Maintenance préventive de la boîte de vitesses Optidriver",
+          "englishName": "Preventive maintenance of Optidriver transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT06",
+          "name": "Maintenance préventive de la boîte de vitesses B14",
+          "englishName": "Preventive maintenance of B14 transmission",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "SENIOR",
+      "trainings": [
+        {
+          "code": "RT07",
+          "name": "Réparation / Révision du moteur DXI11",
+          "englishName": "Repair / Overhaul of DXI11 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT08",
+          "name": "Réparation / Révision du moteur DXI13",
+          "englishName": "Repair / Overhaul of DXI13 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT09",
+          "name": "Réparation / Révision du moteur DXI18",
+          "englishName": "Repair / Overhaul of DXI18 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT10",
+          "name": "Réparation / Révision de la boîte de vitesses Optidriver",
+          "englishName": "Repair / Overhaul of Optidriver transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT11",
+          "name": "Réparation / Révision de la boîte de vitesses B14",
+          "englishName": "Repair / Overhaul of B14 transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT12",
+          "name": "Réparation des systèmes électriques des véhicules",
+          "englishName": "Repair of vehicle electrical systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT13",
+          "name": "Réparation / Révision du système de freinage pneumatique avec EBS",
+          "englishName": "Repair / Overhaul of pneumatic braking system with EBS",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT14",
+          "name": "Maintenance curative des organes des véhicules lourds de la Gamme K",
+          "englishName": "Curative maintenance of K Range heavy vehicle components",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "EXPERT",
+      "trainings": [
+        {
+          "code": "RT15",
+          "name": "Diagnostic du moteur DXI11",
+          "englishName": "Diagnosis of DXI11 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT16",
+          "name": "Diagnostic du moteur DXI13",
+          "englishName": "Diagnosis of DXI13 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT17",
+          "name": "Diagnostic du moteur DXI8",
+          "englishName": "Diagnosis of DXI8 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT18",
+          "name": "Diagnostic de la boîte de vitesses Optidriver",
+          "englishName": "Diagnosis of Optidriver transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT19",
+          "name": "Diagnostic de la boîte de vitesses B14",
+          "englishName": "Diagnosis of B14 transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT20",
+          "name": "Diagnostic des systèmes électriques et électroniques des véhicules",
+          "englishName": "Diagnosis of vehicle electrical and electronic systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT21",
+          "name": "Diagnostic du système de freinage avec EBS",
+          "englishName": "Diagnosis of braking system with EBS",
+          "type": "Service Technique"
+        },
+        {
+          "code": "RT22",
+          "name": "Diagnostic système électrique TEA2+ T2",
+          "englishName": "Diagnosis of TEA2+ T2 electrical system",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ], 
+   "SHACMAN": [
+    {
+      "level": "JUNIOR",
+      "trainings": [
+        {
+          "code": "S101",
+          "name": "Maintenance préventive des systèmes du camion SHACMAN",
+          "englishName": "Preventive maintenance of SHACMAN truck systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "S102",
+          "name": "Maintenance préventive - Gamme SHACMAN X3000",
+          "englishName": "Preventive maintenance - SHACMAN X3000 Range",
+          "type": "Service Technique"
+        },
+        {
+          "code": "S103",
+          "name": "Maintenance préventive - Gamme SHACMAN M3000 (6x4/8x4)",
+          "englishName": "Preventive maintenance - SHACMAN M3000 Range (6x4/8x4)",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "SENIOR",
+      "trainings": [
+        {
+          "code": "S201",
+          "name": "Réparation moteur Cummins (ex: ISM/ISL)",
+          "englishName": "Repair of Cummins engine (ex: ISM/ISL)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "S202",
+          "name": "Réparation boîte de vitesses Fuller/Fast Gear",
+          "englishName": "Repair of Fuller/Fast Gear transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "S203",
+          "name": "Réparation système électrique SHACMAN",
+          "englishName": "Repair of SHACMAN electrical system",
+          "type": "Service Technique"
+        },
+        {
+          "code": "S204",
+          "name": "Réparation système de freinage conventionnel (avec ABS/ASR)",
+          "englishName": "Repair of conventional braking system (with ABS/ASR)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "S205",
+          "name": "Réparation ponts et réducteurs HanDe",
+          "englishName": "Repair of HanDe axles and reducers",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "EXPERT",
+      "trainings": [
+        {
+          "code": "S301",
+          "name": "Diagnostic moteur Cummins (ex: ISM/ISL) et architecture électronique",
+          "englishName": "Diagnosis of Cummins engine (ex: ISM/ISL) and electronic architecture",
+          "type": "Service Technique"
+        },
+        {
+          "code": "S302",
+          "name": "Diagnostic boîte de vitesses Fuller/Fast Gear et commandes",
+          "englishName": "Diagnosis of Fuller/Fast Gear transmission and controls",
+          "type": "Service Technique"
+        },
+        {
+          "code": "S303",
+          "name": "Diagnostic avancé du système électrique et électronique SHACMAN",
+          "englishName": "Advanced diagnosis of SHACMAN electrical and electronic system",
+          "type": "Service Technique"
+        },
+        {
+          "code": "S304",
+          "name": "Diagnostic système de freinage conventionnel et ABS/ASR",
+          "englishName": "Diagnosis of conventional braking system and ABS/ASR",
+          "type": "Service Technique"
+        },
+        {
+          "code": "S305",
+          "name": "Diagnostic ponts et réducteurs HanDe",
+          "englishName": "Diagnosis of HanDe axles and reducers",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ], 
+    "SINOTRUK": [
+    {
+      "level": "JUNIOR",
+      "trainings": [
+        {
+          "code": "H01",
+          "name": "Maintenance préventive des systèmes du Camion HOHAN",
+          "englishName": "Preventive maintenance of HOHAN truck systems",
+          "type": "Service Technique"
+        },
+        {
+          "code": "H430",
+          "name": "Maintenance préventive - Gamme HOHAN 430 Max",
+          "englishName": "Preventive maintenance - HOHAN 430 Max Range",
+          "type": "Service Technique"
+        },
+        {
+          "code": "H431",
+          "name": "Maintenance préventive - GAMME HOWO 6X4",
+          "englishName": "Preventive maintenance - HOWO 6X4 Range",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "SENIOR",
+      "trainings": [
+        {
+          "code": "H02",
+          "name": "Réparation Moteur WD615",
+          "englishName": "Repair of WD615 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "H03",
+          "name": "Réparation Boîte de vitesses HW19710",
+          "englishName": "Repair of HW19710 transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "H04",
+          "name": "Réparation Système électrique",
+          "englishName": "Repair of electrical system",
+          "type": "Service Technique"
+        },
+        {
+          "code": "H05",
+          "name": "Réparation Système de freinage conventionnel (avec ABS)",
+          "englishName": "Repair of conventional braking system (with ABS)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "H06",
+          "name": "Réparation Pont et Réducteurs à entrainement, série mcy11",
+          "englishName": "Repair of drive axle and reduction gears, mcy11 series",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "EXPERT",
+      "trainings": [
+        {
+          "code": "H07",
+          "name": "Diagnostic Moteur WD615",
+          "englishName": "Diagnosis of WD615 engine",
+          "type": "Service Technique"
+        },
+        {
+          "code": "H08",
+          "name": "Diagnostic Boîte de vitesses HW19710",
+          "englishName": "Diagnosis of HW19710 transmission",
+          "type": "Service Technique"
+        },
+        {
+          "code": "H09",
+          "name": "Diagnostic Système électrique",
+          "englishName": "Diagnosis of electrical system",
+          "type": "Service Technique"
+        },
+        {
+          "code": "H10",
+          "name": "Diagnostic Système de freinage conventionnel (avec ABS)",
+          "englishName": "Diagnosis of conventional braking system (with ABS)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "H11",
+          "name": "Diagnostic Pont et Réducteurs à entrainement, série mcy11",
+          "englishName": "Diagnosis of drive axle and reduction gears, mcy11 series",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ],
+  "BT": [
+    {
+      "level": "JUNIOR",
+      "trainings": [
+        {
+          "code": "BT01",
+          "name": "Maintenance préventive des transpalettes (BT LEVIO)",
+          "englishName": "Preventive maintenance of pallet trucks (BT LEVIO)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BT02",
+          "name": "Maintenance préventive des Gerbeurs (BT STAXIO)",
+          "englishName": "Preventive maintenance of stackers (BT STAXIO)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BT03",
+          "name": "Maintenance préventive des chariots à mâts rétractable (BT REFLEX)",
+          "englishName": "Preventive maintenance of reach trucks (BT REFLEX)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BT04",
+          "name": "Maintenance préventive des chariots à mâts rétractable (high performance RRE-H2)",
+          "englishName": "Preventive maintenance of reach trucks (high performance RRE-H2)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BT05",
+          "name": "Maintenance préventive des chariots « allées étroites »",
+          "englishName": "Preventive maintenance of narrow aisle trucks",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "SENIOR",
+      "trainings": [
+        {
+          "code": "BT06",
+          "name": "Réparation des transpalettes électriques (BT LEVIO)",
+          "englishName": "Repair of electric pallet trucks (BT LEVIO)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BT07",
+          "name": "Réparation des Gerbeurs (BT STAXIO)",
+          "englishName": "Repair of stackers (BT STAXIO)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BT08",
+          "name": "Réparation des chariots à mâts rétractable (Reach Trucks BT REFLEX)",
+          "englishName": "Repair of reach trucks (BT REFLEX)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BT09",
+          "name": "Réparation des chariots à mâts rétractable (high performance RRE-H2)",
+          "englishName": "Repair of reach trucks (high performance RRE-H2)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BT10",
+          "name": "Réparation des chariots pour allées étroites",
+          "englishName": "Repair of narrow aisle trucks",
+          "type": "Service Technique"
+        }
+      ]
+    },
+    {
+      "level": "EXPERT",
+      "trainings": [
+        {
+          "code": "BT11",
+          "name": "Diagnostic des transpalettes électriques (BT LEVIO)",
+          "englishName": "Diagnosis of electric pallet trucks (BT LEVIO)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BT12",
+          "name": "Diagnostic des Gerbeurs (BT STAXIO)",
+          "englishName": "Diagnosis of stackers (BT STAXIO)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BT13",
+          "name": "Diagnostic des chariots à mâts rétractable (Reach Trucks BT REFLEX)",
+          "englishName": "Diagnosis of reach trucks (BT REFLEX)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BT14",
+          "name": "Diagnostic des chariots à mâts rétractable (high performance RRE-H2)",
+          "englishName": "Diagnosis of reach trucks (high performance RRE-H2)",
+          "type": "Service Technique"
+        },
+        {
+          "code": "BT15",
+          "name": "Diagnostic des chariots pour allées étroites (VN BT VECTOR)",
+          "englishName": "Diagnosis of narrow aisle trucks (VN BT VECTOR)",
+          "type": "Service Technique"
+        }
+      ]
+    }
+  ]
+}

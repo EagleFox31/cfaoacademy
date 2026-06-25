@@ -1,0 +1,16 @@
+{
+  "id": "mission",
+  "tab": "mission",
+  "tabLabel": "Mission",
+  "kicker": "Andragogie",
+  "title": "Apprendre par la pratique",
+  "meta": "Gestes métiers terrain",
+  "image": "/assets/dernière_section_accueil/andragogie.jpg",
+  "imageAlt": "Techniciens en formation pratique sur véhicule à CFAO Academy Douala",
+  "lead": "Chez CFAO Academy, la formation ne se limite pas à la théorie : chaque module alterne apports structurés et travaux sur véhicule ou équipement réel.",
+  "paragraphs": [
+    "Notre approche andragogique part du vécu en atelier. Le matin, les formateurs certifiés constructeur posent le cadre technique — procédures, normes de sécurité, outils de diagnostic. L'après-midi, les stagiaires appliquent sur des cas concrets : dépose moteur, lecture de codes défauts, réglage de systèmes.",
+    "Cette alternance accélère l'autonomie : le technicien repart avec des gestes reproductibles, pas seulement des slides. Chaque parcours (G3 Toyota, Step 2 Mitsubishi, certification LOVOL…) respecte les standards du constructeur tout en s'adaptant aux contraintes du réseau africain.",
+    "Les évaluations finales combinent QCM, cas pratiques chronométrés et contrôles qualité en conditions atelier — le même niveau d'exigence qu'en usine ou en concession agréée."
+  ]
+}

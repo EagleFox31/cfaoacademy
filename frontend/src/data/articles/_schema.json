@@ -1,0 +1,42 @@
+{
+  "_description": "Format de référence pour les articles CFAO Academy",
+  "_fields": {
+    "id":        "slug URL-safe unique, ex: toyota-g3-douala-2026",
+    "cat":       "Formation | Certification | Evènements",
+    "date":      "YYYY-MM-DD",
+    "brand":     "Code marque en majuscules (TOYOTA, BYD, SUZUKI…) ou null",
+    "tone":      "t1 | t2 | t3 | t4 (palette couleur interne)",
+    "titre":     "Titre court affiché en card et en hero d'article",
+    "resume":    "Résumé 1-2 phrases, affiché sous le titre en card",
+    "readtime":  "Durée de lecture estimée, ex: '3 min'",
+    "views":     "Compteur de vues — initialisé à 0, incrémenté côté client",
+    "contenu":   "Corps de l'article. Paragraphes séparés par \\n\\n",
+    "cover":     "Image de couverture : hero si pas de vidéo ; sinon 1ʳᵉ image de la galerie en bas",
+    "photos": {
+      "count":   "Nombre de photos dans le corps de l'article",
+      "urls":    ["Tableau d'URLs vers les photos"]
+    },
+    "videos": {
+      "count":   "Nombre de vidéos embarquées",
+      "urls":    [
+        "Lien YouTube (watch, youtu.be, shorts) ou Vimeo — lecteur intégré sur la page",
+        "Fichier .mp4 / .webm sur le site (/assets/…) — lecteur HTML5"
+      ]
+    }
+  },
+  "_exemple": {
+    "id":       "toyota-g3-douala-2026",
+    "cat":      "Formation",
+    "date":     "2026-01-15",
+    "brand":    "TOYOTA",
+    "tone":     "t1",
+    "titre":    "Toyota G3 · Diagnostic châssis et freinage — session 5 jours à Douala",
+    "resume":   "Douze techniciens ont suivi le cycle G3 complet sur les systèmes de freinage ABS.",
+    "readtime": "3 min",
+    "views":    0,
+    "contenu":  "Premier paragraphe.\n\nDeuxième paragraphe.",
+    "cover":    "/assets/articles/toyota-g3-douala-2026/cover.jpg",
+    "photos":   { "count": 3, "urls": ["/assets/articles/toyota-g3-douala-2026/photo-1.jpg"] },
+    "videos":   { "count": 0, "urls": [] }
+  }
+}

@@ -1,0 +1,434 @@
+[
+  {
+    "code": "EL-TS01-G4",
+    "brand": "toyota",
+    "level": "G4",
+    "category": "maintenance",
+    "modality": "elearning",
+    "title": "Maintenance préventive des véhicules Toyota",
+    "duration": "4h",
+    "description": "Opérations de maintenance préventive sur les véhicules Toyota : vidange moteur, remplacement filtres, niveaux de fluides, contrôle des organes de sécurité.",
+    "chapters": [
+      "Programme d'entretien Toyota (intervalles & niveaux)",
+      "Vidange moteur et remplacement filtres",
+      "Contrôle et appoint des fluides (LDV, refroidissement, freins)",
+      "Inspection des organes de sécurité (freins, pneus, éclairage)"
+    ],
+    "objectives": [
+      "Réaliser une révision complète selon le carnet Toyota",
+      "Identifier et remplacer les consommables selon les intervalles constructeur",
+      "Renseigner correctement le rapport d'entretien"
+    ],
+    "prerequisites": []
+  },
+  {
+    "code": "EL-TS02-G4",
+    "brand": "toyota",
+    "level": "G4",
+    "category": "securite",
+    "modality": "elearning",
+    "title": "Sécurité en atelier et introduction aux systèmes Toyota",
+    "duration": "3h",
+    "description": "Règles de sécurité fondamentales en atelier automobile, présentation des gammes Toyota et prise en main des outils de base. Basé sur le cours Toyota 021 — Technical Introduction to Toyota.",
+    "chapters": [
+      "Technical Introduction to Toyota (Course 021)",
+      "Sécurité en atelier : EPI, levage, risques électriques",
+      "Architecture des gammes Toyota (LC, Hilux, Corolla, RAV4…)",
+      "Introduction aux outils de diagnostic Toyota (GTS, Techstream)"
+    ],
+    "objectives": [
+      "Appliquer les règles de sécurité en atelier",
+      "Identifier les grandes familles de véhicules et motorisations Toyota",
+      "Utiliser les outils de base du technicien Toyota"
+    ],
+    "prerequisites": []
+  },
+  {
+    "code": "EL-TS03-G3",
+    "brand": "toyota",
+    "level": "G3",
+    "category": "moteur",
+    "modality": "elearning",
+    "title": "Révision/réparation des Moteurs essence et diesel des véhicules",
+    "duration": "6h",
+    "description": "Dépose, révision et repose des motorisations essence (VVT-i, D-4S) et diesel (D-4D) Toyota. Diagnostic des symptômes moteur et interprétation des données de fonctionnement.",
+    "chapters": [
+      "Architecture moteurs essence Toyota (VVT-i, VVT-iE, D-4S)",
+      "Architecture moteurs diesel Toyota (D-4D, GD-series)",
+      "Dépose et repose moteur — séquences et précautions",
+      "Révision culasse, soupapes et joints (procédures Toyota)",
+      "Diagnostic des symptômes moteur et lecture des données GTS"
+    ],
+    "objectives": [
+      "Réaliser la dépose/repose d'un moteur Toyota selon les procédures constructeur",
+      "Diagnostiquer les pannes courantes sur les motorisations essence et diesel",
+      "Interpréter les données live data via l'outil Toyota GTS"
+    ],
+    "prerequisites": ["EL-TS01-G4", "EL-TS02-G4"]
+  },
+  {
+    "code": "EL-TS04-G3",
+    "brand": "toyota",
+    "level": "G3",
+    "category": "chassis",
+    "modality": "elearning",
+    "title": "Révision/réparation des organes châssis — Boîtes de vitesses et Différentiel",
+    "duration": "5h",
+    "description": "Révision et réparation des boîtes de vitesses manuelles et automatiques Toyota, ainsi que des différentiels. Basé sur les cours Toyota 262, 273 et 302.",
+    "chapters": [
+      "Automatic Transmissions (Course 262)",
+      "Automatic Transmissions Diagnosis (Course 273)",
+      "Manual Transmission and Transaxle (Course 302)",
+      "Différentiels Toyota (standard et Torsen) — dépose et réglage",
+      "Arbre de transmission et joints homocinétiques"
+    ],
+    "objectives": [
+      "Déposer et reposer une boîte de vitesses Toyota",
+      "Diagnostiquer les défaillances de transmission automatique",
+      "Régler un différentiel selon les données Toyota"
+    ],
+    "prerequisites": ["EL-TS03-G3"]
+  },
+  {
+    "code": "EL-TS05-G3",
+    "brand": "toyota",
+    "level": "G3",
+    "category": "chassis",
+    "modality": "elearning",
+    "title": "Révision/réparation des organes châssis — Freinage, suspension et direction",
+    "duration": "5h",
+    "description": "Révision et réparation des systèmes de freinage (ABS, VSC, EPB), suspension et direction assistée sur les véhicules Toyota. Basé sur le cours Toyota 453.",
+    "chapters": [
+      "Suspension, Steering and Handling (Course 453)",
+      "Systèmes de freinage Toyota (ABS, EBD, VSC, EPB)",
+      "Direction assistée électrique (EPS) et hydraulique",
+      "Géométrie des trains roulants — mesure et réglage",
+      "Remplacement des organes usés (disques, plaquettes, amortisseurs, rotules)"
+    ],
+    "objectives": [
+      "Réaliser la révision complète du système de freinage Toyota",
+      "Diagnostiquer et corriger les défauts de géométrie",
+      "Remplacer les organes de suspension et direction"
+    ],
+    "prerequisites": ["EL-TS03-G3"]
+  },
+  {
+    "code": "EL-TS06-G3",
+    "brand": "toyota",
+    "level": "G3",
+    "category": "electrique",
+    "modality": "elearning",
+    "title": "Révision/réparation des organes électriques — Climatisation, alternateur et démarreur",
+    "duration": "5h",
+    "description": "Diagnostic et réparation des organes électriques et climatisation sur les véhicules Toyota. Basé sur les cours Toyota 623 et 752.",
+    "chapters": [
+      "Electrical System Diagnosis (Course 623)",
+      "Air Conditioning & Climate Control (Course 752)",
+      "Circuit de charge Toyota (alternateur, régulateur, batterie AGM/EFB)",
+      "Système de démarrage (démarreur, bougies, circuit de préchauffage diesel)",
+      "Recharge et traçabilité gaz frigorigène R1234yf"
+    ],
+    "objectives": [
+      "Diagnostiquer et remplacer un alternateur ou un démarreur Toyota",
+      "Réaliser une intervention complète sur le circuit de climatisation",
+      "Effectuer une recharge gaz réglementaire"
+    ],
+    "prerequisites": ["EL-TS03-G3", "EL-TS05-G3"]
+  },
+  {
+    "code": "EL-TS07-G3",
+    "brand": "toyota",
+    "level": "G3",
+    "category": "certification",
+    "modality": "elearning",
+    "title": "Certification G3 — Révisions et réparations des organes et systèmes des véhicules",
+    "duration": "3h",
+    "description": "Module de révision et évaluation pour la certification G3. Synthèse des compétences en réparation moteur, châssis et organes électriques Toyota.",
+    "chapters": [
+      "Révision des compétences moteur (EL-TS03-G3)",
+      "Révision des compétences châssis (EL-TS04-G3, EL-TS05-G3)",
+      "Révision des compétences électriques (EL-TS06-G3)",
+      "Évaluation théorique finale G3"
+    ],
+    "objectives": [
+      "Valider l'ensemble des compétences de niveau G3",
+      "Démontrer la maîtrise des procédures Toyota de réparation",
+      "Obtenir la certification Toyota Technicien G3"
+    ],
+    "prerequisites": ["EL-TS03-G3", "EL-TS04-G3", "EL-TS05-G3", "EL-TS06-G3"]
+  },
+  {
+    "code": "EL-TS08-G2",
+    "brand": "toyota",
+    "level": "G2",
+    "category": "diagnostic",
+    "modality": "elearning",
+    "title": "Diagnostic des systèmes multiplexés des véhicules",
+    "duration": "6h",
+    "description": "Diagnostic des réseaux multiplexés Toyota : architectures CAN, LIN, lecture des trames, isolation de nœuds défaillants et diagnostic via Toyota Techstream / GTS.",
+    "chapters": [
+      "Electrical System Diagnosis (Course 623) — réseaux multiplex",
+      "Architecture réseaux multiplexés Toyota (CAN-H/L, LIN, BEAN)",
+      "Outil Toyota GTS — configuration et lecture des données en direct",
+      "Lecture et effacement des DTC sur réseaux multiplex",
+      "Isolation d'un nœud défaillant sur réseau CAN"
+    ],
+    "objectives": [
+      "Maîtriser l'utilisation de Toyota GTS pour le diagnostic réseau",
+      "Localiser un nœud défaillant sur un réseau CAN Toyota",
+      "Interpréter les trames et données live du réseau multiplexé"
+    ],
+    "prerequisites": ["EL-TS07-G3"]
+  },
+  {
+    "code": "EL-TS09-G2",
+    "brand": "toyota",
+    "level": "G2",
+    "category": "diagnostic",
+    "modality": "elearning",
+    "title": "Diagnostic des systèmes châssis des véhicules",
+    "duration": "5h",
+    "description": "Diagnostic avancé des systèmes châssis Toyota : ABS, VSC, TRAC, suspension active KDSS et direction EPS. Utilisation des données actives et simulations de pannes.",
+    "chapters": [
+      "Suspension, Steering and Handling (Course 453) — diagnostic avancé",
+      "Diagnostic ABS / EBD / VSC / TRAC avec GTS",
+      "Suspension active KDSS et amortisseurs pilotés",
+      "Diagnostic direction EPS (colonnes, capteur angle, couple)",
+      "Procédures d'initialisation et de calibrage (capteur G, angle volant)"
+    ],
+    "objectives": [
+      "Diagnostiquer les systèmes ABS et VSC Toyota via les données actives",
+      "Réaliser les procédures de calibrage après intervention châssis",
+      "Identifier les défauts EPS et KDSS avec les outils Toyota"
+    ],
+    "prerequisites": ["EL-TS08-G2"]
+  },
+  {
+    "code": "EL-TS10-G2",
+    "brand": "toyota",
+    "level": "G2",
+    "category": "diagnostic",
+    "modality": "elearning",
+    "title": "Diagnostic des systèmes électriques et électroniques des véhicules",
+    "duration": "6h",
+    "description": "Diagnostic avancé des systèmes électriques Toyota : lecture des schémas via Toyota TIS, tests de continuité, diagnostic des ECU. Basé sur le cours Toyota 623.",
+    "chapters": [
+      "Electrical System Diagnosis (Course 623) — niveau avancé",
+      "Lecture des schémas électriques Toyota TIS",
+      "Tests de continuité, résistance et isolement au multimètre",
+      "Diagnostic des ECU moteur (EFI, DIS, VVT-i)",
+      "Diagnostic des systèmes de sécurité active (SRS airbag, ADAS)"
+    ],
+    "objectives": [
+      "Lire et interpréter un schéma électrique Toyota TIS",
+      "Diagnostiquer un ECU défaillant par tests et données GTS",
+      "Réaliser un diagnostic complet des systèmes de confort et sécurité"
+    ],
+    "prerequisites": ["EL-TS08-G2"]
+  },
+  {
+    "code": "EL-TS11-G2",
+    "brand": "toyota",
+    "level": "G2",
+    "category": "diagnostic",
+    "modality": "elearning",
+    "title": "Diagnostic des systèmes de climatisation manuelle et automatique",
+    "duration": "4h",
+    "description": "Diagnostic avancé des systèmes de climatisation Toyota : climatisation automatique bi-zone, diagnostic des défauts ECU clim. Basé sur le cours Toyota 752.",
+    "chapters": [
+      "Air Conditioning & Climate Control (Course 752) — diagnostic avancé",
+      "Architecture climatisation automatique Toyota (Automatic Air Conditioning)",
+      "Capteurs et actionneurs du système clim (température, pression, volets)",
+      "Cas pratiques : DTC climatisation et procédures de remise à zéro"
+    ],
+    "objectives": [
+      "Diagnostiquer les défauts d'une climatisation automatique Toyota",
+      "Interpréter les données actives du système de climatisation",
+      "Réaliser les procédures de réinitialisation après intervention"
+    ],
+    "prerequisites": ["EL-TS10-G2"]
+  },
+  {
+    "code": "EL-TS12-G2",
+    "brand": "toyota",
+    "level": "G2",
+    "category": "certification",
+    "modality": "elearning",
+    "title": "Certification G2 — Diagnostic des systèmes des véhicules",
+    "duration": "3h",
+    "description": "Module de révision et évaluation pour la certification G2. Synthèse des compétences en diagnostic multiplex, châssis, électronique et climatisation Toyota.",
+    "chapters": [
+      "Révision diagnostic multiplexé (EL-TS08-G2)",
+      "Révision diagnostic châssis (EL-TS09-G2)",
+      "Révision diagnostic électrique / électronique (EL-TS10-G2, EL-TS11-G2)",
+      "Évaluation théorique et pratique G2"
+    ],
+    "objectives": [
+      "Valider les compétences de diagnostic de niveau G2",
+      "Démontrer la maîtrise des outils Toyota GTS et TIS",
+      "Obtenir la certification Toyota Technicien G2"
+    ],
+    "prerequisites": ["EL-TS08-G2", "EL-TS09-G2", "EL-TS10-G2", "EL-TS11-G2"]
+  },
+  {
+    "code": "EL-TS13-G1",
+    "brand": "toyota",
+    "level": "G1",
+    "category": "expert",
+    "modality": "elearning",
+    "title": "Diagnostic des défaillances impliquant des interactions entre les systèmes des véhicules",
+    "duration": "7h",
+    "description": "Diagnostic expert des défaillances Toyota impliquant plusieurs systèmes simultanément. Intègre les modules HEV Diagnosis : Engine Control System, Hybrid Vehicle Control System, Brake System.",
+    "chapters": [
+      "Engine Control System (HEV Diagnosis)",
+      "Hybrid Vehicle Control System (HEV Diagnosis)",
+      "Brake System — interactions freinage régénératif ↔ ABS (HEV Diagnosis)",
+      "Méthode d'analyse cause racine (RCA) appliquée aux véhicules Toyota",
+      "Utilisation avancée Toyota GTS (Snapshot, FFD, Active Test)"
+    ],
+    "objectives": [
+      "Conduire un diagnostic complet sur une panne impliquant plusieurs systèmes",
+      "Utiliser les fonctions avancées Toyota GTS (snapshot, tests actifs)",
+      "Rédiger un diagnostic structuré selon la méthode Toyota"
+    ],
+    "prerequisites": ["EL-TS12-G2"]
+  },
+  {
+    "code": "EL-TS14-G1",
+    "brand": "toyota",
+    "level": "G1",
+    "category": "expert",
+    "modality": "elearning",
+    "title": "Diagnostic des bruits mécaniques des systèmes des véhicules",
+    "duration": "5h",
+    "description": "Diagnostic et localisation des bruits mécaniques sur les véhicules Toyota : méthode de reproduction, stéthoscope électronique, analyse vibratoire.",
+    "chapters": [
+      "Fuel and EVAP System (HEV Diagnosis) — bruits liés à la dépression",
+      "Electric Power System (HEV Diagnosis) — bruits électromécaniques",
+      "Classification des bruits (fréquence, nature, conditions de reproduction)",
+      "Bruits moteur (cognement, sifflement, claquement) — localisation et causes",
+      "Bruits de transmission et châssis (boîtes, paliers, articulations)"
+    ],
+    "objectives": [
+      "Reproduire et localiser un bruit mécanique sur un véhicule Toyota",
+      "Utiliser le stéthoscope électronique et les outils d'analyse vibratoire",
+      "Identifier et corriger la cause racine d'un bruit"
+    ],
+    "prerequisites": ["EL-TS13-G1"]
+  },
+  {
+    "code": "EL-TS15-G1",
+    "brand": "toyota",
+    "level": "G1",
+    "category": "expert",
+    "modality": "elearning",
+    "title": "Analyse des défaillances et étude des cas des différents systèmes des véhicules",
+    "duration": "6h",
+    "description": "Analyse approfondie des défaillances récurrentes Toyota via l'étude de cas terrain. Utilisation des Toyota Technical Reports (TTR) et des Service Bulletins (TSB).",
+    "chapters": [
+      "High-Voltage Battery Control System (HEV Diagnosis)",
+      "Other Systems (HEV Diagnosis) — cas multi-systèmes",
+      "Service Bulletins (TSB) — recherche et application via Toyota TIS",
+      "Études de cas : défaillances récurrentes Hilux, Land Cruiser, RAV4",
+      "Retour constructeur — procédure SKR (Shinraisei Kojo Report)"
+    ],
+    "objectives": [
+      "Exploiter les ressources Toyota TIS / TTR / TSB pour résoudre une panne",
+      "Mener une étude de cas structurée selon les standards Toyota",
+      "Rédiger un retour constructeur SKR"
+    ],
+    "prerequisites": ["EL-TS13-G1", "EL-TS14-G1"]
+  },
+  {
+    "code": "EL-TS16-G1",
+    "brand": "toyota",
+    "level": "G1",
+    "category": "certification",
+    "modality": "elearning",
+    "title": "Certification G1 — Diagnostic des bruits et défaillances inter-systèmes (avec et sans DTC)",
+    "duration": "3h",
+    "description": "Module de révision et évaluation finale pour la certification G1. Synthèse des compétences expert : diagnostic inter-systèmes, bruits mécaniques et analyse de cas.",
+    "chapters": [
+      "Révision diagnostic inter-systèmes (EL-TS13-G1)",
+      "Révision diagnostic bruits mécaniques (EL-TS14-G1)",
+      "Révision analyse de cas et TSB (EL-TS15-G1)",
+      "Évaluation théorique et pratique G1"
+    ],
+    "objectives": [
+      "Valider les compétences de niveau G1 Expert Diagnostic",
+      "Démontrer la maîtrise du diagnostic sans DTC",
+      "Obtenir la certification Toyota Technicien G1"
+    ],
+    "prerequisites": ["EL-TS13-G1", "EL-TS14-G1", "EL-TS15-G1"]
+  },
+  {
+    "code": "EL-TSH01",
+    "brand": "toyota",
+    "level": "all",
+    "category": "hybride",
+    "modality": "elearning",
+    "title": "Intervention en sécurité sur un véhicule hybride Toyota",
+    "duration": "4h",
+    "description": "Habilitation obligatoire pour toute intervention sur véhicule Toyota Hybrid System (THS). Basé sur les cours Toyota 071 — Toyota Hybrid System et 072 — Hybrid System Diagnosis.",
+    "chapters": [
+      "Hybrid System Overview (Course 071)",
+      "Hybrid System Operation (Course 071)",
+      "High-Voltage Battery (Course 071)",
+      "Engine — intégration hybride (Course 071)",
+      "Chassis — freinage régénératif (Course 071)",
+      "Body Electrical (Course 071)",
+      "Principals of Operations (Course 072 — HEV Diagnosis)",
+      "Procédures de mise hors tension HV et EPI spécifiques"
+    ],
+    "objectives": [
+      "Identifier les éléments haute tension d'un véhicule Toyota Hybrid",
+      "Appliquer les procédures de mise en sécurité avant toute intervention",
+      "Utiliser les EPI haute tension correctement"
+    ],
+    "prerequisites": ["EL-TS02-G4"]
+  },
+  {
+    "code": "EL-TSKR01",
+    "brand": "toyota",
+    "level": "G1",
+    "category": "qualite",
+    "modality": "elearning",
+    "title": "Remontée constructeur Toyota — Procédure SKR (Shinraisei Kojo Report)",
+    "duration": "2h",
+    "description": "Procédure de remontée d'informations au constructeur Toyota via le système SKR. Rédaction des rapports techniques de défaillance, photos et données GTS à fournir.",
+    "chapters": [
+      "Qu'est-ce que le SKR (Shinraisei Kojo Report) ?",
+      "Critères de déclenchement d'un SKR",
+      "Collecte des données requises (GTS snapshot, photos, historique)",
+      "Rédaction et soumission d'un rapport SKR via Toyota TIS"
+    ],
+    "objectives": [
+      "Identifier les situations nécessitant un rapport SKR",
+      "Collecter et documenter les données requises pour Toyota",
+      "Soumettre un rapport SKR complet et conforme"
+    ],
+    "prerequisites": ["EL-TS16-G1"]
+  },
+  {
+    "code": "EL-TSA01",
+    "brand": "toyota",
+    "level": "all",
+    "category": "relation_client",
+    "modality": "elearning",
+    "title": "Gestion de la clientèle SAV par le conseiller service Toyota",
+    "duration": "3h",
+    "description": "Meilleures pratiques de relation client dans un atelier Toyota : accueil, gestion des réclamations, explication des travaux et suivi de satisfaction.",
+    "chapters": [
+      "Standards d'accueil Toyota (Toyota Hospitality)",
+      "Explication des travaux et restitution du véhicule",
+      "Gestion des réclamations clients et escalade",
+      "Enquête de satisfaction Toyota CSI — impact et bonnes pratiques"
+    ],
+    "objectives": [
+      "Appliquer les standards d'accueil Toyota",
+      "Gérer efficacement une réclamation client",
+      "Contribuer positivement au score CSI de la concession"
+    ],
+    "prerequisites": []
+  }
+]

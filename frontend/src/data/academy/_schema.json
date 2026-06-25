@@ -1,0 +1,15 @@
+{
+  "id":        "Identifiant unique (= tab)",
+  "tab":       "Clé onglet : medacap | mission | equipe | reseau | pays",
+  "tabLabel":  "Libellé court de l'onglet (ex. MEDACAP, Mission)",
+  "kicker":    "Surtitre carte",
+  "title":     "Titre carte + panneau détail",
+  "meta":      "Sous-titre carte",
+  "image":     "Chemin /assets/…",
+  "imageAlt":  "Description image (accessibilité)",
+  "lead":      "Chapô du panneau détail",
+  "paragraphs":["Paragraphes du corps de texte"],
+  "eyebrow":   "Surtitre (MEDACAP)",
+  "cycleImage":"Image du cycle (MEDACAP)",
+  "steps":     "[{ num, verb, desc }] — 7 étapes MEDACAP"
+}

@@ -1,0 +1,46 @@
+[
+  {
+    "slug": "byd-premiere-session-ve",
+    "category": "Terrain",
+    "date": "12 avril 2026",
+    "readTime": "2 min",
+    "title": "BYD : première session VE en Afrique francophone",
+    "summary": "Huit techniciens diplômés au premier cursus BYD, désormais habilités à intervenir sur les batteries haute-tension.",
+    "content": "Suite à l'introduction de la marque BYD dans notre réseau, la première session de formation technique dédiée aux Véhicules Électriques (VE) s'est tenue avec succès. Les techniciens ont pu se familiariser avec l'architecture spécifique des modèles BYD et surtout avec les protocoles de sécurité liés aux batteries haute-tension. Cette session marque une étape majeure dans la préparation de notre réseau aux défis de l'électromobilité.",
+    "image": "/assets/cfao-academy-douala.jpg",
+    "tags": ["Motors", "BYD", "BEV"]
+  },
+  {
+    "slug": "suzuki-z12e-demontage-moteur",
+    "category": "Certifications",
+    "date": "30 mars 2026",
+    "readTime": "3 min",
+    "title": "SUZUKI Z12E démontage moteur",
+    "summary": "Retour sur la session de certification de janvier qui a permis de valider les compétences de réparation avancée.",
+    "content": "Le moteur Suzuki Z12E nécessite une méthodologie de démontage précise. Lors de cette session de certification, les techniciens du niveau Silver ont été évalués sur leur capacité à déposer, inspecter et remonter le moteur en suivant scrupuleusement les manuels du constructeur. Les résultats montrent une nette amélioration de l'autonomie en atelier.",
+    "image": "/assets/hero1.jpg",
+    "tags": ["Motors", "Suzuki"]
+  },
+  {
+    "slug": "mitsubishi-step-2-nigeria",
+    "category": "Sessions",
+    "date": "27 mars 2026",
+    "readTime": "2 min",
+    "title": "Mitsubishi Step 2 Nigeria",
+    "summary": "Le cycle complet de niveau Réparation pour la marque Mitsubishi a été dispensé au centre de Lagos.",
+    "content": "Pendant 5 jours, nos talents nigérians ont pu approfondir leurs connaissances sur les systèmes mécaniques et de transmission des véhicules Mitsubishi. La formation Step 2 est cruciale car elle permet d'intervenir sur des réparations complexes de manière autonome. Félicitations à toute la promotion !",
+    "image": "/assets/hero-bg.jpg",
+    "tags": ["Motors", "Mitsubishi", "Nigeria"]
+  },
+  {
+    "slug": "sinotruk-wd615-diagnostic",
+    "category": "Terrain",
+    "date": "22 janvier 2026",
+    "readTime": "4 min",
+    "title": "SINOTRUK WD615 diagnostic Togo",
+    "summary": "Intervention terrain réussie au Togo sur le diagnostic des moteurs Sinotruk.",
+    "content": "Le diagnostic des pannes sur le moteur lourd WD615 requiert une excellente maîtrise des outils d'investigation. Notre Key Instructor est intervenu en appui de l'équipe togolaise pour résoudre un cas complexe. Ce type d'intervention illustre la puissance de notre réseau décentralisé et l'importance de l'apprentissage par la pratique (andragogie).",
+    "image": "/assets/cfao-academy-douala.jpg",
+    "tags": ["Equipment", "Sinotruk", "Togo"]
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "id":       "sinotruk-wd615-diagnostic-togo-2026",
+  "cat":      "Formation",
+  "date":     "2026-01-22",
+  "brand":    "SINOTRUK",
+  "tone":     "t2",
+  "titre":    "SINOTRUK WD615 · Maîtrise du diagnostic moteur en conditions terrain, Togo",
+  "resume":   "Session déployée directement sur site avec accès aux véhicules en service actif. Retour positif des ateliers partenaires au Togo.",
+  "readtime": "2 min",
+  "views":    0,
+  "contenu":  "Pour la première fois, l'Academy a déployé une formation SINOTRUK directement dans les ateliers partenaires de Lomé, avec un accès direct aux camions en service actif. Huit techniciens ont suivi trois jours de formation intensive sur le moteur WD615, le système d'injection common rail et les codes défauts du tableau de bord.\n\nCe format terrain permet une mise en pratique immédiate sur les véhicules du parc client, ce qui renforce significativement la mémorisation des gestes. Les formateurs ont adapté le programme en temps réel selon les pannes réelles observées sur les camions.\n\nLe retour des responsables d'atelier partenaires est très positif. Ce format itinérant sera étendu au Bénin et au Ghana au troisième trimestre 2026.",
+  "cover":    "/assets/images_articles/form_sino.jpg",
+  "photos":   {
+    "count": 1,
+    "urls": ["/assets/images_articles/form_sino_2.jpg"]
+  },
+  "videos":   { "count": 0, "urls": [] }
+}

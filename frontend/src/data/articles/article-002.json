@@ -1,0 +1,18 @@
+{
+  "id":       "byd-haute-tension-afrique-2026",
+  "cat":      "Formation",
+  "date":     "2026-04-12",
+  "brand":    "BYD",
+  "tone":     "t3",
+  "titre":    "BYD : premier cursus haute tension en Afrique francophone, 8 techniciens formés",
+  "resume":   "Huit techniciens désormais habilités à intervenir sur les batteries haute-tension des véhicules BYD.",
+  "readtime": "2 min",
+  "views":    0,
+  "contenu":  "En avril 2026, l'Academy a organisé la toute première formation certifiante sur les véhicules électriques BYD en Afrique francophone. Huit techniciens issus de trois pays ont suivi le cursus de quatre jours dédié à la sécurité haute tension et aux procédures d'intervention sur pack batterie.\n\nLa formation couvrait les modules suivants : identification des zones de danger HV, procédures de consignation électrique, diagnostic via BYD DiagZone, et remplacement des modules de cellules. Chaque participant a réalisé une mise en situation complète sur un BYD Atto 3.\n\nCe cursus marque le lancement officiel du pôle Véhicules Électriques de l'Academy. D'autres sessions sont déjà programmées pour le second semestre 2026 au Sénégal et en Côte d'Ivoire.",
+  "cover":    "/assets/images_articles/form_byd.jpg",
+  "photos":   {
+    "count": 1,
+    "urls": ["/assets/images_articles/form_byd2.jpg"]
+  },
+  "videos":   { "count": 0, "urls": [] }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "medacap",
+  "tab": "medacap",
+  "tabLabel": "MEDACAP",
+  "kicker": "MEDACAP",
+  "title": "Développer l'expertise professionnelle des techniciens",
+  "meta": "Méthodologie réseau",
+  "image": "/assets/medacap-cycle.png",
+  "cycleImage": "/assets/medacap-cycle.png",
+  "imageAlt": "Cycle MEDACAP — Mesurer, Exploiter, Définir, Acquérir, Certifier, Appliquer, Performer",
+  "eyebrow": "Développer l'expertise professionnelle des techniciens",
+  "eyebrowInImage": true,
+  "lead": "MEDACAP est la méthodologie en 7 étapes qui structure le développement des compétences techniques sur l'ensemble du réseau CFAO Mobility.",
+  "paragraphs": [
+    "CFAO Academy intervient dès l'étape Mesurer : notre application web permet aux différents corps de métier du réseau d'évaluer leurs compétences et d'exploiter les données tout au long du cycle MEDACAP.",
+    "Nous accompagnons ensuite chaque filiale jusqu'à l'acquisition, la certification et la performance sur le terrain, en cohérence avec ses objectifs business et les plans définis en amont."
+  ],
+  "steps": [
+    { "num": "1", "verb": "Mesurer", "desc": "les compétences" },
+    { "num": "2", "verb": "Exploiter", "desc": "les données de mesure" },
+    { "num": "3", "verb": "Définir", "desc": "les plans Individuel & Collectifs" },
+    { "num": "4", "verb": "Acquérir", "desc": "savoirs & savoir-faire (CFR / filiales)" },
+    { "num": "5", "verb": "Certifier", "desc": "savoirs & savoir-faire" },
+    { "num": "6", "verb": "Appliquer", "desc": "le savoir-faire en filiales" },
+    { "num": "7", "verb": "Performer", "desc": "en milieu professionnel" }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id":       "mercedes-basic-certified-rci-2026",
+  "cat":      "Certification",
+  "date":     "2026-04-18",
+  "brand":    "MERCEDES-BENZ",
+  "tone":     "t2",
+  "titre":    "Mercedes-Benz BASIC → CERTIFIED : 4 techniciens agréés, Côte d'Ivoire",
+  "resume":   "Après validation du diagnostic SDS et des procédures moteur OM651, quatre techniciens franchissent le palier CERTIFIED.",
+  "readtime": "2 min",
+  "views":    0,
+  "contenu":  "Quatre techniciens basés en Côte d'Ivoire ont obtenu le niveau CERTIFIED du référentiel Mercedes-Benz en avril 2026, franchissant ainsi le palier intermédiaire du parcours BASIC → CERTIFIED → EXPERT.\n\nL'évaluation portait sur trois domaines : l'utilisation de l'outil de diagnostic SDS (Star Diagnosis System), les procédures de révision du moteur diesel OM651, et la lecture des plans électriques via WIS/ASRA. Les candidats ont été évalués sur des cas pratiques simulant des interventions réelles en concession.\n\nCette certification Mercedes-Benz est reconnue par le constructeur et figure dans le dossier de qualification des techniciens. Les quatre diplômés rejoignent ainsi le pool de techniciens agréés MB disponibles sur le réseau CFAO en Afrique de l'Ouest.",
+  "cover":    "/assets/images_articles/cert_mercedes.jpg",
+  "photos":   {
+    "count": 2,
+    "urls": [
+      "/assets/images_articles/cert_mercedes2.jpg",
+      "/assets/images_articles/cert_mercedes3.jpg"
+    ]
+  },
+  "videos":   { "count": 0, "urls": [] }
+}

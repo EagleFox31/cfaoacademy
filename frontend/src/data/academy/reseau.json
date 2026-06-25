@@ -1,0 +1,17 @@
+{
+  "id": "reseau",
+  "tab": "reseau",
+  "tabLabel": "Réseau KI/PIC",
+  "kicker": "Réseau",
+  "title": "Des Hommes et Des Femmes de terrain",
+  "meta": "18 KI + 22 PIC Multi + 35 PIC Dév.",
+  "image": "/assets/dernière_section_accueil/reseau.jpg",
+  "imageAlt": "Carte du réseau de formation CFAO Academy en Afrique",
+  "panelTitle": "Des Hommes et Des Femmes de terrain",
+  "lead": "Des hommes et des femmes de terrain — Key Instructors et Partenaires Instructeurs Cadres — déploient la formation au plus près des ateliers, avec les standards constructeur.",
+  "paragraphs": [
+    "18 Key Instructors Toyota (G2 / Diagnostic) animent Maintenance & Réparation dans plus de dix pays. 22 PIC Multi-marques Motors et 35 PIC Développement Equipment relaient les parcours Silver / Réparation et accompagnent les techniciens sur le continent.",
+    "Session locale ou centre de Douala : mêmes grilles d'évaluation, mêmes outils, même traçabilité. La décentralisation ne dilue pas l'exigence.",
+    "Un hub central et des relais régionaux : moins de déplacements, montée en compétences plus rapide, pratiques harmonisées sur le réseau CFAO Mobility."
+  ]
+}

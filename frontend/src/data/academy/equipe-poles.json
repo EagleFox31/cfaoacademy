@@ -1,0 +1,66 @@
+{
+  "poles": [
+    {
+      "id": "supports",
+      "shortLabel": "Supports",
+      "label": "Pôle Supports · 4",
+      "members": [
+        { "name": "Laurent GONIN", "role": "Directeur formation", "lieu": "France", "photo": "/assets/team/laurent-gonin.png" },
+        { "name": "André Yves BOKALLY", "role": "Coordinateur", "lieu": "Cameroun", "photo": "/assets/team/andre-yves-bokally.png" },
+        { "name": "Claudia EYINGA", "role": "Assistante formation", "lieu": "Cameroun", "photo": "/assets/team/claudia-eyinga.png" },
+        { "name": "Jennifer AKA'A", "role": "Analyste programmeuse", "lieu": "Cameroun", "photo": "/assets/team/jennifer-akaa.png" }
+      ]
+    },
+    {
+      "id": "toyota",
+      "shortLabel": "Toyota",
+      "label": "Pôle Toyota · 4",
+      "members": [
+        { "name": "Eugène EBENE", "role": "Formateur Toyota", "lieu": "Cameroun", "brands": ["toyota"], "photo": "/assets/team/eugene-ebene.png" },
+        { "name": "Alassane DIALLO", "role": "Formateur Toyota", "lieu": "Sénégal", "brands": ["toyota"], "photo": "/assets/team/alassane-diallo.png" },
+        { "name": "Jacques MAVILA", "role": "Formateur Toyota & Suzuki", "lieu": "RDC", "brands": ["toyota", "suzuki"], "photo": "/assets/team/jacques-mavila.png" },
+        { "name": "Brice NECHI", "role": "Formateur Stellantis & Toyota", "note": "Jusqu'en Mai 2026", "lieu": "Cameroun", "brands": ["stellantis", "toyota"], "photo": "/assets/team/brice-nechi.png" }
+      ]
+    },
+    {
+      "id": "autres-marques",
+      "shortLabel": "Autres marques",
+      "label": "Pôle Autres Marques · 12",
+      "members": [
+        { "name": "Cédric PAKO", "role": "Formateur · Suzuki, BYD & Omoda", "lieu": "Cameroun", "brands": ["suzuki", "byd", "omoda"], "photo": "/assets/team/cedric-pako.png" },
+        { "name": "Hatem BEN ABID", "role": "Formateur · Mercedes-Benz", "lieu": "RCI", "brands": ["mercedes-benz"], "photo": "/assets/team/hatem-ben-abid.png" },
+        { "name": "Mohammed COLY", "role": "Formateur · Suzuki", "lieu": "Sénégal", "brands": ["suzuki"], "photo": "/assets/team/mohammed-coly.png" },
+        { "name": "Bomba COULIBALY", "role": "Formateur · Mitsubishi, Suzuki & BYD", "lieu": "RCI", "brands": ["mitsubishi", "suzuki", "byd"], "photo": "/assets/team/bomba-coulibaly.png" },
+        { "name": "Olakunle SUNMONU", "role": "Formateur · Mitsubishi", "lieu": "Nigeria", "brands": ["mitsubishi"], "photo": "/assets/team/olakunle-sunmonu.png" },
+        { "name": "Marcia MAVOUALA", "role": "Formateur · Suzuki", "lieu": "Congo", "brands": ["suzuki"], "photo": "/assets/team/marcia-mavouala.png" },
+        { "name": "Kossi AFATSAWO", "role": "Formateur · Suzuki", "lieu": "Togo", "brands": ["suzuki"], "photo": "/assets/team/kossi-afatsawo.png" },
+        { "name": "Gilles EKOUME", "role": "Formateur · Suzuki", "lieu": "Cameroun", "brands": ["suzuki"], "photo": "/assets/team/gilles-ekoume.png" },
+        { "name": "Jean Luc RANDRIANJAFY", "role": "Formateur · Suzuki & BYD", "lieu": "Madagascar", "brands": ["suzuki", "byd"], "photo": "/assets/team/jean-luc-randrianjafy.png" },
+        { "name": "Emmanuel OWOICHO", "role": "Formateur · Suzuki", "lieu": "Nigeria", "brands": ["suzuki"], "photo": "/assets/team/emmanuel-owoicho.png" },
+        { "name": "Benjamin Kwesi Abakah", "role": "Formateur · Suzuki", "lieu": "Ghana", "brands": ["suzuki"], "silhouette": true }
+      ]
+    },
+    {
+      "id": "equipement",
+      "shortLabel": "Équipement",
+      "label": "Pôle Équipement · 5",
+      "members": [
+        { "name": "Thierry KOUGHA", "role": "Formateur · Forklift · JCB · Lovol", "lieu": "Cameroun", "brands": ["toyota-forklift", "jcb", "lovol"], "photo": "/assets/team/thierry-kougha.png" },
+        { "name": "Lucien GAGNE", "role": "Formateur · RT · Hino · Fuso", "lieu": "Cameroun", "brands": ["renault-trucks", "hino", "fuso"], "photo": "/assets/team/lucien-gagne.png" },
+        { "name": "Idris NKOA", "role": "Formateur · BT · KL · Sinotruk", "lieu": "Cameroun", "brands": ["bt", "king-long", "sinotruk"], "photo": "/assets/team/idris-nkoa.png" },
+        { "name": "Roland NENDA", "role": "Formateur opérateur", "lieu": "Cameroun", "brands": ["jcb", "lovol"], "photo": "/assets/team/roland-nenda.png" },
+        { "name": "Johann GAUDIN", "role": "Formateur · Lovol", "lieu": "Cameroun", "brands": ["lovol"], "photo": "/assets/team/johann-gaudin.png" }
+      ]
+    },
+    {
+      "id": "autres-act",
+      "shortLabel": "Autres activités",
+      "label": "Pôle Autres Activités · 3",
+      "members": [
+        { "name": "Thierry TAMO YOUDOM", "role": "Formateur · Carrosserie", "lieu": "Cameroun", "brands": ["carrosserie"], "photo": "/assets/team/thierry-tamo-youdom.png" },
+        { "name": "Gérold SADIO", "role": "Formateur · Process", "lieu": "Cameroun", "brands": ["process"], "photo": "/assets/team/gerold-sadio.png" },
+        { "name": "Gauthier OUEDRAOGO", "role": "Formateur · Yamaha Moto & Bateaux", "lieu": "Burkina Faso", "brands": ["yamaha"], "photo": "/assets/team/gauthier-ouedraogo.png" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id":       "academy-salon-auto-abidjan-2026",
+  "cat":      "Evènements",
+  "date":     "2026-03-05",
+  "brand":    null,
+  "tone":     "t4",
+  "titre":    "L'Academy présente son catalogue 2026 au Salon de l'Auto d'Abidjan",
+  "resume":   "L'Academy était présente pour la première fois au salon avec son catalogue 2026 et ses nouvelles offres Equipment.",
+  "readtime": "4 min",
+  "views":    0,
+  "contenu":  "Pour la première fois de son histoire, CFAO Academy a tenu un stand au Salon International de l'Automobile d'Abidjan, du 3 au 7 mars 2026. L'occasion de présenter le catalogue complet 2026 à un public professionnel de plus de 2 000 visiteurs : directeurs de concessions, responsables après-vente, directeurs techniques.\n\nLe stand mettait en avant les nouvelles offres du pôle Equipment — formations LOVOL, JCB et Renault Trucks — ainsi que le lancement du cursus Véhicules Électriques BYD. Des tablettes permettaient aux visiteurs de consulter l'ensemble des fiches de formation et de télécharger le catalogue PDF.\n\nL'équipe de l'Academy a également organisé deux conférences de 30 minutes sur la montée en compétences des techniciens africains face à l'électrification du parc automobile. Ces sessions ont réuni plus de 80 participants chacune.\n\nL'édition 2027 du Salon est déjà confirmée avec un stand agrandi et des démonstrations pratiques en direct.",
+  "cover":    "/assets/images_articles/event_academy.jpg",
+  "photos":   {
+    "count": 1,
+    "urls": ["/assets/images_articles/event_academy2.jpg"]
+  },
+  "videos":   { "count": 0, "urls": [] }
+}

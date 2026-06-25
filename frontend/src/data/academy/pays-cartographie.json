@@ -1,0 +1,79 @@
+{
+  "regions": [
+    {
+      "id": "nord",
+      "label": "Afrique du Nord",
+      "shortLabel": "Nord",
+      "count": 1,
+      "countries": [
+        { "name": "Maroc", "status": "covered" }
+      ]
+    },
+    {
+      "id": "ouest",
+      "label": "Afrique de l'Ouest",
+      "shortLabel": "Ouest",
+      "count": 15,
+      "countries": [
+        { "name": "Mauritanie", "status": "covered" },
+        { "name": "Sénégal", "status": "covered" },
+        { "name": "Gambie", "status": "covered" },
+        { "name": "Guinée-Bissau", "status": "covered" },
+        { "name": "Guinée", "status": "covered" },
+        { "name": "Sierra Leone", "status": "covered" },
+        { "name": "Libéria", "status": "covered" },
+        { "name": "Mali", "status": "covered" },
+        { "name": "Burkina Faso", "status": "covered" },
+        { "name": "Côte d'Ivoire", "status": "covered" },
+        { "name": "Ghana", "status": "covered" },
+        { "name": "Togo", "status": "covered" },
+        { "name": "Bénin", "status": "covered" },
+        { "name": "Niger", "status": "covered" },
+        { "name": "Nigeria", "status": "covered" }
+      ]
+    },
+    {
+      "id": "centrale",
+      "label": "Afrique Centrale",
+      "shortLabel": "Centrale",
+      "count": 7,
+      "countries": [
+        { "name": "Tchad", "status": "covered" },
+        { "name": "Cameroun", "status": "covered" },
+        { "name": "RCA", "status": "covered" },
+        { "name": "Guinée équatoriale", "status": "covered" },
+        { "name": "Gabon", "status": "covered" },
+        { "name": "Congo", "status": "covered" },
+        { "name": "RDC", "status": "covered" }
+      ]
+    },
+    {
+      "id": "est",
+      "label": "Afrique de l'Est",
+      "shortLabel": "Est",
+      "count": 4,
+      "countries": [
+        { "name": "Éthiopie", "status": "potential" },
+        { "name": "Djibouti", "status": "potential" },
+        { "name": "Kenya", "status": "potential" },
+        { "name": "Tanzanie", "status": "potential" }
+      ]
+    },
+    {
+      "id": "australe",
+      "label": "Afrique Australe & Océan Indien",
+      "shortLabel": "Australe",
+      "count": 8,
+      "countries": [
+        { "name": "Angola", "status": "potential" },
+        { "name": "Zambie", "status": "potential" },
+        { "name": "Zimbabwe", "status": "potential" },
+        { "name": "Mozambique", "status": "potential" },
+        { "name": "Malawi", "status": "potential" },
+        { "name": "Madagascar", "status": "covered" },
+        { "name": "Maurice", "status": "covered" },
+        { "name": "La Réunion", "status": "covered" }
+      ]
+    }
+  ]
+}

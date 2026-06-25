@@ -1,0 +1,21 @@
+{
+  "id":       "lovol-jcb-lancement-equipment-2026",
+  "cat":      "Evènements",
+  "date":     "2026-05-10",
+  "brand":    "LOVOL",
+  "tone":     "t2",
+  "titre":    "Lancement du pôle Equipment : LOVOL et JCB désormais au programme",
+  "resume":   "Onze techniciens certifiés sur les niveleuses et chargeuses LOVOL — une première dans le réseau Equipment de CFAO.",
+  "readtime": "3 min",
+  "views":    0,
+  "contenu":  "Mai 2026 marque le lancement officiel du pôle Equipment de CFAO Academy avec l'intégration de LOVOL et JCB dans le catalogue de formations. La cérémonie d'inauguration s'est tenue à Douala en présence des représentants des deux constructeurs et de la direction de CFAO Mobility.\n\nPour marquer l'événement, une première session de certification LOVOL a été organisée simultanément : onze techniciens ont suivi quatre jours de formation intensive sur les niveleuses G9165F et les chargeuses sur roues FL936H. À l'issue de la semaine, tous ont obtenu leur certification LOVOL niveau 1.\n\nL'ajout de LOVOL et JCB porte à sept le nombre de marques couvertes dans le pôle Equipment, aux côtés de Renault Trucks, Hino, Fuso, Sinotruk et Shacman. Le prochain ajout prévu est la gamme BT (chariots élévateurs) pour le second semestre 2026.",
+  "cover":    "/assets/images_articles/event_lovol.jpg",
+  "photos":   {
+    "count": 2,
+    "urls": [
+      "/assets/images_articles/event_lovol2.jpg",
+      "/assets/images_articles/event_lovol3.jpg"
+    ]
+  },
+  "videos":   { "count": 0, "urls": [] }
+}

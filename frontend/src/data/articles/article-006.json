@@ -1,0 +1,21 @@
+{
+  "id":       "suzuki-z12e-demontage-certification-2026",
+  "cat":      "Certification",
+  "date":     "2026-03-30",
+  "brand":    "SUZUKI",
+  "tone":     "t2",
+  "titre":    "Suzuki Z12E · 6 experts en démontage / remontage moteur diplômés",
+  "resume":   "Six techniciens maîtrisent désormais le démontage complet du Z12E dans les temps impartis par le standard Suzuki.",
+  "readtime": "3 min",
+  "views":    0,
+  "contenu":  "La session de certification Suzuki Z12E s'est tenue fin mars à Douala. Six techniciens issus du réseau CFAO ont été évalués sur leur capacité à réaliser un démontage complet du moteur Z12E — y compris la culasse, le vilebrequin et le kit distribution — dans les délais définis par le standard Suzuki.\n\nL'évaluation pratique consistait à démonter et remonter le moteur dans un temps imparti, en respectant les couples de serrage, l'ordre de montage et les points de contrôle obligatoires. Chaque étape était notée par un formateur certifié Suzuki.\n\nLes six candidats ont tous réussi l'épreuve du premier coup, un résultat rare qui témoigne de la qualité de la préparation dispensée. Deux d'entre eux ont obtenu la mention « Excellence » décernée par Suzuki Motor Corporation pour les scores supérieurs à 90 %.",
+  "cover":    "/assets/images_articles/cert_suzuki.jpg",
+  "photos":   {
+    "count": 2,
+    "urls": [
+      "/assets/images_articles/cert_suzuki2.jpg",
+      "/assets/images_articles/cert_suzuki3.jpg"
+    ]
+  },
+  "videos":   { "count": 0, "urls": [] }
+}

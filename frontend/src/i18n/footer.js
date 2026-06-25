@@ -1,0 +1,92 @@
+export const FOOTER_COPY = {
+  fr: {
+    tagline: 'Formation technique constructeur — présents dans 35 pays africains.',
+    navAria: 'Liens pied de page',
+
+    colNav: 'Explorer',
+    linkAbout: 'À propos',
+    linkFormations: 'Formations',
+    linkPublics: 'Publics',
+    linkNews: 'Actualités',
+
+    colAcademy: "L'Academy",
+    linkMission: 'Notre mission',
+    linkCertifications: 'Certifications',
+    linkTeam: "L'équipe",
+    linkPartners: 'Partenaires',
+
+    colAccess: 'Accès',
+    linkContact: 'Nous contacter',
+    linkLogin: 'Connexion',
+
+    statCountries: 'pays',
+    statBrands: 'marques',
+    statCourses: 'formations',
+
+    email: 'academy@cfaomobility.com',
+    location: 'Douala, Cameroun',
+
+    copyright: '© 2026 CFAO Mobility',
+    entity: 'CFAO Academy',
+    legal: 'Mentions légales',
+    privacy: 'Confidentialité',
+  },
+  en: {
+    tagline: 'Manufacturer technical training — present in 35 African countries.',
+    navAria: 'Footer links',
+
+    colNav: 'Explore',
+    linkAbout: 'About',
+    linkFormations: 'Training',
+    linkPublics: 'Audiences',
+    linkNews: 'News',
+
+    colAcademy: 'The Academy',
+    linkMission: 'Our mission',
+    linkCertifications: 'Certifications',
+    linkTeam: 'The team',
+    linkPartners: 'Partners',
+
+    colAccess: 'Access',
+    linkContact: 'Contact us',
+    linkLogin: 'Sign in',
+
+    statCountries: 'countries',
+    statBrands: 'brands',
+    statCourses: 'courses',
+
+    email: 'academy@cfaomobility.com',
+    location: 'Douala, Cameroon',
+
+    copyright: '© 2026 CFAO Mobility',
+    entity: 'CFAO Academy',
+    legal: 'Legal',
+    privacy: 'Privacy',
+  },
+  pt: {
+    tagline: 'Formação técnica de construtor — presente em 35 países africanos.',
+    navAria: 'Links do rodapé',
+    colNav: 'Explorar',
+    linkAbout: 'Sobre',
+    linkFormations: 'Formações',
+    linkPublics: 'Públicos',
+    linkNews: 'Notícias',
+    colAcademy: 'A Academy',
+    linkMission: 'A nossa missão',
+    linkCertifications: 'Certificações',
+    linkTeam: 'A equipa',
+    linkPartners: 'Parceiros',
+    colAccess: 'Acesso',
+    linkContact: 'Contacte-nos',
+    linkLogin: 'Entrar',
+    statCountries: 'países',
+    statBrands: 'marcas',
+    statCourses: 'formações',
+    email: 'academy@cfaomobility.com',
+    location: 'Douala, Camarões',
+    copyright: '© 2026 CFAO Mobility',
+    entity: 'CFAO Academy',
+    legal: 'Informação legal',
+    privacy: 'Privacidade',
+  },
+}

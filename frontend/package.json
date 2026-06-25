@@ -1,0 +1,23 @@
+{
+  "name": "cfao-academy",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "sync-catalogues": "node scripts/sync-catalogues.mjs",
+    "predev": "npm run sync-catalogues",
+    "prebuild": "npm run sync-catalogues",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.8"
+  }
+}
