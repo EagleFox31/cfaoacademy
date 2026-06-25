@@ -17,7 +17,7 @@ jobs:
     name: Alignement version & CHANGELOG
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Vérifier VERSION / package.json / tag
         run: python scripts/verify_version.py "${{ github.ref_name }}"
@@ -43,7 +43,7 @@ jobs:
     needs: [validate, test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v4
         with:
