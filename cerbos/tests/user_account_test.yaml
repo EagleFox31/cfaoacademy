@@ -1,0 +1,78 @@
+# Tests policy user_account — accès aux comptes par périmètre (scope_paths) + négatifs.
+name: UserAccountSuite
+description: Contrôle d'accès des comptes (scopeNode ∈ orgPath = union des scopes du user)
+
+principals:
+  admin_cmr:
+    id: a_1
+    roles: ["branch_admin"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+      orgPath: ["groupe", "groupe.cmr"]
+  learner_cmr:
+    id: l_1
+    roles: ["learner"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+  admin_multi:
+    id: a_2
+    roles: ["branch_admin"]
+    attr:
+      scopeNodes: ["groupe.cmr", "groupe.civ"]  # admin de DEUX filiales
+
+resources:
+  user_in_scope:
+    kind: user_account
+    id: s-cmr
+    attr:
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+  user_out_of_scope:
+    kind: user_account
+    id: s-civ
+    attr:
+      orgPath: ["groupe", "groupe.civ"]
+
+tests:
+  - name: admin voit/édite un compte DANS son périmètre
+    input:
+      principals: ["admin_cmr"]
+      resources: ["user_in_scope"]
+      actions: ["view", "update"]
+    expected:
+      - principal: admin_cmr
+        resource: user_in_scope
+        actions: { "view": EFFECT_ALLOW, "update": EFFECT_ALLOW }
+
+  - name: admin NE voit PAS un compte hors périmètre (négatif)
+    input:
+      principals: ["admin_cmr"]
+      resources: ["user_out_of_scope"]
+      actions: ["view", "update"]
+    expected:
+      - principal: admin_cmr
+        resource: user_out_of_scope
+        actions: { "view": EFFECT_DENY, "update": EFFECT_DENY }
+
+  - name: un learner ne peut PAS gérer les comptes (négatif / élévation)
+    input:
+      principals: ["learner_cmr"]
+      resources: ["user_in_scope"]
+      actions: ["create", "update", "delete"]
+    expected:
+      - principal: learner_cmr
+        resource: user_in_scope
+        actions: { "create": EFFECT_DENY, "update": EFFECT_DENY, "delete": EFFECT_DENY }
+
+  - name: MULTI-SCOPE — admin de 2 filiales voit un compte couvert par son 2e scope
+    input:
+      principals: ["admin_multi"]
+      resources: ["user_in_scope", "user_out_of_scope"]
+      actions: ["view"]
+    expected:
+      - principal: admin_multi
+        resource: user_in_scope
+        actions: { "view": EFFECT_ALLOW }      # via scope groupe.cmr
+      - principal: admin_multi
+        resource: user_out_of_scope
+        actions: { "view": EFFECT_ALLOW }      # via scope groupe.civ

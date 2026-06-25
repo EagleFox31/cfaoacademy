@@ -1,0 +1,16 @@
+# Ressource « org_unit » (module identity) — arbre org, default-deny.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: org_unit
+  importDerivedRoles:
+    - common_scope
+  rules:
+    - actions: ["view", "list"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - within_org_scope
+    - actions: ["create", "update", "delete"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - admin_within_scope

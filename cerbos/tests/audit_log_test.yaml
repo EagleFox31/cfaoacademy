@@ -1,0 +1,58 @@
+# Tests policy audit_log — lecture du journal par périmètre (+ négatifs).
+name: AuditLogSuite
+description: Lecture du journal d'audit scopée
+
+principals:
+  admin_cmr:
+    id: a_1
+    roles: ["branch_admin"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+  learner_cmr:
+    id: l_1
+    roles: ["learner"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+
+resources:
+  event_in_scope:
+    kind: audit_log
+    id: e_1
+    attr:
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+  event_out_of_scope:
+    kind: audit_log
+    id: e_2
+    attr:
+      orgPath: ["groupe", "groupe.civ"]
+
+tests:
+  - name: admin lit l'audit DANS son périmètre
+    input:
+      principals: ["admin_cmr"]
+      resources: ["event_in_scope"]
+      actions: ["view", "list"]
+    expected:
+      - principal: admin_cmr
+        resource: event_in_scope
+        actions: { "view": EFFECT_ALLOW, "list": EFFECT_ALLOW }
+
+  - name: admin NE lit PAS hors de son périmètre (négatif)
+    input:
+      principals: ["admin_cmr"]
+      resources: ["event_out_of_scope"]
+      actions: ["view"]
+    expected:
+      - principal: admin_cmr
+        resource: event_out_of_scope
+        actions: { "view": EFFECT_DENY }
+
+  - name: un learner ne lit PAS l'audit (négatif)
+    input:
+      principals: ["learner_cmr"]
+      resources: ["event_in_scope"]
+      actions: ["view", "list"]
+    expected:
+      - principal: learner_cmr
+        resource: event_in_scope
+        actions: { "view": EFFECT_DENY, "list": EFFECT_DENY }

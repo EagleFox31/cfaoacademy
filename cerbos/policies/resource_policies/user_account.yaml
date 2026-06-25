@@ -1,0 +1,17 @@
+# Ressource « user_account » (module identity) — comptes, default-deny.
+# Le périmètre du compte = union des scopes de ses affectations (orgPath = scope_paths).
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: user_account
+  importDerivedRoles:
+    - common_scope
+  rules:
+    - actions: ["view", "list"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - within_org_scope
+    - actions: ["create", "update", "delete"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - admin_within_scope

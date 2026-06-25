@@ -1,0 +1,60 @@
+# Tests policy org_unit — accès à l'arbre org par périmètre (+ négatifs).
+name: OrgUnitSuite
+description: Contrôle d'accès des unités org (scopeNode ∈ orgPath)
+
+principals:
+  admin_cmr:
+    id: a_1
+    roles: ["branch_admin"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+      orgPath: ["groupe", "groupe.cmr"]
+  learner_cmr:
+    id: l_1
+    roles: ["learner"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+
+resources:
+  unit_in_scope:
+    kind: org_unit
+    id: groupe.cmr.douala
+    attr:
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+  unit_out_of_scope:
+    kind: org_unit
+    id: groupe.civ
+    attr:
+      orgPath: ["groupe", "groupe.civ"]
+
+tests:
+  - name: admin voit/édite une unité DANS son périmètre
+    input:
+      principals: ["admin_cmr"]
+      resources: ["unit_in_scope"]
+      actions: ["view", "update"]
+    expected:
+      - principal: admin_cmr
+        resource: unit_in_scope
+        actions: { "view": EFFECT_ALLOW, "update": EFFECT_ALLOW }
+
+  - name: admin NE voit PAS hors de son périmètre (négatif)
+    input:
+      principals: ["admin_cmr"]
+      resources: ["unit_out_of_scope"]
+      actions: ["view", "update"]
+    expected:
+      - principal: admin_cmr
+        resource: unit_out_of_scope
+        actions: { "view": EFFECT_DENY, "update": EFFECT_DENY }
+
+  - name: un learner ne peut PAS éditer l'org (négatif / élévation)
+    input:
+      principals: ["learner_cmr"]
+      resources: ["unit_in_scope"]
+      actions: ["update", "create", "delete"]
+    expected:
+      - principal: learner_cmr
+        resource: unit_in_scope
+        actions: { "update": EFFECT_DENY, "create": EFFECT_DENY, "delete": EFFECT_DENY }

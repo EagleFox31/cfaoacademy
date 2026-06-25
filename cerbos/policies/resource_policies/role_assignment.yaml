@@ -1,0 +1,13 @@
+# Ressource « role_assignment » — gérer les affectations (rôle+scope) d'un compte.
+# Contrôle contre le PÉRIMÈTRE de l'affectation (orgPath = path de l'unité ciblée).
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: role_assignment
+  importDerivedRoles:
+    - common_scope
+  rules:
+    - actions: ["view", "list", "create", "update", "delete"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - admin_within_scope

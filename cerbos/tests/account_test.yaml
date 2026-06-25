@@ -1,0 +1,89 @@
+# Tests de policy (cerbos compile --tests). Inclut les tests NÉGATIFS d'autorisation
+# qui sont obligatoires dans le gabarit module (norme sécurité ASVS / OWASP A01).
+name: AccountSuite
+description: Contrôle d'accès de la ressource account (référence /me + périmètre org)
+
+principals:
+  self:
+    id: u_123
+    roles: ["learner"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+  other_learner:
+    id: u_999
+    roles: ["learner"]
+    attr:
+      scopeNodes: ["groupe.civ.abidjan"]
+      orgPath: ["groupe", "groupe.civ", "groupe.civ.abidjan"]
+  branch_admin_cmr:
+    id: a_1
+    roles: ["branch_admin"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+      orgPath: ["groupe", "groupe.cmr"]
+
+resources:
+  account_self:
+    kind: account
+    id: u_123
+    attr:
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+  account_in_scope:
+    kind: account
+    id: u_123
+    attr:
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+  account_out_of_scope:
+    kind: account
+    id: u_555
+    attr:
+      orgPath: ["groupe", "groupe.civ", "groupe.civ.abidjan"]
+
+tests:
+  - name: un user lit son propre compte
+    input:
+      principals: ["self"]
+      resources: ["account_self"]
+      actions: ["view:self"]
+    expected:
+      - principal: self
+        resource: account_self
+        actions:
+          "view:self": EFFECT_ALLOW
+
+  - name: un user NE peut PAS lire le compte d'un autre (négatif)
+    input:
+      principals: ["other_learner"]
+      resources: ["account_self"]
+      actions: ["view:self", "view"]
+    expected:
+      - principal: other_learner
+        resource: account_self
+        actions:
+          "view:self": EFFECT_DENY
+          "view": EFFECT_DENY
+
+  - name: admin filiale lit un compte DANS son périmètre
+    input:
+      principals: ["branch_admin_cmr"]
+      resources: ["account_in_scope"]
+      actions: ["view", "update"]
+    expected:
+      - principal: branch_admin_cmr
+        resource: account_in_scope
+        actions:
+          "view": EFFECT_ALLOW
+          "update": EFFECT_ALLOW
+
+  - name: admin filiale NE voit PAS hors de son périmètre (négatif)
+    input:
+      principals: ["branch_admin_cmr"]
+      resources: ["account_out_of_scope"]
+      actions: ["view", "update"]
+    expected:
+      - principal: branch_admin_cmr
+        resource: account_out_of_scope
+        actions:
+          "view": EFFECT_DENY
+          "update": EFFECT_DENY

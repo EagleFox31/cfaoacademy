@@ -1,0 +1,28 @@
+# Ressource « account » (module identity). Policy de référence, default-deny.
+# Toute action non listée est refusée par Cerbos par défaut.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: account
+  importDerivedRoles:
+    - common_scope
+  rules:
+    # Chacun peut lire son propre compte (endpoint /me).
+    - actions: ["view:self"]
+      effect: EFFECT_ALLOW
+      roles: ["*"]
+      condition:
+        match:
+          expr: request.principal.id == request.resource.id
+
+    # Admin/RH/direction : lecture des comptes DANS leur périmètre org.
+    - actions: ["view", "list"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - within_org_scope
+
+    # Gestion des comptes : admin filiale/groupe, DANS le périmètre (rôle dérivé seul → ET).
+    - actions: ["create", "update"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - admin_within_scope

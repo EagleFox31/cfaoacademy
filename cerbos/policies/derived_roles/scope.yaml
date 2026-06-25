@@ -1,0 +1,33 @@
+# Rôle dérivé factorisé : « dans mon périmètre org » (architecture.md §5.3).
+# scopeNode ∈ orgPath règle toute la hiérarchie en une comparaison.
+apiVersion: api.cerbos.dev/v1
+derivedRoles:
+  name: common_scope
+  definitions:
+    # Lecture dans le périmètre : large (admins, RH, direction).
+    # MULTI-SCOPE : autorisé si AU MOINS UN des scopes du principal couvre la ressource.
+    - name: within_org_scope
+      parentRoles:
+        - branch_admin
+        - group_admin
+        - branch_director
+        - regional_director
+        - group_director
+        - branch_hr
+        - group_hr
+        - superadmin
+      condition:
+        match:
+          expr: request.principal.attr.scopeNodes.exists(s, s in request.resource.attr.orgPath)
+
+    # Écriture dans le périmètre : admins seulement.
+    # IMPORTANT : combiner `roles` + `derivedRoles` dans une règle = OU (pas ET).
+    # Pour exiger « rôle admin ET dans le scope », on passe par ce rôle dérivé seul.
+    - name: admin_within_scope
+      parentRoles:
+        - branch_admin
+        - group_admin
+        - superadmin
+      condition:
+        match:
+          expr: request.principal.attr.scopeNodes.exists(s, s in request.resource.attr.orgPath)

@@ -1,0 +1,12 @@
+# Ressource « audit_log » — lecture du journal d'audit, scopée par périmètre (12-4).
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: audit_log
+  importDerivedRoles:
+    - common_scope
+  rules:
+    - actions: ["view", "list"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - within_org_scope

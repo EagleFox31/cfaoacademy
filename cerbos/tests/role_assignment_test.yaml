@@ -1,0 +1,60 @@
+# Tests policy role_assignment — gérer les affectations par périmètre (+ négatifs).
+name: RoleAssignmentSuite
+description: Affectations contrôlées contre le périmètre de l'unité ciblée
+
+principals:
+  admin_cmr:
+    id: a_1
+    roles: ["branch_admin"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+      orgPath: ["groupe", "groupe.cmr"]
+  learner_cmr:
+    id: l_1
+    roles: ["learner"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+
+resources:
+  assign_in_scope:
+    kind: role_assignment
+    id: ra_1
+    attr:
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+  assign_out_of_scope:
+    kind: role_assignment
+    id: ra_2
+    attr:
+      orgPath: ["groupe", "groupe.civ"]
+
+tests:
+  - name: admin affecte DANS son périmètre
+    input:
+      principals: ["admin_cmr"]
+      resources: ["assign_in_scope"]
+      actions: ["create", "delete"]
+    expected:
+      - principal: admin_cmr
+        resource: assign_in_scope
+        actions: { "create": EFFECT_ALLOW, "delete": EFFECT_ALLOW }
+
+  - name: admin NE peut PAS affecter hors de son périmètre (négatif)
+    input:
+      principals: ["admin_cmr"]
+      resources: ["assign_out_of_scope"]
+      actions: ["create"]
+    expected:
+      - principal: admin_cmr
+        resource: assign_out_of_scope
+        actions: { "create": EFFECT_DENY }
+
+  - name: un learner ne peut PAS affecter (négatif / élévation)
+    input:
+      principals: ["learner_cmr"]
+      resources: ["assign_in_scope"]
+      actions: ["create", "delete"]
+    expected:
+      - principal: learner_cmr
+        resource: assign_in_scope
+        actions: { "create": EFFECT_DENY, "delete": EFFECT_DENY }
