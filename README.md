@@ -6,6 +6,9 @@ Plateforme de formation CFAO : **site vitrine** (React/Vite), **portail apprenan
 
 ## Quickstart (5 min)
 
+> **Images / catalogues** : `assets/` et `catalogues/` sont sur **Git LFS**. Après clone ou pull :
+> `git lfs install` puis `git lfs pull`. Sans ça, le navigateur reçoit des fichiers texte ~130 o à la place des PNG/PDF.
+
 ### Site vitrine + portail (frontend)
 
 ```bash
