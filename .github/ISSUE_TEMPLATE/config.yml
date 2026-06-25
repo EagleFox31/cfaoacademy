@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Guide de contribution
+    url: https://github.com/cfao-academy/cfaoacademy/blob/main/CONTRIBUTING.md
+    about: Commits, statut hebdo MOA, conventions d'équipe
+  - name: Sécurité (divulgation responsable)
+    url: https://github.com/cfao-academy/cfaoacademy/blob/main/SECURITY.md
+    about: Ne pas ouvrir d'issue publique pour une faille

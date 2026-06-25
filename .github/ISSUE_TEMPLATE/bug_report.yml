@@ -1,0 +1,74 @@
+name: Bug
+description: Signaler un dysfonctionnement
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pour une **vulnérabilité de sécurité**, ne pas utiliser ce formulaire — voir [SECURITY.md](../../SECURITY.md).
+
+  - type: input
+    id: story
+    attributes:
+      label: Story / ticket (optionnel)
+      placeholder: "ex. 08-2"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Zone concernée
+      options:
+        - Frontend (vitrine / portail)
+        - cfao-core (Django)
+        - cfao-operations (Node)
+        - Cerbos / authZ
+        - Keycloak / authN
+        - Gateway / Docker
+        - Données / catalogues
+        - CI / outillage
+        - Autre
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportement attendu
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportement observé
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Étapes de reproduction
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+
+  - type: input
+    id: env
+    attributes:
+      label: Environnement
+      placeholder: "ex. local Docker, branche main, commit abc123"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / captures
+      description: Coller les extraits pertinents ou joindre des captures dans un commentaire.
+    validations:
+      required: false

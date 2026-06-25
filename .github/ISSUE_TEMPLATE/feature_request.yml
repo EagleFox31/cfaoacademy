@@ -1,0 +1,68 @@
+name: Feature
+description: Proposer une évolution
+title: "[Feature] "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: input
+    id: story
+    attributes:
+      label: Story backlog (si connue)
+      placeholder: "ex. 15-4"
+    validations:
+      required: false
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problème / besoin métier
+      description: Formulé pour un lecteur non technique si possible.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solution proposée
+    validations:
+      required: true
+
+  - type: dropdown
+    id: app
+    attributes:
+      label: App plateforme concernée (cf. PLATFORM_APPS.md)
+      multiple: true
+      options:
+        - "01 — Catalogue / CMS"
+        - "02 — Parcours apprenant"
+        - "03 — LMS / certifications"
+        - "04 — Planning formateurs"
+        - "05 — Salles"
+        - "06 — Assistance"
+        - "07 — Analytics"
+        - "08 — Sessions"
+        - "09 — Recrutement"
+        - "10 — Reporting"
+        - "11–12 — Identity"
+        - "14 — Notifications"
+        - "15 — Delivery / pilotage"
+        - Frontend vitrine seule
+        - Transverse / infra
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critères d'acceptation
+      placeholder: |
+        - [ ] …
+        - [ ] …
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes techniques / dépendances
+    validations:
+      required: false

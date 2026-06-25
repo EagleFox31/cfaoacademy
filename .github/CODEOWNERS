@@ -1,0 +1,6 @@
+# CODEOWNERS — CFAO Academy
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Équipe unique du projet. Adapter @org/academy si le slug GitHub diffère.
+
+* @cfao-academy/academy
