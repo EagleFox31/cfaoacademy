@@ -1,0 +1,154 @@
+---
+description: CFAO Academy — architecture, données, recherches, pièges connus
+alwaysApply: true
+---
+
+# CFAO Academy — contexte projet
+
+## Stack & dossiers
+
+- **App prod** : `frontend/` — React 19 + Vite + React Router. Styles : `frontend/src/styles/index.css` (global, sections, carrousel, hero) + `academy.css` (cartes, articles, Academy, fiches).
+- **Maquettes** : `wireframes/` + `Wireframes.html` (React/Babel CDN) — référence UX, pas la source de l’app.
+- **Fiches PNG / PDF** : `catalogues/{marque}/` à la racine repo. URL app : `/catalogues/...`. Vite sert `public/catalogues` puis fallback `../catalogues` (`vite.config.js`).
+- **Ne pas commit** sauf demande explicite. **Ne pas “corriger”** un rendu visuel sans demande (ex. fond opaque sur `#sessions`).
+
+## Routes & accueil (`Accueil.jsx`)
+
+| Route | Page |
+|-------|------|
+| `/` | Accueil (sections ancres) |
+| `/formations` | Catalogue marques / process |
+| `/formations/fiche/:code?date=` | Fiche détail — catalogue sans `?date=` ; session planifiée avec `?date=` |
+| `/publics` | Publics (onglets famille conservés) |
+| `/actualites`, `/actualites/:slug` | Liste + article |
+
+**Ordre sections accueil** : Hero → Actualités → Publics (sans onglets) → Offres Motors/Equipment → Carrosserie → SAV Motors/Equipment → **Sessions** (`#sessions`, onglets BU sans « Tous », défaut `Motors`) → L’Academy (`#expertise`) → Témoignages → CTA.
+
+**Ancres nav** : `NAV` / `NAV_SPY_SECTIONS` dans `frontend/src/data/index.js`.
+
+## Données — où chercher quoi
+
+| Besoin | Fichier |
+|--------|---------|
+| Sessions planning 2026 | `data/sessions-2026.json` → normalisé dans `data/sessions.js` (`SESSIONS`, `uid`, `tagClass`) |
+| Catalogue formations (codes, titres) | `data/training-catalog.json` (copie aussi dans `catalogues/`) |
+| Articles | `data/articles/*.json` + `data/articles/index.js` (`ARTICLES`) |
+| Piliers Academy | `data/academy/*.json` — `index.js` exclut `_schema`, `equipe-poles`, `pays-cartographie` du glob |
+| Stats, BU, publics, marques | `data/index.js` |
+| PDF offres SAV | `utils/offerCatalogues.js` (noms exacts, `_` pas `&`) |
+
+## Recherches efficaces
+
+1. **Code formation** : `rg "SS05-SILVER" frontend/src/data/sessions-2026.json` puis `rg "SS05" frontend/src/data/training-catalog.json`.
+2. **Image fiche manquante** : lister `catalogues/suzuki/` (ou marque) — comparer nom PNG vs code session. Voir `utils/formationFiche.js` + `utils/trainingCode.js`.
+3. **Comportement section accueil** : `pages/Accueil.jsx` + `components/PreviewSection.jsx`.
+4. **Style carte / panneau** : `styles/academy.css` (`.pv-card`, `.academy-detail`, `.sessions-month-*`).
+5. **Carrousel / dégradés blancs** : `styles/index.css` `.card-carousel--peek` (seulement si `Children.count > 4` dans `CardCarousel.jsx`).
+
+## Codes planning → fiches PNG (`trainingCode.js`)
+
+- Alias HTML : `O&JEV02` / `O&amp;JEV02` → `OJEV02`.
+- **Suzuki** : `SS05-SILVER` → `SS05.png` (`-BRONZE`, `-SILVER`, `-GOLD` retirés pour le chemin).
+- **Toyota** : `TS04 - G3` (espaces Excel) → `TS04-G3.png` via `normalizeHyphens` dans `canonicalTrainingCode`.
+- **FUSO** : `F04-CAN` / `F02-CAN` → `F04.png` / `F02.png` (suffixe `-CAN` retiré dans `ficheFileCode`).
+- **Process SAV** : `PDI01` → `PDI09.png` ; `F001`…`F006` (zéro Excel) → `FO01`…`FO06.png` (`processSavF0ToFo`).
+- Dossier marque : `formationFiche.js` → `BRAND_FOLDER`, index `CODE_TO_FOLDER` depuis `training-catalog.json`.
+
+## Pièges déjà rencontrés
+
+- **Ne pas imbriquer `<section>`** dans une section (ex. mois dans `SessionsMonthGrid`) : hérite `background: rgba(255,255,255,0.78)` → voile blanc sur les cartes. Utiliser `<div role="group">`.
+- **Fond “overlay”** sur tout le site = sections semi-transparentes + photo `body`, pas une modale ajoutée.
+- **Article** : un seul bloc `.article-sheet` blanc ; pas un fond opaque sur toute `.article-page` (photo body visible).
+- **glob academy** : exclure les JSON auxiliaires sinon carte fantôme dans le carrousel expertise.
+- Images articles : chemins `/assets/articles/...` — vérifier que les fichiers existent dans `public/assets`.
+
+## Composants clés
+
+- `PreviewSection` — titre, onglets optionnels, `voir` (lien ou bouton expand), `Reveal`, `bg-word` si `has-deco`.
+- `PvCard` / `SessionCard` / `ArticleCard` / `BrandCard` / `CatalogTrainingCard` / `ProcessSavHomeGrid`.
+- `utils/catalogFormateur.js` — formateur fiches/cartes **catalogue** (pas le planning).
+- `utils/processSavCatalog.js` — flatten process + `resolveProcessSavCardBadge` (logo marque / « Toutes marques »).
+- `CardCarousel` — peek + flèches si overflow.
+- `SessionsMonthGrid` — groupement par mois (vue « Voir tout » sessions).
+- `AcademyHomeSection` — panneaux MEDACAP, Équipe, Pays, détail générique.
+
+## Hero accueil (`HomeHero.jsx`, `index.css`, `useHeroBgParallax.js`)
+
+### Structure actuelle
+
+- **Image** : pleine largeur, zone fixe `--hero-visual-h` (pas toute la hauteur de la carte glass).
+- **Contenu** : carte glass dans `.container`, grille **2×2** parcours apprenant (VL, PL, Carrossier, SAV) ; **B2B hors grille** (`.hero-home-b2b` — porte entreprise distincte).
+- **Fichiers** : `frontend/public/assets/hero/` — `default.jpg`, `cta_hover_*.jpg|png`.
+- **Cadrage par persona** : `HERO_BG_POSITION` dans `HomeHero.jsx` (pas un seul `center` global).
+
+### Leçon — `background-position` + `cover` (têtes coupées)
+
+Quand l’utilisateur dit **« descendre l’image »** (montrer les têtes, marge au-dessus) :
+
+| Action | Effet |
+|--------|--------|
+| **Y bas** (`top`, `5%`, `10%`) | ✅ Image descend dans le cadre, têtes visibles |
+| **Y haut** (`60%`, `70%`, `100%`) | ❌ Image remonte, coupe le haut des visages |
+
+**Ne pas inverser** : plus le % vertical est grand, plus on ancre vers le bas du fichier → crop du haut.
+
+Autres causes de têtes coupées :
+
+- `cover` sur un bandeau **très panoramique** (ratio ~3:1) avec photos ~2:1.
+- Fond étiré sur **toute la hauteur du frame** (carte glass haute) → zoom excessif : limiter `.hero-home-bg` à `height: var(--hero-visual-h)`.
+- `inset` négatif **en haut** (`-12% 0 …`) → tire l’image vers le haut : préférer `inset: -8% 0 -4%` si besoin de marge.
+
+Ajustement : modifier `HERO_BG_POSITION[id]` par image, puis `--hero-visual-h` si besoin (`clamp(480px, 56vw, 620px)` desktop).
+
+### Titre dynamique au hover
+
+- `DEFAULT_HEADLINE = null` → « Développez vos compétences avec CFAO Academy ».
+- B2B : idem, pas de segment souligné.
+- Autres : `headline: { before: 'en', highlight: '…' }` — mot en **italique rouge** (plus de soulignement SVG).
+- Mise en page : `hero-home-title-tail` en `nowrap` = **mot italique + « avec CFAO Academy »** sur la même ligne ; « Développez vos compétences en » au-dessus.
+- Taille titre **identique** défaut / hover : `clamp(30px, 6.2cqw, 38px)` ; carte `container-type: inline-size`.
+
+### Parallax scroll hero → Actualités
+
+- Hook `useHeroBgParallax(frameRef, bgRef)` : `translateY` sur `.hero-home-bg` selon `progress = -rect.top / height`.
+- **Ne pas** : fade opacity du fond (laisse voir le fond semi-blanc d’Actualités) ; `margin-top` négatif sur `.hero--home + section.tight` (collision / bande grise).
+- **Oui** : hero `z-index: 3`, section suivante `z-index: 2` ; pas de chevauchement négatif.
+
+### Jonction hero / Actualités
+
+- Pas de `margin-top` négatif sur `#actualites` — padding-top interne seulement (`~32px`).
+
+## Fiches formation — catalogue vs session
+
+- **Cartes offres** (`CatalogTrainingCard`, sections Organisation SAV accueil) → lien **`/formations/fiche/:code`** (page détail avec PNG dans `.formation-fiche-figure`), **jamais** le PNG brut en `href`.
+- **Sans `?date=`** → mode **catalogue** (`getCatalogFicheByCode`) : métadonnées catalogue + formateur référent métier.
+- **Avec `?date=`** → mode **session** (`getSessionByCode`) : date, lieu, formateur planifié (peut différer du référent catalogue, surtout Equipment).
+
+## Formateurs — règle métier (ne pas inverser)
+
+Source équipe : `data/academy/equipe-poles.json`. Résolution catalogue : `utils/catalogFormateur.js`.
+
+| Offre / périmètre | Formateur carte & fiche catalogue |
+|-------------------|-----------------------------------|
+| **Process SAV & Parts Motors** (toutes marques VL) | **Gérold SADIO** — stable, peu variable |
+| **Process SAV & Parts Equipment** | Formateur **pôle Équipement** selon marque ; formations multi-marques → pas de formateur unique |
+| **Technique Motors** (par marque) | Référent Cameroun en tête ; si **2** formateurs → les deux noms ; si **3+** → avatars empilés + principal + `et +X` (données `equipe-poles.json`) |
+| **Technique Equipment** (engins, camions, bus, chariots) | Référent marque pôle Équipement : Thierry KOUGHA (JCB, Lovol, Toyota Material), Lucien GAGNE (RT, Hino, Fuso), Idris NKOA (BT, King Long, Sinotruk, Shacman) |
+| **Carrosserie** | **Thierry TAMO YOUDOM** |
+| **Yamaha** (moto & bateaux) | **Gauthier OUEDRAOGO** |
+
+Alias noms affichage → catalogue : `Mercedes-Benz` → `MERCEDES`, `Omoda & Jaecoo` → `OMODA & JAECCO`, `Yamaha` → pôle `yamaha` (formateur visible même si catalogue « bientôt »).
+
+**Ne pas** déduire le formateur des cartes offres via `nextSessionForCode()` / `SESSIONS` — le planning ne sert qu’en session datée (`?date=`).
+
+## Organisation SAV — badges marque sur les cartes
+
+- Clé catalogue `training-catalog.json` : `TOYOTA`, `SUZUKI`, `TOUTES_MARQUES_VL`, `TOUTES_MARQUES`, `TOUTES_MARQUES_EQUIPMENT` → conservée en `catalogBrand` via `flattenProcessBrands()`.
+- Affichage carte : `resolveProcessSavCardBadge()` → logo marque (`PvCard` `logo`) ou libellé **« Toutes marques »** (`brandLabel`) si transverse ; **carrosserie** → libellé **« Carrosserie »** (`resolveCardBrandBadge`).
+- Equipment accueil : toutes les formations sont `TOUTES_MARQUES_EQUIPMENT` → badge « Toutes marques ».
+
+## Section Motors VL — fond au survol carte marque
+
+- Images : `assets/hover_section_motors/` (servies via `/assets/hover_section_motors/…`).
+- Mapping : `data/motorsSectionHoverBg.js` (`Toyota` → `01_hover_toyota_bg.png`, etc.).
+- Au survol d’une `BrandCard` dans `#offres`, calque `HomeBackdrop` `home-backdrop-layer--brand-hover` par-dessus le fond section Motors (crossfade ~0,55s).

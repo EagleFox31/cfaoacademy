@@ -1,0 +1,85 @@
+---
+description: CFAO Academy — UI, styles, patterns React à réutiliser
+globs: frontend/**/*.{jsx,js,css}
+alwaysApply: false
+---
+
+# CFAO Academy — style & UI
+
+## Règle impérative — cartes & sections
+
+**Toute nouvelle UI** (accueil, portail, login, app 15, etc.) doit réutiliser le **formalisme accueil** :
+
+| Élément | Composant / classes | Fichier CSS |
+|---------|---------------------|-------------|
+| **Carte** | `PvCard` (`components/PvCard.jsx`) ou structure `.pv-card` + `.pv-card-body` | `academy.css` |
+| **Grille** | `.pv-grid` + `.cols-N` + `.pv-grid--stretch` | `academy.css` |
+| **Section** | `PreviewSection` (`.pv-head`, `.pv-tabs`, `.pv-tab`, `Reveal`) | `index.css` + `academy.css` |
+| **Panneau détail** | `.academy-detail` (texte long, preview MOA…) | `academy.css` |
+
+**Interdit** sans justification explicite : cartes ad hoc (`.portal-*-card`, bordures custom, KPI boxes maison). Les variantes passent par `className`, `accentColor`, `variant`, `corner`, `cardMedia` sur `PvCard`.
+
+**Portail** : même principe — voir `PlanEntryCard`, `LearnerNextActions`, `PortalSessionCard` (tous basés sur `PvCard` + `portalPvCardMedia`).
+
+## Langue & ton
+
+- UI et contenus en **français**. Titres sections : `sectionTitle(before, em, after)` ou `<>Titre <em>accent</em>.</>` dans `PreviewSection`.
+
+## Design system (CSS)
+
+**Variables** (`index.css`) : `--ink`, `--navy`, `--red`, `--paper`, `--muted`, `--rule`.
+
+**Sections page** :
+```css
+section { background: rgba(255,255,255,0.78); }  /* impairs */
+section:nth-of-type(even) { background: rgba(26,31,60,0.72); } /* texte blanc */
+```
+Photo fixe sur `body` (Douala). **Ne pas** forcer `#sessions` opaque sans demande.
+
+**Typo** : titres `Space Grotesk`, labels/kickers `JetBrains Mono` (uppercase, letter-spacing).
+
+**Cartes** (`academy.css` `.pv-card`) :
+- Fond blanc, `border-left: 4px solid var(--pv-accent)` (prop `accentColor` sur `PvCard`).
+- Variante fiche : `variant="doc"` + `img` = URL fiche PNG (`object-position: top`).
+- Stat / KPI : `className="pv-card--stat"` + `kicker` + `title` (valeur) + `meta`.
+- Coin ↗ : prop `corner`. CTA : `cta` + `pv-cta-link` + `.arrow`.
+- Images portail : `portalPvCardMedia()` dans `utils/portalCardMedia.js`.
+
+**Carrousel** : `CardCarousel` — gap 20px ; si >4 enfants → `card-carousel--peek` + dégradés latéraux.
+
+**Hero accueil** : `.hero--home` fond transparent ; bloc texte `.hero-home-glass` (blur blanc).
+
+**Panneaux Academy** : `.academy-detail` (blanc, border-radius 16px, `fadeUp`).
+
+## Patterns React
+
+**Nouvelle section** (accueil ou portail) :
+```jsx
+<PreviewSection id="..." ix="01" title={sectionTitle(...)} headClass="pv-head--compact-line" tabs={...}>
+  <div className="pv-grid cols-3 pv-grid--stretch">
+    <PvCard kicker="..." title="..." meta="..." img="..." accentColor="var(--red)" corner />
+  </div>
+</PreviewSection>
+```
+
+**Onglets + contenu filtré** : `tabs`, `activeTab`, `onTabChange` sur `PreviewSection` ; children `(active) => ...`.
+
+**Contenu éditable dans une carte** : structure `.pv-card` manuelle (cf. `DeliveryStoryCard`) — **pas** de div `.portal-foo-card` ; conserver kicker / h3 / meta / pv-card-cta.
+
+## Fichiers styles par zone
+
+| Zone | Fichier |
+|------|---------|
+| Nav, hero, sections zebra, carrousel, login drawer | `styles/index.css` |
+| Cartes, articles, fiches, Academy, sessions mois | `styles/academy.css` |
+| Extensions portail (champs, modales, sticky bar) | `styles/portal.css` — **pas** de nouvelles cartes ici |
+
+Étendre les règles existantes ; CSS spécifique = layout / champs / états, pas remplacement des cartes.
+
+## Checklist avant PR / fin de tâche
+
+- `npm run build` dans `frontend/`
+- Nouvelles cartes = `PvCard` ou `.pv-card` (accueil)
+- Nouvelles sections listées = `PreviewSection` + `pv-grid`
+- Pas de `<section>` imbriquée pour du grouping UI
+- Chemins `/catalogues/` testés en dev
