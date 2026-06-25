@@ -99,7 +99,8 @@ La CI GitHub Actions exécute ces vérifications sur chaque PR (voir [.github/wo
 | `develop` | Intégration continue |
 | `feature/*` | Travail quotidien (story `NN-x` dans les commits) |
 
-Versionnement **SemVer** (`vMAJOR.MINOR.PATCH`). Les notes de version sont dans [CHANGELOG.md](./CHANGELOG.md).
+Versionnement **SemVer** (`vMAJOR.MINOR.PATCH`). Les notes de version sont dans [CHANGELOG.md](./CHANGELOG.md).  
+**Publication** : tag `v*` → CI + GitHub Release automatique — voir [docs/RELEASE.md](./docs/RELEASE.md).
 
 ## Contribution
 

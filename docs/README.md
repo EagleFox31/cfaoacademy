@@ -38,6 +38,7 @@ Point d'entrée pour la documentation du dépôt. Les fichiers listés ci-dessou
 |----------|---------|
 | [SECURITY.md](../SECURITY.md) | Divulgation vulnérabilités |
 | [CHANGELOG.md](../CHANGELOG.md) | Historique des versions |
+| **[RELEASE.md](./RELEASE.md)** | **Publication SemVer + GitHub Release automatique** |
 | [LICENSE](../LICENSE) | Licence propriétaire interne |
 | [.github/CODEOWNERS](../.github/CODEOWNERS) | Ownership par zone (à configurer) |
 

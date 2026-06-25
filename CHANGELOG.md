@@ -18,5 +18,5 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 - Policies Cerbos avec tests négatifs ; CI (Cerbos, pytest, build Node, Gitleaks).
 - Documentation architecture, apps plateforme, rôles, design system, guide de contribution MOA.
 
-[Unreleased]: https://github.com/cfao-academy/cfaoacademy/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/cfao-academy/cfaoacademy/releases/tag/v0.1.0
+[Unreleased]: https://github.com/EagleFox31/cfaoacademy/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/EagleFox31/cfaoacademy/releases/tag/v0.1.0
