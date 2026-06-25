@@ -1,0 +1,19 @@
+# Secrets volontairement présents (dev / démo locale) — ne pas alerter en CI.
+title = "cfaoacademy gitleaks allowlist"
+
+[allowlist]
+description = "Mots de passe démo Keycloak, clé MEDACAP mock, exemples walkthrough"
+paths = [
+  '''(?i)keycloak/config/''',
+  '''(?i)frontend/\.env\.example$''',
+  '''(?i)frontend/src/utils/medacapConfig\.js$''',
+  '''(?i)\.env\.example$''',
+  '''(?i)walkthrough/''',
+  '''(?i)Makefile$''',
+  '''(?i)BACKEND\.md$''',
+  '''(?i)docs/ONBOARDING\.md$''',
+]
+
+[allowlist.regexes]
+demo_password = '''password[=:].*demo'''
+medacap_demo_key = '''demo-cfao-portal'''
