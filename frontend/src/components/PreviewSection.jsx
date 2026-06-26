@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { resolveSectionBackdrop } from '../data/homeSectionBg.js'
+import { normalizeSectionVeil } from '../data/sectionBackdropVeils.js'
 
 export default function PreviewSection({
   id, ix, title, voir, tabs, filters,
   bgWord, bgWordSide = 'right',
   sectionBg,
-  sectionBgPosition = 'center',
+  sectionBgPosition,
+  sectionVeil,
   activeTab: controlledActive,
   onTabChange,
   headClass,
@@ -13,23 +16,31 @@ export default function PreviewSection({
 }) {
   const [internalActive, setInternalActive] = useState(tabs?.length ? tabs[0].id : null)
   const active = controlledActive !== undefined ? controlledActive : internalActive
-  const setActive = (id) => {
-    if (onTabChange) onTabChange(id)
-    else setInternalActive(id)
+  const setActive = (tabId) => {
+    if (onTabChange) onTabChange(tabId)
+    else setInternalActive(tabId)
   }
+
+  const autoBackdrop = resolveSectionBackdrop(id)
+  const bgImage = sectionBg ?? autoBackdrop?.image ?? null
+  const bgPosition = sectionBg
+    ? (sectionBgPosition ?? 'center')
+    : (sectionBgPosition ?? autoBackdrop?.position ?? 'center')
+  const veilKey = normalizeSectionVeil(sectionVeil ?? autoBackdrop?.veil)
 
   return (
     <section
       id={id}
-      className={`tight section-anchor${bgWord ? ' has-deco' : ''}${sectionBg ? ' has-section-bg' : ''}`}
+      className={`tight section-anchor${bgWord ? ' has-deco' : ''}${bgImage ? ' has-section-bg' : ''}`}
+      data-section-veil={bgImage ? veilKey : undefined}
     >
-      {sectionBg && (
+      {bgImage && (
         <div
           className="section-bg"
           aria-hidden="true"
           style={{
-            backgroundImage: `url(${sectionBg})`,
-            backgroundPosition: sectionBgPosition,
+            backgroundImage: `url(${bgImage})`,
+            backgroundPosition: bgPosition,
           }}
         />
       )}

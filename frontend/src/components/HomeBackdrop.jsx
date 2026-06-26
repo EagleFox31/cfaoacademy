@@ -1,91 +1,40 @@
-import { useEffect, useRef, useState } from 'react'
-import { HERO_BACKDROP_VISUALS } from '../data/heroImages.js'
+import { createPortal } from 'react-dom'
 import { HOME_BACKDROP_SECTIONS } from '../data/homeSectionBg.js'
+import { sectionVeilBackdropClass } from '../data/sectionBackdropVeils.js'
+import BackdropLayer from './BackdropLayer.jsx'
 
-/** Crossfade marque Motors — calque conservé le temps de l’animation sortie. */
-function SectionBrandHoverLayer({ image, show, position = 'center' }) {
-  const [renderedUrl, setRenderedUrl] = useState(null)
-  const [fadedIn, setFadedIn] = useState(false)
-  const rafRef = useRef(0)
+/**
+ * Netflix accueil : fond fixe plein écran par section, crossfade au scroll.
+ * Opacités : CSS vars --backdrop-op-{id} posées par useHomeSectionFocus.
+ */
+export default function HomeBackdrop({
+  activeId,
+  heroPhase,
+  sectionHoverImages = {},
+}) {
+  const activeSection = HOME_BACKDROP_SECTIONS.find((s) => s.id === activeId)
+  const veilClass = heroPhase ? '' : sectionVeilBackdropClass(activeSection?.veil)
 
-  useEffect(() => {
-    if (!show || !image) {
-      setFadedIn(false)
-      return undefined
-    }
-
-    setRenderedUrl(image)
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = requestAnimationFrame(() => setFadedIn(true))
-    })
-
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    }
-  }, [show, image])
-
-  const handleTransitionEnd = (e) => {
-    if (e.propertyName !== 'opacity' || fadedIn) return
-    setRenderedUrl(null)
-  }
-
-  if (!renderedUrl) return null
-
-  return (
-    <div
-      className={`home-backdrop-layer home-backdrop-layer--section home-backdrop-layer--brand-hover${fadedIn ? ' is-active' : ''}`}
-      style={{
-        backgroundImage: `url(${renderedUrl})`,
-        backgroundPosition: position,
-      }}
-      onTransitionEnd={handleTransitionEnd}
-    />
-  )
-}
-
-export default function HomeBackdrop({ activeId, heroPhase, sectionHoverImages = {} }) {
-  return (
+  const backdrop = (
     <div
       className={`home-backdrop${heroPhase ? ' is-hero-phase' : ''}`}
       aria-hidden="true"
     >
-      {HERO_BACKDROP_VISUALS.map(({ id, image, position }) => (
-        <div
-          key={`hero-${id}`}
-          className="home-backdrop-layer home-backdrop-layer--hero"
-          style={{
-            backgroundImage: `url(${image})`,
-            backgroundPosition: position,
-          }}
-        />
-      ))}
       {HOME_BACKDROP_SECTIONS.map(({ id, image, position = 'center' }) => {
-        const isSectionActive = !heroPhase && activeId === id
+        const hoverImage = id === 'offres' ? sectionHoverImages.offres : null
         return (
-          <div key={id} className="home-backdrop-section-stack">
-            <div
-              className={`home-backdrop-layer home-backdrop-layer--section${isSectionActive ? ' is-active' : ''}`}
-              style={{
-                backgroundImage: `url(${image})`,
-                backgroundPosition: position,
-              }}
-            />
-            {id === 'offres' && (
-              <SectionBrandHoverLayer
-                image={sectionHoverImages.offres}
-                show={Boolean(sectionHoverImages.offres && !heroPhase)}
-                position={position}
-              />
-            )}
-          </div>
+          <BackdropLayer
+            key={id}
+            id={id}
+            image={hoverImage ?? image}
+            position={position}
+          />
         )
       })}
-      <div
-        className={[
-          'home-backdrop-veil',
-          !heroPhase && activeId === 'formations-carrosserie' ? 'home-backdrop-veil--light' : '',
-        ].filter(Boolean).join(' ')}
-      />
+      <div className={['home-backdrop-veil', veilClass].filter(Boolean).join(' ')} />
     </div>
   )
+
+  if (typeof document === 'undefined') return backdrop
+  return createPortal(backdrop, document.body)
 }

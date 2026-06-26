@@ -24,22 +24,55 @@ export const HOME_SECTION_BG_POSITION = {
   cta: 'center',
 }
 
+/** Voile mixte par section (light = fond clair, dark = fond navy, light-soft = photo très visible). */
+export const HOME_SECTION_VEIL = {
+  actualites: 'light',
+  publics: 'dark',
+  offres: 'light',
+  'formations-equipment': 'dark',
+  'formations-carrosserie': 'light-soft',
+  'formations-sav-motors': 'dark',
+  'formations-sav-equipment': 'light',
+  sessions: 'dark',
+  expertise: 'light',
+  temoignages: 'dark',
+  'cta-contact': 'light',
+}
+
 /** Ordre scroll + fond fixe Netflix (crossfade). */
 const HOME_BACKDROP_ITEMS = [
-  { id: 'actualites', image: HOME_SECTION_BG.actualites },
-  { id: 'publics', image: HOME_SECTION_BG.publics },
-  { id: 'offres', image: HOME_SECTION_BG.motors },
-  { id: 'formations-equipment', image: HOME_SECTION_BG.equipment },
-  { id: 'formations-carrosserie', image: HOME_SECTION_BG.carrosserie },
-  { id: 'formations-sav-motors', image: HOME_SECTION_BG.savMotors, position: HOME_SECTION_BG_POSITION.savMotors },
-  { id: 'formations-sav-equipment', image: HOME_SECTION_BG.savEquipment },
-  { id: 'sessions', image: HOME_SECTION_BG.sessions },
-  { id: 'expertise', image: HOME_SECTION_BG.academy },
-  { id: 'temoignages', image: HOME_SECTION_BG.testimonials },
-  { id: 'cta-contact', image: HOME_SECTION_BG.cta, position: HOME_SECTION_BG_POSITION.cta },
+  { id: 'actualites', image: HOME_SECTION_BG.actualites, veil: HOME_SECTION_VEIL.actualites },
+  { id: 'publics', image: HOME_SECTION_BG.publics, veil: HOME_SECTION_VEIL.publics },
+  { id: 'offres', image: HOME_SECTION_BG.motors, veil: HOME_SECTION_VEIL.offres },
+  { id: 'formations-equipment', image: HOME_SECTION_BG.equipment, veil: HOME_SECTION_VEIL['formations-equipment'] },
+  { id: 'formations-carrosserie', image: HOME_SECTION_BG.carrosserie, veil: HOME_SECTION_VEIL['formations-carrosserie'] },
+  { id: 'formations-sav-motors', image: HOME_SECTION_BG.savMotors, position: HOME_SECTION_BG_POSITION.savMotors, veil: HOME_SECTION_VEIL['formations-sav-motors'] },
+  { id: 'formations-sav-equipment', image: HOME_SECTION_BG.savEquipment, veil: HOME_SECTION_VEIL['formations-sav-equipment'] },
+  { id: 'sessions', image: HOME_SECTION_BG.sessions, veil: HOME_SECTION_VEIL.sessions },
+  { id: 'expertise', image: HOME_SECTION_BG.academy, veil: HOME_SECTION_VEIL.expertise },
+  { id: 'temoignages', image: HOME_SECTION_BG.testimonials, veil: HOME_SECTION_VEIL.temoignages },
+  { id: 'cta-contact', image: HOME_SECTION_BG.cta, position: HOME_SECTION_BG_POSITION.cta, veil: HOME_SECTION_VEIL['cta-contact'] },
 ]
 export const HOME_BACKDROP_SECTIONS = HOME_SESSIONS_SECTION_VISIBLE
   ? HOME_BACKDROP_ITEMS
   : HOME_BACKDROP_ITEMS.filter((s) => s.id !== 'sessions')
 
 export const HOME_BACKDROP_SECTION_IDS = HOME_BACKDROP_SECTIONS.map((s) => s.id)
+
+/** Index id → { image, position, veil } — source unique pour le fond Netflix d'une section. */
+const HOME_BACKDROP_BY_ID = Object.fromEntries(
+  HOME_BACKDROP_SECTIONS.map((s) => [
+    s.id,
+    { image: s.image, position: s.position ?? 'center', veil: s.veil ?? 'light' },
+  ]),
+)
+
+/**
+ * Résout automatiquement le fond d'une section à partir de son `id`.
+ * Évite les appels inline `sectionBg={...}` dispersés dans les pages.
+ * @param {string} id
+ * @returns {{ image: string, position: string, veil: string } | null}
+ */
+export function resolveSectionBackdrop(id) {
+  return HOME_BACKDROP_BY_ID[id] ?? null
+}

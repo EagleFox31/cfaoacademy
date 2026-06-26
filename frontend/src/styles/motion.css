@@ -3,9 +3,11 @@
    ═══════════════════════════════════════════════════ */
 
 /* ── Morph de route : crossfade + léger scale ─────── */
+/* Pas de `will-change: transform/filter` ici : il rendrait `.route-motion`
+   containing block des éléments `position: fixed` enfants (ex. .home-backdrop),
+   qui seraient alors dimensionnés sur la page entière au lieu de l'écran. */
 .route-motion {
   animation: routeIn 0.30s cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: opacity, transform, filter;
 }
 @keyframes routeIn {
   from { opacity: 0; transform: translateY(8px) scale(0.994); filter: blur(3px); }

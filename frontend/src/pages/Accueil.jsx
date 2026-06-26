@@ -35,7 +35,7 @@ import {
   mergeSessionsReturn,
   scheduleSessionsScroll,
 } from '../utils/sessionsReturn.js'
-import { HOME_SECTION_BG, HOME_SECTION_BG_POSITION, HOME_BACKDROP_SECTION_IDS } from '../data/homeSectionBg.js'
+import { HOME_BACKDROP_SECTION_IDS } from '../data/homeSectionBg.js'
 import { getMotorsSectionHoverBg } from '../data/motorsSectionHoverBg.js'
 import CATALOG from '../data/training-catalog.json'
 import {
@@ -238,9 +238,6 @@ export default function Accueil() {
   const { activeId: activeSectionId, heroVisible } = useHomeSectionFocus(HOME_BACKDROP_SECTION_IDS)
   const homePageRef = useRef(null)
   useHomeNewsBgReveal(homePageRef, heroVisible)
-  const backdropSectionId = heroVisible
-    ? null
-    : (activeSectionId ?? HOME_BACKDROP_SECTION_IDS[0])
 
   const [motorsHoverBg, setMotorsHoverBg] = useState(null)
   const handleMotorsBrandHover = useCallback((brand) => {
@@ -264,7 +261,7 @@ export default function Accueil() {
       <div className="cursor-glow" id="cursor-glow" />
       <div ref={homePageRef} className={`home-page${heroVisible ? ' is-hero-phase' : ''}`}>
       <HomeBackdrop
-        activeId={backdropSectionId}
+        activeId={activeSectionId}
         heroPhase={heroVisible}
         sectionHoverImages={sectionHoverImages}
       />
@@ -281,9 +278,7 @@ export default function Accueil() {
         onTabChange={setNewsTab}
         tabs={newsTabs}
         bgWord="news"
-        bgWordSide="left"
-        sectionBg={HOME_SECTION_BG.actualites}
-        voir={newsVoir}
+        bgWordSide="left"        voir={newsVoir}
       >
         {(active) => {
           const items = active === 'all' ? ARTICLES : ARTICLES.filter((a) => a.category === active)
@@ -313,9 +308,7 @@ export default function Accueil() {
         id="publics"
         ix={homeT.publicsIx}
         title={sectionTitle(homeT.publicsTitleBefore, homeT.publicsTitleEm, homeT.publicsTitleAfter)}
-        headClass="pv-head--compact-line"
-        sectionBg={HOME_SECTION_BG.publics}
-      >
+        headClass="pv-head--compact-line"      >
         <PvCardGrid>
           {PUBLICS.map((p, i) => (
             <PublicCard key={p.name + i} public={p} />
@@ -330,9 +323,7 @@ export default function Accueil() {
         title={sectionTitle(homeT.motorsTitleBefore, homeT.motorsTitleEm, homeT.motorsTitleAfter)}
         headClass="pv-head--compact-line"
         bgWord="motors"
-        bgWordSide="right"
-        sectionBg={HOME_SECTION_BG.motors}
-      >
+        bgWordSide="right"      >
         <BrandOfferGrid
           brands={MOTORS_BRANDS}
           onBrandHover={handleMotorsBrandHover}
@@ -347,9 +338,7 @@ export default function Accueil() {
         title={sectionTitle(homeT.equipmentTitleBefore, homeT.equipmentTitleEm, homeT.equipmentTitleAfter)}
         headClass="pv-head--compact-line"
         bgWord="equipment"
-        bgWordSide="left"
-        sectionBg={HOME_SECTION_BG.equipment}
-      >
+        bgWordSide="left"      >
         <BrandOfferGrid brands={EQUIPMENT_BRANDS} showAll />
       </PreviewSection>
 
@@ -360,9 +349,7 @@ export default function Accueil() {
         title={sectionTitle(homeT.carrosserieTitleBefore, homeT.carrosserieTitleEm, homeT.carrosserieTitleAfter)}
         headClass="pv-head--compact-line"
         bgWord="carrosserie"
-        bgWordSide="left"
-        sectionBg={HOME_SECTION_BG.carrosserie}
-        tabs={carrosserieTabsLocalized}
+        bgWordSide="left"        tabs={carrosserieTabsLocalized}
       >
         {(active) => {
           const group = CATALOG.CARROSSERIE.find((g) => g.level === active)
@@ -383,10 +370,7 @@ export default function Accueil() {
         title={sectionTitle(homeT.savMotorsTitleBefore, homeT.savMotorsTitleEm, homeT.savMotorsTitleAfter)}
         headClass="pv-head--compact-line"
         bgWord="sav"
-        bgWordSide="right"
-        sectionBg={HOME_SECTION_BG.savMotors}
-        sectionBgPosition={HOME_SECTION_BG_POSITION.savMotors}
-        tabs={motorsSavTabsLocalized}
+        bgWordSide="right"        tabs={motorsSavTabsLocalized}
         voir={{
           href: getOfferCataloguePdf('savMotors', locale),
           label: cardsT.openCatalogue,
@@ -408,9 +392,7 @@ export default function Accueil() {
         title={sectionTitle(homeT.savEquipmentTitleBefore, homeT.savEquipmentTitleEm, homeT.savEquipmentTitleAfter)}
         headClass="pv-head--compact-line"
         bgWord="sav"
-        bgWordSide="right"
-        sectionBg={HOME_SECTION_BG.savEquipment}
-        tabs={equipmentSavTabsLocalized}
+        bgWordSide="right"        tabs={equipmentSavTabsLocalized}
         voir={{
           href: getOfferCataloguePdf('savEquipment', locale),
           label: cardsT.openCatalogue,
@@ -438,9 +420,7 @@ export default function Accueil() {
         onTabChange={handleSessionTabChange}
         tabs={sessionTabs}
         bgWord="2026"
-        bgWordSide="right"
-        sectionBg={HOME_SECTION_BG.sessions}
-        voir={sessionsVoir(sessionTab)}
+        bgWordSide="right"        voir={sessionsVoir(sessionTab)}
       >
         {(active) => {
           const filtered = sessionsForTab(active)
@@ -494,17 +474,11 @@ export default function Accueil() {
         title={sectionTitle(homeT.testimonialsTitleBefore, homeT.testimonialsTitleEm, homeT.testimonialsTitleAfter)}
         headClass="pv-head--compact-line"
         bgWord="terrain"
-        bgWordSide="left"
-        sectionBg={HOME_SECTION_BG.testimonials}
-      >
+        bgWordSide="left"      >
         <TestimonialShowcase items={TESTIMONIALS} />
       </PreviewSection>
 
-      <CtaBanner
-        id="cta-contact"
-        sectionBg={HOME_SECTION_BG.cta}
-        sectionBgPosition={HOME_SECTION_BG_POSITION.cta}
-      />
+      <CtaBanner id="cta-contact" />
       <LogoMarquee />
       <Footer />
       <BackToTopFab />

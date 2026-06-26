@@ -747,45 +747,40 @@ section.has-section-bg.has-deco > .bg-word {
   z-index: 2;
 }
 
-/* ── Accueil · fond Netflix (crossfade section active) ── */
+/* ── Accueil · focus section (scroll-snap + voile actif) ── */
 html.home-scroll-snap {
   scroll-snap-type: y proximity;
 }
 html.home-scroll-snap body {
   background-color: var(--ink);
 }
+/* Backdrop Netflix porté sur body — le contenu app doit rester au-dessus */
+html.home-scroll-snap #root {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+}
 
 .home-page {
   position: relative;
-  z-index: 1;
 }
 
+/* Netflix : fond fixe plein écran (cover), sous #root — crossfade au scroll */
 .home-backdrop {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
 }
+.home-backdrop.is-hero-phase {
+  visibility: hidden;
+}
 .home-backdrop-layer {
   position: absolute;
   inset: 0;
   background-size: cover;
   background-repeat: no-repeat;
-  opacity: 0;
-  transform: scale(1.04);
-  transition: opacity 0.85s ease, transform 1.1s ease;
-}
-.home-backdrop-layer.is-active {
-  opacity: 1;
-  transform: scale(1);
-}
-.home-backdrop-section-stack {
-  position: absolute;
-  inset: 0;
-}
-.home-backdrop-layer--brand-hover {
-  z-index: 1;
-  transition: opacity 0.85s ease, transform 1.1s ease;
+  transition: none;
 }
 .home-backdrop-veil {
   position: absolute;
@@ -795,12 +790,12 @@ html.home-scroll-snap body {
       to bottom,
       transparent 0%,
       transparent var(--nav-h),
-      rgba(14, 17, 38, 0.22) calc(var(--nav-h) + 64px),
-      transparent 32%,
-      transparent 62%,
-      rgba(14, 17, 38, 0.82) 100%
+      rgba(14, 17, 38, 0.12) calc(var(--nav-h) + 64px),
+      transparent 28%,
+      transparent 68%,
+      rgba(14, 17, 38, 0.55) 100%
     );
-  transition: background 0.65s ease;
+  transition: background 0.5s ease;
 }
 .home-backdrop-veil--light {
   background:
@@ -808,13 +803,26 @@ html.home-scroll-snap body {
       to bottom,
       transparent 0%,
       transparent var(--nav-h),
-      rgba(255, 255, 255, 0.08) calc(var(--nav-h) + 64px),
+      rgba(255, 255, 255, 0.04) calc(var(--nav-h) + 64px),
       transparent 28%,
       transparent 68%,
-      rgba(255, 255, 255, 0.22) 100%
+      rgba(255, 255, 255, 0.14) 100%
     );
 }
-/* Hero : image dans le cadre (sous la nav), fond ivoire entre les transitions */
+.home-backdrop-veil--dark {
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent var(--nav-h),
+      rgba(14, 17, 38, 0.14) calc(var(--nav-h) + 64px),
+      transparent 28%,
+      transparent 68%,
+      rgba(14, 17, 38, 0.62) 100%
+    );
+}
+
+/* Hero : fond ivoire dans le cadre hero */
 .home-page.is-hero-phase .hero-home-frame {
   background: var(--paper-ivory);
 }
@@ -830,9 +838,24 @@ html.home-scroll-snap body {
   min-height: auto;
   display: block;
 }
+/* ── Accueil · voiles mixtes (data-section-veil) ── */
+.home-page section.has-section-bg[data-section-veil="light"] {
+  --section-veil-active: rgba(255, 255, 255, 0.36);
+  --section-veil-idle: rgba(255, 255, 255, 0.54);
+}
+.home-page section.has-section-bg[data-section-veil="dark"] {
+  --section-veil-active: rgba(26, 31, 60, 0.38);
+  --section-veil-idle: rgba(26, 31, 60, 0.54);
+}
+.home-page section.has-section-bg[data-section-veil="light-soft"] {
+  --section-veil-active: rgba(255, 255, 255, 0.28);
+  --section-veil-idle: rgba(255, 255, 255, 0.46);
+}
+
 .home-page section.has-section-bg > .container {
   width: 100%;
 }
+/* Photo locale masquée : Netflix fixe (sauf jonction hero → Actualités) */
 .home-page section.has-section-bg > .section-bg {
   display: none;
 }
@@ -841,20 +864,47 @@ html.home-scroll-snap body {
   bottom: 0;
   -webkit-mask-image: none;
   mask-image: none;
-  transition: background 0.65s ease, opacity 0.65s ease;
+  transition: background 0.45s ease, opacity 0.45s ease;
 }
 .home-page section.has-section-bg:not(.is-section-active)::after {
-  opacity: 0.82;
+  background: transparent;
+  opacity: 0;
 }
-.home-page section.has-section-bg.is-section-active:nth-of-type(odd)::after {
-  background: rgba(255, 255, 255, 0.52);
+.home-page section.has-section-bg.is-section-active::after {
+  background: var(--section-veil-active, rgba(255, 255, 255, 0.36));
   opacity: 1;
 }
-.home-page section.has-section-bg.is-section-active:nth-of-type(even)::after {
-  background: rgba(26, 31, 60, 0.44);
-  opacity: 1;
+/* Typo selon voile (indépendant du nth-of-type) */
+.home-page section.has-section-bg[data-section-veil="dark"] .pv-head h2,
+.home-page section.has-section-bg[data-section-veil="dark"] .pv-voir {
+  color: #fff;
 }
-/* Phase hero : voiles transparents → le backdrop remplit le viewport */
+.home-page section.has-section-bg[data-section-veil="dark"] .pv-head h2 em {
+  color: var(--red);
+}
+.home-page section.has-section-bg[data-section-veil="dark"] .pv-ix {
+  color: rgba(255, 255, 255, 0.55);
+}
+.home-page section.has-section-bg[data-section-veil="dark"] .pv-ix::before {
+  background: rgba(255, 255, 255, 0.55);
+}
+.home-page section.has-section-bg[data-section-veil="light-soft"] .pv-head h2,
+.home-page section.has-section-bg[data-section-veil="light-soft"] .pv-voir {
+  color: #fff;
+}
+.home-page section.has-section-bg[data-section-veil="light-soft"] .pv-head h2 em {
+  color: var(--red);
+}
+.home-page section.has-section-bg[data-section-veil="light-soft"] .pv-ix {
+  color: #fff;
+}
+.home-page section.has-section-bg[data-section-veil="light-soft"] .pv-ix::before {
+  background: #fff;
+}
+.home-page section.has-section-bg[data-section-veil="light-soft"] .bg-word {
+  -webkit-text-stroke-color: rgba(255, 255, 255, 0.08);
+}
+/* Phase hero : voiles transparents — aperçu Actualités via .section-bg local */
 .home-page.is-hero-phase section.has-section-bg::after {
   background: transparent;
   opacity: 0;
@@ -865,6 +915,7 @@ html.home-scroll-snap body {
 /* ── Jonction hero → Actualités : photo news floutée → nette au scroll ── */
 .home-page.is-hero-phase #actualites.has-section-bg > .section-bg {
   display: block;
+  opacity: 1;
   filter: blur(var(--news-bg-blur, 22px));
   transform: scale(calc(1.04 + (1 - var(--news-bg-reveal, 0)) * 0.04));
   will-change: filter, transform;
@@ -873,49 +924,18 @@ html.home-scroll-snap body {
   background: rgba(255, 255, 255, calc(0.52 + (1 - var(--news-bg-reveal, 0)) * 0.28));
   opacity: 1;
 }
-/* Après le hero : voile + photo backdrop (crossfade HomeBackdrop) */
+/* Après le hero : voile Actualités aligné sur light-soft */
 .home-page:not(.is-hero-phase) #actualites.has-section-bg::after {
-  background: rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.42);
   opacity: 1;
 }
 .home-page:not(.is-hero-phase) #actualites.has-section-bg.is-section-active::after {
-  background: rgba(255, 255, 255, 0.5);
-}
-
-/* Carrosserie (section paire) : voile blanc léger + UI sombre — pas de gris nuit */
-.home-page #formations-carrosserie.has-section-bg::after {
-  background: rgba(255, 255, 255, 0.26);
-  opacity: 1;
-}
-.home-page #formations-carrosserie.has-section-bg:not(.is-section-active)::after {
-  opacity: 0.72;
-}
-.home-page #formations-carrosserie.has-section-bg .pv-head h2 {
-  color: #fff;
-}
-.home-page #formations-carrosserie.has-section-bg .pv-head h2 em {
-  color: var(--red);
-}
-.home-page #formations-carrosserie.has-section-bg .pv-ix {
-  color: #fff;
-}
-.home-page #formations-carrosserie.has-section-bg .pv-ix::before {
-  background: #fff;
-}
-.home-page #formations-carrosserie.has-section-bg .bg-word {
-  -webkit-text-stroke-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.36);
 }
 
 @media (prefers-reduced-motion: reduce) {
   html.home-scroll-snap {
     scroll-snap-type: none;
-  }
-  .home-backdrop-layer {
-    transition: opacity 0.2s ease;
-    transform: none;
-  }
-  .home-backdrop-layer.is-active {
-    transform: none;
   }
   .home-page.is-hero-phase #actualites.has-section-bg > .section-bg {
     filter: none;

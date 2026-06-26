@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import Reveal from './Reveal.jsx'
 import useLocale from '../hooks/useLocale.js'
+import { resolveSectionBackdrop } from '../data/homeSectionBg.js'
+import { normalizeSectionVeil } from '../data/sectionBackdropVeils.js'
 
 /**
  * Bandeau CTA réutilisable — titre + texte + bouton Contact uniquement.
@@ -15,23 +17,32 @@ export default function CtaBanner({
   body,
   contactTo = '/contact',
   sectionBg,
-  sectionBgPosition = 'center',
+  sectionBgPosition,
+  sectionVeil,
   className = '',
 }) {
   const { t } = useLocale('cta')
 
+  const autoBackdrop = resolveSectionBackdrop(id)
+  const bgImage = sectionBg ?? autoBackdrop?.image ?? null
+  const bgPosition = sectionBg
+    ? (sectionBgPosition ?? 'center')
+    : (sectionBgPosition ?? autoBackdrop?.position ?? 'center')
+  const veilKey = normalizeSectionVeil(sectionVeil ?? autoBackdrop?.veil)
+
   return (
     <section
       id={id}
-      className={`tight cta-banner-section${sectionBg ? ' has-section-bg' : ''}${className ? ` ${className}` : ''}`}
+      className={`tight cta-banner-section${bgImage ? ' has-section-bg' : ''}${className ? ` ${className}` : ''}`}
+      data-section-veil={bgImage ? veilKey : undefined}
     >
-      {sectionBg && (
+      {bgImage && (
         <div
           className="section-bg"
           aria-hidden="true"
           style={{
-            backgroundImage: `url(${sectionBg})`,
-            backgroundPosition: sectionBgPosition,
+            backgroundImage: `url(${bgImage})`,
+            backgroundPosition: bgPosition,
           }}
         />
       )}
