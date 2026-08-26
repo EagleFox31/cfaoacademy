@@ -234,7 +234,7 @@ export const PERT_NODES = [
       fr: 'Rappel jeudi, rapport formel vendredi — après socle email I.',
       en: 'Thursday reminder, formal Friday report — after email core I.',
     },
-  },,
+  },
   {
     id: 'N0',
     label: { fr: 'N₀ · Recueil socle', en: 'N₀ · Needs core', pt: 'N₀ · Base recolha' },

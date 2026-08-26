@@ -34,8 +34,10 @@ import {
   WEEKLY_STATUS_DRAFT,
 } from '../../data/mock_delivery'
 
-const NODE_BY_ID = Object.fromEntries(PERT_NODES.map(n => [n.id, n]))
-const EPIC_BY_ID = Object.fromEntries(DELIVERY_EPICS.map(e => [e.id, e]))
+// `.filter(Boolean)` : ces tableaux sont maintenus a la main. Une virgule en trop
+// cree un trou (element undefined) qui faisait planter toute la page au chargement.
+const NODE_BY_ID = Object.fromEntries(PERT_NODES.filter(Boolean).map(n => [n.id, n]))
+const EPIC_BY_ID = Object.fromEntries(DELIVERY_EPICS.filter(Boolean).map(e => [e.id, e]))
 const TEST_KEYS = ['tu', 'ti', 'contract', 'e2e']
 const TEST_CYCLE = { pending: 'done', done: 'na', na: 'pending' }
 
