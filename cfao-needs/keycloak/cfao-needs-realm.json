@@ -1,0 +1,86 @@
+{
+  "realm": "cfao-needs",
+  "enabled": true,
+  "displayName": "CFAO Academy — Recueil des besoins",
+  "loginTheme": "keycloak",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "failureFactor": 5,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 3600,
+  "roles": {
+    "realm": [
+      { "name": "team_manager",    "description": "Chef d'équipe — saisit les besoins de son équipe" },
+      { "name": "workshop_manager","description": "Chef d'atelier — saisit les besoins de son atelier" },
+      { "name": "dps",             "description": "Département pièces / SAV — consolide" },
+      { "name": "dop",             "description": "Directeur des opérations — consolide" },
+      { "name": "branch_director", "description": "Directeur de filiale — relit, en copie des confirmations" },
+      { "name": "branch_admin",    "description": "Admin filiale — saisie déléguée" },
+      { "name": "branch_hr",       "description": "RH filiale — saisie déléguée" },
+      { "name": "center_assistant","description": "Assistante centre — RELIT ET VALIDE les fiches" },
+      { "name": "center_director", "description": "Directeur du centre — valide, ouvre et arbitre" },
+      { "name": "group_admin",     "description": "Admin groupe — vue consolidée" },
+      { "name": "group_director",  "description": "Directeur groupe — vue consolidée" },
+      { "name": "regional_director","description": "Directeur régional — vue consolidée" },
+      { "name": "superadmin",      "description": "Super administrateur" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "needs-web",
+      "name": "SPA Recueil des besoins",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:8080/*"
+      },
+      "redirectUris": ["http://localhost:8080/*"],
+      "webOrigins": ["http://localhost:8080"],
+      "protocolMappers": [
+        {
+          "name": "scopeNode",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "scopeNode",
+            "claim.name": "scopeNode",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true"
+          }
+        },
+        {
+          "name": "brands",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "brands",
+            "claim.name": "brands",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "locale",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "locale",
+            "claim.name": "locale",
+            "jsonType.label": "String",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+# Tests policy needs_line — filtrage du catalogue par marque, via le query plan.
+#
+# Le cas qui compte : une ligne SANS marque (formation transverse au pôle) doit
+# rester visible pour tout saisisseur. La modéliser comme une pseudo-marque
+# « TOUTES MARQUES » la rendrait invisible à qui n'a pas cette marque.
+name: NeedsLineSuite
+description: Un saisisseur voit ses marques plus les lignes transverses
+
+principals:
+  chef_toyota:
+    id: u_toyota
+    roles: ["workshop_manager"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+      brands: ["toyota", "peugeot"]
+  chef_lovol:
+    id: u_lovol
+    roles: ["team_manager"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+      brands: ["lovol"]
+  assistante_academy:
+    id: u_assistante
+    roles: ["center_assistant"]
+    attr:
+      scopeNodes: ["groupe"]
+      brands: []
+
+resources:
+  ligne_toyota:
+    kind: needs_line
+    id: l_toyota
+    attr:
+      brand: "toyota"
+      pole: "MOBILITY"
+  ligne_peugeot:
+    kind: needs_line
+    id: l_peugeot
+    attr:
+      brand: "peugeot"
+      pole: "MOBILITY"
+  ligne_lovol:
+    kind: needs_line
+    id: l_lovol
+    attr:
+      brand: "lovol"
+      pole: "EQUIPMENT"
+  ligne_transverse:
+    kind: needs_line
+    id: l_process
+    attr:
+      brand: ""
+      pole: "MOBILITY"
+
+tests:
+  - name: un chef voit les lignes de ses marques
+    input:
+      principals: ["chef_toyota"]
+      resources: ["ligne_toyota", "ligne_peugeot"]
+      actions: ["view"]
+    expected:
+      - principal: chef_toyota
+        resource: ligne_toyota
+        actions:
+          view: EFFECT_ALLOW
+      - principal: chef_toyota
+        resource: ligne_peugeot
+        actions:
+          view: EFFECT_ALLOW
+
+  - name: une ligne transverse reste visible pour tout saisisseur
+    input:
+      principals: ["chef_toyota", "chef_lovol"]
+      resources: ["ligne_transverse"]
+      actions: ["view"]
+    expected:
+      - principal: chef_toyota
+        actions:
+          view: EFFECT_ALLOW
+      - principal: chef_lovol
+        actions:
+          view: EFFECT_ALLOW
+
+  - name: l equipe Academy voit tout le catalogue
+    input:
+      principals: ["assistante_academy"]
+      resources: ["ligne_toyota", "ligne_lovol", "ligne_transverse"]
+      actions: ["view", "list"]
+    expected:
+      - principal: assistante_academy
+        resource: ligne_toyota
+        actions:
+          view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+      - principal: assistante_academy
+        resource: ligne_lovol
+        actions:
+          view: EFFECT_ALLOW
+      - principal: assistante_academy
+        resource: ligne_transverse
+        actions:
+          view: EFFECT_ALLOW
+
+  - name: NEGATIF un chef ne voit pas une marque qu il ne gere pas
+    input:
+      principals: ["chef_toyota"]
+      resources: ["ligne_lovol"]
+      actions: ["view", "list"]
+    expected:
+      - principal: chef_toyota
+        actions:
+          view: EFFECT_DENY
+          list: EFFECT_DENY
+
+  - name: NEGATIF Stellantis eclate un chef Peugeot ne voit pas Lovol
+    input:
+      principals: ["chef_lovol"]
+      resources: ["ligne_peugeot", "ligne_toyota"]
+      actions: ["view"]
+    expected:
+      - principal: chef_lovol
+        resource: ligne_peugeot
+        actions:
+          view: EFFECT_DENY
+      - principal: chef_lovol
+        resource: ligne_toyota
+        actions:
+          view: EFFECT_DENY

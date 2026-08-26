@@ -1,0 +1,18 @@
+# Rôle dérivé propre à l'app 16 : « membre de l'équipe Academy ».
+#
+# C'est le seul groupe habilité à faire sortir un email vers une filiale
+# (docs/SPEC_RECUEIL_BESOINS_2027.md §7.0). Le distinguer d'un rôle dérivé de
+# périmètre est volontaire : la relecture n'est pas une question d'org, c'est une
+# question de fonction — l'équipe centrale relit TOUTES les filiales.
+apiVersion: api.cerbos.dev/v1
+derivedRoles:
+  name: needs_review
+  definitions:
+    - name: academy_reviewer
+      parentRoles:
+        - center_assistant
+        - center_director
+        - superadmin
+      condition:
+        match:
+          expr: "true"

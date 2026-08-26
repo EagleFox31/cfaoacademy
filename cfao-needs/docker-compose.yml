@@ -1,0 +1,127 @@
+# Module détachable « recueil des besoins » (app 16).
+#
+# Ce fichier monte la stack COMPLÈTE, sans rien emprunter au reste du dépôt :
+#   docker compose -f cfao-needs/docker-compose.yml up
+#
+# Sept services, aucun partagé avec la plateforme. Pour rejoindre la plateforme,
+# on ne change pas ce fichier : on passe NEEDS_DEPLOYMENT_MODE=integrated et on
+# pointe OIDC_* / CERBOS_HTTP vers le Keycloak et le Cerbos existants
+# (docs/SPEC_RECUEIL_BESOINS_2027.md §2).
+
+name: cfao-needs
+
+services:
+  needs-kc-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:?KC_DB_PASSWORD est obligatoire}
+    volumes:
+      - needs-kc-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  needs-keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://needs-kc-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?}
+      KEYCLOAK_ADMIN: ${KC_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:?KC_ADMIN_PASSWORD est obligatoire}
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      # Realm en config-as-code : reproductible, dérive détectable.
+      - ./keycloak:/opt/keycloak/data/import:ro
+    depends_on:
+      needs-kc-db:
+        condition: service_healthy
+    ports:
+      - "${KC_PORT:-8081}:8080"
+
+  needs-cerbos:
+    image: ghcr.io/cerbos/cerbos:0.38.1
+    command: ["server", "--config=/config/cerbos.yaml"]
+    volumes:
+      - ./cerbos/policies:/policies:ro
+      - ./cerbos/cerbos.yaml:/config/cerbos.yaml:ro
+    healthcheck:
+      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/cerbos.yaml"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  needs-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${NEEDS_DB_NAME:-needs}
+      POSTGRES_USER: ${NEEDS_DB_USER:-needs}
+      POSTGRES_PASSWORD: ${NEEDS_DB_PASSWORD:?NEEDS_DB_PASSWORD est obligatoire}
+    volumes:
+      - needs-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${NEEDS_DB_USER:-needs}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  needs-api:
+    build: ./api
+    environment: &api_env
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      # Pas de valeur par défaut : le service refuse de démarrer sans secret.
+      NEEDS_SECRET_KEY: ${NEEDS_SECRET_KEY:?NEEDS_SECRET_KEY est obligatoire}
+      NEEDS_DEPLOYMENT_MODE: ${NEEDS_DEPLOYMENT_MODE:-standalone}
+      NEEDS_DB_HOST: needs-db
+      NEEDS_DB_NAME: ${NEEDS_DB_NAME:-needs}
+      NEEDS_DB_USER: ${NEEDS_DB_USER:-needs}
+      NEEDS_DB_PASSWORD: ${NEEDS_DB_PASSWORD:?}
+      CERBOS_HTTP: http://needs-cerbos:3592
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://needs-keycloak:8080/realms/cfao-needs/protocol/openid-connect/certs}
+      OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8081/realms/cfao-needs}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-needs-web}
+      NEEDS_CORS_ORIGINS: ${NEEDS_CORS_ORIGINS:-http://localhost:8080}
+      NEEDS_PUBLIC_BASE_URL: ${NEEDS_PUBLIC_BASE_URL:-http://localhost:8080}
+      NEEDS_INTERNAL_DOMAINS: ${NEEDS_INTERNAL_DOMAINS:-cfao.com}
+      NEEDS_TEAM_RECIPIENTS: ${NEEDS_TEAM_RECIPIENTS:-}
+      NEEDS_EMAIL_BACKEND: ${NEEDS_EMAIL_BACKEND:-console}
+      NEEDS_SMTP_HOST: ${NEEDS_SMTP_HOST:-}
+    depends_on:
+      needs-db:
+        condition: service_healthy
+      needs-cerbos:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/v1/needs/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  needs-worker:
+    build: ./api
+    command: ["python", "manage.py", "qcluster"]
+    environment: *api_env
+    depends_on:
+      needs-api:
+        condition: service_started
+
+  needs-gateway:
+    build: ./gateway
+    volumes:
+      - ./web/dist:/usr/share/nginx/html:ro
+    ports:
+      - "${NEEDS_PORT:-8080}:80"
+    depends_on:
+      needs-api:
+        condition: service_started
+
+volumes:
+  needs-kc-db-data:
+  needs-db-data:

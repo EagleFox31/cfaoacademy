@@ -1,0 +1,47 @@
+# Ressource « needs_line » — une ligne du catalogue de campagne.
+#
+# C'est cette policy qui alimente le QUERY PLAN : le catalogue n'est jamais renvoyé
+# en entier puis filtré côté navigateur. Un manager habilité `peugeot` reçoit les
+# lignes PEUGEOT ET les lignes sans marque de son pôle.
+#
+# GOTCHA : `roles` + `derivedRoles` dans la MÊME règle valent OU, pas ET.
+# Pour exiger « rôle ET condition », on garde une seule dimension par règle.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: needs_line
+  importDerivedRoles:
+    - needs_review
+  rules:
+    # L'équipe Academy voit tout le catalogue — elle relit toutes les filiales.
+    - actions: ["view", "list"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - academy_reviewer
+
+    # Direction et administration : lecture complète dans leur périmètre.
+    - actions: ["view", "list"]
+      effect: EFFECT_ALLOW
+      roles:
+        - branch_admin
+        - group_admin
+        - branch_director
+        - regional_director
+        - group_director
+        - branch_hr
+        - group_hr
+
+    # Saisisseurs : leurs marques, PLUS les lignes transverses (brand vide).
+    - actions: ["view", "list"]
+      effect: EFFECT_ALLOW
+      roles:
+        - team_manager
+        - workshop_manager
+        - dps
+        - dop
+      condition:
+        match:
+          any:
+            of:
+              - expr: request.resource.attr.brand == ""
+              - expr: request.resource.attr.brand in request.principal.attr.brands
