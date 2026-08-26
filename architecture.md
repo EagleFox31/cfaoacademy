@@ -49,7 +49,7 @@ Deux services métier seulement, un PDP Cerbos partagé, un Keycloak. Le client 
 
 ---
 
-## 3. Découpage en modules (les 15 apps → 2 services)
+## 3. Découpage en modules (les 16 apps → 2 services + 1 module détachable)
 
 | Service | Module | Apps couvertes | Possède |
 |---------|--------|----------------|---------|
@@ -64,6 +64,9 @@ Deux services métier seulement, un PDP Cerbos partagé, un Keycloak. Le client 
 | | `rooms` | 05 | Réservation salles & équipements |
 | | `planning` | 04 | Planning & contenus formateurs |
 | | `tickets` | 06 | Assistance formateurs |
+| **cfao-needs** (Django, **détachable**) | `needs` | **16** | Campagnes de recueil des besoins, référentiel de campagne, soumissions par filiale, emailing de campagne |
+
+> **`cfao-needs` est un troisième déployable, pas un module de `cfao-core`.** Il embarque son propre Keycloak, son propre Cerbos et sa propre base en mode `standalone`, et bascule vers ceux de la plateforme en mode `integrated` par variables d'environnement — jamais par modification de code. Toute dépendance à la plateforme passe par une interface (`ReferentialSource`, `IdentityProvider`) à deux implémentations. Raison d'être : la campagne 2027 doit partir avant la livraison du nœud E. Détail → **`docs/SPEC_RECUEIL_BESOINS_2027.md`**, `planning.md` §2 nœud **N**.
 
 > `analytics` reste un module Django pour l'instant. Si le besoin de perf/async se fait sentir, on l'extrait en service FastAPI séparé — sans rien changer aux autres modules.
 

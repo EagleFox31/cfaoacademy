@@ -18,15 +18,24 @@ Point d'entrée pour la documentation du dépôt. Les fichiers listés ci-dessou
 | [architecture.md](../architecture.md) | Topologie, modules, authN/authZ, déploiement |
 | **[DEPLOYMENT.md](./DEPLOYMENT.md)** | **CI/CD, ACR, Azure, limites runners GitHub, Jenkins ou non** |
 | [architecture_complement.md](../architecture_complement.md) | Compléments architecture |
-| [PLATFORM_APPS.md](../PLATFORM_APPS.md) | Les 15 apps métier |
+| [PLATFORM_APPS.md](../PLATFORM_APPS.md) | Les 16 apps métier |
 | [PLATFORM_ROLES.md](../PLATFORM_ROLES.md) | Rôles, scopes, Cerbos |
-| [planning.md](../planning.md) | Planning projet |
+| [planning.md](../planning.md) | Planning projet (PERT, nœuds A→N) |
 | [backlog.md](../backlog.md) | Backlog stories |
+
+## App 16 · Recueil des besoins *(module détachable, campagne 2027)*
+
+| Document | Contenu |
+|----------|---------|
+| **[SPEC_RECUEIL_BESOINS_2027.md](./SPEC_RECUEIL_BESOINS_2027.md)** | **Spécification du module : détachabilité, référentiel éclaté par marque, modèle, emailing, jalons** |
+| **[PATRON_IMPORT_TABULAIRE.md](./PATRON_IMPORT_TABULAIRE.md)** | **Patron transverse d'import Excel/CSV — story `00-9`** |
+| **[AUDIT_ACADEMIX.md](./AUDIT_ACADEMIX.md)** | **Audit de l'existant remplacé : 26 fonctions, 10 failles, correspondance epics** |
 
 ## Frontend & UX
 
 | Document | Contenu |
 |----------|---------|
+| **[rapport-conges-portail-dps-2026.md](./rapport-conges-portail-dps-2026.md)** | **Passation congés — travail portail DPS, MEDACAP, visible en démo** |
 | [DESIGN_SYSTEM.md](../DESIGN_SYSTEM.md) | Tokens, composants, styles |
 | **[PORTAL_COLORIMETRY.md](./PORTAL_COLORIMETRY.md)** | **Statuts portail (pastilles, bordures, PIF) — RAG / LMS / WCAG** |
 | [APPRENANT_VIEWS.md](../APPRENANT_VIEWS.md) | Écrans portail apprenant |
