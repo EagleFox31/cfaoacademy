@@ -17,8 +17,9 @@ logs:
 migrate:       ## Applique les migrations (JAMAIS dans l'entrypoint)
 	$(COMPOSE) exec needs-api python manage.py migrate
 
-seed:          ## Charge référentiel + templates d'emails (commande explicite)
+seed:          ## Charge référentiel + catalogue 2027 + modèles d'emails (explicite)
 	$(COMPOSE) exec needs-api python manage.py seed_referential
+	$(COMPOSE) exec needs-api python manage.py seed_catalog
 	$(COMPOSE) exec needs-api python manage.py seed_email_templates
 
 test:          ## Tests Python

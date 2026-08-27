@@ -165,6 +165,22 @@ class CatalogImporter(TabularImporter):
                 )
             return None
 
+        if not family.has_brands:
+            # La famille ne se decline pas par marque (Carrosserie, par exemple) :
+            # la colonne reprend souvent le nom de la famille. On normalise vers
+            # « pas de marque » plutot que de rejeter — la famille porte deja
+            # l'information, et le correctif reste visible au rapport.
+            result.normalizations.append(
+                Normalization(
+                    row=line,
+                    column="Marque",
+                    from_value=label,
+                    to_value=None,
+                    rule="family_without_brands",
+                )
+            )
+            return None
+
         key = label.upper()
         brand = self._brands.get(key) or self._brand_labels.get(key)
         if brand:

@@ -1,0 +1,1829 @@
+[
+ {
+  "family": "techniques-motors",
+  "brand": "BYD",
+  "code": "BEV01",
+  "title": "Avis d’intervention sur véhicules électriques",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "BYD",
+  "code": "BEV02",
+  "title": "Maintenance préventive des véhicules électriques",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "BYD",
+  "code": "BEV03",
+  "title": "Certification Maintenance préventive des véhicules électriques",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "MERCEDES",
+  "code": "T21116F-CF",
+  "title": "Entretien des véhicules MERCEDES-BENZ",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "MERCEDES",
+  "code": "T2115F-CF",
+  "title": "Entretien des systèmes électriques",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "MERCEDES",
+  "code": "X24015F",
+  "title": "Formation initiale Mercedes-Benz: XENTRY WIS, XENTRY DIAGNOSIS, XOT, DWD, VEDOC",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "MERCEDES",
+  "code": "X24016F",
+  "title": "Formation initiale Mercedes-Benz: Reception, Maintenance, XENTRY WIS, GTLS",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "MITSUBISHI",
+  "code": "MSTEP01",
+  "title": "Maintenance préventive des véhicules Mitsubishi",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "MITSUBISHI",
+  "code": "MSTEP02-DEM",
+  "title": "Gestion des moteur Diesel",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "OMODA & JAECOO",
+  "code": "O&JEV01",
+  "title": "Avis d’intervention sur véhicules électriques",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "OMODA & JAECOO",
+  "code": "O&JEV02",
+  "title": "Maintenance préventive des véhicules électriques",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "OMODA & JAECOO",
+  "code": "O&JEV03",
+  "title": "Certification Maintenance préventive des véhicules électriques",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "PEUGEOT",
+  "code": "SID01",
+  "title": "Maintenance préventive périodique et non-périodique des véhicules",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "PEUGEOT",
+  "code": "SID02",
+  "title": "Révision et réparation des moteur essence et diesel",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "PEUGEOT",
+  "code": "SSHEV/EV01",
+  "title": "Habilitation en maintenance des véhicules hybrides et électriques",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "PEUGEOT",
+  "code": "SSHEV/EV02",
+  "title": "Certification : maintenance des véhicules hybrides et électriques",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "CITROEN",
+  "code": "SID01",
+  "title": "Maintenance préventive périodique et non-périodique des véhicules",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "CITROEN",
+  "code": "SID02",
+  "title": "Révision et réparation des moteur essence et diesel",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "CITROEN",
+  "code": "SSHEV/EV01",
+  "title": "Habilitation en maintenance des véhicules hybrides et électriques",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "CITROEN",
+  "code": "SSHEV/EV02",
+  "title": "Certification : maintenance des véhicules hybrides et électriques",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "FIAT",
+  "code": "SID01",
+  "title": "Maintenance préventive périodique et non-périodique des véhicules",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "FIAT",
+  "code": "SID02",
+  "title": "Révision et réparation des moteur essence et diesel",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "FIAT",
+  "code": "SSHEV/EV01",
+  "title": "Habilitation en maintenance des véhicules hybrides et électriques",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "FIAT",
+  "code": "SSHEV/EV02",
+  "title": "Certification : maintenance des véhicules hybrides et électriques",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "JEEP",
+  "code": "SID01",
+  "title": "Maintenance préventive périodique et non-périodique des véhicules",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "JEEP",
+  "code": "SID02",
+  "title": "Révision et réparation des moteur essence et diesel",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "JEEP",
+  "code": "SSHEV/EV01",
+  "title": "Habilitation en maintenance des véhicules hybrides et électriques",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "JEEP",
+  "code": "SSHEV/EV02",
+  "title": "Certification : maintenance des véhicules hybrides et électriques",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "SUZUKI",
+  "code": "SS01-BRONZE",
+  "title": "Maintenance préventive périodique et non-périodique des véhicules SUZUKI",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "SUZUKI",
+  "code": "SS02-BRONZE",
+  "title": "Certification BRONZE : Maintenance préventive périodique et non-périodique des véhicules SUZUKI",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "SUZUKI",
+  "code": "SS03-SILVER",
+  "title": "Diagnostic des systèmes embarqués des véhicules (Advanced)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "SUZUKI",
+  "code": "SS04-SILVER",
+  "title": "Réparations des systèmes mécaniques, électrique et électronique",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "SUZUKI",
+  "code": "SS05-SILVER",
+  "title": "Certification SILVER : Diagnostic et Réparation des systèmes mécanique, électrique et électronique",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "SUZUKI",
+  "code": "SS06-GOLD",
+  "title": "Diagnostic des systèmes multiplexés des véhicules",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "SUZUKI",
+  "code": "SS07-GOLD",
+  "title": "Révision moteur essence des véhicules",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "SUZUKI",
+  "code": "SS08-GOLD",
+  "title": "Révision boîte de vitesses, boîte de transfert et différentiel des véhicules",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "SUZUKI",
+  "code": "SS09-GOLD",
+  "title": "Certification GOLD : Révision et diagnostic des systèmes de transmission de puissance des véhicules",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "SUZUKI",
+  "code": "SS-DIAG-01",
+  "title": "Utilisation de l'outil de diagnostic (SDT-II)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "SUZUKI",
+  "code": "SNM01",
+  "title": "Le nouveau modèle « GRAND VITARA » et ses spécifications techniques.",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "SUZUKI",
+  "code": "SNM02",
+  "title": "Le nouveau modèle « S-PRESSO » et ses spécifications techniques.",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS01-G4",
+  "title": "Maintenance préventive périodique et non-périodique des véhicules",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS02-G4",
+  "title": "Certification G4 : Maintenance préventive périodique et non-périodique des véhicules",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS03-G3",
+  "title": "Révision/réparation des Moteurs essence et diesel des véhicules",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS04-G3",
+  "title": "Révision/réparation des organes châssis des véhicules, partie 1 (Boites de vitesse et Différentiel)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS05-G3",
+  "title": "Révision/réparation des organes du châssis des véhicules, partie 2 (Freinage, suspension, arbre de transmission, direction et autres)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS06-G3",
+  "title": "Révision/réparation des organes électriques des véhicules (Climatisation, alternateur, démarreur et autres)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS07-G3",
+  "title": "Certification G3 : Révisions et réparations des organes et autres systèmes des véhicules (moteurs, châssis et électricité)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS08-G2",
+  "title": "Diagnostic des systèmes de motorisation des véhicules",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS09-G2",
+  "title": "Diagnostic des systèmes châssis des véhicules",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS10-G2",
+  "title": "Diagnostic des systèmes électriques/électroniques des véhicules",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS11-G2",
+  "title": "Diagnostic des systèmes de climatisation manuelle et automatique des véhicules",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS12-G2",
+  "title": "Certification G2 : Diagnostics des systèmes des véhicules",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS13-G1",
+  "title": "Diagnostic des défaillances impliquant des interactions entre les systèmes des véhicules",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS14-G1",
+  "title": "Diagnostic des bruits mécaniques des systèmes des véhicules",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS15-G1",
+  "title": "Analyse des défaillances des composants/organes des véhicules",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TS16-G1",
+  "title": "Certification G1 : Diagnostic des bruits et des défaillances inter-systèmes des véhicules (avec et sans DTC)",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-motors",
+  "brand": "TOYOTA",
+  "code": "TSH01",
+  "title": "Intervention en sécurité sur un véhicule hybride TOYOTA",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT01",
+  "title": "Maintenance préventive des transpalettes (BT LEVIO)",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT02",
+  "title": "Maintenance préventive des Gerbeurs (BT STAXIO)",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT03",
+  "title": "Maintenance préventive des chariots à mâts rétractable (BT REFLEX)",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT04",
+  "title": "Maintenance préventive des chariots à mats rétractable (high performance RRE-H2)",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT05",
+  "title": "Maintenance préventive des chariots « alles étroites »",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT06",
+  "title": "Réparation des transpalettes électriques (BT LEVIO)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT07",
+  "title": "Réparation des Gerbeurs (BT STAXIO)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT08",
+  "title": "Réparation des chariots à mats rétractable (Reach Trucks BT REFLEX)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT09",
+  "title": "Réparation des chariots à mats rétractable (high performance RRE-H2)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT10",
+  "title": "Réparation des chariots pour allées étroites",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT11",
+  "title": "Diagnostic des transpalettes électriques (BT LEVIO)",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT12",
+  "title": "Diagnostic des Gerbeurs (BT STAXIO)",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT13",
+  "title": "Diagnostic des chariots à mats rétractable (Reach Trucks BT REFLEX)",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT14",
+  "title": "Diagnostic des chariots à mats rétractable (high performance RRE-H2)",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "BT",
+  "code": "BT15",
+  "title": "Diagnostic des chariots pour allées étroites (VN) BT VECTOR)",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F01",
+  "title": "Maintenance préventive des systèmes des camions FI/FJ",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F02",
+  "title": "Réparation Moteur 4D37 (FUSO FI)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F03",
+  "title": "Réparation Moteur 6S20 (FUSO FJ)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F04",
+  "title": "Réparation Boîte de vitesses G85",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F05",
+  "title": "Réparation Boîte de vitesses G131",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F06",
+  "title": "Réparation Electrique",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F07",
+  "title": "Réparation Système de freinage conventionnel (avec ABS)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F08",
+  "title": "Diagnostic Moteur 4D37 (FUSO FI)",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F09",
+  "title": "Diagnostic Moteur 6S20 (FUSO FJ)",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F10",
+  "title": "Diagnostic Boîte de vitesses G85",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F11",
+  "title": "Diagnostic Boîte de vitesses G131",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F12",
+  "title": "Diagnostic Système électrique",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "FUSO",
+  "code": "F13",
+  "title": "Diagnostic Système de freinage conventionnel (avec ABS)",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI01",
+  "title": "Maintenance préventive des systèmes du camion HINO 300/500",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI02",
+  "title": "Réparation Moteur N04C HINO 300 Euro 3",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI03",
+  "title": "Réparation Moteur W04D HINO 300 Euro 1",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI04",
+  "title": "Réparation Moteur J08C HINO 500 Euro 2",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI05",
+  "title": "Réparation Boîte de vitesses MYY6S HINO 300",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI06",
+  "title": "Réparation Boîte de vitesses LX06 HINO 500",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI07",
+  "title": "Réparation Pont et réducteurs",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI08",
+  "title": "Réparation électrique",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI09",
+  "title": "Réparation système de freinage conventionnel (avec ABS)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI10",
+  "title": "Diagnostic Moteur N04C HINO 300 Euro 3",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI11",
+  "title": "Diagnostic Moteur W04D HINO 300 Euro 1",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI12",
+  "title": "Diagnostic Moteur J08C HINO 500 Euro 2",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI13",
+  "title": "Diagnostic Boîte de vitesses MYY6S HINO 300",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI14",
+  "title": "Diagnostic Boîte de vitesses LX06 HINO 500",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI15",
+  "title": "Diagnostic Electrique et électronique HINO 300 Euro 3",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "HINO",
+  "code": "HI16",
+  "title": "Diagnostic Système de freinage conventionnel (avec ABS)",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "JCB",
+  "code": "JCB01",
+  "title": "Maintenance préventive de la tractopelle JCB 3CX",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "JCB",
+  "code": "JCB02",
+  "title": "Maintenance préventive des chargeuses sur pneumatiques JCB",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "JCB",
+  "code": "JCB03",
+  "title": "Maintenance préventive des pelles excavatrices sur chenilles JCB série JS200.",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "JCB",
+  "code": "JCB04",
+  "title": "Maintenance préventive des pelles excavatrices sur pneumatique JCB série JS100W",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "JCB",
+  "code": "JCB05",
+  "title": "Maintenance préventive des chariots télescopiques JCB 540-170.",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "JCB",
+  "code": "JCB07",
+  "title": "Réparation Boîte de vitesses POWERSHIFT PS750/764/766",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "JCB",
+  "code": "JCB08",
+  "title": "Réparation Boîte de vitesses SYNCHROSIFT SS 600/700",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "JCB",
+  "code": "JCB09",
+  "title": "Réparation Boîte de Vitesses POWERSHIFT 3/4/6WG ERGOPOWER",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "JCB",
+  "code": "JCB10",
+  "title": "Réparation Moteur DIESELMAX 444 TIER 2 à injection mécanique.",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "JCB",
+  "code": "JCB11",
+  "title": "Réparation Hydraulique des engins JCB",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "JCB",
+  "code": "JCB12",
+  "title": "Diagnostic électrique/électronique des engins JCB",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "KING LONG",
+  "code": "KL01",
+  "title": "Maintenance préventive des systèmes du bus KING LONG",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "KING LONG",
+  "code": "KL02",
+  "title": "Réparation Moteur QSC 240",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "KING LONG",
+  "code": "KL03",
+  "title": "Réparation Boîte de vitesses HW 19710",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "KING LONG",
+  "code": "KL04",
+  "title": "Réparation Electrique",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "KING LONG",
+  "code": "KL05",
+  "title": "Réparation Système de freinage conventionnel (avec ABS)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "KING LONG",
+  "code": "KL06",
+  "title": "Réparation Pont et Réducteurs à entrainement, série 2401N-010",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "KING LONG",
+  "code": "KL07",
+  "title": "Diagnostic Moteur QSC 240",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "KING LONG",
+  "code": "KL08",
+  "title": "Diagnostic Boîte de vitesses HW 19710",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "KING LONG",
+  "code": "KL09",
+  "title": "Diagnostic Electrique",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "KING LONG",
+  "code": "KL10",
+  "title": "Diagnostic Système de freinage conventionnel (avec ABS)",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "KING LONG",
+  "code": "KL11",
+  "title": "Diagnostic Pont et Réducteurs à entrainement, série 2401N-010",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL01",
+  "title": "Maintenance préventive des Pelles Excavatrices LOVOL",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL02",
+  "title": "Maintenance préventive des Chargeuses LOVOL",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL03",
+  "title": "Maintenance préventive des Niveleuses LOVOL",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL04",
+  "title": "Maintenance préventive des Bulldozers LOVOL",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL05",
+  "title": "Maintenance préventive des Tractopelles LOVOL",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL06",
+  "title": "Maintenance préventive des Compacteurs LOVOL",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL07",
+  "title": "Réparation des Pelles Excavatrices LOVOL",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL08",
+  "title": "Réparation des Chargeuses LOVOL",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL09",
+  "title": "Réparation des Niveleuses LOVOL",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL10",
+  "title": "Réparation des Bulldozers LOVOL",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL11",
+  "title": "Réparation des Tractopelles LOVOL",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL12",
+  "title": "Réparation des Compacteurs LOVOL",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL13",
+  "title": "Diagnostic des systèmes des Pelles Excavatrices LOVOL",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL14",
+  "title": "Diagnostic des systèmes des Chargeuses LOVOL",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL15",
+  "title": "Diagnostic des systèmes des Niveleuses LOVOL",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL16",
+  "title": "Diagnostic des systèmes des Bulldozers LOVOL",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL17",
+  "title": "Diagnostic des systèmes des Tractopelles LOVOL",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "LOVOL",
+  "code": "LVL18",
+  "title": "Diagnostic des systèmes des Compacteurs LOVOL",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT01",
+  "title": "Maintenance préventive des systèmes du Camion de la Gamme K",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT02",
+  "title": "Maintenance préventive du moteur DXI11",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT03",
+  "title": "Maintenance préventive du moteur DXI13",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT04",
+  "title": "Maintenance préventive du moteur DXI8",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT05",
+  "title": "Maintenance préventive de la boîte de vitesses Optidriver",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT06",
+  "title": "Maintenance préventive de la boîte de vitesses B14",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT07",
+  "title": "Réparation / Révision du moteur DXI11",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT08",
+  "title": "Réparation / Révision du moteur DXI13",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT09",
+  "title": "Réparation / Révision du moteur DXI8",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT10",
+  "title": "Réparation / Révision de la boîte de vitesses Optidriver",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT11",
+  "title": "Réparation / Révision de la boîte de vitesses B14",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT12",
+  "title": "Réparation des systèmes électriques des véhicules",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT13",
+  "title": "Réparation / Révision du système de freinage pneumatique avec EBS",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT14",
+  "title": "Maintenance curative des organes des véhicules lourds de la Gamme K",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT15",
+  "title": "Diagnostic du moteur DXI11",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT16",
+  "title": "Diagnostic du moteur DXI13",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT17",
+  "title": "Diagnostic du moteur DXI8",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT18",
+  "title": "Diagnostic de la boîte de vitesses Optidriver",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT19",
+  "title": "Diagnostic de la boîte de vitesses B14",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT20",
+  "title": "Diagnostic des systèmes électriques et électroniques des véhicules",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT21",
+  "title": "Diagnostic du système de freinage avec EBS",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "RENAULT TRUCKS",
+  "code": "RT22",
+  "title": "Diagnostic Système électrique TEA2+ T2",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S101",
+  "title": "Maintenance préventive des systèmes du camion SHACMAN",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S102",
+  "title": "Maintenance préventive - Gamme SHACMAN X3000",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S103",
+  "title": "Maintenance préventive - Gamme SHACMAN M3000 (6x4)",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S201",
+  "title": "Réparation Moteur Cummins (ex: ISM/ISL)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S202",
+  "title": "Réparation Boîte de vitesses Fuller/Fast Gear",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S203",
+  "title": "Réparation Système électrique SHACMAN",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S204",
+  "title": "Réparation Système de freinage conventionnel (avec ABS/ASR)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S205",
+  "title": "Réparation Ponts et Réducteurs HanDe",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S301",
+  "title": "Diagnostic Moteur Cummins (ex: ISM/ISL) et architecture électronique",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S302",
+  "title": "Diagnostic Boîte de vitesses Fuller/Fast Gear et commandes",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S303",
+  "title": "Diagnostic avancé du système électrique et électronique SHACMAN",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S304",
+  "title": "Diagnostic Système de freinage conventionnel et ABS/ASR",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SHACMAN",
+  "code": "S305",
+  "title": "Diagnostic Ponts et Réducteurs HanDe",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H01",
+  "title": "Maintenance préventive des systèmes du Camion HOHAN",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H430",
+  "title": "Maintenance préventive - Gamme HOHAN 430 Max",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H431",
+  "title": "Maintenance préventive - Gamme HOWO 6X4",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H02",
+  "title": "Réparation Moteur WD615",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H03",
+  "title": "Réparation Boîte de vitesses HW19710",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H04",
+  "title": "Réparation Système électrique",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H05",
+  "title": "Réparation Système de freinage conventionnel (avec ABS)",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H06",
+  "title": "Réparation Pont et Réducteurs à entrainement, série mcy11",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H07",
+  "title": "Diagnostic Moteur WD615",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H08",
+  "title": "Diagnostic Boîte de vitesses HW19710",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H09",
+  "title": "Diagnostic Système électrique",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H10",
+  "title": "Diagnostic Système de freinage conventionnel (avec ABS)",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "SINOTRUK",
+  "code": "H11",
+  "title": "Diagnostic Pont et Réducteurs à entrainement, série mcy11",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY01",
+  "title": "Maintenance préventive des chariots thermiques 8FG(D)10-35,",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY02",
+  "title": "Maintenance préventive des chariots thermiques  8FG(D)40-80,",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY03",
+  "title": "Maintenance préventive des chariots thermiques 4(5) FD100-240,",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY04",
+  "title": "Maintenance préventive des chariots électriques 8FB10-35.",
+  "audience": "JUNIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY05",
+  "title": "Réparation Transmissions automatique et hydrostatique des chariots thermiques,",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY06",
+  "title": "Réparation Unité de traction des chariots électriques.",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY07",
+  "title": "Réparation Moteur Hybride Essence et Gaz,",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY08",
+  "title": "Réparation Moteur Hybride Essence et Gaz (4Y-ECS a gestion électronique),",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY09",
+  "title": "Réparation Moteur diesel 1ZS,",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY10",
+  "title": "Réparation Moteur diesel 1DZ II-III,",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY11",
+  "title": "Réparation Moteur diesel 3Z,",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY12",
+  "title": "Réparation Hydraulique des chariots électriques et thermiques.",
+  "audience": "SENIOR"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY13",
+  "title": "Diagnostic électrique/électronique des chariots électriques,",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TOY14",
+  "title": "Diagnostic électrique/électronique des chariots thermiques.",
+  "audience": "EXPERT"
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "40022",
+  "title": "Réparation sur les matières plastiques",
+  "audience": ""
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "50309",
+  "title": "Intervention sur les matières plastiques",
+  "audience": ""
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "40008",
+  "title": "Débosselage sans peinture – Niveau initiation",
+  "audience": ""
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "52053",
+  "title": "Réparation d’un vitrage feuilleté",
+  "audience": ""
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "52392",
+  "title": "Le soudage acier – E-learning",
+  "audience": ""
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "40009",
+  "title": "Débosselage sans peinture – Niveau confirmé",
+  "audience": ""
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "50527",
+  "title": "Maîtrise des opérations de soudure – Aciers HLE/THLE",
+  "audience": ""
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "52302",
+  "title": "Réparation d’éléments en aluminium",
+  "audience": ""
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "52057",
+  "title": "Réparations par collage/rivetage en carrosserie",
+  "audience": ""
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "52058",
+  "title": "Techniques de débosselage (débourrage)",
+  "audience": ""
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "52054",
+  "title": "Remplacement d’un vitrage collé",
+  "audience": ""
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "52393",
+  "title": "Le soudage aluminium – E-learning",
+  "audience": ""
+ },
+ {
+  "family": "techniques-carrosserie",
+  "brand": "CARROSSERIE",
+  "code": "40010",
+  "title": "Débosselage sans peinture – Niveau expert",
+  "audience": ""
+ },
+ {
+  "family": "techniques-yamaha",
+  "brand": "YAMAHA",
+  "code": "-",
+  "title": "Formation Moteur Marine",
+  "audience": ""
+ },
+ {
+  "family": "techniques-yamaha",
+  "brand": "YAMAHA",
+  "code": "-",
+  "title": "Formation Moto",
+  "audience": ""
+ },
+ {
+  "family": "process-sav-equipment",
+  "brand": "TOUTES MARQUES EQUIPMENT",
+  "code": "FO01",
+  "title": "Appel 1ère maintenance du véhicule client par le SAV",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-sav-equipment",
+  "brand": "TOUTES MARQUES EQUIPMENT",
+  "code": "FO02",
+  "title": "Préparation de la réception véhicule client au sein du service SAV",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-sav-equipment",
+  "brand": "TOUTES MARQUES EQUIPMENT",
+  "code": "FO03",
+  "title": "Réception du véhicule avec le client au SAV",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-sav-equipment",
+  "brand": "TOUTES MARQUES EQUIPMENT",
+  "code": "FO04",
+  "title": "Suivi des travaux du véhicule client au SAV",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-sav-equipment",
+  "brand": "TOUTES MARQUES EQUIPMENT",
+  "code": "FO05",
+  "title": "Restitution du véhicule client par le SAV",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-sav-equipment",
+  "brand": "TOUTES MARQUES EQUIPMENT",
+  "code": "FO06",
+  "title": "Mesure de la satisfaction clients après intervention sur son véhicule",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-parts-equipment",
+  "brand": "TOUTES MARQUES EQUIPMENT",
+  "code": "PART01",
+  "title": "Standardisation des processus du département pièces des filiales",
+  "audience": "Managers, Back-office, Front-Office"
+ },
+ {
+  "family": "process-parts-equipment",
+  "brand": "TOUTES MARQUES EQUIPMENT",
+  "code": "TP01",
+  "title": "Développement de l'argumentaire technique de vente des pièces de maintenance",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-parts-equipment",
+  "brand": "BT",
+  "code": "TP02",
+  "title": "Utilisation de la plateforme de référencement des pièces constructeur",
+  "audience": "Manager + Front office + back office"
+ },
+ {
+  "family": "process-parts-equipment",
+  "brand": "FUSO",
+  "code": "TP02",
+  "title": "Utilisation de la plateforme de référencement des pièces constructeur",
+  "audience": "Manager + Front office + back office"
+ },
+ {
+  "family": "process-parts-equipment",
+  "brand": "HINO",
+  "code": "TP02",
+  "title": "Utilisation de la plateforme de référencement des pièces constructeur",
+  "audience": "Manager + Front office + back office"
+ },
+ {
+  "family": "process-parts-equipment",
+  "brand": "JCB",
+  "code": "TP02",
+  "title": "Utilisation de la plateforme de référencement des pièces constructeur",
+  "audience": "Manager + Front office + back office"
+ },
+ {
+  "family": "process-parts-equipment",
+  "brand": "KING LONG",
+  "code": "TP02",
+  "title": "Utilisation de la plateforme de référencement des pièces constructeur",
+  "audience": "Manager + Front office + back office"
+ },
+ {
+  "family": "process-parts-equipment",
+  "brand": "TOYOTA FORKLIFT",
+  "code": "TP02",
+  "title": "Utilisation de la plateforme de référencement des pièces constructeur",
+  "audience": "Manager + Front office + back office"
+ },
+ {
+  "family": "process-parts-equipment",
+  "brand": "LOVOL",
+  "code": "TP02",
+  "title": "Utilisation de la plateforme de référencement des pièces constructeur",
+  "audience": "Manager + Front office + back office"
+ },
+ {
+  "family": "process-parts-equipment",
+  "brand": "SINOTRUCK",
+  "code": "TP02",
+  "title": "Utilisation de la plateforme de référencement des pièces constructeur",
+  "audience": "Manager + Front office + back office"
+ },
+ {
+  "family": "process-parts-equipment",
+  "brand": "SHACMAN",
+  "code": "TP02",
+  "title": "Utilisation de la plateforme de référencement des pièces constructeur",
+  "audience": "Manager + Front office + back office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "TOYOTA",
+  "code": "TSKR01",
+  "title": "Proposition d’amélioration d’éléments techniques des véhicules à transmettre au constructeur TOYOTA (SKR)",
+  "audience": "Manager, Back-office & Front office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "TOYOTA",
+  "code": "TFT01",
+  "title": "Elaboration d'un rapport d’anomalies techniques à communiquer au constructeur (FTR)",
+  "audience": "Back-office ; Front office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "TOYOTA",
+  "code": "TTG01",
+  "title": "Traitement et soumission des demandes de garantie",
+  "audience": "Back-office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "TOYOTA",
+  "code": "TSA01",
+  "title": "Gestion de la clientèle SAV par le conseiller service (TSA)",
+  "audience": "Back-office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "SUZUKI",
+  "code": "SSGF01",
+  "title": "Traitement et soumission des demandes de garantie",
+  "audience": "Manager, Back-office ; Front office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "SUZUKI",
+  "code": "FTIR01",
+  "title": "Elaboration d'un rapport d’anomalies techniques à communiquer au constructeur FTIR",
+  "audience": "Manager, Back-office ; Front office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "GC01",
+  "title": "Gestion de la clientèle SAV par le conseiller service (FO01 à FO06))",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "FO01",
+  "title": "Appel 1ère maintenance du véhicule client par le SAV",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "FO02",
+  "title": "Préparation de la réception véhicule client au sein du service SAV",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "FO03",
+  "title": "Réception du véhicule avec le client au SAV",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "FO04",
+  "title": "Suivi des travaux du véhicule client au SAV",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "FO05",
+  "title": "Restitution du véhicule client par le SAV",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "FO06",
+  "title": "Mesure de la satisfaction clients après intervention sur son véhicule",
+  "audience": "Front Office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "PDI01",
+  "title": "Préparation des véhicules avant la livraison au client (PDI)",
+  "audience": "Manager; Front Office ;Back office"
+ },
+ {
+  "family": "process-sav-motors",
+  "brand": "MERCEDES",
+  "code": "X24017V",
+  "title": "Traitement et soumission des demandes de garantie MB",
+  "audience": "Back-office"
+ },
+ {
+  "family": "process-parts-motors",
+  "brand": "TOYOTA",
+  "code": "TP01",
+  "title": "Utilisation de la plateforme de référencement des pièces TOYOTA (WEB EPC)",
+  "audience": "Back-office"
+ },
+ {
+  "family": "process-parts-motors",
+  "brand": "TOYOTA",
+  "code": "TP02",
+  "title": "Développement de l'argumentaire technique de vente des pièces de maintenance",
+  "audience": "Back-office"
+ },
+ {
+  "family": "process-parts-motors",
+  "brand": "TOYOTA",
+  "code": "TP03",
+  "title": "Standardisation des processus du département pièces des filiales (DPOK)",
+  "audience": "Managers, Back-office, Front-Office"
+ },
+ {
+  "family": "process-parts-motors",
+  "brand": "SUZUKI",
+  "code": "SPC01",
+  "title": "Utilisation de la plateforme de référencement des pièces Suzuki (SNAPON EPC)",
+  "audience": "Back-office"
+ },
+ {
+  "family": "process-parts-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "PART01",
+  "title": "Standardisation des processus du département pièces des filiales (TM01 à TM06)",
+  "audience": "Managers, Back-office, Front-Office"
+ },
+ {
+  "family": "process-parts-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "TM01",
+  "title": "Définition du standard de l'organisation opérationnelle du département pièce.",
+  "audience": "Managers, Back-office"
+ },
+ {
+  "family": "process-parts-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "TM02",
+  "title": "Evaluation de la conformité de l'organisation opérationnelle d'un département pièces",
+  "audience": "Managers, Back-office"
+ },
+ {
+  "family": "process-parts-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "TM03",
+  "title": "Elaboration d'un plan d'amélioration opérationnelle d'un département pièces.",
+  "audience": "Back office"
+ },
+ {
+  "family": "process-parts-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "TM04",
+  "title": "Déployer un plan d'amélioration opérationnelle d'un département pièces.",
+  "audience": "Back office"
+ },
+ {
+  "family": "process-parts-motors",
+  "brand": "TOUTES MARQUES VL",
+  "code": "TM05",
+  "title": "Pérennisation des actions d'amélioration opérationnelle d'un département pièces.",
+  "audience": "Back office"
+ },
+ {
+  "family": "process-parts-motors",
+  "brand": "MERCEDES",
+  "code": "X24018F",
+  "title": "Parts process MERCEDES-BENZ",
+  "audience": "Back-office"
+ }
+]

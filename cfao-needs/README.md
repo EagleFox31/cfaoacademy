@@ -156,7 +156,7 @@ Chacun est un contrôle, pas une consigne.
 | ✅ | Policies Cerbos `needs_*` — **58 tests exécutés, 58 verts** (positifs et négatifs) |
 | ✅ | **SPA — les 7 pages du parcours**, build Vite vert (216 Ko JS, 9,4 Ko CSS) |
 | ✅ | **Bilingue FR/EN** — 137 clés utilisées, catalogues stricts et alignés (aucune manquante) |
-| ⏳ | Commandes `seed_referential` et `seed_email_templates` |
+| ✅ | Seeds — **259 lignes du catalogue 2027 réel**, 21 marques, 8 familles, 28 modèles d'emails (14 clés × 2 langues) |
 | ⏳ | Relances et regroupement par inactivité (tâches planifiées) |
 
 ### Les 7 pages
