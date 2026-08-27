@@ -47,9 +47,8 @@ class BrandAlias(UUIDModel, TimeStampedModel):
     """Table d'alias — une **donnée**, pas du code (patron d'import, règle 6).
 
     Éditable par un administrateur, chaque alias daté et attribué. Exemples réels
-    relevés dans les sources : `SINOTRUCK` → `SINOTRUK`, `OMODA & JAECOO` et
-    `OMODA & JAECCO` → `OMODA & JAECOO` (orthographe de référence tranchée par le
-    métier, story 16-25).
+    relevés dans les sources : `SINOTRUCK` → `SINOTRUK` et `OMODA & JAECCO` →
+    `OMODA & JAECOO` (orthographe de référence confirmée par le métier, story 16-25).
     """
 
     alias = models.CharField(max_length=96, unique=True)

@@ -58,6 +58,7 @@ tests:
       actions: ["view", "update", "submit"]
     expected:
       - principal: chef_atelier_douala
+        resource: fiche_douala
         actions:
           view: EFFECT_ALLOW
           update: EFFECT_ALLOW
@@ -89,6 +90,7 @@ tests:
       actions: ["validate"]
     expected:
       - principal: directeur_centre
+        resource: fiche_douala
         actions:
           validate: EFFECT_ALLOW
 
@@ -99,6 +101,7 @@ tests:
       actions: ["view"]
     expected:
       - principal: directeur_filiale_cmr
+        resource: fiche_douala
         actions:
           view: EFFECT_ALLOW
 
@@ -110,6 +113,7 @@ tests:
       actions: ["validate", "reopen"]
     expected:
       - principal: directeur_filiale_cmr
+        resource: fiche_douala
         actions:
           validate: EFFECT_DENY
           reopen: EFFECT_DENY
@@ -121,6 +125,7 @@ tests:
       actions: ["validate", "reopen"]
     expected:
       - principal: chef_atelier_douala
+        resource: fiche_douala
         actions:
           validate: EFFECT_DENY
           reopen: EFFECT_DENY
@@ -132,6 +137,7 @@ tests:
       actions: ["view", "update", "submit"]
     expected:
       - principal: chef_atelier_abidjan
+        resource: fiche_douala
         actions:
           view: EFFECT_DENY
           update: EFFECT_DENY

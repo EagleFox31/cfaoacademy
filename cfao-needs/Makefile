@@ -25,7 +25,8 @@ test:          ## Tests Python
 	cd api && .venv/Scripts/python.exe -m pytest -q
 
 policy-test:   ## Tests Cerbos — positifs ET négatifs, obligatoires
-	docker run --rm -v "$(CURDIR)/cerbos:/work" ghcr.io/cerbos/cerbos:0.38.1 \
+	# MSYS_NO_PATHCONV : sous Git Bash, /work/* est sinon converti en chemin Windows.
+	MSYS_NO_PATHCONV=1 docker run --rm -v "$(CURDIR)/cerbos:/work" ghcr.io/cerbos/cerbos:0.38.1 \
 	  compile --tests=/work/tests /work/policies
 
 build-web:

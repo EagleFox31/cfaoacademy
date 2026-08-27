@@ -153,12 +153,11 @@ Chacun est un contrôle, pas une consigne.
 | ✅ | Modèle de données complet (familles, campagne, catalogue, soumissions, besoins, file de sortie) |
 | ✅ | Patron d'import tabulaire + importeur de catalogue — **10 tests passent** |
 | ✅ | Circuit d'envoi à validation — **10 tests passent** |
-| ✅ | Policies Cerbos `needs_*` + suites de tests positifs et négatifs |
+| ✅ | Policies Cerbos `needs_*` — **58 tests exécutés, 58 verts** (positifs et négatifs) |
 | ✅ | **SPA — les 7 pages du parcours**, build Vite vert (216 Ko JS, 9,4 Ko CSS) |
 | ✅ | **Bilingue FR/EN** — 137 clés utilisées, catalogues stricts et alignés (aucune manquante) |
 | ⏳ | Commandes `seed_referential` et `seed_email_templates` |
 | ⏳ | Relances et regroupement par inactivité (tâches planifiées) |
-| ⏳ | Vérification `make policy-test` — **Docker n'était pas démarré au moment de l'écriture** |
 
 ### Les 7 pages
 

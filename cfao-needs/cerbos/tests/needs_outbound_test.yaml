@@ -56,6 +56,7 @@ tests:
       actions: ["view", "list", "approve", "reject", "send"]
     expected:
       - principal: assistante_academy
+        resource: confirmation_en_attente
         actions:
           view: EFFECT_ALLOW
           list: EFFECT_ALLOW
@@ -63,14 +64,20 @@ tests:
           reject: EFFECT_ALLOW
           send: EFFECT_ALLOW
       - principal: directeur_centre
+        resource: confirmation_en_attente
         actions:
           view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
           approve: EFFECT_ALLOW
+          reject: EFFECT_ALLOW
           send: EFFECT_ALLOW
       - principal: superadmin
+        resource: confirmation_en_attente
         actions:
           view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
           approve: EFFECT_ALLOW
+          reject: EFFECT_ALLOW
           send: EFFECT_ALLOW
 
   - name: NEGATIF aucun role de filiale ne peut envoyer
@@ -80,16 +87,19 @@ tests:
       actions: ["view", "approve", "send"]
     expected:
       - principal: directeur_filiale
+        resource: confirmation_en_attente
         actions:
           view: EFFECT_DENY
           approve: EFFECT_DENY
           send: EFFECT_DENY
       - principal: admin_filiale
+        resource: confirmation_en_attente
         actions:
           view: EFFECT_DENY
           approve: EFFECT_DENY
           send: EFFECT_DENY
       - principal: chef_atelier
+        resource: confirmation_en_attente
         actions:
           view: EFFECT_DENY
           approve: EFFECT_DENY
@@ -102,6 +112,7 @@ tests:
       actions: ["send", "approve"]
     expected:
       - principal: admin_groupe
+        resource: confirmation_en_attente
         actions:
           send: EFFECT_DENY
           approve: EFFECT_DENY
