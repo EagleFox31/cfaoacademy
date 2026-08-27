@@ -25,6 +25,11 @@ make test          # tests Python
 make policy-test   # tests Cerbos — positifs ET négatifs
 ```
 
+**En intégration continue** : les jobs `cfao-needs (app 16 · Django · pytest)`,
+`cfao-needs (app 16 · Vite · build)` et l'étape « app 16 » du job Policies Cerbos.
+La CI se déclenche à l'ouverture de la pull request — une branche de feature poussée
+seule ne déclenche rien (`.github/workflows/ci.yml`).
+
 ---
 
 ## Arborescence

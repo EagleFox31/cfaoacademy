@@ -58,7 +58,7 @@ services:
     # PDP — mesure 51 Mio
     mem_limit: 256m
     restart: unless-stopped
-    image: ghcr.io/cerbos/cerbos:0.38.1
+    image: ghcr.io/cerbos/cerbos:0.40.0
     command: ["server", "--config=/config/cerbos.yaml"]
     environment:
       # Cerbos remonte une telemetrie anonyme par defaut. Un PDP qui emet vers
