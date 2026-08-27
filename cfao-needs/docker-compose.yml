@@ -12,6 +12,9 @@ name: cfao-needs
 
 services:
   needs-kc-db:
+    # base Keycloak — mesure 54 Mio
+    mem_limit: 256m
+    restart: unless-stopped
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: keycloak
@@ -21,11 +24,14 @@ services:
       - needs-kc-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U keycloak"]
-      interval: 5s
+      interval: 20s
       timeout: 5s
       retries: 10
 
   needs-keycloak:
+    # JVM bridee a 256 Mio de tas (JAVA_OPTS_KC_HEAP)
+    mem_limit: 768m
+    restart: unless-stopped
     image: quay.io/keycloak/keycloak:25.0
     command: ["start-dev", "--import-realm"]
     environment:
@@ -36,6 +42,9 @@ services:
       KEYCLOAK_ADMIN: ${KC_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:?KC_ADMIN_PASSWORD est obligatoire}
       KC_HEALTH_ENABLED: "true"
+      # 524 Mio mesures pour ~100 comptes : le tas par defaut de la JVM vise
+      # un annuaire d'entreprise, pas un module saisonnier.
+      JAVA_OPTS_KC_HEAP: "-Xms64m -Xmx256m"
     volumes:
       # Realm en config-as-code : reproductible, dérive détectable.
       - ./keycloak:/opt/keycloak/data/import:ro
@@ -46,6 +55,9 @@ services:
       - "${KC_PORT:-8081}:8080"
 
   needs-cerbos:
+    # PDP — mesure 51 Mio
+    mem_limit: 256m
+    restart: unless-stopped
     image: ghcr.io/cerbos/cerbos:0.38.1
     command: ["server", "--config=/config/cerbos.yaml"]
     environment:
@@ -59,11 +71,15 @@ services:
       - needs-cerbos-audit:/audit
     healthcheck:
       test: ["CMD", "/cerbos", "healthcheck", "--config=/config/cerbos.yaml"]
-      interval: 10s
+      # 10 s -> 30 s : pics mesures jusqu'a 50 % de CPU pour une sonde.
+      interval: 30s
       timeout: 5s
       retries: 10
 
   needs-db:
+    # PostgreSQL metier — mesure 59 Mio, marge confortable
+    mem_limit: 512m
+    restart: unless-stopped
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${NEEDS_DB_NAME:-needs}
@@ -73,11 +89,14 @@ services:
       - needs-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${NEEDS_DB_USER:-needs}"]
-      interval: 5s
+      interval: 20s
       timeout: 5s
       retries: 10
 
   needs-api:
+    # 2 workers gunicorn — mesure 166 Mio a 3 workers
+    mem_limit: 512m
+    restart: unless-stopped
     build: ./api
     environment: &api_env
       DJANGO_SETTINGS_MODULE: config.settings.dev
@@ -105,14 +124,20 @@ services:
         condition: service_started
     healthcheck:
       # Python plutot que curl : l'image n'installe aucun paquet systeme.
-      test: ["CMD", "python", "-c",
+      # `-S` saute le chargement de site.py — mesure : la sonde faisait des pics a
+      # 165 % de CPU toutes les 15 s, pour un module interne ou detecter une panne
+      # 30 s plus tard ne change rien.
+      test: ["CMD", "python", "-S", "-c",
              "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/needs/healthz', timeout=5).status==200 else 1)"]
-      interval: 15s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 20s
 
   needs-worker:
+    # Django-Q — mesure 89 Mio
+    mem_limit: 384m
+    restart: unless-stopped
     build: ./api
     # Le worker attend le schema : les migrations sont explicites (make migrate),
     # donc la table de file peut ne pas exister au demarrage du conteneur.
@@ -123,6 +148,9 @@ services:
         condition: service_started
 
   needs-gateway:
+    # nginx — mesure 5 Mio
+    mem_limit: 64m
+    restart: unless-stopped
     build: ./gateway
     volumes:
       - ./web/dist:/usr/share/nginx/html:ro

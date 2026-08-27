@@ -453,6 +453,24 @@ Services définis dans `docker-compose.yml` :
 | `operations` | build `./cfao-operations` | service Node |
 | `ops-db` | postgres | base du service operations |
 
+### Budget de ressources — obligatoire par service
+
+Chaque service déclare `mem_limit` et `restart: unless-stopped`. Le plafond est calibré
+sur une **mesure** (`docker stats` sur la stack démarrée), pas sur une estimation, avec
+une marge de 3 à 8× la consommation observée.
+
+Pas de `cpus:` par défaut : le throttling est silencieux et se diagnostique mal. Quand la
+consommation CPU au repos est anormale, on corrige la **cause** — intervalle de
+scrutation d'un worker, nombre de processus — jamais par un plafond.
+
+**Les valeurs par défaut des composants tiers sont systématiquement remises en cause** :
+elles visent le cas d'usage du fournisseur, pas le nôtre. Keycloak réserve 524 Mio de tas
+JVM là où 256 suffisent pour quelques centaines de comptes ; Django-Q scrute toutes les
+0,2 s là où 2 s ne changent rien à l'expérience.
+
+> Règles complètes, procédure de mesure et exemples chiffrés : **`planning.md` §7**.
+> Cette norme fait partie de la Definition of Done (`planning.md` §6).
+
 Migration des comptes existants : le plugin bcrypt permet d'importer les hash actuels sans reset ; Keycloak ré-encode au format natif à la première connexion.
 
 Config Keycloak : gérée en **config-as-code** via `keycloak-config-cli` (realm, clients, mappers en JSON/YAML versionné, appliqués sans redémarrage), pas de configuration manuelle dans la console — dérive détectable, démarrage reproductible.

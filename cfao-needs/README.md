@@ -124,6 +124,44 @@ Le basculement se fait par `NEEDS_DEPLOYMENT_MODE`, jamais par modification de c
 
 ---
 
+## Budget de ressources
+
+Chaque service déclare son plafond, **calibré sur une mesure** — norme projet
+(`../planning.md` §7, `../architecture.md` §7).
+
+Mesures au repos, médiane sur 5 relevés (un échantillon unique attrape les sondes et
+ment d'un ordre de grandeur).
+
+| Service | CPU | Mémoire | Plafond |
+|---------|----:|--------:|--------:|
+| needs-keycloak | 0,3 % | 337 Mio | 768 Mio |
+| needs-api | 0,01 % | 103 Mio | 512 Mio |
+| needs-worker | 0,9 % | 82 Mio | 384 Mio |
+| needs-cerbos | 1,5 % | 38 Mio | 256 Mio |
+| needs-db | 0,9 % | 23 Mio | 512 Mio |
+| needs-kc-db | 0,1 % | 19 Mio | 256 Mio |
+| needs-gateway | 0 % | 3 Mio | 64 Mio |
+| **Total** | **~3,7 %** | **~605 Mio** | 2,7 Gio |
+
+**Avant réglages : ~950 Mio et ~11 % de CPU, avec des pics à 165 %.**
+
+Quatre valeurs par défaut ramenées à l'usage réel :
+
+| Réglage | Défaut | Ici | Gain |
+|---|---|---|---|
+| Tas JVM Keycloak | libre (524 Mio) | `-Xmx256m` | −190 Mio |
+| Workers gunicorn | 3 | 2 | −60 Mio |
+| Django-Q `guard_cycle` | 0,5 s | 5 s | 4 % → 0,9 % |
+| Sondes de santé | 10–15 s | 20–30 s, `python -S` | pics 165 % → 0 |
+
+> La sonde de l'API coûtait plus cher que l'API elle-même : un interpréteur Python
+> lancé toutes les 15 s, pour un service à 0,01 % d'usage réel.
+
+Pas de limite CPU : le throttling est silencieux et se diagnostique mal. On agit sur la
+cause, pas sur le symptôme.
+
+---
+
 ## Les onze interdits
 
 Repris de l'audit Academix ([`../docs/AUDIT_ACADEMIX.md`](../docs/AUDIT_ACADEMIX.md) §4).

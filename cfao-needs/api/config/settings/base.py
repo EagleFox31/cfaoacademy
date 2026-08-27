@@ -123,4 +123,11 @@ Q_CLUSTER = {
     "queue_limit": 50,
     "orm": "default",
     "catch_up": False,
+    # Deux cadences distinctes, et c'est la seconde qui coute :
+    #   - `poll`        : le courtier interroge la file (defaut 0,2 s)
+    #   - `guard_cycle` : le sentinelle verifie la sante des workers (defaut 0,5 s)
+    # Mesure : `poll: 2` seul n'a rien change (~5 % de CPU a vide) — le bruit venait
+    # du sentinelle. Pour de l'envoi d'emails, ces deux cadences peuvent etre lentes.
+    "poll": 2,
+    "guard_cycle": 5,
 }

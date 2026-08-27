@@ -326,10 +326,78 @@ Implémentation → ① TU → ② TI → ③ Contrat → ④ E2E
 - [ ] ③ Contrat si la story expose ou consomme une API / webhook inter-service
 - [ ] ④ E2E si la story a un parcours utilisateur ou un rôle métier visible
 - [ ] Documentation API / événement mise à jour si le contrat change
+- [ ] **Budget de ressources** déclaré si la story ajoute ou modifie un conteneur (§7)
 
 ---
 
-## 7. Références
+## 7. Budget de ressources — norme de développement
+
+**Tout conteneur qu'on ajoute déclare ce qu'il a le droit de consommer.** Sans plafond,
+un service peut prendre toute la machine ; sur une infra partagée, c'est le voisin qui
+tombe, et le diagnostic part dans la mauvaise direction.
+
+### Les quatre règles
+
+| # | Règle | Pourquoi |
+|---|-------|----------|
+| **1** | `mem_limit` sur **chaque** service, calibré sur une **mesure**, pas sur une intuition | Un plafond deviné est soit inutile, soit une panne différée |
+| **2** | `restart: unless-stopped` sur tout service persistant | Sinon un conteneur mort la nuit se découvre le matin |
+| **3** | **Pas** de `cpus:` par défaut | Le throttling est silencieux et se diagnostique mal ; on agit sur la **cause** (intervalle de scrutation, nombre de workers), pas sur le symptôme |
+| **4** | Toute valeur par défaut d'un composant tiers est **suspecte** | Elle vise le cas d'usage du fournisseur, jamais le nôtre |
+
+### La règle 4 en pratique
+
+Trois exemples relevés au premier démarrage du module `cfao-needs`, tous invisibles
+avant de mesurer :
+
+| Défaut du fournisseur | Ce qu'il vise | Ce qu'on en fait |
+|---|---|---|
+| Keycloak — tas JVM libre, **524 Mio** mesurés | Un annuaire d'entreprise | `JAVA_OPTS_KC_HEAP=-Xmx256m` pour ~100 comptes saisonniers |
+| Django-Q — `guard_cycle` **0,5 s**, ~4 % CPU à vide | De la tâche temps réel | `guard_cycle: 5` — passe à ~0,5 % |
+| gunicorn — nombre de workers arbitraire | Un site public | 2 workers pour une campagne de six semaines |
+
+### Le piège des sondes de santé
+
+**Une sonde peut coûter plus cher que le service qu'elle surveille.** Sur le module 16, la
+sonde `docker healthcheck` de l'API lançait un interpréteur Python toutes les 15 s :
+pics mesurés à **165 % de CPU**, pour un service dont l'usage réel est à 0,01 %.
+
+Trois réflexes :
+
+- **Espacer.** Détecter une panne 30 s plus tard qu'aux 10 s par défaut ne change rien à
+  un module interne. C'est le levier le plus rentable.
+- **Alléger.** `python -S` saute le chargement de `site.py`. Un binaire natif (`pg_isready`,
+  `/cerbos healthcheck`) coûte bien moins qu'un interpréteur.
+- **Se méfier de l'échantillon unique.** `docker stats --no-stream` prend une seconde : s'il
+  tombe sur une sonde, le chiffre est faux d'un ordre de grandeur. **Toujours plusieurs
+  relevés**, et raisonner en médiane.
+
+> C'est en corrigeant une consommation apparente qu'on a trouvé la vraie : le premier
+> réglage (`poll: 2`) n'a rien donné parce que le bruit venait d'ailleurs. Mesurer, changer
+> **une** chose, re-mesurer.
+
+### La procédure
+
+```
+1. démarrer la stack réellement      docker compose up -d
+2. laisser reposer (fin du boot)     les JVM mentent pendant 60 s
+3. mesurer                           docker stats --no-stream
+4. plafonner a ~3-8x le mesure       marge de croissance, pas de plafond decoratif
+5. re-demarrer et re-mesurer         verifier qu'aucun service n'est etrangle
+```
+
+**Le point non négociable : mesurer sur la stack démarrée, avant le push.** Un budget
+posé sans mesure est une décoration. C'est aussi le seul moment où l'on découvre qu'un
+conteneur ne démarre pas — trois défauts bloquants du module 16 (PDP sans
+`storagePath`, build dépendant de `deb.debian.org`, worker démarrant avant le schéma)
+n'ont été vus qu'à ce moment-là.
+
+> Cette norme s'applique à `cfao-core`, `cfao-operations` et `cfao-needs` — et à tout
+> service futur. Détail d'application : `architecture.md` §7, skill `module-securise`.
+
+---
+
+## 8. Références
 
 - Architecture événements : `architecture.md` §5.4  
 - Stratégie tests (résumé) : `architecture.md` §5.5  

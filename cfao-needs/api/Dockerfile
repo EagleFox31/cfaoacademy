@@ -25,4 +25,5 @@ EXPOSE 8000
 # Academix enchaînait `alembic upgrade head && seed_all` à chaque démarrage de
 # conteneur ; acceptable en développement, risqué en production. Ici les deux sont
 # des commandes explicites (`make migrate`, `make seed`).
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+# 2 workers : ~100 utilisateurs sur une campagne de six semaines, pas un site public.
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]
