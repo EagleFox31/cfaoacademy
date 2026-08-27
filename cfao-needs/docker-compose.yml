@@ -48,9 +48,15 @@ services:
   needs-cerbos:
     image: ghcr.io/cerbos/cerbos:0.38.1
     command: ["server", "--config=/config/cerbos.yaml"]
+    environment:
+      # Cerbos remonte une telemetrie anonyme par defaut. Un PDP qui emet vers
+      # l'exterieur n'a pas sa place sur un reseau d'entreprise.
+      CERBOS_NO_TELEMETRY: "1"
     volumes:
       - ./cerbos/policies:/policies:ro
       - ./cerbos/cerbos.yaml:/config/cerbos.yaml:ro
+      # Le journal d'audit du PDP survit au redemarrage du conteneur.
+      - needs-cerbos-audit:/audit
     healthcheck:
       test: ["CMD", "/cerbos", "healthcheck", "--config=/config/cerbos.yaml"]
       interval: 10s
@@ -98,7 +104,9 @@ services:
       needs-cerbos:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/v1/needs/healthz || exit 1"]
+      # Python plutot que curl : l'image n'installe aucun paquet systeme.
+      test: ["CMD", "python", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/needs/healthz', timeout=5).status==200 else 1)"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -106,7 +114,9 @@ services:
 
   needs-worker:
     build: ./api
-    command: ["python", "manage.py", "qcluster"]
+    # Le worker attend le schema : les migrations sont explicites (make migrate),
+    # donc la table de file peut ne pas exister au demarrage du conteneur.
+    command: ["sh", "-c", "python manage.py wait_for_schema && exec python manage.py qcluster"]
     environment: *api_env
     depends_on:
       needs-api:
@@ -125,3 +135,4 @@ services:
 volumes:
   needs-kc-db-data:
   needs-db-data:
+  needs-cerbos-audit:

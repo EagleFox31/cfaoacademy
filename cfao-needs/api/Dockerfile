@@ -5,9 +5,14 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential libpq-dev curl \
-    && rm -rf /var/lib/apt/lists/*
+# Aucune installation systeme : `psycopg[binary]` embarque ses roues
+# precompilees, donc ni build-essential ni libpq-dev ne sont necessaires.
+# Et pas de curl : la sonde de sante passe par Python, deja present.
+#
+# Ce n'est pas qu'une optimisation. Un build qui depend de deb.debian.org
+# echoue derriere un proxy d'entreprise — ce poste a renvoye 403 sur les
+# depots Debian, et le reseau CFAO fera probablement pareil. Une image qui
+# ne se construit que depuis un poste ouvert sur Internet n'est pas livrable.
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
