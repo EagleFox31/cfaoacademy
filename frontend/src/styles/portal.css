@@ -3428,13 +3428,9 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
   scroll-margin-top: var(--portal-anchor-offset);
 }
 
-/* Section sur laquelle on vient d'atterrir via la navigation : son conteneur
-   perd son padding haut, pour que le contenu touche l'appbar sans liseré.
-   `!important` car le padding est posé en style inline sur `.container`.
-   Le padding est restauré dès qu'une autre section devient la cible. */
-.portal-page section[id].portal-section-landed > .container {
-  padding-top: 0 !important;
-}
+/* Le scroll d'ancrage conserve l'espace de mise en page standard pour garder
+   visible l'entête et la section précédente lors d'un déplacement vers une
+   section du portail. */
 
 /* ── "À faire maintenant" : lien "Voir tout (N)" à droite du titre ─── */
 .portal-next-actions-more {

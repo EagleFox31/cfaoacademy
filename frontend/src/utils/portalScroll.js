@@ -55,18 +55,15 @@ const SNAP_CLASS = 'portal-section-snap-hl'
 const SNAP_DURATION = 1600
 
 /**
- * Marque la section sur laquelle on vient d'atterrir. Le CSS s'en sert pour
- * neutraliser le padding haut de son conteneur : sans cela, la section est bien
- * collée à l'appbar mais son PREMIER PIXEL DE CONTENU commence 16px plus bas,
- * ce qui se lit comme un espace résiduel.
+ * Sections qui doivent révéler l'entête plutôt que se coller à l'appbar.
+ *
+ * « Vos priorités » partage l'écran avec l'entête (sa hauteur est calculée
+ * comme le reste de l'écran) : l'ancrer sous l'appbar ferait sortir l'entête du
+ * champ alors que les deux sont conçues pour être vues ensemble. Remonter en
+ * haut de page les affiche toutes les deux.
  */
-const LANDED_CLASS = 'portal-section-landed'
-
-/** Retire la marque d'atterrissage de la section précédemment ciblée. */
-function clearPreviousLanded() {
-  document
-    .querySelectorAll(`.${LANDED_CLASS}`)
-    .forEach(el => el.classList.remove(LANDED_CLASS))
+function scrollsToPageTop(section) {
+  return section.classList.contains('portal-next-actions-viewport')
 }
 
 /**
@@ -96,19 +93,22 @@ export function scrollToPortalSection(sectionId, { highlight = true } = {}) {
   const el = document.getElementById(sectionId)
   if (!el) return false
 
-  // Ordre important : on fige les animations ET on retire le padding haut de la
-  // cible AVANT de mesurer, sinon le layout bouge après le calcul et l'arrivée
-  // est décalée d'autant.
+  // On garde la structure de mise en page normale : la cible ne doit pas
+  // "manger" le padding du conteneur, afin de laisser visible l'entête et la
+  // section qui précède lors d'un déplacement par ancre.
   freezePageReveals()
-  clearPreviousLanded()
-  el.classList.add(LANDED_CLASS)
 
   const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
   // rAF : laisse le navigateur recalculer le layout (retrait des `translateY`
   // et du padding) avant de mesurer la position cible.
   const go = () => {
-    const top = el.getBoundingClientRect().top + window.scrollY - appbarBottom()
+    // « Vos priorités » est dimensionnée pour tenir dans l'écran AVEC l'entête
+    // (cf. --portal-priorities-h) : on remonte donc en haut de page plutôt que
+    // de coller la section sous l'appbar, ce qui masquerait l'entête.
+    const top = scrollsToPageTop(el)
+      ? 0
+      : el.getBoundingClientRect().top + window.scrollY - appbarBottom()
     // `ceil` plutôt que `round` : sur les hauteurs fractionnaires (zoom, DPI),
     // arrondir vers le bas laisserait un liseré de la section précédente.
     window.scrollTo({
