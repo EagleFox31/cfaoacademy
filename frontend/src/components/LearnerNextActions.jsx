@@ -13,6 +13,7 @@ import {
   resolveEvalTitle,
 } from '../utils/learnerTests.js'
 import { planningSessionAccent } from '../utils/learnerPlanning.js'
+import { scrollToPortalSection } from '../utils/portalScroll.js'
 
 const VISIBLE_LIMIT = 4
 
@@ -141,15 +142,6 @@ function LegacyNextActions({ user, items, onEval }) {
   )
 }
 
-/** Défilement doux vers la section dédiée + court halo pour situer l'arrivée. */
-function scrollToSection(sectionId) {
-  const el = document.getElementById(sectionId)
-  if (!el) return
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  el.classList.add('portal-section-snap-hl')
-  window.setTimeout(() => el.classList.remove('portal-section-snap-hl'), 1600)
-}
-
 /* ─────────────────────────────────────────────────────────────
    Vue PL-MEDACAP — une seule catégorie, 4 max + lien section.
    ───────────────────────────────────────────────────────────── */
@@ -190,7 +182,7 @@ function PlMedacapNextActions({ user, lms, actions, onEval }) {
   const showMoreLink = !isRedirectCategory && remaining > 0 && sectionId
 
   return (
-    <PortalReveal id="next-actions">
+    <PortalReveal id="next-actions" className="portal-next-actions-viewport">
       <div className="container" style={{ padding: '16px 32px' }}>
         <div className="portal-section-head portal-section-head--with-action">
           <div>
@@ -201,12 +193,12 @@ function PlMedacapNextActions({ user, lms, actions, onEval }) {
             <button
               type="button"
               className="portal-next-actions-more"
-              onClick={() => scrollToSection(sectionId)}
+              onClick={() => scrollToPortalSection(sectionId)}
             >
-              {((category === 'tests'
-                ? (t.next_actions_see_more_tests ?? t.next_actions_see_more)
-                : t.next_actions_see_more) ?? 'Voir tout ({n})')
-                .replace('{n}', String(items.length))}
+              {(category === 'tests'
+                ? t.next_actions_see_more_tests
+                : t.next_actions_see_more
+              ).replace('{n}', String(items.length))}
               <span className="portal-next-actions-more-arrow" aria-hidden="true">→</span>
             </button>
           )}
@@ -214,13 +206,13 @@ function PlMedacapNextActions({ user, lms, actions, onEval }) {
 
         {isRedirectCategory ? (
           <div className="portal-next-actions-redirect">
-            <p>{redirectHintByCategory[category] ?? 'Vos résultats sont disponibles.'}</p>
+            <p>{redirectHintByCategory[category]}</p>
             <button
               type="button"
               className="portal-next-actions-more"
-              onClick={() => scrollToSection(sectionId)}
+              onClick={() => scrollToPortalSection(sectionId)}
             >
-              {redirectCtaByCategory[category] ?? t.next_actions_see_results ?? 'Voir la section'} →
+              {redirectCtaByCategory[category]} →
             </button>
           </div>
         ) : (

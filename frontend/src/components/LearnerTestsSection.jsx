@@ -12,6 +12,7 @@ import {
   learnerTestEvaluations,
   matchesEvalStatusFilter,
 } from '../utils/learnerTests.js'
+import { scrollToPortalSection } from '../utils/portalScroll.js'
 
 function testStatusFilterLabel(filterId, t) {
   const key = `test_filter_${filterId}`
@@ -111,13 +112,7 @@ export default function LearnerTestsSection({
     setTestOpen(prev => ({ ...prev, [sectionId]: !(prev[sectionId] ?? true) }))
   }
 
-  function scrollToResults() {
-    const results = document.getElementById('resultats')
-    if (!results) return
-    results.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    results.classList.add('portal-section-snap-hl')
-    window.setTimeout(() => results.classList.remove('portal-section-snap-hl'), 1600)
-  }
+  const scrollToResults = () => scrollToPortalSection('resultats')
 
   if (!isMedacapLearner && !visibleEvaluations.length && !medacapLive) return null
 

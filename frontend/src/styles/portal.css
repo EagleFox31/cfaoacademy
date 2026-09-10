@@ -3413,9 +3413,10 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
   }
 }
 
-/* Décalage d'ancrage = hauteur nav fixe (76) + sticky-bar (44) + respiration */
+/* Décalage d'ancrage standard pour les sections du portail.
+   On annule ici la marge supplémentaire ajoutée récemment. */
 :root {
-  --portal-anchor-offset: 132px;
+  --portal-anchor-offset: 92px;
 }
 
 .portal-card-anchor {
@@ -3425,6 +3426,14 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
 .portal-page > section[id],
 .portal-page section[id] {
   scroll-margin-top: var(--portal-anchor-offset);
+}
+
+/* Section sur laquelle on vient d'atterrir via la navigation : son conteneur
+   perd son padding haut, pour que le contenu touche l'appbar sans liseré.
+   `!important` car le padding est posé en style inline sur `.container`.
+   Le padding est restauré dès qu'une autre section devient la cible. */
+.portal-page section[id].portal-section-landed > .container {
+  padding-top: 0 !important;
 }
 
 /* ── "À faire maintenant" : lien "Voir tout (N)" à droite du titre ─── */
@@ -3492,10 +3501,13 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
   animation: portalSectionSnap 1.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Halo d'arrivée : `inset` pour qu'il ne déborde PAS au-dessus du haut de la
+   section — un box-shadow sortant venait se dessiner dans l'espace sous
+   l'appbar et se lisait comme un liseré résiduel. */
 @keyframes portalSectionSnap {
-  0%   { box-shadow: 0 0 0 0 rgba(26, 100, 220, 0); }
-  18%  { box-shadow: 0 0 0 4px rgba(26, 100, 220, 0.22); }
-  100% { box-shadow: 0 0 0 0 rgba(26, 100, 220, 0); }
+  0%   { box-shadow: inset 0 0 0 0 rgba(26, 100, 220, 0); }
+  18%  { box-shadow: inset 0 3px 0 0 rgba(26, 100, 220, 0.22); }
+  100% { box-shadow: inset 0 0 0 0 rgba(26, 100, 220, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3737,57 +3749,25 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
   gap: 14px;
 }
 
-/* ── Résultats (variante PL-MEDACAP) : pastilles de filtre marque ── */
-.portal-results-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 18px;
-}
-.portal-results-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 12px 6px 8px;
-  border: 1px solid var(--border, #d5d8e0);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--ink, #0e1126);
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-.portal-results-pill:hover {
-  border-color: var(--navy, #0e1126);
-}
-.portal-results-pill.is-active {
-  background: var(--navy, #0e1126);
-  border-color: var(--navy, #0e1126);
-  color: #fff;
-}
-.portal-results-pill-logo {
-  width: 18px;
-  height: 18px;
+/* ── Chips de filtre : icône optionnelle (logo de marque) ────────── */
+.chip-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
   background: #fff;
   border-radius: 4px;
   overflow: hidden;
   flex-shrink: 0;
 }
-.portal-results-pill-logo img {
+
+.chip-icon-logo {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
-.portal-results-pill-count {
-  font-size: 11px;
-  font-weight: 700;
-  opacity: 0.7;
-}
-.portal-results-pill.is-active .portal-results-pill-count { opacity: 0.85; }
 
 #pif .portal-plan-status-filter {
   margin-bottom: 32px;
@@ -3840,6 +3820,7 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
 #equipes .portal-plan-status-filter,
 section[id^="equipe-"] .portal-plan-status-filter,
 #tests .portal-plan-status-filter,
+#resultats .portal-plan-status-filter,
 #plan .portal-plan-status-filter {
   margin-bottom: 32px;
 }
@@ -3900,13 +3881,15 @@ section[id^="equipe-"] .portal-plan-status-filter,
   margin-bottom: 0;
 }
 
-#tests .sessions-brand-chips .chip {
+#tests .sessions-brand-chips .chip,
+#resultats .sessions-brand-chips .chip {
   display: inline-flex;
   align-items: center;
   gap: 10px;
 }
 
-#tests .sessions-brand-chips .chip .tab-count {
+#tests .sessions-brand-chips .chip .tab-count,
+#resultats .sessions-brand-chips .chip .tab-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3922,7 +3905,8 @@ section[id^="equipe-"] .portal-plan-status-filter,
   color: var(--red);
 }
 
-#tests .sessions-brand-chips .chip.active .tab-count {
+#tests .sessions-brand-chips .chip.active .tab-count,
+#resultats .sessions-brand-chips .chip.active .tab-count {
   background: #fff;
   color: var(--red);
 }
@@ -4620,5 +4604,207 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   .portal-delivery-weekly-grid,
   .portal-delivery-history-grid {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   ENTÊTE COMPACTE — variante PL-MEDACAP
+   Même contenu, densité plus forte : l'entête cède de
+   la hauteur pour que la première section (« Vos
+   priorités ») tienne dans l'écran sans défilement.
+   Portée limitée à `--compact` : les autres profils
+   gardent l'entête d'origine.
+   ═══════════════════════════════════════════════════ */
+
+.portal-page-header--compact {
+  /* Respiration sous le bandeau des marques, avant la section suivante.
+     Les +26px de marge entre les trois lignes sont PRIS ICI (60 → 34) :
+     la hauteur totale de l'entête reste la même, seule sa répartition change. */
+  padding: 18px 0 34px;
+}
+
+/* Écart entre les éléments empilés de l'entête (badge, salutation, marques).
+   La carte de certification étant désactivée (SHOW_LEARNER_CERT_CARD), le
+   rendu passe par `.portal-header-main` en flux normal et NON par la grille
+   `--with-cert` : `row-gap` n'y produirait aucun effet, il faut des marges. */
+.portal-page-header--compact .portal-header-container {
+  row-gap: 12px;
+}
+
+/* Badge « APPRENANT : TECHNICIEN PL » → salutation. */
+.portal-page-header--compact .portal-header-role-line,
+.portal-page-header--compact .portal-header-eyebrow {
+  margin-bottom: 30px;
+}
+
+/* Bloc salutation → bandeau des marques. */
+.portal-page-header--compact .portal-header-greeting-block {
+  margin-bottom: 34px;
+}
+
+/* Titre : on garde la hiérarchie, on plafonne la casse XXL. */
+.portal-page-header--compact .portal-header-greeting {
+  font-size: clamp(24px, 2.4vw, 34px);
+  margin-bottom: 0;
+  /* La pastille filiale vit DANS le h1 : sans interligne propre, elle se colle
+     au « ! » quand la ligne passe à la ligne suivante. */
+  line-height: 1.35;
+}
+
+/* Pastille filiale (CFAO EQUIPMENT · Cameroun) : détachée de la salutation. */
+.portal-page-header--compact .portal-header-greeting-org {
+  margin-left: 0.75em;
+}
+
+/* Le sous-titre d'orientation devient une ligne de service, pas un paragraphe. */
+.portal-page-header--compact .portal-header-orient {
+  margin-top: 6px;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+/* Bandeau marques : titre sur la même ligne que les cartes plutôt qu'au-dessus,
+   c'est le gain de hauteur le plus net de l'entête. */
+.portal-page-header--compact .portal-header-brand-levels {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  /* Titre calé sur le BAS des cartes : sa dernière ligne s'aligne avec le pied
+     de la rangée, ce qui pose visuellement les deux blocs sur la même assise. */
+  align-items: end;
+  column-gap: 26px;
+  margin-top: 18px;
+}
+
+.portal-page-header--compact .portal-header-brand-levels-title {
+  margin: 0;
+  /* Deux lignes explicites (i18n), pas de coupure automatique : la césure
+     reste correcte quelle que soit la langue. */
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 12px;
+  font-size: clamp(19px, 1.6vw, 23px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  text-transform: none;
+  color: var(--navy);
+  max-width: none;
+  line-height: 1.28;
+  white-space: nowrap;
+}
+
+.portal-page-header--compact .portal-header-brand-levels-title-line {
+  display: block;
+}
+
+/* Les cartes de marque ne sont PAS compactées : elles gardent la forme et la
+   taille d'origine (logo au-dessus, niveau en dessous). Le gain de hauteur
+   vient du titre mis en ligne et des paddings de l'entête, pas des cartes. */
+
+/* Sous 900px la mise en ligne du titre n'a plus la place : on repasse en pile. */
+@media (max-width: 900px) {
+  .portal-page-header--compact .portal-header-brand-levels {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    row-gap: 8px;
+  }
+
+  .portal-page-header--compact .portal-header-brand-levels-title {
+    padding-bottom: 0;
+    white-space: normal;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   ENTÊTE + « VOS PRIORITÉS » — un seul écran
+   Les deux blocs se partagent exactement la hauteur
+   utile. L'entête est mesurée à l'exécution et
+   publiée dans `--portal-header-h` (cf. usePortalHeaderHeight) :
+   la section priorités prend le reste, sans vide.
+   ═══════════════════════════════════════════════════ */
+
+/* Hauteur laissée à la section une fois la Nav et l'entête déduites.
+   En HAUT de page l'appbar visible est la Nav seule (la sticky-bar n'apparaît
+   qu'après) : c'est donc `--portal-nav-h` qu'il faut retrancher ici, et non
+   l'offset d'ancrage (Nav + sticky-bar) qui vaut 44px de plus. */
+.portal-page {
+  --portal-nav-h: 77px;
+  --portal-priorities-h: calc(
+    100dvh - var(--portal-nav-h) - var(--portal-header-h, 0px)
+  );
+}
+
+.portal-page .portal-next-actions-viewport {
+  /* La section occupe EXACTEMENT le reste de l'écran : `height` et non
+     `min-height`, pour qu'elle ne puisse ni laisser de vide ni déborder. */
+  height: var(--portal-priorities-h);
+  margin-bottom: 0;
+  display: flex;
+  /* Le contenu démarre en HAUT de la section : centrer créait le vide au-dessus
+     du titre « Vos priorités ». */
+  align-items: flex-start;
+  overflow: hidden;
+}
+
+.portal-page .portal-next-actions-viewport > .container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* Léger espace au-dessus du titre, pour ne pas coller à l'entête. */
+  padding-top: 18px !important;
+}
+
+/* La grille ne doit PAS s'étirer pour remplir la hauteur réservée : `flex: 1`
+   ajoutait sous les cartes un vide proportionnel à la place restante, bien plus
+   large que la marge des autres sections. Elle garde sa hauteur naturelle et
+   se contente de ne pas déborder. */
+.portal-page .portal-next-actions-viewport .portal-stagger-grid {
+  flex: 0 1 auto;
+  min-height: 0;
+  align-content: start;
+}
+
+/* Les cartes suivent la hauteur disponible plutôt que de la dépasser : la
+   rangée se comprime, et le média de chaque carte absorbe la réduction. */
+.portal-page .portal-next-actions-viewport .portal-stagger-grid > * {
+  min-height: 0;
+}
+
+.portal-page .portal-next-actions-viewport .pv-card {
+  height: 100%;
+}
+
+/* Respiration entre l'entête de section et la grille. */
+.portal-page .portal-next-actions-viewport .portal-section-head {
+  margin-bottom: 14px;
+}
+
+/* Média des cartes : ratio de base plus bas, mais surtout autorisé à se
+   comprimer si la hauteur manque — sans cela `height: 100%` sur la carte la
+   ferait déborder de la section. */
+.portal-page .portal-next-actions-viewport .pv-card-img {
+  aspect-ratio: 16 / 10;
+  min-height: 0;
+  flex-shrink: 1;
+}
+
+/* Écrans courts (portables 13", fenêtre réduite) : la contrainte d'un écran
+   deviendrait illisible — on la relâche et la section reprend sa hauteur. */
+@media (max-height: 720px) {
+  .portal-page .portal-next-actions-viewport {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .portal-page .portal-next-actions-viewport > .container {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .portal-page .portal-next-actions-viewport .pv-card {
+    height: auto;
   }
 }

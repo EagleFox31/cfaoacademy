@@ -30,8 +30,8 @@ export default function LearnerSuggestedTrainingsSection({ user, lms, year = 202
     <PortalReveal id="formations-suggerees">
       <div className="container" style={{ padding: '16px 32px' }}>
         <div className="portal-section-head">
-          <p className="portal-section-eyebrow">{t.eyebrow_suggested_trainings ?? 'Formations à venir'}</p>
-          <h2 className="portal-section-title">{t.title_suggested_trainings ?? 'Formations suggérées pour vous'}</h2>
+          <p className="portal-section-eyebrow">{t.eyebrow_suggested_trainings}</p>
+          <h2 className="portal-section-title">{t.title_suggested_trainings}</h2>
         </div>
 
         <PortalStaggerGrid>

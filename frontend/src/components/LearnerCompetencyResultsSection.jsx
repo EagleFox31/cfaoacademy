@@ -1,3 +1,4 @@
+import ChipFilterBar from './ChipFilterBar.jsx'
 import { useMemo, useState } from 'react'
 import LearnerEvalCard from './LearnerEvalCard.jsx'
 import PortalReveal from './PortalReveal.jsx'
@@ -90,34 +91,32 @@ function ResultsFlatFiltered({ user, lms, t, onOpenEval, brandItems, results }) 
     return [...list].sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))
   }, [results, brandFilter])
 
-  const pills = [
-    { id: 'all', label: t.results_filter_all ?? 'Toutes', logo: null, count: results.length },
+  // Même barre de filtre que la section « Vos tests » (ChipFilterBar), avec le
+  // logo de marque en icône d'option — plus de pilules dupliquées ici.
+  const filterOptions = [
+    { id: 'all', label: t.results_filter_all, count: results.length },
     ...brandItems
       .filter(b => (countByBrand[b.id] ?? 0) > 0)
-      .map(b => ({ ...b, count: countByBrand[b.id] ?? 0 })),
+      .map(b => ({
+        id: b.id,
+        label: b.label,
+        count: countByBrand[b.id] ?? 0,
+        icon: b.logo
+          ? <img className="chip-icon-logo" src={b.logo} alt="" loading="lazy" />
+          : null,
+      })),
   ]
 
   return (
     <>
-      <div className="portal-results-pills" role="group" aria-label={t.results_filter_aria ?? 'Filtrer par marque'}>
-        {pills.map(p => (
-          <button
-            key={p.id}
-            type="button"
-            className={`portal-results-pill${brandFilter === p.id ? ' is-active' : ''}`}
-            aria-pressed={brandFilter === p.id}
-            onClick={() => setBrandFilter(p.id)}
-          >
-            {p.logo && (
-              <span className="portal-results-pill-logo">
-                <img src={p.logo} alt="" loading="lazy" />
-              </span>
-            )}
-            <span>{p.label}</span>
-            <span className="portal-results-pill-count">{p.count}</span>
-          </button>
-        ))}
-      </div>
+      <ChipFilterBar
+        portal
+        label={t.results_filter_lbl}
+        ariaLabel={t.results_filter_aria}
+        value={brandFilter}
+        onChange={setBrandFilter}
+        options={filterOptions}
+      />
 
       {filtered.length === 0 ? (
         <div className="portal-plan-filter-empty" role="status">{t.results_brand_empty}</div>

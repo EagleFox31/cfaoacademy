@@ -8,6 +8,7 @@ import PortalGreetingBlock from './PortalGreetingBlock.jsx'
 import TeamManagerHeroCard from './TeamManagerHeroCard.jsx'
 import { resolveCertGoalPrerequisites } from '../utils/certGoalProgress.js'
 import { formatCertLevelLabel } from '../utils/portalCertLevel.js'
+import { isPlMedacapVariant } from '../utils/portalVariant.js'
 
 /* ─── Greeting logic ───────────────────────────────────────────── */
 
@@ -257,6 +258,9 @@ export default function PortalHeader({ user, certGoals, certGoal, lms, workshop 
   const showWorkshopCard = primaryRole === 'workshop_manager' && lms
   const showSidePanel = showCertCard || showKiCard || showTeamCard || showWorkshopCard
   const showGeoBrands = !showBrandLevels && userBrands.length > 0
+  // Entête compacte (variante PL-MEDACAP) : mêmes informations, densité plus
+  // forte, pour que la première section tienne dans l'écran sans défilement.
+  const compact = isPlMedacapVariant(lms)
   const roleBadge = (
     <span className="portal-header-role-badge">
       <RoleIcon role={primaryRole} />
@@ -264,7 +268,7 @@ export default function PortalHeader({ user, certGoals, certGoal, lms, workshop 
     </span>
   )
   return (
-    <section className={`page-header portal-page-header${showSidePanel ? ' portal-page-header--with-cert' : ''}${showBrandLevels ? ' portal-page-header--with-brands' : ''}`}>
+    <section className={`page-header portal-page-header${showSidePanel ? ' portal-page-header--with-cert' : ''}${showBrandLevels ? ' portal-page-header--with-brands' : ''}${compact ? ' portal-page-header--compact' : ''}`}>
       <div className="portal-hero-fx" aria-hidden="true">
         <span className="portal-hero-orb portal-hero-orb--a parallax" data-speed="0.08" />
         <span className="portal-hero-orb portal-hero-orb--b parallax" data-speed="0.16" />

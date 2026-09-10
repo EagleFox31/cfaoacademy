@@ -2,6 +2,7 @@ import { SESSIONS } from '../data/index.js'
 import CATALOG from '../data/training-catalog.json'
 import { canonicalTrainingCode } from './trainingCode.js'
 import { resolveTargetCertificationLevel, levelMatchesTarget } from './portalCertLevel.js'
+import { isPlMedacapVariant } from './portalVariant.js'
 
 const MOIS_FR = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
 
@@ -111,7 +112,7 @@ const PAYS_LIEUX = {
 function resolveAllowedLieux(user, lms) {
   const byFiliale = FILIALE_LIEUX[user?.filiale]
   if (byFiliale) return byFiliale
-  if (lms?.portalVariant === 'pl-medacap') {
+  if (isPlMedacapVariant(lms)) {
     return PAYS_LIEUX[user?.pays] ?? FILIALE_LIEUX[user?.pays] ?? []
   }
   return []

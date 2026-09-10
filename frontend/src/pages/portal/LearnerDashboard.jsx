@@ -26,6 +26,7 @@ import { handleEvalOpen, resolvePortalDisplayUser, medacapLearnerSections } from
 import useLearnerEvaluations from '../../hooks/useLearnerEvaluations.js'
 import { portalPvCardMedia } from '../../utils/portalCardMedia.js'
 import { isPlMedacapVariant } from '../../utils/portalVariant.js'
+import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
 
 // Mapping marque → section homepage correspondante
 const BRAND_SECTION = {
@@ -69,6 +70,10 @@ export default function LearnerDashboard() {
     () => resolvePortalDisplayUser(user, medacapProfile),
     [user, medacapProfile],
   )
+
+  // Publie la hauteur de l'entête : la section priorités s'en sert pour occuper
+  // exactement le reste de l'écran (variante PL-MEDACAP uniquement).
+  usePortalHeaderHeight(headerRef, isPlMedacapVariant(lms))
 
   const medacapSections = useMemo(
     () => medacapLearnerSections(lms),
@@ -131,7 +136,9 @@ export default function LearnerDashboard() {
           onOpenEval={handleOpenEval}
         />
 
-        <LearnerPifSection user={displayUser} lms={lms} t={t} />
+        {(!isMedacapLearner || medacapSections.pif) && (
+          <LearnerPifSection user={displayUser} lms={lms} t={t} />
+        )}
 
         {isPlMedacapVariant(lms) && (
           <LearnerSuggestedTrainingsSection user={displayUser} lms={lmsLive} />

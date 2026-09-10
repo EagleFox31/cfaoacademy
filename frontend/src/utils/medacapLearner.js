@@ -1,3 +1,5 @@
+import { isPlMedacapVariant } from './portalVariant.js'
+
 /** Apprenant relié à un compte technicien MEDACAP (pas une démo purement mock). */
 export function isMedacapLearner(user) {
   return Boolean(user?.medacapUsername || user?.medacapUserId)
@@ -51,7 +53,7 @@ export function mergeMedacapLearnerEvaluations(mockEvaluations = [], medacapComp
   }
 
   // Pas de réponse API : la variante PL-MEDACAP garde le mock complet (démo).
-  if (lms?.portalVariant === 'pl-medacap') {
+  if (isPlMedacapVariant(lms)) {
     return mockEvaluations
   }
 
@@ -60,14 +62,20 @@ export function mergeMedacapLearnerEvaluations(mockEvaluations = [], medacapComp
 
 /** Sections encore mockées pour un learner MEDACAP (branchement progressif). */
 export function medacapLearnerSections(lms) {
-  const hasPif = (lms?.planPathway?.length ?? 0) > 0
+  const hasPlanPathway = (lms?.planPathway?.length ?? 0) > 0
   const hasCerts = (lms?.certifications?.length ?? 0) > 0
   const hasDiscover = (lms?.discover?.length ?? 0) > 0
 
+  // Variante PL-MEDACAP : le PIF est un plan post-diagnostic alimenté par
+  // `assignedTrainings` / `planningStatus`, pas seulement par `planPathway`.
+  // Le conditionner à `planPathway` masquait la section alors que la navbar
+  // proposait toujours l'entrée « Votre PIF ».
+  const pif = hasPlanPathway || isPlMedacapVariant(lms)
+
   return {
-    pif: hasPif,
+    pif,
     certifications: hasCerts,
     discover: hasDiscover,
-    formationTests: hasPif,
+    formationTests: hasPlanPathway,
   }
 }
