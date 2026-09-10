@@ -47,9 +47,9 @@ export function getPrimaryRole(roles = []) {
 export const PORTAL_NAV_SECTIONS = {
   learner: [
     { key: 'priorities', id: 'next-actions', labelKey: 'nav_sec_priorities' },
-    { key: 'pif',        id: 'pif',        labelKey: 'nav_sec_pif' },
-    { key: 'resultats',  id: 'resultats',  labelKey: 'nav_sec_competency_results' },
     { key: 'tests',      id: 'tests',      labelKey: 'nav_sec_tests' },
+    { key: 'resultats',  id: 'resultats',  labelKey: 'nav_sec_competency_results' },
+    { key: 'pif',        id: 'pif',        labelKey: 'nav_sec_pif' },
     { key: 'certifs',    id: 'certifs',    labelKey: 'nav_sec_certifs' },
     { key: 'assistance', id: 'assistance', labelKey: 'nav_sec_assistance' },
   ],

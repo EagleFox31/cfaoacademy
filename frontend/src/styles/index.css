@@ -20,6 +20,8 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { scroll-behavior: smooth; }
+/* Décalage d'ancrage sous le header fixe — portail apprenant uniquement */
+html:has(.portal-page) { scroll-padding-top: 132px; }
 
 #root {
   min-height: 100dvh;
@@ -118,6 +120,8 @@ body {
     clamp(16px, 3vw, 32px) - 32px - max(0px, (100vw - 1320px) / 2)
   );
 }
+/* Portail apprenant : le menu et les actions occupent deux zones distinctes.
+   Les contrôles de langue/retour ne peuvent donc jamais recouvrir un lien. */
 .nav-cta--ghost {
   background: transparent;
   color: var(--ink);
@@ -350,7 +354,7 @@ body {
 }
 
 /* Portail : nombreux liens → menu dès ~1180px */
-@media (max-width: 1180px) {
+@media (max-width: 1320px) {
   .nav--portal .nav-links {
     display: none;
   }

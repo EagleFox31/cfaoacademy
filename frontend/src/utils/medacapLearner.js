@@ -33,19 +33,29 @@ export function resolveMedacapLearnerUser(user, medacapProfile) {
 
 /**
  * Fusion évaluations :
- * - learner MEDACAP → compétences 100 % API (todo, progress, done)
+ * - learner MEDACAP avec données live → compétences 100 % API + formations mock
+ * - variante PL-MEDACAP sans données live → mock complet (démo autonome hors-API)
+ * - learner MEDACAP standard sans données live → formations mock uniquement (inchangé)
  * - autres profils démo → mock inchangé
+ *
+ * `lms` sert uniquement à détecter la variante PL-MEDACAP pour le repli démo.
  */
-export function mergeMedacapLearnerEvaluations(mockEvaluations = [], medacapCompetency = [], user) {
+export function mergeMedacapLearnerEvaluations(mockEvaluations = [], medacapCompetency = [], user, lms = null) {
   if (!isMedacapLearner(user)) {
     return mockEvaluations
   }
 
-  const formations = mockEvaluations.filter(e => e.kind === 'formation')
   if (medacapCompetency.length) {
+    const formations = mockEvaluations.filter(e => e.kind === 'formation')
     return [...medacapCompetency, ...formations]
   }
-  return formations
+
+  // Pas de réponse API : la variante PL-MEDACAP garde le mock complet (démo).
+  if (lms?.portalVariant === 'pl-medacap') {
+    return mockEvaluations
+  }
+
+  return mockEvaluations.filter(e => e.kind === 'formation')
 }
 
 /** Sections encore mockées pour un learner MEDACAP (branchement progressif). */

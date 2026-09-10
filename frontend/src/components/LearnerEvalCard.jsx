@@ -1,6 +1,8 @@
 import PvCard from './PvCard.jsx'
 import EvalCardMedia from './EvalCardMedia.jsx'
+import { IconQuestions, IconDuration, IconTarget, IconModality } from './EvalCardIcons.jsx'
 import { findCatalogTraining } from '../utils/assignedTrainings.js'
+import { isPlMedacapVariant } from '../utils/portalVariant.js'
 import { portalPvCardMedia } from '../utils/portalCardMedia.js'
 import {
   evalAccentColor,
@@ -38,6 +40,7 @@ export function evalCardStatusClass(e, locked = false) {
   return e.status ?? 'todo'
 }
 
+/* ── Rendu HISTORIQUE (tous profils hors variante PL-MEDACAP) ─────── */
 function EvalCardMeta({ e, t }) {
   const showQuestions = e.status === 'progress' && e.questions != null
   const questionsVal = showQuestions && e.questionsAnswered != null
@@ -95,6 +98,123 @@ function EvalCardResult({ e, t, locked = false }) {
           </span>
         )}
       </div>
+    </div>
+  )
+}
+
+function EvalCardResultMeta({ e, t }) {
+  if (!e.date || e.date === 'â€”') return null
+
+  return (
+    <div className="portal-eval-card-meta portal-eval-card-meta--result">
+      <div className="portal-eval-meta-row portal-eval-meta-row--sub">
+        <span className="portal-eval-meta-val">{t.eval_passed_on} {e.date}</span>
+      </div>
+    </div>
+  )
+}
+
+/* ── Rendu VARIANTE PL-MEDACAP ───────────────────────────────────── */
+/** Une info compacte (icône trait fin + libellé court) de la grille de faits. */
+function EvalFact({ icon: Icon, children }) {
+  return (
+    <span className="portal-eval-fact">
+      <Icon className="portal-eval-fact-ico" />
+      <span className="portal-eval-fact-txt">{children}</span>
+    </span>
+  )
+}
+
+function EvalCardMetaPl({ e, t }) {
+  const total = e.questions ?? null
+  const questionsTxt = total != null
+    ? `${total} ${t.eval_questions_short ?? 'questions'}`
+    : null
+
+  const durationTxt = e.status === 'progress'
+    ? (e.durationRemaining ? `${e.durationRemaining} ${t.eval_time_left_suffix ?? 'restant'}` : (e.estimatedDuration ?? null))
+    : (e.estimatedDuration ?? null)
+
+  const passTxt = e.passMark != null
+    ? `${t.eval_passmark_short ?? 'Seuil'} ${e.passMark}/100`
+    : null
+
+  const formatTxt = e.modality
+    ? (e.modality === 'practical' ? t.test_modality_practical : t.test_modality_theory)
+    : null
+
+  let dateHint = null
+  if (e.status === 'done' && e.date && e.date !== '—') dateHint = `${t.eval_passed_on} ${e.date}`
+  else if (e.status === 'upcoming' && e.date && e.date !== '—') dateHint = `${t.eval_upcoming_on} ${e.date}`
+
+  const formationMeta = resolveEvalFormationMeta(e, t)
+
+  return (
+    <div className="portal-eval-card-meta">
+      {formationMeta && (
+        <div className="portal-eval-meta-row portal-eval-meta-row--sub">
+          <span className="portal-eval-meta-val">{formationMeta}</span>
+        </div>
+      )}
+      <div className="portal-eval-facts">
+        {questionsTxt && <EvalFact icon={IconQuestions}>{questionsTxt}</EvalFact>}
+        {durationTxt && <EvalFact icon={IconDuration}>{durationTxt}</EvalFact>}
+        {passTxt && <EvalFact icon={IconTarget}>{passTxt}</EvalFact>}
+        {formatTxt && <EvalFact icon={IconModality}>{formatTxt}</EvalFact>}
+      </div>
+      {e.status === 'progress' && total != null && (
+        <div className="portal-eval-meta-row portal-eval-meta-row--sub portal-eval-meta-row--progress">
+          <span className="portal-eval-meta-val">
+            {e.questionsAnswered ?? 0}/{total} {t.eval_answered_suffix}
+          </span>
+        </div>
+      )}
+      {dateHint && (
+        <div className="portal-eval-meta-row portal-eval-meta-row--sub">
+          <span className="portal-eval-meta-val">{dateHint}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Libellé d'action : Commencer / Continuer selon l'état. */
+export function evalCardActionLabel(e, t, locked = false) {
+  if (locked) return t.status_coming_soon
+  if (e.status === 'progress') return t.eval_btn_resume ?? t.eval_finish_test
+  if (e.status === 'done') return null
+  return t.eval_btn_start ?? t.test_launch
+}
+
+function EvalCardResultPl({ e, t, locked = false }) {
+  const isDone = e.status === 'done'
+
+  if (isDone) {
+    return (
+      <div className="portal-eval-result-row">
+        <span className="portal-eval-result-lbl">{t.eval_label_result}</span>
+        <div className="portal-eval-result-val">
+          {e.score != null
+            ? <EvalCardScore e={e} />
+            : <span className="portal-eval-result-pending">{t.status_done}</span>}
+        </div>
+      </div>
+    )
+  }
+
+  const label = evalCardActionLabel(e, t, locked)
+  const inProgress = e.status === 'progress'
+  const answered = e.questionsAnswered ?? 0
+  const total = e.questions ?? null
+  const progressTxt = inProgress && total != null
+    ? `${answered}/${total} ${t.eval_answered_suffix ?? 'terminé'}`
+    : null
+
+  return (
+    <div className={`portal-eval-action${locked ? ' is-locked' : ''}${inProgress ? ' is-resume' : ''}`}>
+      <span className="portal-eval-action-label">
+        {label}
+      </span>
     </div>
   )
 }
@@ -234,7 +354,7 @@ export function CertDetail({ c, t }) {
   )
 }
 
-export default function LearnerEvalCard({ e, user, lms, t, onOpen }) {
+export default function LearnerEvalCard({ e, user, lms, t, onOpen, onViewResults, resultOnly = false }) {
   const locked = isFormationTestLocked(user, lms, e)
   const fallbackMedia = portalPvCardMedia({
     brand: e.brand,
@@ -248,15 +368,23 @@ export default function LearnerEvalCard({ e, user, lms, t, onOpen }) {
     ? t.test_modality_practical
     : t.test_modality_theory
 
-  let hoverHint = t.card_view_detail
+  const plVariant = isPlMedacapVariant(lms)
+  const linksToResults = e.status === 'done' && typeof onViewResults === 'function'
+
+  let hoverHint = linksToResults ? t.eval_btn_view_results : t.card_view_detail
   if (locked) hoverHint = t.status_coming_soon
+  else if (plVariant && e.status === 'progress') hoverHint = t.eval_hover_resume ?? t.eval_btn_resume ?? t.eval_finish_test
+  else if (plVariant && e.status !== 'done') hoverHint = t.eval_hover_start ?? t.eval_btn_start ?? t.test_launch
   else if (e.status === 'progress') hoverHint = e.medacap?.launchUrl ? t.test_launch : t.eval_finish_test
   else if (e.status !== 'done' && e.medacap?.launchUrl) hoverHint = t.test_launch
+
+  const MetaComp = plVariant ? EvalCardMetaPl : EvalCardMeta
+  const ResultComp = plVariant ? EvalCardResultPl : EvalCardResult
 
   return (
     <div id={`portal-card-${e.id}`} className="portal-card-anchor">
       <PvCard
-        className={`pv-card--eval${locked ? ' pv-card--eval-locked' : ''}${e.brand ? ` pv-card--brand-${e.brand}` : ''}`}
+        className={`pv-card--eval${resultOnly ? ' pv-card--eval-result' : ''}${locked ? ' pv-card--eval-locked' : ''}${e.brand ? ` pv-card--brand-${e.brand}` : ''}`}
         cardMedia={e.modality ? (
           <EvalCardMedia
             img={cardImg}
@@ -279,16 +407,24 @@ export default function LearnerEvalCard({ e, user, lms, t, onOpen }) {
             : <span className="portal-status-chip done">{t.status_done}</span>
         )}
         title={resolveEvalTitle(e, t, user)}
-        meta={e.kind ? <EvalCardMeta e={e} t={t} /> : (
+        meta={e.kind ? (resultOnly ? <EvalCardResultMeta e={e} t={t} /> : <MetaComp e={e} t={t} />) : (
           e.status === 'upcoming' && e.date !== '—'
             ? `${t.eval_upcoming_on} ${e.date}`
             : e.status === 'done'
               ? `${t.eval_passed_on} ${e.date}`
               : t.status_todo
         )}
-        cta={e.kind ? <EvalCardResult e={e} t={t} locked={locked} /> : undefined}
+        cta={e.kind ? (
+          linksToResults ? (
+            <div className="portal-eval-action is-results">
+              <span className="portal-eval-action-label">
+                {t.eval_btn_view_results}
+              </span>
+            </div>
+          ) : <ResultComp e={e} t={t} locked={locked} />
+        ) : undefined}
         accentColor={locked ? 'var(--muted)' : evalAccentColor(e)}
-        onClick={locked ? undefined : () => onOpen(e)}
+        onClick={locked ? undefined : (linksToResults ? onViewResults : () => onOpen(e))}
         hoverHint={hoverHint}
         corner
       />

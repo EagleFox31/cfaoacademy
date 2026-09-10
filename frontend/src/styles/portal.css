@@ -225,6 +225,13 @@ section:nth-of-type(even) .portal-progress-track { background: rgba(255,255,255,
 .portal-section-head {
   margin-bottom: 20px;
 }
+.portal-section-head--with-action {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
 .portal-section-eyebrow {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -462,6 +469,31 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
   display: none;
 }
 
+#resultats .pv-card-cta .pv-cta-link:has(.portal-eval-result-row) {
+  display: block;
+  width: 100%;
+}
+
+#resultats .pv-card-cta .pv-cta-link:has(.portal-eval-result-row) .arrow {
+  display: none;
+}
+
+#resultats .pv-card--eval-result .pv-card-cta {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+}
+
+#resultats .pv-card--eval-result .portal-eval-result-row {
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+#resultats .pv-card--eval-result .portal-eval-result-val {
+  margin-left: auto;
+}
+
 .portal-eval-card-img,
 .portal-session-card-img,
 .portal-plan-entry-card-img {
@@ -595,6 +627,11 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
   color: var(--muted);
 }
 
+.portal-eval-meta-row--progress .portal-eval-meta-val {
+  color: #c05600;
+  font-weight: 700;
+}
+
 .portal-eval-meta-lbl,
 .portal-eval-result-lbl {
   font-size: 11px;
@@ -641,6 +678,70 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
   white-space: nowrap;
 }
 
+/* ── Carte test : grille de faits + action ───────────────────────── */
+.portal-eval-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 12px;
+  margin-top: 2px;
+}
+.portal-eval-fact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ink);
+}
+.portal-eval-fact-ico {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.portal-eval-fact-txt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.portal-eval-action {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #0e1126;
+}
+.portal-eval-action-label { white-space: nowrap; }
+.portal-eval-action.is-resume .portal-eval-action-label { color: #c05600; }
+.portal-eval-action.is-locked { color: var(--muted); font-weight: 600; }
+
+.portal-eval-action-progress {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #c05600;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+#tests .pv-card--eval .pv-card-brand-row,
+#resultats .pv-card--eval .pv-card-brand-row {
+  min-height: 32px;
+}
+
+#tests .pv-card--eval .pv-card-brand-logo,
+#resultats .pv-card--eval .pv-card-brand-logo {
+  width: 112px;
+  height: 28px;
+  max-width: 112px;
+  max-height: 28px;
+  object-fit: contain;
+  object-position: left center;
+}
+
 #tests .pv-card--eval .pv-card-img img {
   object-fit: cover;
   object-position: center;
@@ -649,13 +750,15 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
 /* Wordmark Renault Trucks — PNG avec marges, plus lisible sur les cartes */
 #tests .pv-card--brand-renault-trucks .pv-card-brand-row,
 #resultats .pv-card--brand-renault-trucks .pv-card-brand-row {
-  min-height: 44px;
+  min-height: 32px;
 }
 
 #tests .pv-card--brand-renault-trucks .pv-card-brand-logo,
 #resultats .pv-card--brand-renault-trucks .pv-card-brand-logo {
-  max-height: 44px;
-  max-width: 168px;
+  width: 112px;
+  height: 28px;
+  max-height: 28px;
+  max-width: 112px;
 }
 
 .portal-results-subsection--renault-trucks .portal-brand-logo--subsection {
@@ -751,6 +854,20 @@ section:nth-of-type(even) .portal-eval-title { color: #fff; }
 section:nth-of-type(even) .portal-eval-meta  { color: rgba(255,255,255,0.4); }
 
 /* ── Certifications ─────────────────────────────── */
+.portal-certifications-empty {
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+}
+
 .portal-cert-list { display: flex; flex-direction: column; gap: 10px; }
 .portal-cert-card {
   background: #f0faf5;
@@ -1799,6 +1916,22 @@ section:nth-of-type(even) .portal-plan-meta { color: rgba(255,255,255,0.5); }
 
 .portal-plan-entry-card .pv-card-body h3 {
   font-size: 20px;
+}
+
+#pif .portal-pif-overview-card .portal-plan-entry-card-img {
+  background: linear-gradient(160deg, rgba(227, 0, 27, 0.18) 0%, rgba(227, 0, 27, 0.04) 100%);
+}
+
+#pif .portal-pif-overview-card .pv-card-body h3 {
+  color: var(--red);
+}
+
+#pif .portal-pif-overview-card .portal-pif-card-status p:first-child {
+  font-weight: 700;
+}
+
+#pif .portal-pif-overview-card .pv-cta-link {
+  color: var(--red);
 }
 
 #pif .portal-pif-eyebrow {
@@ -3280,12 +3413,94 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
   }
 }
 
-.portal-card-anchor {
-  scroll-margin-top: 96px;
+/* Décalage d'ancrage = hauteur nav fixe (76) + sticky-bar (44) + respiration */
+:root {
+  --portal-anchor-offset: 132px;
 }
 
-.portal-page > section[id] {
-  scroll-margin-top: 96px;
+.portal-card-anchor {
+  scroll-margin-top: var(--portal-anchor-offset);
+}
+
+.portal-page > section[id],
+.portal-page section[id] {
+  scroll-margin-top: var(--portal-anchor-offset);
+}
+
+/* ── "À faire maintenant" : lien "Voir tout (N)" à droite du titre ─── */
+.portal-next-actions-more {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: gap 0.16s ease, opacity 0.16s ease;
+}
+
+.portal-next-actions-more:hover {
+  opacity: 0.75;
+  gap: 9px;
+}
+
+.portal-next-actions-more-arrow {
+  transition: transform 0.16s ease;
+}
+
+.portal-next-actions-more:hover .portal-next-actions-more-arrow {
+  transform: translateX(2px);
+}
+
+/* Variante encart (catégorie "results", pas de cartes) */
+.portal-next-actions-redirect {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.portal-next-actions-redirect .portal-next-actions-more {
+  padding: 9px 18px;
+  border: 1px solid var(--border, #d5d8e0);
+  border-radius: 999px;
+  background: #fff;
+  color: #0e1126;
+  font-weight: 600;
+}
+
+.portal-next-actions-redirect .portal-next-actions-more:hover {
+  background: #0e1126;
+  border-color: #0e1126;
+  color: #fff;
+  opacity: 1;
+}
+
+.portal-next-actions-redirect p {
+  margin: 0;
+  color: var(--muted, #64748b);
+  font-size: 14px;
+}
+
+/* Halo bref à l'arrivée du défilement doux (snap subtil) */
+.portal-section-snap-hl {
+  animation: portalSectionSnap 1.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes portalSectionSnap {
+  0%   { box-shadow: 0 0 0 0 rgba(26, 100, 220, 0); }
+  18%  { box-shadow: 0 0 0 4px rgba(26, 100, 220, 0.22); }
+  100% { box-shadow: 0 0 0 0 rgba(26, 100, 220, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-section-snap-hl { animation: none; }
+  .portal-next-actions-more:hover { transform: none; }
 }
 
 /* ── Entrée au scroll — section par section ─────── */
@@ -3330,7 +3545,16 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
 .portal-page .pv-grid--stretch .pv-card h3 {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
+  min-height: 2.3em;
+  overflow: hidden;
+}
+
+.portal-page .pv-card--session h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-height: 2.3em;
   overflow: hidden;
 }
 
@@ -3512,6 +3736,58 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
 #resultats .portal-results-subsections {
   gap: 14px;
 }
+
+/* ── Résultats (variante PL-MEDACAP) : pastilles de filtre marque ── */
+.portal-results-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.portal-results-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid var(--border, #d5d8e0);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink, #0e1126);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.portal-results-pill:hover {
+  border-color: var(--navy, #0e1126);
+}
+.portal-results-pill.is-active {
+  background: var(--navy, #0e1126);
+  border-color: var(--navy, #0e1126);
+  color: #fff;
+}
+.portal-results-pill-logo {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.portal-results-pill-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.portal-results-pill-count {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.7;
+}
+.portal-results-pill.is-active .portal-results-pill-count { opacity: 0.85; }
 
 #pif .portal-plan-status-filter {
   margin-bottom: 32px;
@@ -3733,6 +4009,54 @@ section[id^="equipe-"] .portal-plan-status-filter,
 .portal-status-chip.annual_non_fait {
   background: rgba(227, 0, 27, 0.1);
   color: var(--red);
+}
+
+.portal-status-chip.annual_souhait_transmis {
+  background: rgba(5, 150, 105, 0.12);
+  color: #047857;
+}
+
+.portal-session-card-img .portal-session-status-tag.annual_souhait_transmis,
+.portal-plan-entry-card-img .portal-session-status-tag.annual_souhait_transmis {
+  background: rgba(5, 150, 105, 0.92);
+  color: #fff;
+}
+
+/* Bouton d'intérêt « Je souhaite y participer » — à droite du logo constructeur */
+.portal-interest-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid var(--border, #d5d8e0);
+  border-radius: 999px;
+  background: #fff;
+  color: #0e1126;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.portal-interest-btn:hover {
+  background: #0e1126;
+  border-color: #0e1126;
+  color: #fff;
+}
+
+.portal-interest-btn.is-requested {
+  background: rgba(5, 150, 105, 0.1);
+  border-color: rgba(5, 150, 105, 0.35);
+  color: #047857;
+  cursor: default;
+}
+
+.portal-interest-btn.is-requested:hover {
+  background: rgba(5, 150, 105, 0.16);
 }
 
 .portal-plan-grid {

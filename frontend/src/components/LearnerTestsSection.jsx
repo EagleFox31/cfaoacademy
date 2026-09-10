@@ -111,36 +111,48 @@ export default function LearnerTestsSection({
     setTestOpen(prev => ({ ...prev, [sectionId]: !(prev[sectionId] ?? true) }))
   }
 
-  if (!isMedacapLearner && !visibleEvaluations.length && !medacapLive) return null
-
-  if (isMedacapLearner && medacapLoading) {
-    return (
-      <PortalReveal id="tests">
-        <div className="container" style={{ padding: '16px 32px' }}>
-          <div className="portal-section-head">
-            <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
-            <h2 className="portal-section-title">{t.title_your_tests}</h2>
-          </div>
-          <div className="portal-medacap-status" role="status">{t.medacap_loading}</div>
-        </div>
-      </PortalReveal>
-    )
+  function scrollToResults() {
+    const results = document.getElementById('resultats')
+    if (!results) return
+    results.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    results.classList.add('portal-section-snap-hl')
+    window.setTimeout(() => results.classList.remove('portal-section-snap-hl'), 1600)
   }
 
-  if (isMedacapLearner && medacapError) {
-    return (
-      <PortalReveal id="tests">
-        <div className="container" style={{ padding: '16px 32px' }}>
-          <div className="portal-section-head">
-            <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
-            <h2 className="portal-section-title">{t.title_your_tests}</h2>
+  if (!isMedacapLearner && !visibleEvaluations.length && !medacapLive) return null
+
+  // Learner MEDACAP sans aucune évaluation exploitable (ni live, ni mock) :
+  // on affiche l'état loading/erreur seul. Si des tests mock existent, on les
+  // rend normalement (un bandeau non bloquant peut accompagner en cas d'erreur).
+  if (isMedacapLearner && !visibleEvaluations.length) {
+    if (medacapLoading) {
+      return (
+        <PortalReveal id="tests">
+          <div className="container" style={{ padding: '16px 32px' }}>
+            <div className="portal-section-head">
+              <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
+              <h2 className="portal-section-title">{t.title_your_tests}</h2>
+            </div>
+            <div className="portal-medacap-status" role="status">{t.medacap_loading}</div>
           </div>
-          <div className="portal-medacap-status portal-medacap-status--error" role="alert">
-            {t.medacap_error}
+        </PortalReveal>
+      )
+    }
+    if (medacapError) {
+      return (
+        <PortalReveal id="tests">
+          <div className="container" style={{ padding: '16px 32px' }}>
+            <div className="portal-section-head">
+              <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
+              <h2 className="portal-section-title">{t.title_your_tests}</h2>
+            </div>
+            <div className="portal-medacap-status portal-medacap-status--error" role="alert">
+              {t.medacap_error}
+            </div>
           </div>
-        </div>
-      </PortalReveal>
-    )
+        </PortalReveal>
+      )
+    }
   }
 
   const evalGrid = items => (
@@ -153,6 +165,7 @@ export default function LearnerTestsSection({
           lms={lms}
           t={t}
           onOpen={onOpenEval}
+          onViewResults={e.status === 'done' ? scrollToResults : undefined}
         />
       ))}
     </PortalStaggerGrid>
@@ -184,16 +197,13 @@ export default function LearnerTestsSection({
         ) : (
           <div className="portal-plan-subsections portal-test-subsections">
             {(isMedacapLearner || competencyItems.length > 0) && (
-              <TestSubsection
-                id="competency"
-                title={t.test_group_competency}
-                count={competencyItems.length}
-                isOpen={testOpen.competency ?? true}
-                onToggle={() => toggleTestSubsection('competency')}
-                emptyMessage={isMedacapLearner ? t.medacap_no_tests : t.test_group_empty}
-              >
-                {evalGrid(competencyItems)}
-              </TestSubsection>
+              competencyItems.length > 0
+                ? evalGrid(competencyItems)
+                : (
+                  <div className="portal-plan-filter-empty" role="status">
+                    {t.medacap_no_tests}
+                  </div>
+                )
             )}
 
             {!isMedacapLearner && brandItems.map(({ id, label, logo }) => {

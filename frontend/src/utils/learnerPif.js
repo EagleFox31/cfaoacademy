@@ -87,7 +87,12 @@ export function resolveLearnerPifItems(user, lms, scope) {
   }
 
   const year = Number(scope)
-  const fromPlan = resolveLearnerAssignedTrainings(user, lms, year)
+  // Variante PL-MEDACAP : le PIF est un plan post-diagnostic — uniquement
+  // planPathway / assignedTrainings / planningStatus explicites, aucun repli
+  // sur le planning annuel brut (le PIF reste vide tant que rien n'est planifié).
+  // Tous les autres profils : comportement historique inchangé.
+  const fallbackToPlanning = lms?.portalVariant !== 'pl-medacap'
+  const fromPlan = resolveLearnerAssignedTrainings(user, lms, year, { fallbackToPlanning })
     .filter(item => resolvePlanItemYear(item) === year)
 
   const fromHistory = itemsFromPlanningStatus(user, lms, year)

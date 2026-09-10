@@ -70,8 +70,8 @@ export function resolvePortalDisplayUser(user, medacapProfile) {
 }
 
 /** @deprecated Utiliser mergeMedacapLearnerEvaluations via le hook. */
-export function mergeLearnerEvaluations(mockEvaluations = [], medacapCompetency = [], user = null) {
-  return mergeMedacapLearnerEvaluations(mockEvaluations, medacapCompetency, user)
+export function mergeLearnerEvaluations(mockEvaluations = [], medacapCompetency = [], user = null, lms = null) {
+  return mergeMedacapLearnerEvaluations(mockEvaluations, medacapCompetency, user, lms)
 }
 
 /** Ouvre le QCM MEDACAP (session PHP via portal-launch). */

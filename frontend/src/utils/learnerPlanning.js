@@ -1,4 +1,7 @@
 import { SESSIONS } from '../data/index.js'
+import CATALOG from '../data/training-catalog.json'
+import { canonicalTrainingCode } from './trainingCode.js'
+import { resolveTargetCertificationLevel, levelMatchesTarget } from './portalCertLevel.js'
 
 const MOIS_FR = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
 
@@ -30,6 +33,25 @@ const BRAND_MARQUE = {
   hino: 'HINO',
   jcb: 'JCB',
   lovol: 'LOVOL',
+  'renault-trucks': 'RENAULT TRUCKS',
+  'king-long': 'KING LONG',
+  sinotruk: 'SINOTRUK',
+  shacman: 'SHACMAN',
+}
+
+/** Niveau catalogue (group.level) d'une session — sans passer par assignedTrainings (cycle d'import). */
+function sessionCatalogLevel(session) {
+  const key = BRAND_MARQUE[(session.brand ?? session.marque ?? '').toLowerCase()]
+    ?? (session.marque ?? '').toUpperCase()
+  const groups = CATALOG[key]
+  if (!Array.isArray(groups)) return session.niveau || null
+  const wanted = canonicalTrainingCode(session.code)
+  for (const group of groups) {
+    for (const training of group.trainings ?? []) {
+      if (canonicalTrainingCode(training.code) === wanted) return group.level ?? null
+    }
+  }
+  return session.niveau || null
 }
 
 function parseLocalDate(iso) {
@@ -66,16 +88,57 @@ function planningStatusKey(session) {
   return `${session.date}|${session.code}`
 }
 
+/** Pays apprenant → lieux planning (fallback quand user.filiale n'est pas une clé connue). */
+const PAYS_LIEUX = {
+  Cameroun: ['Douala', 'Yaoundé', 'Cameroun'],
+  "Côte d'Ivoire": ['RCI', 'Abidjan'],
+  Maroc: ['Maroc', 'Casablanca'],
+  Sénégal: ['Dakar', 'Sénégal'],
+  Ghana: ['Ghana', 'Accra'],
+  Nigeria: ['Nigeria', 'Lagos'],
+  Kenya: ['Kenya', 'Nairobi'],
+  'Burkina Faso': ['Burkina Faso'],
+  Bénin: ['Bénin', 'Benin'],
+  Togo: ['Togo'],
+  Madagascar: ['Madagascar'],
+}
+
+/**
+ * Lieux autorisés. Comportement historique : uniquement FILIALE_LIEUX[user.filiale]
+ * (→ [] si filiale inconnue, donc aucun filtre lieu). La variante PL-MEDACAP
+ * ajoute un repli par pays (user.pays) car sa filiale n'est pas une clé connue.
+ */
+function resolveAllowedLieux(user, lms) {
+  const byFiliale = FILIALE_LIEUX[user?.filiale]
+  if (byFiliale) return byFiliale
+  if (lms?.portalVariant === 'pl-medacap') {
+    return PAYS_LIEUX[user?.pays] ?? FILIALE_LIEUX[user?.pays] ?? []
+  }
+  return []
+}
+
+/** Niveau constructeur actuel du technicien pour une marque (certLevels prioritaire). */
+function resolveUserBrandLevel(user, brandId) {
+  return user?.certLevels?.[brandId]
+    ?? user?.certLevels?.[(brandId ?? '').toLowerCase()]
+    ?? user?.level
+    ?? null
+}
+
 /**
  * Sessions planning annuel depuis sessions-2026.json (SESSIONS),
- * filtrées par filiale + marques du profil.
+ * filtrées par filiale/pays + marques du profil.
+ * Avec `targetLevelOnly` (défaut) : ne garde que les sessions du niveau
+ * immédiatement supérieur (N+1) pour la marque concernée — Règle métier 1.
  * Statuts inscription : lms.planningStatus[`date|code`].
  */
-export function resolveLearnerPlanningSessions(user, lms, year = 2026) {
-  const lieux = FILIALE_LIEUX[user?.filiale] ?? []
-  const marques = (user?.brands ?? [])
-    .map(b => BRAND_MARQUE[(b ?? '').toLowerCase()] ?? (b ?? '').toUpperCase())
-    .filter(Boolean)
+export function resolveLearnerPlanningSessions(user, lms, year = 2026, { targetLevelOnly = false } = {}) {
+  const lieux = resolveAllowedLieux(user, lms)
+  const userBrands = user?.brands ?? []
+  const brandById = new Map(
+    userBrands.map(b => [BRAND_MARQUE[(b ?? '').toLowerCase()] ?? (b ?? '').toUpperCase(), b]),
+  )
+  const marques = [...brandById.keys()].filter(Boolean)
 
   const statusMap = lms?.planningStatus ?? {}
 
@@ -84,6 +147,16 @@ export function resolveLearnerPlanningSessions(user, lms, year = 2026) {
       if (!s.date?.startsWith(String(year))) return false
       if (marques.length && !marques.includes(s.marque)) return false
       if (!matchesLieu(s.lieu, lieux)) return false
+
+      if (targetLevelOnly) {
+        const brandId = brandById.get(s.marque)
+        if (brandId) {
+          const target = resolveTargetCertificationLevel(resolveUserBrandLevel(user, brandId), brandId)
+          const candidate = sessionCatalogLevel({ ...s, brand: brandId })
+          if (candidate && !levelMatchesTarget(candidate, target)) return false
+        }
+      }
+
       return true
     })
     .map((s) => {

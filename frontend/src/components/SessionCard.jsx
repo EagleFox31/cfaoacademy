@@ -53,6 +53,7 @@ export default function SessionCard({
   accentColor,
   cta,
   hoverHint,
+  extraAction,
 }) {
   const { locale } = useLocale('cards')
   const { t: cardsT } = useLocale('cards')
@@ -93,6 +94,7 @@ export default function SessionCard({
 
   return (
     <PvCard
+      className="pv-card--session"
       to={onClick ? undefined : ficheTo}
       onClick={onClick}
       onBeforeNavigate={!onClick && (sessionsReturn?.tab || sessionsReturn?.sectionId) ? captureReturn : undefined}
@@ -100,6 +102,7 @@ export default function SessionCard({
       corner
       logo={logo}
       brandLabel={label}
+      brandAside={extraAction}
       cardMedia={imageStatusChip ? (
         <SessionCardMedia src={cardImg} fallback={fallbackImg} statusChip={imageStatusChip} />
       ) : undefined}

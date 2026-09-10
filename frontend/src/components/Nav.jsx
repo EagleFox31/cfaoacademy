@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, useRef, useId } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { NAV, getPortalNavSections } from '../data/index.js'
+import { NAV, getPortalNavSections, getPrimaryRole } from '../data/index.js'
 import useNavScrollSpy from '../hooks/useNavScrollSpy.js'
 import useLocale from '../hooks/useLocale.js'
 import LocaleSwitch from './LocaleSwitch.jsx'
 import useAuth from '../hooks/useAuth.js'
+import { LMS_BY_USER } from '../data/mock_lms.js'
 
 function scrollToSection(hash) {
   if (!hash) {
@@ -153,7 +154,14 @@ export default function Nav({ active: pageActive }) {
   const mobileMenuId = `nav-mobile-menu${menuInstanceId}`
 
   const portalSections = useMemo(
-    () => (user ? getPortalNavSections(user.roles) : []),
+    () => {
+      if (!user) return []
+      const sections = getPortalNavSections(user.roles)
+      if (getPrimaryRole(user.roles) !== 'learner') return sections
+      const lms = LMS_BY_USER[user.id]
+      if (lms?.certifications?.length) return sections
+      return sections.filter(section => section.key !== 'certifs')
+    },
     [user],
   )
 

@@ -104,9 +104,9 @@ export default function useLearnerEvaluations(user, lms) {
 
   const evaluations = useMemo(
 
-    () => mergeLearnerEvaluations(mockEvaluations, medacapCompetency, user),
+    () => mergeLearnerEvaluations(mockEvaluations, medacapCompetency, user, lms),
 
-    [mockEvaluations, medacapCompetency, user],
+    [mockEvaluations, medacapCompetency, user, lms],
 
   )
 
