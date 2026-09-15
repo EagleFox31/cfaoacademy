@@ -48,12 +48,17 @@ class KeycloakJWTAuthentication(authentication.BaseAuthentication):
 
         try:
             signing_key = _client().get_signing_key_from_jwt(token)
+            unverified_claims = jwt.decode(token, options={"verify_signature": False})
+            token_iss = unverified_claims.get("iss", "")
+            if not (token_iss.endswith("/realms/cfao-needs") or (settings.OIDC_ISSUER and token_iss == settings.OIDC_ISSUER)):
+                raise jwt.InvalidIssuerError("Invalid issuer")
+
             claims = jwt.decode(
                 token,
                 signing_key.key,
                 algorithms=["RS256"],
                 audience=audience,
-                issuer=settings.OIDC_ISSUER or None,
+                issuer=token_iss,
                 options=options,
             )
         except jwt.PyJWTError:

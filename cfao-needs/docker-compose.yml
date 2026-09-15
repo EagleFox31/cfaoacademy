@@ -1,4 +1,4 @@
-# Module détachable « recueil des besoins » (app 16).
+# Module détachable « Identification des Besoins en Formations » (app 16).
 #
 # Ce fichier monte la stack COMPLÈTE, sans rien emprunter au reste du dépôt :
 #   docker compose -f cfao-needs/docker-compose.yml up
@@ -39,15 +39,27 @@ services:
       KC_DB_URL: jdbc:postgresql://needs-kc-db:5432/keycloak
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:?}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-${KC_ADMIN:-admin}}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-${KC_ADMIN_PASSWORD:?KC_ADMIN_PASSWORD est obligatoire}}
       KEYCLOAK_ADMIN: ${KC_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:?KC_ADMIN_PASSWORD est obligatoire}
+      NEEDS_LAN_HOST: ${NEEDS_LAN_HOST:-}
+      NEEDS_PUBLIC_BASE_URL: ${NEEDS_PUBLIC_BASE_URL:-}
+      KEYCLOAK_ADDITIONAL_REDIRECT_URIS: ${KEYCLOAK_ADDITIONAL_REDIRECT_URIS:-}
       KC_HEALTH_ENABLED: "true"
       # 524 Mio mesures pour ~100 comptes : le tas par defaut de la JVM vise
       # un annuaire d'entreprise, pas un module saisonnier.
       JAVA_OPTS_KC_HEAP: "-Xms64m -Xmx256m"
+      # Resout les ${VAR} du realm : les mots de passe de recette restent dans
+      # .env, jamais dans le fichier de realm versionne (interdit n° 2).
+      JAVA_OPTS_APPEND: "-Dkeycloak.migration.replace-placeholders=true"
+      NEEDS_DEMO_PASSWORD: ${NEEDS_DEMO_PASSWORD:?NEEDS_DEMO_PASSWORD est obligatoire}
     volumes:
       # Realm en config-as-code : reproductible, dérive détectable.
       - ./keycloak:/opt/keycloak/data/import:ro
+      # Theme de connexion. En start-dev le cache de themes est desactive :
+      # une modification de CSS est visible au rechargement, sans redemarrage.
+      - ./keycloak/themes:/opt/keycloak/themes:ro
     depends_on:
       needs-kc-db:
         condition: service_healthy
@@ -151,9 +163,13 @@ services:
     # nginx — mesure 5 Mio
     mem_limit: 64m
     restart: unless-stopped
-    build: ./gateway
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
     volumes:
       - ./web/dist:/usr/share/nginx/html:ro
+      # Fiches formation (PNG / PDF) — même arbre que la vitrine.
+      - ../catalogues:/var/www/catalogues:ro
     ports:
       - "${NEEDS_PORT:-8080}:80"
     depends_on:

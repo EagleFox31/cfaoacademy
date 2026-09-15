@@ -1,8 +1,14 @@
 {
   "realm": "cfao-needs",
   "enabled": true,
-  "displayName": "CFAO Academy — Recueil des besoins",
-  "loginTheme": "keycloak",
+  "displayName": "CFAO Academy — Identification des Besoins en Formations",
+  "loginTheme": "cfao-needs",
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "fr",
+    "en"
+  ],
+  "defaultLocale": "fr",
   "sslRequired": "external",
   "registrationAllowed": false,
   "resetPasswordAllowed": true,
@@ -14,25 +20,68 @@
   "ssoSessionIdleTimeout": 3600,
   "roles": {
     "realm": [
-      { "name": "team_manager",    "description": "Chef d'équipe — saisit les besoins de son équipe" },
-      { "name": "workshop_manager","description": "Chef d'atelier — saisit les besoins de son atelier" },
-      { "name": "dps",             "description": "Département pièces / SAV — consolide" },
-      { "name": "dop",             "description": "Directeur des opérations — consolide" },
-      { "name": "branch_director", "description": "Directeur de filiale — relit, en copie des confirmations" },
-      { "name": "branch_admin",    "description": "Admin filiale — saisie déléguée" },
-      { "name": "branch_hr",       "description": "RH filiale — saisie déléguée" },
-      { "name": "center_assistant","description": "Assistante centre — RELIT ET VALIDE les fiches" },
-      { "name": "center_director", "description": "Directeur du centre — valide, ouvre et arbitre" },
-      { "name": "group_admin",     "description": "Admin groupe — vue consolidée" },
-      { "name": "group_director",  "description": "Directeur groupe — vue consolidée" },
-      { "name": "regional_director","description": "Directeur régional — vue consolidée" },
-      { "name": "superadmin",      "description": "Super administrateur" }
+      {
+        "name": "team_manager",
+        "description": "Chef d'équipe — saisit les besoins de son équipe"
+      },
+      {
+        "name": "workshop_manager",
+        "description": "Chef d'atelier — saisit les besoins de son atelier"
+      },
+      {
+        "name": "dps",
+        "description": "Département pièces / SAV — consolide"
+      },
+      {
+        "name": "dop",
+        "description": "Directeur des opérations — consolide"
+      },
+      {
+        "name": "branch_director",
+        "description": "Directeur de filiale — relit, en copie des confirmations"
+      },
+      {
+        "name": "branch_admin",
+        "description": "Admin filiale — saisie déléguée"
+      },
+      {
+        "name": "branch_hr",
+        "description": "RH filiale — saisie déléguée"
+      },
+      {
+        "name": "center_assistant",
+        "description": "Assistante centre — RELIT ET VALIDE les fiches"
+      },
+      {
+        "name": "training_coordinator",
+        "description": "Coordonnateur des formations — relit et valide comme l'assistante, ET pilote l'exercice : ouverture, clôture, import du référentiel, arbitrage CFR / filiale."
+      },
+      {
+        "name": "center_director",
+        "description": "Directeur du centre — valide, ouvre et arbitre"
+      },
+      {
+        "name": "group_admin",
+        "description": "Admin groupe — vue consolidée"
+      },
+      {
+        "name": "group_director",
+        "description": "Directeur groupe — vue consolidée"
+      },
+      {
+        "name": "regional_director",
+        "description": "Directeur régional — vue consolidée"
+      },
+      {
+        "name": "superadmin",
+        "description": "Super administrateur"
+      }
     ]
   },
   "clients": [
     {
       "clientId": "needs-web",
-      "name": "SPA Recueil des besoins",
+      "name": "SPA Identification des Besoins en Formations",
       "enabled": true,
       "publicClient": true,
       "standardFlowEnabled": true,
@@ -40,11 +89,34 @@
       "serviceAccountsEnabled": false,
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:8080/*"
+        "post.logout.redirect.uris": "+"
       },
-      "redirectUris": ["http://localhost:8080/*"],
-      "webOrigins": ["http://localhost:8080"],
+      "redirectUris": [
+        "http://localhost:8080/*",
+        "http://localhost:8082/*",
+        "http://localhost:5174/*",
+        "http://127.0.0.1:8080/*",
+        "http://127.0.0.1:8082/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8080",
+        "http://localhost:8082",
+        "http://localhost:5174",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:8082",
+        "+"
+      ],
       "protocolMappers": [
+        {
+          "name": "audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "needs-web",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
         {
           "name": "scopeNode",
           "protocol": "openid-connect",
@@ -82,5 +154,220 @@
         }
       ]
     }
-  ]
+  ],
+  "users": [
+    {
+      "id": "a1000001-0000-4000-8000-000000000001",
+      "username": "chef.atelier@cfao.com",
+      "email": "chef.atelier@cfao.com",
+      "firstName": "Chef d'atelier",
+      "lastName": "Douala",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "scopeNode": [
+          "groupe.cmr.douala"
+        ],
+        "brands": [
+          "toyota",
+          "peugeot"
+        ],
+        "locale": [
+          "fr"
+        ]
+      },
+      "realmRoles": [
+        "workshop_manager"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${NEEDS_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "a1000002-0000-4000-8000-000000000002",
+      "username": "chef.equipe@cfao.com",
+      "email": "chef.equipe@cfao.com",
+      "firstName": "Chef d'équipe",
+      "lastName": "Abidjan",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "scopeNode": [
+          "groupe.civ.abidjan"
+        ],
+        "brands": [
+          "lovol",
+          "hino"
+        ],
+        "locale": [
+          "fr"
+        ]
+      },
+      "realmRoles": [
+        "team_manager"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${NEEDS_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "a1000003-0000-4000-8000-000000000003",
+      "username": "team.lead@cfao.com",
+      "email": "team.lead@cfao.com",
+      "firstName": "Team lead",
+      "lastName": "Accra",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "scopeNode": [
+          "groupe.gha.accra"
+        ],
+        "brands": [
+          "toyota"
+        ],
+        "locale": [
+          "en"
+        ]
+      },
+      "realmRoles": [
+        "team_manager"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${NEEDS_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "a1000004-0000-4000-8000-000000000004",
+      "username": "directeur.cmr@cfao.com",
+      "email": "directeur.cmr@cfao.com",
+      "firstName": "Directeur filiale",
+      "lastName": "Cameroun",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "scopeNode": [
+          "groupe.cmr"
+        ],
+        "locale": [
+          "fr"
+        ]
+      },
+      "realmRoles": [
+        "branch_director"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${NEEDS_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "a1000005-0000-4000-8000-000000000005",
+      "username": "assistante@cfao.com",
+      "email": "assistante@cfao.com",
+      "firstName": "Assistante",
+      "lastName": "centre",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "scopeNode": [
+          "groupe"
+        ],
+        "locale": [
+          "fr"
+        ]
+      },
+      "realmRoles": [
+        "center_assistant"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${NEEDS_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "a1000007-0000-4000-8000-000000000007",
+      "username": "coordonnateur@cfao.com",
+      "email": "coordonnateur@cfao.com",
+      "firstName": "Coordonnateur",
+      "lastName": "formations",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "scopeNode": [
+          "groupe"
+        ],
+        "locale": [
+          "fr"
+        ]
+      },
+      "realmRoles": [
+        "training_coordinator"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${NEEDS_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "a1000006-0000-4000-8000-000000000006",
+      "username": "directeur.centre@cfao.com",
+      "email": "directeur.centre@cfao.com",
+      "firstName": "Directeur",
+      "lastName": "du centre",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "scopeNode": [
+          "groupe"
+        ],
+        "locale": [
+          "fr"
+        ]
+      },
+      "realmRoles": [
+        "center_director"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${NEEDS_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    }
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"firstName\",\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}}],\"unmanagedAttributePolicy\":\"ENABLED\"}"
+          ]
+        }
+      }
+    ]
+  }
 }

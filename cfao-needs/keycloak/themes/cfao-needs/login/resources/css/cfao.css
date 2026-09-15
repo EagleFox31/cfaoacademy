@@ -1,0 +1,496 @@
+/* Écran de connexion Keycloak — CFAO Academy / CFAO Mobility
+   Aligné sur le design system officiel : Space Grotesk · DM Sans
+   Carte en verre dépoli (Glassmorphism), photo d'atelier réelle, boutons et champs arrondis */
+
+/* ── Polices embarquées ─────────────────────────────────────────────────── */
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(../fonts/dm-sans-latin.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(../fonts/space-grotesk-latin.woff2) format("woff2");
+}
+
+/* ── Tokens ──────────────────────────────────────────────────────────────── */
+:root {
+  --cfao-red: #e3001b;
+  --cfao-red-deep: #b40015;
+  --cfao-navy: #1a1f3c;
+  --cfao-navy-2: #2a3157;
+  --cfao-ink: #0e1126;
+  --cfao-sans: "DM Sans", -apple-system, system-ui, sans-serif;
+  --cfao-display: "Space Grotesk", "DM Sans", sans-serif;
+}
+
+/* ── Fond de page : photo d'atelier + vignette lumineuse ─────────────────── */
+.login-pf body {
+  background-color: var(--cfao-navy) !important;
+  background-image:
+    linear-gradient(180deg, rgba(14, 17, 38, 0.22) 0%, rgba(14, 17, 38, 0.38) 100%),
+    radial-gradient(ellipse at 50% 40%, rgba(14, 17, 38, 0.05) 0%, rgba(14, 17, 38, 0.45) 100%),
+    url(../img/hero.jpg) !important;
+  background-size: cover !important;
+  background-position: center 22% !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+  font-family: var(--cfao-sans) !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+
+#kc-header {
+  display: none !important;
+}
+
+.login-pf-page {
+  padding-top: clamp(24px, 6vh, 64px) !important;
+  padding-bottom: 32px !important;
+}
+
+/* ── Carte en verre dépoli (Glassmorphism Modal) ─────────────────────────── */
+.login-pf-page .card-pf {
+  position: relative !important;
+  width: min(540px, calc(100vw - 32px)) !important;
+  max-width: 540px !important;
+  margin-inline: auto !important;
+  padding: 44px clamp(28px, 5vw, 48px) 36px !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(28px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.4) !important;
+  box-shadow:
+    0 32px 80px -20px rgba(14, 17, 38, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+  color: #fff !important;
+  overflow: visible !important;
+}
+
+/* Bouton de fermeture (✕) en haut à droite */
+.login-pf-page .card-pf::after {
+  content: "✕";
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cfao-navy);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 36px;
+  text-align: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.login-pf-page .card-pf:hover::after {
+  transform: scale(1.05);
+  color: var(--cfao-red);
+}
+
+/* ── Logo CFAO Mobility centré ───────────────────────────────────────────── */
+.login-pf-page .login-pf-header {
+  position: relative !important;
+  margin-bottom: 22px !important;
+}
+
+.login-pf-page .login-pf-header::before {
+  content: "";
+  display: block;
+  width: 140px;
+  height: 52px;
+  margin: 0 auto 20px;
+  background: #fff url(../img/logo-cfao-mobility.jpg) no-repeat center / contain;
+  border-radius: 8px;
+  padding: 6px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+#kc-page-title {
+  font-family: var(--cfao-sans) !important;
+  font-size: 15.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  text-align: center !important;
+  color: rgba(255, 255, 255, 0.94) !important;
+  max-width: 38ch !important;
+  margin: 0 auto !important;
+}
+
+/* ── Labels de formulaire (Norme d'accessibilité & contraste) ───────────── */
+.pf-c-form__group,
+.form-group {
+  margin-bottom: 18px !important;
+  text-align: left !important;
+}
+
+.pf-c-form__label,
+.pf-c-form__label-text,
+label[for="username"],
+label[for="password"],
+.control-label {
+  display: block !important;
+  margin-bottom: 6px !important;
+  font-family: var(--cfao-sans) !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  letter-spacing: 0.01em !important;
+  text-align: left !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Champ nom d'utilisateur / e-mail */
+.pf-c-form-control,
+#username,
+#kc-form-login input[type="text"],
+#kc-form-login input[type="email"] {
+  height: 48px !important;
+  padding: 0 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  font-family: var(--cfao-sans) !important;
+  font-size: 14.5px !important;
+  color: var(--cfao-ink) !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+.pf-c-form-control::placeholder,
+#username::placeholder,
+#password::placeholder,
+input::placeholder {
+  color: rgba(26, 31, 60, 0.45) !important;
+}
+
+.pf-c-form-control:focus,
+#username:focus,
+#kc-form-login input[type="text"]:focus,
+#kc-form-login input[type="email"]:focus {
+  outline: none !important;
+  background: #fff !important;
+  border-color: #fff !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.4),
+    0 0 0 4px rgba(26, 31, 60, 0.2) !important;
+}
+
+/* ── Champ mot de passe et groupe œil (Entièrement arrondi) ─────────────── */
+#kc-password-wrapper,
+.pf-c-input-group,
+.input-group {
+  display: flex !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+#kc-password-wrapper:focus-within,
+.pf-c-input-group:focus-within,
+.input-group:focus-within {
+  background: #fff !important;
+  border-color: #fff !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.4),
+    0 0 0 4px rgba(26, 31, 60, 0.2) !important;
+}
+
+#kc-password-wrapper input,
+#kc-password-wrapper #password,
+.pf-c-input-group .pf-c-form-control,
+.pf-c-input-group input,
+.input-group input {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  height: 48px !important;
+  padding: 0 16px !important;
+  border: none !important;
+  border-radius: 12px 0 0 12px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: var(--cfao-sans) !important;
+  font-size: 14.5px !important;
+  color: var(--cfao-ink) !important;
+}
+
+#kc-password-wrapper input:focus,
+.pf-c-input-group input:focus,
+.input-group input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Bouton œil afficher/masquer le mot de passe */
+#kc-password-wrapper button,
+.pf-c-input-group .pf-c-button,
+.pf-c-input-group .pf-c-button.pf-m-control,
+.input-group button,
+.input-group-append button {
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 12px 12px 0 !important;
+  color: rgba(14, 17, 38, 0.5) !important;
+  height: 48px !important;
+  padding: 0 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: color 0.15s ease, background 0.15s ease !important;
+  box-shadow: none !important;
+}
+
+#kc-password-wrapper button:hover,
+.pf-c-input-group .pf-c-button:hover,
+.input-group button:hover {
+  color: var(--cfao-ink) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* ── Options (Se souvenir de moi & Mot de passe oublié) ─────────────────── */
+#kc-form-options {
+  margin-top: 6px !important;
+  margin-bottom: 12px !important;
+  font-size: 13px !important;
+}
+
+.checkbox label {
+  color: rgba(255, 255, 255, 0.88) !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.checkbox input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  accent-color: var(--cfao-red) !important;
+  cursor: pointer !important;
+}
+
+#kc-form-options a,
+.login-pf-page a {
+  color: rgba(255, 255, 255, 0.88) !important;
+  font-size: 13px !important;
+  text-decoration: none !important;
+  transition: color 0.15s ease !important;
+}
+
+#kc-form-options a:hover,
+.login-pf-page a:hover {
+  color: #fff !important;
+  text-decoration: underline !important;
+}
+
+/* ── Bouton d'action rouge pilule « Accédez à votre espace » ────────────── */
+#kc-login,
+input[type="submit"]#kc-login,
+button[type="submit"]#kc-login,
+.pf-c-button.pf-m-primary,
+.btn-primary,
+.btn-block {
+  --pf-c-button--m-primary--BackgroundColor: var(--cfao-red) !important;
+  --pf-c-button--m-primary--hover--BackgroundColor: var(--cfao-red-deep) !important;
+  --pf-c-button--m-primary--focus--BackgroundColor: var(--cfao-red-deep) !important;
+  --pf-c-button--m-primary--active--BackgroundColor: var(--cfao-red-deep) !important;
+  --pf-c-button--BorderRadius: 999px !important;
+  border-radius: 999px !important;
+  width: 100% !important;
+  min-height: 48px !important;
+  height: 48px !important;
+  background: var(--cfao-red) !important;
+  background-color: var(--cfao-red) !important;
+  color: #fff !important;
+  font-family: var(--cfao-sans) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 8px 24px rgba(227, 0, 27, 0.42) !important;
+  transition: all 0.18s ease !important;
+  margin-top: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+}
+
+#kc-login:hover,
+input[type="submit"]#kc-login:hover,
+button[type="submit"]#kc-login:hover,
+.pf-c-button.pf-m-primary:hover,
+.btn-primary:hover,
+.btn-block:hover {
+  background: var(--cfao-red-deep) !important;
+  background-color: var(--cfao-red-deep) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 12px 28px rgba(227, 0, 27, 0.55) !important;
+}
+
+#kc-login:active,
+.pf-c-button.pf-m-primary:active {
+  transform: translateY(0) !important;
+}
+
+/* ── Note de contact & Bas de page ───────────────────────────────────────── */
+#kc-registration {
+  margin-top: 22px !important;
+  text-align: center !important;
+  font-size: 13px !important;
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+#kc-registration a {
+  color: #fff !important;
+  font-weight: 700 !important;
+  text-decoration: underline !important;
+}
+
+#kc-registration a:hover {
+  color: #ffe5e8 !important;
+}
+
+/* ── Sélecteur de langue Keycloak (Aligné sur la même ligne que le logo) ── */
+#kc-locale-wrapper,
+#kc-locale {
+  position: absolute !important;
+  top: 14px !important;
+  right: 0 !important;
+  margin: 0 !important;
+  z-index: 20 !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+}
+
+#kc-locale-wrapper button,
+#kc-locale-wrapper a,
+#kc-current-locale-link,
+.login-pf-page .card-pf .pf-c-dropdown__toggle,
+#kc-locale a {
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  font-family: var(--cfao-sans) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 5px 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.15s ease !important;
+}
+
+#kc-locale-wrapper button:hover,
+#kc-locale-wrapper a:hover,
+#kc-current-locale-link:hover,
+.login-pf-page .card-pf .pf-c-dropdown__toggle:hover,
+#kc-locale a:hover {
+  background: rgba(255, 255, 255, 0.28) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important;
+}
+
+#kc-locale-wrapper .pf-c-dropdown__toggle-icon,
+#kc-locale-wrapper i {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+#kc-locale ul,
+.login-pf-page .card-pf .pf-c-dropdown__menu {
+  position: absolute !important;
+  top: 100% !important;
+  right: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+  overflow: hidden !important;
+  list-style: none !important;
+  padding: 4px 0 !important;
+  margin-top: 6px !important;
+  min-width: 110px !important;
+  z-index: 25 !important;
+}
+
+@media (max-width: 480px) {
+  #kc-locale-wrapper,
+  #kc-locale {
+    top: 20px !important;
+    right: 20px !important;
+  }
+}
+
+#kc-locale ul a,
+.login-pf-page .card-pf .pf-c-dropdown__menu-item {
+  color: var(--cfao-ink) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 8px 14px !important;
+  display: block !important;
+  text-decoration: none !important;
+  background: transparent !important;
+}
+
+#kc-locale ul a:hover,
+.login-pf-page .card-pf .pf-c-dropdown__menu-item:hover {
+  background: rgba(227, 0, 27, 0.08) !important;
+  color: var(--cfao-red) !important;
+}
+
+/* ── Alertes d'erreurs ───────────────────────────────────────────────────── */
+.pf-c-alert.pf-m-inline {
+  border-radius: 10px !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-left: 4px solid var(--cfao-red) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  color: var(--cfao-ink) !important;
+  margin-bottom: 16px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
