@@ -11,6 +11,10 @@ export const COMMON_COPY = {
     allBrands: 'Toutes',
     menuToggleAria: 'Menu',
     mainNavAria: 'Navigation principale',
+    routeLoaderAria: 'Chargement de la page',
+    routeLoaderMsg1: 'Connexion sécurisée…',
+    routeLoaderMsg2: 'Chargement de votre espace…',
+    routeLoaderMsg3: 'Préparation des contenus…',
   },
   en: {
     langSwitchAria: 'Choose language',
@@ -24,6 +28,10 @@ export const COMMON_COPY = {
     allBrands: 'All',
     menuToggleAria: 'Menu',
     mainNavAria: 'Main navigation',
+    routeLoaderAria: 'Loading page',
+    routeLoaderMsg1: 'Secure connection…',
+    routeLoaderMsg2: 'Loading your space…',
+    routeLoaderMsg3: 'Preparing content…',
   },
   pt: {
     langSwitchAria: 'Escolher idioma',
@@ -37,5 +45,9 @@ export const COMMON_COPY = {
     allBrands: 'Todas',
     menuToggleAria: 'Menu',
     mainNavAria: 'Navegação principal',
+    routeLoaderAria: 'A carregar a página',
+    routeLoaderMsg1: 'Ligação segura…',
+    routeLoaderMsg2: 'A carregar o seu espaço…',
+    routeLoaderMsg3: 'A preparar conteúdos…',
   },
 }

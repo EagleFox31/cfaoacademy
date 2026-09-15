@@ -198,7 +198,7 @@ def seeded_templates():
             key="submission.confirmed",
             locale=locale,
             version=1,
-            subject="Votre déclaration de besoins",
-            body_text="$greeting,\n\nVotre déclaration est enregistrée.",
+            subject="Votre Identification des Besoins",
+            body_text="$greeting,\n\nVotre Identification des Besoins est enregistrée.",
             placeholders=["greeting"],
         )

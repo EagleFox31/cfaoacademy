@@ -1,7 +1,7 @@
 export const NAV_COPY = {
   fr: {
     actualites: 'Actualités',
-    publics: 'Publics',
+    publics: 'Nos publics',
     offres: 'Nos Offres',
     sessions: 'Sessions',
     academy: "L'Academy",
@@ -10,7 +10,7 @@ export const NAV_COPY = {
   },
   en: {
     actualites: 'News',
-    publics: 'Audiences',
+    publics: 'Our audiences',
     offres: 'Our offers',
     sessions: 'Sessions',
     academy: 'The Academy',
@@ -19,7 +19,7 @@ export const NAV_COPY = {
   },
   pt: {
     actualites: 'Notícias',
-    publics: 'Públicos',
+    publics: 'Os nossos públicos',
     offres: 'As nossas ofertas',
     sessions: 'Sessões',
     academy: 'A Academy',

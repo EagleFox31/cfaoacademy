@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "identity",
     "audit",
+    "lms",
     # <generated-apps>  (ne pas retirer : ancre du générateur scripts/new_module.py)
 ]
 

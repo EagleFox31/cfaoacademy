@@ -1,57 +1,61 @@
-/** Fonds photo par section accueil (hors hero carrousel). */
+/** Fonds photo accueil — un seul fond fixe pour toute la landing (lisibilité publique). */
 import { HOME_SESSIONS_SECTION_VISIBLE } from './index.js'
 
+/** Image unique derrière toutes les sections (hors hero). */
+export const HOME_LANDING_BG = '/assets/cfao-academy-douala.jpg'
+export const HOME_LANDING_BG_POSITION = 'center'
+export const HOME_LANDING_VEIL = 'light'
+
+/** @deprecated Conservé pour refs éventuelles ; le scroll utilise HOME_LANDING_BG. */
 export const HOME_SECTION_BG = {
-  actualites: '/assets/images_articles/event_academy.jpg',
-  publics: '/assets/publics/commerciaux.jpg',
-  motors: '/assets/images_articles/formation_toyota_g3.jpg',
-  equipment: '/assets/images_articles/event_lovol.jpg',
-  carrosserie: '/assets/images_articles/event_carrosserie.jpg',
-  savMotors: '/assets/hero/cta_hover_sav.jpg',
-  savEquipment: '/assets/publics/parts.jpg',
-  sessions: '/assets/images_articles/cert_toyota.jpg',
-  academy: '/assets/dernière_section_accueil/andragogie.jpg',
-  testimonials: '/assets/images_articles/cert_suzuki.jpg',
-  cta: '/assets/cfao-academy-douala.jpg',
+  actualites: HOME_LANDING_BG,
+  publics: HOME_LANDING_BG,
+  motors: HOME_LANDING_BG,
+  equipment: HOME_LANDING_BG,
+  carrosserie: HOME_LANDING_BG,
+  savMotors: HOME_LANDING_BG,
+  savEquipment: HOME_LANDING_BG,
+  sessions: HOME_LANDING_BG,
+  academy: HOME_LANDING_BG,
+  testimonials: HOME_LANDING_BG,
+  cta: HOME_LANDING_BG,
 }
 
 /** Visuel cartes formations carrosserie (accueil) — `assets/carrossier_peintre.jpg` */
 export const CARROSSERIE_CARD_IMG = '/assets/carrossier_peintre.jpg'
 
-/** Cadrage optionnel — reprend les réglages hero quand pertinent. */
 export const HOME_SECTION_BG_POSITION = {
-  savMotors: '68% 10%',
-  cta: 'center',
+  cta: HOME_LANDING_BG_POSITION,
 }
 
-/** Voile mixte par section (light = fond clair, dark = fond navy, light-soft = photo très visible). */
+/** Voile unique light — évite l’alternance clair/navy qui embrouille le public. */
 export const HOME_SECTION_VEIL = {
-  actualites: 'light',
-  publics: 'dark',
-  offres: 'light',
-  'formations-equipment': 'dark',
-  'formations-carrosserie': 'light-soft',
-  'formations-sav-motors': 'dark',
-  'formations-sav-equipment': 'light',
-  sessions: 'dark',
-  expertise: 'light',
-  temoignages: 'dark',
-  'cta-contact': 'light',
+  actualites: HOME_LANDING_VEIL,
+  publics: HOME_LANDING_VEIL,
+  offres: HOME_LANDING_VEIL,
+  'formations-equipment': HOME_LANDING_VEIL,
+  'formations-carrosserie': HOME_LANDING_VEIL,
+  'formations-sav-motors': HOME_LANDING_VEIL,
+  'formations-sav-equipment': HOME_LANDING_VEIL,
+  sessions: HOME_LANDING_VEIL,
+  expertise: HOME_LANDING_VEIL,
+  temoignages: HOME_LANDING_VEIL,
+  'cta-contact': HOME_LANDING_VEIL,
 }
 
-/** Ordre scroll + fond fixe Netflix (crossfade). */
+/** Ordre scroll (section active / snap) — même fond pour chaque id. */
 const HOME_BACKDROP_ITEMS = [
-  { id: 'actualites', image: HOME_SECTION_BG.actualites, veil: HOME_SECTION_VEIL.actualites },
-  { id: 'publics', image: HOME_SECTION_BG.publics, veil: HOME_SECTION_VEIL.publics },
-  { id: 'offres', image: HOME_SECTION_BG.motors, veil: HOME_SECTION_VEIL.offres },
-  { id: 'formations-equipment', image: HOME_SECTION_BG.equipment, veil: HOME_SECTION_VEIL['formations-equipment'] },
-  { id: 'formations-carrosserie', image: HOME_SECTION_BG.carrosserie, veil: HOME_SECTION_VEIL['formations-carrosserie'] },
-  { id: 'formations-sav-motors', image: HOME_SECTION_BG.savMotors, position: HOME_SECTION_BG_POSITION.savMotors, veil: HOME_SECTION_VEIL['formations-sav-motors'] },
-  { id: 'formations-sav-equipment', image: HOME_SECTION_BG.savEquipment, veil: HOME_SECTION_VEIL['formations-sav-equipment'] },
-  { id: 'sessions', image: HOME_SECTION_BG.sessions, veil: HOME_SECTION_VEIL.sessions },
-  { id: 'expertise', image: HOME_SECTION_BG.academy, veil: HOME_SECTION_VEIL.expertise },
-  { id: 'temoignages', image: HOME_SECTION_BG.testimonials, veil: HOME_SECTION_VEIL.temoignages },
-  { id: 'cta-contact', image: HOME_SECTION_BG.cta, position: HOME_SECTION_BG_POSITION.cta, veil: HOME_SECTION_VEIL['cta-contact'] },
+  { id: 'actualites', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
+  { id: 'publics', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
+  { id: 'offres', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
+  { id: 'formations-equipment', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
+  { id: 'formations-carrosserie', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
+  { id: 'formations-sav-motors', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
+  { id: 'formations-sav-equipment', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
+  { id: 'sessions', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
+  { id: 'expertise', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
+  { id: 'temoignages', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
+  { id: 'cta-contact', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
 ]
 export const HOME_BACKDROP_SECTIONS = HOME_SESSIONS_SECTION_VISIBLE
   ? HOME_BACKDROP_ITEMS
@@ -59,17 +63,15 @@ export const HOME_BACKDROP_SECTIONS = HOME_SESSIONS_SECTION_VISIBLE
 
 export const HOME_BACKDROP_SECTION_IDS = HOME_BACKDROP_SECTIONS.map((s) => s.id)
 
-/** Index id → { image, position, veil } — source unique pour le fond Netflix d'une section. */
 const HOME_BACKDROP_BY_ID = Object.fromEntries(
   HOME_BACKDROP_SECTIONS.map((s) => [
     s.id,
-    { image: s.image, position: s.position ?? 'center', veil: s.veil ?? 'light' },
+    { image: s.image, position: s.position ?? 'center', veil: s.veil ?? HOME_LANDING_VEIL },
   ]),
 )
 
 /**
- * Résout automatiquement le fond d'une section à partir de son `id`.
- * Évite les appels inline `sectionBg={...}` dispersés dans les pages.
+ * Résout le fond d'une section (landing = toujours le même visuel).
  * @param {string} id
  * @returns {{ image: string, position: string, veil: string } | null}
  */

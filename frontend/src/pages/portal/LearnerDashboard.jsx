@@ -8,7 +8,7 @@ import PortalDemoBar from '../../components/PortalDemoBar'
 import PortalModal from '../../components/PortalModal'
 import PortalReveal from '../../components/PortalReveal.jsx'
 import PortalStaggerGrid from '../../components/PortalStaggerGrid.jsx'
-import PortalAssistanceSection from '../../components/PortalAssistanceSection.jsx'
+import DpsAssistanceSection from '../../components/DpsAssistanceSection.jsx'
 import PvCard from '../../components/PvCard'
 import LearnerNextActions from '../../components/LearnerNextActions.jsx'
 import LearnerPifSection from '../../components/LearnerPifSection.jsx'
@@ -22,8 +22,12 @@ import { LMS_BY_USER } from '../../data/mock_lms'
 import { resolveLearnerNextActions } from '../../utils/learnerNextActions.js'
 import { resolveEvalTitle, isFormationTestLocked } from '../../utils/learnerTests.js'
 import { handleEvalOpen, resolvePortalDisplayUser, medacapLearnerSections } from '../../utils/medacapEvaluations.js'
+import { resolveMedacapLearnerCertGoals } from '../../utils/medacapLearner.js'
 import useLearnerEvaluations from '../../hooks/useLearnerEvaluations.js'
+import useLearnerPif from '../../hooks/useLearnerPif.js'
+import { resolveLearnerAssistanceTickets } from '../../utils/assistanceTickets.js'
 import { portalPvCardMedia } from '../../utils/portalCardMedia.js'
+import PortalSectionEyebrow from '../../components/PortalSectionEyebrow.jsx'
 
 // Mapping marque → section homepage correspondante
 const BRAND_SECTION = {
@@ -53,7 +57,7 @@ export default function LearnerDashboard() {
   const { t } = useLocale('portal')
   const [modal, setModal] = useState(null)
   const headerRef = useRef(null)
-  const lms = LMS_BY_USER[user.id]
+  const lms = LMS_BY_USER[user.demoKey]
   const {
     evaluations,
     usingMedacapCompetency,
@@ -62,6 +66,7 @@ export default function LearnerDashboard() {
     error: medacapError,
     isMedacapLearner,
   } = useLearnerEvaluations(user, lms)
+  const { pif: medacapPif } = useLearnerPif(user)
 
   const displayUser = useMemo(
     () => resolvePortalDisplayUser(user, medacapProfile),
@@ -73,14 +78,36 @@ export default function LearnerDashboard() {
     [lms],
   )
 
-  const lmsLive = useMemo(
-    () => (lms ? { ...lms, evaluations } : lms),
-    [lms, evaluations],
-  )
+  const certGoals = useMemo(() => {
+    if (isMedacapLearner && medacapProfile) {
+      const fromApi = resolveMedacapLearnerCertGoals(medacapProfile)
+      if (fromApi.length) return fromApi
+    }
+    return lms?.certGoals ?? []
+  }, [isMedacapLearner, medacapProfile, lms?.certGoals])
+
+  const lmsLive = useMemo(() => {
+    if (!lms) return lms
+    const fromApi = medacapPif && Object.keys(medacapPif.planningStatus ?? {}).length
+    return {
+      ...lms,
+      evaluations,
+      certGoals,
+      ...(fromApi ? {
+        planningStatus: medacapPif.planningStatus,
+        planPathway: medacapPif.planPathway?.length ? medacapPif.planPathway : lms.planPathway,
+      } : {}),
+    }
+  }, [lms, evaluations, certGoals, medacapPif])
 
   const nextActions = useMemo(
     () => resolveLearnerNextActions(displayUser, lmsLive),
     [displayUser, lmsLive],
+  )
+
+  const myAssistanceTickets = useMemo(
+    () => resolveLearnerAssistanceTickets(lmsLive, displayUser),
+    [lmsLive, displayUser],
   )
 
   function handleOpenEval(e) {
@@ -96,10 +123,10 @@ export default function LearnerDashboard() {
   return (
     <>
       <Nav />
-      <PortalStickyBar user={displayUser} lms={lms} headerRef={headerRef} />
+      <PortalStickyBar user={displayUser} lms={lmsLive} headerRef={headerRef} />
       <main className="portal-page">
         <div ref={headerRef}>
-          <PortalHeader user={displayUser} certGoals={lms.certGoals} lms={lms} />
+          <PortalHeader user={displayUser} certGoals={certGoals} lms={lmsLive} />
         </div>
 
         <LearnerNextActions
@@ -109,7 +136,7 @@ export default function LearnerDashboard() {
         />
 
         {(!isMedacapLearner || medacapSections.pif) && (
-          <LearnerPifSection user={displayUser} lms={lms} t={t} />
+          <LearnerPifSection user={displayUser} lms={lmsLive} t={t} />
         )}
 
         <LearnerCompetencyResultsSection
@@ -117,7 +144,6 @@ export default function LearnerDashboard() {
           lms={lmsLive}
           evaluations={evaluations}
           t={t}
-          onOpenEval={handleOpenEval}
         />
 
         <LearnerTestsSection
@@ -136,7 +162,7 @@ export default function LearnerDashboard() {
         <PortalReveal id="certifs">
           <div className="container" style={{ padding: '16px 32px' }}>
             <div className="portal-section-head">
-              <p className="portal-section-eyebrow">{t.eyebrow_manufacturer}</p>
+              <PortalSectionEyebrow icon="award" label={t.eyebrow_manufacturer} />
               <h2 className="portal-section-title">{t.title_my_certifications}</h2>
             </div>
             <PortalStaggerGrid>
@@ -159,7 +185,7 @@ export default function LearnerDashboard() {
           </div>
         </PortalReveal>
         )}
-        <PortalAssistanceSection t={t} variant="learner" />
+        <DpsAssistanceSection t={t} variant="learner" tickets={myAssistanceTickets} />
 
         {(!isMedacapLearner || medacapSections.discover) && (() => {
           const { section, brand } = getDiscoverTarget(displayUser.brands || [])
@@ -169,7 +195,7 @@ export default function LearnerDashboard() {
               <div className="container" style={{ padding: '0 32px' }}>
                 <div className="portal-discover-block">
                   <div className="portal-discover-text">
-                    <p className="portal-section-eyebrow" style={{ color: 'rgba(255,255,255,0.5)' }}>{t.eyebrow_discover}</p>
+                    <PortalSectionEyebrow icon="sparkles" label={t.eyebrow_discover} style={{ color: 'rgba(255,255,255,0.5)' }} />
                     <h2 className="portal-discover-title">{t.title_discover}</h2>
                     <p className="portal-discover-desc">{t.discover_desc}</p>
                   </div>

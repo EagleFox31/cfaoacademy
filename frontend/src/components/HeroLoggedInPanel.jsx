@@ -3,7 +3,12 @@ import useLocale from '../hooks/useLocale.js'
 import { LMS_BY_USER } from '../data/mock_lms.js'
 import { resolveCertGoalPrerequisites } from '../utils/certGoalProgress.js'
 import { formatLearnerRoleBadge } from '../utils/portalPersona.js'
-import { resolveProfileAgencyLabel, resolveProfileFilialeLabel } from '../utils/profileOrg.js'
+import {
+  resolveProfileAgencyLabel,
+  resolveProfileFilialeLabel,
+  resolveProfilePays,
+} from '../utils/profileOrg.js'
+import { flagCdnUrlForCountry } from '../utils/countryFlag.js'
 
 const BRAND_LOGOS = {
   toyota:          '/assets/logos/toyota.png',
@@ -31,6 +36,30 @@ function getPrimaryRole(roles) {
   return 'learner'
 }
 
+/** Agence ou filiale — toujours avec drapeau pays quand `pays` est connu (norme site). */
+function HeroGeoContextBadge({ pays, label }) {
+  if (!label) return null
+  const flagSrc = pays ? flagCdnUrlForCountry(pays, 40) : null
+
+  return (
+    <span className="hero-logged-badge-context">
+      {flagSrc ? (
+        <img
+          src={flagSrc}
+          srcSet={`${flagCdnUrlForCountry(pays, 80)} 2x`}
+          alt=""
+          className="hero-logged-badge-flag"
+          width={20}
+          height={15}
+          loading="lazy"
+          decoding="async"
+        />
+      ) : null}
+      <span>{label}</span>
+    </span>
+  )
+}
+
 /** Badge rôle + agence/filiale — affiché en haut du hero connecté. */
 export function HeroLoggedInBadge({ user }) {
   const { t: heroT } = useLocale('hero')
@@ -41,14 +70,13 @@ export function HeroLoggedInBadge({ user }) {
   const roleLabel = primaryRole === 'learner'
     ? formatLearnerRoleBadge(baseRoleLabel, user, heroT, publicsT)
     : baseRoleLabel
+  const pays = resolveProfilePays(user)
   const contextLabel = resolveProfileAgencyLabel(user) ?? resolveProfileFilialeLabel(user)
 
   return (
     <div className="hero-logged-badge">
       <span className="hero-logged-badge-role">{roleLabel}</span>
-      {contextLabel && (
-        <span className="hero-logged-badge-context">{contextLabel}</span>
-      )}
+      <HeroGeoContextBadge pays={pays} label={contextLabel} />
     </div>
   )
 }
@@ -188,7 +216,7 @@ function GenericPanel({ user, t }) {
 export default function HeroLoggedInPanel({ user }) {
   const { t } = useLocale('hero')
   const { t: pt } = useLocale('portal')
-  const lms = LMS_BY_USER[user.id]
+  const lms = LMS_BY_USER[user.demoKey]
   const primaryRole = getPrimaryRole(user.roles)
 
   const isLearner    = primaryRole === 'learner' || primaryRole === 'ki'

@@ -1,37 +1,28 @@
 import { createPortal } from 'react-dom'
-import { HOME_BACKDROP_SECTIONS } from '../data/homeSectionBg.js'
-import { sectionVeilBackdropClass } from '../data/sectionBackdropVeils.js'
-import BackdropLayer from './BackdropLayer.jsx'
+import {
+  HOME_LANDING_BG,
+  HOME_LANDING_BG_POSITION,
+} from '../data/homeSectionBg.js'
 
 /**
- * Netflix accueil : fond fixe plein écran par section, crossfade au scroll.
- * Opacités : CSS vars --backdrop-op-{id} posées par useHomeSectionFocus.
+ * Fond fixe plein écran pour toute la landing (hors hero).
+ * Un seul visuel — pas de crossfade photo / voile dark-light au scroll.
  */
-export default function HomeBackdrop({
-  activeId,
-  heroPhase,
-  sectionHoverImages = {},
-}) {
-  const activeSection = HOME_BACKDROP_SECTIONS.find((s) => s.id === activeId)
-  const veilClass = heroPhase ? '' : sectionVeilBackdropClass(activeSection?.veil)
-
+export default function HomeBackdrop({ heroPhase }) {
   const backdrop = (
     <div
       className={`home-backdrop${heroPhase ? ' is-hero-phase' : ''}`}
       aria-hidden="true"
     >
-      {HOME_BACKDROP_SECTIONS.map(({ id, image, position = 'center' }) => {
-        const hoverImage = id === 'offres' ? sectionHoverImages.offres : null
-        return (
-          <BackdropLayer
-            key={id}
-            id={id}
-            image={hoverImage ?? image}
-            position={position}
-          />
-        )
-      })}
-      <div className={['home-backdrop-veil', veilClass].filter(Boolean).join(' ')} />
+      <div
+        className="home-backdrop-layer home-backdrop-layer--static"
+        style={{
+          backgroundImage: `url(${HOME_LANDING_BG})`,
+          backgroundPosition: HOME_LANDING_BG_POSITION,
+          opacity: 1,
+        }}
+      />
+      <div className="home-backdrop-veil home-backdrop-veil--light" />
     </div>
   )
 

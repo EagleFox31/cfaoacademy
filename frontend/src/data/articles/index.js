@@ -24,6 +24,10 @@ function deriveBu(brand, titre = '') {
 function normalize(raw) {
   const photos = raw.photos?.urls ?? []
   const videos = raw.videos?.urls ?? []
+  const photoCaptures = (raw.photos?.captures ?? []).map((c) => ({
+    at: c.at,
+    videoIndex: c.video ?? 0,
+  }))
   return {
     slug: raw.id,
     category: raw.cat,
@@ -38,7 +42,11 @@ function normalize(raw) {
     content: raw.contenu ?? '',
     cover: raw.cover ?? null,
     photos,
+    photoCaptures,
     videos,
+    highlights: raw.highlights ?? [],
+    castTitle: raw.castTitle ?? '',
+    cast: raw.cast ?? [],
     bu: deriveBu(raw.brand, raw.titre),
   }
 }

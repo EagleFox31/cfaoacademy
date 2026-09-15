@@ -39,17 +39,20 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       KC_HEALTH_ENABLED: "true"
       # Borne la JVM sous la limite mémoire du conteneur (évite l'OOM kill).
-      JAVA_OPTS_KC_HEAP: "-XX:MaxRAMPercentage=70"
+      # G1GC + limites explicites pour éviter le GC thrashing après plusieurs heures.
+      JAVA_OPTS_KC_HEAP: "-XX:MaxRAMPercentage=70 -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
     ports: ["8080:8080"]
+    volumes:
+      - ./keycloak/themes:/opt/keycloak/themes:ro
     depends_on:
       keycloak-db: { condition: service_healthy }
     deploy:
       resources:
         limits:
           cpus: "${CPU_KEYCLOAK:-1.0}"
-          memory: "${MEM_KEYCLOAK:-768M}"
+          memory: "${MEM_KEYCLOAK:-1280M}"
         reservations:
-          memory: "${MEM_KEYCLOAK_RES:-384M}"
+          memory: "${MEM_KEYCLOAK_RES:-640M}"
 
   # Story 00-6 : applique le realm en config-as-code (idempotent, sans redémarrage).
   # Job one-shot : attend Keycloak, importe ./keycloak/config/*.yaml, puis sort (exit 0).
@@ -203,6 +206,31 @@ services:
           cpus: "${CPU_GATEWAY:-0.25}"
           memory: "${MEM_GATEWAY:-64M}"
 
+  # Base de données MongoDB MEDACAP (Persistante & strictement bornée en mémoire)
+  mongodb:
+    image: mongo:6.0
+    restart: unless-stopped
+    command: ["mongod", "--wiredTigerCacheSizeGB", "0.25"]
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    environment:
+      MONGO_INITDB_DATABASE: academy
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_MONGO:-0.50}"
+          memory: "${MEM_MONGO:-512M}"
+        reservations:
+          memory: "${MEM_MONGO_RES:-256M}"
+
   # BFF : flow OIDC + cookie de session httpOnly. À activer une fois le client
   # Keycloak provisionné (00-6). Laisse en commentaire tant que non câblé bout-en-bout.
   # oauth2-proxy:
@@ -216,3 +244,5 @@ volumes:
   keycloak-db-data:
   core-db-data:
   ops-db-data:
+  mongodb-data:
+

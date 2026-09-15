@@ -19,27 +19,37 @@ _KC_PW = os.environ.get("KEYCLOAK_ADMIN_PASSWORD", "admin")
 _REALM = os.environ.get("OIDC_REALM", "cfao")
 
 
-def keycloak_sub(username):
-    """Récupère le vrai `sub` Keycloak par username (API admin). None si indisponible."""
+_KC_USER_MAP = None  # username → sub, récupéré en UN seul appel (fiable, pas de flakiness par user)
+
+
+def _kc_user_map():
+    global _KC_USER_MAP
+    if _KC_USER_MAP is not None:
+        return _KC_USER_MAP
+    _KC_USER_MAP = {}
     if not _KC:
-        return None
+        return _KC_USER_MAP
     try:
         tok = requests.post(
             f"{_KC}/realms/master/protocol/openid-connect/token",
             data={"grant_type": "password", "client_id": "admin-cli", "username": _KC_ADMIN, "password": _KC_PW},
-            timeout=5,
+            timeout=8,
         ).json().get("access_token")
         if not tok:
-            return None
-        r = requests.get(
+            return _KC_USER_MAP
+        users = requests.get(
             f"{_KC}/admin/realms/{_REALM}/users",
-            params={"username": username, "exact": "true"},
-            headers={"Authorization": f"Bearer {tok}"},
-            timeout=5,
+            params={"max": 200}, headers={"Authorization": f"Bearer {tok}"}, timeout=8,
         ).json()
-        return r[0]["id"] if r else None
-    except (requests.RequestException, KeyError, IndexError, ValueError):
-        return None
+        _KC_USER_MAP = {u["username"]: u["id"] for u in users if "username" in u and "id" in u}
+    except (requests.RequestException, KeyError, ValueError):
+        pass
+    return _KC_USER_MAP
+
+
+def keycloak_sub(username):
+    """Vrai `sub` Keycloak par username (depuis la map récupérée en un appel). None sinon."""
+    return _kc_user_map().get(username)
 
 BRANDS = [
     ("toyota", "Toyota", "vl"), ("suzuki", "Suzuki", "vl"),

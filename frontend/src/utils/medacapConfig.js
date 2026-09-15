@@ -30,6 +30,18 @@ export function medacapLaunchBaseUrl() {
   return MEDACAP_BASE_URL || MEDACAP_API_BASE_URL || `${DEV_PROXY_TARGET.replace(/\/medacap$/, '')}/medacap`
 }
 
+/**
+ * Base MEDACAP pour SSO Define (portal-launch-define → session → dashboard).
+ * En dev split (API localhost, QCM 10.68.0.7), Define passe par le WAMP local :
+ * portal-launch-define.php n’est pas déployé / fonctionnel sur 10.68.0.7.
+ */
+export function medacapDefineLaunchBaseUrl() {
+  if (MEDACAP_API_BASE_URL && MEDACAP_BASE_URL && MEDACAP_API_BASE_URL !== MEDACAP_BASE_URL) {
+    return MEDACAP_API_BASE_URL
+  }
+  return medacapLaunchBaseUrl()
+}
+
 /** Identifiant Mongo MEDACAP pour l'utilisateur mock. */
 export function resolveMedacapUserQuery(user) {
   if (!user) return null

@@ -69,7 +69,7 @@ jobs:
       - run: pytest -q
 
   needs-web:
-    name: cfao-needs (app 16 · Vite · build)
+    name: cfao-needs (app 16 · Vite · test + build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -84,6 +84,7 @@ jobs:
           cache: npm
           cache-dependency-path: cfao-needs/web/package-lock.json
       - run: npm ci
+      - run: npm test
       - run: npm run build
 
   operations:
@@ -127,6 +128,13 @@ jobs:
   secrets:
     name: Secret scanning
     runs-on: ubuntu-latest
+    # gitleaks-action liste les commits de la PR pour les scanner : sans
+    # `pull-requests: read`, l'appel API renvoie 403 et le job echoue AVANT tout
+    # scan. Le workflow ne declarait que `contents: read` — ce job ne pouvait donc
+    # jamais reussir sur un evenement `pull_request`.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:

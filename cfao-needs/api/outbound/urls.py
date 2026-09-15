@@ -1,9 +1,9 @@
 from django.urls import path
-from rest_framework.routers import SimpleRouter
 
+from core.routers import OptionalSlashRouter
 from .views import EmailSendLogViewSet, OutboundMessageViewSet, resend_log
 
-router = SimpleRouter()
+router = OptionalSlashRouter()
 router.register(r"outbound", OutboundMessageViewSet, basename="outbound")
 router.register(r"emails/logs", EmailSendLogViewSet, basename="email-log")
 

@@ -7,6 +7,37 @@ const BU_FILIALE_PREFIX = {
   'parts-eq': 'CFAO MOBILITY',
 }
 
+const BU_SHORT_LABEL = {
+  fr: {
+    motors: 'motors',
+    equipment: 'equipment',
+    carrosserie: 'carrosserie',
+    'parts-motors': 'pièces',
+    'parts-eq': 'pièces',
+  },
+  en: {
+    motors: 'Motors',
+    equipment: 'Equipment',
+    carrosserie: 'body shop',
+    'parts-motors': 'parts',
+    'parts-eq': 'parts',
+  },
+  pt: {
+    motors: 'Motors',
+    equipment: 'Equipment',
+    carrosserie: 'carroçaria',
+    'parts-motors': 'peças',
+    'parts-eq': 'peças',
+  },
+}
+
+/** BU courte pour la salutation hero DPS (ex. « equipment »). */
+export function resolveProfileBuShortLabel(user, locale = 'fr') {
+  const dept = user?.departments?.[0]
+  const labels = BU_SHORT_LABEL[locale] ?? BU_SHORT_LABEL.fr
+  return labels[dept] ?? dept ?? (locale === 'fr' ? 'filiale' : 'branch')
+}
+
 /** Pays affiché / drapeau — explicite ou déduit du nom de filiale. */
 export function resolveProfilePays(user) {
   if (user?.pays) return user.pays
@@ -31,6 +62,7 @@ export function resolveProfileFilialeLabel(user) {
 
 /**
  * Agence (site) — ex. Douala. Une filiale regroupe une ou plusieurs agences.
+ * Norme affichage : libellé géo (agence, filiale, pays) toujours accompagné du drapeau pays.
  */
 export function resolveProfileAgencyLabel(user) {
   const orgLabel = user?.orgLabel?.trim()

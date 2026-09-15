@@ -48,7 +48,7 @@ export default function PvCard({
     className,
   ].filter(Boolean).join(' ')
   const outerProps = isInteractive
-    ? { type: 'button', onClick }
+    ? { type: 'button', onClick: (e) => { e.preventDefault(); onClick?.(e) } }
     : hasDualCta
       ? {}
       : href
@@ -101,7 +101,7 @@ export default function PvCard({
           </div>
         )}
         {kicker && <div className="kicker">{kicker}</div>}
-        <h3>{title}</h3>
+        {title ? <h3>{title}</h3> : null}
         {meta && <div className="meta">{meta}</div>}
 
         {(ctaAside || cta || secondCta) && (

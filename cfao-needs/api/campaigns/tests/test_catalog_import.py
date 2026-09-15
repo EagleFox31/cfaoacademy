@@ -217,6 +217,138 @@ def test_doublon_dans_le_fichier_est_signale(campaign, motors_family):
     assert "ligne 2" in result.errors[0].message
 
 
+def test_titre_anglais_repris_du_catalogue_publie(campaign, motors_family):
+    """Le classeur métier n'a pas de colonne anglaise : le titre vient de la table.
+
+    Sans ce rapprochement, un utilisateur anglophone lirait 261 titres en
+    français — c'est ce qui a motivé `titles_en.json`.
+    """
+    Brand.objects.create(code="toyota", label="TOYOTA", pole=Pole.MOBILITY)
+    stream = _workbook(
+        ["Famille", "Marque", "Code", "Intitulé"],
+        [["techniques-motors", "TOYOTA", "BEV02", "Maintenance préventive des véhicules électriques"]],
+    )
+
+    importer = CatalogImporter(campaign)
+    result = importer.parse(stream)
+    importer.apply(result)
+
+    line = CatalogLine.objects.get(campaign=campaign, code="BEV02")
+    assert line.title.startswith("Maintenance préventive")
+    assert line.title_en == "Preventive maintenance of BYD electric vehicles"
+
+
+def test_un_meme_code_sur_deux_formations_garde_deux_traductions(campaign, equipment_family):
+    """TP01 et TP02 désignent des formations différentes selon la famille.
+
+    Le catalogue va jusqu'à les inverser d'un pôle à l'autre. Une table indexée
+    sur le code leur donnerait la même traduction, fausse et silencieuse — c'est
+    pourquoi elle est indexée sur l'intitulé.
+    """
+    argumentaire = "Développement de l'argumentaire technique de vente des pièces de maintenance"
+    plateforme = "Utilisation de la plateforme de référencement des pièces constructeur"
+    stream = _workbook(
+        ["Famille", "Marque", "Code", "Intitulé"],
+        [
+            ["process-parts-equipment", "", "TP01", argumentaire],
+            ["process-parts-equipment", "", "TP02", plateforme],
+        ],
+    )
+
+    importer = CatalogImporter(campaign)
+    result = importer.parse(stream)
+    importer.apply(result)
+
+    traductions = {
+        line.code: line.title_en
+        for line in CatalogLine.objects.filter(campaign=campaign)
+    }
+    assert traductions["TP01"] == "Developing technical sales arguments for maintenance parts"
+    assert traductions["TP02"] == "Using the manufacturer parts catalogue platform"
+
+
+def test_colonne_anglaise_du_classeur_prime_sur_la_table(campaign, motors_family):
+    """La table n'est qu'un repli : ce que le métier écrit fait foi."""
+    Brand.objects.create(code="toyota", label="TOYOTA", pole=Pole.MOBILITY)
+    stream = _workbook(
+        ["Famille", "Marque", "Code", "Intitulé", "Intitulé EN"],
+        [["techniques-motors", "TOYOTA", "BEV02", "Maintenance préventive", "Agreed wording"]],
+    )
+
+    importer = CatalogImporter(campaign)
+    result = importer.parse(stream)
+    importer.apply(result)
+
+    assert CatalogLine.objects.get(campaign=campaign, code="BEV02").title_en == "Agreed wording"
+
+
+def test_intitule_sans_traduction_reste_en_francais(campaign, motors_family):
+    """Un titre manquant ne bloque pas l'import : la ligne s'affiche en français."""
+    Brand.objects.create(code="toyota", label="TOYOTA", pole=Pole.MOBILITY)
+    stream = _workbook(
+        ["Famille", "Marque", "Code", "Intitulé"],
+        [["techniques-motors", "TOYOTA", "ZZZ99", "Formation inédite jamais publiée"]],
+    )
+
+    importer = CatalogImporter(campaign)
+    result = importer.parse(stream)
+    importer.apply(result)
+
+    assert result.ok, result.errors
+    assert CatalogLine.objects.get(campaign=campaign, code="ZZZ99").title_en == ""
+
+
+def test_les_ecritures_divergentes_du_meme_intitule_se_rapprochent():
+    """Apostrophe droite ou typographique, casse, ponctuation : même formation.
+
+    Comparer les intitulés bruts ferait manquer la moitié des correspondances,
+    et il faudrait tenir une table d'alias qui grossirait à chaque export.
+    """
+    from campaigns.imports.titles_en import english_title, normalize_title
+
+    assert normalize_title("Réparation d’un vitrage feuilleté") == normalize_title(
+        "Reparation d'un vitrage feuillete"
+    )
+    assert english_title("Réparation d’un vitrage feuilleté") == "Laminated glass repair"
+    assert english_title("  RÉPARATION D'UN VITRAGE FEUILLETÉ  ") == "Laminated glass repair"
+    assert english_title("Formation qui n'existe pas") == ""
+
+
+def test_niveau_constructeur_repris_de_la_vitrine(campaign, motors_family):
+    """Toyota lit G4, pas seulement JUNIOR — c'est la nomenclature de la marque."""
+    Brand.objects.create(code="toyota", label="TOYOTA", pole=Pole.MOBILITY)
+    stream = _workbook(
+        ["Famille", "Marque", "Code", "Intitulé", "Public cible"],
+        [["techniques-motors", "TOYOTA", "TS01-G4",
+          "Maintenance préventive périodique et non-périodique des véhicules", "JUNIOR"]],
+    )
+
+    importer = CatalogImporter(campaign)
+    result = importer.parse(stream)
+    importer.apply(result)
+
+    line = CatalogLine.objects.get(campaign=campaign, code="TS01-G4")
+    assert line.tier == "JUNIOR"
+    assert line.level_label == "G4"
+
+
+def test_suffixe_suzuki_donne_le_niveau_bronze(campaign, motors_family):
+    """SS01-BRONZE côté 2027, SS01 sous BRONZE côté vitrine : même niveau."""
+    Brand.objects.create(code="suzuki", label="SUZUKI", pole=Pole.MOBILITY)
+    stream = _workbook(
+        ["Famille", "Marque", "Code", "Intitulé", "Public cible"],
+        [["techniques-motors", "SUZUKI", "SS01-BRONZE",
+          "Maintenance préventive périodique", "JUNIOR"]],
+    )
+
+    importer = CatalogImporter(campaign)
+    result = importer.parse(stream)
+    assert result.ok, result.errors
+    importer.apply(result)
+
+    assert CatalogLine.objects.get(campaign=campaign, code="SS01-BRONZE").level_label == "Bronze"
+
+
 def test_le_modele_vierge_se_relit_avec_le_meme_parseur(campaign, motors_family):
     """Règle 2 : modèle et parseur viennent de la même définition — ils ne peuvent
     pas diverger. Le modèle généré doit donc être relisible tel quel."""

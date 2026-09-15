@@ -1,8 +1,14 @@
 # Ressource « needs_line » — une ligne du catalogue de campagne.
 #
 # C'est cette policy qui alimente le QUERY PLAN : le catalogue n'est jamais renvoyé
-# en entier puis filtré côté navigateur. Un manager habilité `peugeot` reçoit les
-# lignes PEUGEOT ET les lignes sans marque de son pôle.
+# en entier puis filtré côté navigateur.
+#
+# DÉCISION MÉTIER : le catalogue n'est PAS restreint aux marques habilitées.
+# Les filiales ne déclarent pas toujours à temps les marques qu'elles exploitent ;
+# masquer une marque non déclarée empêche de saisir un besoin réel, et le silence
+# qui en résulte coûte plus cher qu'une marque de trop dans la liste. L'habilitation
+# par marque reste portée par `principal.attr.brands` pour les usages qui en ont
+# besoin, mais elle ne filtre plus la lecture du catalogue.
 #
 # GOTCHA : `roles` + `derivedRoles` dans la MÊME règle valent OU, pas ET.
 # Pour exiger « rôle ET condition », on garde une seule dimension par règle.
@@ -31,7 +37,7 @@ resourcePolicy:
         - branch_hr
         - group_hr
 
-    # Saisisseurs : leurs marques, PLUS les lignes transverses (brand vide).
+    # Saisisseurs : tout le catalogue, marques et lignes transverses.
     - actions: ["view", "list"]
       effect: EFFECT_ALLOW
       roles:
@@ -39,9 +45,3 @@ resourcePolicy:
         - workshop_manager
         - dps
         - dop
-      condition:
-        match:
-          any:
-            of:
-              - expr: request.resource.attr.brand == ""
-              - expr: request.resource.attr.brand in request.principal.attr.brands

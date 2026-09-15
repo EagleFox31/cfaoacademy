@@ -17,7 +17,7 @@ const INITIAL_FORGOT = {
   email: '',
 }
 
-export default function useAuthForm(locale = 'fr') {
+export default function useAuthForm(locale = 'fr', onLoginSubmit) {
   const [panel, setPanel] = useState('login')
   const [login, setLogin] = useState(INITIAL_LOGIN)
   const [forgot, setForgot] = useState(INITIAL_FORGOT)
@@ -68,26 +68,32 @@ export default function useAuthForm(locale = 'fr') {
   }, [])
 
   const submitLogin = useCallback(async (event) => {
-    event.preventDefault()
+    if (event?.preventDefault) event.preventDefault()
     clearFeedback()
 
     const result = validateLogin(login)
     if (!result.ok) {
       setFieldErrors(result.fieldErrors)
-      return
+      return false
     }
 
     setLoading(true)
     try {
-      await new Promise((resolve) => window.setTimeout(resolve, 700))
-      // Branchement API auth à venir
-      setFormError(AUTH_ERROR_CODES.SERVICE_UNAVAILABLE)
-    } catch {
-      setFormError(AUTH_ERROR_CODES.NETWORK)
+      if (onLoginSubmit) {
+        await onLoginSubmit({ identifier: login.email, password: login.password, remember: login.remember })
+      }
+      return true
+    } catch (err) {
+      if (err?.code === 'invalid_grant' || err?.message?.toLowerCase().includes('invalid')) {
+        setFormError(AUTH_ERROR_CODES.INVALID_CREDENTIALS)
+      } else {
+        setFormError(AUTH_ERROR_CODES.NETWORK)
+      }
+      return false
     } finally {
       setLoading(false)
     }
-  }, [clearFeedback, login])
+  }, [clearFeedback, login, onLoginSubmit])
 
   const submitForgot = useCallback(async (event) => {
     event.preventDefault()

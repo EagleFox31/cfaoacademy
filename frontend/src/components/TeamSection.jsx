@@ -1,3 +1,4 @@
+import PortalSectionEyebrow from './PortalSectionEyebrow.jsx'
 import { useMemo, useState } from 'react'
 import ChipFilterBar from './ChipFilterBar.jsx'
 import TeamMemberCard from './TeamMemberCard.jsx'
@@ -59,7 +60,7 @@ export default function TeamSection({
     <section id={sectionId}>
       <div className="container" style={{ padding: '16px 32px' }}>
         <div className="portal-section-head">
-          <p className="portal-section-eyebrow">{eyebrowOverride ?? t.eyebrow_individual}</p>
+          <PortalSectionEyebrow icon="users" label={eyebrowOverride ?? t.eyebrow_individual} />
           <h2 className="portal-section-title">{titleOverride ?? t.title_my_team}</h2>
         </div>
 

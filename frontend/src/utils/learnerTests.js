@@ -10,7 +10,7 @@ export const COMPETENCY_TIER_BY_LEVEL = {
   G4: 'junior',
   G3: 'senior',
   G2: 'expert',
-  G1: 'expert',
+  G1: 'expert', // diag avancé — même palier mesure MEDACAP que G2
   JUNIOR: 'junior',
   SENIOR: 'senior',
   EXPERT: 'expert',
@@ -312,13 +312,18 @@ export function evalQuestionsRemaining(evalItem) {
   return Math.max(0, total - evalQuestionsAnswered(evalItem))
 }
 
-export function evalAccentColor(evalItem) {
-  if (evalItem.status === 'progress') return '#e67e00'
-  const tier = evalScoreTier(evalItem.score)
+/** Couleur bordure / accent — mêmes paliers que evalScoreTier. */
+export function evalScoreAccentColor(score) {
+  const tier = evalScoreTier(score)
   if (tier === 'high') return '#1aab5b'
   if (tier === 'mid') return '#e67e00'
   if (tier === 'low') return 'var(--red)'
   return 'var(--muted)'
+}
+
+export function evalAccentColor(evalItem) {
+  if (evalItem.status === 'progress') return '#e67e00'
+  return evalScoreAccentColor(evalItem.score)
 }
 
 function evalCardTier(evalItem) {

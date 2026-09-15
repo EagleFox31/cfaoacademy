@@ -16,6 +16,7 @@ from core.authz.filters import DeniedAll, plan_to_q
 from audit.services import record_audit
 from core.authz.permissions import CerbosPermission
 from .models import OrgUnit, RoleAssignment, User
+from .roles import ROLE_CATALOG
 from .serializers import AssignmentSerializer, OrgUnitSerializer, UserSerializer
 from .services import resolve_principal
 
@@ -62,6 +63,20 @@ class MeView(APIView):
                 "brands": attr.get("brands", []),
             }
         )
+
+
+class SystemRolesView(APIView):
+    """Catalogue des rôles système (lecture) — ressource globale, réservée superadmin/admin groupe."""
+
+    permission_classes = [IsAuthenticated, CerbosPermission]
+    cerbos_resource_kind = "system_role"
+    cerbos_action = "list"
+
+    def get_cerbos_target(self, request):
+        return "*", {}  # ressource globale (pas de périmètre org)
+
+    def get(self, request):
+        return Response(ROLE_CATALOG)
 
 
 class OrgUnitViewSet(viewsets.ModelViewSet):

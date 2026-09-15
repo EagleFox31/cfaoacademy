@@ -25,7 +25,7 @@ class CatalogLineSerializer(serializers.ModelSerializer):
     class Meta:
         model = CatalogLine
         fields = [
-            "id", "code", "title", "tier", "populations",
+            "id", "code", "title", "title_en", "level_label", "tier", "populations",
             "family_key", "family_label", "family_status", "pole",
             "brand_code", "brand_label", "sort_order",
         ]

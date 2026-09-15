@@ -1,35 +1,21 @@
 import { useEffect } from 'react'
 import PvCard from './PvCard.jsx'
 import useLocale from '../hooks/useLocale'
-import { sortDemoProfiles } from '../utils/demoProfiles.js'
+import { demoProfileKicker, sortDemoProfiles } from '../utils/demoProfiles.js'
+import { resolveProfileIcon } from '../utils/resolveProfileIcon.js'
 
-const DEMO_ROLE_LABELS = {
-  learner: 'Apprenant',
-  ki: 'KI — Formateur suppléant',
-  team_manager: "Chef d'équipe",
-  workshop_manager: "Chef d'atelier",
-  branch_hr: 'RH Filiale',
-  superadmin: 'Super Admin',
-  build_team: 'Équipe build',
-  group_admin: 'Admin Groupe (MOA)',
-}
-
-const DEMO_ROLE_LABELS_EN = {
-  learner: 'Learner',
-  ki: 'Key Instructor',
-  team_manager: 'Team Manager',
-  workshop_manager: 'Workshop Manager',
-  branch_hr: 'Branch HR',
-  superadmin: 'Super Admin',
-  build_team: 'Build team',
-  group_admin: 'Group Admin (MOA)',
-}
-
-const DEMO_IMG = '/assets/icone_technicien.png'
-
-function roleLabel(role, locale) {
-  const map = locale === 'en' ? DEMO_ROLE_LABELS_EN : DEMO_ROLE_LABELS
-  return map[role] || role
+const USERNAME_BY_DEMO_KEY = {
+  u1: 'kouame.assi',
+  u2: 'brahim.tahir',
+  u3: 'seydou.diallo',
+  u4: 'fatou.mbaye',
+  u5: 'aminata.kone',
+  u6: 'admin.groupe',
+  u7: 'tech.lead',
+  u8: 'moa.pilotage',
+  u9: 'loic.traore',
+  u10: 'jacques.robin',
+  u11: 'andre.yogba',
 }
 
 export default function LoginDemoDrawer({
@@ -39,7 +25,8 @@ export default function LoginDemoDrawer({
   onClose,
   onSelectProfile,
 }) {
-  const { locale, t } = useLocale('login')
+  const { t } = useLocale('login')
+  const { t: portalT } = useLocale('portal')
   const sortedProfiles = sortDemoProfiles(profiles)
 
   useEffect(() => {
@@ -61,7 +48,7 @@ export default function LoginDemoDrawer({
       <button
         type="button"
         className="login-demo-toggle"
-        onClick={onOpen}
+        onClick={open ? onClose : onOpen}
         aria-expanded={open}
         aria-controls="login-demo-drawer"
       >
@@ -99,16 +86,16 @@ export default function LoginDemoDrawer({
 
         <div className="login-demo-drawer-body">
           <div className="login-demo-profiles pv-grid pv-grid--stretch">
-            {sortedProfiles.map(p => {
-              const primaryRole = p.roles.find(r => DEMO_ROLE_LABELS[r]) || p.roles[0]
-              const isMedacap = Boolean(p.medacapUsername || p.medacapUserId)
+            {sortedProfiles.map((p) => {
+              const username = USERNAME_BY_DEMO_KEY[p.id] || p.email
+              const metaText = `${p.orgLabel || p.filiale} · Login : ${username} (mdp: demo)`
               return (
                 <PvCard
                   key={p.id}
-                  kicker={isMedacap ? 'MEDACAP · Cameroun' : roleLabel(primaryRole, locale)}
+                  kicker={demoProfileKicker(p, portalT)}
                   title={p.demoLabel ?? `${p.firstName} ${p.lastName}`}
-                  meta={p.orgLabel || p.filiale}
-                  img={DEMO_IMG}
+                  meta={metaText}
+                  img={resolveProfileIcon(p, { fallbackTech: true })}
                   accentColor="var(--red)"
                   cta={t.demoAccess}
                   corner

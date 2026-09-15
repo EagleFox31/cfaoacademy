@@ -1,3 +1,4 @@
+import PortalSectionEyebrow from './PortalSectionEyebrow.jsx'
 import { useState } from 'react'
 import PvCard from './PvCard.jsx'
 import PlanEntryCard from './PlanEntryCard.jsx'
@@ -32,7 +33,7 @@ export default function TeamResultsSection({ members, t }) {
     <section id="resultats">
       <div className="container" style={{ padding: '16px 32px' }}>
         <div className="portal-section-head">
-          <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
+          <PortalSectionEyebrow icon="award" label={t.eyebrow_skills} />
           <h2 className="portal-section-title">{t.tm_title_results}</h2>
         </div>
 

@@ -372,11 +372,37 @@ Petite carte blanche positionnee en bas de l'image hero.
 
 ### Accent par marque
 
+Source : `cfao-needs/web/src/lib/brandColors.js` (`BRAND_ACCENTS` / `brandTheme`).
+Equipment + BYD = bandeau titre des fiches PNG `catalogues/<marque>/`.
+
 ```css
-.pv-card[data-brand="toyota"]   { --pv-accent: #EB0A1E; }
-.pv-card[data-brand="mercedes"] { --pv-accent: #888; }
-.pv-card[data-brand="suzuki"]   { --pv-accent: #004b9e; }
+/* Motors — vitrine / constructeur */
+.pv-card[data-brand="toyota"]        { --pv-accent: #EB0A1E; }
+.pv-card[data-brand="mercedes"]      { --pv-accent: #333333; }
+.pv-card[data-brand="suzuki"]        { --pv-accent: #004b9e; }
+.pv-card[data-brand="byd"]           { --pv-accent: #6B7280; } /* gris fiches */
+.pv-card[data-brand="mitsubishi"]    { --pv-accent: #E60012; }
+.pv-card[data-brand="peugeot"]       { --pv-accent: #1C1F2A; }
+.pv-card[data-brand="citroen"]       { --pv-accent: #E4002B; }
+.pv-card[data-brand="fiat"]          { --pv-accent: #AD172B; }
+.pv-card[data-brand="jeep"]          { --pv-accent: #1B4D3E; }
+.pv-card[data-brand="omoda-jaecoo"]  { --pv-accent: #C4A265; }
+.pv-card[data-brand="yamaha"]        { --pv-accent: #0047AB; }
+
+/* Equipment — bandeau titre fiches catalogue */
+.pv-card[data-brand="jcb"]             { --pv-accent: #F8BD04; }
+.pv-card[data-brand="lovol"]           { --pv-accent: #FFCC00; }
+.pv-card[data-brand="bt"]              { --pv-accent: #E60838; }
+.pv-card[data-brand="toyota-forklift"] { --pv-accent: #E26C09; }
+.pv-card[data-brand="hino"]            { --pv-accent: #757675; }
+.pv-card[data-brand="fuso"]            { --pv-accent: #E60012; }
+.pv-card[data-brand="renault-trucks"]  { --pv-accent: #6B6B6B; }
+.pv-card[data-brand="sinotruk"]        { --pv-accent: #006666; }
+.pv-card[data-brand="shacman"]         { --pv-accent: #2E5395; }
+.pv-card[data-brand="king-long"]       { --pv-accent: #757675; }
 ```
+
+Texte sur pastille claire (jaune / gris) : encre `#1a1f3c` — voir `DARK_ON` dans `brandColors.js`.
 
 ---
 

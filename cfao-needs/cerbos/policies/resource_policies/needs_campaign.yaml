@@ -2,8 +2,16 @@
 #
 # Lecture large : tout compte authentifié doit voir la campagne en cours, ses dates
 # et ses familles de catalogue, sinon il ne peut pas savoir qu'il a une fiche à
-# remplir. Écriture (ouverture, clôture, import du référentiel, arbitrage) réservée
-# au pilotage Academy.
+# remplir.
+#
+# Écriture : deux niveaux distincts (derived_roles/needs_review.yaml).
+#   - `academy_reviewer` instruit les dossiers → rien ici, tout est dans
+#     needs_submission et needs_outbound.
+#   - `academy_pilot` engage l'exercice → ouvrir, clôturer, importer, arbitrer.
+#
+# L'assistante du centre relit et valide toute la journée, mais n'ouvre ni ne
+# clôture une campagne : refermer un exercice pendant que des filiales saisissent,
+# ou rejouer un arbitrage déjà communiqué, ne se rattrape pas d'un clic.
 apiVersion: api.cerbos.dev/v1
 resourcePolicy:
   version: default
@@ -18,9 +26,4 @@ resourcePolicy:
     - actions: ["create", "update", "open", "close", "import", "arbitrate"]
       effect: EFFECT_ALLOW
       derivedRoles:
-        - academy_reviewer
-
-    # Le directeur du centre seul peut arbitrer la répartition CFR / filiale.
-    - actions: ["arbitrate"]
-      effect: EFFECT_DENY
-      roles: ["center_assistant"]
+        - academy_pilot

@@ -64,7 +64,7 @@ export default function PreviewSection({
           {voir && (
             voir.href ? (
               <a
-                className="pv-voir"
+                className={`pv-voir${voir.filled ? ' pv-voir--filled' : ''}`}
                 href={voir.href}
                 target="_blank"
                 rel="noopener noreferrer"

@@ -11,6 +11,7 @@ function slugify(text) {
 }
 
 function tocLabel(text, index, type) {
+  if (type === 'heading') return text.replace(/^##\s+/, '').trim()
   if (type === 'quote') return 'Citation'
   if (type === 'gallery') return 'Galerie photos'
   if (type === 'videos') return 'Vidéo'
@@ -20,7 +21,7 @@ function tocLabel(text, index, type) {
   return short.length > 52 ? `${short.slice(0, 49).trim()}…` : short
 }
 
-const TOC_TYPES = new Set(['paragraph', 'quote', 'gallery', 'videos', 'photo'])
+const TOC_TYPES = new Set(['paragraph', 'heading', 'quote', 'gallery', 'videos', 'photo'])
 
 export function parseArticleBlocks(content, photos = [], videos = [], articleSlug = 'article') {
   const paragraphs = content.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
@@ -39,6 +40,15 @@ export function parseArticleBlocks(content, photos = [], videos = [], articleSlu
   }
 
   paragraphs.forEach((text, i) => {
+    if (/^##\s+/.test(text)) {
+      addBlock({
+        type: 'heading',
+        text: text.replace(/^##\s+/, '').trim(),
+        tocText: text,
+        key: `h-${i}`,
+      })
+      return
+    }
     const isQuote = /^[«"“]/.test(text) || (text.includes('«') && text.length < 320)
     addBlock({
       type: isQuote ? 'quote' : 'paragraph',

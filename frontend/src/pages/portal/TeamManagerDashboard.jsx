@@ -24,7 +24,7 @@ export default function TeamManagerDashboard({ mode = 'team' }) {
   const headerRef = useRef(null)
   const planYear = new Date().getFullYear()
   const isWorkshop = mode === 'workshop'
-  const lms = LMS_BY_USER[user.id]
+  const lms = LMS_BY_USER[user.demoKey]
   if (!lms) return null
 
   const allMembers = resolveTeamMembers(lms, { workshop: isWorkshop })

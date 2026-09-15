@@ -8,6 +8,7 @@ import usePortalReveal from '../../hooks/usePortalReveal'
 import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
 import { LMS_BY_USER } from '../../data/mock_lms'
+import PortalSectionEyebrow from '../../components/PortalSectionEyebrow.jsx'
 
 export default function SuperAdminDashboard() {
   useSiteEffects()
@@ -15,7 +16,7 @@ export default function SuperAdminDashboard() {
   const { user } = useAuth()
   const { t } = useLocale('portal')
   const { t: td } = useLocale('delivery')
-  const lms = LMS_BY_USER[user.id]
+  const lms = LMS_BY_USER[user.demoKey]
   if (!lms) return null
 
   const { globalKpis, filialesStats, recentLogs } = lms
@@ -45,7 +46,7 @@ export default function SuperAdminDashboard() {
         <section>
           <div className="container" style={{ padding: '48px 32px' }}>
             <div className="portal-section-head">
-              <p className="portal-section-eyebrow">{t.eyebrow_group_kpis}</p>
+              <PortalSectionEyebrow icon="users" label={t.eyebrow_group_kpis} />
               <h2 className="portal-section-title">{t.title_group_dashboard}</h2>
             </div>
             <div className="portal-kpi-row">
@@ -75,7 +76,7 @@ export default function SuperAdminDashboard() {
         <section>
           <div className="container" style={{ padding: '48px 32px' }}>
             <div className="portal-section-head">
-              <p className="portal-section-eyebrow">{t.eyebrow_group_scope}</p>
+              <PortalSectionEyebrow icon="building" label={t.eyebrow_group_scope} />
               <h2 className="portal-section-title">{t.title_branch_progress}</h2>
             </div>
             <div className="portal-table-wrap">
@@ -124,7 +125,7 @@ export default function SuperAdminDashboard() {
         <section>
           <div className="container" style={{ padding: '48px 32px' }}>
             <div className="portal-section-head">
-              <p className="portal-section-eyebrow">{t.eyebrow_audit}</p>
+              <PortalSectionEyebrow icon="clipboard" label={t.eyebrow_audit} />
               <h2 className="portal-section-title">{t.title_recent_activity}</h2>
             </div>
             <div className="portal-log-list">

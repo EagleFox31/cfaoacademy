@@ -152,3 +152,12 @@ Alias noms affichage → catalogue : `Mercedes-Benz` → `MERCEDES`, `Omoda & Ja
 - Images : `assets/hover_section_motors/` (servies via `/assets/hover_section_motors/…`).
 - Mapping : `data/motorsSectionHoverBg.js` (`Toyota` → `01_hover_toyota_bg.png`, etc.).
 - Au survol d’une `BrandCard` dans `#offres`, calque `HomeBackdrop` `home-backdrop-layer--brand-hover` par-dessus le fond section Motors (crossfade ~0,55s).
+
+## Portail DPS — paliers compétence MEDACAP (norme visuelle)
+
+- **Doc couleurs** : `docs/dps-competency-tier-visual.md` — junior **bleu** `#1a56db`, senior **orange** `#e67e00`, expert **vert** `#1aab5b`.
+- **Doc modèle BD** : `docs/medacap-competency-model.md` — GF, tests, boucles API.
+- **Inventaire collections** : `docs/medacap-mongo-collections.md` — toutes les collections `academy`, relations, portail vs Define.
+- **Theme** : `utils/dpsCompetencyTierTheme.js` — `dpsCompetencyTierAccent`, classes CSS `portal-tier-*` / `tier-*`.
+- **Composants** : `DpsCompetencyTierChip`, `DpsCompetencyTierMemberTitle` — ne pas recoder les couleurs ailleurs.
+- **Hors norme** : scores tests (`evalScoreTier`), statuts PIF/session, `TeamMemberCard`.

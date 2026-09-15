@@ -6,8 +6,10 @@ const PUBLIC_HERO_ID = {
   'Techniciens Voitures': 'vl',
   'Techniciens Poids lourds, Engins, Chariots & Bus': 'pl',
   Carrossiers: 'carrossier',
-  Parts: 'savParts',
-  'Process SAV & Parts': 'savParts',
+  'Manager et conseillers services administratifs, financiers': 'savParts',
+  'Process Parts': 'savParts',
+  'Manager et responsables organisation SAV': 'savParts',
+  'Process SAV': 'savParts',
   Clients: 'b2b',
 }
 
@@ -24,8 +26,8 @@ export const PUBLIC_FICHE_SLUGS = {
   'techniciens-voitures': 'Techniciens Voitures',
   'techniciens-equipment': 'Techniciens Poids lourds, Engins, Chariots & Bus',
   carrossiers: 'Carrossiers',
-  parts: 'Parts',
-  'process-sav-parts': 'Process SAV & Parts',
+  parts: 'Manager et conseillers services administratifs, financiers',
+  'process-sav-parts': 'Manager et responsables organisation SAV',
 }
 
 /** Slug variante → logo marque (fiche technicien). */
@@ -72,7 +74,7 @@ const PUBLIC_FICHE_SETS = {
     { slug: 'lovol', label: 'Lovol', path: 'lovol/technicien_lovol.png' },
   ],
   Carrossiers: [{ slug: 'carrosserie', label: 'Carrosserie', path: 'carrosserie/carrossier.png' }],
-  Parts: [
+  'Manager et conseillers services administratifs, financiers': [
     {
       slug: 'motors',
       label: 'Motors',
@@ -84,7 +86,26 @@ const PUBLIC_FICHE_SETS = {
       path: 'process_sav_parts_equipment/process_parts/profil_parts_equipment.png',
     },
   ],
-  'Process SAV & Parts': [
+  'Process Parts': [
+    {
+      slug: 'motors',
+      label: 'Motors',
+      path: 'process_sav_parts_motors/process_parts/profil_process_parts.png',
+    },
+    {
+      slug: 'equipment',
+      label: 'Equipment',
+      path: 'process_sav_parts_equipment/process_parts/profil_parts_equipment.png',
+    },
+  ],
+  'Manager et responsables organisation SAV': [
+    {
+      slug: 'sav-motors',
+      label: 'Profils SAV · Motors',
+      path: 'process_sav_parts_motors/process_sav/profils_sav.png',
+    },
+  ],
+  'Process SAV': [
     {
       slug: 'sav-motors',
       label: 'Profils SAV · Motors',

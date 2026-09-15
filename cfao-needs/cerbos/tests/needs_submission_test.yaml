@@ -28,6 +28,12 @@ principals:
     attr:
       scopeNodes: ["groupe"]
       brands: []
+  coordonnateur:
+    id: u_coord
+    roles: ["training_coordinator"]
+    attr:
+      scopeNodes: ["groupe"]
+      brands: []
   directeur_centre:
     id: u_dircentre
     roles: ["center_director"]
@@ -82,6 +88,19 @@ tests:
           view: EFFECT_ALLOW
           validate: EFFECT_ALLOW
           reopen: EFFECT_ALLOW
+
+  - name: le coordonnateur des formations valide aussi
+    input:
+      principals: ["coordonnateur"]
+      resources: ["fiche_douala", "fiche_abidjan"]
+      actions: ["view", "validate", "reopen"]
+    expected:
+      - principal: coordonnateur
+        resource: fiche_douala
+        actions: { view: EFFECT_ALLOW, validate: EFFECT_ALLOW, reopen: EFFECT_ALLOW }
+      - principal: coordonnateur
+        resource: fiche_abidjan
+        actions: { view: EFFECT_ALLOW, validate: EFFECT_ALLOW, reopen: EFFECT_ALLOW }
 
   - name: le directeur du centre valide aussi
     input:

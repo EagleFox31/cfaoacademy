@@ -8,6 +8,7 @@ export default function FormateurBadge({
   name,
   variant = 'card',
   showLabel = true,
+  label,
   className = '',
 }) {
   const { t } = useLocale('cards')
@@ -17,6 +18,7 @@ export default function FormateurBadge({
   const avatarSrc = getFormateurAvatarUrl(trimmed)
   const isUnknown = isFormateurUnknownAvatar(trimmed)
   const cls = ['formateur-badge', `formateur-badge--${variant}`, className].filter(Boolean).join(' ')
+  const labelText = label ?? t.trainer
 
   return (
     <span className={cls}>
@@ -32,7 +34,7 @@ export default function FormateurBadge({
       )}
       {showLabel && (
         <span className="formateur-badge-text">
-          {t.trainer} <strong>{trimmed}</strong>
+          {labelText} <strong>{trimmed}</strong>
         </span>
       )}
     </span>

@@ -31,6 +31,19 @@ export function resolveMedacapLearnerUser(user, medacapProfile) {
   }
 }
 
+/** Objectifs certification hero — dérivés du profil MEDACAP si disponible. */
+export function resolveMedacapLearnerCertGoals(medacapProfile) {
+  if (!medacapProfile?.brands?.length) return []
+  const current = levelToCertKey(medacapProfile.level) ?? 'JUNIOR'
+  const target = current === 'EXPERT' ? 'EXPERT' : current === 'SENIOR' ? 'EXPERT' : 'SENIOR'
+  return medacapProfile.brands.map(brand => ({
+    brand,
+    currentLevel: current,
+    targetLevel: target,
+    targetDate: '—',
+  }))
+}
+
 /**
  * Fusion évaluations :
  * - learner MEDACAP → compétences 100 % API (todo, progress, done)

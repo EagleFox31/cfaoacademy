@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { resolveCertGoalPrerequisites } from '../utils/certGoalProgress.js'
+import { TEAM_BRAND_DEFS } from '../utils/teamBrands.js'
+import useLocale from '../hooks/useLocale.js'
 
 const BRAND_LOGOS = {
   toyota:     '/assets/logos/toyota.png',
@@ -13,8 +15,14 @@ const BRAND_LOGOS = {
   yamaha:     '/assets/logos/yamaha.png',
 }
 
-export default function PortalStickyBar({ user, lms, headerRef }) {
+function resolveBrandLogo(brand) {
+  return BRAND_LOGOS[brand] ?? TEAM_BRAND_DEFS[brand]?.logo ?? null
+}
+
+export default function PortalStickyBar({ user, lms, headerRef, variant, filialeBrands }) {
   const [visible, setVisible] = useState(false)
+  const isDps = variant === 'dps'
+  const { t } = useLocale('portal')
 
   useEffect(() => {
     const el = headerRef?.current
@@ -27,8 +35,9 @@ export default function PortalStickyBar({ user, lms, headerRef }) {
     return () => observer.disconnect()
   }, [headerRef])
 
-  const initials = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
-  const brands = user.brands || []
+  const brands = isDps
+    ? (filialeBrands ?? []).map(row => row.brand)
+    : (user.brands || [])
   const certLevels = user.certLevels || {}
 
   const goal = lms?.certGoals?.[0]
@@ -47,7 +56,7 @@ export default function PortalStickyBar({ user, lms, headerRef }) {
 
   return (
     <div
-      className={`portal-sticky-bar${visible ? ' portal-sticky-bar--visible' : ''}`}
+      className={`portal-sticky-bar${visible ? ' portal-sticky-bar--visible' : ''}${isDps ? ' portal-sticky-bar--dps' : ''}`}
       aria-hidden={!visible}
     >
       <div className="container portal-sticky-bar-inner">
@@ -55,19 +64,20 @@ export default function PortalStickyBar({ user, lms, headerRef }) {
         {brands.length > 0 && (
           <div className="portal-sticky-bar-brands">
             {brands.map(brand => {
-              const src = BRAND_LOGOS[brand]
+              const src = resolveBrandLogo(brand)
+              const label = TEAM_BRAND_DEFS[brand]?.label ?? brand
               return src ? (
-                <img key={brand} src={src} alt={brand} className="portal-sticky-bar-brand-logo" />
+                <img key={brand} src={src} alt={label} className="portal-sticky-bar-brand-logo" />
               ) : (
                 <span key={brand} className={`portal-brand-chip ${brand} portal-sticky-bar-brand-chip`}>
-                  {brand}
+                  {label}
                 </span>
               )
             })}
           </div>
         )}
 
-        {Object.keys(certLevels).length > 0 && (
+        {!isDps && Object.keys(certLevels).length > 0 && (
           <div className="portal-sticky-bar-certs">
             {Object.entries(certLevels).map(([brand, level]) => (
               <span key={brand} className="portal-sticky-bar-cert-chip">
@@ -77,13 +87,21 @@ export default function PortalStickyBar({ user, lms, headerRef }) {
           </div>
         )}
 
-        <div className="portal-sticky-bar-progress">
-          {goalLabel && <span className="portal-sticky-bar-goal">{goalLabel}</span>}
-          <div className="portal-sticky-bar-track">
-            <div className="portal-sticky-bar-fill" style={{ width: `${pct}%` }} />
+        {isDps && user.filiale ? (
+          <div className="portal-sticky-bar-dps-meta">
+            <span className="portal-sticky-bar-dps-label">{user.filiale}</span>
           </div>
-          <span className="portal-sticky-bar-pct">{pct}%</span>
-        </div>
+        ) : null}
+
+        {!isDps && (
+          <div className="portal-sticky-bar-progress">
+            {goalLabel && <span className="portal-sticky-bar-goal">{goalLabel}</span>}
+            <div className="portal-sticky-bar-track">
+              <div className="portal-sticky-bar-fill" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="portal-sticky-bar-pct">{pct}%</span>
+          </div>
+        )}
 
       </div>
     </div>

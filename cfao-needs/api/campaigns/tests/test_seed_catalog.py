@@ -31,7 +31,8 @@ def test_le_referentiel_charge_familles_marques_et_organisation(seeded):
     assert CatalogFamily.objects.count() == 8
     assert Brand.objects.count() == 21          # 10 Mobility + 10 Equipment + Yamaha
     assert OrgUnitRef.objects.count() == 7
-    assert UserProfile.objects.count() == 6
+    # 7 comptes de demonstration : un par role du parcours, coordonnateur inclus.
+    assert UserProfile.objects.count() == 7
     assert seeded.status == Campaign.Status.DRAFT
 
 

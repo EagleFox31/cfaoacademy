@@ -34,7 +34,7 @@ def enqueue(
       2. **les destinataires réels sont vérifiés ici** — un type interne dont la
          liste contient une adresse externe bascule en relecture au lieu de partir.
 
-    Le second contrôle existe parce que le premier repose sur une déclaration, et
+    Le second contrôle existe parce que le premier repose sur une donnée déclarée, et
     qu'une liste de destinataires vient de la configuration ou de la base.
     """
     message_type = BY_KEY.get(kind)

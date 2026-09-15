@@ -19,10 +19,10 @@ LOCALES = ("fr", "en")
 TEMPLATES = {
     "internal.submission_summary": {
         "fr": (
-            "Déclaration reçue — $org_unit ($campaign_year)",
-            "Une déclaration de besoins vient d'être transmise.\n\n"
+            "Identification des Besoins reçue — $org_unit ($campaign_year)",
+            "Une Identification des Besoins vient d'être transmise.\n\n"
             "Filiale : $org_unit ($country)\n"
-            "Déposée par : $author\n"
+            "Transmise par : $author\n"
             "Collaborateurs à former : $summary_total_headcount\n"
             "Formations retenues : $summary_trainings_selected\n"
             "Répartition : T1 $summary_by_quarter_q1 · T2 $summary_by_quarter_q2 · "
@@ -31,22 +31,22 @@ TEMPLATES = {
             "Tant que la fiche n'est pas validée, aucun message n'est envoyé à la filiale.",
         ),
         "en": (
-            "Submission received — $org_unit ($campaign_year)",
-            "A training needs submission has just been sent.\n\n"
+            "Needs Identification received — $org_unit ($campaign_year)",
+            "A Needs Identification has just been sent.\n\n"
             "Subsidiary: $org_unit ($country)\n"
-            "Submitted by: $author\n"
+            "Sent by: $author\n"
             "Staff to train: $summary_total_headcount\n"
             "Courses selected: $summary_trainings_selected\n"
             "Split: Q1 $summary_by_quarter_q1 · Q2 $summary_by_quarter_q2 · "
             "Q3 $summary_by_quarter_q3 · Q4 $summary_by_quarter_q4\n\n"
-            "Review and approve the submission:\n$review_url\n\n"
-            "No message is sent to the subsidiary until the submission is approved.",
+            "Review and approve the entry:\n$review_url\n\n"
+            "No message is sent to the subsidiary until the entry is approved.",
         ),
     },
     "internal.reminder_batch": {
         "fr": (
             "Relances à envoyer — échéance $deadline_label",
-            "Les filiales suivantes n'ont pas encore transmis leur déclaration :\n\n"
+            "Les filiales suivantes n'ont pas encore transmis leur Identification des Besoins :\n\n"
             "$org_units\n\n"
             "Les messages sont préparés et vous attendent dans l'écran « À envoyer » :\n$outbox_url",
         ),
@@ -74,41 +74,41 @@ TEMPLATES = {
     "internal.review_sla": {
         "fr": (
             "Fiches en attente de relecture depuis plus de $hours h",
-            "Les déclarations suivantes attendent une relecture :\n\n$submissions\n\n"
+            "Les fiches suivantes attendent une relecture :\n\n$submissions\n\n"
             "Une filiale sans réponse finit par relancer par téléphone : "
             "traiter ces fiches évite ce détour.\n\n$inbox_url",
         ),
         "en": (
-            "Submissions awaiting review for over $hours h",
-            "The following submissions are waiting for review:\n\n$submissions\n\n"
+            "Entries awaiting review for over $hours h",
+            "The following entries are waiting for review:\n\n$submissions\n\n"
             "A subsidiary with no answer eventually calls: clearing these avoids that.\n\n$inbox_url",
         ),
     },
     "internal.digest": {
         "fr": (
             "Campagne $campaign_year — point hebdomadaire",
-            "Avancement de la collecte au $date.\n\n"
-            "Déclarations validées : $validated\n"
+            "Avancement de la Mesure des Besoins en Formations au $date.\n\n"
+            "Fiches validées : $validated\n"
             "En relecture : $in_review\n"
             "En saisie : $drafting\n"
             "Sans nouvelles : $silent\n\n"
-            "Collaborateurs déclarés à ce jour : $total_headcount\n\n$dashboard_url",
+            "Collaborateurs recensés à ce jour : $total_headcount\n\n$dashboard_url",
         ),
         "en": (
             "Campaign $campaign_year — weekly update",
-            "Collection progress as of $date.\n\n"
-            "Approved submissions: $validated\n"
+            "Training Needs Measurement progress as of $date.\n\n"
+            "Approved entries: $validated\n"
             "Under review: $in_review\n"
             "Being filled: $drafting\n"
             "No news: $silent\n\n"
-            "Staff declared to date: $total_headcount\n\n$dashboard_url",
+            "Staff recorded to date: $total_headcount\n\n$dashboard_url",
         ),
     },
     "submission.confirmed": {
         "fr": (
-            "Votre déclaration de besoins $campaign_year est enregistrée",
+            "Votre Identification des Besoins $campaign_year est enregistrée",
             "$greeting,\n\n"
-            "Votre déclaration de besoins en formation pour $org_unit a été relue par "
+            "Votre Identification des Besoins en Formations pour $org_unit a été relue par "
             "l'équipe CFAO Academy et enregistrée.\n\n"
             "Collaborateurs à former : $summary_total_headcount\n"
             "Formations retenues : $summary_trainings_selected\n"
@@ -119,9 +119,9 @@ TEMPLATES = {
             "L'équipe CFAO Academy",
         ),
         "en": (
-            "Your $campaign_year training needs submission is recorded",
+            "Your $campaign_year Needs Identification is recorded",
             "$greeting,\n\n"
-            "Your training needs submission for $org_unit has been reviewed by the "
+            "Your Training Needs Identification for $org_unit has been reviewed by the "
             "CFAO Academy team and recorded.\n\n"
             "Staff to train: $summary_total_headcount\n"
             "Courses selected: $summary_trainings_selected\n"
@@ -134,17 +134,17 @@ TEMPLATES = {
     },
     "submission.reopened": {
         "fr": (
-            "Votre déclaration $campaign_year est à compléter",
+            "Votre Identification des Besoins $campaign_year est à compléter",
             "$greeting,\n\n"
-            "Après relecture, votre déclaration pour $org_unit nécessite une correction :\n\n"
+            "Après relecture, votre Identification des Besoins pour $org_unit nécessite une correction :\n\n"
             "$reason\n\n"
             "Vous pouvez la reprendre ici :\n$entry_url\n\n"
             "L'équipe CFAO Academy",
         ),
         "en": (
-            "Your $campaign_year submission needs an update",
+            "Your $campaign_year Needs Identification is to be completed",
             "$greeting,\n\n"
-            "After review, your submission for $org_unit needs a correction:\n\n"
+            "After review, your Needs Identification for $org_unit needs a correction:\n\n"
             "$reason\n\n"
             "You can update it here:\n$entry_url\n\n"
             "The CFAO Academy team",
@@ -152,9 +152,9 @@ TEMPLATES = {
     },
     "campaign.opened": {
         "fr": (
-            "Recueil des besoins de formation $campaign_year — c'est ouvert",
+            "Identification des Besoins en Formations $campaign_year — c'est ouvert",
             "$greeting,\n\n"
-            "Le recueil des besoins en formation pour l'exercice $campaign_year est ouvert. "
+            "L'Identification des Besoins en Formations pour l'exercice $campaign_year est ouverte. "
             "Merci d'indiquer, pour chaque formation de votre périmètre, le nombre de "
             "collaborateurs à former par trimestre et le lieu souhaité.\n\n"
             "Date limite : $deadline\n\n"
@@ -162,9 +162,9 @@ TEMPLATES = {
             "L'équipe CFAO Academy",
         ),
         "en": (
-            "$campaign_year training needs collection is open",
+            "$campaign_year Training Needs Identification is open",
             "$greeting,\n\n"
-            "The training needs collection for $campaign_year is open. For each course in "
+            "Training Needs Identification for $campaign_year is open. For each course in "
             "your scope, please state how many staff to train per quarter and where.\n\n"
             "Deadline: $deadline\n\n"
             "Open the form:\n$entry_url\n\n"
@@ -173,69 +173,71 @@ TEMPLATES = {
     },
     "reminder.j21": {
         "fr": (
-            "Besoins de formation $campaign_year — trois semaines avant la clôture",
+            "Besoins en Formations $campaign_year — trois semaines avant la clôture",
             "$greeting,\n\n"
-            "La collecte des besoins $campaign_year se termine le $deadline. "
-            "Votre déclaration pour $org_unit n'est pas encore transmise.\n\n$entry_url\n\n"
+            "La Mesure des Besoins en Formations $campaign_year se termine le $deadline. "
+            "Votre Identification des Besoins pour $org_unit n'est pas encore transmise.\n\n$entry_url\n\n"
             "L'équipe CFAO Academy",
         ),
         "en": (
-            "$campaign_year training needs — three weeks to go",
+            "$campaign_year Training Needs — three weeks to go",
             "$greeting,\n\n"
-            "The $campaign_year collection closes on $deadline. Your submission for "
-            "$org_unit has not been sent yet.\n\n$entry_url\n\n"
+            "The $campaign_year Training Needs Measurement closes on $deadline. Your Needs "
+            "Identification for $org_unit has not been sent yet.\n\n$entry_url\n\n"
             "The CFAO Academy team",
         ),
     },
     "reminder.j10": {
         "fr": (
-            "Besoins de formation $campaign_year — dix jours avant la clôture",
+            "Besoins en Formations $campaign_year — dix jours avant la clôture",
             "$greeting,\n\n"
-            "Il reste dix jours pour transmettre les besoins de $org_unit. "
+            "Il reste dix jours pour transmettre les Besoins en Formations de $org_unit. "
             "Au-delà du $deadline, les demandes ne pourront plus être prises en compte "
             "dans le calendrier $campaign_year.\n\n$entry_url\n\n"
             "L'équipe CFAO Academy",
         ),
         "en": (
-            "$campaign_year training needs — ten days to go",
+            "$campaign_year Training Needs — ten days to go",
             "$greeting,\n\n"
-            "Ten days left to submit the needs for $org_unit. After $deadline, requests "
+            "Ten days left to send the Training Needs for $org_unit. After $deadline, requests "
             "can no longer be included in the $campaign_year calendar.\n\n$entry_url\n\n"
             "The CFAO Academy team",
         ),
     },
     "reminder.j3": {
         "fr": (
-            "Besoins de formation $campaign_year — clôture dans trois jours",
+            "Besoins en Formations $campaign_year — clôture dans trois jours",
             "$greeting,\n\n"
-            "La collecte ferme le $deadline. Sans déclaration de $org_unit, aucune place "
+            "La Mesure des Besoins en Formations ferme le $deadline. Sans Identification "
+            "des Besoins de $org_unit, aucune place "
             "ne sera réservée pour vos équipes en $campaign_year.\n\n$entry_url\n\n"
             "L'équipe CFAO Academy",
         ),
         "en": (
-            "$campaign_year training needs — closing in three days",
+            "$campaign_year Training Needs — closing in three days",
             "$greeting,\n\n"
-            "The collection closes on $deadline. Without a submission from $org_unit, no "
+            "The Training Needs Measurement closes on $deadline. Without a Needs "
+            "Identification from $org_unit, no "
             "seats will be reserved for your teams in $campaign_year.\n\n$entry_url\n\n"
             "The CFAO Academy team",
         ),
     },
     "reminder.escalation": {
         "fr": (
-            "Besoins de formation $campaign_year — $org_unit n'a pas répondu",
+            "Besoins en Formations $campaign_year — $org_unit n'a pas répondu",
             "$greeting,\n\n"
-            "La collecte des besoins $campaign_year est close depuis le $deadline et "
-            "aucune déclaration n'a été reçue pour $org_unit.\n\n"
+            "La Mesure des Besoins en Formations $campaign_year est close depuis le $deadline "
+            "et aucune Identification des Besoins n'a été reçue pour $org_unit.\n\n"
             "Sans retour de votre part, aucune place ne sera réservée pour cette filiale "
             "dans le calendrier $campaign_year. Nous restons disponibles pour ouvrir une "
             "saisie tardive si nécessaire.\n\n"
             "L'équipe CFAO Academy",
         ),
         "en": (
-            "$campaign_year training needs — no reply from $org_unit",
+            "$campaign_year Training Needs — no reply from $org_unit",
             "$greeting,\n\n"
-            "The $campaign_year collection closed on $deadline and no submission was "
-            "received for $org_unit.\n\n"
+            "The $campaign_year Training Needs Measurement closed on $deadline and no Needs "
+            "Identification was received for $org_unit.\n\n"
             "Without a reply, no seats will be reserved for this subsidiary in the "
             "$campaign_year calendar. We remain available to open a late entry if needed.\n\n"
             "The CFAO Academy team",
@@ -245,31 +247,31 @@ TEMPLATES = {
         "fr": (
             "Nouvelles formations disponibles — $family_label",
             "$greeting,\n\n"
-            "Le catalogue $family_label est désormais disponible dans le formulaire de "
-            "recueil. Vous pouvez compléter votre déclaration pour $org_unit.\n\n$entry_url\n\n"
+            "Le catalogue $family_label est désormais disponible dans le formulaire. "
+            "Vous pouvez compléter votre Identification des Besoins pour $org_unit.\n\n$entry_url\n\n"
             "L'équipe CFAO Academy",
         ),
         "en": (
             "New courses available — $family_label",
             "$greeting,\n\n"
-            "The $family_label catalogue is now available in the collection form. "
-            "You can complete your submission for $org_unit.\n\n$entry_url\n\n"
+            "The $family_label catalogue is now available in the form. "
+            "You can complete your Needs Identification for $org_unit.\n\n$entry_url\n\n"
             "The CFAO Academy team",
         ),
     },
     "submission.delegated": {
         "fr": (
-            "Une déclaration a été saisie pour $org_unit",
+            "Une Identification des Besoins a été saisie pour $org_unit",
             "$greeting,\n\n"
-            "À votre demande, $actor a saisi la déclaration de besoins $campaign_year "
+            "À votre demande, $actor a saisi l'Identification des Besoins $campaign_year "
             "pour $org_unit. Vous pouvez la consulter et demander une correction :\n\n"
             "$entry_url\n\n"
             "L'équipe CFAO Academy",
         ),
         "en": (
-            "A submission was entered for $org_unit",
+            "A Needs Identification was entered for $org_unit",
             "$greeting,\n\n"
-            "At your request, $actor entered the $campaign_year needs submission for "
+            "At your request, $actor entered the $campaign_year Needs Identification for "
             "$org_unit. You can review it and ask for a correction:\n\n$entry_url\n\n"
             "The CFAO Academy team",
         ),

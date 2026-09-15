@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import re
 
+from campaigns.imports.levels import level_label
+from campaigns.imports.titles_en import english_title
 from core.imports.base import Normalization, ParseResult, RowRejected, TabularImporter
 from core.imports.columns import Column, ColumnSpec, normalize_header
 from referential.models import Brand, BrandAlias, CatalogFamily
@@ -63,6 +65,15 @@ COLUMNS = ColumnSpec(
             labels=("Intitulé", "Module", "Libellé", "Titre", "Formation"),
         ),
         Column(
+            key="title_en",
+            labels=("Intitulé EN", "Intitulé anglais", "Titre EN", "English title", "Title EN"),
+            required=False,
+            help_text=(
+                "Facultatif : sans cette colonne, le titre anglais est repris du "
+                "catalogue publié sur la vitrine, par rapprochement sur le code."
+            ),
+        ),
+        Column(
             key="audience",
             labels=("Public cible", "Public", "Niveau", "Cible"),
             required=False,
@@ -77,6 +88,7 @@ EXAMPLE_ROW = {
     "brand": "TOYOTA",
     "code": "TFT01",
     "title": "Standards SAV Toyota — réception atelier",
+    "title_en": "Toyota aftersales standards — workshop reception",
     "audience": "SENIOR",
 }
 
@@ -143,6 +155,11 @@ class CatalogImporter(TabularImporter):
             "brand_code": brand.code if brand else None,
             "code": code,
             "title": title,
+            # Ce que le métier a écrit prime sur la table : le classeur est la
+            # source, la table n'est qu'un repli pour ce qu'il ne renseigne pas.
+            "title_en": self._text(values.get("title_en")) or english_title(title),
+            # Nomenclature constructeur : la vitrine, pas le seul palier MEDACAP.
+            "level_label": level_label(code, tier=tier),
             "tier": tier,
             "populations": populations,
         }
@@ -243,6 +260,8 @@ class CatalogImporter(TabularImporter):
                     brand=row["brand"],
                     code=row["code"],
                     title=row["title"],
+                    title_en=row["title_en"],
+                    level_label=row["level_label"],
                     tier=row["tier"],
                     populations=row["populations"],
                     sort_order=index,

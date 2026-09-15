@@ -14,7 +14,7 @@ QUARTERS = ("q1", "q2", "q3", "q4")
 
 
 class Place(models.TextChoices):
-    CFR = "CFR", "Centre régional"
+    CFR = "CFR", "Academy de Douala"
     FILIALE = "FILIALE", "Filiale"
 
 
@@ -82,6 +82,16 @@ class CatalogLine(UUIDModel, TimeStampedModel):
     )
     code = models.CharField(max_length=64)
     title = models.CharField(max_length=512)
+    # Le fichier de travail métier n'a qu'une colonne d'intitulé, en français. Le
+    # titre anglais vient soit d'une colonne facultative du classeur, soit du
+    # rapprochement avec le catalogue publié sur la vitrine. Vide = on affiche le
+    # français : un titre technique dans la mauvaise langue reste exploitable,
+    # une clé ou un blanc ne le sont pas.
+    title_en = models.CharField(max_length=512, blank=True)
+    # Nomenclature constructeur (G4, Bronze, BASIC…) — distincte du palier
+    # MEDACAP `tier`. La filiale lit le niveau qu'elle connaît ; `tier` sert au
+    # pilotage transverse. Vide pour le process et les lignes sans parcours.
+    level_label = models.CharField(max_length=64, blank=True)
     tier = models.CharField(max_length=16, choices=Tier.choices, blank=True)
     # Familles de métier visées : MANAGER, FRONT_OFFICE, BACK_OFFICE.
     # La colonne source mélangeait niveau technicien et famille de métier dans un
@@ -111,7 +121,7 @@ class CatalogLine(UUIDModel, TimeStampedModel):
 
 
 class Submission(UUIDModel, TimeStampedModel):
-    """La déclaration d'une filiale pour une campagne.
+    """L'Identification des Besoins d'une filiale pour une campagne.
 
     Le circuit d'états suit le principe « rien ne sort sans relecture » (spec §7) :
     le passage à `SUBMITTED` n'envoie **rien** à la filiale — il notifie l'équipe
@@ -169,7 +179,9 @@ class Submission(UUIDModel, TimeStampedModel):
 
     @property
     def is_editable(self) -> bool:
-        return self.status in (self.Status.DRAFT, self.Status.REOPENED)
+        if hasattr(self, "campaign") and self.campaign and self.campaign.status == Campaign.Status.CLOSED:
+            return False
+        return self.status in (self.Status.DRAFT, self.Status.REOPENED, self.Status.SUBMITTED)
 
     @property
     def org_path(self) -> list:

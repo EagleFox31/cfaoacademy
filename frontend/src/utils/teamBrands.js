@@ -6,6 +6,7 @@ const logoByName = new Map(
 
 /** Clés JSON → libellé + logo (assets/logos). */
 export const TEAM_BRAND_DEFS = {
+  'toutes-marques': { label: 'Toutes marques', logo: null, isAllBrands: true },
   toyota: { label: 'Toyota', logo: logoByName.get('toyota') },
   suzuki: { label: 'Suzuki', logo: logoByName.get('suzuki') },
   byd: { label: 'BYD', logo: logoByName.get('byd') },

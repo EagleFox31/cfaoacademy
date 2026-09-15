@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useMemo, useState, useRef, useId } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { NAV, getPortalNavSections } from '../data/index.js'
+import { NAV, getPortalNavSections, getPrimaryRole } from '../data/index.js'
 import useNavScrollSpy from '../hooks/useNavScrollSpy.js'
 import useLocale from '../hooks/useLocale.js'
 import LocaleSwitch from './LocaleSwitch.jsx'
 import useAuth from '../hooks/useAuth.js'
+import { usePortalOnboarding } from '../context/PortalOnboardingContext.jsx'
+import PortalHelpMenu from './PortalHelpMenu.jsx'
+import PortalNotificationsBell from './PortalNotificationsBell.jsx'
+import { formatLearnerRoleBadge } from '../utils/portalPersona.js'
+import { resolveProfilePays } from '../utils/profileOrg.js'
+import { countryCodeFromName, flagCdnUrlForCountry } from '../utils/countryFlag.js'
+import { localizedCountryName } from '../utils/localizeGeo.js'
+import { ChevronIcon, PortalNavSectionIcon } from './portalSectionIcons.jsx'
+import ProfileAvatar from './ProfileAvatar.jsx'
 
 function scrollToSection(hash) {
   if (!hash) {
@@ -15,9 +24,23 @@ function scrollToSection(hash) {
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-function UserMenu({ user, onLogout, t }) {
+function UserMenu({ user, onLogout, t, onPortal = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const { locale } = useLocale()
+  const { t: heroT } = useLocale('hero')
+  const { t: publicsT } = useLocale('publics')
+
+  const primaryRole = getPrimaryRole(user.roles)
+  const baseRoleLabel = t[`role_${primaryRole}`] || primaryRole
+  const roleLabel = primaryRole === 'learner'
+    ? formatLearnerRoleBadge(baseRoleLabel, user, heroT, publicsT)
+    : baseRoleLabel
+  const pays = resolveProfilePays(user)
+  const paysLabel = pays
+    ? localizedCountryName(pays, locale, countryCodeFromName(pays))
+    : null
+  const flagUrl = pays ? flagCdnUrlForCountry(pays, 40) : null
 
   useEffect(() => {
     function onClickOutside(e) {
@@ -26,8 +49,6 @@ function UserMenu({ user, onLogout, t }) {
     document.addEventListener('mousedown', onClickOutside)
     return () => document.removeEventListener('mousedown', onClickOutside)
   }, [])
-
-  const initials = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
 
   return (
     <div className="nav-user-menu" ref={ref}>
@@ -38,24 +59,46 @@ function UserMenu({ user, onLogout, t }) {
         aria-expanded={open}
         aria-haspopup="true"
       >
-        <span className="nav-user-avatar">{initials}</span>
+        <ProfileAvatar
+          person={user}
+          name={`${user.firstName} ${user.lastName}`}
+          className="nav-user-avatar"
+          imgClassName="nav-user-avatar-img"
+        />
         <span className="nav-user-name">{user.firstName}</span>
-        <span className="nav-user-chevron" aria-hidden="true">{open ? '▴' : '▾'}</span>
+        <ChevronIcon open={open} className="nav-user-chevron" />
       </button>
 
       {open && (
         <div className="nav-user-dropdown" role="menu">
           <div className="nav-user-dropdown-head">
             <span className="nav-user-dropdown-name">{user.firstName} {user.lastName}</span>
-            <span className="nav-user-dropdown-filiale">{user.filiale}</span>
+            <div className="nav-user-dropdown-meta">
+              <span className="nav-user-dropdown-role">{roleLabel}</span>
+              {flagUrl && paysLabel ? (
+                <span className="nav-user-dropdown-pays">
+                  <img
+                    src={flagUrl}
+                    srcSet={`${flagCdnUrlForCountry(pays, 80)} 2x`}
+                    alt=""
+                    className="nav-user-dropdown-flag"
+                    width={20}
+                    height={15}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span>{paysLabel}</span>
+                </span>
+              ) : null}
+            </div>
           </div>
           <Link
-            to="/portail"
+            to={onPortal ? '/#actualites' : '/portail'}
             className="nav-user-dropdown-item"
             role="menuitem"
             onClick={() => setOpen(false)}
           >
-            <span>{t.nav_my_portal}</span>
+            <span>{onPortal ? t.nav_academy_news : t.nav_my_portal}</span>
             <span className="nav-user-dropdown-arrow">→</span>
           </Link>
           <button
@@ -84,8 +127,12 @@ function NavLinkList({
   handleNavClick,
   onItemActivate,
 }) {
-  const listClass = variant === 'mobile' ? 'nav-mobile-links' : 'nav-links'
+  const listClass = [
+    variant === 'mobile' ? 'nav-mobile-links' : 'nav-links',
+    onPortal && variant === 'desktop' ? 'nav-links--portal-pills' : '',
+  ].filter(Boolean).join(' ')
   const itemClass = (active) => {
+    if (onPortal) return `nav-portal-pill${active ? ' active' : ''}`
     if (variant === 'mobile') return `nav-mobile-link${active ? ' active' : ''}`
     return active ? 'active' : ''
   }
@@ -98,17 +145,29 @@ function NavLinkList({
           const display = s.key === 'planning'
             ? `${label} ${new Date().getFullYear()}`
             : label
+          const active = isActive(s)
           return (
             <li key={s.key}>
               <a
                 href={`#${s.id}`}
-                className={itemClass(isActive(s))}
+                className={[
+                  itemClass(active),
+                  variant === 'mobile' ? 'nav-mobile-link' : '',
+                ].filter(Boolean).join(' ')}
+                aria-current={active ? 'location' : undefined}
                 onClick={(e) => {
                   handlePortalNavClick(s)(e)
                   onItemActivate?.()
                 }}
               >
-                {display}
+                <PortalNavSectionIcon
+                  sectionKey={s.key}
+                  iconKey={s.iconKey}
+                  size={variant === 'mobile' ? 20 : 18}
+                  strokeWidth={2}
+                  className="nav-portal-pill-icon"
+                />
+                <span className="nav-portal-pill-label">{display}</span>
               </a>
             </li>
           )
@@ -134,14 +193,15 @@ function NavLinkList({
   )
 }
 
-export default function Nav({ active: pageActive }) {
+export default function Nav({ active: pageActive, notifications }) {
   const { pathname, hash } = useLocation()
   const navigate = useNavigate()
   const onHome    = pathname === '/'
   const onLogin   = pathname === '/login'
   const onPortal  = pathname.startsWith('/portail')
 
-  const { user, logout } = useAuth()
+  const { user, login, logout } = useAuth()
+  const { startTour, hasTour } = usePortalOnboarding()
   const { locale, setLocale, t: navT } = useLocale('nav')
   const { t: commonT }  = useLocale('common')
   const { t: portalT }  = useLocale('portal')
@@ -299,12 +359,31 @@ export default function Nav({ active: pageActive }) {
             onChange={setLocale}
             ariaLabel={commonT.langSwitchAria}
             className="locale-switch--nav"
+            portalMarker={onPortal}
           />
 
+          {onPortal && user && notifications != null && (
+            <PortalNotificationsBell t={portalT} alerts={notifications} />
+          )}
+
           {onPortal && user && (
-            <Link to="/" className="nav-cta nav-cta--ghost nav-home-btn">
-              ← {portalT.nav_home}
-            </Link>
+            <PortalHelpMenu
+              t={portalT}
+              hasTour={hasTour}
+              onStartTour={startTour}
+              navigate={navigate}
+              pathname={pathname}
+              portalSections={portalSections}
+            />
+          )}
+
+          {onPortal && user && (
+            <>
+              <span className="nav-actions-sep nav-actions-sep--account" aria-hidden="true" />
+              <Link to="/#actualites" className="nav-cta nav-cta--ghost nav-home-btn">
+                {portalT.nav_home}
+              </Link>
+            </>
           )}
 
           {!onPortal && user && (
@@ -317,7 +396,7 @@ export default function Nav({ active: pageActive }) {
           )}
 
           {user ? (
-            <UserMenu user={user} onLogout={handleLogout} t={portalT} />
+            <UserMenu user={user} onLogout={handleLogout} t={portalT} onPortal={onPortal} />
           ) : (
             <>
               <Link
@@ -361,9 +440,29 @@ export default function Nav({ active: pageActive }) {
           />
 
           <div className="nav-mobile-foot">
+            {onPortal && user && notifications != null && (
+              <PortalNotificationsBell
+                variant="mobile"
+                t={portalT}
+                alerts={notifications}
+                onMenuAction={closeMenu}
+              />
+            )}
             {onPortal && user && (
-              <Link to="/" className="nav-mobile-foot-link" onClick={closeMenu}>
-                ← {portalT.nav_home}
+              <PortalHelpMenu
+                variant="mobile"
+                t={portalT}
+                hasTour={hasTour}
+                onStartTour={() => { startTour(); closeMenu() }}
+                navigate={navigate}
+                pathname={pathname}
+                portalSections={portalSections}
+                onMenuAction={closeMenu}
+              />
+            )}
+            {onPortal && user && (
+              <Link to="/#actualites" className="nav-mobile-foot-link" onClick={closeMenu}>
+                {portalT.nav_home}
               </Link>
             )}
             {!onPortal && user && (

@@ -13,7 +13,10 @@ from core.models import TimeStampedModel, UUIDModel
 
 
 class Pole(models.TextChoices):
-    MOBILITY = "MOBILITY", "Mobility"
+    # Le code reste `MOBILITY` — il est écrit dans les policies Cerbos, les jeux de
+    # tests et les données déjà en base. Seul le libellé affiché dit « Motors »,
+    # qui est le nom employé par le métier et par la vitrine.
+    MOBILITY = "MOBILITY", "Motors"
     EQUIPMENT = "EQUIPMENT", "Equipment"
     CARROSSERIE = "CARROSSERIE", "Carrosserie"
     AUTRE = "AUTRE", "Autre"
@@ -77,9 +80,20 @@ class CatalogFamily(UUIDModel, TimeStampedModel):
         PENDING = "PENDING", "Catalogue en préparation"
         HIDDEN = "HIDDEN", "Masquée"
 
+    # L'ordre de déclaration est l'ordre d'affichage des rubriques à l'écran.
+    class Section(models.TextChoices):
+        TECHNIQUE = "TECHNIQUE", "Formation Technique"
+        CARROSSERIE = "CARROSSERIE", "Formation en Réparation Carrosserie Tous véhicules"
+        PROCESS = "PROCESS", "Formation en Organisation SAV Process et Parts"
+
     key = models.SlugField(max_length=64, unique=True)
     label = models.CharField(max_length=128)
     pole = models.CharField(max_length=16, choices=Pole.choices)
+    # La section est une DONNÉE, pas un préfixe de clé à parser : « process-* »
+    # marche aujourd'hui et casse au premier libellé qui sort du moule.
+    section = models.CharField(
+        max_length=16, choices=Section.choices, default=Section.TECHNIQUE
+    )
     has_brands = models.BooleanField(
         default=True,
         help_text="La famille peut porter des lignes rattachées à une marque.",

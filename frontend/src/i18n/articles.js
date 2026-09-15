@@ -42,6 +42,23 @@ export const ARTICLES_COPY = {
       title: 'Body shop workshop Côte d\'Ivoire — inaugural N1 session, 12 trainees',
       summary: 'Twelve trainees attended the first N1 body shop session in Côte d\'Ivoire, with results above expectations.',
     },
+    'toyota-formateur-certification-douala-2026': {
+      title: 'Toyota trainer course · Jacques Mavila & Allassane Diallo in Douala',
+      summary: 'Under Eugène EBENE\'s supervision, two future Toyota trainers — DRC and Senegal — prepare to train and assess technicians across the network.',
+      castTitle: 'People in this training',
+      highlights: [
+        { label: 'Location', value: 'Douala, Cameroon' },
+        { label: 'Brand', value: 'Toyota' },
+        { label: 'Format', value: 'In person' },
+        { label: 'Supervision', value: 'Eugène EBENE' },
+      ],
+      cast: [
+        { role: 'Toyota trainer · Supervisor', lieu: 'Cameroon' },
+        { role: 'Future Toyota trainer', lieu: 'DRC' },
+        { role: 'Future Toyota trainer', lieu: 'Senegal' },
+        { role: 'Director of the Training Centre', lieu: 'France' },
+      ],
+    },
   },
   pt: {
     'toyota-g3-diagnostic-douala-2026': {
@@ -83,6 +100,23 @@ export const ARTICLES_COPY = {
     'carrosserie-session-inaugurale-n1-rci-2026': {
       title: "Oficina carroçaria Costa do Marfim — sessão inaugural N1, 12 formandos",
       summary: "Doze formandos participaram na primeira sessão N1 carroçaria na Costa do Marfim, com resultados acima das expectativas.",
+    },
+    'toyota-formateur-certification-douala-2026': {
+      title: 'Formação formador Toyota · Jacques Mavila & Allassane Diallo em Douala',
+      summary: 'Sob a supervisão de Eugène EBENE, dois futuros formadores Toyota — RDC e Senegal — preparam-se para formar e avaliar técnicos na rede.',
+      castTitle: 'Os intervenientes da formação',
+      highlights: [
+        { label: 'Local', value: 'Douala, Camarões' },
+        { label: 'Marca', value: 'Toyota' },
+        { label: 'Formato', value: 'Presencial' },
+        { label: 'Supervisão', value: 'Eugène EBENE' },
+      ],
+      cast: [
+        { role: 'Formador Toyota · Supervisor', lieu: 'Camarões' },
+        { role: 'Futuro formador Toyota', lieu: 'RDC' },
+        { role: 'Futuro formador Toyota', lieu: 'Senegal' },
+        { role: 'Diretor do Centro de Formação', lieu: 'França' },
+      ],
     },
   },
 }

@@ -23,6 +23,13 @@ Point d'entrée pour la documentation du dépôt. Les fichiers listés ci-dessou
 | [planning.md](../planning.md) | Planning projet (PERT, nœuds A→N) |
 | [backlog.md](../backlog.md) | Backlog stories |
 
+## Méthodologie des Rôles & Habilitations
+
+| Document | Contenu |
+|----------|---------|
+| **[docs/methodologie-roles/README.md](./methodologie-roles/README.md)** | **Cadre méthodologique des rôles, multi-affectation, scopes et typologie** |
+| **[docs/methodologie-roles/KEY_INSTRUCTOR.md](./methodologie-roles/KEY_INSTRUCTOR.md)** | **Dossier de référence : Key Instructor (KI / PIC), standards OEM, TWI/Dojo et innovations portail** |
+
 ## App 16 · Recueil des besoins *(module détachable, campagne 2027)*
 
 | Document | Contenu |

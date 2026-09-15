@@ -51,6 +51,7 @@ class KeycloakJWTAuthentication(authentication.BaseAuthentication):
             unverified_claims = jwt.decode(token, options={"verify_signature": False})
             token_iss = unverified_claims.get("iss", "")
             if not (token_iss.endswith("/realms/cfao-needs") or (settings.OIDC_ISSUER and token_iss == settings.OIDC_ISSUER)):
+                print(f"[OIDC DEBUG] Invalid issuer: token_iss={token_iss}, OIDC_ISSUER={settings.OIDC_ISSUER}", flush=True)
                 raise jwt.InvalidIssuerError("Invalid issuer")
 
             claims = jwt.decode(
@@ -61,10 +62,8 @@ class KeycloakJWTAuthentication(authentication.BaseAuthentication):
                 issuer=token_iss,
                 options=options,
             )
-        except jwt.PyJWTError:
-            # Message volontairement uniforme : signature, expiration, audience ou
-            # émetteur invalides produisent la même réponse. Rien ne doit permettre
-            # de distinguer « jeton mal formé » de « compte inconnu ».
+        except Exception as e:
+            print(f"[OIDC DEBUG] Auth failed: {type(e).__name__}: {e}", flush=True)
             raise exceptions.AuthenticationFailed("Authentification refusée.")
 
         principal = build_principal(claims)

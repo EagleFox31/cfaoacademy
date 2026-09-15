@@ -30,7 +30,7 @@ class KeycloakJWTAuthentication(authentication.BaseAuthentication):
             return None
         token = header[len(self.keyword) + 1:].strip()
 
-        options = {"require": ["exp", "sub"]}
+        options = {"require": ["exp", "sub"], "verify_iss": False}
         audience = settings.OIDC_AUDIENCE or None
         if audience is None:
             options["verify_aud"] = False
@@ -42,9 +42,14 @@ class KeycloakJWTAuthentication(authentication.BaseAuthentication):
                 signing_key.key,
                 algorithms=["RS256"],
                 audience=audience,
-                issuer=settings.OIDC_ISSUER or None,
                 options=options,
             )
+            if settings.OIDC_ISSUER:
+                token_iss = claims.get("iss", "")
+                norm_token = token_iss.replace("keycloak:8080", "localhost:8080")
+                norm_expected = settings.OIDC_ISSUER.replace("keycloak:8080", "localhost:8080")
+                if norm_token != norm_expected:
+                    raise jwt.InvalidIssuerError(f"Issuer mismatch: {token_iss} != {settings.OIDC_ISSUER}")
         except jwt.PyJWTError as exc:  # signature, expiration, audience, issuer…
             raise exceptions.AuthenticationFailed(f"Jeton invalide : {exc}")
 

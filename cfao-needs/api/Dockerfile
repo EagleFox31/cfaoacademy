@@ -1,5 +1,10 @@
 FROM python:3.12-slim
 
+LABEL org.opencontainers.image.title="CFAO Needs API" \
+      org.opencontainers.image.description="API backend Django pour CFAO Needs" \
+      org.opencontainers.image.vendor="CFAO Mobility" \
+      org.opencontainers.image.version="0.1.0"
+
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 

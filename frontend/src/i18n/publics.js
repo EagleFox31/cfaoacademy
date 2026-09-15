@@ -13,9 +13,9 @@ export const PUBLICS_COPY = {
       name: 'Carrossiers',
       meta: 'Redressage acier, préparation de surface, remplacement de vitrages et raccords multicouches — du débourrage N1 à la maîtrise des teintes N5.',
     },
-    Parts: {
-      name: 'Parts',
-      meta: 'Organisation du département pièces, référencement, gestion de stock et argumentation technique selon les standards constructeurs.',
+    'Manager et conseillers services administratifs, financiers': {
+      name: 'Manager et conseillers services administratifs, financiers',
+      meta: 'Managers et conseillers des services administratifs et financiers — pilotage, conformité et performance des fonctions support du réseau.',
     },
     'Technico-commerciaux': {
       name: 'Technico-commerciaux',
@@ -25,9 +25,9 @@ export const PUBLICS_COPY = {
       name: 'Commerciaux',
       meta: 'Accueil, prise en charge et accompagnement client au SAV — du réceptionnaire au conseiller service confirmé.',
     },
-    'Process SAV & Parts': {
-      name: 'Process SAV & Parts',
-      meta: 'Application des standards constructeurs, pilotage des indicateurs SAV et Parts, conformité aux exigences réseau KI/PIC.',
+    'Manager et responsables organisation SAV': {
+      name: 'Manager et responsables organisation SAV',
+      meta: 'Managers et responsables back-office SAV — standards constructeurs, pilotage des indicateurs et conformité réseau KI/PIC.',
     },
     Clients: {
       name: 'Clients',
@@ -50,10 +50,10 @@ export const PUBLICS_COPY = {
       niv: 'Junior → Expert',
       meta: 'Steel straightening, surface prep, glazing replacement and multi-layer blending — from N1 dent removal to N5 colour matching.',
     },
-    Parts: {
-      name: 'Parts',
-      niv: 'Counter · Stock',
-      meta: 'Parts department organisation, referencing, stock management and technical sales according to manufacturer standards.',
+    'Manager et conseillers services administratifs, financiers': {
+      name: 'Managers and administrative, financial service advisors',
+      niv: 'Manager · Advisors',
+      meta: 'Managers and advisors in administrative and financial services — network support functions, compliance and performance.',
     },
     'Technico-commerciaux': {
       name: 'Technical sales advisors',
@@ -65,10 +65,10 @@ export const PUBLICS_COPY = {
       niv: 'Reception · Aftersales',
       meta: 'Customer welcome, intake and aftersales support — from service reception to experienced service advisor.',
     },
-    'Process SAV & Parts': {
-      name: 'Aftersales & parts processes',
-      niv: 'Standards · KPI',
-      meta: 'Manufacturer standards, aftersales and parts KPI management, compliance with KI/PIC network requirements.',
+    'Manager et responsables organisation SAV': {
+      name: 'Managers and aftersales organization leaders',
+      niv: 'Manager · Back office',
+      meta: 'Aftersales managers and back-office leaders — manufacturer standards, KPI management and KI/PIC network compliance.',
     },
     Clients: {
       name: 'Clients',
@@ -92,10 +92,10 @@ export const PUBLICS_COPY = {
       niv: 'Júnior → Especialista',
       meta: 'Retificação de aço, preparação de superfícies, substituição de vidros e fundidos multicamada — do N1 ao N5.',
     },
-    Parts: {
-      name: 'Peças',
-      niv: 'Balcão · Stock',
-      meta: 'Organização do departamento de peças, referenciação, gestão de stock e argumentação técnica segundo standards de construtor.',
+    'Manager et conseillers services administratifs, financiers': {
+      name: 'Managers e conselheiros serviços administrativos, financeiros',
+      niv: 'Manager · Conselheiros',
+      meta: 'Managers e conselheiros dos serviços administrativos e financeiros — pilotagem, conformidade e desempenho das funções de suporte da rede.',
     },
     'Technico-commerciaux': {
       name: 'Técnicos-comerciais',
@@ -107,10 +107,10 @@ export const PUBLICS_COPY = {
       niv: 'Receção · SAV',
       meta: 'Acolhimento, receção e acompanhamento de clientes no SAV — do rececionista ao conselheiro de serviço experiente.',
     },
-    'Process SAV & Parts': {
-      name: 'Processos SAV e Peças',
-      niv: 'Standards · KPI',
-      meta: 'Aplicação de standards de construtor, gestão de KPIs SAV e Peças, conformidade com exigências de rede KI/PIC.',
+    'Manager et responsables organisation SAV': {
+      name: 'Managers e responsáveis organização SAV',
+      niv: 'Manager · Back-office',
+      meta: 'Managers e responsáveis back-office SAV — standards de construtor, gestão de indicadores e conformidade de rede KI/PIC.',
     },
     Clients: {
       name: 'Clientes',

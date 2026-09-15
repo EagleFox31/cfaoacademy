@@ -1422,94 +1422,66 @@
  },
  {
   "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "40022",
-  "title": "Réparation sur les matières plastiques",
-  "audience": ""
+  "brand": "",
+  "code": "01N1",
+  "title": "Débourrage des éléments plans de la carrosserie acier des véhicules",
+  "audience": "JUNIOR"
  },
  {
   "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "50309",
-  "title": "Intervention sur les matières plastiques",
-  "audience": ""
+  "brand": "",
+  "code": "02N1",
+  "title": "Redressage des éléments plans de la carrosserie acier des véhicules avant peinture",
+  "audience": "JUNIOR"
  },
  {
   "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "40008",
-  "title": "Débosselage sans peinture – Niveau initiation",
-  "audience": ""
+  "brand": "",
+  "code": "03N1",
+  "title": "Rénovation les éléments de la carrosserie en plastique (Optiques, parechocs…) des véhicules",
+  "audience": "JUNIOR"
  },
  {
   "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "52053",
-  "title": "Réparation d’un vitrage feuilleté",
-  "audience": ""
+  "brand": "",
+  "code": "04N1",
+  "title": "Préparation des éléments de carrosserie avant l'application de produits de peinture",
+  "audience": "JUNIOR"
  },
  {
   "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "52392",
-  "title": "Le soudage acier – E-learning",
-  "audience": ""
+  "brand": "",
+  "code": "05N1",
+  "title": "Remplacement et extrusion des vitrages collés et amovible du véhicule",
+  "audience": "JUNIOR"
  },
  {
   "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "40009",
-  "title": "Débosselage sans peinture – Niveau confirmé",
-  "audience": ""
+  "brand": "",
+  "code": "01N2",
+  "title": "Débosselage des éléments de la carrosserie acier des véhicules sans peinture",
+  "audience": "SENIOR"
  },
  {
   "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "50527",
-  "title": "Maîtrise des opérations de soudure – Aciers HLE/THLE",
-  "audience": ""
+  "brand": "",
+  "code": "02N2",
+  "title": "Redressage des éléments de carrosserie acier des véhicules",
+  "audience": "SENIOR"
  },
  {
   "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "52302",
-  "title": "Réparation d’éléments en aluminium",
-  "audience": ""
+  "brand": "",
+  "code": "01N3",
+  "title": "Débosselage sur véhicule aluminium et acier sans peinture",
+  "audience": "EXPERT"
  },
  {
   "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "52057",
-  "title": "Réparations par collage/rivetage en carrosserie",
-  "audience": ""
- },
- {
-  "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "52058",
-  "title": "Techniques de débosselage (débourrage)",
-  "audience": ""
- },
- {
-  "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "52054",
-  "title": "Remplacement d’un vitrage collé",
-  "audience": ""
- },
- {
-  "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "52393",
-  "title": "Le soudage aluminium – E-learning",
-  "audience": ""
- },
- {
-  "family": "techniques-carrosserie",
-  "brand": "CARROSSERIE",
-  "code": "40010",
-  "title": "Débosselage sans peinture – Niveau expert",
-  "audience": ""
+  "brand": "",
+  "code": "02N3",
+  "title": "Redressage des éléments de carrosserie aluminium avec reprise peinture",
+  "audience": "EXPERT"
  },
  {
   "family": "techniques-yamaha",

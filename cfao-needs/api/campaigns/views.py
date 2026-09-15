@@ -4,7 +4,7 @@ Toute vue de liste passe par le **query plan Cerbos** traduit en `Q` Django — 
 par un filtrage applicatif après coup. Une grille complète ne doit jamais transiter
 vers un manager qui n'a droit qu'à ses marques.
 """
-from django.db.models import Q
+from django.db.models import Count, F, Q, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from core.authz import cerbos
 from core.authz.filters import DeniedAll, plan_to_q
 from core.authz.permissions import CerbosPermission
-from referential.models import CatalogFamily, UserProfile
+from referential.models import Brand, CatalogFamily, Pole, UserProfile
 
 from .imports.catalog import COLUMNS, EXAMPLE_ROW, CatalogImporter
 from .models import Campaign, CatalogLine, NeedLine, Submission, SubmissionCc, SubmissionEvent
@@ -30,6 +30,7 @@ from .serializers import (
     SubmissionEventSerializer,
     SubmissionSerializer,
 )
+from .services.place_rules import resolve_place
 from .services.summary import campaign_summary as compute_campaign_summary
 from .services.summary import refresh_total, submission_summary
 from .services.transitions import TransitionRefused, reopen, submit, validate
@@ -69,6 +70,23 @@ class CampaignViewSet(viewsets.ModelViewSet):
         return Response(CatalogFamilySerializer(families, many=True).data)
 
 
+# Les formations sans marque (« TOUTES MARQUES » à la source) doivent rester
+# atteignables dans une navigation par marque, sinon un pan entier du catalogue
+# devient invisible. Elles forment une entrée transverse par pôle.
+TRANSVERSE = "__transverse__"
+
+
+def _scoped_catalog(request, campaign):
+    """Lignes de catalogue visibles par l'appelant, selon le query plan Cerbos."""
+    plan = cerbos.plan(request.user.to_cerbos(), "needs_line", "view")
+    scope = plan_to_q(plan, {"brand": "brand__code", "pole": "family__pole"})
+    return (
+        CatalogLine.objects.filter(campaign=campaign)
+        .filter(scope)
+        .exclude(family__status=CatalogFamily.Status.HIDDEN)
+    )
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def campaign_catalog(request, pk):
@@ -78,22 +96,223 @@ def campaign_catalog(request, pk):
     lignes sans marque de son pôle. Le filtrage se fait ici, pas dans le navigateur.
     """
     campaign = get_object_or_404(Campaign, pk=pk)
-    plan = cerbos.plan(request.user.to_cerbos(), "needs_line", "view")
     try:
-        scope = plan_to_q(plan, {"brand": "brand__code", "pole": "family__pole"})
+        lines = _scoped_catalog(request, campaign).select_related("family", "brand")
     except DeniedAll:
         return Response([], status=status.HTTP_200_OK)
 
-    lines = (
-        CatalogLine.objects.filter(campaign=campaign)
-        .filter(scope)
-        .exclude(family__status=CatalogFamily.Status.HIDDEN)
-        .select_related("family", "brand")
-    )
     family_key = request.query_params.get("family")
     if family_key:
         lines = lines.filter(family__key=family_key)
+
+    # `brand` est le filtre du parcours en trois écrans : la page marque ne
+    # demande que ce qu'elle affiche, au lieu de charger les 261 lignes.
+    #
+    # `section` accompagne toujours `brand` : une marque figure dans la section
+    # technique ET dans la section process, avec des lignes différentes. Sans ce
+    # filtre, les deux cartes ouvriraient la même grille et les compteurs
+    # annoncés sur la carte ne correspondraient pas à ce qui s'affiche.
+    section = request.query_params.get("section")
+    if section:
+        lines = lines.filter(family__section=section)
+
+    brand = request.query_params.get("brand")
+    if brand == TRANSVERSE:
+        lines = lines.filter(brand__isnull=True)
+        pole = request.query_params.get("pole")
+        if pole:
+            lines = lines.filter(family__pole=pole)
+    elif brand:
+        lines = lines.filter(brand__code=brand)
+
     return Response(CatalogLineSerializer(lines, many=True).data)
+
+
+def _add_pending_brands(grouped: dict[tuple[str, str], list]) -> None:
+    """Complète chaque groupe avec les marques du pôle absentes du catalogue.
+
+    Une marque dont le catalogue n'est pas encore livré — Yamaha aujourd'hui —
+    doit rester **visible** : la filiale voit que la marque existe et qu'elle
+    arrive, au lieu de croire que le groupe ne la forme pas. Elle est marquée
+    `pending`, sans compteur et sans lien : ouvrir une grille vide ferait appeler
+    le support.
+
+    On ne complète que les couples (section, pôle) déjà présents au catalogue :
+    inventer une carte « Process Carrosserie » parce que le pôle existe créerait
+    une entrée qui ne correspond à rien.
+    """
+    poles_used = {pole for _, pole in grouped}
+    by_pole: dict[str, list] = {}
+    for brand in Brand.objects.filter(is_active=True, pole__in=poles_used):
+        by_pole.setdefault(brand.pole, []).append(brand)
+
+    for (_section, pole), brands in grouped.items():
+        known = {brand["code"] for brand in brands}
+        for brand in by_pole.get(pole, []):
+            if brand.code in known:
+                continue
+            brands.append(
+                {
+                    "code": brand.code,
+                    "label": brand.label,
+                    "is_transverse": False,
+                    "trainings": 0,
+                    "headcount": 0,
+                    "trainings_selected": 0,
+                    "sort_order": brand.sort_order,
+                    "pending": True,
+                }
+            )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def campaign_brands(request, pk):
+    """Marques groupées par section puis par pôle — l'écran d'entrée du parcours.
+
+    Deux sections : « Formation Technique » et « Organisation SAV Process et Parts ».
+    Une même marque apparaît dans les deux, avec des compteurs distincts — ce ne
+    sont pas les mêmes formations. Fusionner les deux sous une seule carte ferait
+    croire à un total unique et enverrait vers une grille qui ne correspond pas.
+
+    Les compteurs sortent de la **même requête** que la liste des marques :
+    annoncer « 42 thèmes » puis n'en servir que douze une fois la marque ouverte
+    serait pire que ne rien annoncer. Les deux passent par le même query plan.
+    """
+    campaign = get_object_or_404(Campaign, pk=pk)
+    try:
+        lines = _scoped_catalog(request, campaign)
+    except DeniedAll:
+        return Response([], status=status.HTTP_200_OK)
+
+    available = lines.values(
+        "family__section", "family__pole", "brand__code", "brand__label", "brand__sort_order"
+    ).annotate(trainings=Count("id"))
+
+    entered: dict[tuple[str, str, str | None], dict] = {}
+    submission = _my_submission(request, campaign)
+    if submission:
+        rows = (
+            NeedLine.objects.filter(submission=submission)
+            .values(
+                "catalog_line__family__section",
+                "catalog_line__family__pole",
+                "catalog_line__brand__code",
+            )
+            .annotate(
+                headcount=Sum(F("q1") + F("q2") + F("q3") + F("q4")),
+                selected=Count("id"),
+            )
+        )
+        for row in rows:
+            key = (
+                row["catalog_line__family__section"],
+                row["catalog_line__family__pole"],
+                row["catalog_line__brand__code"],
+            )
+            entered[key] = row
+
+    grouped: dict[tuple[str, str], list] = {}
+    for row in available:
+        section = row["family__section"]
+        pole = row["family__pole"]
+        code = row["brand__code"]
+        mine = entered.get((section, pole, code), {})
+        grouped.setdefault((section, pole), []).append(
+            {
+                "code": code or TRANSVERSE,
+                "label": row["brand__label"] or "",
+                "is_transverse": code is None,
+                "trainings": row["trainings"],
+                "headcount": mine.get("headcount", 0),
+                "trainings_selected": mine.get("selected", 0),
+                "sort_order": row["brand__sort_order"] or 0,
+                "pending": False,
+            }
+        )
+
+    _add_pending_brands(grouped)
+
+    payload = []
+    for section, section_label in CatalogFamily.Section.choices:
+        poles = []
+        for pole, pole_label in Pole.choices:
+            brands = grouped.get((section, pole))
+            if not brands:
+                continue
+            # Le transverse ferme la liste : c'est un repli, pas une marque.
+            brands.sort(key=lambda b: (b["is_transverse"], b["sort_order"], b["label"]))
+            poles.append(
+                {
+                    "pole": pole,
+                    "pole_label": pole_label,
+                    "trainings": sum(b["trainings"] for b in brands),
+                    "headcount": sum(b["headcount"] for b in brands),
+                    "brands": brands,
+                }
+            )
+        if poles:
+            payload.append(
+                {"section": section, "section_label": section_label, "poles": poles}
+            )
+    return Response(payload)
+
+
+def _my_submission(request, campaign) -> Submission | None:
+    """La fiche de la filiale de l'appelant, sans la créer."""
+    profile = _profile(request)
+    if not profile or not profile.org_unit_id:
+        return None
+    return Submission.objects.filter(campaign=campaign, org_unit=profile.org_unit).first()
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def campaign_my_submission(request, pk):
+    """Ouvre — ou retrouve — la fiche de la filiale de l'appelant.
+
+    Idempotent, et **sans `org_unit` dans le corps** : la filiale se déduit du
+    profil, jamais de ce que le navigateur affirme. Appelé au moment où l'on
+    commence réellement à saisir, pour ne pas semer des fiches vides à chaque
+    connexion — une fiche vide compte comme « sans nouvelles » dans le pilotage.
+    """
+    campaign = get_object_or_404(Campaign, pk=pk)
+    profile = _profile(request)
+    if not profile or not profile.org_unit_id:
+        return Response(
+            {"detail": "Votre compte n'est rattaché à aucune filiale."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if not campaign.accepts_entries(timezone.now()):
+        return Response({"detail": "La campagne est fermée."}, status=status.HTTP_409_CONFLICT)
+
+    # La filiale se déduit du profil, mais le droit d'ouvrir une fiche reste une
+    # décision du PDP : un rôle en lecture seule ne doit pas en créer une.
+    if not cerbos.check(
+        request.user.to_cerbos(),
+        "needs_submission",
+        "_new",
+        {"orgPath": profile.scope_nodes(), "status": Submission.Status.DRAFT},
+        "create",
+    ):
+        return Response({"detail": "Ouverture non autorisée."}, status=status.HTTP_403_FORBIDDEN)
+
+    submission, created = Submission.objects.get_or_create(
+        campaign=campaign,
+        org_unit=profile.org_unit,
+        defaults={"country": profile.org_unit.country},
+    )
+    if created:
+        SubmissionEvent.objects.create(
+            submission=submission,
+            kind=SubmissionEvent.Kind.CREATED,
+            actor=profile.email,
+            payload={"campaign": campaign.year},
+        )
+    return Response(
+        SubmissionSerializer(submission).data,
+        status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+    )
 
 
 @api_view(["GET"])
@@ -129,14 +348,17 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         return str(obj.id), {"orgPath": obj.org_path, "status": obj.status}
 
     # ── grille de saisie ─────────────────────────────────────────────────────
-    @action(detail=True, methods=["get"])
+    # Une seule action GET+PATCH : deux `@action` sur le même `url_path` font
+    # gagner la première route Django → PATCH reçoit 405 Method Not Allowed.
+    @action(detail=True, methods=["get", "patch"])
     def lines(self, request, pk=None):
-        submission = self.get_object()
-        lines = NeedLine.objects.filter(submission=submission).select_related("catalog_line")
-        return Response(NeedLineSerializer(lines, many=True).data)
+        if request.method == "GET":
+            submission = self.get_object()
+            rows = NeedLine.objects.filter(submission=submission).select_related("catalog_line")
+            return Response(NeedLineSerializer(rows, many=True).data)
+        return self._write_lines(request, pk)
 
-    @action(detail=True, methods=["patch"], url_path="lines")
-    def write_lines(self, request, pk=None):
+    def _write_lines(self, request, pk=None):
         """Écriture incrémentale — brouillon serveur, débounce côté client.
 
         Une ligne qui retombe à zéro sur les quatre trimestres est **supprimée** :
@@ -169,7 +391,14 @@ class SubmissionViewSet(viewsets.ModelViewSet):
                 continue  # famille PENDING : non saisissable
 
             values = {q: item[q] for q in ("q1", "q2", "q3", "q4")}
-            places = {f"place_{q}": item[f"place_{q}"] for q in ("q1", "q2", "q3", "q4")}
+            # Cameroun : le lieu suit l'effectif (≤6 Douala, ≥7 agence), même si
+            # le client envoie autre chose.
+            places = {
+                f"place_{q}": resolve_place(
+                    submission.country, values[q], item.get(f"place_{q}")
+                )
+                for q in ("q1", "q2", "q3", "q4")
+            }
 
             if sum(values.values()) == 0:
                 deleted, _ = NeedLine.objects.filter(

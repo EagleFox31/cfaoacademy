@@ -3,7 +3,7 @@ FROM quay.io/keycloak/keycloak:25.0
 LABEL org.opencontainers.image.title="CFAO Needs Keycloak" \
       org.opencontainers.image.description="Serveur d'identité Keycloak avec thèmes et realm CFAO Needs embarqués" \
       org.opencontainers.image.vendor="CFAO Mobility" \
-      org.opencontainers.image.version="0.1.1"
+      org.opencontainers.image.version="0.1.2"
 
 # Embarque les thèmes personnalisés CFAO (fond d'écran, logos, CSS, selecteur de langue)
 COPY themes /opt/keycloak/themes

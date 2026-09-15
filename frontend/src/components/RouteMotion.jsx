@@ -1,16 +1,71 @@
+import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import PortalLoader from './PortalLoader.jsx'
+import useLocale from '../hooks/useLocale.js'
+
+/** Routes dont la page est elle-même un loader plein écran (pas de double intro). */
+const SKIP_ROUTE_LOADER = new Set(['/portail/medacap-launch'])
+
+function getRouteLoaderTiming() {
+  const reduce = typeof window !== 'undefined'
+    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  const hold = reduce ? 150 : 850
+  return { hold, done: hold + 450 }
+}
 
 /**
- * Transition de page « morph » : crossfade + léger scale/translate rejoué
- * à chaque changement de route (clé = pathname). Effet proche de la
- * View Transitions API mais fiable sur tous les navigateurs, sans overlay.
- * Désactivé si prefers-reduced-motion (géré en CSS).
+ * Transition globale App : PortalLoader à chaque changement de route
+ * (landing ↔ login, portail, formations…). Crossfade contenu via `.route-motion`.
  */
 export default function RouteMotion({ children }) {
   const { pathname } = useLocation()
+  const { t } = useLocale('common')
+  const skipFirst = useRef(true)
+  const [phase, setPhase] = useState('done')
+
+  useEffect(() => {
+    if (SKIP_ROUTE_LOADER.has(pathname)) {
+      setPhase('done')
+      skipFirst.current = false
+      return undefined
+    }
+
+    if (skipFirst.current) {
+      skipFirst.current = false
+      setPhase('done')
+      return undefined
+    }
+
+    setPhase('loading')
+    const { hold, done } = getRouteLoaderTiming()
+    const t1 = window.setTimeout(() => setPhase('leaving'), hold)
+    const t2 = window.setTimeout(() => setPhase('done'), done)
+
+    return () => {
+      window.clearTimeout(t1)
+      window.clearTimeout(t2)
+    }
+  }, [pathname])
+
+  const messages = [t.routeLoaderMsg1, t.routeLoaderMsg2, t.routeLoaderMsg3]
+  const contentVisible = phase === 'leaving' || phase === 'done'
+
   return (
-    <div key={pathname} className="route-motion">
-      {children}
-    </div>
+    <>
+      {phase !== 'done' && (
+        <PortalLoader
+          leaving={phase === 'leaving'}
+          messages={messages}
+          ariaLabel={t.routeLoaderAria}
+        />
+      )}
+      <div
+        key={pathname}
+        className={`route-motion${contentVisible ? ' route-motion--ready' : ' route-motion--pending'}`}
+        aria-hidden={!contentVisible}
+      >
+        {children}
+      </div>
+    </>
   )
 }

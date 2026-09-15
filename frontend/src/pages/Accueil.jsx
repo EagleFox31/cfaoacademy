@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import useSiteEffects from '../hooks/useSiteEffects.js'
+import useAuth from '../hooks/useAuth.js'
+import usePortalBackground from '../hooks/usePortalBackground.js'
 import useLocale from '../hooks/useLocale.js'
 import { NEWS_TAB_KEYS, CARRO_TAB_KEYS } from '../i18n/home.js'
 import { SESSION_TAB_KEYS } from '../i18n/sessions.js'
@@ -8,7 +10,6 @@ import { sectionTitle } from '../utils/sectionTitle.jsx'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import HomeHero from '../components/HomeHero.jsx'
-import BackToTopFab from '../components/BackToTopFab.jsx'
 import LogoMarquee from '../components/LogoMarquee.jsx'
 import KpiBand from '../components/KpiBand.jsx'
 import PreviewSection from '../components/PreviewSection.jsx'
@@ -36,7 +37,6 @@ import {
   scheduleSessionsScroll,
 } from '../utils/sessionsReturn.js'
 import { HOME_BACKDROP_SECTION_IDS } from '../data/homeSectionBg.js'
-import { getMotorsSectionHoverBg } from '../data/motorsSectionHoverBg.js'
 import CATALOG from '../data/training-catalog.json'
 import {
   EQUIPMENT_SAV_FOLDER,
@@ -111,6 +111,8 @@ const sessionTabsFromCopy = (sessionsT, upcoming) =>
 
 export default function Accueil() {
   useSiteEffects()
+  const { user } = useAuth()
+  usePortalBackground(user, { requireUser: true })
   const { locale, t: homeT } = useLocale('home')
   const { t: commonT } = useLocale('common')
   const { t: cardsT } = useLocale('cards')
@@ -235,36 +237,26 @@ export default function Accueil() {
     })
   }, [hash])
 
-  const { activeId: activeSectionId, heroVisible } = useHomeSectionFocus(HOME_BACKDROP_SECTION_IDS)
+  const { heroVisible } = useHomeSectionFocus(HOME_BACKDROP_SECTION_IDS)
   const homePageRef = useRef(null)
-  useHomeNewsBgReveal(homePageRef, heroVisible)
-
-  const [motorsHoverBg, setMotorsHoverBg] = useState(null)
-  const handleMotorsBrandHover = useCallback((brand) => {
-    setMotorsHoverBg(getMotorsSectionHoverBg(brand.name))
-  }, [])
-  const handleMotorsBrandHoverEnd = useCallback(() => {
-    setMotorsHoverBg(null)
-  }, [])
-  const sectionHoverImages = useMemo(
-    () => (motorsHoverBg ? { offres: motorsHoverBg } : {}),
-    [motorsHoverBg],
-  )
+  useHomeNewsBgReveal(homePageRef, user ? false : heroVisible)
 
   useEffect(() => {
+    if (user) {
+      document.documentElement.classList.remove('home-scroll-snap')
+      return undefined
+    }
     document.documentElement.classList.add('home-scroll-snap')
     return () => document.documentElement.classList.remove('home-scroll-snap')
-  }, [])
+  }, [user])
 
   return (
     <>
       <div className="cursor-glow" id="cursor-glow" />
-      <div ref={homePageRef} className={`home-page${heroVisible ? ' is-hero-phase' : ''}`}>
-      <HomeBackdrop
-        activeId={activeSectionId}
-        heroPhase={heroVisible}
-        sectionHoverImages={sectionHoverImages}
-      />
+      <div ref={homePageRef} className={`home-page${user ? ' home-page--logged' : ''}${!user && heroVisible ? ' is-hero-phase' : ''}`}>
+      {!user && (
+        <HomeBackdrop heroPhase={heroVisible} />
+      )}
       <Nav />
       <HomeHero />
 
@@ -308,7 +300,8 @@ export default function Accueil() {
         id="publics"
         ix={homeT.publicsIx}
         title={sectionTitle(homeT.publicsTitleBefore, homeT.publicsTitleEm, homeT.publicsTitleAfter)}
-        headClass="pv-head--compact-line"      >
+        headClass="pv-head--compact-line"
+      >
         <PvCardGrid>
           {PUBLICS.map((p, i) => (
             <PublicCard key={p.name + i} public={p} />
@@ -326,8 +319,6 @@ export default function Accueil() {
         bgWordSide="right"      >
         <BrandOfferGrid
           brands={MOTORS_BRANDS}
-          onBrandHover={handleMotorsBrandHover}
-          onBrandHoverEnd={handleMotorsBrandHoverEnd}
         />
       </PreviewSection>
 
@@ -349,7 +340,13 @@ export default function Accueil() {
         title={sectionTitle(homeT.carrosserieTitleBefore, homeT.carrosserieTitleEm, homeT.carrosserieTitleAfter)}
         headClass="pv-head--compact-line"
         bgWord="carrosserie"
-        bgWordSide="left"        tabs={carrosserieTabsLocalized}
+        bgWordSide="left"
+        tabs={carrosserieTabsLocalized}
+        voir={{
+          href: getOfferCataloguePdf('carrosserie', locale),
+          label: cardsT.openCatalogue,
+          filled: true,
+        }}
       >
         {(active) => {
           const group = CATALOG.CARROSSERIE.find((g) => g.level === active)
@@ -374,6 +371,7 @@ export default function Accueil() {
         voir={{
           href: getOfferCataloguePdf('savMotors', locale),
           label: cardsT.openCatalogue,
+          filled: true,
         }}
       >
         {(active) => (
@@ -396,6 +394,7 @@ export default function Accueil() {
         voir={{
           href: getOfferCataloguePdf('savEquipment', locale),
           label: cardsT.openCatalogue,
+          filled: true,
         }}
       >
         {(active) => (
@@ -481,7 +480,6 @@ export default function Accueil() {
       <CtaBanner id="cta-contact" />
       <LogoMarquee />
       <Footer />
-      <BackToTopFab />
       </div>
     </>
   )

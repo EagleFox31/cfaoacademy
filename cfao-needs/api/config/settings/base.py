@@ -1,4 +1,4 @@
-"""Réglages communs cfao-needs (app 16 — recueil des besoins).
+"""Réglages communs cfao-needs (app 16 — Identification des Besoins en Formations).
 
 Module **détachable** : en mode `standalone` il parle à son propre Keycloak et à son
 propre Cerbos ; en mode `integrated` il pointe ceux de la plateforme. Le basculement
@@ -47,6 +47,17 @@ ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
+# API JSON uniquement — pas d'UI browsable DRF (évite TemplateDoesNotExist
+# quand un navigateur demande text/html).
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {"context_processors": []},
+    }
+]
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -69,6 +80,9 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
     ],
     "DEFAULT_PAGINATION_CLASS": "core.pagination.TimestampCursorPagination",
     "PAGE_SIZE": 50,

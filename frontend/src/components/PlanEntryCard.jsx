@@ -77,29 +77,41 @@ export default function PlanEntryCard({
   brandLabel,
   muted = false,
   statusChip,
+  href,
+  to,
+  onOpen,
+  corner = true,
+  className = '',
+  cardMedia,
 }) {
   const mediaClass = `pv-card-img portal-plan-entry-card-img portal-plan-entry-card-img--${kind}${logo || brandLabel ? ' portal-plan-entry-card-img--brand' : ''}`
 
+  const resolvedCardMedia = cardMedia ?? (
+    <div className={mediaClass}>
+      {logo ? (
+        <img src={logo} alt="" className="portal-plan-entry-brand-logo" loading="lazy" />
+      ) : brandLabel ? (
+        <span className="portal-plan-entry-brand-wordmark">{brandLabel}</span>
+      ) : (
+        <PlanEntryIcon kind={kind} />
+      )}
+      {statusChip ? (
+        <div className="portal-eval-img-tags">{statusChip}</div>
+      ) : null}
+    </div>
+  )
+
   return (
     <PvCard
+      href={onOpen ? undefined : href}
+      to={onOpen ? undefined : to}
+      onClick={onOpen}
       className={[
         'portal-plan-entry-card',
         muted ? 'portal-plan-entry-card--muted' : '',
+        className,
       ].filter(Boolean).join(' ')}
-      cardMedia={(
-        <div className={mediaClass}>
-          {logo ? (
-            <img src={logo} alt="" className="portal-plan-entry-brand-logo" loading="lazy" />
-          ) : brandLabel ? (
-            <span className="portal-plan-entry-brand-wordmark">{brandLabel}</span>
-          ) : (
-            <PlanEntryIcon kind={kind} />
-          )}
-          {statusChip ? (
-            <div className="portal-eval-img-tags">{statusChip}</div>
-          ) : null}
-        </div>
-      )}
+      cardMedia={resolvedCardMedia}
       title={title}
       meta={(
         <>
@@ -114,7 +126,7 @@ export default function PlanEntryCard({
       cta={cta}
       accentColor={accentColor}
       hoverHint={hoverHint}
-      corner
+      corner={corner}
     />
   )
 }

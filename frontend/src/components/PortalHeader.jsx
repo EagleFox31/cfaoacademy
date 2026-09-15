@@ -1,58 +1,16 @@
 import { useState } from 'react'
 import useLocale from '../hooks/useLocale'
 import { formatLearnerRoleBadge } from '../utils/portalPersona.js'
-import KiHeroCard from './KiHeroCard.jsx'
+import PortalBrandLogo from './PortalBrandLogo.jsx'
+import PortalRoleBadge from './PortalRoleBadge.jsx'
 import LearnerBrandLevelsStrip from './LearnerBrandLevelsStrip.jsx'
-import PortalFilialeFlag from './PortalFilialeFlag.jsx'
 import PortalGreetingBlock from './PortalGreetingBlock.jsx'
 import TeamManagerHeroCard from './TeamManagerHeroCard.jsx'
+import DpsFilialeBrandsStrip from './DpsFilialeBrandsStrip.jsx'
+import PortalHeroShell from './PortalHeroShell.jsx'
 import { resolveCertGoalPrerequisites } from '../utils/certGoalProgress.js'
 import { formatCertLevelLabel } from '../utils/portalCertLevel.js'
-
-/* ─── Greeting logic ───────────────────────────────────────────── */
-
-const SPECIAL_DATES = {
-  '12-25': 'Joyeux Noël',
-  '01-01': 'Bonne année',
-  '12-31': 'Bonne fin d\'année',
-}
-
-const SPECIAL_DATE_KEYS = { '12-25': 'greeting_xmas', '01-01': 'greeting_newyear', '12-31': 'greeting_nye' }
-
-function computeGreetingKey() {
-  const now = new Date()
-  const hour = now.getHours()
-  const mmdd = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-
-  const specialKey = SPECIAL_DATE_KEYS[mmdd]
-  if (specialKey) return specialKey
-
-  const isReturn = sessionStorage.getItem('cfao_portal_visited') === 'true'
-  if (!isReturn) sessionStorage.setItem('cfao_portal_visited', 'true')
-  if (isReturn) return 'greeting_return'
-
-  if (hour >= 5  && hour < 12) return 'greeting_morning'
-  if (hour >= 12 && hour < 18) return 'greeting_afternoon'
-  return 'greeting_evening'
-}
-
-/* ─── Assets maps ──────────────────────────────────────────────── */
-
-const BRAND_LOGOS = {
-  toyota:    '/assets/logos/toyota.png',
-  mercedes:  '/assets/logos/mercedes.png',
-  suzuki:    '/assets/logos/suzuki.png',
-  mitsubishi:'/assets/logos/mitsubishi.png',
-  byd:       '/assets/logos/byd.png',
-  citroen:   '/assets/logos/citroen.png',
-  yamaha:    '/assets/logos/yamaha.png',
-  fuso:      '/assets/logos/fuso.png',
-  hino:      '/assets/logos/hino.png',
-  jcb:       '/assets/logos/jcb.png',
-  lovol:     '/assets/logos/lovol.png',
-  'renault-trucks': '/assets/logos/renault-trucks.png',
-  'king-long': '/assets/logos/kinglong.png',
-}
+import { computePortalGreetingKey } from '../utils/portalGreeting.js'
 
 const ROLE_LABELS = {
   learner:          'Apprenant',
@@ -85,62 +43,10 @@ function getPrimaryRole(roles) {
   return 'learner'
 }
 
-function RoleIcon({ role }) {
-  const common = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }
-
-  if (role === 'learner') {
-    return (
-      <svg {...common}>
-        <path d="M22 10 12 5 2 10l10 5 10-5Z" />
-        <path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5" />
-      </svg>
-    )
-  }
-  if (role === 'ki' || role === 'pic' || role === 'trainer') {
-    return (
-      <svg {...common}>
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M22 11l-5 3-5-3" />
-      </svg>
-    )
-  }
-  if (role === 'team_manager' || role === 'workshop_manager') {
-    return (
-      <svg {...common}>
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M19 8v6M22 11h-6" />
-      </svg>
-    )
-  }
-  return (
-    <svg {...common}>
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  )
-}
-
 /* ─── Sub-components ────────────────────────────────────────────── */
 
 function BrandLogo({ brand, size = 'default' }) {
-  const src = BRAND_LOGOS[brand]
-  const wrapClass = size === 'geo'
-    ? 'portal-header-brand-logo-wrap portal-header-brand-logo-wrap--geo'
-    : 'portal-header-brand-logo-wrap'
-  if (src) {
-    return (
-      <span className={wrapClass} title={brand}>
-        <img src={src} alt={brand} className="portal-header-brand-logo" />
-      </span>
-    )
-  }
-  return (
-    <span className={`portal-brand-chip ${brand} portal-header-brand-chip`}>
-      {brand}
-    </span>
-  )
+  return <PortalBrandLogo brand={brand} size={size} />
 }
 
 /* Masqué pour l'instant — réactiver quand la carte objectif sera retravaillée. */
@@ -238,11 +144,11 @@ function CertGoalCard({ goals, user, lms, t }) {
 
 /* ─── Main component ────────────────────────────────────────────── */
 
-export default function PortalHeader({ user, certGoals, certGoal, lms, workshop = false }) {
+export default function PortalHeader({ user, certGoals, certGoal, lms, workshop = false, filialeBrands }) {
   const { t } = useLocale('portal')
   const { t: heroT } = useLocale('hero')
   const { t: publicsT } = useLocale('publics')
-  const [greetingKey] = useState(() => computeGreetingKey())
+  const [greetingKey] = useState(() => computePortalGreetingKey())
   const primaryRole = getPrimaryRole(user.roles)
   const userBrands = user.brands || []
   const baseRoleLabel = t[`role_${primaryRole}`] || primaryRole
@@ -252,83 +158,74 @@ export default function PortalHeader({ user, certGoals, certGoal, lms, workshop 
   const resolvedGoals = normalizeCertGoals({ certGoals, certGoal, user })
   const showCertCard = SHOW_LEARNER_CERT_CARD && primaryRole === 'learner' && resolvedGoals.length > 0
   const showBrandLevels = primaryRole === 'learner' && userBrands.length > 0
-  const showKiCard = primaryRole === 'ki' && lms
+  const showDpsBrandsStrip = (primaryRole === 'dps' || primaryRole === 'dop') && (filialeBrands?.length > 0)
   const showTeamCard = primaryRole === 'team_manager' && lms
   const showWorkshopCard = primaryRole === 'workshop_manager' && lms
-  const showSidePanel = showCertCard || showKiCard || showTeamCard || showWorkshopCard
-  const showGeoBrands = !showBrandLevels && userBrands.length > 0
+  const showSidePanel = showCertCard || showTeamCard || showWorkshopCard
+  const showGeoBrands = !showBrandLevels && !showDpsBrandsStrip && userBrands.length > 0
+  const showBrandsBand = showBrandLevels || showDpsBrandsStrip
+  const dpsHero = showDpsBrandsStrip
+    ? {
+        technicianCount: lms?.kpis?.totalTechnicians,
+        brandCount: filialeBrands?.length ?? 0,
+      }
+    : null
   const roleBadge = (
-    <span className="portal-header-role-badge">
-      <RoleIcon role={primaryRole} />
-      {roleLabel}
-    </span>
+    <PortalRoleBadge role={primaryRole} label={roleLabel} />
   )
-  return (
-    <section className={`page-header portal-page-header${showSidePanel ? ' portal-page-header--with-cert' : ''}${showBrandLevels ? ' portal-page-header--with-brands' : ''}`}>
-      <div className="portal-hero-fx" aria-hidden="true">
-        <span className="portal-hero-orb portal-hero-orb--a parallax" data-speed="0.08" />
-        <span className="portal-hero-orb portal-hero-orb--b parallax" data-speed="0.16" />
-      </div>
-      <div className="container portal-header-container">
-        {showSidePanel ? (
-          <>
-            <div className="portal-header-role-line">{roleBadge}</div>
-            <PortalGreetingBlock
-              greetingKey={t[greetingKey]}
-              firstName={user.firstName}
-              user={user}
-              primaryRole={primaryRole}
-              hideOrient={showBrandLevels}
-            />
-            {showBrandLevels && (
-              <LearnerBrandLevelsStrip user={user} certGoals={resolvedGoals} />
-            )}
-            {showGeoBrands && (
-            <div className="portal-header-geo-row portal-header-geo-row--grid">
-                  <div className="portal-header-geo-brands">
-                    {userBrands.map(brand => (
-                      <BrandLogo key={brand} brand={brand} size="geo" />
-                    ))}
-                  </div>
-            </div>
-            )}
-            {showCertCard && (
-              <CertGoalCard goals={resolvedGoals} user={user} lms={lms} t={t} />
-            )}
-            {showKiCard && (
-              <KiHeroCard user={user} lms={lms} />
-            )}
-            {(showTeamCard || showWorkshopCard) && (
-              <TeamManagerHeroCard lms={lms} workshop={showWorkshopCard} />
-            )}
-          </>
-        ) : (
-          <div className="portal-header-main">
-            <p className="page-header-eyebrow portal-header-eyebrow">
-              {roleBadge}
-            </p>
-            <PortalGreetingBlock
-              greetingKey={t[greetingKey]}
-              firstName={user.firstName}
-              user={user}
-              primaryRole={primaryRole}
-              hideOrient={showBrandLevels}
-            />
-            {showBrandLevels && (
-              <LearnerBrandLevelsStrip user={user} certGoals={resolvedGoals} />
-            )}
-            {showGeoBrands && (
-            <div className="portal-header-geo-row">
-                  <div className="portal-header-geo-brands">
-                    {userBrands.map(brand => (
-                      <BrandLogo key={brand} brand={brand} size="geo" />
-                    ))}
-                  </div>
-            </div>
-            )}
+
+  const greetingBlock = (
+    <PortalGreetingBlock
+      greetingKey={t[greetingKey]}
+      firstName={user.firstName}
+      user={user}
+      primaryRole={primaryRole}
+      hideOrient={showBrandsBand}
+      dpsHero={dpsHero}
+    />
+  )
+
+  const brandsBand = (
+    <>
+      {showBrandLevels && (
+        <LearnerBrandLevelsStrip user={user} certGoals={resolvedGoals} />
+      )}
+      {showDpsBrandsStrip && (
+        <DpsFilialeBrandsStrip brandStats={filialeBrands} />
+      )}
+      {showGeoBrands && (
+        <div className={`portal-header-geo-row${showBrandsBand ? ' portal-header-geo-row--grid portal-header-geo-row--below-brands' : ''}`}>
+          <div className="portal-header-geo-brands">
+            {userBrands.map(brand => (
+              <BrandLogo key={brand} brand={brand} size="geo" />
+            ))}
           </div>
-        )}
+        </div>
+      )}
+    </>
+  )
+
+  if (showSidePanel) {
+    const aside = showCertCard
+      ? <CertGoalCard goals={resolvedGoals} user={user} lms={lms} t={t} />
+      : <TeamManagerHeroCard lms={lms} workshop={showWorkshopCard} />
+
+    return (
+      <PortalHeroShell aside={aside} className={showBrandsBand ? 'portal-page-header--with-brands' : ''}>
+        <div className="portal-header-role-line">{roleBadge}</div>
+        {greetingBlock}
+        {brandsBand}
+      </PortalHeroShell>
+    )
+  }
+
+  return (
+    <PortalHeroShell className={showBrandsBand ? 'portal-page-header--with-brands' : ''}>
+      <div className="portal-header-main">
+        <p className="page-header-eyebrow portal-header-eyebrow">{roleBadge}</p>
+        {greetingBlock}
+        {brandsBand}
       </div>
-    </section>
+    </PortalHeroShell>
   )
 }

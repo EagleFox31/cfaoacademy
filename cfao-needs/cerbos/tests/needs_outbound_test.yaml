@@ -9,6 +9,12 @@ principals:
     roles: ["center_assistant"]
     attr:
       scopeNodes: ["groupe"]
+  coordonnateur:
+    id: u_coord
+    roles: ["training_coordinator"]
+    attr:
+      scopeNodes: ["groupe"]
+      brands: []
   directeur_centre:
     id: u_dircentre
     roles: ["center_director"]
@@ -72,6 +78,21 @@ tests:
           reject: EFFECT_ALLOW
           send: EFFECT_ALLOW
       - principal: superadmin
+        resource: confirmation_en_attente
+        actions:
+          view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+          approve: EFFECT_ALLOW
+          reject: EFFECT_ALLOW
+          send: EFFECT_ALLOW
+
+  - name: le coordonnateur des formations approuve et envoie
+    input:
+      principals: ["coordonnateur"]
+      resources: ["confirmation_en_attente"]
+      actions: ["view", "list", "approve", "reject", "send"]
+    expected:
+      - principal: coordonnateur
         resource: confirmation_en_attente
         actions:
           view: EFFECT_ALLOW

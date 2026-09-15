@@ -1,3 +1,4 @@
+import PortalSectionEyebrow from './PortalSectionEyebrow.jsx'
 import { useMemo, useState } from 'react'
 import ChipFilterBar from './ChipFilterBar.jsx'
 import LearnerEvalCard from './LearnerEvalCard.jsx'
@@ -118,7 +119,7 @@ export default function LearnerTestsSection({
       <PortalReveal id="tests">
         <div className="container" style={{ padding: '16px 32px' }}>
           <div className="portal-section-head">
-            <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
+            <PortalSectionEyebrow icon="award" label={t.eyebrow_skills} />
             <h2 className="portal-section-title">{t.title_your_tests}</h2>
           </div>
           <div className="portal-medacap-status" role="status">{t.medacap_loading}</div>
@@ -132,7 +133,7 @@ export default function LearnerTestsSection({
       <PortalReveal id="tests">
         <div className="container" style={{ padding: '16px 32px' }}>
           <div className="portal-section-head">
-            <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
+            <PortalSectionEyebrow icon="award" label={t.eyebrow_skills} />
             <h2 className="portal-section-title">{t.title_your_tests}</h2>
           </div>
           <div className="portal-medacap-status portal-medacap-status--error" role="alert">
@@ -162,7 +163,7 @@ export default function LearnerTestsSection({
     <PortalReveal id="tests">
       <div className="container" style={{ padding: '16px 32px' }}>
         <div className="portal-section-head">
-          <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
+          <PortalSectionEyebrow icon="award" label={t.eyebrow_skills} />
           <h2 className="portal-section-title">{t.title_your_tests}</h2>
         </div>
         <ChipFilterBar

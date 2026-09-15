@@ -1,5 +1,7 @@
 // Source de vérité unique — catalogue CFAO Academy 2026
 
+import kiNetworkPayload from './ki-network.json'
+
 /** Masqué temporairement — section #sessions accueil + entrée navbar */
 export const HOME_SESSIONS_SECTION_VISIBLE = false
 
@@ -16,10 +18,14 @@ export const STATS = {
   paysPotentiels: 4,
 }
 
+/** Réseau officiel Key Instructors Toyota (17 nommés / 18). */
+export const KI_NETWORK = kiNetworkPayload.ki ?? []
+export const KI_NETWORK_META = kiNetworkPayload.meta ?? {}
+
 /** Liens navbar — ordre des sections principales de l’accueil */
 const NAV_ITEMS = [
   { label: 'Actualités',  to: '/#actualites', hash: 'actualites', key: 'actualites' },
-  { label: 'Publics',     to: '/#publics',    hash: 'publics',    key: 'publics' },
+  { label: 'Nos publics', to: '/#publics',    hash: 'publics',    key: 'publics' },
   { label: 'Nos Offres',  to: '/#offres',     hash: 'offres',     key: 'offres' },
   { label: 'Sessions',    to: '/#sessions',   hash: 'sessions',   key: 'sessions' },
   { label: "L'Academy",   to: '/#expertise',  hash: 'expertise',  key: 'academy' },
@@ -54,10 +60,10 @@ export const PORTAL_NAV_SECTIONS = {
     { key: 'assistance', id: 'assistance', labelKey: 'nav_sec_assistance' },
   ],
   ki: [
-    { key: 'bilan',      id: 'bilan',      labelKey: 'nav_sec_ki_overview' },
-    { key: 'fad',        id: 'fad',        labelKey: 'nav_sec_fad' },
-    { key: 'apprenants', id: 'apprenants', labelKey: 'nav_sec_apprenants' },
-    { key: 'parcours',   id: 'parcours',   labelKey: 'nav_sec_ki_path' },
+    { key: 'fad',              id: 'fad',              labelKey: 'nav_sec_fad' },
+    { key: 'toyota-resultats', id: 'toyota-resultats', labelKey: 'nav_sec_ki_tech_results', iconKey: 'sliders' },
+    { key: 'toyota-pif',       id: 'toyota-pif',       labelKey: 'nav_sec_ki_tech_pif',     iconKey: 'milestone' },
+    { key: 'parcours',         id: 'parcours',         labelKey: 'nav_sec_ki_path' },
   ],
   pic: [
     { key: 'bilan',      id: 'bilan',      labelKey: 'nav_sec_bilan' },
@@ -77,12 +83,18 @@ export const PORTAL_NAV_SECTIONS = {
     { key: 'assistance', id: 'assistance', labelKey: 'nav_sec_assistance' },
   ],
   dps: [
-    { key: 'bilan',      id: 'bilan',      labelKey: 'nav_sec_bilan' },
-    { key: 'equipe',     id: 'equipe',     labelKey: 'nav_sec_equipe' },
+    { key: 'resultats',  id: 'resultats',  labelKey: 'nav_sec_dps_results' },
+    { key: 'niveaux',    id: 'niveaux',    labelKey: 'nav_sec_dps_tier_results' },
+    { key: 'pif',        id: 'pif',        labelKey: 'nav_sec_dps_plans' },
+    // { key: 'collaborateurs', id: 'collaborateurs', labelKey: 'nav_sec_dps_collaborators' },
+    { key: 'assistance', id: 'assistance', labelKey: 'nav_sec_dps_assistance' },
   ],
   dop: [
-    { key: 'bilan',  id: 'bilan',  labelKey: 'nav_sec_bilan' },
-    { key: 'equipe', id: 'equipe', labelKey: 'nav_sec_equipe' },
+    { key: 'resultats',  id: 'resultats',  labelKey: 'nav_sec_dps_results' },
+    { key: 'niveaux',    id: 'niveaux',    labelKey: 'nav_sec_dps_tier_results' },
+    { key: 'pif',        id: 'pif',        labelKey: 'nav_sec_dps_plans' },
+    // { key: 'collaborateurs', id: 'collaborateurs', labelKey: 'nav_sec_dps_collaborators' },
+    { key: 'assistance', id: 'assistance', labelKey: 'nav_sec_dps_assistance' },
   ],
   branch_director: [
     { key: 'bilan',   id: 'bilan',   labelKey: 'nav_sec_bilan' },
@@ -167,10 +179,10 @@ export const PUBLICS = [
     color: '#ea580c',
   },
   { name: 'Carrossiers',          kicker: 'Atelier · N1-N5', niv: 'Junior → Expert', img: '/assets/hero/cta_hover_carrosserie.png',        meta: 'Redressage acier, préparation de surface, remplacement de vitrages et raccords multicouches — du débourrage N1 à la maîtrise des teintes N5.',         famille: 'Atelier',       color: '#f97316' },
-  { name: 'Parts',                kicker: 'Pièces',          niv: 'Comptoir · Stock',      img: '/assets/hero/cta_hover_sav.jpg',      meta: 'Organisation du département pièces, référencement, gestion de stock et argumentation technique selon les standards constructeurs.',             famille: 'Process & SAV', color: '#059669' },
+  { name: 'Manager et conseillers services administratifs, financiers', kicker: 'Services', niv: 'Manager · Conseillers', img: '/assets/hero/cta_hover_sav.jpg', meta: 'Managers et conseillers des services administratifs et financiers — pilotage, conformité et performance des fonctions support du réseau.', famille: 'Process & SAV', color: '#059669' },
   { name: 'Technico-commerciaux', kicker: 'Vente',           niv: 'Produit · Vente', img: '/assets/publics/technico-commerciaux.jpg',   meta: 'Maîtrise produit et argumentation technique de vente — pour les vendeurs qui allient connaissance véhicule et performance commerciale.',                    famille: 'Vente',         color: '#1a56db' },
   { name: 'Commerciaux',          kicker: 'Vente',           niv: 'Réception · SAV', img: '/assets/publics/commerciaux.jpg',   meta: 'Accueil, prise en charge et accompagnement client au SAV — du réceptionnaire au conseiller service confirmé.',               famille: 'Vente',         color: '#1a56db' },
-  { name: 'Process SAV & Parts',  kicker: 'Process',         niv: 'Standards · KPI',    img: '/assets/hero/cta_hover_sav.jpg',    meta: 'Application des standards constructeurs, pilotage des indicateurs SAV et Parts, conformité aux exigences réseau KI/PIC.',                   famille: 'Process & SAV', color: '#059669' },
+  { name: 'Manager et responsables organisation SAV', kicker: 'Organisation SAV', niv: 'Manager · Back-office', img: '/assets/hero/cta_hover_sav.jpg', meta: 'Managers et responsables back-office SAV — standards constructeurs, pilotage des indicateurs et conformité réseau KI/PIC.', famille: 'Process & SAV', color: '#059669' },
   { name: 'Clients',              kicker: 'Client B2B',      niv: 'Partenaires B2B',       img: '/assets/hero/cta_hover_b2b.jpg',       meta: 'Techniciens, carrossiers et gestionnaires pièces des entreprises clientes — les mêmes formations, dispensées aux partenaires et flottes de CFAO Mobility et Equipment.',                famille: 'Clients',       color: '#7c3aed' },
 ]
 

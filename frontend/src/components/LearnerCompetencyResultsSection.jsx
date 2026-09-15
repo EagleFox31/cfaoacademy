@@ -1,4 +1,6 @@
+import PortalSectionEyebrow from './PortalSectionEyebrow.jsx'
 import { useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import LearnerEvalCard from './LearnerEvalCard.jsx'
 import PortalReveal from './PortalReveal.jsx'
 import PortalStaggerGrid from './PortalStaggerGrid.jsx'
@@ -9,8 +11,9 @@ import {
 } from '../utils/learnerTests.js'
 
 export default function LearnerCompetencyResultsSection({
-  user, lms, t, onOpenEval, evaluations: evaluationsSource,
+  user, lms, t, evaluations: evaluationsSource,
 }) {
+  const navigate = useNavigate()
   const [brandOpen, setBrandOpen] = useState({})
 
   const sourceEvaluations = evaluationsSource ?? lms?.evaluations ?? []
@@ -35,9 +38,14 @@ export default function LearnerCompetencyResultsSection({
   return (
     <PortalReveal id="resultats">
       <div className="container" style={{ padding: '16px 32px' }}>
-        <div className="portal-section-head">
-          <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
-          <h2 className="portal-section-title">{t.title_competency_results}</h2>
+        <div className="portal-section-head portal-section-head--with-action">
+          <div>
+            <PortalSectionEyebrow icon="award" label={t.eyebrow_skills} />
+            <h2 className="portal-section-title">{t.title_competency_results}</h2>
+          </div>
+          <Link to="/portail/resultats" className="portal-section-head-action">
+            {t.bulletin_view_all} →
+          </Link>
         </div>
 
         <div className="portal-plan-subsections portal-results-subsections">
@@ -88,7 +96,7 @@ export default function LearnerCompetencyResultsSection({
                           user={user}
                           lms={lms}
                           t={t}
-                          onOpen={onOpenEval}
+                          onOpen={() => navigate(`/portail/resultats/${encodeURIComponent(e.id)}`)}
                         />
                       ))}
                     </PortalStaggerGrid>

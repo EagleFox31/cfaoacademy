@@ -1,4 +1,4 @@
-# cfao-needs — Recueil des besoins de formation (app 16)
+# cfao-needs — Identification des Besoins en Formations (app 16)
 
 > **Module détachable.** Tout ce dont il a besoin est dans ce dossier : sa base, son
 > Keycloak, son Cerbos, son worker, sa passerelle. `docker compose up` ici suffit,
@@ -12,13 +12,119 @@
 ## Démarrer
 
 ```bash
-cp .env.example .env         # puis remplir les 4 secrets — aucun n'a de défaut
+cp .env.example .env         # puis remplir les 5 secrets — aucun n'a de défaut
+cp web/.env.example web/.env # Vite lit ces valeurs AU BUILD, pas au runtime
+make build-web               # la passerelle sert web/dist, elle ne le construit pas
 make up
 make migrate                 # explicite : jamais dans l'entrypoint
 make seed
 ```
 
 Interface sur `http://localhost:8080`, Keycloak sur `http://localhost:8081`.
+
+> `web/.env` est requis avant `make build-web`. Sans lui, `VITE_OIDC_ISSUER` vaut la
+> chaîne vide et le bouton « Se connecter » pointe sur l'origine du SPA : nginx renvoie
+> `index.html`, l'écran de connexion se réaffiche et **aucune erreur n'apparaît**.
+
+### Comptes de recette
+
+Six comptes, un par rôle du parcours, déclarés dans le realm. Mot de passe commun :
+`NEEDS_DEMO_PASSWORD` — un placeholder `${...}` résolu à l'import, jamais une valeur
+dans le dépôt (interdit n° 2). La substitution vient de
+`-Dkeycloak.migration.replace-placeholders=true`, passé par `JAVA_OPTS_APPEND`.
+
+| Compte | Rôle | Périmètre | Écrans |
+|---|---|---|---|
+| `chef.atelier@cfao.com` | workshop_manager | Douala · Toyota, Peugeot | saisie |
+| `chef.equipe@cfao.com` | team_manager | Abidjan · Lovol, Hino | saisie |
+| `team.lead@cfao.com` | team_manager | Accra · Toyota (locale `en`) | saisie |
+| `directeur.cmr@cfao.com` | branch_director | Cameroun | suivi filiale |
+| `assistante@cfao.com` | center_assistant | Groupe | relecture, à envoyer |
+| `directeur.centre@cfao.com` | center_director | Groupe | relecture, arbitrage |
+
+Trois couplages à ne pas casser :
+
+- **`users[].id` du realm ↔ `PROFILES` de `seed_referential`.** Le `sub` OIDC est la
+  seule jointure avec `referential.UserProfile` ; `LocalIdentityProvider` ne se rabat
+  jamais sur l'email. Un `id` modifié d'un côté seulement donne une connexion réussie
+  puis un refus sur tout : périmètre vide, policies en default-deny.
+- **Le mapper d'audience du client `needs-web`.** L'API valide `aud = needs-web`
+  (`OIDC_AUDIENCE`) ; sans ce mapper, Keycloak n'émet que `aud: account` et tout appel
+  authentifié repart en 401.
+- **`unmanagedAttributePolicy: ENABLED`** dans le composant user-profile. Depuis
+  Keycloak 24, un attribut non déclaré est supprimé à l'import : `scopeNode`, `brands`
+  et `locale` disparaîtraient du jeton en silence.
+
+Le realm n'accepte aucune clé hors schéma — pas de commentaire possible dans le JSON,
+d'où cette section.
+
+### Écran de connexion
+
+Le mot de passe se saisit chez Keycloak, jamais dans le SPA : c'est le flow
+Authorization Code + PKCE, et c'est ce qui rend vraie la phrase « aucun mot de passe
+côté application ». La redirection n'est donc pas contournable — le client a
+`directAccessGrantsEnabled: false`, il n'a même pas le droit d'envoyer un mot de passe.
+Le BFF prévu en R1 ne la supprime pas non plus : il déplace le jeton dans un cookie.
+
+L'écran reprend en revanche la page `/login` du site vitrine : photo `hero/default.jpg`
+et vignette, carte de verre, logo CFAO Mobility, bouton rouge en pilule. Le thème est
+dans `keycloak/themes/cfao-needs/login` ; il hérite du thème Keycloak et surcharge le
+CSS. Le realm est en `defaultLocale: fr` avec FR/EN au choix — sans
+`internationalizationEnabled`, Keycloak sert l'anglais quoi qu'il arrive.
+
+Les images et les polices sont **copiées** dans le thème, pas référencées dans
+`frontend/` : le module doit rester montable seul. Space Grotesk et DM Sans sont
+embarquées en woff2 (96 Ko, polices variables, un fichier par sous-ensemble) plutôt que
+servies par Google — la page de connexion d'un outil interne n'appelle pas l'extérieur,
+même raisonnement que `CERBOS_NO_TELEMETRY`.
+
+Le favicon est fourni par le thème (`resources/img/favicon.ico`, la sphère du logo).
+Sans ce fichier, l'héritage de thème sert celui du parent et l'onglet affiche le logo
+Keycloak — ce n'est pas réglable en CSS, il faut le fichier.
+
+Deux écarts avec la vitrine, imposés par le gabarit FreeMarker de Keycloak : les
+libellés restent au-dessus des champs, le label flottant supposant un `<label>` placé
+après l'`<input>`, et il n'y a pas de particules animées. Le logo est injecté en
+`::before` sur l'en-tête de la carte — aucun template n'est surchargé, ce qui évite
+d'avoir à le rejouer à chaque montée de version de Keycloak.
+
+`start-dev` désactive le cache de thèmes : une retouche de `resources/css/cfao.css` est
+visible au rechargement de la page, sans redémarrer le conteneur. Les libellés vivent
+dans `messages/messages_fr.properties`, limités à ceux que l'utilisateur relit ensuite
+dans le SPA.
+
+Enfin, `make seed` laisse la campagne en brouillon, comme en production où l'ouverture
+est un geste tracé du directeur du centre. Pour une recette immédiatement saisissable :
+
+```bash
+docker compose exec needs-api python manage.py seed_referential --open
+```
+
+### Titres anglais du catalogue
+
+Le fichier de travail métier n'a qu'une colonne d'intitulé, en français. Les titres
+anglais viennent de `api/referential/data/titles_en.json`, rapproché du catalogue publié
+sur la vitrine (`frontend/`). La table est **indexée sur l'intitulé, pas sur le code** :
+`TP01` et `TP02` désignent des formations différentes — et inversées — selon la famille.
+
+```bash
+node scripts/build-titles-en.mjs                        # régénère depuis la vitrine
+docker compose exec needs-api python manage.py backfill_titles_en   # applique à une base existante
+```
+
+Le générateur conserve les traductions saisies à la main pour les formations que la
+vitrine ne publie pas. Un intitulé sans traduction s'affiche en français : rien ne bloque.
+
+### Niveaux constructeur
+
+Le fichier 2027 ne porte que JUNIOR / SENIOR / EXPERT (paliers MEDACAP). L'écran de
+saisie affiche la nomenclature de chaque marque — G4→G1 (Toyota), Bronze→Gold (Suzuki),
+BASIC (Mercedes) — reprise de `frontend/src/data/training-catalog.json`.
+
+```bash
+node scripts/build-levels.mjs
+docker compose exec needs-api python manage.py backfill_level_labels
+```
 
 ```bash
 make test          # tests Python
@@ -59,6 +165,7 @@ cfao-needs/
 │   └── tests/              positifs + négatifs (obligatoires)
 │
 ├── keycloak/               realm en config-as-code
+│   └── themes/cfao-needs/  écran de connexion — port du /login de la vitrine
 ├── gateway/                nginx : sert la SPA, route l'API
 └── web/                    SPA React/Vite
 ```
@@ -197,20 +304,26 @@ Chacun est un contrôle, pas une consigne.
 | ✅ | Patron d'import tabulaire + importeur de catalogue — **10 tests passent** |
 | ✅ | Circuit d'envoi à validation — **10 tests passent** |
 | ✅ | Policies Cerbos `needs_*` — **58 tests exécutés, 58 verts** (positifs et négatifs) |
-| ✅ | **SPA — les 7 pages du parcours**, build Vite vert (216 Ko JS, 9,4 Ko CSS) |
+| ✅ | **SPA — parcours filiale en 3 pages + 3 écrans Academy**, build Vite vert |
 | ✅ | **Bilingue FR/EN** — 137 clés utilisées, catalogues stricts et alignés (aucune manquante) |
 | ✅ | Seeds — **259 lignes du catalogue 2027 réel**, 21 marques, 8 familles, 28 modèles d'emails (14 clés × 2 langues) |
 | ✅ | **Stack complète démarrée et vérifiée** — 7 conteneurs, realm importé, décisions Cerbos live, SPA servie, 401 sans jeton |
 | ⏳ | Relances et regroupement par inactivité (tâches planifiées) — **R1** |
 
-### Les 7 pages
+### Les écrans
+
+Côté filiale, le parcours tient en **trois pages** — connexion, BU et marques,
+formations de la marque. Un DPS ou un manager n'en voit pas d'autres : on ouvre
+une marque, on saisit, on revient, et on transmet une fois depuis le bas de
+l'écran des marques. Il n'y a **pas** d'écran de récapitulatif ni de suivi
+séparés ; les totaux, les destinataires en copie et l'état de la fiche vivent au
+pied de l'écran des marques.
 
 | Route | Écran | Rôle |
 |-------|-------|------|
-| `/` | Campagne — familles, statuts, CTA | Filiale |
-| `/saisie` | Grille : T1–T4 × effectif + lieu, brouillon serveur, filtres | Filiale |
-| `/recapitulatif` | Récapitulatif, destinataires en copie, envoi | Filiale |
-| `/suivi` | Suivi de la déclaration + historique | Filiale |
+| *(Keycloak)* | Connexion | Filiale + Academy |
+| `/` | BU et marques par BU — compteurs, totaux, destinataires en copie, envoi | Filiale |
+| `/marque/:code` | Formations de la marque : T1–T4 × effectif + lieu, groupées par niveau, brouillon serveur | Filiale |
 | `/relecture` | Fiches à relire, ancienneté, alerte SLA 48 h | Academy |
 | `/relecture/:id` | Fiche : récapitulatif, lignes, valider / réouvrir | Academy |
 | `/a-envoyer` | File d'envoi : prévisualisation, approbation par lot, rejet motivé | Academy |
