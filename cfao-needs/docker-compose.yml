@@ -31,8 +31,9 @@ services:
   needs-keycloak:
     # JVM bridee a 256 Mio de tas (JAVA_OPTS_KC_HEAP)
     mem_limit: 768m
-    restart: unless-stopped
-    image: quay.io/keycloak/keycloak:25.0
+    build:
+      context: ./keycloak
+    image: antifragile237/cfao-needs-keycloak:v0.1.1
     command: ["start-dev", "--import-realm"]
     environment:
       KC_DB: postgres

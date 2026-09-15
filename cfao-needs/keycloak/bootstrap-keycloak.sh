@@ -18,10 +18,21 @@ KC_PID=$!
 (
   echo "[bootstrap-keycloak] Background worker started, waiting for Keycloak readiness..."
   
+  ADMIN_USER="${KC_BOOTSTRAP_ADMIN_USERNAME:-${KEYCLOAK_ADMIN:-admin}}"
+  ADMIN_PASS="${KC_BOOTSTRAP_ADMIN_PASSWORD:-${KEYCLOAK_ADMIN_PASSWORD}}"
+
+  if [ -z "$ADMIN_PASS" ]; then
+    echo "[bootstrap-keycloak] ERROR: No admin password configured. Cannot bootstrap client."
+    exit 0
+  fi
+
   READY=0
   for i in $(seq 1 60); do
-    if curl -sf -o /dev/null "http://localhost:8080/realms/master" 2>/dev/null || \
-       curl -sf -o /dev/null "http://localhost:8080/health/ready" 2>/dev/null; then
+    if /opt/keycloak/bin/kcadm.sh config credentials \
+        --server http://localhost:8080 \
+        --realm master \
+        --user "$ADMIN_USER" \
+        --password "$ADMIN_PASS" >/dev/null 2>&1; then
       READY=1
       break
     fi
@@ -33,30 +44,7 @@ KC_PID=$!
     exit 0
   fi
 
-  echo "[bootstrap-keycloak] Keycloak is ready. Authenticating admin CLI..."
-  
-  ADMIN_USER="${KC_BOOTSTRAP_ADMIN_USERNAME:-${KEYCLOAK_ADMIN:-admin}}"
-  ADMIN_PASS="${KC_BOOTSTRAP_ADMIN_PASSWORD:-${KEYCLOAK_ADMIN_PASSWORD}}"
-
-  if [ -z "$ADMIN_PASS" ]; then
-    echo "[bootstrap-keycloak] ERROR: No admin password configured. Cannot bootstrap client."
-    exit 0
-  fi
-
-  # Login via kcadm.sh
-  /opt/keycloak/bin/kcadm.sh config credentials \
-    --server http://localhost:8080 \
-    --realm master \
-    --user "$ADMIN_USER" \
-    --password "$ADMIN_PASS" >/dev/null 2>&1 || {
-      echo "[bootstrap-keycloak] Failed to authenticate admin via kcadm.sh. Retrying in 3s..."
-      sleep 3
-      /opt/keycloak/bin/kcadm.sh config credentials \
-        --server http://localhost:8080 \
-        --realm master \
-        --user "$ADMIN_USER" \
-        --password "$ADMIN_PASS" || exit 0
-    }
+  echo "[bootstrap-keycloak] Keycloak is ready and admin CLI authenticated."
 
   # Verify cfao-needs realm exists
   REALM_EXISTS=$(/opt/keycloak/bin/kcadm.sh get realms/cfao-needs --fields id --format csv --noquotes 2>/dev/null || true)
@@ -71,7 +59,7 @@ KC_PID=$!
     exit 0
   fi
 
-  echo "[bootstrap-keycloak] Synchronizing client needs-web ($CLIENT_ID)..."
+  echo "[bootstrap-keycloak] Synchronizing client needs-web (ID: $CLIENT_ID)..."
 
   # Build JSON payload dynamically
   # 1. Base local origins
@@ -79,7 +67,7 @@ KC_PID=$!
   WEB_ORIGINS_JSON='["http://localhost:8080","http://localhost:8082","http://localhost:5174","http://127.0.0.1:8080","http://127.0.0.1:8082"]'
 
   # 2. Host LAN IP (passed from host via NEEDS_LAN_HOST)
-  if [ -n "$NEEDS_LAN_HOST" ]; then
+  if [ -n "$NEEDS_LAN_HOST" ] && [ "$NEEDS_LAN_HOST" != "localhost" ] && [ "$NEEDS_LAN_HOST" != "127.0.0.1" ]; then
     echo "[bootstrap-keycloak] Registering LAN host origins: $NEEDS_LAN_HOST"
     REDIRECT_JSON=$(echo "$REDIRECT_JSON" | sed "s/]$/,\"http:\/\/${NEEDS_LAN_HOST}:8082\/*\",\"http:\/\/${NEEDS_LAN_HOST}:8080\/*\"]/")
     WEB_ORIGINS_JSON=$(echo "$WEB_ORIGINS_JSON" | sed "s/]$/,\"http:\/\/${NEEDS_LAN_HOST}:8082\",\"http:\/\/${NEEDS_LAN_HOST}:8080\"]/")
