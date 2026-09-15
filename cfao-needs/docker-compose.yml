@@ -33,7 +33,7 @@ services:
     mem_limit: 768m
     build:
       context: ./keycloak
-    image: antifragile237/cfao-needs-keycloak:v0.1.1
+    image: antifragile237/cfao-needs-keycloak:v0.1.2
     command: ["start-dev", "--import-realm"]
     environment:
       KC_DB: postgres
@@ -111,7 +111,7 @@ services:
     mem_limit: 512m
     restart: unless-stopped
     build: ./api
-    image: antifragile237/cfao-needs-api:v0.1.1
+    image: antifragile237/cfao-needs-api:v0.1.2
     volumes:
       - ./api:/app
     environment: &api_env
@@ -170,6 +170,7 @@ services:
     build:
       context: .
       dockerfile: gateway/Dockerfile
+    image: antifragile237/cfao-needs-gateway:v0.1.2
     volumes:
       - ./web/dist:/usr/share/nginx/html:ro
       # Fiches formation (PNG / PDF) — même arbre que la vitrine.
