@@ -25,7 +25,7 @@ services:
   needs-keycloak:
     mem_limit: 768m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-keycloak:v0.1.1
+    image: antifragile237/cfao-needs-keycloak:v0.1.2
     command: ["start-dev", "--import-realm"]
     environment:
       KC_DB: postgres
@@ -83,7 +83,7 @@ services:
   needs-api:
     mem_limit: 512m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-api:v0.1.0
+    image: antifragile237/cfao-needs-api:v0.1.2
     environment: &api_env
       DJANGO_SETTINGS_MODULE: config.settings.dev
       NEEDS_SECRET_KEY: ${NEEDS_SECRET_KEY:-ueDBVqGE8R7OzHALv+e5Hnp710zP2xf1A4uWlC+7oPA5pxtctl3LmKPzo01PYrbf}
@@ -128,7 +128,7 @@ services:
   needs-gateway:
     mem_limit: 64m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-gateway:v0.1.0
+    image: antifragile237/cfao-needs-gateway:v0.1.2
     ports:
       - "${NEEDS_PORT:-8082}:80"
     depends_on:
