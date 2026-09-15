@@ -6,6 +6,7 @@ set -euo pipefail
 # ==============================================================================
 
 COMPOSE_FILE="${1:-docker-compose.prod.yml}"
+ENV_FILE="${ENV_FILE:-.env}"
 
 # 1. Détection automatique de l'IP LAN de la machine hôte
 if [ -z "${NEEDS_LAN_HOST:-}" ]; then
@@ -19,17 +20,42 @@ else
   echo "[deploy] NEEDS_LAN_HOST déjà défini par l'environnement : $NEEDS_LAN_HOST"
 fi
 
+env_value() {
+  [ -f "$ENV_FILE" ] || return 0
+  sed -n "s/^$1=//p" "$ENV_FILE" | tail -n 1
+}
+
+# Port frontend : variable shell > .env > fallback
+NEEDS_PORT="${NEEDS_PORT:-$(env_value NEEDS_PORT)}"
+NEEDS_PORT="${NEEDS_PORT:-8082}"
+export NEEDS_PORT
+
+# URL publique : valeur explicite > .env > URL LAN calculée
+NEEDS_PUBLIC_BASE_URL="${NEEDS_PUBLIC_BASE_URL:-$(env_value NEEDS_PUBLIC_BASE_URL)}"
+
+if [ -z "$NEEDS_PUBLIC_BASE_URL" ]; then
+  NEEDS_PUBLIC_BASE_URL="http://${NEEDS_LAN_HOST}:${NEEDS_PORT}"
+fi
+
+export NEEDS_PUBLIC_BASE_URL
+
 echo "=========================================================="
 echo " CFAO Needs - Déploiement Conteneurs"
 echo "=========================================================="
 echo " Fichier Compose  : $COMPOSE_FILE"
+echo " Fichier d'env    : $ENV_FILE"
 echo " Hôte LAN détecté : $NEEDS_LAN_HOST"
-echo " Port Frontend    : 8082"
-echo " Port Keycloak    : 8081"
-echo " Accès local      : http://localhost:8082"
-if [ "$NEEDS_LAN_HOST" != "localhost" ]; then
-  echo " Accès réseau LAN : http://${NEEDS_LAN_HOST}:8082"
-fi
+echo " Port Frontend    : ${NEEDS_PORT}"
+echo " Accès local      : http://localhost:${NEEDS_PORT}"
+echo " Accès réseau LAN : http://${NEEDS_LAN_HOST}:${NEEDS_PORT}"
+echo " URL publique     : ${NEEDS_PUBLIC_BASE_URL}"
 echo "=========================================================="
 
-docker compose -f "$COMPOSE_FILE" up -d
+if [ -f "$ENV_FILE" ]; then
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" pull
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d
+else
+  docker compose -f "$COMPOSE_FILE" pull
+  docker compose -f "$COMPOSE_FILE" up -d
+fi
+
