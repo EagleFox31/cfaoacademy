@@ -111,6 +111,9 @@ services:
     mem_limit: 512m
     restart: unless-stopped
     build: ./api
+    image: antifragile237/cfao-needs-api:v0.1.1
+    volumes:
+      - ./api:/app
     environment: &api_env
       DJANGO_SETTINGS_MODULE: config.settings.dev
       # Pas de valeur par défaut : le service refuse de démarrer sans secret.

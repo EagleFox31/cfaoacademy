@@ -1,5 +1,5 @@
 /** Client API — un seul point d'accès, un seul traitement d'erreur. */
-import { readSession } from './auth'
+import { readSession, reauthenticate } from './auth'
 
 const BASE = (import.meta.env.VITE_API_BASE || '/api/v1/needs').replace(/\/$/, '')
 
@@ -13,10 +13,16 @@ export class ApiError extends Error {
   }
 }
 
-async function request(path, { method = 'GET', body, headers, raw } = {}) {
+async function request(path, { method = 'GET', body, headers, raw, keepalive } = {}) {
   const session = readSession()
   const init = {
     method,
+    // `keepalive` : la requête survit à la destruction du document. Sans lui, un
+    // envoi déclenché au rechargement de la page est annulé par le navigateur —
+    // le filet de sécurité de sortie de page ne rattrapait donc rien.
+    // Limite du standard : 64 Ko de corps cumulés, largement suffisant pour un
+    // lot de lignes de saisie.
+    ...(keepalive ? { keepalive: true } : {}),
     headers: {
       Accept: 'application/json',
       ...(session ? { Authorization: `Bearer ${session.accessToken}` } : {}),
@@ -42,6 +48,11 @@ async function request(path, { method = 'GET', body, headers, raw } = {}) {
 
   const payload = await response.json().catch(() => null)
   if (!response.ok) {
+    // 401 = session expirée ou jeton refusé : reconduire à la connexion,
+    // jamais un banner « Something went wrong » (norme UX auth SaaS).
+    if (response.status === 401) {
+      reauthenticate()
+    }
     throw new ApiError(response.status, payload?.detail, payload)
   }
   return payload
@@ -58,6 +69,7 @@ export const api = {
   campaigns: () => request('/campaigns'),
   campaign: (id) => request(`/campaigns/${id}`),
   families: (id) => request(`/campaigns/${id}/families`),
+  brands: (id) => request(`/campaigns/${id}/brands`),
   catalog: (id, params = {}) => {
     const query = new URLSearchParams(params).toString()
     return request(`/campaigns/${id}/catalog${query ? `?${query}` : ''}`)
@@ -71,12 +83,16 @@ export const api = {
   },
   submission: (id) => request(`/submissions/${id}`),
   createSubmission: (body) => request('/submissions', { method: 'POST', body }),
+  createMySubmission: (campaignId) =>
+    request(`/campaigns/${campaignId}/submission`, { method: 'POST', body: {} }),
   lines: (id) => request(`/submissions/${id}/lines`),
-  writeLines: (id, rows) => request(`/submissions/${id}/lines`, { method: 'PATCH', body: rows }),
+  writeLines: (id, rows, { keepalive } = {}) =>
+    request(`/submissions/${id}/lines`, { method: 'PATCH', body: rows, keepalive }),
   submissionSummary: (id) => request(`/submissions/${id}/summary`),
   events: (id) => request(`/submissions/${id}/events`),
+  // Lecture seule : la filiale ne choisit pas ses destinataires en copie, seule
+  // la relecture Academy affiche la liste. L'écriture (PUT) reste côté serveur.
   cc: (id) => request(`/submissions/${id}/cc`),
-  setCc: (id, rows) => request(`/submissions/${id}/cc`, { method: 'PUT', body: rows }),
   submit: (id, body = {}) => request(`/submissions/${id}/submit`, { method: 'POST', body }),
   validate: (id) => request(`/submissions/${id}/validate`, { method: 'POST', body: {} }),
   reopen: (id, reason) => request(`/submissions/${id}/reopen`, { method: 'POST', body: { reason } }),

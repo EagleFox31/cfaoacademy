@@ -1,101 +1,69 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 
 import AppShell from './components/AppShell'
-import { AsyncBoundary, Banner } from './components/ui'
+import BackToTopFab from './components/BackToTopFab'
+import PortalLoader from './components/PortalLoader'
+import ScrollToTop from './components/ScrollToTop'
+import { SaveStatusProvider } from './components/SaveStatus'
+import { Banner } from './components/ui'
 import { LocaleProvider, useLocale } from './i18n'
 import { api } from './lib/api'
-import { handleCallback, isReviewer, login, readSession } from './lib/auth'
-import { useAsync } from './lib/hooks'
-import Campaign from './pages/Campaign'
-import Entry from './pages/Entry'
+import {
+  consumeAuthReturnPath,
+  handleCallback,
+  isReviewer,
+  login,
+  readSession,
+} from './lib/auth'
+import BrandEntry from './pages/BrandEntry'
+import FicheViewer from './pages/FicheViewer'
 import Inbox from './pages/Inbox'
 import Outbox from './pages/Outbox'
-import Recap from './pages/Recap'
+import Poles from './pages/Poles'
+import Profile from './pages/Profile'
 import Review from './pages/Review'
-import Tracking from './pages/Tracking'
 
-/** Campagne courante + ma déclaration — chargées une fois, partagées. */
+/** Campagne courante + mon Identification des Besoins + sections de marques — chargées au démarrage, partagées. */
 const CampaignContext = createContext(null)
 export const useCampaign = () => useContext(CampaignContext)
 
-function CampaignProvider({ children }) {
-  const state = useAsync(async () => {
-    const campaigns = await api.campaigns()
-    const list = campaigns?.results ?? campaigns ?? []
-    const campaign = list.find((c) => c.status === 'OPEN') ?? list[0] ?? null
-    if (!campaign) return { campaign: null, submission: null, families: [] }
+function CampaignProvider({ initialData, children }) {
+  const [data, setData] = useState(initialData)
 
-    const [families, submissions] = await Promise.all([
-      api.families(campaign.id),
-      api.submissions({ campaign: campaign.id }),
+  const reload = useCallback(async () => {
+    if (!data?.campaign) return
+    const [submissionsRes, sectionsRes] = await Promise.all([
+      api.submissions({ campaign: data.campaign.id }).catch(() => null),
+      api.brands(data.campaign.id).catch(() => []),
     ])
-    const mine = (submissions?.results ?? submissions ?? [])[0] ?? null
-    return { campaign, families: families?.results ?? families ?? [], submission: mine }
-  }, [])
+    const mine = (submissionsRes?.results ?? submissionsRes ?? [])[0] ?? null
+    const sections = sectionsRes?.results ?? sectionsRes ?? []
+    setData((prev) => ({ ...prev, submission: mine, sections }))
+  }, [data?.campaign])
+
+  const ensureSubmission = useCallback(async () => {
+    if (data?.submission) return data.submission
+    const created = await api.createMySubmission(data.campaign.id)
+    setData((prev) => ({ ...prev, submission: created }))
+    return created
+  }, [data?.campaign, data?.submission])
 
   return (
-    <AsyncBoundary state={state}>
-      {(data) => (
-        <CampaignContext.Provider value={{ ...data, reload: state.reload, setData: state.setData }}>
-          {children}
-        </CampaignContext.Provider>
-      )}
-    </AsyncBoundary>
+    <CampaignContext.Provider
+      value={{
+        ...data,
+        reload,
+        setData,
+        ensureSubmission,
+      }}
+    >
+      {children}
+    </CampaignContext.Provider>
   )
 }
 
-function Callback({ onSession }) {
-  const { t } = useLocale()
-  const navigate = useNavigate()
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    handleCallback()
-      .then((session) => {
-        onSession(session)
-        navigate('/', { replace: true })
-      })
-      .catch(() => setError('auth'))
-  }, [navigate, onSession])
-
-  if (error) {
-    return (
-      <div style={{ padding: 32, maxWidth: 460 }}>
-        <Banner tone="crit" title={t('auth.failed')}>
-          <button type="button" className="btn" onClick={login} style={{ marginTop: 10 }}>
-            {t('auth.signIn')}
-          </button>
-        </Banner>
-      </div>
-    )
-  }
-  return <div style={{ padding: 32 }}>{t('auth.signingIn')}</div>
-}
-
-function SignIn() {
-  const { t } = useLocale()
-  return (
-    <div style={{ display: 'grid', placeItems: 'center', height: '100vh' }}>
-      <div className="card" style={{ maxWidth: 380, width: '100%' }}>
-        <div className="card__body stack">
-          <div>
-            <p className="eyebrow">{t('app.subtitle')}</p>
-            <h1 style={{ fontSize: 20, margin: 0 }}>{t('app.name')}</h1>
-          </div>
-          <p className="muted" style={{ margin: 0 }}>
-            {t('auth.required')}
-          </p>
-          <button type="button" className="btn btn--primary" onClick={login}>
-            {t('auth.signIn')}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function Authenticated({ session }) {
+function Authenticated({ session, initialCampaignData }) {
   const [pendingCount, setPendingCount] = useState(0)
 
   // Compteur de la file d'envoi — visible en permanence dans la navigation :
@@ -106,9 +74,9 @@ function Authenticated({ session }) {
     const refresh = () =>
       api
         .outbound({ status: 'PENDING_REVIEW' })
-        .then((data) => {
+        .then((res) => {
           if (!alive) return
-          const rows = data?.results ?? data ?? []
+          const rows = res?.results ?? res ?? []
           setPendingCount(rows.length)
         })
         .catch(() => {})
@@ -121,37 +89,151 @@ function Authenticated({ session }) {
   }, [session])
 
   return (
-    <CampaignProvider>
-      <AppShell session={session} pendingCount={pendingCount}>
-        <Routes>
-          <Route path="/" element={<Campaign />} />
-          <Route path="/saisie" element={<Entry />} />
-          <Route path="/recapitulatif" element={<Recap />} />
-          <Route path="/suivi" element={<Tracking />} />
-          <Route path="/relecture" element={<Inbox />} />
-          <Route path="/relecture/:id" element={<Review />} />
-          <Route path="/a-envoyer" element={<Outbox onCountChange={setPendingCount} />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AppShell>
+    <CampaignProvider initialData={initialCampaignData}>
+      <SaveStatusProvider>
+        <AppShell session={session} pendingCount={pendingCount}>
+          <Routes>
+            <Route path="/" element={<Poles />} />
+            <Route path="/marque/:code" element={<BrandEntry />} />
+            <Route path="/profil" element={<Profile session={session} />} />
+            <Route path="/relecture" element={<Inbox />} />
+            <Route path="/relecture/:id" element={<Review />} />
+            <Route path="/a-envoyer" element={<Outbox onCountChange={setPendingCount} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AppShell>
+      </SaveStatusProvider>
     </CampaignProvider>
   )
 }
 
 export default function App() {
   const [session, setSession] = useState(() => readSession())
-  const isCallback = window.location.pathname === '/callback'
+  const [campaignData, setCampaignData] = useState(null)
+  const [bootStatus, setBootStatus] = useState(() => {
+    const path = window.location.pathname
+    if (path.startsWith('/fiche/')) return 'ready'
+    return 'loading'
+  })
+  const [bootError, setBootError] = useState(null)
+  const [isLeaving, setIsLeaving] = useState(false)
+  const navigate = useNavigate()
+
+  const path = window.location.pathname
+  const isFiche = path.startsWith('/fiche/')
+  const isCallback = path === '/callback'
+
+  useEffect(() => {
+    if (isFiche) return
+
+    let cancelled = false
+
+    async function init() {
+      try {
+        let activeSession = session
+        let returnPath = null
+
+        // 1. Retour de Keycloak sur /callback : échanger le code contre un jeton
+        if (isCallback) {
+          activeSession = await handleCallback()
+          if (cancelled) return
+          setSession(activeSession)
+          returnPath = consumeAuthReturnPath()
+        }
+
+        // 2. Si non authentifié (et hors /callback), rediriger vers Keycloak
+        if (!activeSession) {
+          login()
+          return
+        }
+
+        // 3. Charger d'un seul coup toute la donnée requise pour l'affichage :
+        //    Campagne active + soumission de l'utilisateur + catalogue des marques.
+        //    Le loader reste CONTINU et UNIQUE jusqu'à ce que tout soit prêt.
+        const campaigns = await api.campaigns()
+        if (cancelled) return
+        const list = campaigns?.results ?? campaigns ?? []
+        const campaign = list.find((c) => c.status === 'OPEN') ?? list[0] ?? null
+
+        let mine = null
+        let sections = []
+        if (campaign) {
+          const [submissionsRes, sectionsRes] = await Promise.all([
+            api.submissions({ campaign: campaign.id }).catch(() => null),
+            api.brands(campaign.id).catch(() => []),
+          ])
+          if (cancelled) return
+          mine = (submissionsRes?.results ?? submissionsRes ?? [])[0] ?? null
+          sections = sectionsRes?.results ?? sectionsRes ?? []
+        }
+
+        if (cancelled) return
+        setCampaignData({ campaign, submission: mine, sections })
+
+        if (returnPath) {
+          navigate(returnPath, { replace: true })
+        }
+
+        // 4. Transition fluide vers la page : animation de sortie du loader
+        setIsLeaving(true)
+        setTimeout(() => {
+          if (!cancelled) {
+            setBootStatus('ready')
+            setIsLeaving(false)
+          }
+        }, 250)
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Initialisation failed:', err)
+          setBootError(err)
+          setBootStatus('error')
+        }
+      }
+    }
+
+    init()
+
+    return () => {
+      cancelled = true
+    }
+  }, []) // Initialisation unique au montage
+
+  if (isFiche) {
+    return (
+      <LocaleProvider profileLocale={session?.claims?.locale}>
+        <Routes>
+          <Route path="/fiche/:code" element={<FicheViewer />} />
+        </Routes>
+      </LocaleProvider>
+    )
+  }
+
+  if (bootStatus === 'error') {
+    return (
+      <LocaleProvider profileLocale={session?.claims?.locale}>
+        <div style={{ padding: 32, maxWidth: 480, margin: '40px auto' }}>
+          <Banner tone="crit" title="Authentification impossible">
+            <p style={{ margin: '8px 0 16px' }}>
+              Une erreur est survenue lors de l'accès à votre espace.
+            </p>
+            <button type="button" className="btn" onClick={() => login()}>
+              Se reconnecter
+            </button>
+          </Banner>
+        </div>
+      </LocaleProvider>
+    )
+  }
 
   return (
     <LocaleProvider profileLocale={session?.claims?.locale}>
-      {isCallback ? (
-        <Routes>
-          <Route path="/callback" element={<Callback onSession={setSession} />} />
-        </Routes>
-      ) : session ? (
-        <Authenticated session={session} />
-      ) : (
-        <SignIn />
+      <ScrollToTop />
+      <BackToTopFab />
+      {bootStatus === 'loading' && (
+        <PortalLoader leaving={isLeaving} />
+      )}
+      {bootStatus === 'ready' && session && campaignData && (
+        <Authenticated session={session} initialCampaignData={campaignData} />
       )}
     </LocaleProvider>
   )

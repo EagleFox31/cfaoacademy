@@ -11,4 +11,11 @@ export default defineConfig({
     },
   },
   build: { outDir: 'dist', sourcemap: false },
+  test: {
+    // jsdom : les tests portent sur des comportements navigateur (cycle de vie du
+    // document, requetes sortantes). Un environnement node ne les couvrirait pas.
+    environment: 'jsdom',
+    globals: true,
+    include: ['src/**/*.test.{js,jsx}'],
+  },
 })

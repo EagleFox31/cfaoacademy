@@ -1,5 +1,5 @@
 /**
- * i18n — bilingue dès le départ, jamais de chaîne en dur dans le JSX.
+ * i18n — FR / EN / PT dès le départ, jamais de chaîne en dur dans le JSX.
  *
  * La langue suit la personne, pas sa filiale : elle vient du profil (claim
  * `locale`), avec le choix manuel qui prend le pas. C'est la correction de ce qui
@@ -9,8 +9,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import en from './en.json'
 import fr from './fr.json'
+import pt from './pt.json'
 
-const CATALOGS = { fr, en }
+const CATALOGS = { fr, en, pt }
 const STORAGE_KEY = 'needs.locale'
 
 const LocaleContext = createContext(null)
@@ -55,9 +56,38 @@ export function LocaleProvider({ children, profileLocale }) {
     [locale],
   )
 
+  /**
+   * Libellé venu de la base : traduit s'il figure au catalogue, rendu tel quel
+   * sinon. Les familles forment un ensemble fermé et se traduisent ; les titres
+   * des formations viennent du fichier métier et n'existent qu'en français —
+   * mieux vaut un titre français qu'une clé technique à l'écran.
+   */
+  const tData = useCallback(
+    (key, fallback) => CATALOGS[locale][key] ?? CATALOGS.fr[key] ?? fallback,
+    [locale],
+  )
+
+  /**
+   * Champ traduit d'un enregistrement : `title` / `title_en`.
+   *
+   * PT n'a pas encore de `title_pt` en base : on préfère l'anglais au français
+   * pour les lusophones, puis le français. Un titre dans une autre langue reste
+   * exploitable ; un blanc ne l'est pas.
+   */
+  const tField = useCallback(
+    (row, field) => {
+      if (!row) return ''
+      const localized = row[`${field}_${locale}`]
+      if (localized) return localized
+      if (locale === 'pt' && row[`${field}_en`]) return row[`${field}_en`]
+      return row[field] || ''
+    },
+    [locale],
+  )
+
   const value = useMemo(
-    () => ({ locale, setLocale, t, available: Object.keys(CATALOGS) }),
-    [locale, setLocale, t],
+    () => ({ locale, setLocale, t, tData, tField, available: Object.keys(CATALOGS) }),
+    [locale, setLocale, t, tData, tField],
   )
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
