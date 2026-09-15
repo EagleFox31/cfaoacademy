@@ -69,16 +69,16 @@ KC_PID=$!
   # 2. Host LAN IP (passed from host via NEEDS_LAN_HOST)
   if [ -n "$NEEDS_LAN_HOST" ] && [ "$NEEDS_LAN_HOST" != "localhost" ] && [ "$NEEDS_LAN_HOST" != "127.0.0.1" ]; then
     echo "[bootstrap-keycloak] Registering LAN host origins: $NEEDS_LAN_HOST"
-    REDIRECT_JSON=$(echo "$REDIRECT_JSON" | sed "s/]$/,\"http:\/\/${NEEDS_LAN_HOST}:8082\/*\",\"http:\/\/${NEEDS_LAN_HOST}:8080\/*\"]/")
-    WEB_ORIGINS_JSON=$(echo "$WEB_ORIGINS_JSON" | sed "s/]$/,\"http:\/\/${NEEDS_LAN_HOST}:8082\",\"http:\/\/${NEEDS_LAN_HOST}:8080\"]/")
+    REDIRECT_JSON=$(echo "$REDIRECT_JSON" | sed "s|]$|,\"http://${NEEDS_LAN_HOST}:8082/*\",\"http://${NEEDS_LAN_HOST}:8080/*\"]|")
+    WEB_ORIGINS_JSON=$(echo "$WEB_ORIGINS_JSON" | sed "s|]$|,\"http://${NEEDS_LAN_HOST}:8082\",\"http://${NEEDS_LAN_HOST}:8080\"]|")
   fi
 
   # 3. Public base URL (e.g. https://cfao-needs.zrok.io or https://academy.cfao.com)
-  if [ -n "$NEEDS_PUBLIC_BASE_URL" ]; then
+  if [ -n "$NEEDS_PUBLIC_BASE_URL" ] && [ "$NEEDS_PUBLIC_BASE_URL" != "http://localhost:8082" ]; then
     CLEAN_URL=$(echo "$NEEDS_PUBLIC_BASE_URL" | sed 's:/*$::')
     echo "[bootstrap-keycloak] Registering public HTTPS base URL: $CLEAN_URL"
-    REDIRECT_JSON=$(echo "$REDIRECT_JSON" | sed "s/]$/,\"${CLEAN_URL}\/*\"]/")
-    WEB_ORIGINS_JSON=$(echo "$WEB_ORIGINS_JSON" | sed "s/]$/,\"${CLEAN_URL}\"]/")
+    REDIRECT_JSON=$(echo "$REDIRECT_JSON" | sed "s|]$|,\"${CLEAN_URL}/*\"]|")
+    WEB_ORIGINS_JSON=$(echo "$WEB_ORIGINS_JSON" | sed "s|]$|,\"${CLEAN_URL}\"]|")
   fi
 
   # 4. Additional explicit redirect URIs (e.g. zrok / CFAO domains)
@@ -89,16 +89,16 @@ KC_PID=$!
     for URI in $KEYCLOAK_ADDITIONAL_REDIRECT_URIS; do
       URI_TRIMMED=$(echo "$URI" | tr -d ' ')
       if [ -n "$URI_TRIMMED" ]; then
-        REDIRECT_JSON=$(echo "$REDIRECT_JSON" | sed "s/]$/,\"${URI_TRIMMED}\"]/")
+        REDIRECT_JSON=$(echo "$REDIRECT_JSON" | sed "s|]$|,\"${URI_TRIMMED}\"]|")
         ORIGIN=$(echo "$URI_TRIMMED" | sed 's:/\*$::')
-        WEB_ORIGINS_JSON=$(echo "$WEB_ORIGINS_JSON" | sed "s/]$/,\"${ORIGIN}\"]/")
+        WEB_ORIGINS_JSON=$(echo "$WEB_ORIGINS_JSON" | sed "s|]$|,\"${ORIGIN}\"]|")
       fi
     done
     IFS="$OLD_IFS"
   fi
 
   # Always append "+" to webOrigins (inherits valid redirect URIs)
-  WEB_ORIGINS_JSON=$(echo "$WEB_ORIGINS_JSON" | sed 's/]$/,"+\"]/')
+  WEB_ORIGINS_JSON=$(echo "$WEB_ORIGINS_JSON" | sed 's|]$|,"+\"]|')
 
   TMP_JSON="/tmp/needs-web-update.json"
   cat <<EOF > "$TMP_JSON"
