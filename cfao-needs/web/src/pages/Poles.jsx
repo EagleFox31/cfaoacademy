@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 
 import { useCampaign } from '../App'
 import BrandLogo from '../components/BrandLogo'
@@ -11,6 +11,7 @@ import {
   IconUsers,
   IconWrench,
 } from '../components/icons'
+import LandingSkeleton from '../components/LandingSkeleton'
 import SubmitPanel from '../components/SubmitPanel'
 import { AsyncBoundary, Banner, Counter, Empty } from '../components/ui'
 import { useFormatters, useLocale } from '../i18n'
@@ -33,7 +34,28 @@ import { useAsync } from '../lib/hooks'
  */
 export default function Poles() {
   const { t } = useLocale()
+  const location = useLocation()
   const { campaign, submission, sections = [], reload } = useCampaign()
+  const [loading, setLoading] = useState(() => Boolean(location.state?.fromBrand))
+
+  useEffect(() => {
+    if (!location.state?.fromBrand) return
+    let active = true
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 450))
+    Promise.all([reload(), minDelay]).finally(() => {
+      if (active) {
+        setLoading(false)
+        window.history.replaceState({}, document.title)
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [location.state, reload])
+
+  if (loading) {
+    return <LandingSkeleton />
+  }
 
   if (!campaign) return <Empty>{t('poles.empty')}</Empty>
 
@@ -320,6 +342,8 @@ function PoleCard({ pole, section, locked }) {
  */
 function BrandItem({ brand, pole, section, locked }) {
   const { t } = useLocale()
+  const headcount = brand.headcount || 0
+  const isPopulated = headcount > 0
 
   const identity = (
     <>
@@ -347,15 +371,20 @@ function BrandItem({ brand, pole, section, locked }) {
 
   return (
     <Link
-      className="brand-item"
+      className={`brand-item ${isPopulated ? 'brand-item--populated' : ''}`}
+      data-populated={isPopulated ? 'true' : undefined}
       to={`/marque/${encodeURIComponent(brand.code)}?pole=${pole}&section=${section}`}
       aria-disabled={locked || undefined}
       onClick={() => rememberHomeScroll()}
     >
       {identity}
-      <span className="brand-item__people" title={t('dashboard.kpiPlaces')}>
+      <span
+        className={`brand-item__people ${isPopulated ? 'brand-item__people--populated' : ''}`}
+        data-positive={isPopulated ? 'true' : undefined}
+        title={t('dashboard.kpiPlaces')}
+      >
         <IconUsers />
-        {brand.headcount || 0}
+        {headcount}
       </span>
     </Link>
   )

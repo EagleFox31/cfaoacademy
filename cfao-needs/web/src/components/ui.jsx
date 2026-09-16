@@ -140,10 +140,10 @@ export function Empty({ children }) {
  * État de chargement / erreur — un message d'erreur dit ce qui s'est passé ET
  * comment s'en sortir, jamais « une erreur est survenue » tout court.
  */
-export function AsyncBoundary({ state, children }) {
+export function AsyncBoundary({ state, children, fallback = <PortalLoader /> }) {
   const { t } = useLocale()
   if (state.status === 'loading') {
-    return <PortalLoader />
+    return fallback
   }
   if (state.status === 'error') {
     // 401 : redirection login déjà lancée par l'API — pas de faux message d'erreur.

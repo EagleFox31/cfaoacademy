@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { AsyncBoundary, Banner } from './ui'
+import { Banner } from './ui'
 import { useFormatters, useLocale } from '../i18n'
 import { api } from '../lib/api'
 import { useAsync } from '../lib/hooks'
@@ -18,7 +18,7 @@ function IconSend() {
 
 function IconCalendar() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
       <line x1="16" y1="2" x2="16" y2="6" />
       <line x1="8" y1="2" x2="8" y2="6" />
@@ -29,7 +29,7 @@ function IconCalendar() {
 
 function IconBuilding() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
       <path d="M6 12H4a2 2 0 0 0-2 2v8h4" />
       <path d="M18 9h2a2 2 0 0 1 2 2v11h-4" />
@@ -37,6 +37,14 @@ function IconBuilding() {
       <path d="M10 10h4" />
       <path d="M10 14h4" />
       <path d="M10 18h4" />
+    </svg>
+  )
+}
+
+function IconPlane() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
     </svg>
   )
 }
@@ -69,13 +77,10 @@ export default function SubmitPanel({ submission, onSent }) {
     return api.submissionSummary(submission.id)
   }, [submission?.id, submission?.status, submission?.total_headcount])
 
-  if (!submission) return null
+  if (!submission || state.status === 'loading' || !state.data) return null
+  if (state.status === 'error') return null
 
-  return (
-    <AsyncBoundary state={state}>
-      {(summary) => <Panel submission={submission} summary={summary} onSent={onSent} />}
-    </AsyncBoundary>
-  )
+  return <Panel submission={submission} summary={state.data} onSent={onSent} />
 }
 
 function Panel({ submission, summary, onSent }) {

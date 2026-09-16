@@ -77,6 +77,7 @@ export default function BrandEntry() {
 }
 
 function BrandGrid({ campaign, code, pole, section, submission, catalog, lines }) {
+  const navigate = useNavigate()
   const { t } = useLocale()
   const { number } = useFormatters()
   const isCampaignClosed = campaign?.status === 'CLOSED'
@@ -164,7 +165,7 @@ function BrandGrid({ campaign, code, pole, section, submission, catalog, lines }
 
   async function back() {
     await flush()
-    navigate('/')
+    navigate('/', { state: { fromBrand: true } })
   }
 
   async function save() {
@@ -185,9 +186,18 @@ function BrandGrid({ campaign, code, pole, section, submission, catalog, lines }
         <div className="entry-head__side">
           <img src={logo.src} alt={logo.alt} className="entry-head__group" />
         </div>
-        <h1 className="entry-head__title">
-          {t('brand.listTitle', { brand: brandLabel, year: campaign.year })}
-        </h1>
+        <div className="entry-head__center">
+          <h1 className="entry-head__title">
+            {t('brand.listTitle', { brand: brandLabel, year: campaign.year })}
+          </h1>
+          <p className="entry-head__subtitle">
+            <span className="entry-head__subtitle-label">
+              <IconInfo />
+              {t('brand.helpTitle')}
+            </span>{' '}
+            {t('brand.help', { year: campaign.year })}
+          </p>
+        </div>
         <div className="entry-head__side entry-head__side--end">
           <BrandLogo
             code={code}
@@ -196,18 +206,6 @@ function BrandGrid({ campaign, code, pole, section, submission, catalog, lines }
             transverse={code === TRANSVERSE}
             size={80}
           />
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="card__body stack">
-          <h2 className="section-title">
-            <IconInfo />
-            {t('brand.helpTitle')}
-          </h2>
-          <div className="instructions">
-            <p>{t('brand.help', { year: campaign.year })}</p>
-          </div>
         </div>
       </div>
 
