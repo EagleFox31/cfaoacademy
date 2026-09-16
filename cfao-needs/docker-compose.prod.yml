@@ -36,6 +36,9 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-${KC_ADMIN_PASSWORD:-4g3BOwwdgL46ful1}}
       KEYCLOAK_ADMIN: ${KC_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-4g3BOwwdgL46ful1}
+      KC_HOSTNAME: ${NEEDS_PUBLIC_BASE_URL:-http://localhost:${NEEDS_PORT:-8082}}
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
       NEEDS_LAN_HOST: ${NEEDS_LAN_HOST:-}
       NEEDS_PUBLIC_BASE_URL: ${NEEDS_PUBLIC_BASE_URL:-}
       KEYCLOAK_ADDITIONAL_REDIRECT_URIS: ${KEYCLOAK_ADDITIONAL_REDIRECT_URIS:-}
@@ -94,7 +97,7 @@ services:
       NEEDS_DB_PASSWORD: ${NEEDS_DB_PASSWORD:-ZyHDiHqm8UMIbsNy5Hmoi2Cl}
       CERBOS_HTTP: http://needs-cerbos:3592
       OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://needs-keycloak:8080/realms/cfao-needs/protocol/openid-connect/certs}
-      OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8081/realms/cfao-needs}
+      OIDC_ISSUER: ${OIDC_ISSUER:-${NEEDS_PUBLIC_BASE_URL:-http://localhost:8082}/realms/cfao-needs}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-needs-web}
       NEEDS_CORS_ORIGINS: ${NEEDS_CORS_ORIGINS:-http://localhost:8082,http://localhost:8080,http://localhost:5174}
       NEEDS_PUBLIC_BASE_URL: ${NEEDS_PUBLIC_BASE_URL:-http://localhost:8082}

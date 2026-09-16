@@ -39,6 +39,13 @@ if [ -z "$NEEDS_PUBLIC_BASE_URL" ]; then
 fi
 export NEEDS_PUBLIC_BASE_URL
 
+# 4. Issuer OIDC : valeur explicite > .env > dérivé de NEEDS_PUBLIC_BASE_URL
+OIDC_ISSUER="${OIDC_ISSUER:-$(env_value OIDC_ISSUER)}"
+if [ -z "$OIDC_ISSUER" ]; then
+  OIDC_ISSUER="${NEEDS_PUBLIC_BASE_URL}/realms/cfao-needs"
+fi
+export OIDC_ISSUER
+
 echo "=========================================================="
 echo " CFAO Needs - Déploiement Conteneurs"
 echo "=========================================================="
@@ -49,6 +56,7 @@ echo " Port Frontend    : ${NEEDS_PORT}"
 echo " Accès local      : http://localhost:${NEEDS_PORT}"
 echo " Accès réseau LAN : http://${NEEDS_LAN_HOST}:${NEEDS_PORT}"
 echo " URL publique     : ${NEEDS_PUBLIC_BASE_URL}"
+echo " Issuer OIDC      : ${OIDC_ISSUER}"
 echo "=========================================================="
 
 if [ -f "$ENV_FILE" ]; then

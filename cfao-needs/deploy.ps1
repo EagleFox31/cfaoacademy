@@ -54,6 +54,16 @@ if (-not $env:NEEDS_PUBLIC_BASE_URL) {
     }
 }
 
+# Issuer OIDC : valeur explicite > .env > dérivé de NEEDS_PUBLIC_BASE_URL
+if (-not $env:OIDC_ISSUER) {
+    $envIssuer = Get-EnvValue "OIDC_ISSUER"
+    if ($envIssuer) {
+        $env:OIDC_ISSUER = $envIssuer
+    } else {
+        $env:OIDC_ISSUER = "$($env:NEEDS_PUBLIC_BASE_URL)/realms/cfao-needs"
+    }
+}
+
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host " CFAO Needs - Déploiement Conteneurs (Windows)" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
@@ -64,6 +74,7 @@ Write-Host " Port Frontend    : $env:NEEDS_PORT"
 Write-Host " Accès local      : http://localhost:$($env:NEEDS_PORT)"
 Write-Host " Accès réseau LAN : http://$($env:NEEDS_LAN_HOST):$($env:NEEDS_PORT)" -ForegroundColor Green
 Write-Host " URL publique     : $env:NEEDS_PUBLIC_BASE_URL" -ForegroundColor Cyan
+Write-Host " Issuer OIDC      : $env:OIDC_ISSUER" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Green
 
 if (Test-Path $EnvFile) {

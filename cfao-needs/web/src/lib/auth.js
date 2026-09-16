@@ -9,8 +9,19 @@
  * est prise par l'API, qui interroge Cerbos. Academix restaurait l'utilisateur —
  * rôle compris — depuis `localStorage` sans revalidation (interdit n° 6).
  */
-const baseIssuer = import.meta.env.VITE_OIDC_ISSUER || ''
-const ISSUER = baseIssuer ? baseIssuer.replace('localhost', window.location.hostname) : ''
+function resolveIssuer() {
+  const customIssuer = (import.meta.env.VITE_OIDC_ISSUER || '').trim()
+  if (customIssuer) {
+    // Override explicite (ex. dev local direct sur http://localhost:8081/realms/cfao-needs)
+    return customIssuer.startsWith('http')
+      ? customIssuer.replace('localhost', window.location.hostname)
+      : `${window.location.origin}${customIssuer.startsWith('/') ? '' : '/'}${customIssuer}`
+  }
+  // Par défaut : same-origin via la passerelle (production / tunnels HTTPS / LAN)
+  return `${window.location.origin}/realms/cfao-needs`
+}
+
+const ISSUER = resolveIssuer()
 const CLIENT_ID = import.meta.env.VITE_OIDC_CLIENT_ID || 'needs-web'
 const REDIRECT_URI = `${window.location.origin}/callback`
 
