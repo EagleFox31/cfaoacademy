@@ -7,7 +7,7 @@ import { IconArrowLeft, IconBook, IconInfo, IconUsers } from '../components/icon
 import PageCloseButton from '../components/PageCloseButton'
 import PlaceSelect from '../components/PlaceSelect'
 import { useReportSaveStatus } from '../components/SaveStatus'
-import { AsyncBoundary, Banner, Counter, Empty } from '../components/ui'
+import { AsyncBoundary, Banner, Counter, Empty, SaveIndicator } from '../components/ui'
 import { useFormatters, useLocale } from '../i18n'
 import { api } from '../lib/api'
 import { brandTheme } from '../lib/brandColors'
@@ -103,6 +103,24 @@ function BrandGrid({ campaign, code, pole, section, submission, catalog, lines }
   // pied de page n'est plus visible quand on remplit le haut du tableau.
   useReportSaveStatus(saveState)
 
+  // Mémorisation de la fermeture du bandeau d'information pour éviter la fatigue visuelle
+  const [submittedBannerDismissed, setSubmittedBannerDismissed] = useState(() => {
+    try {
+      return sessionStorage.getItem('cfao_submitted_banner_dismissed') === '1'
+    } catch {
+      return false
+    }
+  })
+
+  const dismissSubmittedBanner = () => {
+    setSubmittedBannerDismissed(true)
+    try {
+      sessionStorage.setItem('cfao_submitted_banner_dismissed', '1')
+    } catch {
+      // ignore
+    }
+  }
+
   const isCarrosserie = pole === 'CARROSSERIE' || section === 'CARROSSERIE'
   const brandLabel =
     code === TRANSVERSE
@@ -182,13 +200,38 @@ function BrandGrid({ campaign, code, pole, section, submission, catalog, lines }
   return (
     <div className="stack brand-entry" style={theme.css}>
       <div className="card entry-head" ref={headRef}>
-        <PageCloseButton ariaLabel={t('brand.closeAria')} onClick={back} />
-        <div className="entry-head__side">
+        <button
+          type="button"
+          className="entry-head__back"
+          onClick={back}
+          aria-label={t('brand.closeAria')}
+        >
+          <IconArrowLeft />
+        </button>
+
+        <div className="entry-head__side entry-head__side--group">
           <img src={logo.src} alt={logo.alt} className="entry-head__group" />
         </div>
+
+        <div className="entry-head__side entry-head__side--end entry-head__side--brand">
+          <BrandLogo
+            code={code}
+            label={brandLabel}
+            variant={isCarrosserie ? 'carrosserie' : undefined}
+            transverse={code === TRANSVERSE}
+            size={80}
+          />
+        </div>
+
         <div className="entry-head__center">
           <h1 className="entry-head__title">
-            {t('brand.listTitle', { brand: brandLabel, year: campaign.year })}
+            <span className="entry-head__title-desktop">
+              {t('brand.listTitle', { brand: brandLabel, year: campaign.year })}
+            </span>
+            <span className="entry-head__title-mobile">
+              <span className="entry-head__title-lead">{t('brand.themesTitle')}</span>
+              <span className="entry-head__title-sub">{brandLabel} {campaign.year}</span>
+            </span>
           </h1>
           <p className="entry-head__subtitle">
             <span className="entry-head__subtitle-label">
@@ -198,15 +241,20 @@ function BrandGrid({ campaign, code, pole, section, submission, catalog, lines }
             {t('brand.help', { year: campaign.year })}
           </p>
         </div>
-        <div className="entry-head__side entry-head__side--end">
-          <BrandLogo
-            code={code}
-            label={brandLabel}
-            variant={isCarrosserie ? 'carrosserie' : undefined}
-            transverse={code === TRANSVERSE}
-            size={80}
-          />
+
+        <div className="entry-head__actions">
+          <SaveIndicator state={saveState} />
+          <PageCloseButton ariaLabel={t('brand.closeAria')} onClick={back} />
         </div>
+      </div>
+
+      {/* Carte d'information mobile sous l'AppBar : sur fond blanc 100% lisible */}
+      <div className="card brand-entry__help-card">
+        <span className="entry-head__subtitle-label">
+          <IconInfo />
+          {t('brand.helpTitle')}
+        </span>{' '}
+        {t('brand.help', { year: campaign.year })}
       </div>
 
       <div className="counter-grid">
@@ -214,20 +262,22 @@ function BrandGrid({ campaign, code, pole, section, submission, catalog, lines }
           tone="red"
           icon={<IconUsers />}
           label={t('dashboard.kpiPlaces')}
+          shortLabel={t('dashboard.kpiPlacesShort')}
           value={number(total)}
         />
         <Counter
           tone="ok"
           icon={<IconBook />}
           label={t('dashboard.kpiThemes')}
+          shortLabel={t('dashboard.kpiThemesShort')}
           value={number(selected)}
         />
       </div>
 
       {locked ? (
         <Banner tone="info">{t('grid.locked')}</Banner>
-      ) : submission.status === 'SUBMITTED' ? (
-        <Banner tone="ok">
+      ) : submission.status === 'SUBMITTED' && !submittedBannerDismissed ? (
+        <Banner tone="ok" onDismiss={dismissSubmittedBanner}>
           Vos besoins ont été transmis à CFAO Academy. Vous pouvez continuer à les modifier tant que la campagne est ouverte.
         </Banner>
       ) : null}

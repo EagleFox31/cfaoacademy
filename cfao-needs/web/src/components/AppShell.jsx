@@ -1,9 +1,10 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 
 import { useCampaign } from '../App'
 import { useLocale } from '../i18n'
 import { isReviewer } from '../lib/auth'
 import LocaleSwitch from './LocaleSwitch'
+import MobileBottomNav from './MobileBottomNav'
 import { useSaveStatus } from './SaveStatus'
 import { SaveIndicator } from './ui'
 import UserMenu from './UserMenu'
@@ -49,6 +50,8 @@ function IconOutbox() {
 export default function AppShell({ session, pendingCount = 0, children }) {
   const { t, locale, setLocale, available } = useLocale()
   const reviewer = isReviewer(session)
+  const location = useLocation()
+  const isBrandEntry = location.pathname.startsWith('/marque/')
   // L'année vient de la campagne ouverte : écrite en dur, elle survivrait à la
   // campagne qu'elle annonce.
   const year = useCampaign()?.campaign?.year
@@ -57,7 +60,7 @@ export default function AppShell({ session, pendingCount = 0, children }) {
   const saveState = useSaveStatus()
 
   return (
-    <div className="shell">
+    <div className={`shell ${isBrandEntry ? 'shell--brand-entry' : ''}`}>
       <header className="topbar">
         {/* Trois colonnes pleine largeur, comme la vitrine : le logo touche le
             bord gauche et les actions le bord droit, la navigation reste centrée. */}
@@ -111,6 +114,8 @@ export default function AppShell({ session, pendingCount = 0, children }) {
       <main className="shell__main">
         <div className="shell__container">{children}</div>
       </main>
+
+      <MobileBottomNav session={session} pendingCount={pendingCount} />
     </div>
   )
 }

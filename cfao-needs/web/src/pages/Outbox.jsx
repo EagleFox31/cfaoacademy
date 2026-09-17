@@ -81,8 +81,8 @@ export default function Outbox({ onCountChange }) {
     <>
       <PageHead title={t('outbox.title')} subtitle={t('outbox.subtitle')} />
 
-      {notice && <Banner tone="ok">{notice}</Banner>}
-      {error && <Banner tone="crit">{error}</Banner>}
+      {notice && <Banner tone="ok" onDismiss={() => setNotice(null)}>{notice}</Banner>}
+      {error && <Banner tone="crit" onDismiss={() => setError(null)}>{error}</Banner>}
 
       <AsyncBoundary state={state}>
         {(rows) =>

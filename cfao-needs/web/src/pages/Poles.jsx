@@ -6,6 +6,7 @@ import BrandLogo from '../components/BrandLogo'
 import {
   IconBodywork,
   IconBook,
+  IconCar,
   IconInfo,
   IconTag,
   IconUsers,
@@ -86,14 +87,89 @@ export default function Poles() {
  */
 function PolesList({ sections, locked, submission, onSent }) {
   useEffect(() => restoreHomeScroll({ clear: true }), [sections])
+  const [activeCategory, setActiveCategory] = useState('ALL')
+  const { t } = useLocale()
+
+  const categoryStats = useMemo(() => {
+    const map = {
+      ALL: {
+        brands: 0,
+        places: 0,
+      },
+    }
+    sections.forEach((sec) => {
+      const allBrands = sec.poles.flatMap((p) => p.brands)
+      const countBrands = allBrands.filter((b) => !b.is_transverse).length || allBrands.length
+      const countPlaces = allBrands.reduce((sum, b) => sum + (b.headcount || 0), 0)
+      map[sec.section] = {
+        brands: countBrands,
+        places: countPlaces,
+      }
+      map.ALL.places += countPlaces
+    })
+    map.ALL.brands = Object.keys(map)
+      .filter((k) => k !== 'ALL')
+      .reduce((sum, k) => sum + map[k].brands, 0)
+    return map
+  }, [sections])
+
+  const filteredSections = useMemo(() => {
+    if (activeCategory === 'ALL') return sections
+    return sections.filter((sec) => sec.section === activeCategory)
+  }, [sections, activeCategory])
 
   return (
     <div className="stack">
       <Counters sections={sections} />
 
-      {sections.map((section) => (
-        <Section key={section.section} section={section} locked={locked} />
-      ))}
+      {/* Barre de sélection de catégorie / pilules horizontales */}
+      <div className="category-bar-wrap">
+        <div className="category-bar" role="tablist" aria-label={t('nav.brands')}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeCategory === 'ALL'}
+            className={`category-chip ${activeCategory === 'ALL' ? 'is-active' : ''}`}
+            onClick={() => setActiveCategory('ALL')}
+          >
+            <span className="category-chip__icon"><IconTag /></span>
+            <span className="category-chip__label">{t('category.all')}</span>
+            <span className="category-chip__count">({categoryStats.ALL?.brands ?? 0})</span>
+            {(categoryStats.ALL?.places ?? 0) > 0 && (
+              <span className="category-chip__dot" title={t('dashboard.kpiPlaces')} />
+            )}
+          </button>
+
+          {sections.map((section) => {
+            const Icon = SECTION_ICON[section.section] ?? IconTag
+            const stats = categoryStats[section.section] ?? { brands: 0, places: 0 }
+            const isSelected = activeCategory === section.section
+            return (
+              <button
+                key={section.section}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                className={`category-chip ${isSelected ? 'is-active' : ''}`}
+                onClick={() => setActiveCategory(section.section)}
+              >
+                <span className="category-chip__icon"><Icon /></span>
+                <span className="category-chip__label">{t(`category.${section.section}`)}</span>
+                <span className="category-chip__count">({stats.brands})</span>
+                {stats.places > 0 && (
+                  <span className="category-chip__dot" title={t('dashboard.kpiPlaces')} />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div id="marques-section" className="stack">
+        {filteredSections.map((section) => (
+          <Section key={section.section} section={section} locked={locked} />
+        ))}
+      </div>
 
       <SubmitPanel submission={submission} onSent={onSent} />
     </div>
@@ -204,18 +280,21 @@ function Counters({ sections }) {
         tone="navy"
         icon={<IconTag />}
         label={t('dashboard.kpiBrands')}
+        shortLabel={t('dashboard.kpiBrandsShort')}
         value={number(totals.brands)}
       />
       <Counter
         tone="red"
         icon={<IconUsers />}
         label={t('dashboard.kpiPlaces')}
+        shortLabel={t('dashboard.kpiPlacesShort')}
         value={number(totals.places)}
       />
       <Counter
         tone="ok"
         icon={<IconBook />}
         label={t('dashboard.kpiThemes')}
+        shortLabel={t('dashboard.kpiThemesShort')}
         value={number(totals.themes)}
       />
     </div>
@@ -258,7 +337,7 @@ function StatusNote({ campaign, submission }) {
 }
 
 const SECTION_ICON = {
-  TECHNIQUE: IconTag,
+  TECHNIQUE: IconCar,
   CARROSSERIE: IconBodywork,
   PROCESS: IconWrench,
 }

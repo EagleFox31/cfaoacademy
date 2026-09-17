@@ -82,8 +82,8 @@ function Content({ submission, summary, lines, cc, events, t, reload }) {
         <StatusPill status={submission.status} />
       </PageHead>
 
-      {done && <Banner tone="ok">{done}</Banner>}
-      {error && <Banner tone="crit">{error}</Banner>}
+      {done && <Banner tone="ok" onDismiss={() => setDone(null)}>{done}</Banner>}
+      {error && <Banner tone="crit" onDismiss={() => setError(null)}>{error}</Banner>}
 
       <div className="grid grid--kpi" style={{ marginBottom: 24 }}>
         <Kpi label={t('recap.totalHeadcount')} value={summary.total_headcount} />

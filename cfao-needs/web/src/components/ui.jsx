@@ -84,7 +84,7 @@ function BannerIcon({ tone }) {
   )
 }
 
-export function Banner({ tone = 'info', title, children }) {
+export function Banner({ tone = 'info', title, children, onDismiss }) {
   return (
     <div className={`banner banner--${tone}`} role={tone === 'crit' ? 'alert' : undefined}>
       <BannerIcon tone={tone} />
@@ -92,6 +92,20 @@ export function Banner({ tone = 'info', title, children }) {
         {title && <strong>{title}</strong>}
         {children}
       </div>
+      {onDismiss && (
+        <button
+          type="button"
+          className="banner__close"
+          onClick={onDismiss}
+          aria-label="Fermer ce message"
+          title="Fermer"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )}
     </div>
   )
 }
@@ -114,12 +128,21 @@ export function Kpi({ label, value, hint, tone }) {
  * Partagé entre l'accueil et la grille marque : les deux écrans annoncent les
  * mêmes chiffres, à deux niveaux d'agrégation différents.
  */
-export function Counter({ tone, icon, label, value }) {
+export function Counter({ tone, icon, label, shortLabel, value }) {
   return (
     <div className="counter">
       <span className={`counter__icon counter__icon--${tone}`}>{icon}</span>
       <div className="counter__body">
-        <div className="counter__label">{label}</div>
+        <div className="counter__label">
+          {shortLabel ? (
+            <>
+              <span className="counter__label--full">{label}</span>
+              <span className="counter__label--short">{shortLabel}</span>
+            </>
+          ) : (
+            label
+          )}
+        </div>
         <div className="counter__value">{value}</div>
       </div>
     </div>

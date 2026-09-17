@@ -117,7 +117,7 @@ function Panel({ submission, summary, onSent }) {
   const filialePct = Math.round((filialeCount / totalPlacesSafe) * 100)
 
   return (
-    <div className="card submit-panel">
+    <div id="synthese-section" className="card submit-panel">
       {/* En-tête avec titre, icône et badge de total */}
       <div className="submit-panel__head">
         <div className="submit-panel__head-left">
@@ -239,7 +239,7 @@ function Panel({ submission, summary, onSent }) {
           <div className="submit-panel__footer">
             {error && <Banner tone="crit">{error}</Banner>}
 
-            <div className="submit-panel__actions">
+            <div id="submit-panel-action" className="submit-panel__actions">
               <button
                 type="button"
                 className="btn submit-panel__submit-btn"
