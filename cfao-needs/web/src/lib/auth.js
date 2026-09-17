@@ -130,63 +130,108 @@ async function challengeFrom(verifier) {
   return base64url(sha256Pure(verifier))
 }
 
-export async function login() {
-  const verifier = randomString()
-  const state = randomString(16)
-  sessionStorage.setItem(VERIFIER_KEY, verifier)
-  sessionStorage.setItem(STATE_KEY, state)
+let loginInFlight = false
+let callbackInFlight = false
 
-  const params = new URLSearchParams({
-    client_id: CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
-    response_type: 'code',
-    scope: 'openid profile email',
-    state,
-    code_challenge: await challengeFrom(verifier),
-    code_challenge_method: 'S256',
-  })
-  window.location.assign(`${ISSUER}/protocol/openid-connect/auth?${params}`)
+export function resetAuthLock() {
+  loginInFlight = false
+  reauthInFlight = false
+  callbackInFlight = false
+}
+
+export async function login() {
+  if (loginInFlight) return
+  loginInFlight = true
+  try {
+    const verifier = randomString()
+    const state = randomString(16)
+    sessionStorage.setItem(VERIFIER_KEY, verifier)
+    sessionStorage.setItem(STATE_KEY, state)
+
+    const params = new URLSearchParams({
+      client_id: CLIENT_ID,
+      redirect_uri: REDIRECT_URI,
+      response_type: 'code',
+      scope: 'openid profile email',
+      state,
+      code_challenge: await challengeFrom(verifier),
+      code_challenge_method: 'S256',
+    })
+    window.location.assign(`${ISSUER}/protocol/openid-connect/auth?${params}`)
+  } catch (err) {
+    loginInFlight = false
+    throw err
+  }
 }
 
 export async function handleCallback() {
-  const url = new URL(window.location.href)
-  const code = url.searchParams.get('code')
-  const state = url.searchParams.get('state')
-  const expected = sessionStorage.getItem(STATE_KEY)
-  const verifier = sessionStorage.getItem(VERIFIER_KEY)
-
-  if (!code || !state || state !== expected || !verifier) {
-    throw new Error('callback_invalid')
+  const existing = readSession()
+  if (existing) {
+    try {
+      if (window.location.search) {
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+    } catch {
+      /* ignore */
+    }
+    return existing
   }
-  sessionStorage.removeItem(STATE_KEY)
-  sessionStorage.removeItem(VERIFIER_KEY)
 
-  const response = await fetch(`${ISSUER}/protocol/openid-connect/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      client_id: CLIENT_ID,
-      redirect_uri: REDIRECT_URI,
-      code,
-      code_verifier: verifier,
-    }),
-  })
-  if (!response.ok) throw new Error('token_exchange_failed')
+  if (callbackInFlight) {
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    return readSession()
+  }
+  callbackInFlight = true
 
-  const payload = await response.json()
-  sessionStorage.setItem(
-    TOKEN_KEY,
-    JSON.stringify({
-      accessToken: payload.access_token,
-      expiresAt: Date.now() + (payload.expires_in ?? 900) * 1000,
-      refreshToken: payload.refresh_token ?? null,
-      // Conservé pour `id_token_hint` : sans lui, Keycloak ne sait pas quelle
-      // session fermer et intercale un écran « êtes-vous sûr ? ».
-      idToken: payload.id_token ?? null,
-    }),
-  )
-  return readSession()
+  try {
+    const url = new URL(window.location.href)
+    const code = url.searchParams.get('code')
+    const state = url.searchParams.get('state')
+    const expected = sessionStorage.getItem(STATE_KEY)
+    const verifier = sessionStorage.getItem(VERIFIER_KEY)
+
+    if (!code || !state || state !== expected || !verifier) {
+      throw new Error('callback_invalid')
+    }
+    sessionStorage.removeItem(STATE_KEY)
+    sessionStorage.removeItem(VERIFIER_KEY)
+
+    const response = await fetch(`${ISSUER}/protocol/openid-connect/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: CLIENT_ID,
+        redirect_uri: REDIRECT_URI,
+        code,
+        code_verifier: verifier,
+      }),
+    })
+    if (!response.ok) throw new Error('token_exchange_failed')
+
+    const payload = await response.json()
+    sessionStorage.setItem(
+      TOKEN_KEY,
+      JSON.stringify({
+        accessToken: payload.access_token,
+        expiresAt: Date.now() + (payload.expires_in ?? 900) * 1000,
+        refreshToken: payload.refresh_token ?? null,
+        // Conservé pour `id_token_hint` : sans lui, Keycloak ne sait pas quelle
+        // session fermer et intercale un écran « êtes-vous sûr ? ».
+        idToken: payload.id_token ?? null,
+      }),
+    )
+
+    try {
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } catch {
+      /* ignore */
+    }
+
+    return readSession()
+  } finally {
+    callbackInFlight = false
+  }
 }
 
 export function readSession() {
@@ -211,6 +256,7 @@ export function clearLocalSession() {
  * Un seul redirect même si plusieurs appels API échouent en parallèle.
  */
 export function reauthenticate(returnTo) {
+  loginInFlight = false
   if (reauthInFlight) return
   reauthInFlight = true
 

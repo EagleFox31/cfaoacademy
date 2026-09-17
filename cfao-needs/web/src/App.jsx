@@ -15,6 +15,7 @@ import {
   isReviewer,
   login,
   readSession,
+  reauthenticate,
 } from './lib/auth'
 import BrandEntry from './pages/BrandEntry'
 import FicheViewer from './pages/FicheViewer'
@@ -216,7 +217,7 @@ export default function App() {
             <p style={{ margin: '8px 0 16px' }}>
               Une erreur est survenue lors de l'accès à votre espace.
             </p>
-            <button type="button" className="btn" onClick={() => login()}>
+            <button type="button" className="btn" onClick={() => reauthenticate('/')}>
               Se reconnecter
             </button>
           </Banner>
