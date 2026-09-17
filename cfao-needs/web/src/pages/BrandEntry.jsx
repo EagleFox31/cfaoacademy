@@ -304,7 +304,9 @@ function TierCard({
           {t(rows.length === 1 ? 'poles.theme' : 'poles.themes', { count: rows.length })}
         </span>
       </div>
-      <div className="table-wrap">
+
+      {/* Vue tableau pour Desktop (masquée sur mobile <= 768px via CSS) */}
+      <div className="table-wrap brand-entry__desktop-table">
         <table className="grid-table grid-table--brand">
           {/* Largeurs fixes : chaque palier a son propre <table>, sinon la
               1ʳᵉ colonne s'étire selon les titres et les filets ne s'alignent plus. */}
@@ -394,9 +396,9 @@ function TierCard({
                     >
                       <PlaceSelect
                         value={row[`place_${q}`]}
-            country={country}
-            orgUnitLabel={orgUnitLabel}
-            headcount={row[q]}
+                        country={country}
+                        orgUnitLabel={orgUnitLabel}
+                        headcount={row[q]}
                         disabled={disabled || !row[q]}
                         aria-label={`${line.code} ${t('grid.colPlace')} ${t(`quarter.${q}`)}`}
                         onChange={(place) => onChange(line, { [`place_${q}`]: place }, { immediate: true })}
@@ -408,6 +410,122 @@ function TierCard({
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Vue cartes pour Mobile (masquée sur desktop > 768px via CSS) */}
+      <div className="brand-entry__mobile-cards">
+        {rows.map((line) => {
+          const row = values[line.id] ?? blank()
+          const total = totalOf(row)
+          const filled = total > 0
+          const disabled = locked || line.family_status !== 'READY'
+          return (
+            <div
+              key={`mob-${line.id}`}
+              className="brand-theme-card"
+              data-filled={filled}
+              data-locked={disabled}
+            >
+              <div className="brand-theme-card__head">
+                <div className="brand-theme-card__badges">
+                  <span className="cell-code">{line.code}</span>
+                  {filled && (
+                    <span className="brand-theme-card__total-pill">
+                      Σ {total} {t(total === 1 ? 'poles.theme' : 'poles.themes', { count: total })}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="brand-theme-card__title-btn"
+                  onClick={() =>
+                    openFicheWindow(line, { title: tField(line, 'title') })
+                  }
+                  aria-label={t('fiche.openAria', { code: line.code })}
+                >
+                  <span className="brand-theme-card__title">
+                    {tField(line, 'title')}
+                  </span>
+                  <span className="brand-theme-card__fiche-link">
+                    Fiche ↗
+                  </span>
+                </button>
+                {line.family_status !== 'READY' && (
+                  <div className="muted brand-theme-card__pending">
+                    {t('grid.pendingRow')}
+                  </div>
+                )}
+              </div>
+
+              <div className="brand-theme-card__quarters">
+                {QUARTERS.map((q) => {
+                  const qty = row[q] || ''
+                  const hasQty = row[q] > 0
+                  return (
+                    <div
+                      key={`mob-${line.id}-${q}`}
+                      className="brand-quarter-tile"
+                      data-active={hasQty}
+                    >
+                      <div className="brand-quarter-tile__header">
+                        <span className="brand-quarter-tile__name">
+                          {t(`quarter.${q}`)}
+                        </span>
+                        <span className="brand-quarter-tile__year">
+                          {year}
+                        </span>
+                      </div>
+
+                      <div className="brand-quarter-tile__controls">
+                        <div className="brand-quarter-tile__field">
+                          <label
+                            className="brand-quarter-tile__label"
+                            htmlFor={`qty-mob-${line.id}-${q}`}
+                          >
+                            Effectif
+                          </label>
+                          <input
+                            id={`qty-mob-${line.id}-${q}`}
+                            className="qty brand-quarter-tile__qty"
+                            type="number"
+                            min="0"
+                            inputMode="numeric"
+                            disabled={disabled}
+                            data-positive={hasQty}
+                            value={qty}
+                            placeholder="0"
+                            aria-label={`${line.code} ${t(`quarter.${q}`)}`}
+                            onChange={(event) =>
+                              onChange(line, { [q]: clamp(event.target.value) })
+                            }
+                            onBlur={onCommit}
+                          />
+                        </div>
+
+                        <div className="brand-quarter-tile__field brand-quarter-tile__field--place">
+                          <label className="brand-quarter-tile__label">
+                            {t('grid.colPlace')}
+                          </label>
+                          <PlaceSelect
+                            value={row[`place_${q}`]}
+                            country={country}
+                            orgUnitLabel={orgUnitLabel}
+                            headcount={row[q]}
+                            disabled={disabled || !row[q]}
+                            aria-label={`${line.code} ${t('grid.colPlace')} ${t(`quarter.${q}`)}`}
+                            onChange={(place) =>
+                              onChange(line, { [`place_${q}`]: place }, { immediate: true })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
