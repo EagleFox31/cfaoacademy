@@ -723,6 +723,44 @@
    de plus.
    ══════════════════════════════════════════════════════════════════ */
 
+/* Le panneau de choix : la grille prend la hauteur disponible et
+   défile, l'échappée reste ancrée au bas du panneau. Avec vingt
+   sessions au planning, elle ne doit pas être repoussée hors de
+   l'écran — c'est justement là qu'on la cherche. */
+.cr-assistant .cr-panel--choix {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.cr-assistant .cr-panel--choix .cr-panel-head { flex: none; }
+.cr-assistant .cr-panel--choix .cr-session-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
+  /* La barre de défilement ne doit pas coller aux cartes. */
+  padding-right: 4px;
+}
+
+/* Une rangée tranchée net au ras du filet ne dit pas qu'il y a une
+   suite. Un voile dégradé, posé au-dessus du bas de la grille, la
+   signale. Il est décoratif et ne capte pas le clic. */
+.cr-assistant .cr-panel--choix {
+  position: relative;
+}
+.cr-assistant .cr-panel--choix .cr-session-grid::after {
+  content: '';
+  position: sticky;
+  bottom: 0;
+  display: block;
+  grid-column: 1 / -1;
+  height: 28px;
+  margin-top: -28px;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--paper), transparent);
+}
+.cr-assistant .cr-panel--choix .cr-echappee { flex: none; }
+
 .cr-echappee {
   display: flex;
   align-items: center;
