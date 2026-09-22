@@ -29,6 +29,73 @@
 }
 .cr-retour:hover { color: var(--red); }
 
+/* ── Cartes d'entrée du module ──────────────────────────────────── */
+
+.cr-card-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px; margin-top: 4px;
+}
+.cr-entries {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px;
+}
+.cr-entry {
+  display: flex; align-items: flex-start; gap: 15px; text-align: left;
+  padding: 22px 24px; border: 1.5px solid var(--rule); border-radius: 14px;
+  background: var(--paper); cursor: pointer; font-family: inherit;
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+.cr-entry:hover {
+  border-color: var(--red); box-shadow: 0 8px 24px rgba(14, 17, 38, .08);
+  transform: translateY(-2px);
+}
+.cr-entry--primary { border-color: var(--red); background: var(--red-soft); }
+.cr-entry--draft { border-style: dashed; }
+.cr-entry-mark {
+  flex: none; width: 40px; height: 40px; border-radius: 11px;
+  display: grid; place-items: center; background: var(--paper);
+  border: 1px solid var(--rule); color: var(--red); font-size: 19px; line-height: 1;
+}
+.cr-entry--primary .cr-entry-mark { background: var(--red); color: #fff; border-color: var(--red); }
+.cr-entry-body { min-width: 0; }
+.cr-entry-title {
+  display: flex; align-items: center; gap: 9px;
+  font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600;
+  color: var(--ink); margin-bottom: 4px;
+}
+.cr-entry-count {
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px;
+  font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  background: var(--red); color: #fff;
+}
+.cr-entry-desc { font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+
+/* Le portail alterne le fond de ses sections : impaire sur voile clair,
+   paire sur voile navy. Les cartes d'entrée suivent la meme regle que
+   les cartes natives, sinon elles decoupent un rectangle blanc au
+   milieu de la bande sombre. */
+section:nth-of-type(even) .cr-entry {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+section:nth-of-type(even) .cr-entry:hover {
+  border-color: var(--red);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+section:nth-of-type(even) .cr-entry--primary {
+  background: rgba(227, 0, 27, 0.18);
+  border-color: var(--red);
+}
+section:nth-of-type(even) .cr-entry-mark {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #ff6b7a;
+}
+section:nth-of-type(even) .cr-entry--primary .cr-entry-mark {
+  background: var(--red); color: #fff; border-color: var(--red);
+}
+section:nth-of-type(even) .cr-entry-title { color: #fff; }
+section:nth-of-type(even) .cr-entry-desc { color: rgba(255, 255, 255, 0.62); }
+
 /* ── Les trois phases ───────────────────────────────────────────── */
 
 .cr-phases { display: flex; gap: 10px; flex-wrap: wrap; }
