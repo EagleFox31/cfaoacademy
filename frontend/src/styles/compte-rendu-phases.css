@@ -59,17 +59,85 @@
 .cr-field--large { grid-column: 1 / -1; }
 .cr-session--manuel { border-style: dashed; background: var(--paper-2); }
 
-.cr-recap {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 10px 22px; padding: 16px 18px; background: var(--paper-2);
-  border: 1px solid var(--rule); border-radius: 12px;
+/* ── Fiche de la session reprise du planning ────────────────────── */
+
+/* L'intitulé identifie la session : il est le titre de la fiche. Traité
+   comme une colonne parmi cinq, il se repliait sur deux lignes pendant
+   que « TOYOTA » occupait la même largeur que lui. Les attributs, de
+   longueur comparable entre eux, tiennent sur une ligne en dessous. */
+.cr-fiche {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper-2);
+  overflow: hidden;
 }
-.cr-recap-ligne { display: flex; flex-direction: column; gap: 2px; }
-.cr-recap-cle {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px;
-  letter-spacing: .07em; text-transform: uppercase; color: var(--muted-2);
+.cr-fiche-tete {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
 }
-.cr-recap-val { font-size: 14px; color: var(--ink); font-weight: 500; }
+.cr-fiche-titre {
+  flex: 1;
+  min-width: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -.015em;
+  color: var(--ink);
+  margin: 0;
+}
+.cr-fiche-code {
+  flex: none;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--red-soft);
+  color: var(--red-deep);
+}
+.cr-fiche-attributs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 0;
+  margin: 0;
+  padding: 12px 18px;
+}
+/* Un filet sépare les attributs : plus léger qu'une bordure de carte,
+   assez net pour qu'on ne lise pas deux valeurs à la suite. */
+.cr-fiche-attribut {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 20px;
+  border-left: 1px solid var(--rule);
+}
+.cr-fiche-attribut:first-child { padding-left: 0; border-left: 0; }
+.cr-fiche-cle {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+.cr-fiche-val {
+  font-size: 13.5px;
+  color: var(--ink);
+  font-weight: 500;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .cr-fiche-attribut {
+    padding: 0 14px 0 0;
+    border-left: 0;
+  }
+}
 
 .cr-sous-titre {
   display: flex; align-items: center; gap: 10px; font-size: 14px;
