@@ -296,6 +296,30 @@ export default function PhaseVerification({
  *  precedentes, et les corriger a deux endroits ferait diverger le
  *  document de ses donnees.
  */
+/**
+ * Les deux commentaires libres de la page des resultats.
+ *
+ * Le modele les pose sous chaque graphique de la diapositive 17 :
+ * `Rectangle 21` sous le taux de progression, `Rectangle 30` sous le
+ * taux d'acquisition. Les textes d'invite reprennent les tournures du
+ * modele, que le formateur adapte.
+ */
+const COMMENTAIRES_RESULTATS = [
+  {
+    cle: 'commentaireProgression',
+    titre: 'Constat sur la progression',
+    exemple: 'Nous pouvons constater que l’ensemble des participants '
+      + 'avait un niveau théorique inférieur en arrivant à cette '
+      + 'formation et qu’ils ont progressé de […] %.',
+  },
+  {
+    cle: 'commentaireAcquisition',
+    titre: 'Constat sur l’acquisition des compétences',
+    exemple: '[n] participants sur [n] ont réussi à cette session de '
+      + 'formation, pour un pourcentage d’acquisition de […] %.',
+  },
+]
+
 function FormulairePage({
   page, textes, onTexte, photos, disposition,
   onAjouter, onRetirer, onLegender, onDisposition,
@@ -312,7 +336,7 @@ function FormulairePage({
     <div className="cr-edition">
       <div className="cr-edition-champs">
         {page.cle !== 'objectifs' && page.cle !== 'participants'
-          && !numeroJour && (
+          && page.type !== 'chiffres' && !numeroJour && (
           <label className="cr-field">
             <span className="cr-field-label">Titre de la page</span>
             <input className="cr-input" value={valeur('titre', page.titrePage || '')}
@@ -354,14 +378,18 @@ function FormulairePage({
           </div>
         )}
 
-        {page.type === 'texte' && page.cle !== 'objectifs' && page.blocs.map(b => (
-          <label key={b.cle} className="cr-field">
-            <span className="cr-field-label">{b.titre}</span>
-            <textarea className="cr-textarea" rows={3}
-              value={valeur(b.cle, b.texte)}
-              onChange={e => onTexte(`${page.cle}.${b.cle}`, e.target.value)} />
-          </label>
-        ))}
+        {page.type === 'texte' && page.cle !== 'objectifs' && (
+          <div className="cr-edition-large cr-bilan-rubriques">
+            {page.blocs.map(b => (
+              <label key={b.cle} className="cr-bilan-rubrique">
+                <span className="cr-field-label">{b.titre}</span>
+                <textarea className="cr-textarea cr-bilan-texte"
+                  value={valeur(b.cle, b.texte)}
+                  onChange={e => onTexte(`${page.cle}.${b.cle}`, e.target.value)} />
+              </label>
+            ))}
+          </div>
+        )}
 
         {page.cle === 'participants' && (
           <div className="cr-edition-large">
@@ -404,10 +432,25 @@ function FormulairePage({
         )}
 
         {page.type === 'chiffres' && (
-          <p className="cr-vide-texte">
-            Ces chiffres sont calculés depuis les notes et les
-            questionnaires de l’étape 2.
-          </p>
+          <div className="cr-edition-large cr-res-saisie">
+            <p className="cr-obj-aide">
+              Les taux et les graphiques sont calculés depuis l’étape 2.
+              Ces deux commentaires les accompagnent sur la diapositive.
+            </p>
+            <div className="cr-res-commentaires">
+              {COMMENTAIRES_RESULTATS.map(c => (
+                <label key={c.cle} className="cr-res-commentaire">
+                  <span className="cr-field-label">
+                    {c.titre} <span>facultatif</span>
+                  </span>
+                  <textarea className="cr-textarea cr-res-texte"
+                    value={valeur(c.cle, '')}
+                    placeholder={c.exemple}
+                    onChange={e => onTexte(`${page.cle}.${c.cle}`, e.target.value)} />
+                </label>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 

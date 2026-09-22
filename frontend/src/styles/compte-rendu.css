@@ -1854,8 +1854,12 @@
    Sans cela la planche reste a sa taille minimale sous un vide. */
 .cr-edition:has(.cr-blocs--objectifs),
 .cr-edition:has(.cr-blocs--journee),
+.cr-edition:has(.cr-res-saisie),
+.cr-edition:has(.cr-bilan-rubriques),
 .cr-edition:has(.cr-part) { padding-bottom: 0; }
 .cr-edition-champs:has(.cr-part),
+.cr-edition-champs:has(.cr-res-saisie),
+.cr-edition-champs:has(.cr-bilan-rubriques),
 .cr-edition-champs:has(.cr-blocs--journee),
 .cr-edition-champs:has(.cr-blocs--objectifs) {
   flex: 1;
@@ -1866,6 +1870,8 @@
   align-items: stretch;
 }
 .cr-edition-champs:has(.cr-part) > .cr-edition-large,
+.cr-edition-champs:has(.cr-res-saisie) > .cr-edition-large,
+.cr-edition-champs:has(.cr-bilan-rubriques) > .cr-edition-large,
 .cr-edition-champs:has(.cr-blocs--journee) > .cr-edition-large,
 .cr-edition-champs:has(.cr-blocs--objectifs) > .cr-edition-large {
   display: flex;
@@ -2258,4 +2264,62 @@
   outline: none;
   border-color: var(--accent, #e2001a);
   background: var(--surface-1, #fff);
+}
+
+/* ---- Resultats : les deux commentaires de la diapositive ---- */
+
+.cr-res-saisie {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+/* Les deux constats se lisent cote a cote, comme sous les deux
+   graphiques du modele ; ils repassent l'un sous l'autre au serre. */
+.cr-res-commentaires {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-content: start;
+}
+@media (max-width: 900px) {
+  .cr-res-commentaires { grid-template-columns: minmax(0, 1fr); }
+}
+.cr-res-commentaire {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+.cr-res-texte {
+  min-height: 92px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+
+/* ---- Bilan : les quatre rubriques de la diapositive ---- */
+
+.cr-bilan-rubriques {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 12px 16px;
+  flex: 1;
+  min-height: 0;
+}
+@media (max-width: 900px) {
+  .cr-bilan-rubriques { grid-template-columns: minmax(0, 1fr); }
+}
+.cr-bilan-rubrique {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+.cr-bilan-texte {
+  flex: 1;
+  min-height: 72px;
+  resize: none;
+  line-height: 1.5;
 }

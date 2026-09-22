@@ -39,6 +39,21 @@ export function diapoDe(page) {
   return DIAPO_PAR_PAGE[cle] ?? null
 }
 
+/**
+ * Les phrases que la diapositive 17 pose sous ses deux graphiques.
+ *
+ * Elles doivent reprendre le run du modele mot pour mot, apostrophe
+ * droite comprise : la substitution compare le texte entier.
+ */
+const PHRASE_PROGRESSION =
+  "Nous pouvons constater que l'ensemble des participants avait un "
+  + 'niveau théorique inferieur en arrivant à cette formation et '
+  + "qu'ils ont progressé de [taux] %."
+const PHRASE_ACQUISITION =
+  '[n] participants sur [n] ont réussi à cette session de '
+  + "formation. Pour un pourcentage d'acquisition de compétence "
+  + 'de [taux] %.'
+
 /** Les drapeaux du modele, renseignes depuis le brouillon. */
 export function valeursDrapeaux(brouillon, session, synthese) {
   const b = brouillon || {}
@@ -69,6 +84,12 @@ export function valeursDrapeaux(brouillon, session, synthese) {
     '{bilan_vigilance}': t.vigilance || '',
     '{bilan_suites}': t.suites || '',
     '{objectifs}': t.objectifs || '',
+
+    // Les deux constats de la diapositive 17 : le modele y pose des
+    // phrases completes, pas des drapeaux. Le service substitue le run
+    // entier quand son texte correspond a la phrase du gabarit.
+    [PHRASE_PROGRESSION]: t['resultats.commentaireProgression'] || '',
+    [PHRASE_ACQUISITION]: t['resultats.commentaireAcquisition'] || '',
     '{appréciation_formateur}': t.appreciation || '',
   }
 }

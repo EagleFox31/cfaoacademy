@@ -17,7 +17,7 @@ DIAPOS = {
     'objectifs': [5, 9],
     'participants': [3, 4],
     'deroule': [10, 11],
-    'resultats': [16, 17, 18],
+    'resultats': [16, 17, 18, 19],
     'bilan': [20],
     'fiches': [25, 26, 27],
     'cloture': [28],
