@@ -386,6 +386,7 @@ function FormulairePage({
               onRetirer={onRetirer}
               onReordonner={onReordonner}
               onDisposition={onDisposition}
+              onLegender={onLegender}
               jourPrecedent={Number(numeroJour) > 1
                 ? jours?.[Number(numeroJour) - 1] : null}
               onCopierVeille={() => onJournee(numeroJour,
