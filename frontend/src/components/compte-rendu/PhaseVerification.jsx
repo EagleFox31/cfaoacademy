@@ -431,7 +431,14 @@ function FormulairePage({
           </p>
         )}
 
-        {page.type === 'chiffres' && (
+        {page.type === 'chiffres' && page.sansCommentaires && (
+          <p className="cr-vide-texte">
+            Ces taux sont calculés depuis les questionnaires de l’étape 2.
+            Cette diapositive n’a pas de zone à remplir.
+          </p>
+        )}
+
+        {page.type === 'chiffres' && !page.sansCommentaires && (
           <div className="cr-edition-large cr-res-saisie">
             <p className="cr-obj-aide">
               Les taux et les graphiques sont calculés depuis l’étape 2.
@@ -749,9 +756,9 @@ function composerPages(b, session, s) {
   }
 
   if (retenue('resultats')) {
-    // Les taux de satisfaction sortent des memes questionnaires que le
-    // reste des resultats : ils tiennent sur la meme page, comme dans
-    // le classeur ou tout figure sur une seule feuille.
+    // Le modele consacre deux diapositives distinctes aux resultats :
+    // la 17 pour la progression et l'acquisition, la 19 pour les taux
+    // de satisfaction. On compose donc deux pages, pas une.
     const sat = syntheseSatisfaction(b.satisfaction)
     pages.push({
       cle: 'resultats', titre: 'Résultats', type: 'chiffres',
@@ -765,6 +772,15 @@ function composerPages(b, session, s) {
         },
         { libelle: 'Participants', valeur: s.effectif },
         { libelle: `Sous ${SEUIL} %`, valeur: s.enRetrait },
+      ],
+    })
+    // La satisfaction ne se saisit pas : elle sort des questionnaires
+    // de l'etape 2 et la diapositive n'a aucune zone libre.
+    pages.push({
+      cle: 'satisfaction', titre: 'Satisfaction', type: 'chiffres',
+      titrePage: 'RÉSULTAT GLOBAL DE LA SESSION',
+      sansCommentaires: true,
+      chiffres: [
         { libelle: 'Qualité de la formation', valeur: afficherTaux(sat.formation) },
         { libelle: 'Qualité de l’accueil', valeur: afficherTaux(sat.accueil) },
       ],
