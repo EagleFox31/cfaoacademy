@@ -6,6 +6,7 @@ import { syntheseSatisfaction, afficherTaux } from '../../utils/satisfactionCfao
 import ApercuReel from './ApercuReel'
 import EditeurObjectifs from './EditeurObjectifs'
 import EditeurParticipants from './EditeurParticipants'
+import EditeurJournee from './EditeurJournee'
 import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
 
 /**
@@ -218,14 +219,22 @@ export default function PhaseVerification({
             marquage={brouillon.marquageObjectifs}
             onObjectifs={v => maj({ objectifs: v })}
             onMarquage={v => maj({ marquageObjectifs: v })}
-            onReordonner={v => maj({
-              photos: { ...(brouillon.photos || {}), objectifs: v },
+            onReordonner={v => page?.rubrique && maj({
+              photos: { ...(brouillon.photos || {}), [page.rubrique]: v },
             })}
             formateurs={brouillon.formateurs || formateursInitiaux(session)}
             stagiaires={(brouillon.participants || []).filter(p => p.present !== false)}
             photoGroupe={brouillon.photoGroupe}
             onFormateurs={v => maj({ formateurs: v })}
             onPhotoGroupe={v => maj({ photoGroupe: v })}
+            jours={brouillon.jours || {}}
+            onJournee={(n, v) => maj({
+              jours: { ...(brouillon.jours || {}), [n]: v },
+            })}
+            legendes={brouillon.legendes || {}}
+            onLegende={(cle, v) => maj({
+              legendes: { ...(brouillon.legendes || {}), [cle]: v },
+            })}
             photos={photos}
             disposition={page?.rubrique
               ? brouillon.dispositions?.[page.rubrique] : null}
@@ -290,14 +299,18 @@ function FormulairePage({
   onAjouter, onRetirer, onLegender, onDisposition,
   objectifs, marquage, onObjectifs, onMarquage, onReordonner,
   formateurs, stagiaires, photoGroupe, onFormateurs, onPhotoGroupe,
+  jours, onJournee, legendes, onLegende,
 }) {
+  // Une page jour porte son numero : « jour-3 » edite la 3e journee.
+  const numeroJour = /^jour-(\d+)$/.exec(page?.cle || '')?.[1]
   if (!page) return null
   const valeur = (cle, defaut) => textes[`${page.cle}.${cle}`] ?? defaut
 
   return (
     <div className="cr-edition">
       <div className="cr-edition-champs">
-        {page.cle !== 'objectifs' && page.cle !== 'participants' && (
+        {page.cle !== 'objectifs' && page.cle !== 'participants'
+          && !numeroJour && (
           <label className="cr-field">
             <span className="cr-field-label">Titre de la page</span>
             <input className="cr-input" value={valeur('titre', page.titrePage || '')}
@@ -311,7 +324,7 @@ function FormulairePage({
           </p>
         )}
 
-        {(page.sousTitre != null || page.type === 'photos') && (
+        {(page.sousTitre != null || page.type === 'photos') && !numeroJour && (
           <label className="cr-field">
             <span className="cr-field-label">
               Sous-titre <span>facultatif</span>
@@ -359,6 +372,27 @@ function FormulairePage({
           </div>
         )}
 
+        {numeroJour && (
+          <div className="cr-edition-large">
+            <EditeurJournee
+              jour={Number(numeroJour)}
+              journee={jours?.[numeroJour]}
+              photos={photos || []}
+              disposition={disposition}
+              legende={legendes?.[page.cle]}
+              onJournee={v => onJournee(numeroJour, v)}
+              onLegende={v => onLegende(page.cle, v)}
+              onAjouter={onAjouter}
+              onRetirer={onRetirer}
+              onReordonner={onReordonner}
+              onDisposition={onDisposition}
+              jourPrecedent={Number(numeroJour) > 1
+                ? jours?.[Number(numeroJour) - 1] : null}
+              onCopierVeille={() => onJournee(numeroJour,
+                { ...jours[Number(numeroJour) - 1] })} />
+          </div>
+        )}
+
         {page.type === 'tableau' && page.cle !== 'participants' && (
           <p className="cr-vide-texte">
             Le tableau reprend les participants de l’étape 1.
@@ -375,7 +409,7 @@ function FormulairePage({
       </div>
 
       {page.rubrique && page.cle !== 'objectifs'
-        && page.cle !== 'participants' && (
+        && page.cle !== 'participants' && !numeroJour && (
         <PanneauPhotos
           rubrique={page.rubrique}
           photos={photos}
