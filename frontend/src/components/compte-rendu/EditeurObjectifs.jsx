@@ -33,6 +33,35 @@ export const LIGNE_VIDE = { code: '', intitule: '', texte: '' }
 /** Le modele ne prevoit pas de disposition au-dela de cinq images. */
 export const MAX_PHOTOS = 5
 
+const PLACEHOLDER = [
+  'Collez vos objectifs, un par ligne.',
+  '',
+  'Identifier les organes du circuit',
+  'Contrôler les pressions au banc',
+  'Remplacer un élément défectueux',
+].join('\n')
+
+/** Le texte de la zone de saisie, une ligne par objectif. */
+function texteDesObjectifs(lignes) {
+  return (lignes || []).map(o => o.texte || '').join('\n').replace(/\n+$/, '')
+}
+
+/** Les objectifs decoupes depuis la zone de saisie.
+ *
+ *  Le code et l'intitule deja renseignes suivent leur objectif tant que
+ *  son texte ne change pas : retaper une ligne ne doit pas vider les
+ *  deux colonnes qu'on vient de remplir a cote.
+ */
+function objectifsDuTexte(texte, anciens = []) {
+  const parLigne = new Map(
+    anciens.filter(o => (o.texte || '').trim()).map(o => [o.texte.trim(), o]))
+  return String(texte).split(/\r?\n/).map(ligne => {
+    const t = ligne.trim()
+    const connu = parLigne.get(t)
+    return connu ? { ...connu, texte: ligne } : { code: '', intitule: '', texte: ligne }
+  })
+}
+
 export default function EditeurObjectifs({
   objectifs, marquage, photos, disposition,
   onObjectifs, onMarquage, onDisposition, onReordonner,
@@ -43,20 +72,6 @@ export default function EditeurObjectifs({
   // La forme suit les photos, sans reglage : c'est la regle du modele.
   const avecImages = cliches.length > 0
   const [volet, setVolet] = useState('objectifs')
-
-  function majLigne(i, champ, valeur) {
-    const suite = lignes.map((o, j) => (j === i ? { ...o, [champ]: valeur } : o))
-    // Garder une ligne libre en fin de liste : on saisit d'affilee sans
-    // reclamer une ligne de plus a chaque fois.
-    const fin = suite[suite.length - 1]
-    if (fin && (fin.texte || fin.code || fin.intitule)) suite.push({ ...LIGNE_VIDE })
-    onObjectifs(suite)
-  }
-
-  function retirer(i) {
-    const suite = lignes.filter((_, j) => j !== i)
-    onObjectifs(suite.length ? suite : [{ ...LIGNE_VIDE }])
-  }
 
   const remplies = lignes.filter(o => (o.texte || '').trim()).length
   const choix = dispositionsPour(cliches.length)
@@ -70,60 +85,53 @@ export default function EditeurObjectifs({
         ton={remplies ? 'ok' : null}
         ouvert={volet === 'objectifs'}
         onOuvrir={() => setVolet('objectifs')}>
-        <div className={`cr-obj-lignes cr-obj-lignes--${avecImages ? 'tableau' : 'liste'}`}>
-          {avecImages && (
-            <div className="cr-obj-entete" aria-hidden="true">
-              <span /><span>Code</span><span>Intitulé</span><span>Objectif</span><span />
-            </div>
-          )}
-          {lignes.map((o, i) => (
-            <div key={i} className="cr-obj-ligne">
-              <span className="cr-obj-puce" aria-hidden="true">
-                {avecImages ? i + 1 : puceDe(marquage, i)}
-              </span>
-              {avecImages && (
-                <>
-                  <input className="cr-input" value={o.code || ''}
-                    placeholder="TS05"
-                    aria-label={`Code de l’objectif ${i + 1}`}
-                    onChange={e => majLigne(i, 'code', e.target.value)} />
-                  <input className="cr-input" value={o.intitule || ''}
-                    placeholder="Intitulé"
-                    aria-label={`Intitulé de l’objectif ${i + 1}`}
-                    onChange={e => majLigne(i, 'intitule', e.target.value)} />
-                </>
-              )}
-              <input className="cr-input" value={o.texte || ''}
-                placeholder={i === 0 ? 'Ce que le participant saura faire' : ''}
-                aria-label={`Objectif ${i + 1}`}
-                onChange={e => majLigne(i, 'texte', e.target.value)} />
-              <button type="button" className="cr-obj-retirer"
-                onClick={() => retirer(i)} disabled={lignes.length === 1}
-                aria-label={`Retirer l’objectif ${i + 1}`}>×</button>
-            </div>
-          ))}
+        <div className="cr-obj-saisie">
+          {/* On colle une liste d'objectifs, on ne la saisit pas case
+              par case : le formateur les a deja rediges ailleurs. Une
+              ligne vaut un objectif. */}
+          <label className="cr-obj-zone">
+            <span className="cr-field-label">
+              Un objectif par ligne
+            </span>
+            <textarea className="cr-textarea cr-obj-texte"
+              value={texteDesObjectifs(lignes)}
+              placeholder={PLACEHOLDER}
+              onChange={e => onObjectifs(objectifsDuTexte(e.target.value, lignes))} />
+            <span className="cr-obj-aide">
+              {remplies
+                ? `${remplies} objectif${remplies > 1 ? 's' : ''} — `
+                  + 'une ligne vide sera ignorée.'
+                : 'Chaque ligne deviendra un objectif du document.'}
+            </span>
+          </label>
+
+          {/* Le marquage ne concerne que la liste : avec des photos, le
+              modele numerote lui-meme les lignes du tableau. */}
+          <div className="cr-obj-cote">
+            <span className="cr-field-label">Disposition</span>
+            {avecImages ? (
+              <p className="cr-obj-aide">
+                Des photos sont intégrées : le modèle passe au tableau et
+                numérote lui-même les lignes.
+              </p>
+            ) : (
+              <div className="cr-obj-choix cr-obj-choix--colonne">
+                {MARQUAGES.map(m => (
+                  <button key={m.id} type="button"
+                    className={`cr-obj-opt${(marquage || 'puces') === m.id ? ' cr-obj-opt--on' : ''}`}
+                    aria-pressed={(marquage || 'puces') === m.id}
+                    onClick={() => onMarquage(m.id)}>
+                    <span className="cr-obj-opt-vue" aria-hidden="true">
+                      {m.apercu.map((x, j) => <em key={j}>{x}</em>)}
+                    </span>
+                    <span className="cr-obj-opt-nom">{m.nom}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Le marquage ne concerne que la liste : avec des photos, le
-            modele numerote lui-meme les lignes du tableau. */}
-        {!avecImages && (
-          <div className="cr-obj-reglage">
-            <span className="cr-field-label">Marquage</span>
-            <div className="cr-obj-choix">
-              {MARQUAGES.map(m => (
-                <button key={m.id} type="button"
-                  className={`cr-obj-opt${(marquage || 'puces') === m.id ? ' cr-obj-opt--on' : ''}`}
-                  aria-pressed={(marquage || 'puces') === m.id}
-                  onClick={() => onMarquage(m.id)}>
-                  <span className="cr-obj-opt-vue" aria-hidden="true">
-                    {m.apercu.map((p, j) => <em key={j}>{p}</em>)}
-                  </span>
-                  <span className="cr-obj-opt-nom">{m.nom}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </Bloc>
 
       <Bloc titre="Intégrer les images"
