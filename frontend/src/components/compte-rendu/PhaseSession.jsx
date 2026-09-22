@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { periodeLongue } from '../../utils/compteRendu'
 
 /**
@@ -20,18 +19,14 @@ import { periodeLongue } from '../../utils/compteRendu'
 export default function PhaseSession({
   brouillon, maj, sessions, onChoisirSession, onSaisieManuelle,
 }) {
-  const [mode, setMode] = useState(
-    brouillon.manuel ? 'manuel' : brouillon.sessionId ? 'planning' : null)
+  // Le mode se deduit du brouillon : l'orchestrateur porte le bouton de
+  // retour dans sa barre fixe, et doit pouvoir revenir au choix sans
+  // qu'un etat local vienne le contredire.
+  const mode = brouillon.manuel ? 'manuel'
+    : brouillon.sessionId ? 'planning' : null
 
-  function choisir(s) {
-    onChoisirSession(s)
-    setMode('planning')
-  }
-
-  function passerEnManuel() {
-    onSaisieManuelle()
-    setMode('manuel')
-  }
+  const choisir = s => onChoisirSession(s)
+  const passerEnManuel = () => onSaisieManuelle()
 
   // ── Choix du mode, tant que rien n'est engage
   if (!mode) {
@@ -87,40 +82,48 @@ export default function PhaseSession({
   // ── Saisie manuelle
   if (mode === 'manuel') {
     return (
-      <div className="cr-panel">
+      <div className="cr-panel cr-panel--formulaire">
         <div className="cr-panel-head">
           <h2 className="cr-panel-title">Les informations de la formation</h2>
           <p className="cr-panel-hint">
-            Renseignez ce que vous savez. L’intitulé et les participants
-            suffisent pour commencer.
+            Renseignez ce que vous savez. L’intitulé et le nombre de
+            participants suffisent pour commencer.
           </p>
         </div>
 
-        <div className="cr-form-grid">
-          <Champ label="Intitulé de la formation" large
-            valeur={brouillon.intitule}
-            surSaisie={v => maj({ intitule: v })}
-            exemple="Révision des organes châssis" />
-          <Champ label="Code" valeur={brouillon.codeFormation}
-            surSaisie={v => maj({ codeFormation: v })} exemple="TS05-G3" />
-          <Champ label="Marque" valeur={brouillon.marque}
-            surSaisie={v => maj({ marque: v })} exemple="TOYOTA" />
-          <Champ label="Début" type="date" valeur={brouillon.debut}
-            surSaisie={v => maj({ debut: v })} />
-          <Champ label="Fin" type="date" valeur={brouillon.fin}
-            surSaisie={v => maj({ fin: v })} />
-          <Champ label="Lieu" valeur={brouillon.lieu}
-            surSaisie={v => maj({ lieu: v })}
-            exemple="Centre CFAO Academy — Douala" />
-          <Champ label="Pays" valeur={brouillon.pays}
-            surSaisie={v => maj({ pays: v })} exemple="Cameroun" />
+        <div className="cr-form">
+          {/* Une ligne par nature d'information : ce qui identifie la
+              formation, quand elle a eu lieu, ou et avec combien de
+              personnes. */}
+          <div className="cr-form-ligne cr-form-ligne--code-intitule">
+            <Champ label="Code" valeur={brouillon.codeFormation}
+              surSaisie={v => maj({ codeFormation: v })} exemple="TS05-G3" />
+            <Champ label="Intitulé de la formation"
+              valeur={brouillon.intitule}
+              surSaisie={v => maj({ intitule: v })}
+              exemple="Révision et réparation des organes châssis" />
+          </div>
+
+          <div className="cr-form-ligne cr-form-ligne--trois">
+            <Champ label="Marque" valeur={brouillon.marque}
+              surSaisie={v => maj({ marque: v })} exemple="TOYOTA" />
+            <Champ label="Début" type="date" valeur={brouillon.debut}
+              surSaisie={v => maj({ debut: v })} />
+            <Champ label="Fin" type="date" valeur={brouillon.fin}
+              surSaisie={v => maj({ fin: v })} />
+          </div>
+
+          <div className="cr-form-ligne cr-form-ligne--trois">
+            <Champ label="Lieu" valeur={brouillon.lieu}
+              surSaisie={v => maj({ lieu: v })}
+              exemple="Centre CFAO Academy — Douala" />
+            <Champ label="Pays" valeur={brouillon.pays}
+              surSaisie={v => maj({ pays: v })} exemple="Cameroun" />
+            <ChampEffectif brouillon={brouillon} maj={maj} />
+          </div>
         </div>
 
         <ListeParticipants brouillon={brouillon} maj={maj} modifiable />
-
-        <button type="button" className="cr-add" onClick={() => setMode(null)}>
-          ← Choisir plutôt une session du planning
-        </button>
       </div>
     )
   }
@@ -145,10 +148,6 @@ export default function PhaseSession({
       </div>
 
       <ListeParticipants brouillon={brouillon} maj={maj} />
-
-      <button type="button" className="cr-add" onClick={() => setMode(null)}>
-        ← Changer de session
-      </button>
     </div>
   )
 }
@@ -161,6 +160,63 @@ function Ligne({ cle, valeur }) {
       <span className="cr-recap-val">{valeur}</span>
     </div>
   )
+}
+
+/** Le nombre de participants, qui crée ou retire les lignes du tableau.
+ *
+ *  Saisir « 6 » est plus rapide que cliquer six fois « Ajouter ». La
+ *  reduction ne retire que des lignes vides, en partant de la fin : un
+ *  nom deja saisi ne doit pas disparaitre sur une faute de frappe.
+ */
+function ChampEffectif({ brouillon, maj }) {
+  const participants = brouillon.participants || []
+
+  function ajuster(saisie) {
+    const voulu = saisie === '' ? 0 : Math.min(Number(saisie) || 0, 60)
+    if (voulu === participants.length) return
+
+    if (voulu > participants.length) {
+      const ajouts = Array.from(
+        { length: voulu - participants.length },
+        (_, i) => ligneVide(participants.length + i))
+      maj({ participants: [...participants, ...ajouts] })
+      return
+    }
+
+    // On n'enleve que des lignes restees vides, de la derniere a la
+    // premiere. Une ligne deja renseignee se retire a la croix : elle ne
+    // doit pas disparaitre sur une faute de frappe dans ce champ.
+    const restants = [...participants]
+    for (let i = restants.length - 1; i >= 0 && restants.length > voulu; i--) {
+      if (estVide(restants[i])) restants.splice(i, 1)
+    }
+    maj({ participants: restants })
+  }
+
+  return (
+    <label className="cr-field">
+      <span className="cr-field-label">Nombre de participants</span>
+      <input className="cr-input cr-input--nombre" type="number"
+        min="0" max="60" inputMode="numeric"
+        value={participants.length || ''}
+        placeholder="0"
+        onChange={e => ajuster(e.target.value)} />
+    </label>
+  )
+}
+
+function ligneVide(index) {
+  return {
+    id: `p-${Date.now()}-${index}`,
+    prenom: '', nom: '', pays: '', fonction: '',
+    present: true, entreeBrut: '', sortieTheoBrut: '', sortiePratBrut: '',
+    appreciation: '', ajoute: true,
+  }
+}
+
+function estVide(p) {
+  return !p.prenom?.trim() && !p.nom?.trim()
+    && !p.pays?.trim() && !p.fonction?.trim()
 }
 
 function Champ({ label, valeur, surSaisie, exemple, type = 'text', large }) {
@@ -192,22 +248,12 @@ function ListeParticipants({ brouillon, maj, modifiable }) {
     })
   }
 
-  function ajouter() {
-    maj({
-      participants: [...participants, {
-        id: `p-${Date.now()}`, prenom: '', nom: '', pays: '', fonction: '',
-        present: true, entreeBrut: '', sortieTheoBrut: '', sortiePratBrut: '',
-        appreciation: '', ajoute: true,
-      }],
-    })
-  }
-
   function retirer(id) {
     maj({ participants: participants.filter(p => p.id !== id) })
   }
 
   return (
-    <div style={{ marginTop: 22 }}>
+    <div className="cr-participants">
       <div className="cr-sous-titre">
         Participants
         <span className="cr-compte">{presents.length}</span>
@@ -215,7 +261,8 @@ function ListeParticipants({ brouillon, maj, modifiable }) {
 
       {participants.length === 0 ? (
         <p className="cr-vide-texte">
-          Aucun participant. Ajoutez-les pour continuer.
+          Indiquez le nombre de participants ci-dessus : les lignes à
+          renseigner apparaîtront ici.
         </p>
       ) : (
         <div className="cr-table-wrap">
@@ -279,9 +326,6 @@ function ListeParticipants({ brouillon, maj, modifiable }) {
         </div>
       )}
 
-      <button type="button" className="cr-add" onClick={ajouter}>
-        + Ajouter un participant
-      </button>
     </div>
   )
 }

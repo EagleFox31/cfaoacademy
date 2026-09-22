@@ -842,6 +842,11 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  /* Les sections du portail portent 48px de respiration verticale,
+     taillés pour une page qui défile. Entre l'en-tête de l'assistant et
+     son panneau, cela creuse un vide sans rôle. */
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .cr-assistant .cr-etape > .container {
   flex: 1;
@@ -875,4 +880,68 @@
   .cr-assistant .cr-panel {
     overflow-y: visible;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Formulaire de saisie libre
+
+   Trois lignes, groupées par nature d'information plutôt que par un
+   remplissage automatique : ce qui identifie la formation, quand elle
+   a eu lieu, où et avec combien de personnes. Les largeurs suivent la
+   donnée attendue — un code tient en huit caractères, un intitulé
+   demande toute la place restante.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* La liste suit le formulaire ou le récapitulatif, dans les deux modes
+   de la phase 1. */
+.cr-participants { margin-top: 18px; }
+
+/* Une grille unique de trois colonnes porte les trois lignes : les
+   champs s'alignent alors verticalement d'une ligne à l'autre. Le code
+   occupe une colonne, l'intitulé les deux suivantes. */
+.cr-form {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 16px;
+  align-items: start;
+}
+.cr-form-ligne { display: contents; }
+.cr-form-ligne--code-intitule > :last-child { grid-column: span 2; }
+
+/* Dans une grille, la marge basse du champ ferait double emploi avec
+   la gouttière. */
+.cr-form .cr-field { margin-bottom: 0; }
+
+/* Un effectif se lit d'un coup d'œil : chiffres tabulaires, cadrés à
+   gauche comme les autres champs pour garder l'alignement de la ligne. */
+.cr-input--nombre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+}
+
+/* Le formulaire et sa liste : la liste prend la hauteur restante et
+   défile seule, l'en-tête du formulaire reste lisible. */
+.cr-assistant .cr-panel--formulaire { display: flex; flex-direction: column; }
+.cr-assistant .cr-panel--formulaire .cr-panel-head,
+.cr-assistant .cr-panel--formulaire .cr-form { flex: none; }
+
+/* Le formulaire reste visible, seule la liste des participants défile :
+   on doit pouvoir corriger une date sans remonter la page. */
+.cr-assistant .cr-panel--formulaire { overflow: hidden; }
+.cr-assistant .cr-panel--formulaire .cr-participants {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.cr-assistant .cr-panel--formulaire .cr-participants .cr-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 860px) {
+  .cr-form-ligne--code-intitule,
+  .cr-form-ligne--trois { grid-template-columns: 1fr; gap: 12px; }
 }
