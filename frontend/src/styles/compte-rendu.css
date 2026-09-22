@@ -2323,3 +2323,49 @@
   resize: none;
   line-height: 1.5;
 }
+
+/* Les deux tableaux de la diapositive 17 : chacun porte ses deux
+   mesures puis la ligne de total, mise en avant comme dans le modele. */
+.cr-res-tableaux {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .cr-res-tableaux { grid-template-columns: minmax(0, 1fr); }
+}
+.cr-res-tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  border: 1px solid var(--line, rgba(16, 20, 48, 0.14));
+  border-radius: 8px;
+  overflow: hidden;
+}
+.cr-res-tableau caption {
+  padding: 6px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--surface-1, #fff);
+  background: var(--marine, #101430);
+}
+.cr-res-tableau th,
+.cr-res-tableau td {
+  padding: 6px 10px;
+  text-align: left;
+  font-weight: 400;
+  border-top: 1px solid var(--line, rgba(16, 20, 48, 0.1));
+}
+.cr-res-tableau td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cr-res-total th,
+.cr-res-total td {
+  font-weight: 700;
+  background: var(--surface-2, rgba(16, 20, 48, 0.05));
+}
