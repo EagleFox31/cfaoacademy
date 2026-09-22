@@ -77,7 +77,7 @@ function retenues(lignes) {
 export default function EditeurJournee({
   jour, journee, photos, disposition, legende,
   onJournee, onLegende,
-  onAjouter, onRetirer, onReordonner, onDisposition,
+  onAjouter, onRetirer, onReordonner, onDisposition, onLegender,
   jourPrecedent, onCopierVeille,
 }) {
   const contenu = journee || {}
@@ -89,6 +89,10 @@ export default function EditeurJournee({
   const choix = dispositionsPour(cliches.length)
     .filter(d => d.nombre <= MAX_PHOTOS_JOUR)
   const dispoActive = disposition || choix[0]?.id
+  const dispo = choix.find(d => d.id === dispoActive)
+  // La disposition commande : legendee, chaque image a son champ ;
+  // sinon une seule legende vaut pour le cadre entier.
+  const parImage = !!dispo?.legendes
   const restantes = MAX_PHOTOS_JOUR - cliches.length
 
   function majRubrique(cle, texte) {
@@ -191,20 +195,25 @@ export default function EditeurJournee({
 
           <div className="cr-jour-planche">
             <PlanchePhotos photos={cliches} jour={jour}
-              disposition={choix.find(d => d.id === dispoActive)}
+              disposition={dispo}
+              parImage={parImage}
               onRetirer={onRetirer} onReordonner={onReordonner}
-              onAjouter={onAjouter} />
-            {/* La legende n'est renseignee que sur une page sur six :
-                elle reste en bas, discrete, jamais en colonne. */}
-            <label className="cr-jour-legende">
-              <span className="cr-field-label">
-                Légende <span>facultatif</span>
-              </span>
-              <input className="cr-input cr-input--discret"
-                value={legende || ''}
-                placeholder="Une ligne sous les photos"
-                onChange={e => onLegende(e.target.value)} />
-            </label>
+              onAjouter={onAjouter} onLegender={onLegender} />
+            {/* Deux familles dans le modele : soit chaque image porte sa
+                legende (diapos 12 a 15), soit aucune n'en a et une seule
+                ligne vaut pour l'ensemble. Dans ce second cas la legende
+                se pose sous le cadre entier, pas sous la derniere image. */}
+            {!parImage && (
+              <label className="cr-jour-legende">
+                <span className="cr-field-label">
+                  Légende <span>pour l’ensemble</span>
+                </span>
+                <input className="cr-input cr-input--discret"
+                  value={legende || ''}
+                  placeholder="Une ligne sous les photos"
+                  onChange={e => onLegende(e.target.value)} />
+              </label>
+            )}
           </div>
         </div>
       </Bloc>
@@ -233,7 +242,8 @@ function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
 }
 
 /** Les photos posees selon la disposition retenue. */
-function PlanchePhotos({ photos, disposition, jour, onRetirer, onReordonner, onAjouter }) {
+function PlanchePhotos({ photos, disposition, jour, parImage,
+  onRetirer, onReordonner, onAjouter, onLegender }) {
   const [saisie, setSaisie] = useState(null)
   const [survol, setSurvol] = useState(null)
   const champ = `cr-jour-fichier-${jour}`
@@ -274,7 +284,8 @@ function PlanchePhotos({ photos, disposition, jour, onRetirer, onReordonner, onA
         return (
           <div key={photo.id}
             className={`cr-case${survol === i ? ' cr-case--cible' : ''}`
-              + `${saisie === i ? ' cr-case--prise' : ''}`}
+              + `${saisie === i ? ' cr-case--prise' : ''}`
+              + `${parImage ? ' cr-case--legendee' : ''}`}
             style={forme}
             draggable
             onDragStart={() => setSaisie(i)}
@@ -286,11 +297,22 @@ function PlanchePhotos({ photos, disposition, jour, onRetirer, onReordonner, onA
               else onAjouter?.(e.dataTransfer.files)
             }}
             onDragEnd={() => { setSaisie(null); setSurvol(null) }}>
-            <img src={photo.apercu} alt="" />
-            <span className="cr-case-rang" aria-hidden="true">{i + 1}</span>
-            <button type="button" className="cr-case-retirer"
-              onClick={() => onRetirer?.(photo.id)}
-              aria-label={`Retirer la photo ${i + 1}`}>×</button>
+            <div className="cr-case-image">
+              <img src={photo.apercu} alt="" />
+              <span className="cr-case-rang" aria-hidden="true">{i + 1}</span>
+              <button type="button" className="cr-case-retirer"
+                onClick={() => onRetirer?.(photo.id)}
+                aria-label={`Retirer la photo ${i + 1}`}>×</button>
+            </div>
+            {parImage && (
+              <input className="cr-case-legende"
+                value={photo.legende || ''}
+                placeholder={`Légende ${i + 1}`}
+                aria-label={`Légende de la photo ${i + 1}`}
+                draggable={false}
+                onDragStart={e => e.stopPropagation()}
+                onChange={e => onLegender?.(photo.id, e.target.value)} />
+            )}
           </div>
         )
       })}
