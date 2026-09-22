@@ -1950,7 +1950,8 @@
    carré, puis le nom et la fonction. */
 .cr-part-formateur {
   display: grid;
-  grid-template-columns: 52px minmax(150px, 230px) 24px;
+  grid-template-columns: auto minmax(150px, 230px) 24px;
+  align-items: stretch;
   align-items: center;
   gap: 10px;
 }
@@ -1963,7 +1964,8 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 52px;
+  height: 100%;
+  width: auto;
   aspect-ratio: 1;
   border: 1.5px dashed var(--line, rgba(16, 20, 48, 0.25));
   border-radius: 6px;
