@@ -477,6 +477,10 @@
   margin-bottom: 10px;
 }
 .cr-layout-row { flex: 1; display: flex; gap: 5px; }
+/* Une image haute a cote d'une pile : la colonne empile ses cases. */
+.cr-layout-preview--cols { flex-direction: row; }
+.cr-layout-col { display: flex; flex-direction: column; gap: 5px; }
+.cr-layout-col .cr-layout-cell { flex: 1; }
 .cr-layout-cell {
   background: var(--muted-2);
   border-radius: 3px;

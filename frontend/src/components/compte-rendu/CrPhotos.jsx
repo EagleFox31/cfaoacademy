@@ -174,15 +174,7 @@ export default function CrPhotos({ brouillon, maj, session, parties }) {
                 <button key={d.id} type="button"
                   className={`cr-layout${dispoActive === d.id ? ' cr-layout--on' : ''}`}
                   onClick={() => choisirDisposition(d.id)}>
-                  <div className="cr-layout-preview" aria-hidden="true">
-                    {d.schema.map((ligne, li) => (
-                      <div key={li} className="cr-layout-row">
-                        {ligne.map((poids, ci) => (
-                          <div key={ci} className="cr-layout-cell" style={{ flex: poids }} />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
+                  <ApercuDisposition disposition={d} />
                   <div className="cr-layout-name">{d.nom}</div>
                   <div className="cr-layout-note">{d.note}</div>
                 </button>
@@ -191,6 +183,46 @@ export default function CrPhotos({ brouillon, maj, session, parties }) {
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+/** L'apercu schematique d'une mise en page.
+ *
+ * Deux descriptions cohabitent, parce que deux familles de mises en
+ * page existent :
+ *
+ *   `lignes`   des rangees d'images de meme hauteur ;
+ *   `colonnes` une image haute a cote d'une pile — la forme que
+ *              `lignes` ne savait pas decrire sans dessiner une case
+ *              de trop.
+ *
+ * Le nombre de cases dessinees doit toujours egaler le nombre de
+ * photos : c'est ce que le formateur compte du regard.
+ */
+function ApercuDisposition({ disposition: d }) {
+  if (d.colonnes) {
+    return (
+      <div className="cr-layout-preview cr-layout-preview--cols" aria-hidden="true">
+        {d.colonnes.map((pile, ci) => (
+          <div key={ci} className="cr-layout-col" style={{ flex: d.poids?.[ci] ?? 1 }}>
+            {pile.map((_, li) => (
+              <div key={li} className="cr-layout-cell" />
+            ))}
+          </div>
+        ))}
+      </div>
+    )
+  }
+  return (
+    <div className="cr-layout-preview" aria-hidden="true">
+      {(d.schema || []).map((ligne, li) => (
+        <div key={li} className="cr-layout-row">
+          {ligne.map((poids, ci) => (
+            <div key={ci} className="cr-layout-cell" style={{ flex: poids }} />
+          ))}
+        </div>
+      ))}
     </div>
   )
 }

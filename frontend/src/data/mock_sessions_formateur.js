@@ -240,7 +240,11 @@ export const DISPOSITIONS = [
     id: 'une-plus-deux',
     nom: 'Une grande, deux petites',
     pour: [3],
-    schema: [[2, 1], [2, 1]],
+    // `colonnes` decrit une mise en page ou une image occupe toute la
+    // hauteur a cote d'une pile : `schema` ne savait dire que des
+    // lignes, et dessinait quatre cases pour trois photos.
+    colonnes: [[1], [1, 1]],
+    poids: [2, 1],
     note: 'Met en avant la première image',
   },
   {
@@ -260,8 +264,9 @@ export const DISPOSITIONS = [
   {
     id: 'mosaique',
     nom: 'Mosaïque',
-    pour: [5, 6],
-    schema: [[2, 1, 1], [2, 1, 1]],
+    pour: [5],
+    colonnes: [[1], [1, 1], [1, 1]],
+    poids: [2, 1, 1],
     note: 'Une dominante, les autres autour',
   },
   {
