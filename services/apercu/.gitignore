@@ -1,0 +1,4 @@
+.cache/
+.profil-lo/
+modeles/*.pptx
+__pycache__/

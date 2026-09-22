@@ -47,6 +47,13 @@ export default defineConfig({
   server: {
     fs: { allow: ['..'] },
     proxy: {
+      // Le service d'apercu convertit les diapositives du modele en
+      // images. Il tourne a part : LibreOffice n'a pas sa place dans
+      // le serveur de developpement.
+      '/apercu': {
+        target: 'http://127.0.0.1:5175',
+        changeOrigin: true,
+      },
       '/medacap-api': {
         target: 'http://localhost',
         changeOrigin: true,
