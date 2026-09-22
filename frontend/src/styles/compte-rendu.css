@@ -1984,10 +1984,16 @@
 }
 
 /* Le tableau à gauche, la photo de groupe à droite, comme le modèle. */
+/* Dans le modele la photo fait 43,8 % de largeur sur 56,5 % de
+   hauteur : c'est l'element le plus haut de la page, et son sommet
+   s'aligne sur celui du tableau. On laisse donc le cadre prendre la
+   hauteur disponible et la colonne se regler dessus, au lieu de
+   deduire sa hauteur d'une largeur de colonne arbitraire. */
 .cr-part-saisie {
   display: grid;
   grid-template-columns: minmax(0, 480fr) minmax(190px, 438fr);
   grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
   gap: 18px;
   flex: 1;
   min-height: 0;
@@ -2045,15 +2051,29 @@
 .cr-part-pays { font-size: 0.8rem; color: var(--ink-2, #4b5563); }
 
 .cr-part-cote {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  justify-items: stretch;
+  align-content: stretch;
+  gap: 6px;
   min-height: 0;
-  align-self: start;
+  align-self: stretch;
+}
+/* Le libelle s'aligne sur l'entete du tableau : les deux colonnes
+   demarrent alors a la meme hauteur, et le cadre recupere le reste. */
+.cr-part-cote > .cr-field-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3, #6b7280);
 }
 
 /* La photo de groupe garde les proportions de son cadre dans le
-   modèle : 43,8 % de largeur sur 56,5 % de hauteur, soit 1,38. */
+   modèle : 43,8 % de largeur sur 56,5 % de hauteur, soit 1,378.
+   La hauteur commande, la largeur en decoule : ainsi le cadre
+   occupe toute la hauteur laissee par la bande des formateurs,
+   comme sur la diapositive. */
 .cr-groupe {
   position: relative;
   display: flex;
@@ -2062,8 +2082,9 @@
   justify-content: center;
   gap: 4px;
   width: 100%;
-  flex: none;
-  aspect-ratio: 1.38;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 1.378;
   border: 1.5px dashed var(--line, rgba(16, 20, 48, 0.25));
   border-radius: 8px;
   overflow: hidden;
