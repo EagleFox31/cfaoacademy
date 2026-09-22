@@ -4,6 +4,7 @@ import { SEUIL, calculer, afficher } from '../../utils/baremeCfao'
 import { periodeLongue, nombreDeJours } from '../../utils/compteRendu'
 import { syntheseSatisfaction, afficherTaux } from '../../utils/satisfactionCfao'
 import ApercuReel from './ApercuReel'
+import EditeurObjectifs from './EditeurObjectifs'
 import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
 
 /**
@@ -22,6 +23,34 @@ import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
  * proportions, ce qui evite la surprise d'un texte qui deborde une fois
  * le fichier produit.
  */
+const SEPARATEUR_OBJECTIFS = new RegExp('\r?\n|(?<=\.)\s+(?=[A-Z\u00C0-\u00DE])')
+const PUCE_INITIALE = new RegExp('^[-\u2022*\u2013]\s*')
+
+/** Le modele ne prevoit pas de disposition au-dela de cinq images. */
+const MAX_PHOTOS = 5
+
+/** Les objectifs d'un brouillon anterieur, repris ligne a ligne.
+ *
+ *  Les objectifs se saisissaient dans un paragraphe libre. Un brouillon
+ *  commence avant ce changement garde ce texte : on le redecoupe en
+ *  lignes plutot que de le perdre ou de le laisser invisible.
+ */
+function objectifsInitiaux(b, page) {
+  const texte = b.textes?.['objectifs.objectifs']
+    ?? b.textes?.objectifs
+    ?? page?.blocs?.[0]?.texte
+    ?? ''
+  // Une ligne par objectif, ou a defaut une phrase : le paragraphe
+  // d'origine tenait souvent les deux formes.
+  const lignes = String(texte)
+    .split(SEPARATEUR_OBJECTIFS)
+    .map(l => l.replace(PUCE_INITIALE, '').trim())
+    .filter(Boolean)
+  if (!lignes.length) return null
+  return [...lignes.map(t => ({ code: '', intitule: '', texte: t })),
+    { code: '', intitule: '', texte: '' }]
+}
+
 export default function PhaseVerification({
   brouillon, maj, session, synthese, onTerminer,
 }) {
@@ -59,7 +88,10 @@ export default function PhaseVerification({
       }))
     if (!neuves.length) return
     const actuelles = brouillon.photos?.[rubrique] || []
-    maj({ photos: { ...(brouillon.photos || {}), [rubrique]: [...actuelles, ...neuves] } })
+    // Cinq photos au plus : au-dela, le modele n'a plus de disposition
+    // et les images se tasseraient hors de leur cadre.
+    const retenues = [...actuelles, ...neuves].slice(0, MAX_PHOTOS)
+    maj({ photos: { ...(brouillon.photos || {}), [rubrique]: retenues } })
   }
 
   function retirerPhoto(rubrique, id) {
@@ -169,6 +201,13 @@ export default function PhaseVerification({
             page={page}
             textes={brouillon.textes || {}}
             onTexte={majTexte}
+            objectifs={brouillon.objectifs
+              || objectifsInitiaux(brouillon, page)}
+            marquage={brouillon.marquageObjectifs}
+            forme={brouillon.formeObjectifs}
+            onObjectifs={v => maj({ objectifs: v })}
+            onMarquage={v => maj({ marquageObjectifs: v })}
+            onForme={v => maj({ formeObjectifs: v })}
             photos={photos}
             disposition={page?.rubrique
               ? brouillon.dispositions?.[page.rubrique] : null}
@@ -231,6 +270,7 @@ export default function PhaseVerification({
 function FormulairePage({
   page, textes, onTexte, photos, disposition,
   onAjouter, onRetirer, onLegender, onDisposition,
+  objectifs, marquage, forme, onObjectifs, onMarquage, onForme,
 }) {
   if (!page) return null
   const valeur = (cle, defaut) => textes[`${page.cle}.${cle}`] ?? defaut
@@ -245,7 +285,7 @@ function FormulairePage({
         </label>
 
         {page.type === 'couverture' && (page.periode || page.lieu) && (
-          <p className="cr-vide-texte" style={{ gridColumn: '1 / -1' }}>
+          <p className="cr-vide-texte">
             La période et le lieu viennent de l’étape 1.
           </p>
         )}
@@ -261,7 +301,22 @@ function FormulairePage({
           </label>
         )}
 
-        {page.type === 'texte' && page.blocs.map(b => (
+        {page.cle === 'objectifs' && (
+          <div className="cr-edition-large">
+            <EditeurObjectifs
+              objectifs={objectifs}
+              marquage={marquage}
+              forme={forme}
+              photos={photos?.objectifs || []}
+              disposition={disposition}
+              onObjectifs={onObjectifs}
+              onMarquage={onMarquage}
+              onForme={onForme}
+              onDisposition={onDisposition} />
+          </div>
+        )}
+
+        {page.type === 'texte' && page.cle !== 'objectifs' && page.blocs.map(b => (
           <label key={b.cle} className="cr-field">
             <span className="cr-field-label">{b.titre}</span>
             <textarea className="cr-textarea" rows={3}
@@ -293,7 +348,7 @@ function FormulairePage({
           onAjouter={onAjouter}
           onRetirer={onRetirer}
           onLegender={onLegender}
-          onDisposition={onDisposition}
+          onDisposition={page.cle === 'objectifs' ? null : onDisposition}
         />
       )}
     </div>
@@ -422,6 +477,9 @@ function TableauPage({ page }) {
 function PanneauPhotos({
   rubrique, photos, disposition, onAjouter, onRetirer, onLegender, onDisposition,
 }) {
+  // La page des objectifs porte son propre choix de disposition, au
+  // plus pres des lignes qu'il met en forme : on ne le repete pas ici.
+  const reglable = Boolean(onDisposition)
   const champ = useRef(null)
   const [survol, setSurvol] = useState(false)
   const choix = dispositionsPour(photos.length)
@@ -438,7 +496,11 @@ function PanneauPhotos({
         role="button" tabIndex={0}
         onKeyDown={e => { if (e.key === 'Enter') champ.current?.click() }}>
         <span className="cr-drop-title">Déposez vos photos</span>
-        <span className="cr-drop-hint">ou cliquez — JPG, PNG</span>
+        <span className="cr-drop-hint">
+          {photos.length >= 5
+            ? '5 photos au maximum'
+            : `ou cliquez — JPG, PNG · ${5 - photos.length} restante${5 - photos.length > 1 ? 's' : ''}`}
+        </span>
         <input ref={champ} type="file" accept="image/*" multiple hidden
           onChange={e => { onAjouter(e.target.files); e.target.value = '' }} />
       </div>
@@ -459,7 +521,7 @@ function PanneauPhotos({
             ))}
           </div>
 
-          {choix.length > 1 && (
+          {reglable && choix.length > 1 && (
             <>
               <div className="cr-outils-tete" style={{ marginTop: 16 }}>
                 Disposition — {photos.length} photo{photos.length > 1 ? 's' : ''}
