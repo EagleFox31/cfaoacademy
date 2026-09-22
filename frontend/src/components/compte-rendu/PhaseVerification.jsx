@@ -279,11 +279,13 @@ function FormulairePage({
   return (
     <div className="cr-edition">
       <div className="cr-edition-champs">
-        <label className="cr-field">
-          <span className="cr-field-label">Titre de la page</span>
-          <input className="cr-input" value={valeur('titre', page.titrePage || '')}
-            onChange={e => onTexte(`${page.cle}.titre`, e.target.value)} />
-        </label>
+        {page.cle !== 'objectifs' && (
+          <label className="cr-field">
+            <span className="cr-field-label">Titre de la page</span>
+            <input className="cr-input" value={valeur('titre', page.titrePage || '')}
+              onChange={e => onTexte(`${page.cle}.titre`, e.target.value)} />
+          </label>
+        )}
 
         {page.type === 'couverture' && (page.periode || page.lieu) && (
           <p className="cr-vide-texte">
