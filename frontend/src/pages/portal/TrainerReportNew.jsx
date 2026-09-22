@@ -31,7 +31,7 @@ import '../../styles/compte-rendu.css'
  */
 const PHASES = [
   { cle: 'session', titre: 'La session', resume: 'Formation, dates, participants' },
-  { cle: 'resultats', titre: 'Les résultats', resume: 'Notes et appréciations' },
+  { cle: 'resultats', titre: 'Les résultats', resume: 'Notes et satisfaction' },
   { cle: 'structure', titre: 'La structure', resume: 'Parties du document' },
   { cle: 'edition', titre: 'L’édition', resume: 'Photos, mise en page, aperçu' },
 ]
@@ -52,6 +52,7 @@ function brouillonVide() {
     dispositions: {},
     textes: {},
     parties: {},
+    satisfaction: {},
     phase: 0,
   }
 }

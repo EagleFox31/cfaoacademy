@@ -1,7 +1,14 @@
 import { BAREMES, SEUIL, calculer, anomalies, afficher } from '../../utils/baremeCfao'
+import {
+  MENTIONS,
+  CRITERES_FORMATION,
+  CRITERES_ACCUEIL,
+  syntheseSatisfaction,
+  afficherTaux,
+} from '../../utils/satisfactionCfao'
 
 /**
- * Phase 2 — les notes brutes et les appreciations.
+ * Phase 2 — les notes brutes et la satisfaction des stagiaires.
  *
  * Le formateur saisit ce qu'il a corrige sur copie : 27 sur 30, 14 sur
  * 20. Les pourcentages, la progression et le score final se deduisent,
@@ -14,6 +21,11 @@ import { BAREMES, SEUIL, calculer, anomalies, afficher } from '../../utils/barem
  * La progression est **relative** : passer de 50 % a 75 % fait +50 %,
  * pas +25. C'est ce qui produit les « 113 % » des comptes rendus, et
  * la colonne le rappelle pour qu'on ne le lise pas comme une erreur.
+ *
+ * La seconde moitie de l'ecran recueille la satisfaction, reprise du
+ * classeur d'evaluation : sept criteres de qualite de formation, six
+ * d'accueil, notes par mention et moyennes en taux (cf.
+ * `utils/satisfactionCfao.js`).
  */
 export default function PhaseResultats({ brouillon, maj, session, synthese }) {
   const participants = (brouillon.participants || []).filter(p => p.present !== false)
@@ -29,10 +41,15 @@ export default function PhaseResultats({ brouillon, maj, session, synthese }) {
     })
   }
 
-  function apprecier(id, texte) {
+  const reponses = brouillon.satisfaction || {}
+  const satisfaction = syntheseSatisfaction(reponses)
+
+  function repondre(idParticipant, critere, mention) {
     maj({
-      participants: brouillon.participants.map(p =>
-        p.id === id ? { ...p, appreciation: texte } : p),
+      satisfaction: {
+        ...reponses,
+        [idParticipant]: { ...reponses[idParticipant], [critere]: mention },
+      },
     })
   }
 
@@ -60,7 +77,8 @@ export default function PhaseResultats({ brouillon, maj, session, synthese }) {
         ].map(([cle, libelle]) => (
           <label key={cle} className="cr-bareme">
             {libelle} sur
-            <input className="cr-num cr-num--court" inputMode="numeric"
+            <input className="cr-num cr-num--court" type="number"
+              min="1" max="200" inputMode="numeric"
               value={baremes[cle]} onChange={e => majBareme(cle, e.target.value)}
               aria-label={`Barème ${libelle}`} />
           </label>
@@ -95,13 +113,14 @@ export default function PhaseResultats({ brouillon, maj, session, synthese }) {
                     </div>
                   </td>
                   {[
-                    ['entreeBrut', 'entrée'],
-                    ['sortieTheoBrut', 'théorie'],
-                    ['sortiePratBrut', 'pratique'],
-                  ].map(([champ, nom]) => (
+                    ['entreeBrut', 'entrée', 'entreeTheorique'],
+                    ['sortieTheoBrut', 'théorie', 'sortieTheorique'],
+                    ['sortiePratBrut', 'pratique', 'sortiePratique'],
+                  ].map(([champ, nom, bareme]) => (
                     <td key={champ}>
                       <input
                         className={`cr-num${erreurs.has(champ) ? ' cr-num--erreur' : ''}`}
+                        type="number" min="0" max={baremes[bareme]}
                         inputMode="numeric" value={p[champ] ?? ''}
                         onChange={e => modifier(p.id, champ, e.target.value)}
                         placeholder="—"
@@ -147,34 +166,39 @@ export default function PhaseResultats({ brouillon, maj, session, synthese }) {
         </div>
       )}
 
-      <div className="cr-sous-titre" style={{ marginTop: 30 }}>
-        Appréciations
-        <span className="cr-compte-doux">facultatif</span>
+      <div className="cr-sous-titre" style={{ marginTop: 28 }}>
+        Satisfaction des stagiaires
+        <span className="cr-compte-doux">
+          {satisfaction.repondants > 0
+            ? `${satisfaction.repondants}/${participants.length} réponses`
+            : 'facultatif'}
+        </span>
       </div>
       <p className="cr-vide-texte" style={{ marginTop: 0, marginBottom: 14 }}>
-        Ce que les notes ne disent pas. Laissez vide et le texte sera
-        rédigé à partir des seuls résultats.
+        Reportez les questionnaires de fin de session. Chaque mention
+        vaut un score — très satisfaisant 100, satisfaisant 75, moyen
+        50, peu satisfaisant 25 — et les deux taux en sont la moyenne.
       </p>
-      <div className="cr-appreciations">
-        {participants.map(p => {
-          const c = calculer(p, baremes)
-          return (
-            <div key={p.id} className="cr-appreciation">
-              <div className="cr-appreciation-tete">
-                <span className="cr-name">{p.prenom} {p.nom}</span>
-                <span className={`cr-calc${c.scoreFinal == null ? ' cr-calc--vide'
-                  : c.scoreFinal >= SEUIL ? ' cr-calc--ok' : ' cr-calc--ko'}`}>
-                  {afficher(c.scoreFinal)}
-                </span>
-              </div>
-              <textarea className="cr-textarea" rows={2}
-                value={p.appreciation || ''}
-                placeholder="Assidu, à l’aise sur la pratique, reste à consolider la métrologie…"
-                onChange={e => apprecier(p.id, e.target.value)}
-                aria-label={`Appréciation de ${p.prenom} ${p.nom}`} />
-            </div>
-          )
-        })}
+
+      <div className="cr-satisfaction">
+        <div className="cr-satis-entete">
+          <span className="cr-satis-critere">Critère</span>
+          {participants.map(p => (
+            <span key={p.id} className="cr-satis-nom" title={`${p.prenom} ${p.nom}`}>
+              {p.prenom} {p.nom.slice(0, 1)}.
+            </span>
+          ))}
+        </div>
+
+        <GroupeCriteres titre="Qualité de la formation"
+          criteres={CRITERES_FORMATION} participants={participants}
+          reponses={reponses} onRepondre={repondre}
+          taux={satisfaction.formation} />
+
+        <GroupeCriteres titre="Qualité de l’accueil"
+          criteres={CRITERES_ACCUEIL} participants={participants}
+          reponses={reponses} onRepondre={repondre}
+          taux={satisfaction.accueil} />
       </div>
     </div>
   )
@@ -185,6 +209,39 @@ function Indicateur({ valeur, legende, ton }) {
     <div className="cr-kpi">
       <div className={`cr-kpi-val${ton ? ` cr-kpi-val--${ton}` : ''}`}>{valeur}</div>
       <div className="cr-kpi-lab">{legende}</div>
+    </div>
+  )
+}
+
+/** Un groupe de criteres, une ligne par critere et une colonne par
+ *  stagiaire. Le tableau croise tient sur un ecran la ou treize champs
+ *  par personne demanderaient une page entiere. */
+function GroupeCriteres({ titre, criteres, participants, reponses, onRepondre, taux }) {
+  return (
+    <div className="cr-satis-groupe">
+      <div className="cr-satis-tete">
+        <span className="cr-satis-titre">{titre}</span>
+        <span className={`cr-calc${taux == null ? ' cr-calc--vide'
+          : taux >= 75 ? ' cr-calc--ok' : ''}`}>
+          {afficherTaux(taux)}
+        </span>
+      </div>
+      {criteres.map(c => (
+        <div key={c.cle} className="cr-satis-ligne">
+          <span className="cr-satis-critere" title={c.libelle}>{c.libelle}</span>
+          {participants.map(p => (
+            <select key={p.id} className="cr-satis-choix"
+              value={reponses[p.id]?.[c.cle] || ''}
+              onChange={e => onRepondre(p.id, c.cle, e.target.value)}
+              aria-label={`${c.libelle} — ${p.prenom} ${p.nom}`}>
+              <option value="">—</option>
+              {MENTIONS.map(m => (
+                <option key={m.cle} value={m.cle}>{m.signe} {m.libelle}</option>
+              ))}
+            </select>
+          ))}
+        </div>
+      ))}
     </div>
   )
 }

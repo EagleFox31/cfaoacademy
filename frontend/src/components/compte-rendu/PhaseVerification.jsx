@@ -2,6 +2,7 @@ import { useMemo, useState, useRef } from 'react'
 import { dispositionsPour, PARTIES_RAPPORT } from '../../data/mock_sessions_formateur'
 import { SEUIL, calculer, afficher } from '../../utils/baremeCfao'
 import { periodeLongue, nombreDeJours } from '../../utils/compteRendu'
+import { syntheseSatisfaction, afficherTaux } from '../../utils/satisfactionCfao'
 
 /**
  * Phase 4 — l'edition du rapport.
@@ -473,18 +474,19 @@ function composerPages(b, session, s) {
   }
 
   if (retenue('qualite')) {
+    // Les taux viennent des questionnaires saisis en phase 2, avec la
+    // ponderation du classeur d'evaluation. Sans reponse, la page
+    // retombe sur une formulation neutre plutot que d'afficher « — ».
+    const sat = syntheseSatisfaction(b.satisfaction)
     pages.push({
-      cle: 'qualite', titre: 'Qualité et accueil', type: 'texte',
+      cle: 'qualite', titre: 'Qualité et accueil', type: 'chiffres',
       titrePage: 'QUALITÉ ET ACCUEIL',
       rubrique: 'qualite',
-      blocs: [{
-        cle: 'qualite',
-        titre: 'Retours des participants',
-        texte: b.textes?.qualite
-          || 'Les conditions d’accueil, la documentation remise et '
-            + 'l’organisation de la session ont été jugées conformes '
-            + 'aux attentes.',
-      }],
+      chiffres: [
+        { libelle: 'Qualité de la formation', valeur: afficherTaux(sat.formation) },
+        { libelle: 'Qualité de l’accueil', valeur: afficherTaux(sat.accueil) },
+        { libelle: 'Questionnaires', valeur: sat.repondants },
+      ],
     })
   }
 
