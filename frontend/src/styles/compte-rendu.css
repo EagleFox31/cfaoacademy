@@ -2168,11 +2168,42 @@
 
 /* La planche et sa legende : le cadre du modele fait 1,165 de rapport,
    la legende tient sur la bande de 0,048 qui le suit. */
-.cr-jour-planche {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+/* Le cadre porte la grille et la legende d'ensemble : les deux se
+   dimensionnent ensemble, comme le bloc photo de la diapositive. */
+.cr-planche-cadre {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   min-height: 0;
+  max-height: 100%;
+  align-self: center;
+  justify-self: center;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  aspect-ratio: var(--planche-ratio, 1.17);
+  margin-inline: auto;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--surface-2, rgba(16, 20, 48, 0.05));
+}
+/* La grille vit dans le cadre : celui-ci porte le fond et la marge,
+   elle garde son rapport et commande la taille de l'ensemble. */
+.cr-planche-cadre > .cr-planche {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: auto;
+  aspect-ratio: auto;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+}
+.cr-planche-legende {
+  border-color: transparent;
+  background: var(--surface-1, #fff);
+  font-size: 0.78rem;
+  padding: 4px 8px;
 }
 .cr-jour-planche .cr-planche {
   min-height: 0;
