@@ -1,0 +1,326 @@
+/* ══════════════════════════════════════════════════════════════════
+   Accueil formateur et parcours en trois phases
+
+   Complète `compte-rendu.css`. Mêmes règles : tous les tokens viennent
+   de `index.css`, aucune valeur brute.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── En-tête ────────────────────────────────────────────────────── */
+
+.cr-home-header { background: var(--paper-2); border-bottom: 1px solid var(--rule); }
+.cr-home-header--slim { background: var(--paper); }
+.cr-home-role {
+  display: inline-block;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--red); margin-bottom: 10px;
+}
+.cr-home-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(30px, 3.4vw, 44px); font-weight: 600;
+  letter-spacing: -.028em; line-height: 1.05; color: var(--ink); margin: 0 0 8px;
+}
+.cr-home-title--sm { font-size: clamp(22px, 2.2vw, 30px); margin-bottom: 18px; }
+.cr-home-sub { font-size: 15px; color: var(--muted); margin: 0; }
+
+.cr-retour {
+  background: none; border: 0; color: var(--muted); font-size: 13px;
+  font-family: inherit; cursor: pointer; padding: 0 0 12px;
+}
+.cr-retour:hover { color: var(--red); }
+
+/* ── Cartes d'entrée du module ──────────────────────────────────── */
+
+.cr-card-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px; margin-top: 4px;
+}
+.cr-entries {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px;
+}
+.cr-entry {
+  display: flex; align-items: flex-start; gap: 15px; text-align: left;
+  padding: 22px 24px; border: 1.5px solid var(--rule); border-radius: 14px;
+  background: var(--paper); cursor: pointer; font-family: inherit;
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+.cr-entry:hover {
+  border-color: var(--red); box-shadow: 0 8px 24px rgba(14, 17, 38, .08);
+  transform: translateY(-2px);
+}
+.cr-entry--primary { border-color: var(--red); background: var(--red-soft); }
+.cr-entry--draft { border-style: dashed; }
+.cr-entry-mark {
+  flex: none; width: 40px; height: 40px; border-radius: 11px;
+  display: grid; place-items: center; background: var(--paper);
+  border: 1px solid var(--rule); color: var(--red); font-size: 19px; line-height: 1;
+}
+.cr-entry--primary .cr-entry-mark { background: var(--red); color: #fff; border-color: var(--red); }
+.cr-entry-body { min-width: 0; }
+.cr-entry-title {
+  display: flex; align-items: center; gap: 9px;
+  font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600;
+  color: var(--ink); margin-bottom: 4px;
+}
+.cr-entry-count {
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px;
+  font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  background: var(--red); color: #fff;
+}
+.cr-entry-desc { font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+
+/* ── Les trois phases ───────────────────────────────────────────── */
+
+.cr-phases { display: flex; gap: 10px; flex-wrap: wrap; }
+.cr-phase {
+  display: flex; align-items: center; gap: 12px; padding: 12px 20px 12px 14px;
+  border: 1.5px solid var(--rule); border-radius: 12px; background: var(--paper);
+  cursor: pointer; font-family: inherit; text-align: left;
+  transition: border-color .18s, background .18s;
+}
+.cr-phase:disabled { opacity: .5; cursor: not-allowed; }
+.cr-phase--on { border-color: var(--red); background: var(--red-soft); }
+.cr-phase-num {
+  flex: none; width: 28px; height: 28px; border-radius: 999px;
+  display: grid; place-items: center; background: var(--paper-3); color: var(--muted);
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; font-weight: 700;
+}
+.cr-phase--on .cr-phase-num { background: var(--red); color: #fff; }
+.cr-phase--done .cr-phase-num { background: #E6F6EC; color: #147a41; }
+.cr-phase-texte { display: flex; flex-direction: column; gap: 1px; }
+.cr-phase-titre { font-size: 14px; font-weight: 600; color: var(--ink); }
+.cr-phase-resume { font-size: 12px; color: var(--muted); }
+
+/* ── Saisie manuelle et récapitulatif ───────────────────────────── */
+
+.cr-form-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 16px;
+}
+.cr-field--large { grid-column: 1 / -1; }
+.cr-session--manuel { border-style: dashed; background: var(--paper-2); }
+
+.cr-recap {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px 22px; padding: 16px 18px; background: var(--paper-2);
+  border: 1px solid var(--rule); border-radius: 12px;
+}
+.cr-recap-ligne { display: flex; flex-direction: column; gap: 2px; }
+.cr-recap-cle {
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--muted-2);
+}
+.cr-recap-val { font-size: 14px; color: var(--ink); font-weight: 500; }
+
+.cr-sous-titre {
+  display: flex; align-items: center; gap: 10px; font-size: 14px;
+  font-weight: 600; color: var(--ink); margin-bottom: 10px;
+}
+.cr-compte {
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px;
+  font-weight: 700; padding: 2px 9px; border-radius: 999px;
+  background: var(--red-soft); color: var(--red-deep);
+}
+.cr-compte-doux { font-size: 11.5px; font-weight: 400; color: var(--muted-2); }
+.cr-vide-texte { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+.cr-doux { color: var(--muted); font-size: 13.5px; }
+
+/* ── Barèmes ────────────────────────────────────────────────────── */
+
+.cr-baremes {
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 12px 16px; background: var(--paper-2); border: 1px solid var(--rule);
+  border-radius: 11px; margin-bottom: 16px;
+}
+.cr-baremes-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10.5px;
+  font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2);
+}
+.cr-bareme { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.cr-num--court { width: 52px; padding: 5px 8px; text-align: center; }
+.cr-table thead th small {
+  display: block; font-weight: 400; font-size: 9.5px; color: var(--muted-2); letter-spacing: 0;
+}
+.cr-avertissement { font-size: 11px; color: #8a5200; margin-top: 3px; line-height: 1.3; }
+
+.cr-appreciations {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px;
+}
+.cr-appreciation {
+  border: 1px solid var(--rule); border-radius: 11px; padding: 13px 15px; background: var(--paper);
+}
+.cr-appreciation-tete {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px;
+}
+
+/* ── Revue : sommaire et scène ──────────────────────────────────── */
+
+.cr-revue { display: grid; grid-template-columns: 224px 1fr; gap: 22px; align-items: start; }
+.cr-sommaire {
+  position: sticky; top: 90px; background: var(--paper); border: 1px solid var(--rule);
+  border-radius: 13px; padding: 14px 10px; max-height: calc(100vh - 130px); overflow-y: auto;
+}
+.cr-sommaire-titre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px;
+  font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted-2); padding: 0 8px 10px;
+}
+.cr-sommaire-liste { list-style: none; margin: 0; padding: 0; }
+.cr-sommaire-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 9px;
+  border: 0; border-radius: 8px; background: none; cursor: pointer;
+  font-family: inherit; text-align: left; color: var(--muted); font-size: 13px;
+  transition: background .14s, color .14s;
+}
+.cr-sommaire-item:hover { background: var(--paper-3); color: var(--ink); }
+.cr-sommaire-item--on { background: var(--red-soft); color: var(--red-deep); font-weight: 600; }
+.cr-sommaire-num {
+  flex: none; width: 20px; font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px; color: var(--muted-2);
+}
+.cr-sommaire-item--on .cr-sommaire-num { color: var(--red); }
+.cr-sommaire-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-sommaire-pastille {
+  flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 9.5px;
+  font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--rule); color: var(--muted);
+}
+
+.cr-scene { min-width: 0; }
+.cr-scene-tete {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 14px; margin-bottom: 10px;
+}
+.cr-scene-nom { font-size: 15px; font-weight: 600; color: var(--ink); }
+.cr-scene-aide { font-size: 12.5px; color: var(--muted-2); }
+
+/* ── La page, à l'échelle d'une diapositive ─────────────────────── */
+
+.cr-page {
+  aspect-ratio: 16 / 9; background: var(--paper); border: 1px solid var(--rule);
+  border-radius: 10px; box-shadow: 0 6px 28px rgba(14, 17, 38, .1);
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.cr-page-bandeau { height: 8px; background: var(--navy); flex: none; }
+.cr-page-corps {
+  flex: 1; padding: 26px 32px; display: flex; flex-direction: column;
+  gap: 12px; min-height: 0; overflow: hidden;
+}
+.cr-page-titre {
+  font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 600;
+  letter-spacing: -.01em; color: var(--navy); line-height: 1.2;
+}
+.cr-page-soustitre { font-size: 13px; color: var(--muted); }
+.cr-page-blocs { display: flex; flex-direction: column; gap: 11px; overflow: hidden; }
+.cr-page-bloc-titre { font-size: 12px; font-weight: 700; color: var(--red); margin-bottom: 2px; }
+.cr-page-bloc-texte { font-size: 12.5px; line-height: 1.5; color: var(--ink); }
+
+.cr-page-tableau { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cr-page-tableau th {
+  background: var(--navy); color: #fff; text-align: left; padding: 6px 10px;
+  font-size: 10.5px; font-weight: 600;
+}
+.cr-page-tableau td { padding: 5px 10px; border-bottom: 1px solid var(--rule); }
+.cr-cell--ko { color: var(--red); font-weight: 600; }
+.cr-cell--ok { color: #147a41; font-weight: 600; }
+
+.cr-page-photos {
+  flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px; min-height: 0;
+}
+.cr-page-photo { margin: 0; min-height: 0; display: flex; flex-direction: column; }
+.cr-page-photo img {
+  width: 100%; flex: 1; object-fit: cover; border-radius: 5px;
+  min-height: 0; background: var(--paper-3);
+}
+.cr-page-photo figcaption {
+  font-size: 10px; color: var(--muted); margin-top: 3px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cr-page-photos-vide {
+  grid-column: 1 / -1; display: grid; place-items: center;
+  border: 2px dashed var(--rule); border-radius: 8px; color: var(--muted-2); font-size: 12.5px;
+}
+
+.cr-page-chiffres { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 8px; }
+.cr-page-chiffre {
+  background: var(--paper-2); border: 1px solid var(--rule); border-radius: 9px;
+  padding: 14px; text-align: center;
+}
+.cr-page-chiffre-val {
+  font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 600;
+  color: var(--ink); line-height: 1;
+}
+.cr-page-chiffre-lab { font-size: 10.5px; color: var(--muted); margin-top: 5px; }
+
+/* ── Texte éditable à même l'aperçu ─────────────────────────────── */
+
+.cr-editable { border-radius: 5px; cursor: text; transition: background .14s, box-shadow .14s; outline: none; }
+.cr-editable:hover { background: rgba(227, 0, 27, .06); box-shadow: 0 0 0 4px rgba(227, 0, 27, .06); }
+.cr-editable:focus-visible { box-shadow: 0 0 0 2px var(--red); }
+.cr-editable--actif {
+  background: var(--paper); border: 1px solid var(--red);
+  box-shadow: 0 0 0 3px rgba(227, 0, 27, .12); padding: 4px 7px;
+  font-family: inherit; width: 100%; resize: vertical;
+}
+.cr-editable-vide { color: var(--muted-2); font-style: italic; }
+
+/* ── Outils sous la page ────────────────────────────────────────── */
+
+.cr-outils {
+  margin-top: 16px; padding: 16px 18px; background: var(--paper-2);
+  border: 1px solid var(--rule); border-radius: 12px;
+}
+.cr-outils-tete {
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10.5px;
+  font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted-2); margin-bottom: 10px;
+}
+.cr-drop--compact { padding: 18px 16px; display: flex; flex-direction: column; gap: 3px; }
+.cr-vignettes {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 10px; margin-top: 12px;
+}
+.cr-vignette {
+  border: 1px solid var(--rule); border-radius: 9px; overflow: hidden;
+  background: var(--paper); padding: 0 0 7px;
+}
+.cr-vignette img {
+  width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--paper-3);
+}
+.cr-vignette .cr-photo-legend { margin: 7px 7px 0; width: calc(100% - 14px); }
+.cr-vignette .cr-photo-del { margin: 5px 7px 0; }
+
+@media (max-width: 980px) {
+  .cr-revue { grid-template-columns: 1fr; }
+  .cr-sommaire { position: static; max-height: none; overflow-x: auto; padding: 10px; }
+  .cr-sommaire-titre { display: none; }
+  .cr-sommaire-liste { display: flex; gap: 6px; }
+  .cr-sommaire-nom { max-width: 120px; }
+}
+
+/* Le portail colore une section sur deux en navy. Les ecrans de
+   travail du module restent clairs : un fond sombre derriere un
+   formulaire fait perdre le fil de ce qui est saisissable. */
+.cr-section-claire { background: var(--paper) !important; }
+.cr-section-claire .portal-section-title { color: var(--ink) !important; }
+.cr-section-claire .portal-section-eyebrow { color: var(--red) !important; }
+
+/* ── Carte « à faire » ──────────────────────────────────────────── */
+
+.cr-todo {
+  display: flex; flex-direction: column; gap: 9px; text-align: left;
+  padding: 20px 22px; border: 1.5px solid var(--rule); border-left: 3px solid var(--red);
+  border-radius: 13px; background: var(--paper); cursor: pointer;
+  font-family: inherit; transition: box-shadow .18s, transform .18s, border-color .18s;
+}
+.cr-todo:hover {
+  box-shadow: 0 10px 28px rgba(14, 17, 38, .1); transform: translateY(-2px);
+  border-color: var(--red);
+}
+.cr-todo-tete { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cr-todo-titre {
+  font-family: 'Space Grotesk', sans-serif; font-size: 16.5px; font-weight: 600;
+  line-height: 1.25; color: var(--ink);
+}
+.cr-todo-action {
+  font-size: 13.5px; font-weight: 600; color: var(--red); margin-top: 3px;
+}

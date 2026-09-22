@@ -4,7 +4,8 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import Portal from './pages/portal/Portal.jsx'
 import Assistance from './pages/portal/Assistance.jsx'
 import Delivery from './pages/portal/Delivery.jsx'
-import TrainerReport from './pages/portal/TrainerReport.jsx'
+import TrainerHome from './pages/portal/TrainerHome.jsx'
+import TrainerReportNew from './pages/portal/TrainerReportNew.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
 import RouteMotion from './components/RouteMotion.jsx'
 import Accueil from './pages/Accueil.jsx'
@@ -43,7 +44,8 @@ export default function App() {
           <Route path="/portail" element={<Portal />} />
           <Route path="/portail/assistance" element={<Assistance />} />
           <Route path="/portail/delivery" element={<Delivery />} />
-          <Route path="/portail/compte-rendu" element={<TrainerReport />} />
+          <Route path="/portail/formateur" element={<TrainerHome />} />
+          <Route path="/portail/compte-rendu/nouveau" element={<TrainerReportNew />} />
         </Routes>
       </RouteMotion>
     </LocaleProvider>
