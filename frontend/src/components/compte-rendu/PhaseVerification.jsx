@@ -307,14 +307,14 @@ export default function PhaseVerification({
 const COMMENTAIRES_RESULTATS = [
   {
     cle: 'commentaireProgression',
-    titre: 'Constat sur la progression',
+    titre: 'Remarque sur la progression',
     exemple: 'Nous pouvons constater que l’ensemble des participants '
       + 'avait un niveau théorique inférieur en arrivant à cette '
       + 'formation et qu’ils ont progressé de […] %.',
   },
   {
     cle: 'commentaireAcquisition',
-    titre: 'Constat sur l’acquisition des compétences',
+    titre: 'Remarque sur l’acquisition des compétences',
     exemple: '[n] participants sur [n] ont réussi à cette session de '
       + 'formation, pour un pourcentage d’acquisition de […] %.',
   },
@@ -335,8 +335,7 @@ function FormulairePage({
   return (
     <div className="cr-edition">
       <div className="cr-edition-champs">
-        {page.cle !== 'objectifs' && page.cle !== 'participants'
-          && page.type !== 'chiffres' && !numeroJour && (
+        {page.titreLibre && (
           <label className="cr-field">
             <span className="cr-field-label">Titre de la page</span>
             <input className="cr-input" value={valeur('titre', page.titrePage || '')}
@@ -346,11 +345,18 @@ function FormulairePage({
 
         {page.type === 'couverture' && (page.periode || page.lieu) && (
           <p className="cr-vide-texte">
-            La période et le lieu viennent de l’étape 1.
+            Le titre, la période et le lieu viennent de l’étape 1.
           </p>
         )}
 
-        {(page.sousTitre != null || page.type === 'photos') && !numeroJour && (
+        {page.type === 'couverture' && !page.periode && !page.lieu && (
+          <p className="cr-vide-texte">
+            Cette page est fixe : elle clôt le document et n’a rien à
+            remplir.
+          </p>
+        )}
+
+        {page.titreLibre && (page.sousTitre != null || page.type === 'photos') && (
           <label className="cr-field">
             <span className="cr-field-label">
               Sous-titre <span>facultatif</span>
@@ -440,9 +446,27 @@ function FormulairePage({
 
         {page.type === 'chiffres' && !page.sansCommentaires && (
           <div className="cr-edition-large cr-res-saisie">
+            {page.tableaux && (
+              <div className="cr-res-tableaux">
+                {page.tableaux.map(t => (
+                  <table key={t.titre} className="cr-res-tableau">
+                    <caption>{t.titre}</caption>
+                    <tbody>
+                      {t.lignes.map(l => (
+                        <tr key={l.libelle}
+                          className={l.total ? 'cr-res-total' : undefined}>
+                          <th scope="row">{l.libelle}</th>
+                          <td>{l.valeur}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ))}
+              </div>
+            )}
             <p className="cr-obj-aide">
-              Les taux et les graphiques sont calculés depuis l’étape 2.
-              Ces deux commentaires les accompagnent sur la diapositive.
+              Les taux viennent de l’étape 2. Ces deux remarques les
+              accompagnent sur la diapositive.
             </p>
             <div className="cr-res-commentaires">
               {COMMENTAIRES_RESULTATS.map(c => (
@@ -760,18 +784,37 @@ function composerPages(b, session, s) {
     // la 17 pour la progression et l'acquisition, la 19 pour les taux
     // de satisfaction. On compose donc deux pages, pas une.
     const sat = syntheseSatisfaction(b.satisfaction)
+    // Les deux tableaux de la diapositive 17, lignes comprises : ils
+    // se lisent mieux ainsi que sous forme de compteurs isoles.
+    const pc = v => (v == null ? '—' : `${Math.round(v)} %`)
     pages.push({
       cle: 'resultats', titre: 'Résultats', type: 'chiffres',
       titrePage: 'RÉSULTAT GLOBAL DE LA SESSION',
-      chiffres: [
-        { libelle: 'Score moyen', valeur: afficher(s.scoreFinal) },
+      tableaux: [
         {
-          libelle: 'Progression',
-          valeur: s.progression == null ? '—'
-            : `${s.progression > 0 ? '+' : ''}${s.progression} %`,
+          titre: 'Taux de progression',
+          lignes: [
+            { libelle: 'Test théorique d’entrée', valeur: pc(s.entree) },
+            { libelle: 'Test théorique de sortie', valeur: pc(s.sortieTheorique) },
+            {
+              libelle: 'Taux de progression des stagiaires',
+              valeur: s.progression == null ? '—'
+                : `${s.progression > 0 ? '+' : ''}${Math.round(s.progression)} %`,
+              total: true,
+            },
+          ],
         },
-        { libelle: 'Participants', valeur: s.effectif },
-        { libelle: `Sous ${SEUIL} %`, valeur: s.enRetrait },
+        {
+          titre: 'Acquisition des compétences',
+          lignes: [
+            { libelle: 'Test théorique durant la formation', valeur: pc(s.sortieTheorique) },
+            { libelle: 'Test pratique durant la formation', valeur: pc(s.sortiePratique) },
+            {
+              libelle: 'Taux d’acquisition des compétences',
+              valeur: pc(s.scoreFinal), total: true,
+            },
+          ],
+        },
       ],
     })
     // La satisfaction ne se saisit pas : elle sort des questionnaires
@@ -791,6 +834,7 @@ function composerPages(b, session, s) {
     pages.push({
       cle: 'bilan', titre: 'Bilan', type: 'texte',
       titrePage: 'BILAN DE LA FORMATION',
+      titreLibre: true,
       rubrique: 'bilan',
       blocs: rubriquesBilan(b, s, periode),
     })
