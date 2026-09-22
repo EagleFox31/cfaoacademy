@@ -12,9 +12,10 @@ import { periodeLongue } from '../../utils/compteRendu'
  *     client, session d'un autre centre. Le formateur saisit alors les
  *     details lui-meme.
  *
- * Le second cas n'est pas un repli : c'est un chemin de plein droit,
- * affiche a cote du premier. Le cacher derriere un lien obligerait a
- * chercher, et ces sessions-la existent bel et bien.
+ * Le second cas reste visible en permanence, sous la liste, comme le
+ * « Je n'ai pas de compte » d'un formulaire de connexion. Presente en
+ * sixieme carte de la grille, au meme format que les sessions, il se
+ * lisait comme une session de plus et personne ne le voyait.
  */
 export default function PhaseSession({
   brouillon, maj, sessions, onChoisirSession, onSaisieManuelle,
@@ -36,12 +37,11 @@ export default function PhaseSession({
   if (!mode) {
     const proposables = sessions.filter(s => s.statut !== 'a_venir')
     return (
-      <div className="cr-panel">
+      <div className="cr-panel cr-panel--choix">
         <div className="cr-panel-head">
           <h2 className="cr-panel-title">De quelle formation s’agit-il ?</h2>
           <p className="cr-panel-hint">
-            Choisissez-la dans vos sessions, ou saisissez les informations
-            vous-même si elle n’y figure pas.
+            Choisissez-la parmi vos sessions.
           </p>
         </div>
 
@@ -66,16 +66,18 @@ export default function PhaseSession({
               </div>
             </button>
           ))}
+        </div>
 
-          <button type="button" className="cr-session cr-session--manuel"
+        {/* Sous la liste, comme le « Je n'ai pas de compte » d'un
+            formulaire de connexion : la ou le regard arrive quand il
+            n'a rien trouve au-dessus, et jamais noye dans la grille. */}
+        <div className="cr-echappee">
+          <span className="cr-echappee-texte">
+            Vous ne trouvez pas votre formation dans la liste ?
+          </span>
+          <button type="button" className="cr-echappee-lien"
             onClick={passerEnManuel}>
-            <div className="cr-session-top">
-              <span className="cr-session-code">SAISIE LIBRE</span>
-            </div>
-            <h3 className="cr-session-title">Formation hors planning</h3>
-            <div className="cr-session-meta">
-              <span>Renseigner l’intitulé, les dates et les participants</span>
-            </div>
+            Saisir les informations moi-même →
           </button>
         </div>
       </div>

@@ -1,10 +1,10 @@
 import { useMemo, useState, useRef } from 'react'
-import { dispositionsPour } from '../../data/mock_sessions_formateur'
+import { dispositionsPour, PARTIES_RAPPORT } from '../../data/mock_sessions_formateur'
 import { SEUIL, calculer, afficher } from '../../utils/baremeCfao'
 import { periodeLongue, nombreDeJours } from '../../utils/compteRendu'
 
 /**
- * Phase 3 — la revue du rapport.
+ * Phase 4 — l'edition du rapport.
  *
  * A ce stade tout est connu : le rapport peut etre compose. On le
  * montre donc, page par page, plutot que de demander encore des
@@ -403,69 +403,143 @@ function composerPages(b, session, s) {
   const participants = (b.participants || []).filter(p => p.present !== false)
   const pages = []
 
-  pages.push({
-    cle: 'couverture', titre: 'Couverture', type: 'texte',
-    titrePage: (b.intitule || 'Compte rendu de formation').toUpperCase(),
-    sousTitre: [periode, b.lieu].filter(Boolean).join(' — '),
-    blocs: [],
-  })
+  // La phase « structure » a dit ce que le document contient. Une
+  // partie ecartee ne doit pas reapparaitre ici : composer puis laisser
+  // retirer page a page reviendrait a ignorer ce choix.
+  const retenue = id => estRetenue(b, id, s, session)
 
-  pages.push({
-    cle: 'participants', titre: 'Participants', type: 'tableau',
-    titrePage: 'LES PARTICIPANTS',
-    rubrique: 'participants',
-    colonnes: ['Nom et prénom', 'Pays', 'Fonction'],
-    lignes: participants.map(p => [`${p.prenom} ${p.nom}`, p.pays, p.fonction]),
-  })
-
-  const jours = session ? nombreDeJours(session) : 0
-  for (let i = 1; i <= jours; i++) {
+  if (retenue('couverture')) {
     pages.push({
-      cle: `jour-${i}`, titre: `Jour ${i}`, type: 'photos',
-      titrePage: `${i}ᵉ JOUR DE FORMATION`,
-      rubrique: `jour-${i}`,
-      sousTitre: '',
+      cle: 'couverture', titre: 'Couverture', type: 'texte',
+      titrePage: (b.intitule || 'Compte rendu de formation').toUpperCase(),
+      sousTitre: [periode, b.lieu].filter(Boolean).join(' — '),
+      blocs: [],
     })
   }
 
-  pages.push({
-    cle: 'resultats', titre: 'Résultats', type: 'chiffres',
-    titrePage: 'RÉSULTAT GLOBAL DE LA SESSION',
-    chiffres: [
-      { libelle: 'Score moyen', valeur: afficher(s.scoreFinal) },
-      {
-        libelle: 'Progression',
-        valeur: s.progression == null ? '—'
-          : `${s.progression > 0 ? '+' : ''}${s.progression} %`,
-      },
-      { libelle: 'Participants', valeur: s.effectif },
-      { libelle: `Sous ${SEUIL} %`, valeur: s.enRetrait },
-    ],
-  })
-
-  pages.push({
-    cle: 'bilan', titre: 'Bilan', type: 'texte',
-    titrePage: 'BILAN DE LA FORMATION',
-    rubrique: 'bilan',
-    blocs: rubriquesBilan(b, s, periode),
-  })
-
-  participants.forEach((p, i) => {
-    const c = calculer(p, b.baremes)
+  if (retenue('objectifs')) {
     pages.push({
-      cle: `fiche-${p.id}`, titre: `${p.prenom} ${p.nom}`, type: 'texte',
-      titrePage: `RÉSULTAT INDIVIDUEL — ${p.prenom} ${p.nom}`.toUpperCase(),
-      sousTitre: `Score final ${afficher(c.scoreFinal)} · progression `
-        + (c.progression == null ? '—' : `${c.progression > 0 ? '+' : ''}${c.progression} %`),
+      cle: 'objectifs', titre: 'Objectifs', type: 'texte',
+      titrePage: 'OBJECTIFS DE LA FORMATION',
+      rubrique: 'objectifs',
       blocs: [{
-        cle: 'appreciation',
-        titre: 'Appréciation du formateur',
-        texte: p.appreciation || appreciationAuto(p, c),
+        cle: 'objectifs',
+        titre: 'À l’issue de la formation',
+        texte: b.textes?.objectifs
+          || 'Les participants maîtrisent les gestes et procédures '
+            + 'couverts par le module, dans le respect des standards '
+            + 'du constructeur.',
       }],
     })
-  })
+  }
+
+  if (retenue('participants')) {
+    pages.push({
+      cle: 'participants', titre: 'Participants', type: 'tableau',
+      titrePage: 'LES PARTICIPANTS',
+      rubrique: 'participants',
+      colonnes: ['Nom et prénom', 'Pays', 'Fonction'],
+      lignes: participants.map(p => [`${p.prenom} ${p.nom}`, p.pays, p.fonction]),
+    })
+  }
+
+  const jours = session ? nombreDeJours(session) : 0
+  if (retenue('deroule')) {
+    for (let i = 1; i <= Math.max(jours, 1); i++) {
+      pages.push({
+        cle: `jour-${i}`, titre: `Jour ${i}`, type: 'photos',
+        titrePage: `${i}ᵉ JOUR DE FORMATION`,
+        rubrique: `jour-${i}`,
+        sousTitre: '',
+      })
+    }
+  }
+
+  if (retenue('resultats')) {
+    pages.push({
+      cle: 'resultats', titre: 'Résultats', type: 'chiffres',
+      titrePage: 'RÉSULTAT GLOBAL DE LA SESSION',
+      chiffres: [
+        { libelle: 'Score moyen', valeur: afficher(s.scoreFinal) },
+        {
+          libelle: 'Progression',
+          valeur: s.progression == null ? '—'
+            : `${s.progression > 0 ? '+' : ''}${s.progression} %`,
+        },
+        { libelle: 'Participants', valeur: s.effectif },
+        { libelle: `Sous ${SEUIL} %`, valeur: s.enRetrait },
+      ],
+    })
+  }
+
+  if (retenue('qualite')) {
+    pages.push({
+      cle: 'qualite', titre: 'Qualité et accueil', type: 'texte',
+      titrePage: 'QUALITÉ ET ACCUEIL',
+      rubrique: 'qualite',
+      blocs: [{
+        cle: 'qualite',
+        titre: 'Retours des participants',
+        texte: b.textes?.qualite
+          || 'Les conditions d’accueil, la documentation remise et '
+            + 'l’organisation de la session ont été jugées conformes '
+            + 'aux attentes.',
+      }],
+    })
+  }
+
+  if (retenue('bilan')) {
+    pages.push({
+      cle: 'bilan', titre: 'Bilan', type: 'texte',
+      titrePage: 'BILAN DE LA FORMATION',
+      rubrique: 'bilan',
+      blocs: rubriquesBilan(b, s, periode),
+    })
+  }
+
+  if (retenue('fiches')) {
+    participants.forEach(p => {
+      const c = calculer(p, b.baremes)
+      pages.push({
+        cle: `fiche-${p.id}`, titre: `${p.prenom} ${p.nom}`, type: 'texte',
+        titrePage: `RÉSULTAT INDIVIDUEL — ${p.prenom} ${p.nom}`.toUpperCase(),
+        sousTitre: `Score final ${afficher(c.scoreFinal)} · progression `
+          + (c.progression == null ? '—' : `${c.progression > 0 ? '+' : ''}${c.progression} %`),
+        blocs: [{
+          cle: 'appreciation',
+          titre: 'Appréciation du formateur',
+          texte: p.appreciation || appreciationAuto(p, c),
+        }],
+      })
+    })
+  }
+
+  if (retenue('cloture')) {
+    pages.push({
+      cle: 'cloture', titre: 'Clôture', type: 'texte',
+      titrePage: 'MERCI',
+      sousTitre: 'CFAO Mobility Academy',
+      blocs: [],
+    })
+  }
 
   return pages
+}
+
+/** Une partie entre-t-elle dans le document ?
+ *
+ *  Meme regle que la phase « structure » : les parties presentes dans
+ *  plus de 90 % des comptes rendus sont acquises, les autres suivent le
+ *  choix du formateur, et a defaut le fait qu'elles aient de la matiere.
+ */
+function estRetenue(b, id, s, session) {
+  const partie = PARTIES_RAPPORT.find(p => p.id === id)
+  if (partie?.obligatoire) return true
+  const choix = b.parties || {}
+  if (choix[id] != null) return choix[id]
+  if (id === 'fiches') return s.saisis > 0
+  if (id === 'objectifs') return Boolean(session?.codeFormation)
+  return false
 }
 
 /** Les quatre rubriques du bilan, redigees depuis les chiffres. */

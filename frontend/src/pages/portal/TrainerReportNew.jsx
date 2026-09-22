@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Nav from '../../components/Nav'
-import Footer from '../../components/Footer'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import { SESSIONS_FORMATEUR } from '../../data/mock_sessions_formateur'
 import { syntheseGroupe } from '../../utils/baremeCfao'
@@ -9,27 +8,32 @@ import { enregistrer, recuperer } from '../../utils/brouillonsCompteRendu'
 import { nombreDeJours } from '../../utils/compteRendu'
 import PhaseSession from '../../components/compte-rendu/PhaseSession'
 import PhaseResultats from '../../components/compte-rendu/PhaseResultats'
+import PhaseStructure from '../../components/compte-rendu/PhaseStructure'
 import PhaseVerification from '../../components/compte-rendu/PhaseVerification'
 import '../../styles/compte-rendu.css'
 
 /**
- * Redaction d'un compte rendu, en trois phases.
+ * Redaction d'un compte rendu, en quatre etapes.
  *
  *   1. **La session** — reprise du planning, ou saisie manuelle quand
  *      la formation n'y figure pas.
  *   2. **Les résultats** — notes brutes et appreciations. Tous les
  *      pourcentages se calculent, comme dans les classeurs.
- *   3. **La vérification** — le rapport est deja composable : on le
- *      montre, le formateur ajoute ses photos, choisit les
- *      dispositions et corrige les textes a meme l'apercu.
+ *   3. **La structure** — quelles parties composeront le document. Les
+ *      cinq presentes dans plus de 90 % des rapports sont acquises ;
+ *      les quatre autres se decident session par session.
+ *   4. **L'édition** — le rapport est alors composable : on le montre,
+ *      le formateur ajoute ses photos, choisit les dispositions et
+ *      corrige les textes a meme l'apercu.
  *
- * Trois phases, pas neuf etapes. Un decoupage fin rassure celui qui
- * concoit ; il decourage celui qui doit tout remplir un vendredi soir.
+ * Quatre etapes, pas neuf. Choisir la structure avant de composer evite
+ * de produire des pages qu'il faudrait ensuite retirer une a une.
  */
 const PHASES = [
   { cle: 'session', titre: 'La session', resume: 'Formation, dates, participants' },
   { cle: 'resultats', titre: 'Les résultats', resume: 'Notes et appréciations' },
-  { cle: 'verification', titre: 'Vérification', resume: 'Photos, mise en page, aperçu' },
+  { cle: 'structure', titre: 'La structure', resume: 'Parties du document' },
+  { cle: 'edition', titre: 'L’édition', resume: 'Photos, mise en page, aperçu' },
 ]
 
 function brouillonVide() {
@@ -47,6 +51,7 @@ function brouillonVide() {
     photos: {},
     dispositions: {},
     textes: {},
+    parties: {},
     phase: 0,
   }
 }
@@ -111,9 +116,9 @@ export default function TrainerReportNew() {
   return (
     <>
       <Nav />
-      <main className="portal-page">
+      <main className="portal-page cr-assistant">
         <header className="cr-home-header cr-home-header--slim" ref={haut}>
-          <div className="container" style={{ padding: '26px 32px 20px' }}>
+          <div className="container" style={{ padding: '18px 32px 14px' }}>
             <button type="button" className="cr-retour"
               onClick={() => naviguer('/portail/formateur')}>
               ← Mes comptes rendus
@@ -140,8 +145,8 @@ export default function TrainerReportNew() {
           </div>
         </header>
 
-        <section>
-          <div className="container" style={{ padding: '26px 32px 56px' }}>
+        <section className="cr-etape">
+          <div className="container" style={{ padding: '20px 32px 24px' }}>
             {phase === 0 && (
               <PhaseSession
                 brouillon={brouillon} maj={maj}
@@ -159,6 +164,12 @@ export default function TrainerReportNew() {
               />
             )}
             {phase === 2 && (
+              <PhaseStructure
+                brouillon={brouillon} maj={maj}
+                session={session} synthese={synthese}
+              />
+            )}
+            {phase === 3 && (
               <PhaseVerification
                 brouillon={brouillon} maj={maj}
                 session={session} synthese={synthese}
@@ -166,7 +177,7 @@ export default function TrainerReportNew() {
               />
             )}
 
-            {phase < 2 && (
+            {phase < PHASES.length - 1 && (
               <div className="cr-actions">
                 <button type="button" className="cr-btn cr-btn--ghost"
                   onClick={() => phase === 0 ? naviguer('/portail/formateur') : aller(phase - 1)}>
@@ -180,7 +191,7 @@ export default function TrainerReportNew() {
                   )}
                   <button type="button" className="cr-btn cr-btn--primary"
                     onClick={() => aller(phase + 1)} disabled={!pret}>
-                    {phase === 1 ? 'Voir le rapport →' : 'Continuer →'}
+                    {phase === 2 ? 'Composer le rapport →' : 'Continuer →'}
                   </button>
                 </div>
               </div>
@@ -188,7 +199,6 @@ export default function TrainerReportNew() {
           </div>
         </section>
       </main>
-      <Footer />
     </>
   )
 }
