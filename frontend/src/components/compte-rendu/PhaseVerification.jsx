@@ -2,11 +2,13 @@ import { useMemo, useState, useRef } from 'react'
 import { dispositionsPour, partieRetenue } from '../../data/mock_sessions_formateur'
 import { SEUIL, calculer, afficher } from '../../utils/baremeCfao'
 import { periodeLongue, nombreDeJours } from '../../utils/compteRendu'
-import { syntheseSatisfaction, afficherTaux } from '../../utils/satisfactionCfao'
+import { syntheseSatisfaction, afficherTaux, detailParCritere,
+  CRITERES_FORMATION, CRITERES_ACCUEIL } from '../../utils/satisfactionCfao'
 import ApercuReel from './ApercuReel'
 import EditeurObjectifs from './EditeurObjectifs'
 import EditeurParticipants from './EditeurParticipants'
 import EditeurJournee, { MAX_PHOTOS_JOUR } from './EditeurJournee'
+import EditeurBilan from './EditeurBilan'
 import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
 
 /**
@@ -320,6 +322,29 @@ const COMMENTAIRES_RESULTATS = [
   },
 ]
 
+/** Les tableaux de chiffres d'une page, tels que le modele les pose. */
+function TableauxResultats({ tableaux }) {
+  if (!tableaux?.length) return null
+  return (
+    <div className="cr-res-tableaux">
+      {tableaux.map(t => (
+        <table key={t.titre} className="cr-res-tableau">
+          <caption>{t.titre}</caption>
+          <tbody>
+            {t.lignes.map(l => (
+              <tr key={l.libelle}
+                className={l.total ? 'cr-res-total' : undefined}>
+                <th scope="row">{l.libelle}</th>
+                <td>{l.valeur}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ))}
+    </div>
+  )
+}
+
 function FormulairePage({
   page, textes, onTexte, photos, disposition,
   onAjouter, onRetirer, onLegender, onDisposition,
@@ -384,18 +409,33 @@ function FormulairePage({
           </div>
         )}
 
-        {page.type === 'texte' && page.cle !== 'objectifs' && (
-          <div className="cr-edition-large cr-bilan-rubriques">
-            {page.blocs.map(b => (
-              <label key={b.cle} className="cr-bilan-rubrique">
-                <span className="cr-field-label">{b.titre}</span>
-                <textarea className="cr-textarea cr-bilan-texte"
-                  value={valeur(b.cle, b.texte)}
-                  onChange={e => onTexte(`${page.cle}.${b.cle}`, e.target.value)} />
-              </label>
-            ))}
+        {page.cle === 'bilan' && (
+          <div className="cr-edition-large">
+            <EditeurBilan
+              blocs={page.blocs}
+              textes={textes}
+              photos={photos || []}
+              disposition={disposition}
+              legende={legendes?.[page.cle]}
+              onTexte={onTexte}
+              onLegende={v => onLegende(page.cle, v)}
+              onAjouter={onAjouter}
+              onRetirer={onRetirer}
+              onReordonner={onReordonner}
+              onDisposition={onDisposition}
+              onLegender={onLegender} />
           </div>
         )}
+
+        {page.type === 'texte' && page.cle !== 'objectifs'
+          && page.cle !== 'bilan' && page.blocs.map(b => (
+          <label key={b.cle} className="cr-field">
+            <span className="cr-field-label">{b.titre}</span>
+            <textarea className="cr-textarea" rows={3}
+              value={valeur(b.cle, b.texte)}
+              onChange={e => onTexte(`${page.cle}.${b.cle}`, e.target.value)} />
+          </label>
+        ))}
 
         {page.cle === 'participants' && (
           <div className="cr-edition-large">
@@ -438,32 +478,18 @@ function FormulairePage({
         )}
 
         {page.type === 'chiffres' && page.sansCommentaires && (
-          <p className="cr-vide-texte">
-            Ces taux sont calculés depuis les questionnaires de l’étape 2.
-            Cette diapositive n’a pas de zone à remplir.
-          </p>
+          <div className="cr-edition-large cr-res-saisie">
+            <TableauxResultats tableaux={page.tableaux} />
+            <p className="cr-obj-aide">
+              Ces taux viennent des questionnaires de l’étape 2.
+              Cette diapositive n’a pas de zone à remplir.
+            </p>
+          </div>
         )}
 
         {page.type === 'chiffres' && !page.sansCommentaires && (
           <div className="cr-edition-large cr-res-saisie">
-            {page.tableaux && (
-              <div className="cr-res-tableaux">
-                {page.tableaux.map(t => (
-                  <table key={t.titre} className="cr-res-tableau">
-                    <caption>{t.titre}</caption>
-                    <tbody>
-                      {t.lignes.map(l => (
-                        <tr key={l.libelle}
-                          className={l.total ? 'cr-res-total' : undefined}>
-                          <th scope="row">{l.libelle}</th>
-                          <td>{l.valeur}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ))}
-              </div>
-            )}
+            <TableauxResultats tableaux={page.tableaux} />
             <p className="cr-obj-aide">
               Les taux viennent de l’étape 2. Ces deux remarques les
               accompagnent sur la diapositive.
@@ -485,7 +511,7 @@ function FormulairePage({
         )}
       </div>
 
-      {page.rubrique && page.cle !== 'objectifs'
+      {page.rubrique && page.cle !== 'objectifs' && page.cle !== 'bilan'
         && page.cle !== 'participants' && !numeroJour && (
         <PanneauPhotos
           rubrique={page.rubrique}
@@ -819,13 +845,25 @@ function composerPages(b, session, s) {
     })
     // La satisfaction ne se saisit pas : elle sort des questionnaires
     // de l'etape 2 et la diapositive n'a aucune zone libre.
+    const critere = (criteres, titre, total, valeur) => ({
+      titre,
+      lignes: [
+        ...detailParCritere(b.satisfaction, criteres).map(c => ({
+          libelle: c.libelle,
+          valeur: c.moyenne == null ? '—' : `${Math.round(c.moyenne)} %`,
+        })),
+        { libelle: total, valeur: afficherTaux(valeur), total: true },
+      ],
+    })
     pages.push({
       cle: 'satisfaction', titre: 'Satisfaction', type: 'chiffres',
       titrePage: 'RÉSULTAT GLOBAL DE LA SESSION',
       sansCommentaires: true,
-      chiffres: [
-        { libelle: 'Qualité de la formation', valeur: afficherTaux(sat.formation) },
-        { libelle: 'Qualité de l’accueil', valeur: afficherTaux(sat.accueil) },
+      tableaux: [
+        critere(CRITERES_FORMATION, 'Qualité de la formation',
+          'Qualité de la formation', sat.formation),
+        critere(CRITERES_ACCUEIL, 'Qualité de l’accueil',
+          'Qualité de l’accueil', sat.accueil),
       ],
     })
   }
@@ -834,7 +872,6 @@ function composerPages(b, session, s) {
     pages.push({
       cle: 'bilan', titre: 'Bilan', type: 'texte',
       titrePage: 'BILAN DE LA FORMATION',
-      titreLibre: true,
       rubrique: 'bilan',
       blocs: rubriquesBilan(b, s, periode),
     })

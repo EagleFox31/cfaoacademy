@@ -2147,6 +2147,17 @@
   flex: 1;
   min-height: 0;
 }
+.cr-jour-rubriques--bilan {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(96px, 1fr));
+  gap: 10px 16px;
+}
+@media (max-width: 900px) {
+  .cr-jour-rubriques--bilan {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(4, minmax(80px, 1fr));
+  }
+}
 .cr-jour-rubrique {
   display: flex;
   flex-direction: column;
@@ -2271,15 +2282,17 @@
 .cr-res-saisie {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  justify-content: center;
+  gap: 18px;
   min-height: 0;
+  padding-block: 8px;
 }
 /* Les deux constats se lisent cote a cote, comme sous les deux
    graphiques du modele ; ils repassent l'un sous l'autre au serre. */
 .cr-res-commentaires {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 20px;
   align-content: start;
 }
 @media (max-width: 900px) {
@@ -2329,7 +2342,7 @@
 .cr-res-tableaux {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 20px;
 }
 @media (max-width: 900px) {
   .cr-res-tableaux { grid-template-columns: minmax(0, 1fr); }
@@ -2343,7 +2356,7 @@
   overflow: hidden;
 }
 .cr-res-tableau caption {
-  padding: 6px 10px;
+  padding: 8px 12px;
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -2354,7 +2367,7 @@
 }
 .cr-res-tableau th,
 .cr-res-tableau td {
-  padding: 6px 10px;
+  padding: 8px 12px;
   text-align: left;
   font-weight: 400;
   border-top: 1px solid var(--line, rgba(16, 20, 48, 0.1));
