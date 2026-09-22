@@ -1671,6 +1671,7 @@
   flex-direction: column;
   min-height: 0;
 }
+.cr-blocs--journee .cr-bloc--ouvert .cr-bloc-corps,
 .cr-blocs--objectifs .cr-bloc--ouvert .cr-bloc-corps {
   display: flex;
   flex-direction: column;
@@ -1852,8 +1853,10 @@
    l'est prend la place disponible, l'autre se replie a son en-tete.
    Sans cela la planche reste a sa taille minimale sous un vide. */
 .cr-edition:has(.cr-blocs--objectifs),
+.cr-edition:has(.cr-blocs--journee),
 .cr-edition:has(.cr-part) { padding-bottom: 0; }
 .cr-edition-champs:has(.cr-part),
+.cr-edition-champs:has(.cr-blocs--journee),
 .cr-edition-champs:has(.cr-blocs--objectifs) {
   flex: 1;
   min-height: 0;
@@ -1863,6 +1866,7 @@
   align-items: stretch;
 }
 .cr-edition-champs:has(.cr-part) > .cr-edition-large,
+.cr-edition-champs:has(.cr-blocs--journee) > .cr-edition-large,
 .cr-edition-champs:has(.cr-blocs--objectifs) > .cr-edition-large {
   display: flex;
   flex: 1;
@@ -1870,12 +1874,15 @@
 }
 .cr-blocs--objectifs { flex: 1; min-height: 0; }
 .cr-blocs--objectifs .cr-bloc:not(.cr-bloc--ouvert) { flex: none; }
+.cr-blocs--journee .cr-bloc:not(.cr-bloc--ouvert) { flex: none; }
+.cr-blocs--journee .cr-bloc--ouvert,
 .cr-blocs--objectifs .cr-bloc--ouvert {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
 }
+.cr-blocs--journee .cr-bloc--ouvert .cr-bloc-corps,
 .cr-blocs--objectifs .cr-bloc--ouvert .cr-bloc-corps {
   display: flex;
   flex-direction: column;
@@ -2108,3 +2115,74 @@
 .cr-groupe--pose { border-style: solid; }
 .cr-groupe img { width: 100%; height: 100%; object-fit: cover; }
 .cr-groupe:hover .cr-case-retirer { opacity: 1; }
+
+/* ---- Journee de formation : rubriques et planche photos ---- */
+
+.cr-blocs--journee { display: flex; flex-direction: column; gap: 10px;
+  flex: 1; min-height: 0; }
+
+/* Reprendre la veille : une action discrete, au-dessus des rubriques. */
+.cr-jour-veille {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+/* Les trois rubriques du modele se lisent de haut en bas, dans l'ordre
+   de la diapositive. Elles se partagent la hauteur au prorata de ce
+   qu'on y met : 5 thematiques, 2 points forts, 3 ameliorations en
+   mediane sur les comptes rendus releves. */
+.cr-jour-rubriques {
+  display: grid;
+  grid-template-rows: minmax(96px, 5fr) minmax(88px, 2fr) minmax(92px, 3fr);
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+.cr-jour-rubrique {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+.cr-jour-rubrique .cr-field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cr-jour-compte {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink-3, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+.cr-jour-texte {
+  flex: 1;
+  min-height: 66px;
+  resize: none;
+  line-height: 1.5;
+}
+
+/* La planche et sa legende : le cadre du modele fait 1,165 de rapport,
+   la legende tient sur la bande de 0,048 qui le suit. */
+.cr-jour-planche {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 8px;
+  min-height: 0;
+}
+.cr-jour-planche .cr-planche {
+  min-height: 0;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  justify-self: center;
+}
+.cr-jour-legende {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
