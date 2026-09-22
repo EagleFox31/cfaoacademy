@@ -113,12 +113,25 @@ export default function TrainerReportNew() {
     ? Boolean(session?.moduleFormation && brouillon.participants.length)
     : true
 
+  // Le retour suit la profondeur reelle : a la premiere phase, une
+  // session engagee se quitte d'abord vers la liste, et seule la liste
+  // vide ramene au tableau de bord.
+  const engage = Boolean(brouillon.sessionId || brouillon.manuel)
+  const libelleRetour = phase > 0 ? 'Retour'
+    : engage ? 'Changer de formation' : 'Annuler'
+
+  function retourner() {
+    if (phase > 0) return aller(phase - 1)
+    if (engage) return setBrouillon(brouillonVide())
+    naviguer('/portail/formateur')
+  }
+
   return (
     <>
       <Nav />
       <main className="portal-page cr-assistant">
         <header className="cr-home-header cr-home-header--slim" ref={haut}>
-          <div className="container" style={{ padding: '18px 32px 14px' }}>
+          <div className="container" style={{ padding: '16px 32px 12px' }}>
             <button type="button" className="cr-retour"
               onClick={() => naviguer('/portail/formateur')}>
               ← Mes comptes rendus
@@ -146,7 +159,7 @@ export default function TrainerReportNew() {
         </header>
 
         <section className="cr-etape">
-          <div className="container" style={{ padding: '20px 32px 24px' }}>
+          <div className="container" style={{ padding: '12px 32px 20px' }}>
             {phase === 0 && (
               <PhaseSession
                 brouillon={brouillon} maj={maj}
@@ -180,8 +193,8 @@ export default function TrainerReportNew() {
             {phase < PHASES.length - 1 && (
               <div className="cr-actions">
                 <button type="button" className="cr-btn cr-btn--ghost"
-                  onClick={() => phase === 0 ? naviguer('/portail/formateur') : aller(phase - 1)}>
-                  ← {phase === 0 ? 'Annuler' : 'Retour'}
+                  onClick={retourner}>
+                  ← {libelleRetour}
                 </button>
                 <div className="cr-actions-right">
                   {phase === 1 && !synthese.complet && synthese.saisis > 0 && (
