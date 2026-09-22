@@ -29,6 +29,10 @@ export default function PhaseVerification({
   )
   const [active, setActive] = useState(0)
   const [etat, setEtat] = useState('revue')
+  // Deux modes plutot qu'une page a moitie editable : on remplit, ou
+  // on regarde le resultat. Un texte cliquable dans un apercu ne dit
+  // pas qu'il l'est, et un apercu qu'on modifie n'est plus un apercu.
+  const [mode, setMode] = useState('edition')
   const page = pages[active]
 
   function majTexte(cle, valeur) {
@@ -136,26 +140,39 @@ export default function PhaseVerification({
       <div className="cr-scene">
         <div className="cr-scene-tete">
           <span className="cr-scene-nom">{page?.titre}</span>
-          <span className="cr-scene-aide">
-            Cliquez sur un texte pour le corriger
-          </span>
+          <div className="cr-modes" role="tablist" aria-label="Mode d’affichage">
+            {[
+              ['edition', 'Édition', '✎'],
+              ['apercu', 'Aperçu', '▢'],
+            ].map(([cle, libelle, signe]) => (
+              <button key={cle} type="button" role="tab"
+                aria-selected={mode === cle}
+                className={`cr-mode${mode === cle ? ' cr-mode--on' : ''}`}
+                onClick={() => setMode(cle)}>
+                <span aria-hidden="true">{signe}</span> {libelle}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <ApercuPage page={page} textes={brouillon.textes || {}}
-          onTexte={majTexte} photos={photos} />
-
-        {page?.rubrique && (
-          <PanneauPhotos
-            rubrique={page.rubrique}
+        {mode === 'edition' ? (
+          <FormulairePage
+            page={page}
+            textes={brouillon.textes || {}}
+            onTexte={majTexte}
             photos={photos}
-            disposition={brouillon.dispositions?.[page.rubrique]}
-            onAjouter={f => ajouterPhotos(page.rubrique, f)}
-            onRetirer={id => retirerPhoto(page.rubrique, id)}
-            onLegender={(id, t) => legender(page.rubrique, id, t)}
-            onDisposition={d => maj({
+            disposition={page?.rubrique
+              ? brouillon.dispositions?.[page.rubrique] : null}
+            onAjouter={f => page?.rubrique && ajouterPhotos(page.rubrique, f)}
+            onRetirer={id => page?.rubrique && retirerPhoto(page.rubrique, id)}
+            onLegender={(id, t) => page?.rubrique && legender(page.rubrique, id, t)}
+            onDisposition={d => page?.rubrique && maj({
               dispositions: { ...(brouillon.dispositions || {}), [page.rubrique]: d },
             })}
           />
+        ) : (
+          <ApercuPage page={page} textes={brouillon.textes || {}}
+            photos={photos} />
         )}
 
         <div className="cr-actions">
@@ -183,22 +200,106 @@ export default function PhaseVerification({
 }
 
 /* ─────────────────────────────────────────────────────────────
+   Le formulaire d'une page : ce qu'elle contient, en clair.
+   ───────────────────────────────────────────────────────────── */
+
+/** Les champs de la page courante, preremplis et modifiables.
+ *
+ *  Chaque page du rapport a sa propre matiere : un titre partout, des
+ *  paragraphes sur les pages de texte, des photos sur les pages de
+ *  journee. Le formulaire n'affiche que ce que la page accepte —
+ *  proposer un champ « legende » sur la couverture n'aurait pas de
+ *  sens.
+ *
+ *  Les valeurs calculees (tableau des participants, chiffres des
+ *  resultats) ne sont pas editables ici : elles viennent des etapes
+ *  precedentes, et les corriger a deux endroits ferait diverger le
+ *  document de ses donnees.
+ */
+function FormulairePage({
+  page, textes, onTexte, photos, disposition,
+  onAjouter, onRetirer, onLegender, onDisposition,
+}) {
+  if (!page) return null
+  const valeur = (cle, defaut) => textes[`${page.cle}.${cle}`] ?? defaut
+
+  return (
+    <div className="cr-edition">
+      <div className="cr-edition-champs">
+        <label className="cr-field">
+          <span className="cr-field-label">Titre de la page</span>
+          <input className="cr-input" value={valeur('titre', page.titrePage || '')}
+            onChange={e => onTexte(`${page.cle}.titre`, e.target.value)} />
+        </label>
+
+        {(page.sousTitre != null || page.type === 'photos') && (
+          <label className="cr-field">
+            <span className="cr-field-label">
+              Sous-titre <span>facultatif</span>
+            </span>
+            <input className="cr-input" value={valeur('sousTitre', page.sousTitre || '')}
+              placeholder="Une ligne de contexte sous le titre"
+              onChange={e => onTexte(`${page.cle}.sousTitre`, e.target.value)} />
+          </label>
+        )}
+
+        {page.type === 'texte' && page.blocs.map(b => (
+          <label key={b.cle} className="cr-field">
+            <span className="cr-field-label">{b.titre}</span>
+            <textarea className="cr-textarea" rows={3}
+              value={valeur(b.cle, b.texte)}
+              onChange={e => onTexte(`${page.cle}.${b.cle}`, e.target.value)} />
+          </label>
+        ))}
+
+        {page.type === 'tableau' && (
+          <p className="cr-vide-texte">
+            Le tableau reprend les participants de l’étape 1.
+            Modifiez-les là-bas pour que le document suive.
+          </p>
+        )}
+
+        {page.type === 'chiffres' && (
+          <p className="cr-vide-texte">
+            Ces chiffres sont calculés depuis les notes et les
+            questionnaires de l’étape 2.
+          </p>
+        )}
+      </div>
+
+      {page.rubrique && (
+        <PanneauPhotos
+          rubrique={page.rubrique}
+          photos={photos}
+          disposition={disposition}
+          onAjouter={onAjouter}
+          onRetirer={onRetirer}
+          onLegender={onLegender}
+          onDisposition={onDisposition}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────
    L'apercu d'une page, a l'echelle d'une diapositive 16:9.
    ───────────────────────────────────────────────────────────── */
-function ApercuPage({ page, textes, onTexte, photos }) {
+function ApercuPage({ page, textes, photos }) {
   if (!page) return null
   return (
     <div className="cr-page" role="group" aria-label={`Aperçu — ${page.titre}`}>
       <div className="cr-page-bandeau" />
       <div className="cr-page-corps">
         {page.titrePage && (
-          <TexteEditable cle={`${page.cle}.titre`} valeur={textes[`${page.cle}.titre`] ?? page.titrePage}
-            onChange={onTexte} className="cr-page-titre" />
+          <div className="cr-page-titre">
+            {textes[`${page.cle}.titre`] ?? page.titrePage}
+          </div>
         )}
         {page.sousTitre && (
-          <TexteEditable cle={`${page.cle}.sousTitre`}
-            valeur={textes[`${page.cle}.sousTitre`] ?? page.sousTitre}
-            onChange={onTexte} className="cr-page-soustitre" />
+          <div className="cr-page-soustitre">
+            {textes[`${page.cle}.sousTitre`] ?? page.sousTitre}
+          </div>
         )}
 
         {page.type === 'tableau' && <TableauPage page={page} />}
@@ -208,9 +309,9 @@ function ApercuPage({ page, textes, onTexte, photos }) {
             {page.blocs.map(b => (
               <div key={b.cle} className="cr-page-bloc">
                 <div className="cr-page-bloc-titre">{b.titre}</div>
-                <TexteEditable cle={`${page.cle}.${b.cle}`}
-                  valeur={textes[`${page.cle}.${b.cle}`] ?? b.texte}
-                  onChange={onTexte} className="cr-page-bloc-texte" multi />
+                <div className="cr-page-bloc-texte">
+                  {textes[`${page.cle}.${b.cle}`] ?? b.texte}
+                </div>
               </div>
             ))}
           </div>
@@ -245,63 +346,6 @@ function ApercuPage({ page, textes, onTexte, photos }) {
         )}
       </div>
     </div>
-  )
-}
-
-/** Un texte qu'on corrige en cliquant dessus.
- *
- * L'edition se fait sur place : passer par un panneau separe couperait
- * le lien entre ce qu'on lit et ce qu'on change.
- */
-function TexteEditable({ cle, valeur, onChange, className, multi }) {
-  const [edite, setEdite] = useState(false)
-  const champ = useRef(null)
-
-  if (edite) {
-    const Balise = multi ? 'textarea' : 'input'
-    return (
-      <Balise
-        ref={champ}
-        className={`${className} cr-editable cr-editable--actif`}
-        value={valeur}
-        rows={multi ? 3 : undefined}
-        onChange={e => onChange(cle, e.target.value)}
-        onBlur={() => setEdite(false)}
-        onKeyDown={e => {
-          if (e.key === 'Escape' || (e.key === 'Enter' && !multi)) e.target.blur()
-        }}
-        autoFocus
-      />
-    )
-  }
-  return (
-    <div className={`${className} cr-editable`} role="button" tabIndex={0}
-      onClick={() => setEdite(true)}
-      onKeyDown={e => { if (e.key === 'Enter') setEdite(true) }}
-      title="Cliquer pour corriger">
-      {valeur || <span className="cr-editable-vide">Cliquer pour écrire</span>}
-    </div>
-  )
-}
-
-function TableauPage({ page }) {
-  return (
-    <table className="cr-page-tableau">
-      <thead>
-        <tr>{page.colonnes.map(c => <th key={c}>{c}</th>)}</tr>
-      </thead>
-      <tbody>
-        {page.lignes.slice(0, 9).map((l, i) => (
-          <tr key={i}>
-            {l.map((c, j) => (
-              <td key={j} className={typeof c === 'object' ? `cr-cell--${c.ton}` : undefined}>
-                {typeof c === 'object' ? c.valeur : c}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
   )
 }
 
