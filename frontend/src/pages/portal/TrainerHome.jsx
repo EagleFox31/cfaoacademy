@@ -12,6 +12,7 @@ import PvCard from '../../components/PvCard'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
+import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
 import { SESSIONS_FORMATEUR } from '../../data/mock_sessions_formateur'
 import { periodeLongue } from '../../utils/compteRendu'
 import { brouillonsEnregistres } from '../../utils/brouillonsCompteRendu'
@@ -82,6 +83,10 @@ export default function TrainerHome() {
   )
   const brouillons = useMemo(() => brouillonsEnregistres(), [])
 
+  // Publie la hauteur de l'entete : la premiere section s'en sert pour
+  // occuper exactement le reste de l'ecran.
+  usePortalHeaderHeight(headerRef, aRediger.length > 0)
+
   if (!user) return null
 
   return (
@@ -90,12 +95,13 @@ export default function TrainerHome() {
       <PortalStickyBar user={user} headerRef={headerRef} />
       <main className="portal-page">
         <div ref={headerRef}>
-          <PortalHeader user={user} />
+          <PortalHeader user={user} compact={aRediger.length > 0} />
         </div>
 
         {/* ── 1. Les sessions qui attendent leur compte rendu ──── */}
         {aRediger.length > 0 && (
-          <PortalReveal id="a-documenter">
+          <PortalReveal id="a-documenter"
+            className="portal-next-actions-viewport">
             <div className="container" style={{ padding: '16px 32px' }}>
               <div className="portal-section-head">
                 <p className="portal-section-eyebrow">Priorité — compte rendu</p>
