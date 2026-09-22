@@ -1,15 +1,17 @@
-import { PARTIES_RAPPORT } from '../../data/mock_sessions_formateur'
+import { PARTIES_RAPPORT, partieRetenue } from '../../data/mock_sessions_formateur'
 
 /**
  * Phase 3 — ce que le document contiendra.
  *
- * Les neuf parties ne sont pas toutes de meme nature. L'analyse des
- * quatorze comptes rendus existants donne leur frequence : couverture
- * 100 %, participants 92 %, deroule 92 %, resultats 92 %, bilan 92 %,
- * puis objectifs et fiches individuelles 78 %, qualite 64 %, cloture
- * 21 %. Au-dela de 90 % la partie est traitee comme acquise : on la
- * montre sans la proposer au retrait, pour ne pas laisser produire un
- * rapport que personne ne reconnaitrait. En deca, le formateur tranche.
+ * Le formateur compose son rapport. Seules la couverture et la cloture
+ * sont imposees : elles encadrent le document et n'ont pas de contenu
+ * a decider. Tout le reste se choisit, y compris ce que l'usage rend
+ * habituel.
+ *
+ * Le taux affiche a cote de chaque partie vient de l'analyse des
+ * quatorze comptes rendus existants. Il informe sans contraindre :
+ * savoir que le deroule journalier figure dans 92 % des rapports aide
+ * a decider, mais la session peut justifier de s'en passer.
  *
  * Une partie sans matiere est signalee comme telle plutot que cochee
  * d'office : proposer « Fiches individuelles » quand aucune note n'est
@@ -23,21 +25,7 @@ export default function PhaseStructure({ brouillon, maj, session, synthese }) {
     maj({ parties: { ...choix, [id]: !estRetenue(id) } })
   }
 
-  function estRetenue(id) {
-    const partie = PARTIES_RAPPORT.find(p => p.id === id)
-    if (partie?.obligatoire) return true
-    return choix[id] ?? defautPour(id)
-  }
-
-  /** Une partie optionnelle n'est proposee cochee que si elle a de quoi
-   *  se remplir. */
-  function defautPour(id) {
-    if (id === 'fiches') return synthese.saisis > 0
-    if (id === 'objectifs') return Boolean(session?.codeFormation)
-    if (id === 'qualite') return false
-    if (id === 'cloture') return false
-    return true
-  }
+  const estRetenue = id => partieRetenue(choix, id)
 
   /** Ce qui manque pour qu'une partie ait du contenu, le cas echeant. */
   function manque(id) {
@@ -50,6 +38,9 @@ export default function PhaseStructure({ brouillon, maj, session, synthese }) {
     if (id === 'deroule' && jours === 0) {
       return 'Durée inconnue : une seule page sera produite.'
     }
+    if (id === 'resultats' && synthese.saisis === 0) {
+      return 'Aucun résultat saisi.'
+    }
     return null
   }
 
@@ -57,12 +48,13 @@ export default function PhaseStructure({ brouillon, maj, session, synthese }) {
   const nbPages = estimerPages(retenues, brouillon, synthese, jours)
 
   return (
-    <div className="cr-panel">
+    <div className="cr-panel cr-panel--structure">
       <div className="cr-panel-head">
         <h2 className="cr-panel-title">Que contiendra le document ?</h2>
         <p className="cr-panel-hint">
-          Les parties attendues dans tous les comptes rendus sont déjà
-          retenues. Ajoutez ou retirez les autres selon la session.
+          Décochez ce que cette session ne justifie pas. Le pourcentage
+          rappelle la fréquence de chaque partie dans les comptes rendus
+          existants.
         </p>
       </div>
 
@@ -79,6 +71,9 @@ export default function PhaseStructure({ brouillon, maj, session, synthese }) {
                 disabled={p.obligatoire}
                 onChange={() => basculer(p.id)}
                 aria-label={p.titre} />
+              <span className="cr-partie-numero" aria-hidden="true">
+                {p.numero}
+              </span>
               <span className="cr-partie-corps">
                 <span className="cr-partie-tete">
                   <span className="cr-partie-titre">{p.titre}</span>
@@ -94,6 +89,9 @@ export default function PhaseStructure({ brouillon, maj, session, synthese }) {
         })}
       </div>
 
+      {/* Le bilan du document reste au pied du panneau : c'est la
+          conclusion de ce qu'on vient de composer, pas une carte de
+          plus dans la grille. */}
       <div className="cr-structure-pied">
         <span className="cr-structure-compte">
           <strong>{nbPages}</strong> page{nbPages > 1 ? 's' : ''} au total

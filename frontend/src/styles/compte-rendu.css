@@ -816,6 +816,19 @@
 .cr-partie--fixe.cr-partie--on { border-color: var(--rule); background: var(--paper-2); }
 
 .cr-partie-case { flex: none; margin-top: 2px; accent-color: var(--red); }
+
+/* Le numéro dit la place de la partie dans le document : on compose un
+   sommaire, pas une liste d'options. */
+.cr-partie-numero {
+  flex: none;
+  width: 22px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted-2);
+  text-align: right;
+}
+.cr-partie--on .cr-partie-numero { color: var(--red); }
 .cr-partie-corps { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .cr-partie-tete {
   display: flex;
@@ -835,12 +848,24 @@
 .cr-partie-resume { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
 .cr-partie-alerte { font-size: 11.5px; color: #8a5200; line-height: 1.4; }
 
+/* Le bilan du document est la conclusion de la composition : il reste
+   au pied du panneau, quelle que soit la hauteur de la grille. */
+.cr-panel--structure { display: flex; flex-direction: column; }
+.cr-panel--structure .cr-panel-head,
+.cr-panel--structure .cr-structure-pied { flex: none; }
+.cr-panel--structure .cr-parties {
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+  overflow-y: auto;
+}
+
 .cr-structure-pied {
   display: flex;
   align-items: baseline;
   gap: 14px;
   flex-wrap: wrap;
-  margin-top: 20px;
+  margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid var(--rule);
 }

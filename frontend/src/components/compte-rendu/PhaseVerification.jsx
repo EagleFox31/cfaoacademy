@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef } from 'react'
-import { dispositionsPour, PARTIES_RAPPORT } from '../../data/mock_sessions_formateur'
+import { dispositionsPour, partieRetenue } from '../../data/mock_sessions_formateur'
 import { SEUIL, calculer, afficher } from '../../utils/baremeCfao'
 import { periodeLongue, nombreDeJours } from '../../utils/compteRendu'
 import { syntheseSatisfaction, afficherTaux } from '../../utils/satisfactionCfao'
@@ -407,7 +407,7 @@ function composerPages(b, session, s) {
   // La phase « structure » a dit ce que le document contient. Une
   // partie ecartee ne doit pas reapparaitre ici : composer puis laisser
   // retirer page a page reviendrait a ignorer ce choix.
-  const retenue = id => estRetenue(b, id, s, session)
+  const retenue = id => partieRetenue(b.parties, id)
 
   if (retenue('couverture')) {
     pages.push({
@@ -457,6 +457,10 @@ function composerPages(b, session, s) {
   }
 
   if (retenue('resultats')) {
+    // Les taux de satisfaction sortent des memes questionnaires que le
+    // reste des resultats : ils tiennent sur la meme page, comme dans
+    // le classeur ou tout figure sur une seule feuille.
+    const sat = syntheseSatisfaction(b.satisfaction)
     pages.push({
       cle: 'resultats', titre: 'Résultats', type: 'chiffres',
       titrePage: 'RÉSULTAT GLOBAL DE LA SESSION',
@@ -469,23 +473,8 @@ function composerPages(b, session, s) {
         },
         { libelle: 'Participants', valeur: s.effectif },
         { libelle: `Sous ${SEUIL} %`, valeur: s.enRetrait },
-      ],
-    })
-  }
-
-  if (retenue('qualite')) {
-    // Les taux viennent des questionnaires saisis en phase 2, avec la
-    // ponderation du classeur d'evaluation. Sans reponse, la page
-    // retombe sur une formulation neutre plutot que d'afficher « — ».
-    const sat = syntheseSatisfaction(b.satisfaction)
-    pages.push({
-      cle: 'qualite', titre: 'Qualité et accueil', type: 'chiffres',
-      titrePage: 'QUALITÉ ET ACCUEIL',
-      rubrique: 'qualite',
-      chiffres: [
         { libelle: 'Qualité de la formation', valeur: afficherTaux(sat.formation) },
         { libelle: 'Qualité de l’accueil', valeur: afficherTaux(sat.accueil) },
-        { libelle: 'Questionnaires', valeur: sat.repondants },
       ],
     })
   }
@@ -526,22 +515,6 @@ function composerPages(b, session, s) {
   }
 
   return pages
-}
-
-/** Une partie entre-t-elle dans le document ?
- *
- *  Meme regle que la phase « structure » : les parties presentes dans
- *  plus de 90 % des comptes rendus sont acquises, les autres suivent le
- *  choix du formateur, et a defaut le fait qu'elles aient de la matiere.
- */
-function estRetenue(b, id, s, session) {
-  const partie = PARTIES_RAPPORT.find(p => p.id === id)
-  if (partie?.obligatoire) return true
-  const choix = b.parties || {}
-  if (choix[id] != null) return choix[id]
-  if (id === 'fiches') return s.saisis > 0
-  if (id === 'objectifs') return Boolean(session?.codeFormation)
-  return false
 }
 
 /** Les quatre rubriques du bilan, redigees depuis les chiffres. */

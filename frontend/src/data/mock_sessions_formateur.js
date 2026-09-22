@@ -21,15 +21,22 @@ export const SESSION_STATUTS = {
   termine: { label: 'Terminé', tone: 'ok' },
 }
 
-/** Les 9 parties du compte rendu, avec leur caractere obligatoire.
+/** Les parties du compte rendu, dans l'ordre du document.
  *
- * Le statut vient de l'analyse des 14 comptes rendus existants : une
- * partie presente dans plus de 90 % des rapports est traitee comme
- * obligatoire, en deca elle est proposee mais peut etre ecartee.
+ * Le taux de presence vient de l'analyse des quatorze comptes rendus
+ * existants : il renseigne le formateur sur l'usage etabli, sans lui
+ * dicter sa composition. Seules la couverture et la cloture sont
+ * imposees — elles encadrent le document et n'ont pas de contenu a
+ * decider. Tout le reste se choisit session par session.
+ *
+ * « Qualite et accueil » ne figure plus ici : ses deux taux sont
+ * calcules a partir des memes questionnaires que le reste des
+ * resultats, et paraissent sur la page « Resultats globaux ».
  */
 export const PARTIES_RAPPORT = [
   {
     id: 'couverture',
+    numero: 1,
     titre: 'Couverture',
     resume: 'Intitulé, dates, lieu',
     obligatoire: true,
@@ -38,15 +45,8 @@ export const PARTIES_RAPPORT = [
     aide: 'Composée depuis la fiche session. Rien à saisir.',
   },
   {
-    id: 'participants',
-    titre: 'Participants',
-    resume: 'Liste et photo de groupe',
-    obligatoire: true,
-    presence: 92,
-    aide: 'Vérifiez la liste, ajoutez la photo de groupe.',
-  },
-  {
     id: 'objectifs',
+    numero: 2,
     titre: 'Objectifs',
     resume: 'Ce que la formation visait',
     obligatoire: false,
@@ -54,39 +54,44 @@ export const PARTIES_RAPPORT = [
     aide: 'Repris du catalogue si la formation y figure.',
   },
   {
+    id: 'participants',
+    numero: 3,
+    titre: 'Participants',
+    resume: 'Liste et photo de groupe',
+    obligatoire: false,
+    presence: 92,
+    aide: 'Vérifiez la liste, ajoutez la photo de groupe.',
+  },
+  {
     id: 'deroule',
+    numero: 4,
     titre: 'Déroulé journalier',
     resume: 'Une page par jour',
-    obligatoire: true,
+    obligatoire: false,
     presence: 92,
     aide: 'Thématiques, points forts, points d’amélioration et photos.',
   },
   {
     id: 'resultats',
+    numero: 5,
     titre: 'Résultats globaux',
-    resume: 'Progression et acquisition',
-    obligatoire: true,
-    presence: 92,
-    aide: 'Calculés depuis les notes saisies.',
-  },
-  {
-    id: 'qualite',
-    titre: 'Qualité et accueil',
-    resume: 'Retours des participants',
+    resume: 'Progression, acquisition, qualité et accueil',
     obligatoire: false,
-    presence: 64,
-    aide: 'À inclure si vous avez recueilli les questionnaires.',
+    presence: 92,
+    aide: 'Calculés depuis les notes et les questionnaires saisis.',
   },
   {
     id: 'bilan',
+    numero: 6,
     titre: 'Bilan',
     resume: 'Synthèse en quatre rubriques',
-    obligatoire: true,
+    obligatoire: false,
     presence: 92,
     aide: 'Rédigé automatiquement, relisez avant diffusion.',
   },
   {
     id: 'fiches',
+    numero: 7,
     titre: 'Fiches individuelles',
     resume: 'Une page par participant',
     obligatoire: false,
@@ -95,14 +100,35 @@ export const PARTIES_RAPPORT = [
   },
   {
     id: 'cloture',
+    numero: 8,
     titre: 'Clôture',
     resume: 'Page de fin',
-    obligatoire: false,
+    obligatoire: true,
     presence: 21,
     auto: true,
     aide: 'Page de remerciement.',
   },
 ]
+
+/** Une partie entre-t-elle dans le document ?
+ *
+ *  Regle unique, partagee par l'ecran de composition et la fabrication
+ *  des pages. Dedoublee, elle a diverge : l'ecran proposait le deroule
+ *  coche, la composition l'ecartait, et le rapport sortait ampute de
+ *  huit pages sur dix-sept.
+ *
+ *  Tout est retenu par defaut. Le formateur retire ce que la session
+ *  ne justifie pas ; une partie sans matiere est signalee dans l'ecran
+ *  de composition, mais rien n'est ecarte a sa place.
+ *
+ *  @param {object} parties  les choix explicites du formateur
+ *  @param {string} id       la partie a tester
+ */
+export function partieRetenue(parties, id) {
+  const partie = PARTIES_RAPPORT.find(p => p.id === id)
+  if (partie?.obligatoire) return true
+  return parties?.[id] ?? true
+}
 
 function participant(id, prenom, nom, pays, fonction) {
   return { id, prenom, nom, pays, fonction, present: true }
