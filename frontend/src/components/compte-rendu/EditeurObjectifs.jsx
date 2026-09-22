@@ -1,20 +1,19 @@
+import { useState } from 'react'
 import { dispositionsPour } from '../../data/mock_sessions_formateur'
 
 /**
  * L'editeur des objectifs de la formation.
  *
- * Le modele propose trois rendus pour cette page, et la specification
- * les fait dependre du contenu plutot que d'un reglage : un bloc part
- * en tableau des qu'un code ou un intitule est renseigne, en liste
- * sinon ; la colonne d'images apparait des qu'il y a des photos.
+ * Une seule regle commande la page, et elle ne se regle pas : sans
+ * photo, les objectifs sont une liste ; des qu'il y en a une, le modele
+ * passe au tableau avec la colonne d'images. Le formateur n'a donc pas
+ * a choisir une « presentation » — il depose des photos, ou non.
  *
- * On applique cette regle telle quelle, en la montrant. Le formateur
- * voit le rendu deduit et peut le forcer, mais n'a rien a regler pour
- * obtenir le rendu attendu.
- *
- * Le marquage, lui, ne se deduit de rien — romain, puces ou les deux —
- * et reste donc un choix, pose en apercu plutot qu'en liste deroulante :
- * on reconnait une numerotation romaine plus vite qu'on ne lit son nom.
+ * Restent deux vrais choix, qui n'apparaissent que quand ils ont un
+ * sens : le marquage de la liste (rien ne permet de le deviner) et,
+ * des qu'il y a plusieurs photos, leur disposition. L'ordre des photos
+ * fixe leur place dans la disposition retenue ; on les reordonne en les
+ * faisant glisser.
  */
 
 /** Les trois marquages de liste retenus par le modele. */
@@ -27,25 +26,17 @@ export const MARQUAGES = [
 /** Une ligne vierge, pour demarrer ou prolonger la saisie. */
 export const LIGNE_VIDE = { code: '', intitule: '', texte: '' }
 
-/** Le rendu deduit du contenu, selon la specification du modele. */
-export function rendrDeduit(objectifs, photos) {
-  const tableau = (objectifs || []).some(
-    o => (o.code || '').trim() || (o.intitule || '').trim())
-  return {
-    forme: tableau ? 'tableau' : 'liste',
-    avecImages: (photos || []).length > 0,
-  }
-}
+/** Le modele ne prevoit pas de disposition au-dela de cinq images. */
+export const MAX_PHOTOS = 5
 
 export default function EditeurObjectifs({
-  objectifs, marquage, forme, photos, disposition,
-  onObjectifs, onMarquage, onForme, onDisposition,
+  objectifs, marquage, photos, disposition,
+  onObjectifs, onMarquage, onDisposition, onReordonner,
 }) {
   const lignes = objectifs?.length ? objectifs : [LIGNE_VIDE]
   const cliches = photos || []
-  const deduit = rendrDeduit(lignes, cliches)
-  const formeActive = forme || deduit.forme
-  const forcee = Boolean(forme) && forme !== deduit.forme
+  // La forme suit les photos, sans reglage : c'est la regle du modele.
+  const avecImages = cliches.length > 0
 
   function majLigne(i, champ, valeur) {
     const suite = lignes.map((o, j) => (j === i ? { ...o, [champ]: valeur } : o))
@@ -68,22 +59,14 @@ export default function EditeurObjectifs({
   return (
     <div className="cr-obj">
       <div className="cr-obj-tete">
-        <div>
-          <span className="cr-field-label">Objectifs de la formation</span>
-          <p className="cr-obj-aide">
-            {formeActive === 'tableau'
-              ? 'Rendu en tableau : un code ou un intitulé est renseigné.'
-              : 'Rendu en liste. Renseignez un code pour passer au tableau.'}
-            {deduit.avecImages && ' Les photos tiendront la colonne de droite.'}
-          </p>
-        </div>
+        <span className="cr-field-label">Objectifs de la formation</span>
         <span className="cr-obj-compte">
           {remplies || 'Aucun'} objectif{remplies > 1 ? 's' : ''}
         </span>
       </div>
 
-      <div className={`cr-obj-lignes cr-obj-lignes--${formeActive}`}>
-        {formeActive === 'tableau' && (
+      <div className={`cr-obj-lignes cr-obj-lignes--${avecImages ? 'tableau' : 'liste'}`}>
+        {avecImages && (
           <div className="cr-obj-entete" aria-hidden="true">
             <span /><span>Code</span><span>Intitulé</span><span>Objectif</span><span />
           </div>
@@ -91,9 +74,9 @@ export default function EditeurObjectifs({
         {lignes.map((o, i) => (
           <div key={i} className="cr-obj-ligne">
             <span className="cr-obj-puce" aria-hidden="true">
-              {formeActive === 'tableau' ? i + 1 : puceDe(marquage, i)}
+              {avecImages ? i + 1 : puceDe(marquage, i)}
             </span>
-            {formeActive === 'tableau' && (
+            {avecImages && (
               <>
                 <input className="cr-input" value={o.code || ''}
                   placeholder="TS05"
@@ -116,78 +99,115 @@ export default function EditeurObjectifs({
         ))}
       </div>
 
-      <div className="cr-obj-reglages">
-        {formeActive === 'liste' && (
-          <fieldset className="cr-obj-bloc">
-            <legend className="cr-field-label">Marquage</legend>
-            <div className="cr-obj-choix">
-              {MARQUAGES.map(m => (
-                <button key={m.id} type="button"
-                  className={`cr-obj-opt${(marquage || 'puces') === m.id ? ' cr-obj-opt--on' : ''}`}
-                  aria-pressed={(marquage || 'puces') === m.id}
-                  onClick={() => onMarquage(m.id)}>
-                  <span className="cr-obj-opt-vue" aria-hidden="true">
-                    {m.apercu.map((p, j) => <em key={j}>{p}</em>)}
-                  </span>
-                  <span className="cr-obj-opt-nom">{m.nom}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        )}
-
-        <fieldset className="cr-obj-bloc">
-          <legend className="cr-field-label">Présentation</legend>
+      {/* Le marquage ne concerne que la liste : avec des photos, le
+          modele numerote lui-meme les lignes du tableau. */}
+      {!avecImages && (
+        <div className="cr-obj-reglage">
+          <span className="cr-field-label">Marquage</span>
           <div className="cr-obj-choix">
-            {['liste', 'tableau'].map(f => (
-              <button key={f} type="button"
-                className={`cr-obj-opt${formeActive === f ? ' cr-obj-opt--on' : ''}`}
-                aria-pressed={formeActive === f}
-                onClick={() => onForme(f === deduit.forme ? null : f)}>
+            {MARQUAGES.map(m => (
+              <button key={m.id} type="button"
+                className={`cr-obj-opt${(marquage || 'puces') === m.id ? ' cr-obj-opt--on' : ''}`}
+                aria-pressed={(marquage || 'puces') === m.id}
+                onClick={() => onMarquage(m.id)}>
                 <span className="cr-obj-opt-vue" aria-hidden="true">
-                  {f === 'liste'
-                    ? <><em>•</em><em>•</em><em>•</em></>
-                    : <span className="cr-obj-mini-tab" />}
+                  {m.apercu.map((p, j) => <em key={j}>{p}</em>)}
                 </span>
-                <span className="cr-obj-opt-nom">
-                  {f === 'liste' ? 'Liste' : 'Tableau'}
-                  {f === deduit.forme && <small> déduit</small>}
-                </span>
+                <span className="cr-obj-opt-nom">{m.nom}</span>
               </button>
             ))}
           </div>
-          {forcee && (
-            <p className="cr-obj-aide">
-              Présentation forcée.{' '}
-              <button type="button" className="cr-lien-discret"
-                onClick={() => onForme(null)}>
-                Revenir au rendu déduit
-              </button>
-            </p>
-          )}
-        </fieldset>
+        </div>
+      )}
 
-        {cliches.length > 0 && choix.length > 1 && (
-          <fieldset className="cr-obj-bloc">
-            <legend className="cr-field-label">
-              Disposition des {cliches.length} photos
-            </legend>
-            <div className="cr-obj-choix">
-              {choix.map(d => (
-                <button key={d.id} type="button"
-                  className={`cr-obj-opt${dispoActive === d.id ? ' cr-obj-opt--on' : ''}`}
-                  aria-pressed={dispoActive === d.id} title={d.note}
-                  onClick={() => onDisposition(d.id)}>
-                  <span className="cr-obj-opt-vue" aria-hidden="true">
-                    <VignetteDisposition disposition={d} />
-                  </span>
-                  <span className="cr-obj-opt-nom">{d.nom}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        )}
-      </div>
+      {choix.length > 1 && (
+        <div className="cr-obj-reglage">
+          <span className="cr-field-label">
+            Disposition des {cliches.length} photos
+          </span>
+          <div className="cr-obj-choix">
+            {choix.map(d => (
+              <button key={d.id} type="button"
+                className={`cr-obj-opt${dispoActive === d.id ? ' cr-obj-opt--on' : ''}`}
+                aria-pressed={dispoActive === d.id} title={d.note}
+                onClick={() => onDisposition(d.id)}>
+                <span className="cr-obj-opt-vue" aria-hidden="true">
+                  <VignetteDisposition disposition={d} />
+                </span>
+                <span className="cr-obj-opt-nom">{d.nom}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {cliches.length > 1 && (
+        <OrdreDesPhotos photos={cliches} onReordonner={onReordonner} />
+      )}
+    </div>
+  )
+}
+
+/**
+ * L'ordre des photos, qui fixe leur place dans la disposition.
+ *
+ * On les fait glisser plutot que de saisir un rang : la position se
+ * decide en regardant les images, pas en lisant des numeros.
+ */
+function OrdreDesPhotos({ photos, onReordonner }) {
+  const [saisie, setSaisie] = useState(null)
+  const [survol, setSurvol] = useState(null)
+
+  function deposer(vers) {
+    if (saisie == null || saisie === vers) return
+    const suite = [...photos]
+    const [prise] = suite.splice(saisie, 1)
+    suite.splice(vers, 0, prise)
+    onReordonner?.(suite)
+    setSaisie(null)
+    setSurvol(null)
+  }
+
+  /** Deplacer au clavier : glisser n'est pas accessible a tous. */
+  function decaler(i, pas) {
+    const vers = i + pas
+    if (vers < 0 || vers >= photos.length) return
+    const suite = [...photos]
+    const [prise] = suite.splice(i, 1)
+    suite.splice(vers, 0, prise)
+    onReordonner?.(suite)
+  }
+
+  return (
+    <div className="cr-obj-reglage">
+      <span className="cr-field-label">Ordre des photos</span>
+      <p className="cr-obj-aide">
+        La première occupe la place principale de la disposition.
+        Faites glisser pour réordonner.
+      </p>
+      <ol className="cr-obj-ordre">
+        {photos.map((p, i) => (
+          <li key={p.id}
+            className={`cr-obj-photo${survol === i ? ' cr-obj-photo--cible' : ''}`
+              + `${saisie === i ? ' cr-obj-photo--prise' : ''}`}
+            draggable
+            onDragStart={() => setSaisie(i)}
+            onDragOver={e => { e.preventDefault(); setSurvol(i) }}
+            onDragLeave={() => setSurvol(null)}
+            onDrop={e => { e.preventDefault(); deposer(i) }}
+            onDragEnd={() => { setSaisie(null); setSurvol(null) }}>
+            <span className="cr-obj-photo-rang" aria-hidden="true">{i + 1}</span>
+            <img src={p.apercu} alt={p.legende || `Photo ${i + 1}`} />
+            <span className="cr-obj-photo-fleches">
+              <button type="button" onClick={() => decaler(i, -1)}
+                disabled={i === 0} aria-label={`Avancer la photo ${i + 1}`}>↑</button>
+              <button type="button" onClick={() => decaler(i, 1)}
+                disabled={i === photos.length - 1}
+                aria-label={`Reculer la photo ${i + 1}`}>↓</button>
+            </span>
+          </li>
+        ))}
+      </ol>
     </div>
   )
 }
