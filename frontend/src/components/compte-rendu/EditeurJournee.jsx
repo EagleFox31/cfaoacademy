@@ -193,28 +193,17 @@ export default function EditeurJournee({
               onChange={e => { onAjouter?.(e.target.files); e.target.value = '' }} />
           </div>
 
-          <div className="cr-jour-planche">
-            <PlanchePhotos photos={cliches} jour={jour}
-              disposition={dispo}
-              parImage={parImage}
-              onRetirer={onRetirer} onReordonner={onReordonner}
-              onAjouter={onAjouter} onLegender={onLegender} />
-            {/* Deux familles dans le modele : soit chaque image porte sa
-                legende (diapos 12 a 15), soit aucune n'en a et une seule
-                ligne vaut pour l'ensemble. Dans ce second cas la legende
-                se pose sous le cadre entier, pas sous la derniere image. */}
-            {!parImage && (
-              <label className="cr-jour-legende">
-                <span className="cr-field-label">
-                  Légende <span>pour l’ensemble</span>
-                </span>
-                <input className="cr-input cr-input--discret"
-                  value={legende || ''}
-                  placeholder="Une ligne sous les photos"
-                  onChange={e => onLegende(e.target.value)} />
-              </label>
-            )}
-          </div>
+          {/* Deux familles dans le modele : soit chaque image porte sa
+              legende (diapos 12 a 15), soit une seule vaut pour
+              l'ensemble. Dans les deux cas elle se saisit dans le cadre,
+              a la place qu'elle occupera sur la diapositive. */}
+          <PlanchePhotos photos={cliches} jour={jour}
+            disposition={dispo}
+            parImage={parImage}
+            legende={legende}
+            onRetirer={onRetirer} onReordonner={onReordonner}
+            onAjouter={onAjouter} onLegender={onLegender}
+            onLegende={onLegende} />
         </div>
       </Bloc>
     </div>
@@ -242,8 +231,8 @@ function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
 }
 
 /** Les photos posees selon la disposition retenue. */
-function PlanchePhotos({ photos, disposition, jour, parImage,
-  onRetirer, onReordonner, onAjouter, onLegender }) {
+function PlanchePhotos({ photos, disposition, jour, parImage, legende,
+  onRetirer, onReordonner, onAjouter, onLegender, onLegende }) {
   const [saisie, setSaisie] = useState(null)
   const [survol, setSurvol] = useState(null)
   const champ = `cr-jour-fichier-${jour}`
@@ -277,8 +266,9 @@ function PlanchePhotos({ photos, disposition, jour, parImage,
   const cases = casesDe(disposition).slice(0, photos.length)
 
   return (
-    <div className="cr-planche"
-      style={{ ...grilleDe(disposition), '--planche-ratio': disposition?.ratio || 1.17 }}>
+    <div className="cr-planche-cadre"
+      style={{ '--planche-ratio': disposition?.ratio || 1.17 }}>
+      <div className="cr-planche" style={grilleDe(disposition)}>
       {cases.map((forme, i) => {
         const photo = photos[i]
         return (
@@ -316,6 +306,16 @@ function PlanchePhotos({ photos, disposition, jour, parImage,
           </div>
         )
       })}
+      </div>
+      {/* Une seule legende pour le cadre : elle se pose sous les images,
+          la ou elle figurera sur la diapositive. */}
+      {!parImage && (
+        <input className="cr-case-legende cr-planche-legende"
+          value={legende || ''}
+          placeholder="Légende de l’ensemble"
+          aria-label="Légende de l’ensemble des photos"
+          onChange={e => onLegende?.(e.target.value)} />
+      )}
     </div>
   )
 }

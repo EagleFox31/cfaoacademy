@@ -6,7 +6,7 @@ import { syntheseSatisfaction, afficherTaux } from '../../utils/satisfactionCfao
 import ApercuReel from './ApercuReel'
 import EditeurObjectifs from './EditeurObjectifs'
 import EditeurParticipants from './EditeurParticipants'
-import EditeurJournee from './EditeurJournee'
+import EditeurJournee, { MAX_PHOTOS_JOUR } from './EditeurJournee'
 import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
 
 /**
@@ -101,9 +101,11 @@ export default function PhaseVerification({
       }))
     if (!neuves.length) return
     const actuelles = brouillon.photos?.[rubrique] || []
-    // Cinq photos au plus : au-dela, le modele n'a plus de disposition
-    // et les images se tasseraient hors de leur cadre.
-    const retenues = [...actuelles, ...neuves].slice(0, MAX_PHOTOS)
+    // Le plafond suit la rubrique : cinq sur les objectifs, quatre sur
+    // une journee — au-dela le modele n'a plus de disposition et les
+    // images se tasseraient hors de leur cadre.
+    const plafond = /^jour-\d+$/.test(rubrique) ? MAX_PHOTOS_JOUR : MAX_PHOTOS
+    const retenues = [...actuelles, ...neuves].slice(0, plafond)
     maj({ photos: { ...(brouillon.photos || {}), [rubrique]: retenues } })
   }
 
