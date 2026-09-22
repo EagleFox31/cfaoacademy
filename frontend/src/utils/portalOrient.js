@@ -8,6 +8,8 @@ export const PORTAL_ORIENT_KEY_BY_ROLE = {
   branch_hr: 'portal_orient_branch_hr',
   branch_admin: 'portal_orient_branch_hr',
   superadmin: 'portal_orient_superadmin',
+  trainer: 'portal_orient_trainer',
+  center_director: 'portal_orient_trainer',
 }
 
 export function resolvePortalOrientKey(primaryRole) {

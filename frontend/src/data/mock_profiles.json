@@ -133,5 +133,20 @@
       "sinotruk": "JUNIOR"
     },
     "instructorBrands": []
+  },
+  {
+    "id": "u10",
+    "roles": ["trainer"],
+    "firstName": "Eugène",
+    "lastName": "EBENE",
+    "demoLabel": "Eugène EBENE — Formateur Toyota",
+    "orgPath": "groupe.afrique_centrale.cameroun.douala",
+    "orgLabel": "CFAO Academy — Douala",
+    "pays": "Cameroun",
+    "filiale": "CFAO MOBILITY Academy",
+    "departments": ["motors"],
+    "brands": ["toyota"],
+    "certLevels": {},
+    "instructorBrands": ["toyota"]
   }
 ]

@@ -8,6 +8,7 @@ import KIDashboard from './KIDashboard'
 import TeamManagerDashboard from './TeamManagerDashboard'
 import BranchHRDashboard from './BranchHRDashboard'
 import SuperAdminDashboard from './SuperAdminDashboard'
+import TrainerHome from './TrainerHome'
 
 const ROLE_PRIORITY = [
   'superadmin', 'build_team', 'group_admin', 'branch_hr', 'branch_admin',
@@ -32,6 +33,7 @@ function resolveView(roles) {
   if (primary === 'workshop_manager') return <TeamManagerDashboard mode="workshop" />
   if (primary === 'team_manager') return <TeamManagerDashboard mode="team" />
   if (primary === 'ki' || primary === 'pic') return <KIDashboard />
+  if (primary === 'trainer') return <TrainerHome />
   return <LearnerDashboard />
 }
 

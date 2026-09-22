@@ -117,6 +117,11 @@ export const PORTAL_NAV_SECTIONS = {
     { key: 'directory', id: 'directory', labelKey: 'nav_sec_directory' },
     { key: 'logs',      id: 'logs',      labelKey: 'nav_sec_logs' },
   ],
+  trainer: [
+    { key: 'a-documenter',     id: 'a-documenter',     labelKey: 'nav_sec_a_documenter' },
+    { key: 'comptes-rendus',   id: 'comptes-rendus',   labelKey: 'nav_sec_comptes_rendus' },
+    { key: 'sessions-a-venir', id: 'sessions-a-venir', labelKey: 'nav_sec_sessions_animees' },
+  ],
 }
 
 export function getPortalNavSections(roles) {
