@@ -20,6 +20,7 @@ export const DIAPO_PAR_PAGE = {
   participants: 4,
   deroule: 11,
   resultats: 17,
+  satisfaction: 19,
   bilan: 20,
   fiches: 26,
   cloture: 28,
