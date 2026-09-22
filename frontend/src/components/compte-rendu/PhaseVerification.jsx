@@ -232,6 +232,12 @@ function FormulairePage({
             onChange={e => onTexte(`${page.cle}.titre`, e.target.value)} />
         </label>
 
+        {page.type === 'couverture' && (page.periode || page.lieu) && (
+          <p className="cr-vide-texte" style={{ gridColumn: '1 / -1' }}>
+            La période et le lieu viennent de l’étape 1.
+          </p>
+        )}
+
         {(page.sousTitre != null || page.type === 'photos') && (
           <label className="cr-field">
             <span className="cr-field-label">
@@ -287,6 +293,32 @@ function FormulairePage({
    ───────────────────────────────────────────────────────────── */
 function ApercuPage({ page, textes, photos }) {
   if (!page) return null
+  // La couverture et la cloture sont centrees, sans bandeau : elles
+  // encadrent le document plutot qu'elles n'en portent une rubrique.
+  if (page.type === 'couverture') {
+    return (
+      <div className="cr-page cr-page--couverture" role="group"
+        aria-label={`Aperçu — ${page.titre}`}>
+        <div className="cr-couv">
+          <div className="cr-couv-mention">{page.mention}</div>
+          {(textes[`${page.cle}.titre`] ?? page.titrePage) && (
+            <div className="cr-couv-titre">
+              {textes[`${page.cle}.titre`] ?? page.titrePage}
+            </div>
+          )}
+          {(textes[`${page.cle}.sousTitre`] ?? page.sousTitre) && (
+            <div className="cr-couv-soustitre">
+              {textes[`${page.cle}.sousTitre`] ?? page.sousTitre}
+            </div>
+          )}
+          {page.periode && <div className="cr-couv-ligne">{page.periode}</div>}
+          {page.lieu && <div className="cr-couv-ligne">{page.lieu}</div>}
+        </div>
+        <div className="cr-page-pied">CFAO ACADEMY</div>
+      </div>
+    )
+  }
+
   return (
     <div className="cr-page" role="group" aria-label={`Aperçu — ${page.titre}`}>
       <div className="cr-page-bandeau" />
@@ -345,7 +377,30 @@ function ApercuPage({ page, textes, photos }) {
           </div>
         )}
       </div>
+      <div className="cr-page-pied">CFAO ACADEMY</div>
     </div>
+  )
+}
+
+/** Le tableau des participants, tel qu'il paraitra sur la page. */
+function TableauPage({ page }) {
+  return (
+    <table className="cr-page-tableau">
+      <thead>
+        <tr>{page.colonnes.map(c => <th key={c}>{c}</th>)}</tr>
+      </thead>
+      <tbody>
+        {page.lignes.slice(0, 9).map((l, i) => (
+          <tr key={i}>
+            {l.map((c, j) => (
+              <td key={j} className={typeof c === 'object' ? `cr-cell--${c.ton}` : undefined}>
+                {typeof c === 'object' ? c.valeur : c}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   )
 }
 
@@ -454,11 +509,15 @@ function composerPages(b, session, s) {
   const retenue = id => partieRetenue(b.parties, id)
 
   if (retenue('couverture')) {
+    // La couverture du modele : mention centree, intitule, puis periode
+    // et lieu sur deux lignes, le tout au centre de la diapositive.
     pages.push({
-      cle: 'couverture', titre: 'Couverture', type: 'texte',
-      titrePage: (b.intitule || 'Compte rendu de formation').toUpperCase(),
-      sousTitre: [periode, b.lieu].filter(Boolean).join(' — '),
-      blocs: [],
+      cle: 'couverture', titre: 'Couverture', type: 'couverture',
+      mention: 'COMPTE RENDU DE FORMATION',
+      titrePage: (b.intitule || '').toUpperCase(),
+      sousTitre: b.codeFormation || '',
+      periode,
+      lieu: b.lieu || '',
     })
   }
 
@@ -551,10 +610,12 @@ function composerPages(b, session, s) {
 
   if (retenue('cloture')) {
     pages.push({
-      cle: 'cloture', titre: 'Clôture', type: 'texte',
-      titrePage: 'MERCI',
-      sousTitre: 'CFAO Mobility Academy',
-      blocs: [],
+      cle: 'cloture', titre: 'Clôture', type: 'couverture',
+      mention: 'MERCI DE VOTRE ATTENTION',
+      titrePage: '',
+      sousTitre: '',
+      periode: '',
+      lieu: '',
     })
   }
 

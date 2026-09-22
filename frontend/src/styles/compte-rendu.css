@@ -1267,3 +1267,74 @@
   aspect-ratio: 16 / 9;
   margin: 0 auto;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Couverture et clôture : le patron du modèle PPTX
+
+   Dans `MODELE-REFERENCES.pptx`, la couverture centre tout : la mention
+   « COMPTE RENDU DE FORMATION » à 48 pt, puis l'intitulé, la période et
+   le lieu à 24 pt, avec « CFAO ACADEMY » en pied. Rendue comme une page
+   ordinaire — titre en haut à gauche, corps vide — elle ne ressemblait
+   à rien du document produit.
+   ══════════════════════════════════════════════════════════════════ */
+
+.cr-page--couverture {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 4% 8%;
+  position: relative;
+}
+.cr-couv {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.2%;
+  text-align: center;
+  max-width: 88%;
+}
+/* Les tailles sont celles du modèle rapportées à la hauteur de la
+   diapositive : 48 pt sur 7,5 pouces font 8,9 % de la hauteur, 24 pt
+   en font 4,4 %. La maquette reste juste à toutes les échelles. */
+.cr-couv-mention {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 8.9cqh;
+  font-weight: 700;
+  letter-spacing: -.015em;
+  line-height: 1.15;
+  color: var(--navy);
+}
+.cr-couv-titre {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 4.4cqh;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--red);
+  margin-top: 1.2%;
+}
+.cr-couv-soustitre,
+.cr-couv-ligne {
+  font-size: 3.4cqh;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.cr-couv-soustitre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .06em;
+  color: var(--muted-2);
+}
+
+/* La mention de pied, comme sur le modèle : discrète, en bas à gauche. */
+.cr-page-pied {
+  position: absolute;
+  left: 4.2%;
+  bottom: 3.6%;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 2cqh;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--navy);
+  opacity: .55;
+}
+.cr-page { position: relative; container-type: size; }
