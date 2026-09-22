@@ -239,7 +239,7 @@ function CertGoalCard({ goals, user, lms, t }) {
 
 /* ─── Main component ────────────────────────────────────────────── */
 
-export default function PortalHeader({ user, certGoals, certGoal, lms, workshop = false, compact: compactProp }) {
+export default function PortalHeader({ user, certGoals, certGoal, lms, workshop = false }) {
   const { t } = useLocale('portal')
   const { t: heroT } = useLocale('hero')
   const { t: publicsT } = useLocale('publics')
@@ -258,11 +258,9 @@ export default function PortalHeader({ user, certGoals, certGoal, lms, workshop 
   const showWorkshopCard = primaryRole === 'workshop_manager' && lms
   const showSidePanel = showCertCard || showKiCard || showTeamCard || showWorkshopCard
   const showGeoBrands = !showBrandLevels && userBrands.length > 0
-  // Entête compacte : mêmes informations, densité plus forte, pour que la
-  // première section tienne dans l'écran sans défilement. `compact` la
-  // demande explicitement ; sans elle, la variante PL-MEDACAP la déclenche
-  // comme avant.
-  const compact = compactProp ?? isPlMedacapVariant(lms)
+  // Entête compacte (variante PL-MEDACAP) : mêmes informations, densité plus
+  // forte, pour que la première section tienne dans l'écran sans défilement.
+  const compact = isPlMedacapVariant(lms)
   const roleBadge = (
     <span className="portal-header-role-badge">
       <RoleIcon role={primaryRole} />

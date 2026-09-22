@@ -264,30 +264,23 @@
 .cr-section-claire .portal-section-title { color: var(--ink) !important; }
 .cr-section-claire .portal-section-eyebrow { color: var(--red) !important; }
 
-/* ── Le pli : entête + première section dans un écran ───────────
-   Budget vertical sur un portable 14" (768px) :
-     768 − 77 (barre) − 271 (entête compacte) − 47 (titre) − marges
-     = 339px, pour une carte photo qui en demande 368 (180 d'image et
-     188 de texte). `overflow: hidden` prenait le manque sur le texte :
-     titre, dates et lien passaient sous le pli, et il ne restait
-     qu'une photo muette.
-   Sous le pli, la vignette cède donc la place au texte : elle illustre,
-   elle n'informe pas, et une session se reconnaît à son intitulé. La
-   carte devient une ligne dense — marque, état, intitulé, dates,
-   effectif, lien — qui tient dans 150px. Le seuil est à 1000px et non
-   à 900 : à 900 la vignette revient mais le lien d'action tombe encore
-   sous le pli, ce qui est exactement le défaut qu'on corrige. */
+/* ── Carte « à faire » ──────────────────────────────────────────── */
 
-@media (max-height: 999px) {
-  #a-documenter.portal-next-actions-viewport .pv-card-media {
-    display: none;
-  }
-
-  /* Le corps portait `min-height: 148px` en complément de l'image ;
-     seul, il se règle sur son texte. */
-  #a-documenter.portal-next-actions-viewport .pv-card-body {
-    min-height: 0;
-    padding: 16px 20px 18px;
-    gap: 7px;
-  }
+.cr-todo {
+  display: flex; flex-direction: column; gap: 9px; text-align: left;
+  padding: 20px 22px; border: 1.5px solid var(--rule); border-left: 3px solid var(--red);
+  border-radius: 13px; background: var(--paper); cursor: pointer;
+  font-family: inherit; transition: box-shadow .18s, transform .18s, border-color .18s;
+}
+.cr-todo:hover {
+  box-shadow: 0 10px 28px rgba(14, 17, 38, .1); transform: translateY(-2px);
+  border-color: var(--red);
+}
+.cr-todo-tete { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cr-todo-titre {
+  font-family: 'Space Grotesk', sans-serif; font-size: 16.5px; font-weight: 600;
+  line-height: 1.25; color: var(--ink);
+}
+.cr-todo-action {
+  font-size: 13.5px; font-weight: 600; color: var(--red); margin-top: 3px;
 }
