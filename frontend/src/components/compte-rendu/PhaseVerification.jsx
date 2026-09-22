@@ -5,6 +5,7 @@ import { periodeLongue, nombreDeJours } from '../../utils/compteRendu'
 import { syntheseSatisfaction, afficherTaux } from '../../utils/satisfactionCfao'
 import ApercuReel from './ApercuReel'
 import EditeurObjectifs from './EditeurObjectifs'
+import EditeurParticipants from './EditeurParticipants'
 import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
 
 /**
@@ -49,6 +50,17 @@ function objectifsInitiaux(b, page) {
   if (!lignes.length) return null
   return [...lignes.map(t => ({ code: '', intitule: '', texte: t })),
     { code: '', intitule: '', texte: '' }]
+}
+
+/** Le formateur de la session, prerempli et modifiable.
+ *
+ *  La session n'en designe qu'un ; une formation peut en compter
+ *  plusieurs, que le formateur ajoute lui-meme. On part donc de celui
+ *  qui est connu plutot que d'une ligne vide.
+ */
+function formateursInitiaux(session) {
+  const nom = session?.formateur
+  return [{ nom: nom || '', fonction: nom ? 'Formateur' : '', portrait: null }]
 }
 
 export default function PhaseVerification({
@@ -209,6 +221,11 @@ export default function PhaseVerification({
             onReordonner={v => maj({
               photos: { ...(brouillon.photos || {}), objectifs: v },
             })}
+            formateurs={brouillon.formateurs || formateursInitiaux(session)}
+            stagiaires={(brouillon.participants || []).filter(p => p.present !== false)}
+            photoGroupe={brouillon.photoGroupe}
+            onFormateurs={v => maj({ formateurs: v })}
+            onPhotoGroupe={v => maj({ photoGroupe: v })}
             photos={photos}
             disposition={page?.rubrique
               ? brouillon.dispositions?.[page.rubrique] : null}
@@ -272,6 +289,7 @@ function FormulairePage({
   page, textes, onTexte, photos, disposition,
   onAjouter, onRetirer, onLegender, onDisposition,
   objectifs, marquage, onObjectifs, onMarquage, onReordonner,
+  formateurs, stagiaires, photoGroupe, onFormateurs, onPhotoGroupe,
 }) {
   if (!page) return null
   const valeur = (cle, defaut) => textes[`${page.cle}.${cle}`] ?? defaut
@@ -279,7 +297,7 @@ function FormulairePage({
   return (
     <div className="cr-edition">
       <div className="cr-edition-champs">
-        {page.cle !== 'objectifs' && (
+        {page.cle !== 'objectifs' && page.cle !== 'participants' && (
           <label className="cr-field">
             <span className="cr-field-label">Titre de la page</span>
             <input className="cr-input" value={valeur('titre', page.titrePage || '')}
@@ -330,7 +348,18 @@ function FormulairePage({
           </label>
         ))}
 
-        {page.type === 'tableau' && (
+        {page.cle === 'participants' && (
+          <div className="cr-edition-large">
+            <EditeurParticipants
+              formateurs={formateurs}
+              stagiaires={stagiaires}
+              photoGroupe={photoGroupe}
+              onFormateurs={onFormateurs}
+              onPhotoGroupe={onPhotoGroupe} />
+          </div>
+        )}
+
+        {page.type === 'tableau' && page.cle !== 'participants' && (
           <p className="cr-vide-texte">
             Le tableau reprend les participants de l’étape 1.
             Modifiez-les là-bas pour que le document suive.
@@ -345,7 +374,8 @@ function FormulairePage({
         )}
       </div>
 
-      {page.rubrique && page.cle !== 'objectifs' && (
+      {page.rubrique && page.cle !== 'objectifs'
+        && page.cle !== 'participants' && (
         <PanneauPhotos
           rubrique={page.rubrique}
           photos={photos}

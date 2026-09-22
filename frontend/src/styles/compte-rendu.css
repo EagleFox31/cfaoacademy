@@ -1851,7 +1851,9 @@
 /* Les deux volets ne peuvent etre ouverts en meme temps : celui qui
    l'est prend la place disponible, l'autre se replie a son en-tete.
    Sans cela la planche reste a sa taille minimale sous un vide. */
-.cr-edition:has(.cr-blocs--objectifs) { padding-bottom: 0; }
+.cr-edition:has(.cr-blocs--objectifs),
+.cr-edition:has(.cr-part) { padding-bottom: 0; }
+.cr-edition-champs:has(.cr-part),
 .cr-edition-champs:has(.cr-blocs--objectifs) {
   flex: 1;
   min-height: 0;
@@ -1860,6 +1862,7 @@
      la couverture demande. Ici la rangee est la hauteur disponible. */
   align-items: stretch;
 }
+.cr-edition-champs:has(.cr-part) > .cr-edition-large,
 .cr-edition-champs:has(.cr-blocs--objectifs) > .cr-edition-large {
   display: flex;
   flex: 1;
@@ -1887,3 +1890,160 @@
 }
 .cr-obj-zone { min-height: 0; height: 100%; }
 .cr-obj-texte { flex: 1; min-height: 160px; }
+
+/* ---- Participants : formateurs et stagiaires ---- */
+
+.cr-part {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  flex: 1;
+  min-height: 0;
+}
+/* Les sections imbriquees heritent du zebre du portail : on le
+   neutralise, ces blocs ne sont pas des sections de page. */
+.cr-part-bloc { background: none; padding: 0; }
+.cr-part-bloc { display: flex; flex-direction: column; gap: 10px; }
+.cr-part-bloc--stagiaires { flex: 1; min-height: 0; }
+
+.cr-part-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.cr-part-ajout {
+  padding: 5px 11px;
+  border: 1.5px dashed var(--line, rgba(16, 20, 48, 0.25));
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink-2, #4b5563);
+  background: transparent;
+  transition: border-color 0.15s, color 0.15s;
+}
+.cr-part-ajout:hover {
+  border-color: var(--accent, #e2001a);
+  color: var(--accent, #e2001a);
+}
+
+.cr-part-formateurs { display: flex; flex-direction: column; gap: 8px; }
+
+/* Un formateur tient sur une ligne, comme dans le modèle : le portrait
+   carré, puis le nom et la fonction. */
+.cr-part-formateur {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Le modèle réserve un cadre 1:1 au portrait du formateur. */
+.cr-portrait {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  aspect-ratio: 1;
+  border: 1.5px dashed var(--line, rgba(16, 20, 48, 0.25));
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--surface-2, rgba(16, 20, 48, 0.05));
+  transition: border-color 0.15s;
+}
+.cr-portrait:hover,
+.cr-portrait--over { border-color: var(--accent, #e2001a); }
+.cr-portrait--pose { border-style: solid; }
+.cr-portrait img { width: 100%; height: 100%; object-fit: cover; }
+.cr-portrait-vide {
+  font-size: 0.65rem;
+  color: var(--ink-3, #6b7280);
+}
+
+.cr-part-identite { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+/* La fonction se lit sous le nom, en retrait : c'est une précision. */
+.cr-input--discret {
+  font-size: 0.85rem;
+  color: var(--ink-2, #4b5563);
+}
+
+/* Le tableau à gauche, la photo de groupe à droite, comme le modèle. */
+.cr-part-saisie {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.82fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 18px;
+  flex: 1;
+  min-height: 0;
+}
+
+.cr-part-liste { display: flex; flex-direction: column; min-height: 0; gap: 6px; }
+.cr-part-liste--vide { justify-content: center; }
+.cr-part-entete {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 110px;
+  gap: 10px;
+  padding: 0 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3, #6b7280);
+}
+.cr-part-entete span:first-child { grid-column: 2; }
+.cr-part-noms {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.cr-part-nom {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 110px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+.cr-part-nom:nth-child(odd) { background: var(--surface-2, rgba(16, 20, 48, 0.04)); }
+.cr-part-rang {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: right;
+  color: var(--ink-3, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+.cr-part-complet { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-part-pays { font-size: 0.8rem; color: var(--ink-2, #4b5563); }
+
+.cr-part-cote { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+
+/* La photo de groupe garde les proportions de son cadre dans le
+   modèle : 43,8 % de largeur sur 56,5 % de hauteur, soit 1,38. */
+.cr-groupe {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  aspect-ratio: 1.38;
+  flex: none;
+  border: 1.5px dashed var(--line, rgba(16, 20, 48, 0.25));
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--surface-2, rgba(16, 20, 48, 0.05));
+  transition: border-color 0.15s;
+}
+.cr-groupe:hover,
+.cr-groupe--over { border-color: var(--accent, #e2001a); }
+.cr-groupe--pose { border-style: solid; }
+.cr-groupe img { width: 100%; height: 100%; object-fit: cover; }
+.cr-groupe:hover .cr-case-retirer { opacity: 1; }
