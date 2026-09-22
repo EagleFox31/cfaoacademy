@@ -1651,3 +1651,81 @@
 .cr-obj-photo-fleches button + button {
   border-left: 1px solid var(--line, rgba(16, 20, 48, 0.1));
 }
+
+/* ---- Objectifs : coller une liste, choisir sa disposition ---- */
+
+/* La zone de saisie tient la largeur, les dispositions se rangent à
+   côté : on colle d'abord, on règle ensuite. */
+.cr-obj-saisie {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(150px, 1fr);
+  gap: 18px;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+}
+/* Le volet des objectifs, deplie, occupe la place disponible. */
+.cr-blocs--objectifs { flex: 1; min-height: 0; }
+.cr-blocs--objectifs .cr-bloc--ouvert {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.cr-blocs--objectifs .cr-bloc--ouvert .cr-bloc-corps {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+@media (max-width: 860px) {
+  .cr-obj-saisie { grid-template-columns: minmax(0, 1fr); }
+}
+
+.cr-obj-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.cr-obj-texte {
+  /* La zone prend la hauteur libre du volet : les objectifs se
+     relisent d'un bloc, sans defilement interne. */
+  flex: 1;
+  min-height: 260px;
+  resize: vertical;
+  line-height: 1.8;
+  font-family: inherit;
+}
+.cr-obj-cote {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* Empilées, les trois options se comparent d'un coup d'œil. */
+.cr-obj-choix--colonne { flex-direction: column; }
+.cr-obj-choix--colonne .cr-obj-opt {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+.cr-obj-facultatif {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink-3, #6b7280);
+}
+/* En tableau, l'objectif se rappelle en clair : il se modifie dans la
+   zone de saisie, pas ici. */
+.cr-obj-rappel {
+  overflow: hidden;
+  font-size: 0.82rem;
+  color: var(--ink-2, #4b5563);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cr-obj-lignes--tableau .cr-obj-ligne:has(.cr-obj-rappel),
+.cr-obj-lignes--tableau .cr-obj-entete {
+  grid-template-columns: 28px 90px minmax(0, 1fr) minmax(0, 1.6fr);
+}
