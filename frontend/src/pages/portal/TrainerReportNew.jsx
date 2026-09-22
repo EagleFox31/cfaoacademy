@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Nav from '../../components/Nav'
 import useSiteEffects from '../../hooks/useSiteEffects'
@@ -75,12 +75,30 @@ export default function TrainerReportNew() {
   const [phase, setPhase] = useState(brouillon.phase || 0)
   const haut = useRef(null)
 
-  // Le brouillon est enregistre a chaque changement : une saisie de
-  // notes pour douze participants ne doit pas se perdre.
+  // Le brouillon est garde en reference pour etre enregistre sans que
+  // l'effet ait a dependre de son contenu : sinon chaque frappe dans
+  // une case de note declenche une ecriture.
+  const dernier = useRef({ brouillon, phase })
+  dernier.current = { brouillon, phase }
+
+  const sauver = useCallback(() => {
+    const { brouillon: b, phase: p } = dernier.current
+    const id = b.sessionId || (b.manuel ? 'manuel' : null)
+    if (id) enregistrer(id, { ...b, phase: p })
+  }, [])
+
+  // Aux moments qui comptent : changement d'etape, et depart de la page
+  // (onglet ferme, navigation). Entre les deux, les volets de saisie
+  // appellent `sauver` quand on passe de l'un a l'autre.
+  useEffect(() => { sauver() }, [phase, sauver])
+
   useEffect(() => {
-    const id = brouillon.sessionId || (brouillon.manuel ? 'manuel' : null)
-    if (id) enregistrer(id, { ...brouillon, phase })
-  }, [brouillon, phase])
+    window.addEventListener('beforeunload', sauver)
+    return () => {
+      window.removeEventListener('beforeunload', sauver)
+      sauver()
+    }
+  }, [sauver])
 
   const session = useMemo(() => {
     if (brouillon.manuel) {
@@ -175,6 +193,7 @@ export default function TrainerReportNew() {
               <PhaseResultats
                 brouillon={brouillon} maj={maj}
                 session={session} synthese={synthese}
+                onEnregistrer={sauver}
               />
             )}
             {phase === 2 && (

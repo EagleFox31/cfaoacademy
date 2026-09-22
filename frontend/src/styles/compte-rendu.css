@@ -1044,7 +1044,13 @@
 .cr-satis-groupe:first-of-type .cr-satis-tete { border-top: 0; }
 .cr-satis-titre { font-size: 13px; font-weight: 600; color: var(--ink); }
 
-.cr-satis-ligne { border-top: 1px solid var(--rule); }
+/* Un filet sous chaque critère découpait la grille en barreaux : sur
+   treize lignes, l'œil compte les traits au lieu de lire. L'alignement
+   des colonnes suffit à guider ; un léger fond au survol marque la
+   ligne qu'on remplit. */
+.cr-satis-ligne { transition: background .12s; }
+.cr-satis-ligne:hover { background: var(--paper-2); }
+.cr-satis-ligne:focus-within { background: var(--paper-2); }
 .cr-satis-ligne .cr-satis-critere {
   font-size: 12.5px;
   color: var(--muted);
@@ -1078,3 +1084,71 @@
   .cr-satis-entete,
   .cr-satis-ligne { grid-template-columns: var(--cr-satis-critere) repeat(auto-fit, minmax(72px, 1fr)); }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Volets dépliables de la phase « résultats »
+
+   Trois saisies de natures différentes — les notes corrigées sur copie,
+   puis deux questionnaires — que rien n'obligeait à tenir dans un seul
+   écran. Chaque volet porte son indicateur dans l'en-tête : replié, il
+   dit déjà où en est la saisie, et les trois repliés donnent la vue
+   d'ensemble.
+   ══════════════════════════════════════════════════════════════════ */
+
+.cr-blocs { display: flex; flex-direction: column; gap: 12px; }
+
+.cr-bloc {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.cr-bloc--ouvert { border-color: var(--muted-2); }
+
+.cr-bloc-titre { margin: 0; }
+.cr-bloc-bouton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 16px;
+  border: 0;
+  background: var(--paper-2);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background .14s;
+}
+.cr-bloc-bouton:hover { background: var(--paper-3); }
+.cr-bloc-bouton:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: -2px;
+}
+.cr-bloc--ouvert .cr-bloc-bouton { background: var(--paper); border-bottom: 1px solid var(--rule); }
+
+.cr-bloc-fleche {
+  flex: none;
+  color: var(--muted-2);
+  font-size: 11px;
+  transition: transform .16s ease;
+}
+.cr-bloc--ouvert .cr-bloc-fleche { transform: rotate(90deg); color: var(--red); }
+
+.cr-bloc-nom {
+  flex: 1;
+  min-width: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.cr-bloc-resume {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--muted-2);
+}
+.cr-bloc-bouton .cr-calc { flex: none; }
+
+.cr-bloc-corps { padding: 16px; }
+/* Les barèmes ouvrent le volet des tests : pas de marge en double. */
+.cr-bloc-corps > .cr-baremes:first-child { margin-top: 0; }
