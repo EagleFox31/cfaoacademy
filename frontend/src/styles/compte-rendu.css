@@ -1177,3 +1177,93 @@
 .cr-bloc-corps { padding: 16px; }
 /* Les barèmes ouvrent le volet des tests : pas de marge en double. */
 .cr-bloc-corps > .cr-baremes:first-child { margin-top: 0; }
+
+/* ══════════════════════════════════════════════════════════════════
+   Édition : deux modes plutôt qu'une page à moitié cliquable
+
+   Un texte modifiable au clic dans un aperçu ne dit pas qu'il l'est, et
+   un aperçu qu'on modifie n'est plus un aperçu. On remplit d'un côté,
+   on regarde le résultat de l'autre.
+   ══════════════════════════════════════════════════════════════════ */
+
+.cr-modes {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper-2);
+}
+.cr-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background .14s, color .14s;
+}
+.cr-mode:hover { color: var(--ink); }
+.cr-mode--on {
+  background: var(--paper);
+  color: var(--red);
+  box-shadow: 0 1px 3px rgba(14, 17, 38, .1);
+}
+.cr-mode:focus-visible { outline: 2px solid var(--red); outline-offset: 1px; }
+
+/* Le formulaire occupe la place de l'aperçu : même hauteur, même
+   cadre, pour que la bascule ne fasse pas sauter la mise en page. */
+.cr-edition {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.cr-edition-champs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px 16px;
+  align-content: start;
+}
+.cr-edition-champs .cr-field { margin-bottom: 0; }
+/* Un paragraphe mérite toute la largeur ; un titre s'en contente. */
+.cr-edition-champs .cr-field:has(.cr-textarea) { grid-column: 1 / -1; }
+
+/* L'étape d'édition tient dans l'écran : le sommaire et la scène se
+   partagent la hauteur, et seul le contenu défile. */
+.cr-assistant .cr-revue {
+  flex: 1;
+  min-height: 0;
+}
+.cr-assistant .cr-revue .cr-sommaire {
+  position: static;
+  max-height: none;
+  height: 100%;
+}
+.cr-assistant .cr-scene {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.cr-assistant .cr-scene-tete { flex: none; }
+.cr-assistant .cr-scene .cr-edition { flex: 1; }
+
+/* La diapositive garde son rapport 16:9 mais se contente de la place
+   disponible : à hauteur libre, elle poussait la barre d'actions — donc
+   le bouton « Produire le compte rendu » — sous la ligne de flottaison. */
+.cr-assistant .cr-scene .cr-page {
+  flex: 1;
+  min-height: 0;
+  width: auto;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+}
