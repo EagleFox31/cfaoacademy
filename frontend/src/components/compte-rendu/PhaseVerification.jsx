@@ -3,6 +3,8 @@ import { dispositionsPour, partieRetenue } from '../../data/mock_sessions_format
 import { SEUIL, calculer, afficher } from '../../utils/baremeCfao'
 import { periodeLongue, nombreDeJours } from '../../utils/compteRendu'
 import { syntheseSatisfaction, afficherTaux } from '../../utils/satisfactionCfao'
+import ApercuReel from './ApercuReel'
+import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
 
 /**
  * Phase 4 — l'edition du rapport.
@@ -34,6 +36,13 @@ export default function PhaseVerification({
   // pas qu'il l'est, et un apercu qu'on modifie n'est plus un apercu.
   const [mode, setMode] = useState('edition')
   const page = pages[active]
+
+  // Les drapeaux transmis au service d'apercu. Memorises : une nouvelle
+  // reference relancerait une conversion a chaque rendu.
+  const valeurs = useMemo(
+    () => valeursDrapeaux(brouillon, session, synthese),
+    [brouillon, session, synthese],
+  )
 
   function majTexte(cle, valeur) {
     maj({ textes: { ...(brouillon.textes || {}), [cle]: valeur } })
@@ -171,8 +180,11 @@ export default function PhaseVerification({
             })}
           />
         ) : (
-          <ApercuPage page={page} textes={brouillon.textes || {}}
-            photos={photos} />
+          <ApercuReel
+            diapo={diapoDe(page)}
+            valeurs={valeurs}
+            secours={<ApercuPage page={page} textes={brouillon.textes || {}}
+              photos={photos} />} />
         )}
 
         <div className="cr-actions">
