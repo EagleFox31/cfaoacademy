@@ -130,7 +130,7 @@ export default function PhaseSession({
 
   // ── Session reprise du planning : verification
   return (
-    <div className="cr-panel">
+    <div className="cr-panel cr-panel--fiche">
       <div className="cr-panel-head">
         <h2 className="cr-panel-title">Vérifiez les informations</h2>
         <p className="cr-panel-hint">
@@ -139,12 +139,23 @@ export default function PhaseSession({
         </p>
       </div>
 
-      <div className="cr-recap">
-        <Ligne cle="Formation" valeur={brouillon.intitule} />
-        <Ligne cle="Code" valeur={brouillon.codeFormation} />
-        <Ligne cle="Période" valeur={periodeLongue(brouillon.debut, brouillon.fin)} />
-        <Ligne cle="Lieu" valeur={brouillon.lieu} />
-        <Ligne cle="Marque" valeur={brouillon.marque} />
+      {/* L'intitule porte l'identite de la session : il est le titre,
+          pas une colonne parmi cinq. Le reste sont des attributs, de
+          longueur comparable, alignes sur une seule ligne. */}
+      <div className="cr-fiche">
+        <div className="cr-fiche-tete">
+          <h3 className="cr-fiche-titre">{brouillon.intitule}</h3>
+          {brouillon.codeFormation && (
+            <span className="cr-fiche-code">{brouillon.codeFormation}</span>
+          )}
+        </div>
+        <dl className="cr-fiche-attributs">
+          <Attribut cle="Période"
+            valeur={periodeLongue(brouillon.debut, brouillon.fin)} />
+          <Attribut cle="Lieu" valeur={brouillon.lieu} />
+          <Attribut cle="Marque" valeur={brouillon.marque} />
+          <Attribut cle="Pays" valeur={brouillon.pays} />
+        </dl>
       </div>
 
       <ListeParticipants brouillon={brouillon} maj={maj} />
@@ -152,12 +163,12 @@ export default function PhaseSession({
   )
 }
 
-function Ligne({ cle, valeur }) {
+function Attribut({ cle, valeur }) {
   if (!valeur) return null
   return (
-    <div className="cr-recap-ligne">
-      <span className="cr-recap-cle">{cle}</span>
-      <span className="cr-recap-val">{valeur}</span>
+    <div className="cr-fiche-attribut">
+      <dt className="cr-fiche-cle">{cle}</dt>
+      <dd className="cr-fiche-val">{valeur}</dd>
     </div>
   )
 }

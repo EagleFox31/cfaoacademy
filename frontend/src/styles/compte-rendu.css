@@ -960,20 +960,28 @@
 
 /* Le formulaire et sa liste : la liste prend la hauteur restante et
    défile seule, l'en-tête du formulaire reste lisible. */
-.cr-assistant .cr-panel--formulaire { display: flex; flex-direction: column; }
+/* Les deux modes de la phase 1 portent une liste de participants : le
+   formulaire de saisie libre, et la fiche reprise du planning. Dans les
+   deux cas l'en-tête reste visible et seule la liste défile — on doit
+   pouvoir corriger une date sans remonter la page. */
+.cr-assistant .cr-panel--formulaire,
+.cr-assistant .cr-panel--fiche {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 .cr-assistant .cr-panel--formulaire .cr-panel-head,
-.cr-assistant .cr-panel--formulaire .cr-form { flex: none; }
+.cr-assistant .cr-panel--fiche .cr-panel-head,
+.cr-assistant .cr-panel--formulaire .cr-form,
+.cr-assistant .cr-panel--fiche .cr-fiche { flex: none; }
 
-/* Le formulaire reste visible, seule la liste des participants défile :
-   on doit pouvoir corriger une date sans remonter la page. */
-.cr-assistant .cr-panel--formulaire { overflow: hidden; }
-.cr-assistant .cr-panel--formulaire .cr-participants {
+.cr-assistant .cr-participants {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
-.cr-assistant .cr-panel--formulaire .cr-participants .cr-table-wrap {
+.cr-assistant .cr-participants .cr-table-wrap {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
