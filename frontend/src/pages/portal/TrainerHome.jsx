@@ -12,6 +12,8 @@ import PvCard from '../../components/PvCard'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
+import usePortalBackground from '../../hooks/usePortalBackground'
+import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
 import { SESSIONS_FORMATEUR } from '../../data/mock_sessions_formateur'
 import { periodeLongue } from '../../utils/compteRendu'
 import { brouillonsEnregistres } from '../../utils/brouillonsCompteRendu'
@@ -27,6 +29,13 @@ const VISUEL_POLE = {
   Motors: '/assets/publics/techniciens.jpg',
   Equipment: '/assets/publics/techniciens.jpg',
   Carrosserie: '/assets/publics/carrossiers.jpg',
+}
+
+/** Visuel des cartes d'entree du module. */
+const VISUEL_ENTREE = {
+  nouveau: '/assets/publics/process-sav.jpg',
+  archive: '/assets/img_cards/certification.jpg',
+  brouillon: '/assets/publics/process-sav.jpg',
 }
 
 function visuelSession(session) {
@@ -60,6 +69,15 @@ export default function TrainerHome() {
   const naviguer = useNavigate()
   const headerRef = useRef(null)
 
+  // Le fond hero suit le profil. `Portal` l'applique deja quand on arrive
+  // par `/portail`, mais il le retire au demontage : la page doit le
+  // porter elle-meme pour survivre a une navigation interne.
+  usePortalBackground(user)
+
+  // Publie la hauteur de l'entete : la section prioritaire s'en sert pour
+  // occuper exactement le reste de l'ecran.
+  usePortalHeaderHeight(headerRef)
+
   const aRediger = useMemo(
     () => SESSIONS_FORMATEUR.filter(s => s.statut === 'a_rediger'),
     [],
@@ -88,12 +106,15 @@ export default function TrainerHome() {
 
         {/* ── 1. Les sessions qui attendent leur compte rendu ──── */}
         {aRediger.length > 0 && (
-          <PortalReveal id="a-documenter">
+          <PortalReveal id="a-documenter"
+            className="portal-next-actions-viewport cr-viewport">
             <div className="container" style={{ padding: '16px 32px' }}>
               <div className="portal-section-head">
                 <p className="portal-section-eyebrow">Priorité — compte rendu</p>
                 <h2 className="portal-section-title">Vos sessions à documenter</h2>
               </div>
+              {/* Section tenue a un ecran : la meta se limite aux dates et
+                  a l'effectif. Le lieu se lit sur la fiche de session. */}
               <PortalStaggerGrid>
                 {aRediger.map(s => (
                   <div key={s.id} className="portal-card-anchor">
@@ -103,7 +124,7 @@ export default function TrainerHome() {
                         <span className="portal-status-chip progress">À rédiger</span>
                       }
                       title={s.moduleFormation}
-                      meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} participants · ${s.lieu}`}
+                      meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} participants`}
                       cta="Rédiger le compte rendu"
                       accentColor="#E3001B"
                       hoverHint="Ouvrir le compte rendu"
@@ -125,54 +146,59 @@ export default function TrainerHome() {
               <h2 className="portal-section-title">Comptes rendus</h2>
             </div>
 
-            {/* Des entrees de module, pas des contenus a illustrer :
-                la carte porte l'action, sans visuel qui n'ajouterait
-                rien a ce que le libelle dit deja. */}
-            <div className="cr-entries">
-              <button type="button" className="cr-entry cr-entry--primary"
-                onClick={() => naviguer('/portail/compte-rendu/nouveau')}>
-                <span className="cr-entry-mark" aria-hidden="true">+</span>
-                <span className="cr-entry-body">
-                  <span className="cr-entry-title">Nouveau compte rendu</span>
-                  <span className="cr-entry-desc">
-                    Depuis une session planifiée, ou en saisissant tout
-                    manuellement.
-                  </span>
-                </span>
-              </button>
+            <PortalStaggerGrid>
+              <div className="portal-card-anchor">
+                <PvCard
+                  img={VISUEL_ENTREE.nouveau}
+                  kicker={<span className="portal-status-chip progress">Rédiger</span>}
+                  title="Nouveau compte rendu"
+                  meta="Depuis une session planifiée, ou en saisissant tout manuellement."
+                  cta="Commencer"
+                  accentColor="#E3001B"
+                  hoverHint="Ouvrir un compte rendu"
+                  onClick={() => naviguer('/portail/compte-rendu/nouveau')}
+                  corner
+                />
+              </div>
 
-              <button type="button" className="cr-entry"
-                onClick={() => naviguer('/portail/compte-rendu/mes-rapports')}>
-                <span className="cr-entry-mark" aria-hidden="true">▤</span>
-                <span className="cr-entry-body">
-                  <span className="cr-entry-title">
-                    Mes comptes rendus
-                    {termines.length > 0 && (
-                      <span className="cr-entry-count">{termines.length}</span>
-                    )}
-                  </span>
-                  <span className="cr-entry-desc">
-                    Consulter, télécharger ou reprendre un rapport produit.
-                  </span>
-                </span>
-              </button>
+              <div className="portal-card-anchor">
+                <PvCard
+                  img={VISUEL_ENTREE.archive}
+                  kicker={
+                    <span className="portal-status-chip done">
+                      {termines.length > 0
+                        ? `${termines.length} rapport${termines.length > 1 ? 's' : ''}`
+                        : 'Archive'}
+                    </span>
+                  }
+                  title="Mes comptes rendus"
+                  meta="Consulter, télécharger ou reprendre un rapport produit."
+                  cta="Ouvrir l’archive"
+                  hoverHint="Voir les rapports produits"
+                  onClick={() => naviguer('/portail/compte-rendu/mes-rapports')}
+                  corner
+                />
+              </div>
 
               {brouillons.length > 0 && (
-                <button type="button" className="cr-entry cr-entry--draft"
-                  onClick={() => naviguer('/portail/compte-rendu/nouveau')}>
-                  <span className="cr-entry-mark" aria-hidden="true">⟳</span>
-                  <span className="cr-entry-body">
-                    <span className="cr-entry-title">
-                      Reprendre
-                      <span className="cr-entry-count">{brouillons.length}</span>
-                    </span>
-                    <span className="cr-entry-desc">
-                      {brouillons[0].session || 'Compte rendu'} — saisie en cours.
-                    </span>
-                  </span>
-                </button>
+                <div className="portal-card-anchor">
+                  <PvCard
+                    img={VISUEL_ENTREE.brouillon}
+                    kicker={
+                      <span className="portal-status-chip todo">
+                        {brouillons.length} en cours
+                      </span>
+                    }
+                    title="Reprendre une saisie"
+                    meta={`${brouillons[0].session || 'Compte rendu'} — saisie interrompue.`}
+                    cta="Reprendre"
+                    hoverHint="Reprendre là où vous vous êtes arrêté"
+                    onClick={() => naviguer('/portail/compte-rendu/nouveau')}
+                    corner
+                  />
+                </div>
               )}
-            </div>
+            </PortalStaggerGrid>
           </div>
         </PortalReveal>
 
