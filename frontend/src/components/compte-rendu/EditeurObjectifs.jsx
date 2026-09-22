@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { dispositionsPour } from '../../data/mock_sessions_formateur'
+import { MAX_PHOTOS, casesDe, dispositionsPour, grilleDe }
+  from '../../data/dispositions_photos'
 
 /**
  * L'editeur des objectifs de la formation.
@@ -29,9 +30,6 @@ export const MARQUAGES = [
 
 /** Une ligne vierge, pour demarrer ou prolonger la saisie. */
 export const LIGNE_VIDE = { code: '', intitule: '', texte: '' }
-
-/** Le modele ne prevoit pas de disposition au-dela de cinq images. */
-export const MAX_PHOTOS = 5
 
 const PLACEHOLDER = [
   'Collez vos objectifs, un par ligne.',
@@ -142,33 +140,51 @@ export default function EditeurObjectifs({
         ton={avecImages ? 'ok' : null}
         ouvert={volet === 'images'}
         onOuvrir={() => setVolet('images')}>
-        <DepotImages photos={cliches} onAjouter={onAjouter}
-          onRetirer={onRetirer} onLegender={onLegender} />
+        <div className="cr-obj-saisie cr-obj-saisie--images">
+          {/* A gauche les dispositions et le bouton d'ajout, a droite
+              le rendu : on choisit une mise en page en voyant l'effet
+              qu'elle produit sur ses propres photos. */}
+          <div className="cr-obj-cote cr-obj-cote--gauche">
+            <span className="cr-field-label">Disposition</span>
+            {choix.length > 1 ? (
+              <div className="cr-obj-choix cr-obj-choix--colonne">
+                {choix.map(d => (
+                  <button key={d.id} type="button"
+                    className={`cr-obj-opt${dispoActive === d.id ? ' cr-obj-opt--on' : ''}`}
+                    aria-pressed={dispoActive === d.id} title={d.note}
+                    onClick={() => onDisposition(d.id)}>
+                    <span className="cr-obj-opt-vue" aria-hidden="true">
+                      <VignetteDisposition disposition={d} />
+                    </span>
+                    <span className="cr-obj-opt-nom">{d.nom}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="cr-obj-aide">
+                {avecImages
+                  ? 'Une seule mise en page pour ce nombre de photos.'
+                  : 'Ajoutez des photos pour choisir une mise en page.'}
+              </p>
+            )}
 
-        {choix.length > 1 && (
-          <div className="cr-obj-reglage">
-            <span className="cr-field-label">
-              Disposition des {cliches.length} photos
-            </span>
-            <div className="cr-obj-choix">
-              {choix.map(d => (
-                <button key={d.id} type="button"
-                  className={`cr-obj-opt${dispoActive === d.id ? ' cr-obj-opt--on' : ''}`}
-                  aria-pressed={dispoActive === d.id} title={d.note}
-                  onClick={() => onDisposition(d.id)}>
-                  <span className="cr-obj-opt-vue" aria-hidden="true">
-                    <VignetteDisposition disposition={d} />
-                  </span>
-                  <span className="cr-obj-opt-nom">{d.nom}</span>
-                </button>
-              ))}
-            </div>
+            <button type="button" className="cr-obj-ajout"
+              disabled={cliches.length >= MAX_PHOTOS}
+              onClick={() => document.getElementById('cr-obj-fichier')?.click()}>
+              + Ajouter
+              <span className="cr-obj-ajout-compte">
+                {cliches.length}/{MAX_PHOTOS}
+              </span>
+            </button>
+            <input id="cr-obj-fichier" type="file" accept="image/*" multiple hidden
+              onChange={e => { onAjouter?.(e.target.files); e.target.value = '' }} />
           </div>
-        )}
 
-        {cliches.length > 1 && (
-          <OrdreDesPhotos photos={cliches} onReordonner={onReordonner} />
-        )}
+          <PlanchePhotos photos={cliches}
+            disposition={choix.find(d => d.id === dispoActive)}
+            onRetirer={onRetirer} onReordonner={onReordonner}
+            onAjouter={onAjouter} />
+        </div>
       </Bloc>
     </div>
   )
@@ -199,69 +215,14 @@ function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
   )
 }
 
-/** Le depot des photos et leurs legendes. */
-function DepotImages({ photos, onAjouter, onRetirer, onLegender }) {
-  const [survol, setSurvol] = useState(false)
-  const reste = MAX_PHOTOS - photos.length
-  const complet = reste <= 0
-
-  return (
-    <>
-      <div className={`cr-drop cr-drop--compact${survol ? ' cr-drop--over' : ''}`
-        + `${complet ? ' cr-drop--plein' : ''}`}
-        onClick={() => !complet && document.getElementById('cr-obj-fichier')?.click()}
-        onDragOver={e => { e.preventDefault(); if (!complet) setSurvol(true) }}
-        onDragLeave={() => setSurvol(false)}
-        onDrop={e => {
-          e.preventDefault()
-          setSurvol(false)
-          if (!complet) onAjouter?.(e.dataTransfer.files)
-        }}
-        role="button" tabIndex={complet ? -1 : 0}
-        aria-disabled={complet}
-        onKeyDown={e => {
-          if (e.key === 'Enter' && !complet) {
-            document.getElementById('cr-obj-fichier')?.click()
-          }
-        }}>
-        <span className="cr-drop-title">
-          {complet ? 'Cinq photos, le maximum' : 'Déposez vos photos'}
-        </span>
-        <span className="cr-drop-hint">
-          {complet
-            ? 'Retirez-en une pour en ajouter une autre'
-            : `ou cliquez — JPG, PNG · ${reste} restante${reste > 1 ? 's' : ''}`}
-        </span>
-        <input id="cr-obj-fichier" type="file" accept="image/*" multiple hidden
-          onChange={e => { onAjouter?.(e.target.files); e.target.value = '' }} />
-      </div>
-
-      {photos.length > 0 && (
-        <div className="cr-vignettes">
-          {photos.map((p, i) => (
-            <div key={p.id} className="cr-vignette">
-              <img src={p.apercu} alt="" />
-              <input className="cr-photo-legend" value={p.legende}
-                placeholder="Libellé (facultatif)"
-                onChange={e => onLegender?.(p.id, e.target.value)}
-                aria-label={`Libellé de la photo ${i + 1}`} />
-              <button type="button" className="cr-photo-del"
-                onClick={() => onRetirer?.(p.id)}>Retirer</button>
-            </div>
-          ))}
-        </div>
-      )}
-    </>
-  )
-}
-
 /**
- * L'ordre des photos, qui fixe leur place dans la disposition.
+ * Les photos posees selon la disposition retenue.
  *
- * On les fait glisser plutot que de saisir un rang : la position se
- * decide en regardant les images, pas en lisant des numeros.
+ * Le formateur voit la planche telle qu'elle sortira : c'est la mise en
+ * page du modele, pas une grille de vignettes. Les images se font
+ * glisser d'une case a l'autre, leur ordre fixant leur place.
  */
-function OrdreDesPhotos({ photos, onReordonner }) {
+function PlanchePhotos({ photos, disposition, onRetirer, onReordonner, onAjouter }) {
   const [saisie, setSaisie] = useState(null)
   const [survol, setSurvol] = useState(null)
 
@@ -269,52 +230,60 @@ function OrdreDesPhotos({ photos, onReordonner }) {
     if (saisie == null || saisie === vers) return
     const suite = [...photos]
     const [prise] = suite.splice(saisie, 1)
-    suite.splice(vers, 0, prise)
+    suite.splice(Math.min(vers, suite.length), 0, prise)
     onReordonner?.(suite)
     setSaisie(null)
     setSurvol(null)
   }
 
-  /** Deplacer au clavier : glisser n'est pas accessible a tous. */
-  function decaler(i, pas) {
-    const vers = i + pas
-    if (vers < 0 || vers >= photos.length) return
-    const suite = [...photos]
-    const [prise] = suite.splice(i, 1)
-    suite.splice(vers, 0, prise)
-    onReordonner?.(suite)
+  if (!photos.length) {
+    return (
+      <div className="cr-planche cr-planche--vide"
+        onClick={() => document.getElementById('cr-obj-fichier')?.click()}
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => { e.preventDefault(); onAjouter?.(e.dataTransfer.files) }}
+        role="button" tabIndex={0}
+        onKeyDown={e => {
+          if (e.key === 'Enter') document.getElementById('cr-obj-fichier')?.click()
+        }}>
+        <span className="cr-drop-title">Déposez vos photos</span>
+        <span className="cr-drop-hint">JPG, PNG</span>
+      </div>
+    )
   }
 
+  // Les cases de la disposition, limitees aux photos posees : une case
+  // vide repeterait le bouton d'ajout de la colonne de gauche.
+  const cases = casesDe(disposition).slice(0, photos.length)
+
   return (
-    <div className="cr-obj-reglage">
-      <span className="cr-field-label">Ordre des photos</span>
-      <p className="cr-obj-aide">
-        La première occupe la place principale de la disposition.
-        Faites glisser pour réordonner.
-      </p>
-      <ol className="cr-obj-ordre">
-        {photos.map((p, i) => (
-          <li key={p.id}
-            className={`cr-obj-photo${survol === i ? ' cr-obj-photo--cible' : ''}`
-              + `${saisie === i ? ' cr-obj-photo--prise' : ''}`}
+    <div className="cr-planche"
+      style={{ ...grilleDe(disposition), '--planche-ratio': disposition?.ratio || 1.17 }}>
+      {cases.map((forme, i) => {
+        const photo = photos[i]
+        return (
+          <div key={photo.id}
+            className={`cr-case${survol === i ? ' cr-case--cible' : ''}`
+              + `${saisie === i ? ' cr-case--prise' : ''}`}
+            style={forme}
             draggable
             onDragStart={() => setSaisie(i)}
             onDragOver={e => { e.preventDefault(); setSurvol(i) }}
             onDragLeave={() => setSurvol(null)}
-            onDrop={e => { e.preventDefault(); deposer(i) }}
+            onDrop={e => {
+              e.preventDefault()
+              if (saisie != null) deposer(i)
+              else onAjouter?.(e.dataTransfer.files)
+            }}
             onDragEnd={() => { setSaisie(null); setSurvol(null) }}>
-            <span className="cr-obj-photo-rang" aria-hidden="true">{i + 1}</span>
-            <img src={p.apercu} alt={p.legende || `Photo ${i + 1}`} />
-            <span className="cr-obj-photo-fleches">
-              <button type="button" onClick={() => decaler(i, -1)}
-                disabled={i === 0} aria-label={`Avancer la photo ${i + 1}`}>↑</button>
-              <button type="button" onClick={() => decaler(i, 1)}
-                disabled={i === photos.length - 1}
-                aria-label={`Reculer la photo ${i + 1}`}>↓</button>
-            </span>
-          </li>
-        ))}
-      </ol>
+            <img src={photo.apercu} alt="" />
+            <span className="cr-case-rang" aria-hidden="true">{i + 1}</span>
+            <button type="button" className="cr-case-retirer"
+              onClick={() => onRetirer?.(photo.id)}
+              aria-label={`Retirer la photo ${i + 1}`}>×</button>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -329,25 +298,10 @@ function puceDe(marquage, i) {
 
 /** Le schema d'une disposition, en miniature. */
 function VignetteDisposition({ disposition: d }) {
-  if (d.colonnes) {
-    return (
-      <span className="cr-obj-vignette" style={{
-        gridTemplateColumns: d.poids.map(p => `${p}fr`).join(' '),
-      }}>
-        {d.colonnes.map((col, i) => (
-          <span key={i} className="cr-obj-vignette-col">
-            {col.map((_, j) => <span key={j} className="cr-obj-vignette-case" />)}
-          </span>
-        ))}
-      </span>
-    )
-  }
   return (
-    <span className="cr-obj-vignette cr-obj-vignette--lignes">
-      {d.schema.map((ligne, i) => (
-        <span key={i} className="cr-obj-vignette-ligne">
-          {ligne.map((_, j) => <span key={j} className="cr-obj-vignette-case" />)}
-        </span>
+    <span className="cr-obj-vignette" style={grilleDe(d)}>
+      {casesDe(d).map((forme, i) => (
+        <span key={i} className="cr-obj-vignette-case" style={forme} />
       ))}
     </span>
   )

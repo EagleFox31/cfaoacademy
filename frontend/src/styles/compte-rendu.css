@@ -1729,3 +1729,161 @@
 .cr-obj-lignes--tableau .cr-obj-entete {
   grid-template-columns: 28px 90px minmax(0, 1fr) minmax(0, 1.6fr);
 }
+
+/* ---- Planche photos : la mise en page telle qu'elle sortira ---- */
+
+/* Miroir du volet des objectifs : les réglages tiennent la colonne
+   étroite, le rendu occupe le reste. */
+.cr-obj-saisie--images {
+  grid-template-columns: minmax(150px, 1fr) minmax(0, 4fr);
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+.cr-obj-cote--gauche { height: 100%; }
+
+.cr-obj-ajout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding: 9px 12px;
+  border: 1.5px dashed var(--line, rgba(16, 20, 48, 0.25));
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink-2, #4b5563);
+  background: transparent;
+  transition: border-color 0.15s, color 0.15s;
+}
+.cr-obj-ajout:hover:not(:disabled) {
+  border-color: var(--accent, #e2001a);
+  color: var(--accent, #e2001a);
+}
+.cr-obj-ajout:disabled { opacity: 0.4; cursor: default; }
+.cr-obj-ajout-compte {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-3, #6b7280);
+}
+
+/* La planche reproduit le cadre reserve aux photos dans le modele :
+   x=0.472 w=0.498 y=0.185 h=0.755 d'une diapositive 13,33 x 7,5 pouces,
+   soit 6,64 x 5,66 pouces — un rapport de 1,173, nettement plus haut
+   que le 16:9 de la diapositive entiere. La planche est donc a
+   l'echelle de ce qu'elle represente. */
+.cr-planche {
+  display: grid;
+  gap: 8px;
+  align-self: center;
+  justify-self: center;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  aspect-ratio: var(--planche-ratio, 1.17);
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--surface-2, rgba(16, 20, 48, 0.05));
+}
+.cr-planche--vide {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1.5px dashed var(--line, rgba(16, 20, 48, 0.25));
+  cursor: pointer;
+}
+.cr-planche--vide:hover { border-color: var(--accent, #e2001a); }
+
+.cr-case {
+  position: relative;
+  min-height: 0;
+  border-radius: 5px;
+  overflow: hidden;
+  cursor: grab;
+  border: 2px solid transparent;
+  background: var(--surface-1, #fff);
+  transition: border-color 0.15s, opacity 0.15s;
+}
+.cr-case img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cr-case--prise { opacity: 0.4; cursor: grabbing; }
+.cr-case--cible { border-color: var(--accent, #e2001a); }
+
+.cr-case-rang {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(16, 20, 48, 0.78);
+}
+.cr-case-retirer {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 19px;
+  height: 19px;
+  border: 0;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  color: #fff;
+  background: rgba(16, 20, 48, 0.78);
+  transition: opacity 0.15s, background 0.15s;
+}
+.cr-case:hover .cr-case-retirer { opacity: 1; }
+.cr-case-retirer:hover { background: var(--danger, #c0392b); }
+
+/* ---- La hauteur va au volet ouvert ---- */
+
+/* Les deux volets ne peuvent etre ouverts en meme temps : celui qui
+   l'est prend la place disponible, l'autre se replie a son en-tete.
+   Sans cela la planche reste a sa taille minimale sous un vide. */
+.cr-edition:has(.cr-blocs--objectifs) { padding-bottom: 0; }
+.cr-edition-champs:has(.cr-blocs--objectifs) {
+  flex: 1;
+  min-height: 0;
+  grid-auto-rows: minmax(0, 1fr);
+  /* `align-items: start` cale les champs en haut de leur rangee, ce que
+     la couverture demande. Ici la rangee est la hauteur disponible. */
+  align-items: stretch;
+}
+.cr-edition-champs:has(.cr-blocs--objectifs) > .cr-edition-large {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.cr-blocs--objectifs { flex: 1; min-height: 0; }
+.cr-blocs--objectifs .cr-bloc:not(.cr-bloc--ouvert) { flex: none; }
+.cr-blocs--objectifs .cr-bloc--ouvert {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.cr-blocs--objectifs .cr-bloc--ouvert .cr-bloc-corps {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.cr-obj-saisie--images {
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+.cr-obj-zone { min-height: 0; height: 100%; }
+.cr-obj-texte { flex: 1; min-height: 160px; }
