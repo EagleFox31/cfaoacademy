@@ -1222,19 +1222,59 @@
 .cr-edition {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
   min-height: 0;
   overflow-y: auto;
+  /* Le defilement s'arrete net sur le dernier bloc sans cette reserve :
+     le panneau des photos restait coupe par la barre d'actions. */
+  padding-bottom: 8px;
+}
+/* Le panneau des photos suit la meme colonne que les champs, plutot
+   que de filer sur toute la largeur du panneau. */
+.cr-edition > .cr-outils {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
 }
 .cr-edition-champs {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 14px 16px;
+  /* `auto-fit` decoupait trois colonnes dans un panneau large, puis
+     tassait deux champs dans la premiere : la couverture se lisait
+     comme un formulaire abandonne a gauche. Deux colonnes fixes et une
+     largeur de lecture bornee, centree, tiennent la page quel que
+     soit le nombre de champs. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
   align-content: start;
+  align-items: start;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+/* Un champ seul sur sa ligne n'a pas a rester en demi-largeur. */
+.cr-edition-champs > .cr-field:only-child { grid-column: 1 / -1; }
+@media (max-width: 900px) {
+  .cr-edition-champs { grid-template-columns: minmax(0, 1fr); }
 }
 .cr-edition-champs .cr-field { margin-bottom: 0; }
 /* Un paragraphe mérite toute la largeur ; un titre s'en contente. */
 .cr-edition-champs .cr-field:has(.cr-textarea) { grid-column: 1 / -1; }
+/* L'editeur des objectifs et les notes de bas de page prennent la
+   largeur entiere : ce sont des blocs, pas des champs. */
+.cr-edition-champs .cr-edition-large { grid-column: 1 / -1; }
+/* Une note d'information se range sous son champ plutot que de couper
+   la grille en deux : sans cela le champ suivant repart a la ligne et
+   la moitie droite reste vide. */
+.cr-edition-champs .cr-vide-texte {
+  grid-column: 1;
+  grid-row: 2;
+  margin: -6px 0 0;
+}
+/* Le champ facultatif reprend la premiere rangee, a cote du titre. */
+.cr-edition-champs:has(> .cr-vide-texte) > .cr-field:nth-of-type(2) {
+  grid-column: 2;
+  grid-row: 1;
+}
 
 /* L'étape d'édition tient dans l'écran : le sommaire et la scène se
    partagent la hauteur, et seul le contenu défile. */
@@ -1398,4 +1438,167 @@
 .cr-apercu-reel--secours {
   flex-direction: column;
   align-items: stretch;
+}
+
+/* ---- Éditeur des objectifs ---- */
+
+.cr-obj {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cr-obj-tete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.cr-obj-aide {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-3, #6b7280);
+}
+.cr-obj-compte {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-2, #4b5563);
+  background: var(--surface-2, rgba(16, 20, 48, 0.06));
+}
+
+.cr-obj-lignes { display: flex; flex-direction: column; gap: 6px; }
+
+/* La puce précède le champ : on voit le rendu pendant qu'on saisit. */
+.cr-obj-ligne,
+.cr-obj-entete {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+}
+.cr-obj-lignes--liste .cr-obj-ligne { grid-template-columns: 28px 1fr 32px; }
+.cr-obj-lignes--tableau .cr-obj-ligne,
+.cr-obj-lignes--tableau .cr-obj-entete {
+  grid-template-columns: 28px 90px minmax(0, 1fr) minmax(0, 1.6fr) 32px;
+}
+.cr-obj-entete {
+  padding-bottom: 2px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3, #6b7280);
+}
+.cr-obj-puce {
+  text-align: right;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-3, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+.cr-obj-retirer {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ink-3, #6b7280);
+  background: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+.cr-obj-retirer:hover:not(:disabled) {
+  color: var(--danger, #c0392b);
+  background: rgba(192, 57, 43, 0.1);
+}
+.cr-obj-retirer:disabled { opacity: 0.25; cursor: default; }
+
+/* Les réglages se lisent d'un coup d'œil : un aperçu vaut mieux qu'un
+   intitulé dans une liste déroulante. */
+.cr-obj-reglages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line, rgba(16, 20, 48, 0.1));
+}
+.cr-obj-bloc { min-width: 0; margin: 0; padding: 0; border: 0; }
+.cr-obj-bloc legend { padding: 0; margin-bottom: 8px; }
+.cr-obj-choix { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.cr-obj-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 68px;
+  padding: 8px 10px;
+  border: 1.5px solid var(--line, rgba(16, 20, 48, 0.14));
+  border-radius: 10px;
+  cursor: pointer;
+  background: var(--surface-1, #fff);
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.cr-obj-opt:hover { border-color: var(--accent, #e2001a); }
+.cr-obj-opt:active { transform: translateY(1px); }
+.cr-obj-opt--on {
+  border-color: var(--accent, #e2001a);
+  background: rgba(226, 0, 26, 0.05);
+}
+.cr-obj-opt-vue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 26px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-2, #4b5563);
+}
+.cr-obj-opt-vue em { font-style: normal; }
+.cr-obj-opt-nom {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-2, #4b5563);
+}
+.cr-obj-opt-nom small { font-weight: 400; opacity: 0.6; }
+.cr-obj-mini-tab {
+  width: 26px;
+  height: 18px;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  background:
+    linear-gradient(currentColor, currentColor) 0 0 / 100% 5px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 50% / 100% 1px no-repeat;
+}
+
+/* La vignette dit la disposition sans avoir à la nommer. */
+.cr-obj-vignette {
+  display: grid;
+  gap: 2px;
+  width: 30px;
+  height: 22px;
+}
+.cr-obj-vignette--lignes { grid-auto-flow: row; }
+.cr-obj-vignette-col,
+.cr-obj-vignette-ligne { display: grid; gap: 2px; }
+.cr-obj-vignette-ligne { grid-auto-flow: column; }
+.cr-obj-vignette-case {
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.45;
+}
+.cr-obj-opt--on .cr-obj-vignette-case { opacity: 0.85; }
+
+.cr-lien-discret {
+  padding: 0;
+  border: 0;
+  font: inherit;
+  color: var(--accent, #e2001a);
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
 }
