@@ -1442,31 +1442,10 @@
 
 /* ---- Éditeur des objectifs ---- */
 
-.cr-obj {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.cr-obj-tete {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
 .cr-obj-aide {
   margin: 4px 0 0;
   font-size: 0.8rem;
   color: var(--ink-3, #6b7280);
-}
-.cr-obj-compte {
-  flex: none;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--ink-2, #4b5563);
-  background: var(--surface-2, rgba(16, 20, 48, 0.06));
 }
 
 .cr-obj-lignes { display: flex; flex-direction: column; gap: 8px; }
@@ -1522,9 +1501,14 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--line, rgba(16, 20, 48, 0.1));
 }
+/* Les deux volets tiennent la meme colonne que les champs. */
+.cr-blocs--objectifs { display: flex; flex-direction: column; gap: 10px; }
+/* Une zone de depot pleine ne se clique plus. */
+.cr-drop--plein { opacity: 0.6; cursor: default; }
 .cr-obj-choix { display: flex; flex-wrap: wrap; gap: 10px; }
 
 .cr-obj-opt {

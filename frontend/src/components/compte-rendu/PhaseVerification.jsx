@@ -312,7 +312,10 @@ function FormulairePage({
               onObjectifs={onObjectifs}
               onMarquage={onMarquage}
               onReordonner={onReordonner}
-              onDisposition={onDisposition} />
+              onDisposition={onDisposition}
+              onAjouter={onAjouter}
+              onRetirer={onRetirer}
+              onLegender={onLegender} />
           </div>
         )}
 
@@ -340,7 +343,7 @@ function FormulairePage({
         )}
       </div>
 
-      {page.rubrique && (
+      {page.rubrique && page.cle !== 'objectifs' && (
         <PanneauPhotos
           rubrique={page.rubrique}
           photos={photos}
