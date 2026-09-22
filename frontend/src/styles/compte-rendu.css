@@ -1445,12 +1445,12 @@
 .cr-obj {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .cr-obj-tete {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
@@ -1469,7 +1469,7 @@
   background: var(--surface-2, rgba(16, 20, 48, 0.06));
 }
 
-.cr-obj-lignes { display: flex; flex-direction: column; gap: 6px; }
+.cr-obj-lignes { display: flex; flex-direction: column; gap: 8px; }
 
 /* La puce précède le champ : on voit le rendu pendant qu'on saisit. */
 .cr-obj-ligne,
@@ -1518,16 +1518,14 @@
 
 /* Les réglages se lisent d'un coup d'œil : un aperçu vaut mieux qu'un
    intitulé dans une liste déroulante. */
-.cr-obj-reglages {
+.cr-obj-reglage {
   display: flex;
-  flex-wrap: wrap;
-  gap: 18px 28px;
-  padding-top: 14px;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 16px;
   border-top: 1px solid var(--line, rgba(16, 20, 48, 0.1));
 }
-.cr-obj-bloc { min-width: 0; margin: 0; padding: 0; border: 0; }
-.cr-obj-bloc legend { padding: 0; margin-bottom: 8px; }
-.cr-obj-choix { display: flex; flex-wrap: wrap; gap: 8px; }
+.cr-obj-choix { display: flex; flex-wrap: wrap; gap: 10px; }
 
 .cr-obj-opt {
   display: flex;
@@ -1601,4 +1599,71 @@
   text-decoration: underline;
   cursor: pointer;
   background: none;
+}
+
+/* ---- Ordre des photos : la place dans la disposition ---- */
+
+.cr-obj-ordre {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cr-obj-photo {
+  position: relative;
+  width: 92px;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: grab;
+  border: 2px solid transparent;
+  background: var(--surface-2, rgba(16, 20, 48, 0.06));
+  transition: border-color 0.15s, opacity 0.15s;
+}
+.cr-obj-photo img {
+  display: block;
+  width: 100%;
+  height: 62px;
+  object-fit: cover;
+}
+.cr-obj-photo--prise { opacity: 0.4; cursor: grabbing; }
+.cr-obj-photo--cible { border-color: var(--accent, #e2001a); }
+
+/* Le rang se lit sur l'image : c'est lui qui dit la place occupée. */
+.cr-obj-photo-rang {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(16, 20, 48, 0.8);
+}
+/* Les flèches doublent le glisser, qui n'est pas accessible à tous. */
+.cr-obj-photo-fleches {
+  display: flex;
+  border-top: 1px solid var(--line, rgba(16, 20, 48, 0.1));
+}
+.cr-obj-photo-fleches button {
+  flex: 1;
+  border: 0;
+  padding: 3px 0;
+  font-size: 0.78rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ink-2, #4b5563);
+  background: var(--surface-1, #fff);
+}
+.cr-obj-photo-fleches button:hover:not(:disabled) {
+  background: var(--surface-2, rgba(16, 20, 48, 0.06));
+}
+.cr-obj-photo-fleches button:disabled { opacity: 0.3; cursor: default; }
+.cr-obj-photo-fleches button + button {
+  border-left: 1px solid var(--line, rgba(16, 20, 48, 0.1));
 }

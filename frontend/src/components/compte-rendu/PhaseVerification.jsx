@@ -204,10 +204,11 @@ export default function PhaseVerification({
             objectifs={brouillon.objectifs
               || objectifsInitiaux(brouillon, page)}
             marquage={brouillon.marquageObjectifs}
-            forme={brouillon.formeObjectifs}
             onObjectifs={v => maj({ objectifs: v })}
             onMarquage={v => maj({ marquageObjectifs: v })}
-            onForme={v => maj({ formeObjectifs: v })}
+            onReordonner={v => maj({
+              photos: { ...(brouillon.photos || {}), objectifs: v },
+            })}
             photos={photos}
             disposition={page?.rubrique
               ? brouillon.dispositions?.[page.rubrique] : null}
@@ -270,7 +271,7 @@ export default function PhaseVerification({
 function FormulairePage({
   page, textes, onTexte, photos, disposition,
   onAjouter, onRetirer, onLegender, onDisposition,
-  objectifs, marquage, forme, onObjectifs, onMarquage, onForme,
+  objectifs, marquage, onObjectifs, onMarquage, onReordonner,
 }) {
   if (!page) return null
   const valeur = (cle, defaut) => textes[`${page.cle}.${cle}`] ?? defaut
@@ -306,12 +307,11 @@ function FormulairePage({
             <EditeurObjectifs
               objectifs={objectifs}
               marquage={marquage}
-              forme={forme}
-              photos={photos?.objectifs || []}
+              photos={photos || []}
               disposition={disposition}
               onObjectifs={onObjectifs}
               onMarquage={onMarquage}
-              onForme={onForme}
+              onReordonner={onReordonner}
               onDisposition={onDisposition} />
           </div>
         )}
