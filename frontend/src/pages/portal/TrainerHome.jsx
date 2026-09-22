@@ -29,6 +29,13 @@ const VISUEL_POLE = {
   Carrosserie: '/assets/publics/carrossiers.jpg',
 }
 
+/** Visuel des cartes d'entree du module. */
+const VISUEL_ENTREE = {
+  nouveau: '/assets/publics/process-sav.jpg',
+  archive: '/assets/img_cards/certification.jpg',
+  brouillon: '/assets/publics/process-sav.jpg',
+}
+
 function visuelSession(session) {
   const { logo, label } = resolvePortalCardBrand(session.marque)
   return {
@@ -125,54 +132,59 @@ export default function TrainerHome() {
               <h2 className="portal-section-title">Comptes rendus</h2>
             </div>
 
-            {/* Des entrees de module, pas des contenus a illustrer :
-                la carte porte l'action, sans visuel qui n'ajouterait
-                rien a ce que le libelle dit deja. */}
-            <div className="cr-entries">
-              <button type="button" className="cr-entry cr-entry--primary"
-                onClick={() => naviguer('/portail/compte-rendu/nouveau')}>
-                <span className="cr-entry-mark" aria-hidden="true">+</span>
-                <span className="cr-entry-body">
-                  <span className="cr-entry-title">Nouveau compte rendu</span>
-                  <span className="cr-entry-desc">
-                    Depuis une session planifiée, ou en saisissant tout
-                    manuellement.
-                  </span>
-                </span>
-              </button>
+            <PortalStaggerGrid>
+              <div className="portal-card-anchor">
+                <PvCard
+                  img={VISUEL_ENTREE.nouveau}
+                  kicker={<span className="portal-status-chip progress">Rédiger</span>}
+                  title="Nouveau compte rendu"
+                  meta="Depuis une session planifiée, ou en saisissant tout manuellement."
+                  cta="Commencer"
+                  accentColor="#E3001B"
+                  hoverHint="Ouvrir un compte rendu"
+                  onClick={() => naviguer('/portail/compte-rendu/nouveau')}
+                  corner
+                />
+              </div>
 
-              <button type="button" className="cr-entry"
-                onClick={() => naviguer('/portail/compte-rendu/mes-rapports')}>
-                <span className="cr-entry-mark" aria-hidden="true">▤</span>
-                <span className="cr-entry-body">
-                  <span className="cr-entry-title">
-                    Mes comptes rendus
-                    {termines.length > 0 && (
-                      <span className="cr-entry-count">{termines.length}</span>
-                    )}
-                  </span>
-                  <span className="cr-entry-desc">
-                    Consulter, télécharger ou reprendre un rapport produit.
-                  </span>
-                </span>
-              </button>
+              <div className="portal-card-anchor">
+                <PvCard
+                  img={VISUEL_ENTREE.archive}
+                  kicker={
+                    <span className="portal-status-chip done">
+                      {termines.length > 0
+                        ? `${termines.length} rapport${termines.length > 1 ? 's' : ''}`
+                        : 'Archive'}
+                    </span>
+                  }
+                  title="Mes comptes rendus"
+                  meta="Consulter, télécharger ou reprendre un rapport produit."
+                  cta="Ouvrir l’archive"
+                  hoverHint="Voir les rapports produits"
+                  onClick={() => naviguer('/portail/compte-rendu/mes-rapports')}
+                  corner
+                />
+              </div>
 
               {brouillons.length > 0 && (
-                <button type="button" className="cr-entry cr-entry--draft"
-                  onClick={() => naviguer('/portail/compte-rendu/nouveau')}>
-                  <span className="cr-entry-mark" aria-hidden="true">⟳</span>
-                  <span className="cr-entry-body">
-                    <span className="cr-entry-title">
-                      Reprendre
-                      <span className="cr-entry-count">{brouillons.length}</span>
-                    </span>
-                    <span className="cr-entry-desc">
-                      {brouillons[0].session || 'Compte rendu'} — saisie en cours.
-                    </span>
-                  </span>
-                </button>
+                <div className="portal-card-anchor">
+                  <PvCard
+                    img={VISUEL_ENTREE.brouillon}
+                    kicker={
+                      <span className="portal-status-chip todo">
+                        {brouillons.length} en cours
+                      </span>
+                    }
+                    title="Reprendre une saisie"
+                    meta={`${brouillons[0].session || 'Compte rendu'} — saisie interrompue.`}
+                    cta="Reprendre"
+                    hoverHint="Reprendre là où vous vous êtes arrêté"
+                    onClick={() => naviguer('/portail/compte-rendu/nouveau')}
+                    corner
+                  />
+                </div>
               )}
-            </div>
+            </PortalStaggerGrid>
           </div>
         </PortalReveal>
 
