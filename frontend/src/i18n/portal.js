@@ -304,6 +304,7 @@ export const PORTAL_COPY = {
     portal_orient_workshop_manager: 'Vous pilotez plusieurs équipes et suivez leurs tests, leurs résultats et leurs plans de formation.',
     portal_orient_branch_hr:      'Vue filiale : annuaire collaborateurs et inscriptions.',
     portal_orient_superadmin:     'Administration groupe : vue globale et logs.',
+    portal_orient_trainer:        'Vous animez vos sessions, saisissez les résultats et produisez vos comptes rendus de formation.',
     tm_hero_member_one:         'collaborateur',
     tm_hero_competency_label:   'Tests de compétences',
     tm_hero_competency_detail:  '{done} / {total} tests validés',
@@ -391,6 +392,9 @@ export const PORTAL_COPY = {
     nav_sec_directory: 'Annuaire',
     nav_sec_branches:  'Filiales',
     nav_sec_logs:      'Activité',
+    nav_sec_a_documenter:     'À documenter',
+    nav_sec_comptes_rendus:   'Vos comptes rendus',
+    nav_sec_sessions_animees: 'Vos sessions',
 
     // Section assistance OR — app 06 (hotline formateur atelier)
     eyebrow_assistance:         'Hotline technique · atelier',
@@ -833,6 +837,7 @@ export const PORTAL_COPY = {
     portal_orient_workshop_manager: 'You oversee several teams and keep track of their tests, results and training plans.',
     portal_orient_branch_hr:        'Branch view: employee directory and enrollments.',
     portal_orient_superadmin:       'Group admin: global view and logs.',
+    portal_orient_trainer:          'You deliver your sessions, enter the results and produce your training reports.',
     tm_hero_member_one:         'team member',
     tm_hero_competency_label:   'Skills tests',
     tm_hero_competency_detail:  '{done} / {total} tests validated',
@@ -920,6 +925,9 @@ export const PORTAL_COPY = {
     nav_sec_directory: 'Directory',
     nav_sec_branches:  'Branches',
     nav_sec_logs:      'Activity',
+    nav_sec_a_documenter:     'To document',
+    nav_sec_comptes_rendus:   'Your reports',
+    nav_sec_sessions_animees: 'Your sessions',
 
     // Assistance section (tickets app)
     eyebrow_assistance:         'Technical hotline · workshop',
@@ -1326,6 +1334,7 @@ export const PORTAL_COPY = {
     portal_orient_workshop_manager: 'Vous pilotez plusieurs équipes e suivez leurs tests, leurs résultats e leurs plans de formation.',
     portal_orient_branch_hr: 'Vue filiale : annuaire collaborateurs e inscriptions.',
     portal_orient_superadmin: 'Administration groupe : vue globale e logs.',
+    portal_orient_trainer: 'Vous animez vos sessions, saisissez os résultats e produisez vos comptes rendus de formation.',
     tm_hero_member_one: 'collaborateur',
     tm_hero_competency_label: 'Tests de compétences',
     tm_hero_competency_detail: '{done} / {total} tests validés',
@@ -1405,6 +1414,9 @@ export const PORTAL_COPY = {
     nav_sec_directory: 'Annuaire',
     nav_sec_branches: 'Filials',
     nav_sec_logs: 'Activité',
+    nav_sec_a_documenter: 'A documentar',
+    nav_sec_comptes_rendus: 'Vos comptes rendus',
+    nav_sec_sessions_animees: 'Vos sessions',
     eyebrow_assistance: 'Hotline técnica · oficina',
     title_assistance: 'Bloqueado numa intervenção?',
     assistance_desc: 'Um formador certificado na sua marca ajuda a desbloquear a ordem de reparação em curso — enquanto trabalha no veículo.',

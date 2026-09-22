@@ -1,106 +1,133 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
+import PortalHeader from '../../components/PortalHeader'
+import PortalStickyBar from '../../components/PortalStickyBar'
+import PortalDemoBar from '../../components/PortalDemoBar'
+import PortalReveal from '../../components/PortalReveal.jsx'
+import PortalStaggerGrid from '../../components/PortalStaggerGrid.jsx'
+import PortalAssistanceSection from '../../components/PortalAssistanceSection.jsx'
+import PvCard from '../../components/PvCard'
 import useSiteEffects from '../../hooks/useSiteEffects'
-import {
-  SESSIONS_FORMATEUR,
-  SESSION_STATUTS,
-} from '../../data/mock_sessions_formateur'
+import useAuth from '../../hooks/useAuth'
+import useLocale from '../../hooks/useLocale'
+import { SESSIONS_FORMATEUR } from '../../data/mock_sessions_formateur'
 import { periodeLongue } from '../../utils/compteRendu'
 import { brouillonsEnregistres } from '../../utils/brouillonsCompteRendu'
+import { resolvePortalCardBrand } from '../../utils/portalCardMedia.js'
 import '../../styles/compte-rendu.css'
 
+/** Visuel des cartes de session, par pole — meme table que `SessionCard`.
+ *
+ * Surtout pas la fiche catalogue : `technicien_<marque>.png` est le
+ * schema des niveaux de competences, lisible sur une fiche A4, illisible
+ * et hors sujet en vignette de carte. */
+const VISUEL_POLE = {
+  Motors: '/assets/publics/techniciens.jpg',
+  Equipment: '/assets/publics/techniciens.jpg',
+  Carrosserie: '/assets/publics/carrossiers.jpg',
+}
+
+function visuelSession(session) {
+  const { logo, label } = resolvePortalCardBrand(session.marque)
+  return {
+    img: VISUEL_POLE[session.pole] ?? '/assets/publics/techniciens.jpg',
+    logo,
+    brandLabel: logo ? undefined : label,
+  }
+}
+
 /**
- * Accueil du formateur, calque sur le tableau de bord du technicien.
+ * Tableau de bord du formateur — calque sur celui du technicien.
  *
- * Deux sections, dans l'ordre ou le formateur en a besoin :
+ * Memes briques, meme rythme : entete portail, barre collante, sections
+ * `PortalReveal` avec surtitre et titre, grilles `PvCard`. Un formateur
+ * qui a deja vu le portail cote apprenant n'a rien a reapprendre.
  *
- *   1. **A faire maintenant** — les sessions terminees sans compte
- *      rendu. C'est la seule chose qui presse, et c'est ce qu'il vient
- *      chercher en ouvrant l'outil.
- *   2. **Comptes rendus** — les entrees du module : en commencer un,
- *      reprendre un brouillon, consulter les precedents.
+ * Trois sections, dans l'ordre ou il en a besoin :
  *
- * Le parcours de redaction lui-meme tient en trois phases. Une session
- * de formation se documente le vendredi soir, entre deux trains : un
- * assistant qui annonce neuf etapes fait reporter la tache.
+ *   1. **Vos sessions a documenter** — les formations terminees dont le
+ *      compte rendu manque. C'est ce qu'il vient chercher.
+ *   2. **Comptes rendus** — les entrees du module : en ouvrir un,
+ *      reprendre un brouillon, relire les precedents.
+ *   3. **Vos prochaines sessions** — ce qu'il anime bientot.
  */
 export default function TrainerHome() {
   useSiteEffects()
+  const { user } = useAuth()
+  const { t } = useLocale('portal')
   const naviguer = useNavigate()
+  const headerRef = useRef(null)
 
   const aRediger = useMemo(
     () => SESSIONS_FORMATEUR.filter(s => s.statut === 'a_rediger'),
     [],
   )
-  const brouillons = useMemo(() => brouillonsEnregistres(), [])
   const termines = useMemo(
     () => SESSIONS_FORMATEUR.filter(s => s.statut === 'termine'),
     [],
   )
+  const aVenir = useMemo(
+    () => SESSIONS_FORMATEUR.filter(
+      s => s.statut === 'en_cours' || s.statut === 'a_venir'),
+    [],
+  )
+  const brouillons = useMemo(() => brouillonsEnregistres(), [])
+
+  if (!user) return null
 
   return (
     <>
       <Nav />
+      <PortalStickyBar user={user} headerRef={headerRef} />
       <main className="portal-page">
-        {/* ── En-tete ─────────────────────────────────────────── */}
-        <header className="cr-home-header">
-          <div className="container" style={{ padding: '38px 32px 30px' }}>
-            <span className="cr-home-role">Formateur</span>
-            <h1 className="cr-home-title">Bonjour, Eugène</h1>
-            <p className="cr-home-sub">
-              {aRediger.length > 0
-                ? `${aRediger.length} session${aRediger.length > 1 ? 's' : ''} attend${aRediger.length > 1 ? 'ent' : ''} son compte rendu.`
-                : 'Aucun compte rendu en attente.'}
-            </p>
-          </div>
-        </header>
+        <div ref={headerRef}>
+          <PortalHeader user={user} />
+        </div>
 
-        {/* ── 1. À faire maintenant ───────────────────────────── */}
+        {/* ── 1. Les sessions qui attendent leur compte rendu ──── */}
         {aRediger.length > 0 && (
-          <section id="a-faire" className="cr-section-claire">
-            <div className="container" style={{ padding: '30px 32px 8px' }}>
+          <PortalReveal id="a-documenter">
+            <div className="container" style={{ padding: '16px 32px' }}>
               <div className="portal-section-head">
                 <p className="portal-section-eyebrow">Priorité — compte rendu</p>
-                <h2 className="portal-section-title">À faire maintenant</h2>
+                <h2 className="portal-section-title">Vos sessions à documenter</h2>
               </div>
-              {/* Une session a documenter n'est pas un contenu a
-                  illustrer : la carte porte l'information utile, sans
-                  visuel qui ne dirait rien de plus. */}
-              <div className="cr-card-grid">
+              <PortalStaggerGrid>
                 {aRediger.map(s => (
-                  <button key={s.id} type="button" className="cr-todo"
-                    onClick={() => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)}>
-                    <span className="cr-todo-tete">
-                      <span className="cr-session-code">{s.codeSession}</span>
-                      <span className="cr-badge cr-badge--warn">À rédiger</span>
-                    </span>
-                    <span className="cr-todo-titre">{s.moduleFormation}</span>
-                    <span className="cr-session-meta">
-                      <span>{periodeLongue(s.debut, s.fin)}</span>
-                      <span>{s.participants.length} participants</span>
-                    </span>
-                    <span className="cr-session-meta">
-                      <span>{s.marque}</span>
-                      <span>{s.lieu}</span>
-                    </span>
-                    <span className="cr-todo-action">Rédiger le compte rendu →</span>
-                  </button>
+                  <div key={s.id} className="portal-card-anchor">
+                    <PvCard
+                      {...visuelSession(s)}
+                      kicker={
+                        <span className="portal-status-chip progress">À rédiger</span>
+                      }
+                      title={s.moduleFormation}
+                      meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} participants · ${s.lieu}`}
+                      cta="Rédiger le compte rendu"
+                      accentColor="#E3001B"
+                      hoverHint="Ouvrir le compte rendu"
+                      onClick={() => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)}
+                      corner
+                    />
+                  </div>
                 ))}
-              </div>
+              </PortalStaggerGrid>
             </div>
-          </section>
+          </PortalReveal>
         )}
 
-        {/* ── 2. Comptes rendus ───────────────────────────────── */}
-        <section id="comptes-rendus" className="cr-section-claire">
-          <div className="container" style={{ padding: '24px 32px 56px' }}>
+        {/* ── 2. Le module compte rendu ─────────────────────────── */}
+        <PortalReveal id="comptes-rendus">
+          <div className="container" style={{ padding: '16px 32px' }}>
             <div className="portal-section-head">
               <p className="portal-section-eyebrow">Vos documents</p>
               <h2 className="portal-section-title">Comptes rendus</h2>
             </div>
 
+            {/* Des entrees de module, pas des contenus a illustrer :
+                la carte porte l'action, sans visuel qui n'ajouterait
+                rien a ce que le libelle dit deja. */}
             <div className="cr-entries">
               <button type="button" className="cr-entry cr-entry--primary"
                 onClick={() => naviguer('/portail/compte-rendu/nouveau')}>
@@ -147,10 +174,46 @@ export default function TrainerHome() {
               )}
             </div>
           </div>
-        </section>
+        </PortalReveal>
+
+        {/* ── 3. Ce qu'il anime bientot ─────────────────────────── */}
+        {aVenir.length > 0 && (
+          <PortalReveal id="sessions-a-venir">
+            <div className="container" style={{ padding: '16px 32px' }}>
+              <div className="portal-section-head">
+                <p className="portal-section-eyebrow">Planning — animation</p>
+                <h2 className="portal-section-title">Vos prochaines sessions</h2>
+              </div>
+              <PortalStaggerGrid>
+                {aVenir.map(s => (
+                  <div key={s.id} className="portal-card-anchor">
+                    <PvCard
+                      {...visuelSession(s)}
+                      kicker={
+                        <span className={`portal-status-chip ${
+                          s.statut === 'en_cours' ? 'progress' : 'todo'}`}>
+                          {s.statut === 'en_cours' ? 'En cours' : 'À venir'}
+                        </span>
+                      }
+                      title={s.moduleFormation}
+                      meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} participants · ${s.lieu}`}
+                      cta="Voir la session"
+                      hoverHint="Voir la session"
+                      onClick={() => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)}
+                      corner
+                    />
+                  </div>
+                ))}
+              </PortalStaggerGrid>
+            </div>
+          </PortalReveal>
+        )}
+
+        <PortalAssistanceSection t={t} variant="learner" />
       </main>
+
       <Footer />
+      <PortalDemoBar />
     </>
   )
 }
-
