@@ -163,6 +163,46 @@ Trois points à trancher, dans cet ordre suggéré :
 3. **Le poids des images** — aucune stratégie arrêtée (compression,
    redimensionnement, stockage hors document).
 
+**Groupe Résultats/Bilan (diapositives 17, 19, 20) connecté et rédigé
+automatiquement.** Les tableaux et graphiques des diapositives 17
+(progression, acquisition) et 19 (satisfaction) sont des **classeurs
+Excel embarqués** affichés par une image EMF figée — remplir le
+classeur ne suffit pas, PowerPoint/LibreOffice montrent l'image, pas
+le classeur. `services/apercu/classeurs.py` reconnaît chaque classeur à
+sa cellule A1 (`nature()`), y pose les valeurs (`remplir_classeur`),
+puis **redessine l'image** via LibreOffice + PyMuPDF (fond rendu
+transparent, légende ajoutée sous l'anneau de la diapositive 19 car
+les étiquettes natives du modèle chevauchent l'anneau avec de vraies
+valeurs). Le classeur reste éditable au double-clic dans PowerPoint.
+Branché dans `service.remplir()` via `@classeurs` dans les valeurs
+(`utils/remarquesSession.js` → `valeursClasseurs()`), calculé une fois
+par page (coûteux : un aller-retour LibreOffice par classeur modifié,
+mis en cache par empreinte sha1).
+
+Le **bilan** (diapositive 20, 4 rubriques `{bilan_contexte|resultats|
+vigilance|suites}`) et le pied de page commun (`{intitulé_formation}`,
+`{date_début}`, `{date_fin}`) suivent maintenant le brouillon —
+`drapeauxBilan()` dans `diapositives.js`, valeur saisie prioritaire sur
+le pré-remplissage de `rubriquesBilan()`.
+
+**Rédaction assistée des remarques de session** (nouveau moteur,
+distinct du moteur individuel des fiches) : `services/redaction/
+lexique_session.py` (grammaire à choix imbriqués `[a|b|c]` + accords
+`<sing|plur:champ>`) et `moteur_session.py` (`rediger_progression`,
+`rediger_acquisition`, `rediger_bilan`). Point d'entrée unique
+`POST /apercu/redaction` avec `type: progression|acquisition|bilan`
+(en plus de `fiche|accueil` déjà existants), `session` (chiffres du
+groupe, jamais de texte à reprendre — voir `donneesSession()`) et une
+`graine` aléatoire par clic pour varier les tournures (~590 textes
+distincts sur 600 tirages, mesuré). Front : `utils/remarquesSession.js`
+(chiffres, textes par défaut, pont vers le moteur) et
+`components/compte-rendu/BoutonsRedaction.jsx` (Proposer un texte /
+Autre proposition / Annuler — l'ancien texte est gardé et restitué).
+Branché sur la page Résultats (les deux commentaires de la
+diapositive 17) et sur le Bilan (une rédaction groupée des 4 rubriques,
+ou une par rubrique). Vérifié en Playwright bout en bout (génération,
+régénération, annulation) et par appel direct à `/apercu/redaction`.
+
 **Export Excel des résultats** (`utils/exportEvaluation.js`, bouton de
 l'en-tête de l'étape 2). Remplit le **modèle** `frontend/public/modeles/evaluation.xlsx`
 — le classeur « Evaluation … Climatisation » anonymisé, mise en forme
@@ -206,7 +246,6 @@ certification demanderait en plus : niveau, modules requis/validés,
 - `/apercu/document` compose le rapport avec un seul jeu de valeurs :
   les pages répétées (jours, fiches) y reçoivent toutes les mêmes. Non
   appelé par l'interface pour l'instant.
-  Flask ne recharge pas son code : le relancer après modification.
 - `/portail/compte-rendu/mes-rapports` est référencé mais pas implémenté.
 - Stash `participants-css-abandonne` toujours présent.
 - `Compte rendu Eugène.zip` (209 Mo) conservé dans le dépôt compagnon.

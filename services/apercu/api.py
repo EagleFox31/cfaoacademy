@@ -21,6 +21,8 @@ from service import CACHE, MODELE, SOFFICE, document, image_de
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'redaction'))
 from moteur import rediger, rediger_accueil  # noqa: E402
+from moteur_session import (rediger_acquisition, rediger_bilan,  # noqa: E402
+                            rediger_progression)
 
 app = Flask(__name__)
 
@@ -90,11 +92,23 @@ def redaction():
     le signe, et la reponse porte `relecture_requise` pour le rappeler.
     """
     corps = request.get_json(force=True) or {}
+    quoi = corps.get('type') or 'fiche'
+    # Les remarques de session : la graine vient de l'interface, une
+    # nouvelle a chaque « Autre proposition ».
+    if quoi in ('progression', 'acquisition', 'bilan'):
+        session, graine = corps.get('session') or {}, corps.get('graine')
+        if quoi == 'bilan':
+            return jsonify({'rubriques': rediger_bilan(session, graine, corps.get('rubrique')),
+                            'relecture_requise': True})
+        texte = (rediger_progression if quoi == 'progression'
+                 else rediger_acquisition)(session, graine)
+        if not texte:
+            return jsonify({'erreur': 'chiffres insuffisants'}), 400
+        return jsonify({'texte': texte, 'relecture_requise': True})
     participant = corps.get('participant') or {}
     genre = corps.get('genre') or participant.get('genre')
     if genre:
         participant['genre'] = genre
-    quoi = corps.get('type') or 'fiche'
     try:
         sortie = (rediger_accueil(participant) if quoi == 'accueil'
                   else rediger(participant, corps.get('longueur', 'standard')))
