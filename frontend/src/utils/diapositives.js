@@ -1,6 +1,8 @@
 import { periodeLongue, titreDeCouverture } from './compteRendu'
 import { DISPOSITIONS, dispositionsPour, rectanglesDe } from '../data/dispositions_photos'
-import { constatsParDefaut, rubriquesBilan, valeursClasseurs } from './remarquesSession'
+import {
+  constatsParDefaut, rubriquesBilan, valeursClasseurs, valeursClasseursStagiaire,
+} from './remarquesSession'
 
 /**
  * Le lien entre les pages de l'assistant et les diapositives du modele.
@@ -367,5 +369,8 @@ function drapeauxDeFiche(brouillon, page) {
   return {
     '{nom_complet}': p ? `${p.prenom || ''} ${p.nom || ''}`.trim() : '',
     '{appréciation_formation_accueil}': t[`${cle}.appreciation`] || '',
+    // Les tableaux et graphiques de la fiche : les chiffres du stagiaire,
+    // pas ceux du groupe.
+    '@classeurs': valeursClasseursStagiaire(brouillon, id),
   }
 }
