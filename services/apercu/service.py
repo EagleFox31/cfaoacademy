@@ -42,6 +42,12 @@ SOFFICE = os.environ.get(
 PROFIL = (RACINE / '.profil-lo').as_uri().replace('file:///', 'file:///')
 
 
+# Un champ que le formateur laisse vide a dessein. Il faut un mot, et
+# non une chaine vide, pour le distinguer d'une donnee pas encore
+# saisie : les deux se ressemblent sinon.
+VIDE = '∅'
+
+
 def substituer(xml, valeurs):
     """Remplace les drapeaux dans le texte des runs.
 
@@ -54,18 +60,25 @@ def substituer(xml, valeurs):
 
     Un drapeau sans valeur reste en place : une page ou il manque une
     donnee doit le montrer plutot que l'effacer discretement.
+
+    Reste le cas d'un champ volontairement vide — un sous-titre de
+    couverture dont le formateur ne veut pas. L'absence de valeur ne
+    suffit pas a l'exprimer, puisqu'elle signifie deja « pas encore
+    rempli ». La valeur `VIDE` le dit explicitement : le drapeau
+    disparait au lieu de laisser le mot du modele s'imprimer.
     """
     nus = {c.strip().casefold(): v for c, v in valeurs.items()
-           if not c.startswith('{') and v}
+           if not c.startswith('{') and (v or v == VIDE)}
 
     def sur_run(m):
         texte = m.group(1)
         for drapeau, valeur in valeurs.items():
             if drapeau.startswith('{') and drapeau in texte:
-                texte = texte.replace(drapeau, str(valeur))
+                texte = texte.replace(
+                    drapeau, '' if valeur == VIDE else str(valeur))
         remplacement = nus.get(texte.strip().casefold())
         if remplacement:
-            texte = str(remplacement)
+            texte = '' if remplacement == VIDE else str(remplacement)
         return '<a:t>' + texte + '</a:t>'
 
     return re.sub(r'<a:t>(.*?)</a:t>', sur_run, xml, flags=re.S)

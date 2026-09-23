@@ -2634,3 +2634,21 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* ---- Couverture : une saisie pre-remplie, jamais figee ---- */
+
+.cr-couv-saisie {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+/* La periode et le lieu sont courts : les mettre cote a cote evite
+   d'etirer la colonne pour deux champs d'une ligne. */
+.cr-couv-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+@media (max-width: 720px) {
+  .cr-couv-duo { grid-template-columns: minmax(0, 1fr); }
+}
