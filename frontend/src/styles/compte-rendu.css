@@ -2382,3 +2382,11 @@
   font-weight: 700;
   background: var(--surface-2, rgba(16, 20, 48, 0.05));
 }
+
+/* La fiche : ses deux tableaux, puis l'appreciation qui les commente. */
+.cr-fiche-appreciation {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cr-fiche-appreciation .cr-res-texte { min-height: 110px; }

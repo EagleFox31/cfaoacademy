@@ -19,14 +19,14 @@ DIAPOS = {
     'deroule': [10, 11],
     'resultats': [16, 17, 18, 19],
     'bilan': [20],
-    'fiches': [25, 26, 27],
+    'fiches': [25, 27],
     'cloture': [28],
 }
 
 # Les parties dont le nombre de pages depend des donnees saisies.
 GABARITS = {
     'deroule': {'fixe': [10], 'repete': 11},
-    'fiches': {'fixe': [25], 'repete': 26},
+    'fiches': {'fixe': [25], 'repete': 27},
 }
 
 
