@@ -165,8 +165,16 @@ certification demanderait en plus : niveau, modules requis/validés,
 ### Points signalés, jamais tranchés
 
 - `moteur_bilan.py` existe mais n'est pas branché.
-- Les diapositives 6 à 8 portent encore des objectifs SUZUKI / FTIR /
-  SCAN / CMAP.
+- ~~Les diapositives 6 à 8 portent encore des objectifs SUZUKI / FTIR /
+  SCAN / CMAP.~~ Réglé : 6 à 9 sont en drapeaux
+  (`outils/drapeaux_objectifs.py`, dépôt compagnon). La page des
+  objectifs suit le brouillon : 9 avec photos, sinon 6 / 7 / 8 selon
+  le marquage (romain / puces / les deux).
+- Photos : envoyées une fois au service (`POST /apercu/photo`, réduites
+  à 1600 px), posées sur la diapositive 9 selon la disposition
+  (`services/apercu/photos.py`). Restent les légendes des dispositions
+  légendées et les photos des journées (diapositive 11). Le service
+  Flask ne recharge pas son code : le relancer après modification.
 - `/portail/compte-rendu/mes-rapports` est référencé mais pas implémenté.
 - Stash `participants-css-abandonne` toujours présent.
 - `Compte rendu Eugène.zip` (209 Mo) conservé dans le dépôt compagnon.

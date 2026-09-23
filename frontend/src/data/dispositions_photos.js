@@ -25,6 +25,10 @@
  * @property {number[][]} rangees  nombre de colonnes par rangee
  * @property {number} ratio        rapport largeur/hauteur du cadre
  * @property {string} source       diapositive du modele d'ou elle vient
+ * @property {number} [colonnes]   grille plus fine que les rangees, pour
+ *                                 les images qui ne s'alignent pas
+ * @property {number[][]} [places] colonnes [debut, fin] de chaque image,
+ *                                 dans l'ordre ; prime sur le partage egal
  */
 
 /** Le repertoire, du plus simple au plus fourni. */
@@ -58,6 +62,18 @@ export const DISPOSITIONS = [
     ratio: 1.08,
     source: 'relevé des comptes rendus',
     note: 'Deux images de même largeur',
+  },
+  {
+    id: 'deux-decalees',
+    nom: 'En escalier',
+    nombre: 2,
+    poidsRangees: [1, 1],
+    rangees: [[1], [1]],
+    colonnes: 6,
+    places: [[1, 6], [2, 7]],
+    ratio: 1.21,
+    source: 'slide9',
+    note: 'Deux images décalées, l’une sous l’autre',
   },
   {
     id: 'trois-une-deux',
@@ -181,6 +197,11 @@ export function dispositionsClassees(nombre) {
   return [...DISPOSITIONS].sort((a, b) => utilisable(b) - utilisable(a))
 }
 
+/** Les colonnes de la grille : fixees, ou celles de la rangee la plus fournie. */
+function colonnesDe(d) {
+  return d.colonnes || Math.max(...d.rangees.map(r => r.length))
+}
+
 /**
  * La grille CSS d'une disposition.
  *
@@ -190,26 +211,55 @@ export function dispositionsClassees(nombre) {
  */
 export function grilleDe(d) {
   if (!d) return { gridTemplateColumns: '1fr' }
-  const colonnes = Math.max(...d.rangees.map(r => r.length))
+  const colonnes = colonnesDe(d)
   return {
     gridTemplateColumns: `repeat(${colonnes}, 1fr)`,
     gridTemplateRows: d.poidsRangees.map(p => `${p}fr`).join(' '),
   }
 }
 
-/** La place de chaque photo dans la grille, dans l'ordre du document. */
-export function casesDe(d) {
-  if (!d) return [{}]
-  const colonnes = Math.max(...d.rangees.map(r => r.length))
-  const cases = []
+/** Chaque photo : sa rangee et ses lignes de colonne [debut, fin[. */
+function placesDe(d) {
+  const colonnes = colonnesDe(d)
+  const places = []
   d.rangees.forEach((rangee, r) => {
     const largeur = colonnes / rangee.length
     rangee.forEach((_, c) => {
-      cases.push({
-        gridColumn: `${c * largeur + 1} / span ${largeur}`,
-        gridRow: `${r + 1}`,
+      const fixee = d.places?.[places.length]
+      places.push({
+        rangee: r,
+        colonnes: fixee || [c * largeur + 1, (c + 1) * largeur + 1],
       })
     })
   })
-  return cases
+  return places
+}
+
+/** La place de chaque photo dans la grille, dans l'ordre du document. */
+export function casesDe(d) {
+  if (!d) return [{}]
+  return placesDe(d).map(p => ({
+    gridColumn: `${p.colonnes[0]} / ${p.colonnes[1]}`,
+    gridRow: `${p.rangee + 1}`,
+  }))
+}
+
+/**
+ * Les cases d'une disposition en fractions de son cadre.
+ *
+ * C'est la meme geometrie que la grille de l'editeur, exprimee pour le
+ * service qui pose les photos dans la diapositive : `x`, `y`, `l`, `h`
+ * entre 0 et 1. Les ecarts entre photos sont l'affaire du service.
+ */
+export function rectanglesDe(d) {
+  if (!d) return []
+  const colonnes = colonnesDe(d)
+  const total = d.poidsRangees.reduce((a, b) => a + b, 0)
+  const avant = r => d.poidsRangees.slice(0, r).reduce((a, b) => a + b, 0)
+  return placesDe(d).map(p => ({
+    x: (p.colonnes[0] - 1) / colonnes,
+    l: (p.colonnes[1] - p.colonnes[0]) / colonnes,
+    y: avant(p.rangee) / total,
+    h: d.poidsRangees[p.rangee] / total,
+  }))
 }
