@@ -2,7 +2,7 @@ import { useMemo, useState, useRef } from 'react'
 import { dispositionsPour, partieRetenue } from '../../data/mock_sessions_formateur'
 import { SEUIL, calculer, afficher } from '../../utils/baremeCfao'
 import { periodeLongue, nombreDeJours } from '../../utils/compteRendu'
-import { syntheseSatisfaction, afficherTaux, detailParCritere,
+import { syntheseSatisfaction, satisfactionStagiaire, afficherTaux, detailParCritere,
   CRITERES_FORMATION, CRITERES_ACCUEIL } from '../../utils/satisfactionCfao'
 import ApercuReel from './ApercuReel'
 import EditeurObjectifs from './EditeurObjectifs'
@@ -243,8 +243,11 @@ export default function PhaseVerification({
             onFormateurs={v => maj({ formateurs: v })}
             onPhotoGroupe={v => maj({ photoGroupe: v })}
             onProposer={async (pg, cle) => {
+              const reponses = brouillon.satisfaction?.[pg.participant.id]
+              const propre = satisfactionStagiaire(reponses || {})
               const texte = await proposerTexte(
-                participantPourMoteur(pg.participant, pg.calcul), 'accueil')
+                participantPourMoteur(pg.participant, pg.calcul,
+                  propre?.formation), 'accueil')
               if (texte) majTexte(`${pg.cle}.${cle}`, texte)
             }}
             jours={brouillon.jours || {}}
@@ -334,6 +337,18 @@ const COMMENTAIRES_RESULTATS = [
     exemple: 'Votre constat sur les compétences acquises',
   },
 ]
+
+/**
+ * Le moteur a-t-il de quoi rediger ?
+ *
+ * Il n'invente rien : chaque champ absent retire simplement le
+ * mouvement de phrase qui en depend. Sans note, il ne resterait qu'une
+ * formule d'accueil, et la proposition serait plus pauvre qu'une
+ * saisie. On exige donc le score final et la progression.
+ */
+function chiffresSuffisants(calcul) {
+  return calcul?.scoreFinal != null && calcul?.progression != null
+}
 
 /** Les tableaux de chiffres d'une page, tels que le modele les pose. */
 /**
@@ -478,6 +493,10 @@ function FormulairePage({
                   {b.titre} <span>facultatif</span>
                   {page.participant && (
                     <button type="button" className="cr-part-ajout cr-redac"
+                      disabled={!chiffresSuffisants(page.calcul)}
+                      title={chiffresSuffisants(page.calcul)
+                        ? 'Rédige une proposition à partir des notes'
+                        : 'Renseignez les notes à l’étape 2'}
                       onClick={() => onProposer?.(page, b.cle)}>
                       Proposer un texte
                     </button>

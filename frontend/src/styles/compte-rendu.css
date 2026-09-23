@@ -2588,3 +2588,9 @@
   color: var(--accent, #e2001a);
   background: var(--accent-faible, rgba(226, 0, 26, 0.05));
 }
+
+/* Sans notes, le moteur n'aurait rien a dire : le bouton le montre. */
+.cr-redac:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
