@@ -117,9 +117,7 @@ export default function EditeurJournee({
               onClick={onCopierVeille}>
               Reprendre le jour {jour - 1}
             </button>
-            <span className="cr-obj-aide">
-              Les trois rubriques seront remplacées par celles de la veille.
-            </span>
+
           </div>
         )}
 
@@ -140,9 +138,7 @@ export default function EditeurJournee({
             )
           })}
         </div>
-        <span className="cr-obj-aide">
-          Une ligne par puce — les lignes vides sont ignorées.
-        </span>
+
       </Bloc>
 
       <Bloc titre="Intégrer les images"
