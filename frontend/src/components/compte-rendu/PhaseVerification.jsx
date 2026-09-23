@@ -10,6 +10,7 @@ import EditeurParticipants from './EditeurParticipants'
 import EditeurJournee, { MAX_PHOTOS_JOUR } from './EditeurJournee'
 import EditeurBilan from './EditeurBilan'
 import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
+import { participantPourMoteur, proposerTexte } from '../../utils/redaction'
 
 /**
  * Phase 4 — l'edition du rapport.
@@ -230,6 +231,11 @@ export default function PhaseVerification({
             photoGroupe={brouillon.photoGroupe}
             onFormateurs={v => maj({ formateurs: v })}
             onPhotoGroupe={v => maj({ photoGroupe: v })}
+            onProposer={async (pg, cle) => {
+              const texte = await proposerTexte(
+                participantPourMoteur(pg.participant, pg.calcul), 'accueil')
+              if (texte) majTexte(`${pg.cle}.${cle}`, texte)
+            }}
             jours={brouillon.jours || {}}
             onJournee={(n, v) => maj({
               jours: { ...(brouillon.jours || {}), [n]: v },
@@ -349,7 +355,7 @@ function FormulairePage({
   onAjouter, onRetirer, onLegender, onDisposition,
   objectifs, marquage, onObjectifs, onMarquage, onReordonner,
   formateurs, stagiaires, photoGroupe, onFormateurs, onPhotoGroupe,
-  jours, onJournee, legendes, onLegende,
+  jours, onJournee, legendes, onLegende, onProposer,
 }) {
   // Une page jour porte son numero : « jour-3 » edite la 3e journee.
   const numeroJour = /^jour-(\d+)$/.exec(page?.cle || '')?.[1]
@@ -434,6 +440,12 @@ function FormulairePage({
               <label key={b.cle} className="cr-fiche-appreciation">
                 <span className="cr-field-label">
                   {b.titre} <span>facultatif</span>
+                  {page.participant && (
+                    <button type="button" className="cr-part-ajout cr-redac"
+                      onClick={() => onProposer?.(page, b.cle)}>
+                      Proposer un texte
+                    </button>
+                  )}
                 </span>
                 <textarea className="cr-textarea cr-res-texte"
                   value={valeur(b.cle, b.texte)}
@@ -886,6 +898,7 @@ function composerPages(b, session, s) {
       const c = calculer(p, b.baremes)
       pages.push({
         cle: `fiche-${p.id}`, titre: `${p.prenom} ${p.nom}`, type: 'texte',
+        participant: p, calcul: c,
         titrePage: `RÉSULTAT INDIVIDUEL — ${p.prenom} ${p.nom}`.toUpperCase(),
         sousTitre: `Score final ${afficher(c.scoreFinal)} · progression `
           + (c.progression == null ? '—' : `${c.progression > 0 ? '+' : ''}${c.progression} %`),

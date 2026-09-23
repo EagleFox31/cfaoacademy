@@ -13,9 +13,13 @@ indexe par le contenu : l'assistant reste la source de verite.
 
 from pathlib import Path
 
+import sys
 from flask import Flask, jsonify, request, send_file
 
 from service import MODELE, SOFFICE, document, image_de
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'redaction'))
+from moteur import rediger, rediger_accueil  # noqa: E402
 
 app = Flask(__name__)
 
@@ -58,6 +62,28 @@ def doc():
     except Exception as e:  # noqa: BLE001
         return jsonify({'erreur': str(e)}), 500
     return send_file(chemin, as_attachment=True, download_name=chemin.name)
+
+
+@app.post('/apercu/redaction')
+def redaction():
+    """Une proposition d'appreciation, a partir des chiffres d'un stagiaire.
+
+    Le moteur s'appuie sur les tournures relevees dans les comptes rendus
+    existants. Le texte renvoye est un brouillon : c'est le formateur qui
+    le signe, et la reponse porte `relecture_requise` pour le rappeler.
+    """
+    corps = request.get_json(force=True) or {}
+    participant = corps.get('participant') or {}
+    genre = corps.get('genre') or participant.get('genre')
+    if genre:
+        participant['genre'] = genre
+    quoi = corps.get('type') or 'fiche'
+    try:
+        sortie = (rediger_accueil(participant) if quoi == 'accueil'
+                  else rediger(participant, corps.get('longueur', 'standard')))
+    except Exception as erreur:      # le moteur refuse une entree vide
+        return jsonify({'erreur': str(erreur)}), 400
+    return jsonify(sortie)
 
 
 if __name__ == '__main__':
