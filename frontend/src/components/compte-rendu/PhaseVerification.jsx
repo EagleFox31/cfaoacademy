@@ -1,7 +1,8 @@
 import { useMemo, useState, useRef } from 'react'
 import { dispositionsPour, partieRetenue } from '../../data/mock_sessions_formateur'
 import { SEUIL, calculer, afficher } from '../../utils/baremeCfao'
-import { periodeLongue, nombreDeJours } from '../../utils/compteRendu'
+import { periodeLongue, nombreDeJours, titreDeCouverture }
+  from '../../utils/compteRendu'
 import { syntheseSatisfaction, satisfactionStagiaire, afficherTaux, detailParCritere,
   CRITERES_FORMATION, CRITERES_ACCUEIL } from '../../utils/satisfactionCfao'
 import ApercuReel from './ApercuReel'
@@ -424,10 +425,47 @@ function FormulairePage({
           </label>
         )}
 
+        {/* La couverture est pre-remplie depuis l'etape 1, mais rien
+            n'y est fige : le titre porte le code, et le formateur
+            reecrit ce qu'il veut sans revenir en arriere. */}
         {page.type === 'couverture' && (page.periode || page.lieu) && (
-          <p className="cr-vide-texte">
-            Le titre, la période et le lieu viennent de l’étape 1.
-          </p>
+          <div className="cr-couv-saisie">
+            <label className="cr-field">
+              <span className="cr-field-label">Titre</span>
+              <input className="cr-input"
+                value={valeur('titre', page.titrePage || '')}
+                placeholder={page.titrePage || 'Code : intitulé de la formation'}
+                onChange={e => onTexte(`${page.cle}.titre`, e.target.value)} />
+            </label>
+            <label className="cr-field">
+              <span className="cr-field-label">
+                Sous-titre <span className="cr-obj-facultatif">facultatif</span>
+              </span>
+              <input className="cr-input"
+                value={valeur('sousTitre', page.sousTitre || '')}
+                placeholder="Laissé vide si rien à préciser"
+                onChange={e => onTexte(`${page.cle}.sousTitre`, e.target.value)} />
+            </label>
+            <div className="cr-couv-duo">
+              <label className="cr-field">
+                <span className="cr-field-label">Période</span>
+                <input className="cr-input"
+                  value={valeur('periode', page.periode || '')}
+                  placeholder={page.periode || 'du 14 au 18 septembre 2026'}
+                  onChange={e => onTexte(`${page.cle}.periode`, e.target.value)} />
+              </label>
+              <label className="cr-field">
+                <span className="cr-field-label">Lieu</span>
+                <input className="cr-input"
+                  value={valeur('lieu', page.lieu || '')}
+                  placeholder={page.lieu || 'Douala'}
+                  onChange={e => onTexte(`${page.cle}.lieu`, e.target.value)} />
+              </label>
+            </div>
+            <span className="cr-obj-aide">
+              Pré-rempli depuis l’étape 1 — à reprendre librement.
+            </span>
+          </div>
         )}
 
         {page.type === 'couverture' && !page.periode && !page.lieu && (
@@ -617,8 +655,16 @@ function ApercuPage({ page, textes, photos }) {
               {textes[`${page.cle}.sousTitre`] ?? page.sousTitre}
             </div>
           )}
-          {page.periode && <div className="cr-couv-ligne">{page.periode}</div>}
-          {page.lieu && <div className="cr-couv-ligne">{page.lieu}</div>}
+          {(textes[`${page.cle}.periode`] ?? page.periode) && (
+            <div className="cr-couv-ligne">
+              {textes[`${page.cle}.periode`] ?? page.periode}
+            </div>
+          )}
+          {(textes[`${page.cle}.lieu`] ?? page.lieu) && (
+            <div className="cr-couv-ligne">
+              {textes[`${page.cle}.lieu`] ?? page.lieu}
+            </div>
+          )}
         </div>
         <div className="cr-page-pied">CFAO ACADEMY</div>
       </div>
@@ -827,8 +873,9 @@ function composerPages(b, session, s) {
     pages.push({
       cle: 'couverture', titre: 'Couverture', type: 'couverture',
       mention: 'COMPTE RENDU DE FORMATION',
-      titrePage: (b.intitule || '').toUpperCase(),
-      sousTitre: b.codeFormation || '',
+      titrePage: titreDeCouverture(b.codeFormation, b.intitule).toUpperCase(),
+      // Le code est passe dans le titre : le sous-titre est libre.
+      sousTitre: b.textes?.sousTitreCouverture || '',
       periode,
       lieu: b.lieu || '',
     })

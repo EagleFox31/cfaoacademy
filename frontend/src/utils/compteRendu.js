@@ -126,6 +126,24 @@ export function dateLongue(iso) {
   return `${d.getDate()} ${MOIS[d.getMonth()]} ${d.getFullYear()}`
 }
 
+/**
+ * Le titre de couverture : « TS09-G2 : SYSTEMES DE CHASSIS ».
+ *
+ * Le code appartient au titre, pas au sous-titre : c'est ainsi que les
+ * comptes rendus existants nomment la session, et c'est par la que le
+ * lecteur la retrouve. Le sous-titre reste donc libre.
+ *
+ * Sans code, l'intitule tient seul le titre — on ne laisse pas trainer
+ * un deux-points devant un titre orphelin.
+ */
+export function titreDeCouverture(code, intitule) {
+  const c = (code || '').trim()
+  const i = (intitule || '').trim()
+  if (!c) return i
+  if (!i) return c
+  return `${c} : ${i}`
+}
+
 /** « du 14 au 18 septembre 2026 », en evitant de repeter le mois. */
 export function periodeLongue(debut, fin) {
   if (!debut || !fin) return ''

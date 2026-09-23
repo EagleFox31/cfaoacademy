@@ -1,4 +1,4 @@
-import { periodeLongue } from './compteRendu'
+import { periodeLongue, titreDeCouverture } from './compteRendu'
 
 /**
  * Le lien entre les pages de l'assistant et les diapositives du modele.
@@ -55,26 +55,51 @@ const PHRASE_ACQUISITION =
   + "formation. Pour un pourcentage d'acquisition de compétence "
   + 'de [taux] %.'
 
+/**
+ * Un champ volontairement vide.
+ *
+ * Le service laisse en place le drapeau d'une donnee manquante, pour
+ * qu'une page incomplete se voie. Ce marqueur dit l'inverse : le champ
+ * est vide parce qu'on l'a voulu, et le mot du modele doit disparaitre.
+ * Il double `VIDE` dans `services/apercu/service.py`.
+ */
+export const VIDE = '∅'
+
 /** Les drapeaux du modele, renseignes depuis le brouillon. */
 export function valeursDrapeaux(brouillon, session, synthese, page) {
   const b = brouillon || {}
   const t = b.textes || {}
   const periode = periodeLongue(b.debut, b.fin)
+  // La page de couverture ecrit ses corrections sous « couverture.* ».
+  // On les prefere aux valeurs de l'etape 1, sans quoi l'apercu et le
+  // document afficheraient deux choses differentes.
+  const couv = (cle, defaut) => {
+    const v = t[`couverture.${cle}`]
+    return v != null && v !== '' ? v : defaut
+  }
+  const couvTitre = couv('titre', titreDeCouverture(b.codeFormation, b.intitule))
+  // Un sous-titre laisse vide est un choix, pas un oubli : sans ce
+  // marqueur, le service garderait le mot « Sous titre » du modele.
+  const couvSousTitre = couv('sousTitre', '') || VIDE
+  const couvPeriode = couv('periode', periode)
+  const couvLieu = couv('lieu', b.lieu || '')
   return {
     // Les couvertures du modele portent des mots nus plutot que des
     // drapeaux entre accolades : le service les remplace quand le run
     // ne contient que le mot.
-    Titre: b.intitule || '',
-    'Sous titre': b.codeFormation || '',
-    'Sous-titre': b.codeFormation || '',
-    PERIODE: periode,
-    periode,
-    lieu: b.lieu || '',
+    // L'edition de la couverture prime sur l'etape 1 : ce que le
+    // formateur a reecrit dans la page est ce qui part au document.
+    Titre: couvTitre,
+    'Sous titre': couvSousTitre,
+    'Sous-titre': couvSousTitre,
+    PERIODE: couvPeriode,
+    periode: couvPeriode,
+    lieu: couvLieu,
 
-    '{titre}': b.intitule || '',
-    '{sous_titre}': b.codeFormation || '',
-    '{periode}': periode,
-    '{lieu}': b.lieu || '',
+    '{titre}': couvTitre,
+    '{sous_titre}': couvSousTitre,
+    '{periode}': couvPeriode,
+    '{lieu}': couvLieu,
     '{pays}': b.pays || '',
     '{nb_participants}': String((b.participants || []).length || ''),
     '{taux_progression}': synthese?.progression != null
