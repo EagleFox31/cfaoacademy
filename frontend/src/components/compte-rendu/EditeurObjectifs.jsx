@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { MAX_PHOTOS, casesDe, dispositionsPour, grilleDe }
   from '../../data/dispositions_photos'
 
@@ -70,6 +70,7 @@ export default function EditeurObjectifs({
   // La forme suit les photos, sans reglage : c'est la regle du modele.
   const avecImages = cliches.length > 0
   const [volet, setVolet] = useState('objectifs')
+  const marge = useRef(null)
 
   const remplies = lignes.filter(o => (o.texte || '').trim()).length
   const choix = dispositionsPour(cliches.length)
@@ -91,15 +92,28 @@ export default function EditeurObjectifs({
             <span className="cr-field-label">
               Un objectif par ligne
             </span>
-            <textarea className="cr-textarea cr-obj-texte"
-              value={texteDesObjectifs(lignes)}
-              placeholder={PLACEHOLDER}
-              onChange={e => onObjectifs(objectifsDuTexte(e.target.value, lignes))} />
+            <div className="cr-obj-champ">
+              {/* La marge reprend le marquage choisi, ligne a ligne :
+                  on voit la numerotation du document en tapant. */}
+              <div className="cr-obj-marge" aria-hidden="true" ref={marge}>
+                {texteDesObjectifs(lignes).split(/\n/).map((l, i) => (
+                  <span key={i} className={l.trim() ? '' : 'cr-obj-marge--vide'}>
+                    {l.trim() ? puceDe(marquage || 'puces', rang(lignes, i)) : ''}
+                  </span>
+                ))}
+              </div>
+              <textarea className="cr-textarea cr-obj-texte"
+                value={texteDesObjectifs(lignes)}
+                placeholder={PLACEHOLDER}
+                onScroll={e => {
+                  if (marge.current) marge.current.scrollTop = e.target.scrollTop
+                }}
+                onChange={e => onObjectifs(objectifsDuTexte(e.target.value, lignes))} />
+            </div>
             <span className="cr-obj-aide">
               {remplies
-                ? `${remplies} objectif${remplies > 1 ? 's' : ''} — `
-                  + 'une ligne vide sera ignorée.'
-                : 'Chaque ligne deviendra un objectif du document.'}
+                ? `${remplies} objectif${remplies > 1 ? 's' : ''}`
+                : 'Une ligne, un objectif'}
             </span>
           </label>
 
@@ -286,6 +300,12 @@ function PlanchePhotos({ photos, disposition, onRetirer, onReordonner, onAjouter
       })}
     </div>
   )
+}
+
+/** Le rang d'une ligne parmi les seules lignes remplies. */
+function rang(lignes, i) {
+  return (lignes || []).slice(0, i)
+    .filter(o => (o.texte || '').trim()).length
 }
 
 /** La puce affichee devant une ligne, selon le marquage retenu. */
