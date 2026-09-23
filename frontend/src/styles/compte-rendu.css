@@ -1516,19 +1516,33 @@
   background: var(--surface-2, rgba(16, 20, 48, 0.06));
 }
 
-/* L'actualisation se signale sans masquer l'image précédente : on
-   continue de lire la page pendant que la suivante se prépare. */
-.cr-apercu-etat {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
+/* Pendant l'actualisation, l'ancienne image s'efface : le cadre vide
+   porte au centre un indicateur qui tourne et son texte. */
+.cr-apercu-vide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cr-apercu-spinner {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #fff;
-  background: rgba(16, 20, 48, 0.72);
-  backdrop-filter: blur(4px);
+  color: var(--ink-3, #6b7280);
+}
+.cr-apercu-roue {
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(16, 20, 48, 0.12);
+  border-top-color: var(--accent, #e2001a);
+  border-radius: 50%;
+  animation: cr-tourne 0.8s linear infinite;
+}
+@keyframes cr-tourne { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .cr-apercu-roue { animation-duration: 2.4s; }
 }
 
 .cr-apercu-avis {
@@ -1858,7 +1872,7 @@
 /* Miroir du volet des objectifs : les réglages tiennent la colonne
    étroite, le rendu occupe le reste. */
 .cr-obj-saisie--images {
-  grid-template-columns: minmax(150px, 1fr) minmax(0, 4fr);
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   flex: 1;
   min-height: 0;
@@ -2759,11 +2773,14 @@
 .cr-fiche-tableaux .cr-res-tableau caption { padding: 5px 8px; font-size: 0.64rem; }
 
 /* Le bouton d'ajout ouvre la colonne : sous huit dispositions, il
-   sortait de l'ecran des qu'on avait deja des photos. */
+   sortait de l'ecran des qu'on avait deja des photos. La colonne
+   elargie (`.cr-obj-saisie--images`) lui laisse la place de tenir sur
+   une seule ligne : « + Ajouter une photo » ne doit pas se replier. */
 .cr-obj-ajout--haut {
   width: 100%;
   margin-bottom: 10px;
   justify-content: center;
+  white-space: nowrap;
 }
 
 /* Une case libre reste offerte tant que la disposition n'est pas au

@@ -261,9 +261,6 @@ function PlanchePhotos({ photos, disposition, jour, parImage, legende,
 
   const toutes = casesDe(disposition)
   const cases = toutes.slice(0, photos.length)
-  // La disposition courante epouse le nombre de photos : la case
-  // d'ajout n'y figure pas, on la pose en fin de grille.
-  const libre = photos.length < MAX_PHOTOS_JOUR
 
   return (
     <div className="cr-planche-cadre"
@@ -318,15 +315,6 @@ function PlanchePhotos({ photos, disposition, jour, parImage, legende,
           </div>
         )
       })}
-      {libre && (
-        <button type="button" className="cr-case cr-case--libre"
-          onClick={() => document.getElementById(champ)?.click()}
-          onDragOver={e => e.preventDefault()}
-          onDrop={e => { e.preventDefault(); onAjouter?.(e.dataTransfer.files) }}
-          aria-label="Ajouter une photo">
-          <span aria-hidden="true">+</span>
-        </button>
-      )}
       </div>
       {/* Une seule legende pour le cadre : elle se pose sous les images,
           la ou elle figurera sur la diapositive. */}

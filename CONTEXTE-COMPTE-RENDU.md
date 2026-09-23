@@ -203,6 +203,30 @@ diapositive 17) et sur le Bilan (une rédaction groupée des 4 rubriques,
 ou une par rubrique). Vérifié en Playwright bout en bout (génération,
 régénération, annulation) et par appel direct à `/apercu/redaction`.
 
+**Signes + et = du graphique d'acquisition** (diapositives 17 et 27).
+Absents du modèle, mais présents dans 98 classeurs des rapports réels :
+le « + » en forme utilisateur du graphique (`c:userShapes`, `mathPlus`,
+position en fraction du graphique), le « = » en forme de la feuille
+(`drawing1.xml`, `mathEqual`). `classeurs._ajouter_signes_acquisition`
+les injecte dans l'OLE : ils restent éditables au double-clic, et le
+rendu LibreOffice les montre. Pièges rencontrés : LibreOffice ignore
+une forme sans `<cdr:style>`, sans `xfrm` non nul, ou dont le
+namespace `a:` est déclaré sur un frère plutôt qu'un parent ; le
+classeur de la 27 porte un `userShapes` vide qu'il faut remplir. Le
+cadre du graphique se mesure sur la feuille (`xdr:from`/`xdr:to`,
+hauteurs de lignes réelles), pas sur `imgW/imgH` de la diapositive.
+
+**Anneau de satisfaction** (diapositive 19) : le bord transparent qui
+ramène l'image aux proportions de l'EMF est centré sur les deux axes
+(il était collé en haut, d'où le décalage visible).
+
+**Aperçu** (`ApercuReel.jsx`) : dès qu'une page change, l'ancienne
+image s'efface au profit d'un cadre neutre avec indicateur centré.
+
+**Brouillons** : l'accueil formateur affiche une carte « Reprendre »
+par brouillon (`TrainerHome.jsx`) — il n'en montrait qu'une, vers le
+plus récent, rendant les autres inaccessibles.
+
 **Export Excel des résultats** (`utils/exportEvaluation.js`, bouton de
 l'en-tête de l'étape 2). Remplit le **modèle** `frontend/public/modeles/evaluation.xlsx`
 — le classeur « Evaluation … Climatisation » anonymisé, mise en forme

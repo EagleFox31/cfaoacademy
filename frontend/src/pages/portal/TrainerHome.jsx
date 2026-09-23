@@ -38,6 +38,15 @@ const VISUEL_ENTREE = {
   brouillon: '/assets/publics/process-sav.jpg',
 }
 
+/** « il y a 2 jours », pour situer une reprise sans afficher une date brute. */
+function venuDe(iso) {
+  const jours = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
+  if (jours <= 0) return "aujourd'hui"
+  if (jours === 1) return 'hier'
+  if (jours < 14) return `il y a ${jours} jours`
+  return `il y a ${Math.round(jours / 7)} semaines`
+}
+
 function visuelSession(session) {
   const { logo, label } = resolvePortalCardBrand(session.marque)
   return {
@@ -180,25 +189,24 @@ export default function TrainerHome() {
                 />
               </div>
 
-              {brouillons.length > 0 && (
-                <div className="portal-card-anchor">
+              {/* Chaque brouillon a sa propre carte : un seul point d'entree
+                  vers le plus recent laissait les autres inaccessibles —
+                  toujours en memoire, mais sans aucun lien pour y revenir. */}
+              {brouillons.map(b => (
+                <div key={b.id} className="portal-card-anchor">
                   <PvCard
                     img={VISUEL_ENTREE.brouillon}
-                    kicker={
-                      <span className="portal-status-chip todo">
-                        {brouillons.length} en cours
-                      </span>
-                    }
-                    title="Reprendre une saisie"
-                    meta={`${brouillons[0].session || 'Compte rendu'} — saisie interrompue.`}
+                    kicker={<span className="portal-status-chip todo">En cours</span>}
+                    title={b.session || 'Compte rendu'}
+                    meta={`Saisie interrompue${b.modifieLe ? ` — ${venuDe(b.modifieLe)}` : ''}.`}
                     cta="Reprendre"
                     hoverHint="Reprendre là où vous vous êtes arrêté"
                     onClick={() => naviguer(
-                      `/portail/compte-rendu/nouveau?session=${brouillons[0].id}`)}
+                      `/portail/compte-rendu/nouveau?session=${b.id}`)}
                     corner
                   />
                 </div>
-              )}
+              ))}
             </PortalStaggerGrid>
           </div>
         </PortalReveal>

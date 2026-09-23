@@ -100,7 +100,9 @@ def _cache(graphique, cellules):
     """Les caches numeriques des series, repris des cellules."""
     def sur_serie(m):
         cellules_serie = _plage(m.group(2))
-        if not cellules_serie or not all(c in cellules for c in cellules_serie):
+        # Une valeur encore absente (notes ou questionnaires pas saisis)
+        # laisse la serie telle que le modele la porte.
+        if not cellules_serie or not all(cellules.get(c) is not None for c in cellules_serie):
             return m.group(0)
         points = ''.join(f'<c:pt idx="{i}"><c:v>{float(cellules[c]):.10g}</c:v></c:pt>'
                          for i, c in enumerate(cellules_serie))
@@ -122,6 +124,258 @@ def remplir_classeur(parts, cellules):
     parts['xl/worksheets/sheet1.xml'] = feuille.encode('utf-8')
     for nom in [n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)]:
         parts[nom] = _cache(parts[nom].decode('utf-8'), cellules).encode('utf-8')
+    return parts
+
+
+# ── Signes + et = du graphique d'acquisition ────────────────────────────
+# Le modele les a perdus (constate sur sa propre diapositive comme sur
+# celle de tous les comptes rendus verifies), mais 98 classeurs du dossier
+# compagnon les portent encore, sous deux formes distinctes :
+#
+#   * le « + », en forme utilisateur du graphique (`c:userShapes`),
+#     positionnee en fraction du graphique lui-meme — elle suit le
+#     graphique quel que soit son cadrage sur la diapositive ;
+#   * le « = », en forme du dessin de la feuille (`xl/drawings/drawing1.xml`,
+#     celui qui porte deja l'ancrage du graphique), positionnee en EMU
+#     absolus sur la feuille.
+#
+# Les fractions ci-dessous viennent de la geometrie exacte d'un classeur
+# source (le « + ») et d'une conversion EMU de son ancrage de cellules
+# (le « = », les largeurs de colonnes different d'un fichier a l'autre) ;
+# les deux ont ete recoupees avec la position en pixels mesuree sur
+# l'image rendue du meme fichier, qui les confirme a moins de 0.1 pres.
+SIGNES_ACQUISITION = {
+    '+': dict(x0=0.33998, x1=0.43425, y0=0.65262, y1=0.80805, id_forme=2,
+             nom='Signe Plus 1', nom_creation='8DE92517-B108-41BF-95A9-B83710DCFBEC'),
+    '=': dict(x0=0.6535, x1=0.7365, y0=0.659, y1=0.721, id_forme=3,
+             nom='Est égal à 2', nom_creation='5DD21F7B-8417-4D58-A2B9-C26DBC982262'),
+}
+
+_STYLE_FORME = (
+    '<a:solidFill><a:schemeClr val="bg1"/></a:solidFill>'
+    '<a:ln><a:solidFill><a:srgbClr val="003A70"/></a:solidFill></a:ln>')
+# La reference de style (couleurs du theme) : sans elle, le moteur de
+# rendu de LibreOffice laisse la forme invisible malgre un remplissage
+# et un contour explicites.
+_REF_STYLE = (
+    '<a:lnRef idx="2"><a:schemeClr val="accent1"><a:shade val="50000"/></a:schemeClr></a:lnRef>'
+    '<a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef>'
+    '<a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef>'
+    '<a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef>')
+_LSTSTYLE_FORME = (
+    '<a:lstStyle><a:defPPr><a:defRPr lang="en-US"/></a:defPPr>'
+    + ''.join(
+        f'<a:lvl{n}pPr marL="{(n - 1) * 457200}" algn="l" defTabSz="914400" rtl="0" '
+        'eaLnBrk="1" latinLnBrk="0" hangingPunct="1"><a:defRPr sz="1800" kern="1200">'
+        '<a:solidFill><a:schemeClr val="lt1"/></a:solidFill><a:latin typeface="+mn-lt"/>'
+        f'<a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/></a:defRPr></a:lvl{n}pPr>'
+        for n in range(1, 10))
+    + '</a:lstStyle>')
+
+
+def _userShapes_plus(prst, x0, x1, y0, y1, id_forme, nom, nom_creation, off_x, off_y):
+    """Une forme du graphique (`c:userShapes`), en fraction de son cadre.
+
+    `off_x`/`off_y` (EMU) alimentent le `xfrm` de la forme : un `<a:off>`
+    a zero, correct pour la position reelle (donnee par le
+    `relSizeAnchor`), a suffi a faire disparaitre la forme au rendu — le
+    moteur de LibreOffice s'appuie visiblement aussi sur ce xfrm, meme
+    quand `relSizeAnchor` prime dans PowerPoint.
+    """
+    return (
+        '<c:userShapes xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" '
+        'xmlns:cdr="http://schemas.openxmlformats.org/drawingml/2006/chartDrawing" '
+        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+        'xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main">'
+        '<cdr:relSizeAnchor>'
+        f'<cdr:from><cdr:x>{x0}</cdr:x><cdr:y>{y0}</cdr:y></cdr:from>'
+        f'<cdr:to><cdr:x>{x1}</cdr:x><cdr:y>{y1}</cdr:y></cdr:to>'
+        f'<cdr:sp macro="" textlink=""><cdr:nvSpPr><cdr:cNvPr id="{id_forme}" name="{nom}">'
+        '<a:extLst><a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">'
+        f'<a16:creationId id="{{{nom_creation}}}"/></a:ext></a:extLst>'
+        '</cdr:cNvPr><cdr:cNvSpPr/></cdr:nvSpPr>'
+        f'<cdr:spPr><a:xfrm><a:off x="{off_x}" y="{off_y}"/>'
+        f'<a:ext cx="504000" cy="504000"/></a:xfrm>'
+        f'<a:prstGeom prst="{prst}"><a:avLst/></a:prstGeom>'
+        + _STYLE_FORME
+        + '</cdr:spPr><cdr:style>' + _REF_STYLE + '</cdr:style>'
+        + '<cdr:txBody><a:bodyPr rtlCol="0" anchor="ctr"/>'
+        + _LSTSTYLE_FORME
+        + '<a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></cdr:txBody></cdr:sp>'
+          '</cdr:relSizeAnchor></c:userShapes>'
+    )
+
+
+def _drawing_egal(x, y, prst='mathEqual', id_forme=3, nom='Est égal à 2',
+                  nom_creation='5DD21F7B-8417-4D58-A2B9-C26DBC982262'):
+    """La forme « = », en EMU absolus sur la feuille (`xdr:absoluteAnchor`).
+
+    Une ancre absolue evite l'ecueil d'une ancre a une cellule dont le
+    decalage depasserait la largeur de la colonne (comportement indefini
+    en dehors d'Excel) : la position ne depend d'aucune largeur de
+    colonne ni hauteur de ligne, differentes d'un classeur a l'autre.
+    """
+    return (
+        '<xdr:absoluteAnchor>'
+        f'<xdr:pos x="{x}" y="{y}"/>'
+        '<xdr:ext cx="504000" cy="504000"/>'
+        f'<xdr:sp macro="" textlink=""><xdr:nvSpPr><xdr:cNvPr id="{id_forme}" name="{nom}">'
+        '<a:extLst><a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">'
+        '<a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" '
+        f'id="{{{nom_creation}}}"/></a:ext></a:extLst></xdr:cNvPr><xdr:cNvSpPr/></xdr:nvSpPr>'
+        f'<xdr:spPr><a:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="504000" cy="504000"/></a:xfrm>'
+        f'<a:prstGeom prst="{prst}"><a:avLst/></a:prstGeom>' + _STYLE_FORME
+        + '</xdr:spPr><xdr:style>' + _REF_STYLE + '</xdr:style>'
+        + '<xdr:txBody><a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>'
+        + _LSTSTYLE_FORME
+        + '<a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-CM">'
+          '<a:solidFill><a:schemeClr val="tx1"/></a:solidFill></a:endParaRPr></a:p>'
+          '</xdr:txBody></xdr:sp><xdr:clientData/></xdr:absoluteAnchor>'
+    )
+
+
+def _hauteur_lignes(parts, jusqua):
+    """La hauteur cumulee (EMU) des lignes 0 a `jusqua` exclue.
+
+    Chaque ligne vaut sa hauteur explicite (`ht`, en points) ou la
+    hauteur par defaut de la feuille — 1 point = 12700 EMU.
+    """
+    feuille = parts['xl/worksheets/sheet1.xml'].decode('utf-8')
+    defaut = re.search(r'defaultRowHeight="([\d.]+)"', feuille)
+    defaut = float(defaut.group(1)) if defaut else 15.0
+    hauteurs = {int(r): float(h) for r, h in
+               re.findall(r'<row r="(\d+)"[^>]*\bht="([\d.]+)"', feuille)}
+    return round(sum(hauteurs.get(r + 1, defaut) for r in range(jusqua)) * 12700)
+
+
+def _largeur_colonnes(parts, jusqua):
+    """La largeur cumulee (EMU) des colonnes 0 a `jusqua` exclue.
+
+    La largeur Excel (en « caracteres ») se convertit en pixels par la
+    formule usuelle (police par defaut Calibri 11, chiffre repere 7 px),
+    puis en EMU a 96 ppp.
+    """
+    feuille = parts['xl/worksheets/sheet1.xml'].decode('utf-8')
+    defaut = re.search(r'defaultColWidth="([\d.]+)"', feuille)
+    defaut = float(defaut.group(1)) if defaut else 8.43
+    largeurs = {}
+    for mn, mx, w in re.findall(r'<col min="(\d+)" max="(\d+)"[^>]*width="([\d.]+)"', feuille):
+        for col in range(int(mn), int(mx) + 1):
+            largeurs[col] = float(w)
+    px = lambda l: int(l * 7 + 5)
+    return sum(px(largeurs.get(c + 1, defaut)) * 9525 for c in range(jusqua))
+
+
+def _point_feuille(parts, col, col_off, ligne, ligne_off):
+    """La position (x, y) en EMU absolus sur la feuille d'une ancre de cellule."""
+    return (_largeur_colonnes(parts, col) + col_off,
+            _hauteur_lignes(parts, ligne) + ligne_off)
+
+
+def _cadre_graphique(parts, d1):
+    """Le rectangle du graphique en EMU absolus sur la feuille.
+
+    Lu sur son propre ancrage (`xdr:from`/`xdr:to` du `twoCellAnchor` qui
+    porte le graphique) : c'est la seule mesure fiable de sa taille sur
+    la feuille — celle de l'objet OLE sur la diapositive (`imgW`/`imgH`)
+    reflete un cadrage qui peut differer.
+    """
+    ancre = re.search(
+        r'<xdr:from><xdr:col>(\d+)</xdr:col><xdr:colOff>(\d+)</xdr:colOff>'
+        r'<xdr:row>(\d+)</xdr:row><xdr:rowOff>(\d+)</xdr:rowOff></xdr:from>'
+        r'<xdr:to><xdr:col>(\d+)</xdr:col><xdr:colOff>(\d+)</xdr:colOff>'
+        r'<xdr:row>(\d+)</xdr:row><xdr:rowOff>(\d+)</xdr:rowOff></xdr:to>', d1)
+    if not ancre:
+        return (0, 0, 0, 0)
+    c1, co1, r1, ro1, c2, co2, r2, ro2 = (int(g) for g in ancre.groups())
+    x0, y0 = _point_feuille(parts, c1, co1, r1, ro1)
+    x1, y1 = _point_feuille(parts, c2, co2, r2, ro2)
+    return x0, y0, x1 - x0, y1 - y0
+
+
+def _ajouter_signes_acquisition(parts):
+    """Ajoute les signes + et = manquants au graphique d'acquisition.
+
+    Les deux signes se positionnent en fraction du cadre du graphique,
+    mesure sur la feuille elle-meme (`_cadre_graphique`) — pas sur la
+    taille de l'objet OLE affichee sur la diapositive (`imgW`/`imgH`),
+    qui peut differer selon le cadrage retenu.
+    """
+    parts = dict(parts)
+    chart_nom = next((n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)), None)
+    if not chart_nom:
+        return parts  # pas de graphique a completer
+    graphique = parts[chart_nom].decode('utf-8')
+    # Un `c:userShapes` deja en place, non vide, porte deja des formes —
+    # certains classeurs du modele en gardent un coquille vide (la forme
+    # d'origine a disparu sans que la reference ne suive), qu'on remplit
+    # plutot que de le laisser inerte.
+    ref_existante = re.search(r'<c:userShapes r:id="([^"]+)"/>', graphique)
+    if ref_existante:
+        rels_nom = chart_nom.replace('charts/', 'charts/_rels/') + '.rels'
+        cible = re.search(r'Id="' + re.escape(ref_existante.group(1))
+                          + r'"[^>]*Target="([^"]+)"', parts[rels_nom].decode('utf-8'))
+        drawing_existant = ('xl/' + cible.group(1).replace('../', '')) if cible else None
+        if drawing_existant and parts.get(drawing_existant, b'').strip().endswith(
+                b'</c:userShapes>') and b'<cdr:' in parts.get(drawing_existant, b''):
+            return parts  # deja rempli, rien a faire
+
+    d1_nom = 'xl/drawings/drawing1.xml'
+    cx, cy, cl, ch = _cadre_graphique(parts, parts[d1_nom].decode('utf-8'))
+
+    plus = SIGNES_ACQUISITION['+']
+    contenu_drawing = _userShapes_plus(
+        'mathPlus', plus['x0'], plus['x1'], plus['y0'], plus['y1'],
+        plus['id_forme'], plus['nom'], plus['nom_creation'],
+        cx + round(plus['x0'] * cl), cy + round(plus['y0'] * ch))
+
+    if ref_existante and drawing_existant:
+        # La reference et la relation existent deja : on ne fait que
+        # remplacer le contenu de la forme utilisateur, vide ou perimee.
+        parts[drawing_existant] = contenu_drawing.encode('utf-8')
+    else:
+        num = 2
+        while f'xl/drawings/drawing{num}.xml' in parts:
+            num += 1
+        nom_drawing = f'xl/drawings/drawing{num}.xml'
+        parts[nom_drawing] = contenu_drawing.encode('utf-8')
+
+        rid = 'rIdSignes'
+        graphique = graphique.replace(
+            '</c:printSettings>', f'</c:printSettings><c:userShapes r:id="{rid}"/>', 1)
+        if '<c:userShapes r:id=' not in graphique:
+            graphique = graphique.replace('</c:chartSpace>',
+                                          f'<c:userShapes r:id="{rid}"/></c:chartSpace>', 1)
+        parts[chart_nom] = graphique.encode('utf-8')
+
+        rels_nom = chart_nom.replace('charts/', 'charts/_rels/') + '.rels'
+        rels = parts.get(rels_nom, b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                        b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006'
+                        b'/relationships"></Relationships>').decode('utf-8')
+        rels = rels.replace('</Relationships>',
+                            f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org'
+                            f'/officeDocument/2006/relationships/chartUserShapes" '
+                            f'Target="../drawings/drawing{num}.xml"/></Relationships>')
+        parts[rels_nom] = rels.encode('utf-8')
+
+        types = parts['[Content_Types].xml'].decode('utf-8')
+        if f'/xl/drawings/drawing{num}.xml' not in types:
+            types = types.replace('</Types>',
+                                  f'<Override PartName="/xl/drawings/drawing{num}.xml" '
+                                  'ContentType="application/vnd.openxmlformats-officedocument.'
+                                  'drawingml.chartshapes+xml"/></Types>')
+        parts['[Content_Types].xml'] = types.encode('utf-8')
+
+    # Le « = », sur le dessin de la feuille qui porte deja l'ancrage du
+    # graphique : sa position EMU absolue se lit sur le meme cadre,
+    # a laquelle on applique la fraction verifiee (voir SIGNES_ACQUISITION).
+    egal = SIGNES_ACQUISITION['=']
+    x = cx + round(egal['x0'] * cl)
+    y = cy + round(egal['y0'] * ch)
+    forme_egal = _drawing_egal(x, y, 'mathEqual', egal['id_forme'], egal['nom'],
+                               egal['nom_creation'])
+    d1 = parts[d1_nom].decode('utf-8')
+    parts[d1_nom] = d1.replace('</xdr:wsDr>', forme_egal + '</xdr:wsDr>').encode('utf-8')
     return parts
 
 
@@ -241,14 +495,15 @@ def _rogner(pixmap_png, legende=None, cellules=None, ratio=None):
     if legende:
         image = _legende_anneau(image, legende, cellules or {})
     # L'objet etire son image aux proportions de l'EMF d'origine : on les
-    # retrouve par un bord transparent, pour ne rien deformer.
+    # retrouve par un bord transparent, centre sur les deux axes pour ne
+    # pas laisser le contenu glisser vers un coin de son cadre.
     if ratio:
         from PIL import Image
         l, h = image.size
         cible_l, cible_h = max(l, round(h * ratio)), max(h, round(l / ratio))
         if (cible_l, cible_h) != (l, h):
             cadre = Image.new('RGBA', (cible_l, cible_h), (255, 255, 255, 0))
-            cadre.paste(image, ((cible_l - l) // 2, 0))
+            cadre.paste(image, ((cible_l - l) // 2, (cible_h - h) // 2))
             image = cadre
     sortie = io.BytesIO()
     image.save(sortie, 'PNG', optimize=True)
@@ -324,7 +579,10 @@ def rafraichir(contenus, slides, valeurs, soffice, profil, cache):
             quoi = nature(parts)
             if quoi not in valeurs:
                 continue
-            brut = _ecrire(remplir_classeur(parts, valeurs[quoi]))
+            remplies = remplir_classeur(parts, valeurs[quoi])
+            if quoi == 'acquisition':
+                remplies = _ajouter_signes_acquisition(remplies)
+            brut = _ecrire(remplies)
             contenus[emb] = brut
             a_rendre[emb] = brut
             taille = re.search(r'imgW="(\d+)" imgH="(\d+)"', m.group(0))

@@ -8,9 +8,12 @@ import { useEffect, useRef, useState } from 'react'
  * donc la vraie diapositive du modele, drapeaux remplis.
  *
  * La conversion prend une a trois secondes ; le cache du service rend
- * les suivantes immediates. On garde l'image precedente affichee
- * pendant qu'une nouvelle se prepare, plutot que de vider la zone :
- * un clignotement a chaque frappe serait pire que le leger retard.
+ * les suivantes immediates. Pendant qu'une nouvelle page se prepare,
+ * l'ancienne image disparait : la garder affichee laissait croire que
+ * la modification en cours etait deja visible, alors que ce n'etait
+ * pas encore le cas. Un cadre neutre et un indicateur centre — icone
+ * qui tourne, texte — disent sans ambiguite qu'une nouvelle version
+ * arrive.
  *
  * Si le service ne repond pas, on le dit et on laisse la main au rendu
  * HTML : mieux vaut un apercu approchant que pas d'apercu du tout.
@@ -26,10 +29,14 @@ export default function ApercuReel({ diapo, valeurs, secours }) {
     let annule = false
     let url = null
 
+    // L'image affichee ne correspond plus : elle s'efface tout de suite,
+    // sans attendre la fin du differe — sinon la page precedente resterait
+    // visible le temps qu'il s'ecoule.
+    setEtat('chargement')
+
     // Laisser retomber la frappe avant de convertir : sans cela chaque
     // caractere lancerait une conversion.
     const minuteur = setTimeout(async () => {
-      setEtat('chargement')
       try {
         const r = await fetch('/apercu/page', {
           method: 'POST',
@@ -68,18 +75,22 @@ export default function ApercuReel({ diapo, valeurs, secours }) {
     )
   }
 
+  const chargement = etat === 'chargement'
+
   return (
     <div className="cr-apercu-reel">
-      {image ? (
+      {image && !chargement ? (
         <img className="cr-apercu-image" src={image}
           alt="Aperçu de la page telle qu’elle sera dans le document" />
       ) : (
-        <div className="cr-apercu-vide" />
-      )}
-      {etat === 'chargement' && (
-        <span className="cr-apercu-etat" role="status">
-          Actualisation…
-        </span>
+        <div className="cr-apercu-vide">
+          {chargement && (
+            <span className="cr-apercu-spinner" role="status">
+              <span className="cr-apercu-roue" aria-hidden="true" />
+              Actualisation de l’aperçu…
+            </span>
+          )}
+        </div>
       )}
     </div>
   )
