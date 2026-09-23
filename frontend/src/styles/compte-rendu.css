@@ -1048,7 +1048,6 @@
   color: var(--muted);
 }
 .cr-mentions-legende li { display: inline-flex; align-items: center; gap: 6px; }
-.cr-mentions-legende .cr-mention-icone { color: var(--ink); }
 
 /* Le cadre defile seul : les noms s'y figent en haut, les criteres a
    gauche. Sans cadre borne, c'est la page qui defilerait et les
@@ -1105,6 +1104,7 @@
 .cr-satis-nom-texte {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-size: 12px;
@@ -1178,11 +1178,25 @@
 }
 .cr-mentions--rempli .cr-mention:not(.cr-mention--on) { opacity: .4; }
 .cr-mentions--rempli .cr-mention:not(.cr-mention--on):hover { opacity: 1; }
+/* Le code couleur des mentions, du vert au rouge. La case retenue
+   prend un fond teinte et une bordure franche : la couleur se lit sans
+   que l'icone disparaisse dans un aplat. */
+.cr-mention--tres_satisfaisant { --mention: #1a8f4c; --mention-fond: #e3f5ea; }
+.cr-mention--satisfaisant      { --mention: #5f9e1f; --mention-fond: #eef6e0; }
+.cr-mention--moyen             { --mention: #b7860b; --mention-fond: #fbf1d6; }
+.cr-mention--peu_satisfaisant  { --mention: #d2640f; --mention-fond: #fde9da; }
+.cr-mention--insatisfaisant    { --mention: #c62828; --mention-fond: #fbe3e3; }
 .cr-mention--on {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: #fff;
+  background: var(--mention-fond);
+  border: 1.5px solid var(--mention);
+  color: var(--mention);
 }
+.cr-mention--on .cr-mention-icone { stroke-width: 2.2; }
+.cr-mention:not(.cr-mention--on):hover {
+  color: var(--mention);
+  border-color: var(--mention);
+}
+.cr-mentions-legende li .cr-mention-icone { color: var(--mention); }
 
 /* ---- Notes des tests : en-tete fige, colonnes a largeur fixe ---- */
 .cr-table-wrap--fige {
