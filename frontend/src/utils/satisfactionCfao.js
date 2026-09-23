@@ -35,11 +35,18 @@ export const MENTIONS = [
 
 const SCORE_PAR_CLE = Object.fromEntries(MENTIONS.map(m => [m.cle, m.score]))
 
-/** Les sept criteres de la qualite de la formation (lignes 13 a 19). */
+/** Les sept criteres de la qualite de la formation (lignes 13 a 19).
+ *
+ *  `libelle` sert a la saisie, ou la place est comptee ; `modele`
+ *  reprend mot pour mot l'intitule du classeur de la diapositive 27,
+ *  qui est ce que le lecteur du compte rendu aura sous les yeux.
+ */
 export const CRITERES_FORMATION = [
   { cle: 'themes', libelle: 'Thèmes abordés' },
-  { cle: 'documents', libelle: 'Qualité des documents de formation' },
-  { cle: 'planning', libelle: 'Planning, horaires et durée' },
+  { cle: 'documents', libelle: 'Qualité des documents de formation',
+    modele: 'Qualité des documents de formation (ppt, docs papiers…)' },
+  { cle: 'planning', libelle: 'Planning, horaires et durée',
+    modele: 'Planning, horaires et durée de la formation' },
   { cle: 'formateur', libelle: 'Prestation du formateur' },
   { cle: 'composition', libelle: 'Composition du groupe' },
   { cle: 'ambiance', libelle: 'Ambiance du groupe' },
@@ -48,12 +55,16 @@ export const CRITERES_FORMATION = [
 
 /** Les six criteres de la qualite de l'accueil (lignes 20 a 25). */
 export const CRITERES_ACCUEIL = [
-  { cle: 'aeroport', libelle: 'Accueil à l’aéroport' },
+  { cle: 'aeroport', libelle: 'Accueil à l’aéroport',
+    modele: 'Accueil à l’aéroport par le centre de formation' },
   { cle: 'transport', libelle: 'Transport de l’aéroport à l’hôtel' },
-  { cle: 'hebergement', libelle: 'Qualité de l’hébergement' },
-  { cle: 'repas_hotel', libelle: 'Repas et boissons à l’hôtel' },
-  { cle: 'accueil_centre', libelle: 'Accueil au centre de formation' },
-  { cle: 'repas_cfr', libelle: 'Repas au centre' },
+  { cle: 'hebergement', libelle: 'Qualité de l’hébergement',
+    modele: 'Qualité de l’hébergement (hôtel, chambre…)' },
+  { cle: 'repas_hotel', libelle: 'Repas et boissons à l’hôtel',
+    modele: 'Qualité du repas et des boissons proposées à l’hôtel' },
+  { cle: 'accueil_centre', libelle: 'Accueil au centre de formation',
+    modele: 'Accueil des stagiaires au centre de formation' },
+  { cle: 'repas_cfr', libelle: 'Repas au centre', modele: 'Repas au CFR' },
 ]
 
 /** Moyenne des mentions saisies pour un ensemble de criteres.

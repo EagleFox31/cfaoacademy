@@ -947,8 +947,10 @@ function composerPages(b, session, s) {
     const critere = (criteres, titre, total, valeur) => ({
       titre,
       lignes: [
+        // Sur la fiche, on reprend l'intitule exact du classeur de la
+        // diapositive 27 : c'est ce que le lecteur compare.
         ...detailParCritere(b.satisfaction, criteres).map(cr => ({
-          libelle: cr.libelle,
+          libelle: cr.modele || cr.libelle,
           valeur: cr.moyenne == null ? '—' : `${Math.round(cr.moyenne)} %`,
         })),
         { libelle: total, valeur: afficherTaux(valeur), total: true },
@@ -984,7 +986,7 @@ function composerPages(b, session, s) {
             ],
           },
           {
-            titre: 'Progression de la formation',
+            titre: 'Taux de progression',
             lignes: [
               { libelle: 'Test théorique d’entrée', valeur: pourcent(c.entree) },
               { libelle: 'Test théorique de sortie', valeur: pourcent(c.sortieTheorique) },

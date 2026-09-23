@@ -169,6 +169,19 @@ export function dispositionsPour(nombre) {
 export const MAX_PHOTOS = Math.max(...DISPOSITIONS.map(d => d.nombre))
 
 /**
+ * Le repertoire entier, les dispositions utilisables en tete.
+ *
+ * On montre tout pour que le formateur sache ce qui existe, mais ce
+ * qu'il peut choisir tout de suite vient en premier : sans cela, avec
+ * une seule photo, la seule disposition active se retrouve noyee au
+ * milieu de huit vignettes eteintes.
+ */
+export function dispositionsClassees(nombre) {
+  const utilisable = d => d.nombre === nombre
+  return [...DISPOSITIONS].sort((a, b) => utilisable(b) - utilisable(a))
+}
+
+/**
  * La grille CSS d'une disposition.
  *
  * Les rangees reprennent `poidsRangees`, les colonnes le nombre de

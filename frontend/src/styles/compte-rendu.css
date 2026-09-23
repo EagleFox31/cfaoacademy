@@ -1704,6 +1704,23 @@
 }
 /* Empilées, les trois options se comparent d'un coup d'œil. */
 .cr-obj-choix--colonne { flex-direction: column; }
+/* Le repertoire entier tient dans la colonne : il defile sur place
+   plutot que d'allonger le volet. Aucune marge interne, pour que les
+   vignettes restent alignees sur le reste de la colonne. */
+.cr-obj-choix--defile {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  /* .cr-obj-choix autorise le retour a la ligne : en colonne, la liste
+     repartirait en plusieurs colonnes au lieu de defiler. */
+  flex-wrap: nowrap;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+/* Sans cela, le conteneur ecrase les vignettes pour les faire tenir au
+   lieu de defiler : chacune garde sa hauteur propre. */
+.cr-obj-choix--defile .cr-obj-opt { flex: none; }
 .cr-obj-choix--colonne .cr-obj-opt {
   flex-direction: row;
   justify-content: flex-start;
@@ -2402,25 +2419,46 @@
   min-height: 0;
   border: 1px solid var(--line, rgba(16, 20, 48, 0.18));
   border-radius: 8px;
-  background: var(--surface-1, #fff);
+  /* La gouttiere est peinte sur le champ : le miroir est superpose et
+     ne peut donc plus porter son propre fond. */
+  background:
+    linear-gradient(to right,
+      var(--surface-2, rgba(16, 20, 48, 0.03)) 0 38px,
+      var(--line, rgba(16, 20, 48, 0.08)) 38px 39px,
+      var(--surface-1, #fff) 39px);
   overflow: hidden;
 }
 .cr-obj-champ:focus-within { border-color: var(--accent, #e2001a); }
+/* Le miroir se superpose exactement a la zone de saisie : memes
+   metriques de texte, meme largeur utile, donc mêmes retours a la
+   ligne. Il ne recoit pas la souris, la saisie reste dessous. */
 .cr-obj-marge {
-  flex: none;
-  width: 46px;
-  padding: 10px 6px 10px 0;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
-  text-align: right;
+  padding: 10px 12px 10px 46px;
   font-size: 0.85rem;
   line-height: 1.6;
-  color: var(--ink-3, #9ca3af);
-  background: var(--surface-2, rgba(16, 20, 48, 0.03));
-  border-right: 1px solid var(--line, rgba(16, 20, 48, 0.08));
+  font-family: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  pointer-events: none;
   user-select: none;
 }
-.cr-obj-marge span { display: block; white-space: pre; }
+.cr-obj-marge-ligne { position: relative; margin: 0; }
+/* La puce sort dans la gouttiere, sans decaler le texte du miroir. */
+.cr-obj-marge-puce {
+  position: absolute;
+  left: -40px;
+  width: 34px;
+  text-align: right;
+  color: var(--ink-3, #9ca3af);
+}
+/* Le texte du miroir ne sert qu'a occuper la place : il reste invisible
+   mais garde sa hauteur, ligne pour ligne. */
+.cr-obj-marge-ombre { visibility: hidden; }
 .cr-obj-champ .cr-obj-texte {
+  position: relative;
   flex: 1;
   min-width: 0;
   border: none;
@@ -2428,7 +2466,9 @@
   background: none;
   font-size: 0.85rem;
   line-height: 1.6;
-  padding: 10px 12px;
+  font-family: inherit;
+  overflow-wrap: break-word;
+  padding: 10px 12px 10px 46px;
 }
 .cr-obj-champ .cr-obj-texte:focus { outline: none; box-shadow: none; }
 

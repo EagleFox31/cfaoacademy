@@ -20,7 +20,7 @@
  */
 
 import { useState } from 'react'
-import { DISPOSITIONS, casesDe, dispositionsPour, grilleDe }
+import { casesDe, dispositionsClassees, dispositionsPour, grilleDe }
   from '../../data/dispositions_photos'
 
 /**
@@ -166,8 +166,8 @@ export default function EditeurJournee({
               onChange={e => { onAjouter?.(e.target.files); e.target.value = '' }} />
 
             <span className="cr-field-label">Disposition</span>
-            <div className="cr-obj-choix cr-obj-choix--colonne">
-              {DISPOSITIONS.map(d => {
+            <div className="cr-obj-choix cr-obj-choix--colonne cr-obj-choix--defile">
+              {dispositionsClassees(cliches.length).map(d => {
                 const possible = d.nombre === cliches.length
                 return (
                   <button key={d.id} type="button"
