@@ -142,8 +142,8 @@ function absent(p) {
 export const SESSIONS_FORMATEUR = [
   {
     // Liste d'inscription papier (TOYOTA, presentiel). Les dix-sept
-    // techniciens y figurent ; seuls les huit inscrits a cette session
-    // sont marques presents, les autres restent a cocher. Les noms
+    // techniciens y figurent ; les huit qui ont suivi la session sont
+    // marques presents, les autres restent a cocher. Les noms
     // suivent l'orthographe deja enregistree dans les resultats des
     // sessions precedentes et les extractions Team GP.
     id: 'ses-tsh01-0907',
@@ -170,10 +170,10 @@ export const SESSIONS_FORMATEUR = [
       participant('h05', 'Martin', 'FOKOU', 'Cameroun', 'Technicien'),
       participant('h06', 'Paul', 'KAMGA TALLA', 'Cameroun', 'Technicien'),
       participant('h07', 'Samuel', 'NJOYA MFOUAPON', 'Cameroun', 'Technicien'),
-      participant('h08', 'Eric', 'TAKAM FOTSO', 'Cameroun', 'Technicien'),
+      absent(participant('h08', 'Eric', 'TAKAM FOTSO', 'Cameroun', 'Technicien')),
       participant('h09', 'Thierry', 'ABENA OWONO', 'Cameroun', 'Technicien'),
       participant('h10', 'Oumarou', 'HAMADOU', 'Cameroun', 'Technicien'),
-      absent(participant('h11', 'Kossi Edem', 'AMEWU', 'Togo', 'Technicien')),
+      participant('h11', 'Kossi Edem', 'AMEWU', 'Togo', 'Technicien'),
       absent(participant('h12', 'Patrice', 'LUKUSA MBALA', 'RDC', 'Technicien')),
       absent(participant('h13', 'Didier', 'NZUZI MAKIESE', 'RDC', 'Technicien')),
       absent(participant('h14', 'Junior', 'KABONGO ILUNGA', 'RDC', 'Technicien')),
