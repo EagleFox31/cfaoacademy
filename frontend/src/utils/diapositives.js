@@ -22,7 +22,7 @@ export const DIAPO_PAR_PAGE = {
   resultats: 17,
   satisfaction: 19,
   bilan: 20,
-  fiches: 26,
+  fiches: 27,
   cloture: 28,
 }
 
@@ -56,7 +56,7 @@ const PHRASE_ACQUISITION =
   + 'de [taux] %.'
 
 /** Les drapeaux du modele, renseignes depuis le brouillon. */
-export function valeursDrapeaux(brouillon, session, synthese) {
+export function valeursDrapeaux(brouillon, session, synthese, page) {
   const b = brouillon || {}
   const t = b.textes || {}
   const periode = periodeLongue(b.debut, b.fin)
@@ -92,5 +92,27 @@ export function valeursDrapeaux(brouillon, session, synthese) {
     [PHRASE_PROGRESSION]: t['resultats.commentaireProgression'] || '',
     [PHRASE_ACQUISITION]: t['resultats.commentaireAcquisition'] || '',
     '{appréciation_formateur}': t.appreciation || '',
+
+    // La page courante, quand c'est une fiche, surcharge les drapeaux
+    // communs : le modele repete la meme diapositive par stagiaire.
+    ...drapeauxDeFiche(brouillon, page),
+  }
+}
+
+/**
+ * Les drapeaux propres a une fiche individuelle.
+ *
+ * La diapositive 27 ne laisse qu'une zone libre — l'appreciation de la
+ * formation et de l'accueil — et porte le nom du stagiaire en titre.
+ */
+function drapeauxDeFiche(brouillon, page) {
+  const cle = page?.cle || ''
+  if (!cle.startsWith('fiche-')) return {}
+  const id = cle.slice('fiche-'.length)
+  const p = (brouillon?.participants || []).find(x => String(x.id) === id)
+  const t = brouillon?.textes || {}
+  return {
+    '{nom_complet}': p ? `${p.prenom || ''} ${p.nom || ''}`.trim() : '',
+    '{appréciation_formation_accueil}': t[`${cle}.appreciation`] || '',
   }
 }

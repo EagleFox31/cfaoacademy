@@ -84,8 +84,8 @@ export default function PhaseVerification({
   // Les drapeaux transmis au service d'apercu. Memorises : une nouvelle
   // reference relancerait une conversion a chaque rendu.
   const valeurs = useMemo(
-    () => valeursDrapeaux(brouillon, session, synthese),
-    [brouillon, session, synthese],
+    () => valeursDrapeaux(brouillon, session, synthese, page),
+    [brouillon, session, synthese, page],
   )
 
   function majTexte(cle, valeur) {
@@ -428,14 +428,21 @@ function FormulairePage({
         )}
 
         {page.type === 'texte' && page.cle !== 'objectifs'
-          && page.cle !== 'bilan' && page.blocs.map(b => (
-          <label key={b.cle} className="cr-field">
-            <span className="cr-field-label">{b.titre}</span>
-            <textarea className="cr-textarea" rows={3}
-              value={valeur(b.cle, b.texte)}
-              onChange={e => onTexte(`${page.cle}.${b.cle}`, e.target.value)} />
-          </label>
-        ))}
+          && page.cle !== 'bilan' && (
+          <div className="cr-edition-large cr-res-saisie">
+            <TableauxResultats tableaux={page.tableaux} />
+            {page.blocs.map(b => (
+              <label key={b.cle} className="cr-fiche-appreciation">
+                <span className="cr-field-label">
+                  {b.titre} <span>facultatif</span>
+                </span>
+                <textarea className="cr-textarea cr-res-texte"
+                  value={valeur(b.cle, b.texte)}
+                  onChange={e => onTexte(`${page.cle}.${b.cle}`, e.target.value)} />
+              </label>
+            ))}
+          </div>
+        )}
 
         {page.cle === 'participants' && (
           <div className="cr-edition-large">
@@ -878,6 +885,7 @@ function composerPages(b, session, s) {
   }
 
   if (retenue('fiches')) {
+    const pourcent = v => (v == null ? '—' : `${Math.round(v)} %`)
     participants.forEach(p => {
       const c = calculer(p, b.baremes)
       pages.push({
@@ -887,9 +895,35 @@ function composerPages(b, session, s) {
           + (c.progression == null ? '—' : `${c.progression > 0 ? '+' : ''}${c.progression} %`),
         blocs: [{
           cle: 'appreciation',
-          titre: 'Appréciation du formateur',
+          titre: 'Appréciation de la formation et de l’accueil',
           texte: p.appreciation || appreciationAuto(p, c),
         }],
+        tableaux: [
+          {
+            titre: 'Acquisition des compétences',
+            lignes: [
+              { libelle: 'Test théorique durant la formation', valeur: pourcent(c.sortieTheorique) },
+              { libelle: 'Test pratique durant la formation', valeur: pourcent(c.sortiePratique) },
+              {
+                libelle: 'Niveau d’acquisition des compétences',
+                valeur: pourcent(c.scoreFinal), total: true,
+              },
+            ],
+          },
+          {
+            titre: 'Progression de la formation',
+            lignes: [
+              { libelle: 'Test théorique d’entrée', valeur: pourcent(c.entree) },
+              { libelle: 'Test théorique de sortie', valeur: pourcent(c.sortieTheorique) },
+              {
+                libelle: 'Taux de progression',
+                valeur: c.progression == null ? '—'
+                  : `${c.progression > 0 ? '+' : ''}${Math.round(c.progression)} %`,
+                total: true,
+              },
+            ],
+          },
+        ],
       })
     })
   }
