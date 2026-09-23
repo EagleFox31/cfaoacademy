@@ -38,6 +38,8 @@ ECART = 125000
 BANDE_LEGENDE = 329184
 
 NOM_EMPLACEMENT = 'Emplacement photo'
+# La legende commune d'une page jour, sous le cadre des photos.
+LEGENDE_COMMUNE = 'Legende ensemble'
 TYPE_IMAGE = ('http://schemas.openxmlformats.org/officeDocument/2006/'
               'relationships/image')
 
@@ -181,10 +183,20 @@ def poser(contenus, slide, photos, cache):
     if not lisibles:
         return
     xml = contenus[slide].decode('utf-8')
+    # Une page jour porte une legende commune sous son cadre. Des que
+    # chaque photo a la sienne, la bande commune rejoint le cadre.
+    commune = None
+    if any('legende' in p for p, _ in lisibles):
+        m = re.search(r'<p:sp>(?:(?!</p:sp>).)*?name="' + LEGENDE_COMMUNE
+                      + r'".*?</p:sp>', xml, re.S)
+        pos = m and RE_POSITION.search(m.group(0))
+        if pos:
+            commune = tuple(int(v) for v in pos.groups())
+            xml = xml[:m.start()] + xml[m.end():]
     trouves = emplacements(xml)
     if not trouves:
         return
-    cadre_ = cadre([pos for _, pos in trouves])
+    cadre_ = cadre([pos for _, pos in trouves] + ([commune] if commune else []))
 
     ident_forme = 900
     formes = []
