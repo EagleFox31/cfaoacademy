@@ -18,6 +18,7 @@ reconvertie.
 """
 
 import hashlib
+import html
 import json
 import os
 import re
@@ -28,6 +29,7 @@ import zipfile
 from pathlib import Path
 
 from composer import composer
+import photos
 from modele import diapos_pour
 
 RACINE = Path(__file__).resolve().parent
@@ -46,6 +48,99 @@ PROFIL = (RACINE / '.profil-lo').as_uri().replace('file:///', 'file:///')
 # non une chaine vide, pour le distinguer d'une donnee pas encore
 # saisie : les deux se ressemblent sinon.
 VIDE = '∅'
+
+
+def echapper(valeur):
+    """Une valeur saisie, rendue sure pour le XML du document.
+
+    Un « & » ou un « < » tape par le formateur casserait la diapositive
+    entiere, que LibreOffice refuserait alors d'ouvrir.
+    """
+    return html.escape(str(valeur), quote=False)
+
+
+# L'espacement que le modele laisse avant un paragraphe.
+RE_ESPACE_AVANT = re.compile(r'<a:spcBef>.*?</a:spcBef>', re.S)
+RE_POINTS = re.compile(r'(<a:spcBef><a:spcPts val=")(\d+)(")')
+
+
+RE_PARAGRAPHE = re.compile(r'<a:p>(?:(?!</a:p>).)*?</a:p>', re.S)
+
+
+def _lignes(elements):
+    """Les elements d'une liste a plat : (niveau, texte), vides ecartes.
+
+    Un element est un texte, ou un groupe `{'texte': ..., 'sous': [...]}`
+    dont le titre ouvre la marche et dont les sous-elements suivent.
+    """
+    lignes = []
+    for e in elements:
+        if isinstance(e, dict):
+            if str(e.get('texte', '')).strip():
+                lignes.append((0, e['texte']))
+            lignes += [(1, s) for s in e.get('sous') or [] if str(s).strip()]
+        elif str(e).strip():
+            lignes.append((0, e))
+    return lignes
+
+
+def repeter(xml, listes):
+    """Repete le paragraphe d'un drapeau de liste, une fois par element.
+
+    Le nombre de lignes d'une liste varie d'une session a l'autre ; le
+    modele n'en porte qu'une, le paragraphe `{objectif_1}` par exemple.
+    On le duplique avec sa mise en forme, chaque copie recevant son
+    element.
+
+    Une liste a deux niveaux — des titres et leurs sous-elements — prend
+    ses sous-elements dans un second paragraphe porteur, dont le drapeau
+    prefixe le premier de `sous_` : `{sous_objectif_1}`. Une diapositive
+    qui n'en porte pas pose tout au premier niveau.
+
+    L'espacement avant le paragraphe separe les lignes entre elles : la
+    premiere n'en a pas besoin. Au-dela, l'espace total reste celui que
+    le modele prevoyait pour ses quatre lignes, partage entre toutes :
+    une liste plus longue se resserre au lieu de deborder de son cadre.
+
+    Une liste vide laisse le drapeau en place, comme toute donnee
+    manquante.
+    """
+    for drapeau, elements in listes.items():
+        lignes = _lignes(elements)
+        if not lignes:
+            continue
+        sous = '{sous_' + drapeau[1:]
+        porteurs = {}
+        for m in RE_PARAGRAPHE.finditer(xml):
+            for niveau, d in ((0, drapeau), (1, sous)):
+                if d in m.group(0) and niveau not in porteurs:
+                    porteurs[niveau] = (m.group(0), d)
+        if 0 not in porteurs:
+            continue
+        facteur = min(1, 3 / max(len(lignes) - 1, 1))
+
+        def resserre(p, facteur=facteur):
+            points = round(int(p.group(2)) * facteur)
+            return p.group(1) + str(points) + p.group(3)
+
+        copies = []
+        for i, (niveau, texte) in enumerate(lignes):
+            modele, d = porteurs.get(niveau, porteurs[0])
+            p = (RE_ESPACE_AVANT.sub('', modele) if i == 0
+                 else RE_POINTS.sub(resserre, modele))
+            copies.append(p.replace(d, echapper(texte)))
+
+        # Le premier porteur recoit toute la liste, le second s'efface :
+        # ses copies sont deja rangees sous leurs titres.
+        def sur_paragraphe(m, drapeau=drapeau, sous=sous, copies=copies):
+            if drapeau in m.group(0):
+                return ''.join(copies)
+            if sous in m.group(0):
+                return ''
+            return m.group(0)
+
+        xml = RE_PARAGRAPHE.sub(sur_paragraphe, xml)
+    return xml
 
 
 def substituer(xml, valeurs):
@@ -67,6 +162,9 @@ def substituer(xml, valeurs):
     rempli ». La valeur `VIDE` le dit explicitement : le drapeau
     disparait au lieu de laisser le mot du modele s'imprimer.
     """
+    xml = repeter(xml, {c: v for c, v in valeurs.items() if isinstance(v, list)})
+    valeurs = {c: v for c, v in valeurs.items()
+               if isinstance(v, str) and not c.startswith('@')}
     nus = {c.strip().casefold(): v for c, v in valeurs.items()
            if not c.startswith('{') and (v or v == VIDE)}
 
@@ -75,10 +173,10 @@ def substituer(xml, valeurs):
         for drapeau, valeur in valeurs.items():
             if drapeau.startswith('{') and drapeau in texte:
                 texte = texte.replace(
-                    drapeau, '' if valeur == VIDE else str(valeur))
+                    drapeau, '' if valeur == VIDE else echapper(valeur))
         remplacement = nus.get(texte.strip().casefold())
         if remplacement:
-            texte = '' if remplacement == VIDE else str(remplacement)
+            texte = '' if remplacement == VIDE else echapper(remplacement)
         return '<a:t>' + texte + '</a:t>'
 
     return re.sub(r'<a:t>(.*?)</a:t>', sur_run, xml, flags=re.S)
@@ -90,14 +188,22 @@ def remplir(source, cible, valeurs):
         infos = {i.filename: i for i in z.infolist()}
         contenus = {n: z.read(n) for n in infos}
 
-    for nom in contenus:
+    for nom in list(contenus):
         if re.match(r'ppt/slides/slide\d+\.xml$', nom):
             xml = contenus[nom].decode('utf-8')
             contenus[nom] = substituer(xml, valeurs).encode('utf-8')
 
+    # Les photos, par numero de diapositive : `{'9': [{id, x, y, l, h}]}`.
+    for diapo, liste in (valeurs.get('@photos') or {}).items():
+        slide = f'ppt/slides/slide{int(diapo)}.xml'
+        if slide in contenus:
+            photos.poser(contenus, slide, liste, CACHE)
+
     with zipfile.ZipFile(cible, 'w', zipfile.ZIP_DEFLATED) as out:
         for nom, donnees in contenus.items():
-            zi = zipfile.ZipInfo(nom, date_time=infos[nom].date_time)
+            zi = zipfile.ZipInfo(
+                nom, date_time=infos[nom].date_time if nom in infos
+                else (2026, 1, 1, 0, 0, 0))
             zi.compress_type = zipfile.ZIP_DEFLATED
             out.writestr(zi, donnees)
 
@@ -142,9 +248,10 @@ def image_de(diapo, valeurs):
         shutil.rmtree(travail, ignore_errors=True)
 
 
-def document(parties, valeurs, nb_jours=0, nb_participants=0, format_='pptx'):
+def document(parties, valeurs, nb_jours=0, nb_participants=0, format_='pptx',
+             variantes=None):
     """Le rapport complet, limite aux parties retenues."""
-    numeros = diapos_pour(parties, nb_jours, nb_participants)
+    numeros = diapos_pour(parties, nb_jours, nb_participants, variantes)
     travail = Path(tempfile.mkdtemp(prefix='cr-doc-'))
     try:
         rempli = travail / 'rempli.pptx'

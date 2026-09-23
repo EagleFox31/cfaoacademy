@@ -11,6 +11,7 @@ import EditeurParticipants from './EditeurParticipants'
 import EditeurJournee, { MAX_PHOTOS_JOUR } from './EditeurJournee'
 import EditeurBilan from './EditeurBilan'
 import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
+import { useRefsPhotos } from '../../utils/photosService'
 import { participantPourMoteur, proposerTexte } from '../../utils/redaction'
 
 /**
@@ -85,9 +86,10 @@ export default function PhaseVerification({
 
   // Les drapeaux transmis au service d'apercu. Memorises : une nouvelle
   // reference relancerait une conversion a chaque rendu.
+  const refsPhotos = useRefsPhotos(brouillon.photos)
   const valeurs = useMemo(
-    () => valeursDrapeaux(brouillon, session, synthese, page),
-    [brouillon, session, synthese, page],
+    () => valeursDrapeaux(brouillon, session, synthese, page, refsPhotos),
+    [brouillon, session, synthese, page, refsPhotos],
   )
 
   function majTexte(cle, valeur) {
@@ -271,7 +273,7 @@ export default function PhaseVerification({
           />
         ) : (
           <ApercuReel
-            diapo={diapoDe(page)}
+            diapo={diapoDe(page, brouillon)}
             valeurs={valeurs}
             secours={<ApercuPage page={page} textes={brouillon.textes || {}}
               photos={photos} />} />

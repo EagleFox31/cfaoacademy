@@ -16,7 +16,8 @@ from pathlib import Path
 import sys
 from flask import Flask, jsonify, request, send_file
 
-from service import MODELE, SOFFICE, document, image_de
+import photos
+from service import CACHE, MODELE, SOFFICE, document, image_de
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'redaction'))
 from moteur import rediger, rediger_accueil  # noqa: E402
@@ -47,6 +48,22 @@ def page():
     return send_file(chemin, mimetype='image/png')
 
 
+@app.post('/apercu/photo')
+def photo():
+    """Recoit une photo, la reduit et renvoie son identifiant.
+
+    Le corps de la requete est l'image elle-meme : l'apercu n'echange
+    ensuite plus que l'identifiant.
+    """
+    donnees = request.get_data()
+    if not donnees:
+        return jsonify({'erreur': 'image attendue'}), 400
+    try:
+        return jsonify(photos.enregistrer(donnees, CACHE))
+    except Exception as e:  # noqa: BLE001 — fichier illisible
+        return jsonify({'erreur': str(e)}), 400
+
+
 @app.post('/apercu/document')
 def doc():
     """Le rapport complet, une fois la relecture terminee."""
@@ -58,7 +75,7 @@ def doc():
         chemin = document(
             parties, corps.get('valeurs') or {},
             corps.get('nbJours') or 0, corps.get('nbParticipants') or 0,
-            corps.get('format') or 'pptx')
+            corps.get('format') or 'pptx', corps.get('variantes'))
     except Exception as e:  # noqa: BLE001
         return jsonify({'erreur': str(e)}), 500
     return send_file(chemin, as_attachment=True, download_name=chemin.name)

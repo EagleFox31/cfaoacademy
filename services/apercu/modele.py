@@ -23,6 +23,14 @@ DIAPOS = {
     'cloture': [28],
 }
 
+# Les parties qui existent en plusieurs variantes : le modele en porte
+# une par forme, l'assistant choisit celle qui sert. Les objectifs ont
+# une page par marquage de liste (6 romain, 7 puces, 8 les deux) et une
+# page en tableau des qu'il y a des photos (9).
+VARIANTES = {
+    'objectifs': {'remplace': 9, 'possibles': {6, 7, 8, 9}},
+}
+
 # Les parties dont le nombre de pages depend des donnees saisies.
 GABARITS = {
     'deroule': {'fixe': [10], 'repete': 11},
@@ -30,8 +38,12 @@ GABARITS = {
 }
 
 
-def diapos_pour(parties_retenues, nb_jours=0, nb_participants=0):
+def diapos_pour(parties_retenues, nb_jours=0, nb_participants=0,
+                variantes=None):
     """Les numeros de diapositive a produire, dans l'ordre du rapport.
+
+    `variantes` dit, pour une partie qui en a plusieurs, la diapositive
+    retenue ; faute de choix, la partie garde sa page par defaut.
 
     `parties_retenues` suit l'ordre de `PARTIES_RAPPORT` cote interface ;
     on le respecte pour que l'apercu corresponde au document final.
@@ -49,5 +61,15 @@ def diapos_pour(parties_retenues, nb_jours=0, nb_participants=0):
             numeros += GABARITS['fiches']['fixe']
             numeros += [GABARITS['fiches']['repete']] * nb_participants
         else:
-            numeros += DIAPOS.get(partie, [])
+            numeros += [_variante(partie, n, variantes)
+                        for n in DIAPOS.get(partie, [])]
     return numeros
+
+
+def _variante(partie, numero, variantes):
+    """La diapositive retenue a la place de `numero`, si elle est permise."""
+    regle = VARIANTES.get(partie)
+    choix = (variantes or {}).get(partie)
+    if regle and numero == regle['remplace'] and choix in regle['possibles']:
+        return choix
+    return numero
