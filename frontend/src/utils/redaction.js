@@ -11,8 +11,8 @@
  */
 
 /** Les chiffres d'un stagiaire, dans la forme qu'attend le moteur. */
-export function participantPourMoteur(p, calcul) {
-  const nombre = v => (v == null || v === '' ? undefined : Number(v))
+export function participantPourMoteur(p, calcul, satisfaction) {
+  const nombre = v => (v == null || v === '' ? undefined : Math.round(Number(v)))
   return {
     nom: p.nom || '',
     prenom: p.prenom || '',
@@ -23,6 +23,7 @@ export function participantPourMoteur(p, calcul) {
     entree: nombre(calcul?.entree),
     sortie: nombre(calcul?.sortieTheorique),
     taux_progression: nombre(calcul?.progression),
+    satisfaction: nombre(satisfaction),
   }
 }
 
