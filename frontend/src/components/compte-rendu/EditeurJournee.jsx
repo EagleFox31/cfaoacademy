@@ -20,7 +20,7 @@
  */
 
 import { useState } from 'react'
-import { casesDe, dispositionsPour, grilleDe }
+import { DISPOSITIONS, casesDe, dispositionsPour, grilleDe }
   from '../../data/dispositions_photos'
 
 /**
@@ -153,33 +153,10 @@ export default function EditeurJournee({
           {/* A gauche les dispositions et l'ajout, a droite le rendu :
               on choisit une mise en page en voyant son effet. */}
           <div className="cr-obj-cote cr-obj-cote--gauche">
-            <span className="cr-field-label">Disposition</span>
-            {choix.length > 1 ? (
-              <div className="cr-obj-choix cr-obj-choix--colonne">
-                {choix.map(d => (
-                  <button key={d.id} type="button"
-                    className={`cr-obj-opt${dispoActive === d.id ? ' cr-obj-opt--on' : ''}`}
-                    aria-pressed={dispoActive === d.id} title={d.note}
-                    onClick={() => onDisposition(d.id)}>
-                    <span className="cr-obj-opt-vue" aria-hidden="true">
-                      <VignetteDisposition disposition={d} />
-                    </span>
-                    <span className="cr-obj-opt-nom">{d.nom}</span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="cr-obj-aide">
-                {cliches.length
-                  ? 'Une seule mise en page pour ce nombre de photos.'
-                  : 'Ajoutez des photos pour choisir une mise en page.'}
-              </p>
-            )}
-
-            <button type="button" className="cr-obj-ajout"
+            <button type="button" className="cr-obj-ajout cr-obj-ajout--haut"
               disabled={cliches.length >= MAX_PHOTOS_JOUR}
               onClick={() => document.getElementById(`cr-jour-fichier-${jour}`)?.click()}>
-              + Ajouter
+              + Ajouter une photo
               <span className="cr-obj-ajout-compte">
                 {cliches.length}/{MAX_PHOTOS_JOUR}
               </span>
@@ -187,6 +164,27 @@ export default function EditeurJournee({
             <input id={`cr-jour-fichier-${jour}`} type="file"
               accept="image/*" multiple hidden
               onChange={e => { onAjouter?.(e.target.files); e.target.value = '' }} />
+
+            <span className="cr-field-label">Disposition</span>
+            <div className="cr-obj-choix cr-obj-choix--colonne">
+              {DISPOSITIONS.map(d => {
+                const possible = d.nombre === cliches.length
+                return (
+                  <button key={d.id} type="button"
+                    className={`cr-obj-opt${dispoActive === d.id && possible ? ' cr-obj-opt--on' : ''}`}
+                    aria-pressed={dispoActive === d.id && possible}
+                    disabled={!possible || d.nombre > MAX_PHOTOS_JOUR}
+                    title={possible ? d.note : `${d.nombre} photo${d.nombre > 1 ? 's' : ''}`}
+                    onClick={() => onDisposition(d.id)}>
+                    <span className="cr-obj-opt-vue" aria-hidden="true">
+                      <VignetteDisposition disposition={d} />
+                    </span>
+                    <span className="cr-obj-opt-nom">{d.nom}</span>
+                    <span className="cr-obj-opt-nb">{d.nombre}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Deux familles dans le modele : soit chaque image porte sa
@@ -259,7 +257,11 @@ function PlanchePhotos({ photos, disposition, jour, parImage, legende,
     )
   }
 
-  const cases = casesDe(disposition).slice(0, photos.length)
+  const toutes = casesDe(disposition)
+  const cases = toutes.slice(0, photos.length)
+  // La disposition courante epouse le nombre de photos : la case
+  // d'ajout n'y figure pas, on la pose en fin de grille.
+  const libre = photos.length < MAX_PHOTOS_JOUR
 
   return (
     <div className="cr-planche-cadre"
@@ -302,6 +304,15 @@ function PlanchePhotos({ photos, disposition, jour, parImage, legende,
           </div>
         )
       })}
+      {libre && (
+        <button type="button" className="cr-case cr-case--libre"
+          onClick={() => document.getElementById(champ)?.click()}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => { e.preventDefault(); onAjouter?.(e.dataTransfer.files) }}
+          aria-label="Ajouter une photo">
+          <span aria-hidden="true">+</span>
+        </button>
+      )}
       </div>
       {/* Une seule legende pour le cadre : elle se pose sous les images,
           la ou elle figurera sur la diapositive. */}

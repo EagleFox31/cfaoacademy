@@ -12,7 +12,7 @@
  */
 
 import { useState } from 'react'
-import { casesDe, dispositionsPour, grilleDe, MAX_PHOTOS }
+import { DISPOSITIONS, casesDe, dispositionsPour, grilleDe, MAX_PHOTOS }
   from '../../data/dispositions_photos'
 
 export default function EditeurBilan({
@@ -65,33 +65,10 @@ export default function EditeurBilan({
         onOuvrir={() => setVolet('images')}>
         <div className="cr-obj-saisie cr-obj-saisie--images">
           <div className="cr-obj-cote cr-obj-cote--gauche">
-            <span className="cr-field-label">Disposition</span>
-            {choix.length > 1 ? (
-              <div className="cr-obj-choix cr-obj-choix--colonne">
-                {choix.map(d => (
-                  <button key={d.id} type="button"
-                    className={`cr-obj-opt${dispoActive === d.id ? ' cr-obj-opt--on' : ''}`}
-                    aria-pressed={dispoActive === d.id} title={d.note}
-                    onClick={() => onDisposition(d.id)}>
-                    <span className="cr-obj-opt-vue" aria-hidden="true">
-                      <VignetteDisposition disposition={d} />
-                    </span>
-                    <span className="cr-obj-opt-nom">{d.nom}</span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="cr-obj-aide">
-                {cliches.length
-                  ? 'Une seule mise en page pour ce nombre de photos.'
-                  : 'Ajoutez des photos pour choisir une mise en page.'}
-              </p>
-            )}
-
-            <button type="button" className="cr-obj-ajout"
+            <button type="button" className="cr-obj-ajout cr-obj-ajout--haut"
               disabled={cliches.length >= MAX_PHOTOS}
               onClick={() => document.getElementById('cr-bilan-fichier')?.click()}>
-              + Ajouter
+              + Ajouter une photo
               <span className="cr-obj-ajout-compte">
                 {cliches.length}/{MAX_PHOTOS}
               </span>
@@ -99,6 +76,27 @@ export default function EditeurBilan({
             <input id="cr-bilan-fichier" type="file"
               accept="image/*" multiple hidden
               onChange={e => { onAjouter?.(e.target.files); e.target.value = '' }} />
+
+            <span className="cr-field-label">Disposition</span>
+            <div className="cr-obj-choix cr-obj-choix--colonne">
+              {DISPOSITIONS.map(d => {
+                const possible = d.nombre === cliches.length
+                return (
+                  <button key={d.id} type="button"
+                    className={`cr-obj-opt${dispoActive === d.id && possible ? ' cr-obj-opt--on' : ''}`}
+                    aria-pressed={dispoActive === d.id && possible}
+                    disabled={!possible || d.nombre > MAX_PHOTOS}
+                    title={possible ? d.note : `${d.nombre} photo${d.nombre > 1 ? 's' : ''}`}
+                    onClick={() => onDisposition(d.id)}>
+                    <span className="cr-obj-opt-vue" aria-hidden="true">
+                      <VignetteDisposition disposition={d} />
+                    </span>
+                    <span className="cr-obj-opt-nom">{d.nom}</span>
+                    <span className="cr-obj-opt-nb">{d.nombre}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           <PlanchePhotos photos={cliches} disposition={dispo}
@@ -165,7 +163,11 @@ function PlanchePhotos({ photos, disposition, parImage, legende,
     )
   }
 
-  const cases = casesDe(disposition).slice(0, photos.length)
+  const toutes = casesDe(disposition)
+  const cases = toutes.slice(0, photos.length)
+  // La disposition courante epouse le nombre de photos : la case
+  // d'ajout n'y figure pas, on la pose en fin de grille.
+  const libre = photos.length < MAX_PHOTOS
 
   return (
     <div className="cr-planche-cadre"
@@ -208,6 +210,15 @@ function PlanchePhotos({ photos, disposition, parImage, legende,
             </div>
           )
         })}
+        {libre && (
+          <button type="button" className="cr-case cr-case--libre"
+            onClick={() => document.getElementById('cr-bilan-fichier')?.click()}
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); onAjouter?.(e.dataTransfer.files) }}
+            aria-label="Ajouter une photo">
+            <span aria-hidden="true">+</span>
+          </button>
+        )}
       </div>
       {!parImage && (
         <input className="cr-case-legende cr-planche-legende"

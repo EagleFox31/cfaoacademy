@@ -1920,12 +1920,7 @@
 }
 /* Les sections imbriquees heritent du zebre du portail : on le
    neutralise, ces blocs ne sont pas des sections de page. */
-.cr-part-bloc {
-  background: var(--surface-1, #fff);
-  padding: 12px 14px;
-  border: 1px solid var(--line, rgba(16, 20, 48, 0.12));
-  border-radius: 10px;
-}
+.cr-part-bloc { background: none; padding: 0; }
 .cr-part-bloc { display: flex; flex-direction: column; gap: 10px; }
 .cr-part-bloc--stagiaires {
   flex: 1;
@@ -1938,8 +1933,9 @@
 .cr-part-tete {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
+  margin-bottom: 10px;
 }
 .cr-part-ajout {
   padding: 5px 11px;
@@ -2564,3 +2560,31 @@
 .cr-fiche-tableaux .cr-res-tableau th,
 .cr-fiche-tableaux .cr-res-tableau td { padding: 4px 8px; }
 .cr-fiche-tableaux .cr-res-tableau caption { padding: 5px 8px; font-size: 0.64rem; }
+
+/* Le bouton d'ajout ouvre la colonne : sous huit dispositions, il
+   sortait de l'ecran des qu'on avait deja des photos. */
+.cr-obj-ajout--haut {
+  width: 100%;
+  margin-bottom: 10px;
+  justify-content: center;
+}
+
+/* Une case libre reste offerte tant que la disposition n'est pas au
+   complet : on ajoute depuis la planche, la ou l'on regarde. */
+.cr-case--libre {
+  display: grid;
+  place-items: center;
+  border: 1.5px dashed var(--line, rgba(16, 20, 48, 0.28));
+  border-radius: 6px;
+  background: var(--surface-1, #fff);
+  color: var(--ink-3, #9ca3af);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.cr-case--libre:hover {
+  border-color: var(--accent, #e2001a);
+  color: var(--accent, #e2001a);
+  background: var(--accent-faible, rgba(226, 0, 26, 0.05));
+}
