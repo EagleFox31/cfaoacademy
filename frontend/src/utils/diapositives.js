@@ -43,6 +43,14 @@ export function diapoObjectifs(brouillon) {
   return DIAPO_OBJECTIFS[b.marquageObjectifs] ?? DIAPO_OBJECTIFS.puces
 }
 
+/**
+ * Les pages jour alternent, comme dans le modele : texte a gauche et
+ * photos a droite les jours impairs (11), l'inverse les jours pairs (13).
+ */
+const DIAPOS_JOUR = [DIAPO_PAR_PAGE.deroule, 13]
+export const diapoJour = n => DIAPOS_JOUR[(Math.max(n, 1) - 1) % DIAPOS_JOUR.length]
+const numeroJour = cle => Number(/^jour-(\d+)$/.exec(cle || '')?.[1]) || null
+
 /** Le numero de diapositive d'une page, ou null si elle n'en a pas.
  *
  *  Deux familles de pages se repetent et portent donc une cle indexee :
@@ -55,7 +63,7 @@ export function diapoDe(page, brouillon) {
   if (!page) return null
   const cle = page.cle || ''
   if (cle === 'objectifs') return diapoObjectifs(brouillon)
-  if (cle.startsWith('jour-')) return DIAPO_PAR_PAGE.deroule
+  if (cle.startsWith('jour-')) return diapoJour(numeroJour(cle))
   if (cle.startsWith('fiche-')) return DIAPO_PAR_PAGE.fiches
   return DIAPO_PAR_PAGE[cle] ?? null
 }
@@ -92,13 +100,34 @@ export const VIDE = '∅'
  * service lui a donne a la reception. Une photo pas encore recue est
  * laissee de cote : l'apercu se refera quand elle le sera.
  */
-function photosDesDiapos(b, refsPhotos) {
-  const liste = b.photos?.objectifs || []
-  if (!liste.length || diapoObjectifs(b) !== DIAPO_OBJECTIFS_IMAGES) return {}
-  const d = DISPOSITIONS.find(x => x.id === b.dispositions?.objectifs
-    && x.nombre === liste.length) || dispositionsPour(liste.length)[0]
+function photosDesDiapos(b, refsPhotos, page) {
+  const poses = {}
+  if (diapoObjectifs(b) === DIAPO_OBJECTIFS_IMAGES) {
+    const objectifs = photosPosees(b, 'objectifs', refsPhotos)
+    if (objectifs.length) poses[DIAPO_OBJECTIFS_IMAGES] = objectifs
+  }
+  const jour = numeroJour(page?.cle)
+  if (jour) {
+    const photos = photosPosees(b, page.cle, refsPhotos)
+    if (photos.length) poses[diapoJour(jour)] = photos
+  }
+  return poses
+}
+
+/** La disposition retenue pour une rubrique, ou la premiere possible. */
+function dispositionDe(b, rubrique) {
+  const n = (b.photos?.[rubrique] || []).length
+  return DISPOSITIONS.find(x => x.id === b.dispositions?.[rubrique] && x.nombre === n)
+    || dispositionsPour(n)[0]
+}
+
+/** Les photos d'une rubrique, placees selon sa disposition. */
+function photosPosees(b, rubrique, refsPhotos) {
+  const liste = b.photos?.[rubrique] || []
+  if (!liste.length) return []
+  const d = dispositionDe(b, rubrique)
   const cases = rectanglesDe(d)
-  const posees = liste
+  return liste
     .map((p, i) => ({
       id: refsPhotos?.[p.id],
       ...cases[i],
@@ -108,7 +137,32 @@ function photosDesDiapos(b, refsPhotos) {
       ...(d.legendes ? { legende: p.legende || '' } : {}),
     }))
     .filter(p => p.id && p.l != null)
-  return posees.length ? { [DIAPO_OBJECTIFS_IMAGES]: posees } : {}
+}
+
+/**
+ * Les drapeaux d'une page jour : son numero, ses trois rubriques en
+ * listes, que le service repete une puce par ligne, et la legende
+ * commune.
+ *
+ * La legende commune est facultative : vide, elle s'efface plutot que
+ * de laisser son drapeau. Une disposition legendee photo par photo
+ * l'efface aussi, le service donnant sa place au cadre.
+ */
+function drapeauxDeJour(b, page) {
+  const n = numeroJour(page?.cle)
+  if (!n) return {}
+  const j = b.jours?.[n] || {}
+  const lignes = cle => (j[cle] || []).map(l => String(l).trim()).filter(Boolean)
+  const parImage = !!dispositionDe(b, page.cle)?.legendes
+    && (b.photos?.[page.cle] || []).length > 0
+  const commune = parImage ? '' : String(b.legendes?.[page.cle] || '').trim()
+  return {
+    '{jour_numero}': String(n),
+    '{jour_thematique}': lignes('thematiques'),
+    '{jour_fort}': lignes('forts'),
+    '{jour_amelioration}': lignes('ameliorations'),
+    '{jour_legende}': commune || VIDE,
+  }
 }
 
 /** Les formateurs saisis, ou a defaut celui de la session. */
@@ -223,7 +277,7 @@ export function valeursDrapeaux(brouillon, session, synthese, page, refsPhotos) 
 
     // Les photos ne sont pas des drapeaux : le service les pose dans les
     // emplacements de la diapositive, selon la disposition retenue.
-    '@photos': { ...photosDesDiapos(b, refsPhotos), ...photosParticipants(b, refsPhotos) },
+    '@photos': { ...photosDesDiapos(b, refsPhotos, page), ...photosParticipants(b, refsPhotos) },
 
     // La page des participants : le formateur, puis une ligne de tableau
     // par stagiaire present, que le service repete.
@@ -233,6 +287,7 @@ export function valeursDrapeaux(brouillon, session, synthese, page, refsPhotos) 
     // La page courante, quand c'est une fiche, surcharge les drapeaux
     // communs : le modele repete la meme diapositive par stagiaire.
     ...drapeauxDeFiche(brouillon, page),
+    ...drapeauxDeJour(b, page),
   }
 }
 

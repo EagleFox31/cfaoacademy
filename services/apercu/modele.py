@@ -32,8 +32,10 @@ VARIANTES = {
 }
 
 # Les parties dont le nombre de pages depend des donnees saisies.
+# Le deroule alterne deux pages jour : texte a gauche (11) les jours
+# impairs, photos a gauche (13) les jours pairs.
 GABARITS = {
-    'deroule': {'fixe': [10], 'repete': 11},
+    'deroule': {'fixe': [10], 'repete': (11, 13)},
     'fiches': {'fixe': [25], 'repete': 27},
 }
 
@@ -56,7 +58,8 @@ def diapos_pour(parties_retenues, nb_jours=0, nb_participants=0,
             continue
         if partie == 'deroule' and nb_jours:
             numeros += GABARITS['deroule']['fixe']
-            numeros += [GABARITS['deroule']['repete']] * nb_jours
+            alterne = GABARITS['deroule']['repete']
+            numeros += [alterne[j % len(alterne)] for j in range(nb_jours)]
         elif partie == 'fiches' and nb_participants:
             numeros += GABARITS['fiches']['fixe']
             numeros += [GABARITS['fiches']['repete']] * nb_participants

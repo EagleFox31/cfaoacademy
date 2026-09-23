@@ -196,7 +196,16 @@ certification demanderait en plus : niveau, modules requis/validés,
   diapositive. Page 4 (participants) synchronisée : formateur, une
   ligne par stagiaire (resserrée au-delà de 11), portrait et photo de
   groupe (`outils/drapeaux_participants.py`). Plusieurs formateurs :
-  le bloc se répète côte à côte (`blocs.py`). Restent les photos des journées (diapositive 11). Le service
+  le bloc se répète côte à côte (`blocs.py`). Pages jour synchronisées
+  (`outils/drapeaux_journees.py`) : alternance comme le modèle, jour
+  impair = 11 (texte à gauche), jour pair = 13 (photos à gauche) ;
+  rubriques en listes `{jour_thematique|fort|amelioration}`, un cadre
+  « Emplacement photo » + « Legende ensemble » `{jour_legende}` (absorbée
+  par le cadre si légendes par photo). Le service
+  Flask ne recharge pas son code : le relancer après modification.
+- `/apercu/document` compose le rapport avec un seul jeu de valeurs :
+  les pages répétées (jours, fiches) y reçoivent toutes les mêmes. Non
+  appelé par l'interface pour l'instant.
   Flask ne recharge pas son code : le relancer après modification.
 - `/portail/compte-rendu/mes-rapports` est référencé mais pas implémenté.
 - Stash `participants-css-abandonne` toujours présent.
