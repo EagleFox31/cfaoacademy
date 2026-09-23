@@ -55,7 +55,9 @@ export function brouillonsEnregistres() {
   return Object.entries(tout)
     .map(([id, b]) => ({
       id,
-      session: b.intitule || b.sessionId || null,
+      // L'id d'une saisie manuelle (`manuel-<horodatage>`) n'est pas un
+      // titre presentable : mieux vaut dire que rien n'est encore saisi.
+      session: b.intitule || (b.sessionId?.startsWith('manuel-') ? null : b.sessionId),
       modifieLe: b.modifieLe,
       phase: b.phase ?? 0,
     }))

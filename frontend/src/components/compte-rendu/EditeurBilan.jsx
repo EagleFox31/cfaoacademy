@@ -194,9 +194,6 @@ function PlanchePhotos({ photos, disposition, parImage, legende,
 
   const toutes = casesDe(disposition)
   const cases = toutes.slice(0, photos.length)
-  // La disposition courante epouse le nombre de photos : la case
-  // d'ajout n'y figure pas, on la pose en fin de grille.
-  const libre = photos.length < MAX_PHOTOS
 
   return (
     <div className="cr-planche-cadre"
@@ -251,15 +248,6 @@ function PlanchePhotos({ photos, disposition, parImage, legende,
             </div>
           )
         })}
-        {libre && (
-          <button type="button" className="cr-case cr-case--libre"
-            onClick={() => document.getElementById('cr-bilan-fichier')?.click()}
-            onDragOver={e => e.preventDefault()}
-            onDrop={e => { e.preventDefault(); onAjouter?.(e.dataTransfer.files) }}
-            aria-label="Ajouter une photo">
-            <span aria-hidden="true">+</span>
-          </button>
-        )}
       </div>
       {!parImage && (
         <input className="cr-case-legende cr-planche-legende"
