@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { MAX_PHOTOS, casesDe, dispositionsPour, grilleDe }
+import { DISPOSITIONS, MAX_PHOTOS, casesDe, dispositionsPour, grilleDe }
   from '../../data/dispositions_photos'
 
 /**
@@ -41,7 +41,7 @@ const PLACEHOLDER = [
 
 /** Le texte de la zone de saisie, une ligne par objectif. */
 function texteDesObjectifs(lignes) {
-  return (lignes || []).map(o => o.texte || '').join('\n').replace(/\n+$/, '')
+  return (lignes || []).map(o => o.texte || '').join('\n')
 }
 
 /** Les objectifs decoupes depuis la zone de saisie.
@@ -160,27 +160,25 @@ export default function EditeurObjectifs({
               qu'elle produit sur ses propres photos. */}
           <div className="cr-obj-cote cr-obj-cote--gauche">
             <span className="cr-field-label">Disposition</span>
-            {choix.length > 1 ? (
-              <div className="cr-obj-choix cr-obj-choix--colonne">
-                {choix.map(d => (
+            <div className="cr-obj-choix cr-obj-choix--colonne">
+              {DISPOSITIONS.map(d => {
+                const possible = d.nombre === cliches.length
+                return (
                   <button key={d.id} type="button"
-                    className={`cr-obj-opt${dispoActive === d.id ? ' cr-obj-opt--on' : ''}`}
-                    aria-pressed={dispoActive === d.id} title={d.note}
+                    className={`cr-obj-opt${dispoActive === d.id && possible ? ' cr-obj-opt--on' : ''}`}
+                    aria-pressed={dispoActive === d.id && possible}
+                    disabled={!possible}
+                    title={possible ? d.note : `${d.nombre} photo${d.nombre > 1 ? 's' : ''}`}
                     onClick={() => onDisposition(d.id)}>
                     <span className="cr-obj-opt-vue" aria-hidden="true">
                       <VignetteDisposition disposition={d} />
                     </span>
                     <span className="cr-obj-opt-nom">{d.nom}</span>
+                    <span className="cr-obj-opt-nb">{d.nombre}</span>
                   </button>
-                ))}
-              </div>
-            ) : (
-              <p className="cr-obj-aide">
-                {avecImages
-                  ? 'Une seule mise en page pour ce nombre de photos.'
-                  : 'Ajoutez des photos pour choisir une mise en page.'}
-              </p>
-            )}
+                )
+              })}
+            </div>
 
             <button type="button" className="cr-obj-ajout"
               disabled={cliches.length >= MAX_PHOTOS}

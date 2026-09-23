@@ -1920,7 +1920,12 @@
 }
 /* Les sections imbriquees heritent du zebre du portail : on le
    neutralise, ces blocs ne sont pas des sections de page. */
-.cr-part-bloc { background: none; padding: 0; }
+.cr-part-bloc {
+  background: var(--surface-1, #fff);
+  padding: 12px 14px;
+  border: 1px solid var(--line, rgba(16, 20, 48, 0.12));
+  border-radius: 10px;
+}
 .cr-part-bloc { display: flex; flex-direction: column; gap: 10px; }
 .cr-part-bloc--stagiaires {
   flex: 1;
@@ -2429,3 +2434,36 @@
   padding: 10px 12px;
 }
 .cr-obj-champ .cr-obj-texte:focus { outline: none; box-shadow: none; }
+
+/* Une disposition hors de portee reste visible mais eteinte : on voit
+   le repertoire entier sans pouvoir s'y tromper. */
+.cr-obj-opt:disabled {
+  opacity: 0.4;
+  cursor: default;
+  filter: grayscale(1);
+}
+.cr-obj-opt:disabled:hover { border-color: var(--line, rgba(16, 20, 48, 0.18)); }
+.cr-obj-opt-nb {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink-3, #9ca3af);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ce que l'utilisateur n'a pas rempli s'affiche en retrait : un texte
+   d'invite ne doit pas se lire comme une saisie. */
+.cr-textarea::placeholder,
+.cr-input::placeholder {
+  color: var(--ink-4, #b6bac6);
+}
+.cr-res-tableau td:empty::after { content: "—"; color: var(--ink-4, #b6bac6); }
+
+/* Le bouton de proposition se tient a droite du libelle, discret :
+   c'est une aide, pas l'action principale. */
+.cr-redac {
+  margin-left: auto;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+}
