@@ -193,7 +193,8 @@ export default function TrainerHome() {
                     meta={`${brouillons[0].session || 'Compte rendu'} — saisie interrompue.`}
                     cta="Reprendre"
                     hoverHint="Reprendre là où vous vous êtes arrêté"
-                    onClick={() => naviguer('/portail/compte-rendu/nouveau')}
+                    onClick={() => naviguer(
+                      `/portail/compte-rendu/nouveau?session=${brouillons[0].id}`)}
                     corner
                   />
                 </div>

@@ -143,9 +143,18 @@ les aperçus, avant d'intégrer des images qui feront grossir le fichier.
 
 Trois points à trancher, dans cet ordre suggéré :
 
-1. **Le brouillon ne survit pas à un rechargement** — il vit en mémoire.
-   C'est le premier sujet : il conditionne le choix de stockage, donc la
-   manière dont les images seront conservées.
+1. ~~Le brouillon ne survit pas à un rechargement~~ **Réglé** :
+   `utils/brouillonsCompteRendu.js` stocke déjà chaque brouillon dans
+   `localStorage`, sous sa clé `sessionId` (ou `manuel-<horodatage>`
+   pour une saisie manuelle). Le bug signalé — « notes enregistrées,
+   introuvables au retour » — venait du bouton **« Reprendre une
+   saisie »** de `TrainerHome.jsx` : il ouvrait
+   `/portail/compte-rendu/nouveau` sans `?session=<id>`, et
+   `TrainerReportNew.jsx` ne relit `recuperer()` que si ce paramètre
+   est présent — il retombait donc sur un brouillon vide. Corrigé en
+   passant `brouillons[0].id`. Une saisie manuelle n'avait par ailleurs
+   pas d'id propre (toutes partageaient la clé `'manuel'` et
+   s'écrasaient) : elle reçoit désormais `manuel-${Date.now()}`.
 2. **Les chiffres individuels ne sortent pas dans le PPTX.** La
    diapositive 27 loge ses tableaux dans des **classeurs Excel
    embarqués** (`ppt/embeddings/Microsoft_Excel_Worksheet5..7.xlsx`), que
