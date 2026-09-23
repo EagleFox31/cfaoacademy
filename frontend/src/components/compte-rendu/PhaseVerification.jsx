@@ -218,8 +218,7 @@ export default function PhaseVerification({
             page={page}
             textes={brouillon.textes || {}}
             onTexte={majTexte}
-            objectifs={brouillon.objectifs
-              || objectifsInitiaux(brouillon, page)}
+            objectifs={brouillon.objectifs ?? objectifsInitiaux(brouillon, page)}
             marquage={brouillon.marquageObjectifs}
             onObjectifs={v => maj({ objectifs: v })}
             onMarquage={v => maj({ marquageObjectifs: v })}
@@ -782,10 +781,7 @@ function composerPages(b, session, s) {
       blocs: [{
         cle: 'objectifs',
         titre: 'À l’issue de la formation',
-        texte: b.textes?.objectifs
-          || 'Les participants maîtrisent les gestes et procédures '
-            + 'couverts par le module, dans le respect des standards '
-            + 'du constructeur.',
+        texte: b.textes?.objectifs || '',
       }],
     })
   }
