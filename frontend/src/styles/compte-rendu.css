@@ -935,9 +935,45 @@
   padding-top: 16px;
 }
 
-/* Écrans courts : la contrainte rendrait le panneau illisible. On la
-   relâche et la page reprend son défilement normal. */
-@media (max-height: 640px) {
+/* L'en-tête (retour, titre, phases) et la barre d'actions sont fixes :
+   ce qu'ils prennent en hauteur, l'aperçu le perd. Sur un portable à
+   100 % (≈ 650 à 730 px utiles), ils mangeaient plus de la moitié de
+   l'écran et l'aperçu tombait à 450 px de large — il fallait dézoomer.
+   Leurs marges et le titre suivent donc la hauteur de l'écran, sans
+   réglage de la part du formateur. */
+.cr-entete-assistant {
+  padding: clamp(8px, 2vh, 16px) 32px clamp(8px, 1.6vh, 12px);
+}
+.cr-assistant .cr-home-title--sm {
+  font-size: clamp(20px, min(2.2vw, 3.6vh), 30px);
+  margin-bottom: clamp(8px, 2vh, 18px);
+}
+.cr-assistant .cr-retour { padding-bottom: clamp(4px, 1.4vh, 12px); }
+
+/* Écran court : le retour passe à gauche du titre, les phases perdent
+   leur sous-titre, la barre d'actions se resserre. */
+@media (max-height: 820px) {
+  .cr-entete-assistant {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    column-gap: 18px;
+  }
+  .cr-entete-assistant .cr-phases { grid-column: 1 / -1; }
+  .cr-entete-assistant .cr-home-title--sm {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cr-assistant .cr-phase { padding: 6px 16px 6px 8px; gap: 10px; }
+  .cr-assistant .cr-phase-num { width: 24px; height: 24px; }
+  .cr-assistant .cr-phase-resume { display: none; }
+  .cr-assistant .cr-actions { margin-top: 8px; padding-top: 8px; }
+}
+
+/* Écrans très courts : la contrainte rendrait le panneau illisible. On
+   la relâche et la page reprend son défilement normal. */
+@media (max-height: 540px) {
   .cr-assistant {
     height: auto;
     overflow: visible;

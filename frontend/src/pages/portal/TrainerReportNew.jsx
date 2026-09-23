@@ -161,7 +161,7 @@ export default function TrainerReportNew() {
       <Nav />
       <main className="portal-page cr-assistant">
         <header className="cr-home-header cr-home-header--slim" ref={haut}>
-          <div className="container" style={{ padding: '16px 32px 12px' }}>
+          <div className="container cr-entete-assistant">
             <button type="button" className="cr-retour"
               onClick={() => naviguer('/portail/formateur')}>
               ← Mes comptes rendus
