@@ -30,6 +30,7 @@ from pathlib import Path
 
 from composer import composer
 import blocs
+import classeurs
 import photos
 from modele import diapos_pour
 
@@ -252,8 +253,12 @@ def substituer(xml, valeurs):
     return re.sub(r'<a:t>(.*?)</a:t>', sur_run, xml, flags=re.S)
 
 
-def remplir(source, cible, valeurs):
-    """Ecrit une copie du PPTX dont les drapeaux portent les valeurs."""
+def remplir(source, cible, valeurs, diapos=None):
+    """Ecrit une copie du PPTX dont les drapeaux portent les valeurs.
+
+    `diapos` limite aux diapositives produites la mise a jour des
+    classeurs embarques : chacun coute un passage par LibreOffice.
+    """
     with zipfile.ZipFile(source) as z:
         infos = {i.filename: i for i in z.infolist()}
         contenus = {n: z.read(n) for n in infos}
@@ -278,6 +283,13 @@ def remplir(source, cible, valeurs):
             photos.poser_nommes(contenus, slide, contenu, CACHE)
         else:
             photos.poser(contenus, slide, contenu, CACHE)
+
+    # Les tableaux et graphiques des resultats : classeurs embarques,
+    # remplis puis redessines (voir `classeurs.py`).
+    if diapos:
+        classeurs.rafraichir(
+            contenus, [f'ppt/slides/slide{int(n)}.xml' for n in sorted(set(diapos))],
+            valeurs.get('@classeurs') or {}, SOFFICE, PROFIL, CACHE)
 
     with zipfile.ZipFile(cible, 'w', zipfile.ZIP_DEFLATED) as out:
         for nom, donnees in contenus.items():
@@ -318,7 +330,7 @@ def image_de(diapo, valeurs):
     travail = Path(tempfile.mkdtemp(prefix='cr-apercu-'))
     try:
         rempli = travail / 'rempli.pptx'
-        remplir(MODELE, rempli, valeurs)
+        remplir(MODELE, rempli, valeurs, [diapo])
         seule = travail / 'seule.pptx'
         composer(str(rempli), str(seule), [diapo])
         png = convertir(seule, travail, 'png')
@@ -335,7 +347,7 @@ def document(parties, valeurs, nb_jours=0, nb_participants=0, format_='pptx',
     travail = Path(tempfile.mkdtemp(prefix='cr-doc-'))
     try:
         rempli = travail / 'rempli.pptx'
-        remplir(MODELE, rempli, valeurs)
+        remplir(MODELE, rempli, valeurs, numeros)
         sortie = travail / 'rapport.pptx'
         composer(str(rempli), str(sortie), numeros)
         if format_ == 'pptx':

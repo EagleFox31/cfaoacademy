@@ -13,6 +13,7 @@
 
 import { useState } from 'react'
 import ImageCadree, { BoutonRecadrer } from './ImageCadree'
+import BoutonsRedaction from './BoutonsRedaction'
 import { casesDe, dispositionsClassees, dispositionsPour, grilleDe, MAX_PHOTOS }
   from '../../data/dispositions_photos'
 
@@ -20,6 +21,7 @@ export default function EditeurBilan({
   blocs, textes, photos, disposition, legende,
   onTexte, onLegende,
   onAjouter, onRetirer, onReordonner, onDisposition, onLegender, onCadrer,
+  redaction,
 }) {
   const cliches = photos || []
   const [volet, setVolet] = useState('bilan')
@@ -40,20 +42,45 @@ export default function EditeurBilan({
         ton={remplies ? 'ok' : null}
         ouvert={volet === 'bilan'}
         onOuvrir={() => setVolet('bilan')}>
-        <div className="cr-jour-rubriques cr-jour-rubriques--bilan">
-          {(blocs || []).map(b => (
-            <label key={b.cle} className="cr-jour-rubrique">
-              <span className="cr-field-label">{b.titre}</span>
-              <textarea className="cr-textarea cr-jour-texte"
-                value={valeur(b)}
-                placeholder={b.texte || 'Quelques lignes'}
-                onChange={e => onTexte(`bilan.${b.cle}`, e.target.value)} />
-            </label>
-          ))}
+        {/* Le moteur redige les quatre rubriques d'un coup, ou une seule :
+            chaque rubrique garde son propre tirage. */}
+        <div className="cr-redac-bilan">
+          <span className="cr-obj-aide">
+            Pré-rempli depuis les notes et les journées — à reprendre librement.
+          </span>
+          <BoutonsRedaction
+            aTexte={remplies > 0}
+            enCours={redaction?.redigeant === 'bilan'}
+            onRediger={() => redaction?.bilan(null)} />
         </div>
-        <span className="cr-obj-aide">
-          Pré-rempli depuis les notes — à reprendre librement.
-        </span>
+        <div className="cr-jour-rubriques cr-jour-rubriques--bilan">
+          {(blocs || []).map(b => {
+            const cle = `bilan.${b.cle}`
+            return (
+              <div key={b.cle} className="cr-jour-rubrique">
+                <div className="cr-redac-entete">
+                  <label className="cr-field-label" htmlFor={`cr-bilan-${b.cle}`}>{b.titre}</label>
+                  <BoutonsRedaction
+                    aTexte={!!valeur(b).trim()}
+                    enCours={redaction?.redigeant === 'bilan'
+                      || redaction?.redigeant === cle}
+                    onRediger={() => redaction?.bilan(b.cle)}
+                    peutAnnuler={cle in (redaction?.avant || {})}
+                    onAnnuler={() => redaction?.annuler(cle)} />
+                </div>
+                <textarea id={`cr-bilan-${b.cle}`} className="cr-textarea cr-jour-texte"
+                  value={valeur(b)}
+                  placeholder={b.texte || 'Quelques lignes'}
+                  onChange={e => onTexte(cle, e.target.value)} />
+              </div>
+            )
+          })}
+        </div>
+        {redaction?.panne && (
+          <p className="cr-redac-panne">
+            Le service de rédaction ne répond pas : écrivez le bilan, ou réessayez.
+          </p>
+        )}
       </Bloc>
 
       <Bloc titre="Intégrer les images"

@@ -2617,6 +2617,51 @@
   font-size: 0.72rem;
 }
 
+/* L'entete d'un champ redigeable : le libelle a gauche, les commandes
+   de redaction a droite — meme ligne que le libelle seul aurait prise. */
+.cr-redac-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cr-redac-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.cr-redac svg { flex-shrink: 0; }
+.cr-redac-annuler {
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-3, #6b7280);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.cr-redac-annuler:hover { color: var(--accent, #e2001a); }
+
+/* Le bandeau au-dessus des quatre rubriques du bilan : l'aide de saisie
+   a gauche, la redaction groupee a droite. */
+.cr-redac-bilan {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.cr-redac-bilan .cr-obj-aide { margin: 0; }
+
+.cr-redac-panne {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: var(--ink-3, #6b7280);
+}
+
 /* ---- Le sommaire en ligne de vie ---- */
 
 /* Les pages se rangent sous le jalon de leur partie, relies par un

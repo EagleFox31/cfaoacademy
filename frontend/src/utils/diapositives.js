@@ -1,5 +1,6 @@
 import { periodeLongue, titreDeCouverture } from './compteRendu'
 import { DISPOSITIONS, dispositionsPour, rectanglesDe } from '../data/dispositions_photos'
+import { constatsParDefaut, rubriquesBilan, valeursClasseurs } from './remarquesSession'
 
 /**
  * Le lien entre les pages de l'assistant et les diapositives du modele.
@@ -106,6 +107,8 @@ function photosDesDiapos(b, refsPhotos, page) {
     const objectifs = photosPosees(b, 'objectifs', refsPhotos)
     if (objectifs.length) poses[DIAPO_OBJECTIFS_IMAGES] = objectifs
   }
+  const bilan = photosPosees(b, 'bilan', refsPhotos)
+  if (bilan.length) poses[DIAPO_PAR_PAGE.bilan] = bilan
   const jour = numeroJour(page?.cle)
   if (jour) {
     const photos = photosPosees(b, page.cle, refsPhotos)
@@ -255,10 +258,7 @@ export function valeursDrapeaux(brouillon, session, synthese, page, refsPhotos) 
     '{taux_progression}': synthese?.progression != null
       ? String(synthese.progression) : '',
     '{taux_acquis}': synthese?.acquis != null ? String(synthese.acquis) : '',
-    '{bilan_contexte}': t.contexte || '',
-    '{bilan_resultats}': t.resultats || '',
-    '{bilan_vigilance}': t.vigilance || '',
-    '{bilan_suites}': t.suites || '',
+    ...drapeauxBilan(b),
     '{objectifs}': t.objectifs || '',
 
     // Les pages des objectifs (6 a 9) : la session en tete du tableau,
@@ -271,8 +271,20 @@ export function valeursDrapeaux(brouillon, session, synthese, page, refsPhotos) 
     // Les deux constats de la diapositive 17 : le modele y pose des
     // phrases completes, pas des drapeaux. Le service substitue le run
     // entier quand son texte correspond a la phrase du gabarit.
-    [PHRASE_PROGRESSION]: t['resultats.commentaireProgression'] || '',
-    [PHRASE_ACQUISITION]: t['resultats.commentaireAcquisition'] || '',
+    // Sans remarque saisie, la phrase du modele porte les chiffres.
+    [PHRASE_PROGRESSION]: t['resultats.commentaireProgression']
+      || constatsParDefaut(b).commentaireProgression,
+    [PHRASE_ACQUISITION]: t['resultats.commentaireAcquisition']
+      || constatsParDefaut(b).commentaireAcquisition,
+
+    // Le pied de page des pages de resultats et du bilan.
+    '{intitulé_formation}': couv('intitule', b.intitule || ''),
+    '{date_début}': dateCourte(b.debut),
+    '{date_fin}': dateCourte(b.fin),
+
+    // Les tableaux et graphiques des diapositives 17 et 19 : des classeurs
+    // embarques, que le service remplit puis redessine.
+    '@classeurs': valeursClasseurs(b),
     '{appréciation_formateur}': t.appreciation || '',
 
     // Les photos ne sont pas des drapeaux : le service les pose dans les
@@ -289,6 +301,29 @@ export function valeursDrapeaux(brouillon, session, synthese, page, refsPhotos) 
     ...drapeauxDeFiche(brouillon, page),
     ...drapeauxDeJour(b, page),
   }
+}
+
+/** Une date du pied de page : « 07/09/2026 ». */
+function dateCourte(iso) {
+  if (!iso) return ''
+  const [a, m, j] = String(iso).split('-')
+  return j && m && a ? `${j}/${m}/${a}` : ''
+}
+
+/**
+ * Les quatre rubriques du bilan (diapositive 20).
+ *
+ * Ce que le formateur a ecrit prime ; a defaut, le pre-remplissage que
+ * l'editeur lui montre. Une rubrique videe a dessein disparait de la
+ * page au lieu de laisser son drapeau.
+ */
+function drapeauxBilan(b) {
+  const t = b.textes || {}
+  return Object.fromEntries(rubriquesBilan(b).map(r => {
+    const saisi = t[`bilan.${r.cle}`]
+    const valeur = saisi == null ? r.texte : saisi
+    return [`{bilan_${r.cle}}`, String(valeur || '').trim() || VIDE]
+  }))
 }
 
 /**

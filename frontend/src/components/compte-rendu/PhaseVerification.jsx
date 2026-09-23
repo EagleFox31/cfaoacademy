@@ -13,6 +13,9 @@ import EditeurBilan from './EditeurBilan'
 import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
 import { useRefsPhotos } from '../../utils/photosService'
 import { participantPourMoteur, proposerTexte } from '../../utils/redaction'
+import { chiffresSession, constatsParDefaut, donneesSession, redigerRemarque, rubriquesBilan }
+  from '../../utils/remarquesSession'
+import BoutonsRedaction from './BoutonsRedaction'
 
 /**
  * Phase 4 — l'edition du rapport.
@@ -101,6 +104,48 @@ export default function PhaseVerification({
 
   function majTexte(cle, valeur) {
     maj({ textes: { ...(brouillon.textes || {}), [cle]: valeur } })
+  }
+
+  // La redaction assistee des remarques de session. Chaque proposition
+  // garde le texte qu'elle remplace, pour que « Annuler » le rende.
+  const [redigeant, setRedigeant] = useState(null)
+  const [avant, setAvant] = useState({})
+  const [panne, setPanne] = useState(false)
+
+  async function rediger(type, cles, rubrique) {
+    setRedigeant(rubrique ? `bilan.${rubrique}` : type)
+    setPanne(false)
+    const sortie = await redigerRemarque(type, donneesSession(brouillon, session), rubrique)
+    setRedigeant(null)
+    if (!sortie) { setPanne(true); return }
+    const textes = brouillon.textes || {}
+    const nouveaux = type === 'bilan'
+      ? Object.fromEntries(cles.map(k => [k, sortie[k.slice('bilan.'.length)] ?? textes[k]]))
+      : { [cles[0]]: sortie }
+    const defauts = {
+      ...Object.fromEntries(rubriquesBilan(brouillon).map(r => [`bilan.${r.cle}`, r.texte])),
+    }
+    setAvant(a => ({
+      ...a,
+      ...Object.fromEntries(Object.keys(nouveaux).map(k => [k, textes[k] ?? defauts[k] ?? ''])),
+    }))
+    maj({ textes: { ...textes, ...nouveaux } })
+  }
+
+  const redaction = {
+    redigeant, panne, avant,
+    chiffres: chiffresSession(brouillon),
+    defauts: constatsParDefaut(brouillon),
+    constat: cle => rediger(
+      cle === 'commentaireProgression' ? 'progression' : 'acquisition', [`resultats.${cle}`]),
+    bilan: rubrique => rediger('bilan',
+      rubrique ? [`bilan.${rubrique}`]
+        : ['contexte', 'resultats', 'vigilance', 'suites'].map(r => `bilan.${r}`),
+      rubrique),
+    annuler: cle => {
+      majTexte(cle, avant[cle])
+      setAvant(a => { const suite = { ...a }; delete suite[cle]; return suite })
+    },
   }
 
   function ajouterPhotos(rubrique, fichiers) {
@@ -261,6 +306,7 @@ export default function PhaseVerification({
             photoGroupe={brouillon.photoGroupe}
             onFormateurs={v => maj({ formateurs: v })}
             onPhotoGroupe={v => maj({ photoGroupe: v })}
+            redaction={redaction}
             onProposer={async (pg, cle) => {
               const reponses = brouillon.satisfaction?.[pg.participant.id]
               const propre = satisfactionStagiaire(reponses || {})
@@ -426,7 +472,7 @@ function FormulairePage({
   onAjouter, onRetirer, onLegender, onCadrer, onDisposition,
   objectifs, marquage, onObjectifs, onMarquage, onReordonner,
   formateurs, stagiaires, photoGroupe, onFormateurs, onPhotoGroupe,
-  jours, onJournee, legendes, onLegende, onProposer,
+  jours, onJournee, legendes, onLegende, onProposer, redaction,
 }) {
   // Une page jour porte son numero : « jour-3 » edite la 3e journee.
   const numeroJour = /^jour-(\d+)$/.exec(page?.cle || '')?.[1]
@@ -573,7 +619,8 @@ function FormulairePage({
               onReordonner={onReordonner}
               onDisposition={onDisposition}
               onLegender={onLegender}
-              onCadrer={onCadrer} />
+              onCadrer={onCadrer}
+              redaction={redaction} />
           </div>
         )}
 
@@ -657,17 +704,38 @@ function FormulairePage({
             <TableauxResultats tableaux={page.tableaux} />
             <p className="cr-obj-aide">Taux calculés à l’étape 2.</p>
             <div className="cr-res-commentaires">
-              {COMMENTAIRES_RESULTATS.map(c => (
-                <label key={c.cle} className="cr-res-commentaire">
-                  <span className="cr-field-label">
-                    {c.titre} <span>facultatif</span>
-                  </span>
-                  <textarea className="cr-textarea cr-res-texte"
-                    value={valeur(c.cle, '')}
-                    placeholder={c.exemple}
-                    onChange={e => onTexte(`${page.cle}.${c.cle}`, e.target.value)} />
-                </label>
-              ))}
+              {COMMENTAIRES_RESULTATS.map(c => {
+                const cle = `${page.cle}.${c.cle}`
+                const ch = redaction?.chiffres
+                const possible = c.cle === 'commentaireProgression'
+                  ? ch?.progression != null
+                  : ch?.scoreFinal != null && ch?.saisis > 0
+                const type = c.cle === 'commentaireProgression' ? 'progression' : 'acquisition'
+                return (
+                  <div key={c.cle} className="cr-res-commentaire">
+                    <div className="cr-redac-entete">
+                      <label className="cr-field-label" htmlFor={`cr-${c.cle}`}>{c.titre}</label>
+                      <BoutonsRedaction
+                        aTexte={!!valeur(c.cle, '').trim()}
+                        enCours={redaction?.redigeant === type}
+                        desactive={!possible}
+                        raison="Renseignez les notes à l’étape 2"
+                        onRediger={() => redaction?.constat(c.cle)}
+                        peutAnnuler={cle in (redaction?.avant || {})}
+                        onAnnuler={() => redaction?.annuler(cle)} />
+                    </div>
+                    <textarea id={`cr-${c.cle}`} className="cr-textarea cr-res-texte"
+                      value={valeur(c.cle, '')}
+                      placeholder={redaction?.defauts?.[c.cle] || c.exemple}
+                      onChange={e => onTexte(cle, e.target.value)} />
+                  </div>
+                )
+              })}
+              {redaction?.panne && (
+                <p className="cr-redac-panne">
+                  Le service de rédaction ne répond pas : écrivez la remarque, ou réessayez.
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -1049,7 +1117,7 @@ function composerPages(b, session, s) {
       cle: 'bilan', titre: 'Bilan', type: 'texte',
       titrePage: 'BILAN DE LA FORMATION',
       rubrique: 'bilan',
-      blocs: rubriquesBilan(b, s, periode),
+      blocs: rubriquesBilan(b),
     })
   }
 
@@ -1127,37 +1195,6 @@ function composerPages(b, session, s) {
   }
 
   return pages
-}
-
-/** Les quatre rubriques du bilan, redigees depuis les chiffres. */
-function rubriquesBilan(b, s, periode) {
-  const lieu = b.pays ? ` au Centre CFAO ${b.pays}` : ''
-  const contexte = s.effectif
-    ? `La formation ${b.intitule || ''} s'est tenue ${periode}${lieu}, `
-      + `avec ${s.effectif} participant${s.effectif > 1 ? 's' : ''}.`
-    : ''
-  const resultats = s.scoreFinal != null
-    ? `Le score moyen du groupe s'établit à ${s.scoreFinal} %`
-      + (s.progression != null
-        ? `, pour une progression de ${s.progression > 0 ? '+' : ''}${s.progression} %.`
-        : '.')
-    : ''
-  const vigilance = s.saisis > 0
-    ? (s.enRetrait === 0
-      ? 'L’ensemble des participants atteint le seuil de validation.'
-      : `${s.enRetrait} participant${s.enRetrait > 1 ? 's' : ''} sur ${s.effectif} `
-        + `rest${s.enRetrait > 1 ? 'ent' : 'e'} sous le seuil de ${SEUIL} %.`)
-    : ''
-  const suites = s.enRetrait > 0
-    ? 'La reprise des modules e-learning est recommandée pour les participants en retrait.'
-    : 'La mise en pratique en atelier consolidera ces acquis.'
-
-  return [
-    { cle: 'contexte', titre: 'Contexte', texte: contexte },
-    { cle: 'resultats', titre: 'Résultats et acquis', texte: resultats },
-    { cle: 'vigilance', titre: 'Points de vigilance', texte: vigilance },
-    { cle: 'suites', titre: 'Suites à donner', texte: s.saisis > 0 ? suites : '' },
-  ]
 }
 
 /** Une appreciation de depart, quand le formateur n'en a pas ecrit. */
