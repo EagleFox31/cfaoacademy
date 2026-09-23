@@ -2394,7 +2394,8 @@
   flex-direction: column;
   gap: 4px;
 }
-.cr-fiche-appreciation .cr-res-texte { min-height: 110px; }
+.cr-fiche-appreciation { flex: 1; min-height: 0; }
+.cr-fiche-appreciation .cr-res-texte { flex: 1; min-height: 72px; }
 
 /* La marge de numerotation des objectifs : elle suit le defilement de
    la zone et reprend exactement sa hauteur de ligne. */
@@ -2467,3 +2468,99 @@
   padding: 3px 9px;
   font-size: 0.72rem;
 }
+
+/* ---- Le sommaire en ligne de vie ---- */
+
+/* Les pages se rangent sous le jalon de leur partie, relies par un
+   trait continu : on situe la page courante dans le document, au lieu
+   de compter dans une liste de dix-huit entrees. */
+.cr-fil {
+  position: relative;
+  padding: 4px 0 4px 2px;
+  overflow-y: auto;
+  min-height: 0;
+}
+.cr-fil-section { background: none; padding: 0; margin: 0 0 4px; }
+.cr-fil-jalon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 0 4px;
+  padding: 0 0 0 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2, #4b5563);
+}
+.cr-fil-section:first-child .cr-fil-jalon { margin-top: 2px; }
+.cr-fil-point {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--marine, #101430);
+  box-shadow: 0 0 0 3px var(--surface-1, #fff);
+}
+/* Le trait relie les jalons entre eux, derriere les pastilles. */
+.cr-fil-pages {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 8px;
+  border-left: 2px solid var(--line, rgba(16, 20, 48, 0.12));
+  margin-left: 8px;
+}
+.cr-fil-page {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--ink-1, #101430);
+  transition: background 0.14s, color 0.14s;
+}
+.cr-fil-page:hover { background: var(--surface-2, rgba(16, 20, 48, 0.05)); }
+.cr-fil-page--on {
+  background: var(--accent-faible, rgba(226, 0, 26, 0.08));
+  color: var(--accent, #e2001a);
+  font-weight: 600;
+}
+.cr-fil-num {
+  flex: none;
+  min-width: 18px;
+  font-size: 0.72rem;
+  text-align: right;
+  color: var(--ink-3, #9ca3af);
+  font-variant-numeric: tabular-nums;
+}
+.cr-fil-page--on .cr-fil-num { color: var(--accent, #e2001a); }
+.cr-fil-nom {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La fiche porte quatre tableaux : ils se rangent en deux rangees de
+   deux plutot qu'en une bande qui deborderait. */
+.cr-fiche-tableaux {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+@media (max-width: 1200px) {
+  .cr-fiche-tableaux { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.cr-fiche-tableaux .cr-res-tableau { font-size: 0.74rem; }
+.cr-fiche-tableaux .cr-res-tableau th,
+.cr-fiche-tableaux .cr-res-tableau td { padding: 4px 8px; }
+.cr-fiche-tableaux .cr-res-tableau caption { padding: 5px 8px; font-size: 0.64rem; }

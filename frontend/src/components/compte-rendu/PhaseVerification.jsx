@@ -176,23 +176,34 @@ export default function PhaseVerification({
       {/* ── Sommaire des pages ────────────────────────────── */}
       <aside className="cr-sommaire" aria-label="Pages du rapport">
         <div className="cr-sommaire-titre">{pages.length} pages</div>
-        <ol className="cr-sommaire-liste">
-          {pages.map((p, i) => (
-            <li key={p.cle}>
-              <button type="button"
-                className={`cr-sommaire-item${i === active ? ' cr-sommaire-item--on' : ''}`}
-                onClick={() => setActive(i)}>
-                <span className="cr-sommaire-num">{i + 1}</span>
-                <span className="cr-sommaire-nom">{p.titre}</span>
-                {p.rubrique && (brouillon.photos?.[p.rubrique]?.length > 0) && (
-                  <span className="cr-sommaire-pastille" aria-label="photos ajoutées">
-                    {brouillon.photos[p.rubrique].length}
-                  </span>
-                )}
-              </button>
-            </li>
+        <div className="cr-fil">
+          {jalonner(pages).map(section => (
+            <div key={section.cle} className="cr-fil-section">
+              <h3 className="cr-fil-jalon">
+                <span className="cr-fil-point" aria-hidden="true" />
+                {section.titre}
+              </h3>
+              <ol className="cr-fil-pages">
+                {section.pages.map(({ page: p, index: i }) => (
+                  <li key={p.cle}>
+                    <button type="button"
+                      className={`cr-fil-page${i === active ? ' cr-fil-page--on' : ''}`}
+                      aria-current={i === active ? 'page' : undefined}
+                      onClick={() => setActive(i)}>
+                      <span className="cr-fil-num">{i + 1}</span>
+                      <span className="cr-fil-nom">{p.titre}</span>
+                      {p.rubrique && (brouillon.photos?.[p.rubrique]?.length > 0) && (
+                        <span className="cr-sommaire-pastille" aria-label="photos ajoutées">
+                          {brouillon.photos[p.rubrique].length}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </div>
           ))}
-        </ol>
+        </div>
       </aside>
 
       {/* ── La page, telle qu'elle sortira ────────────────── */}
@@ -315,23 +326,48 @@ const COMMENTAIRES_RESULTATS = [
   {
     cle: 'commentaireProgression',
     titre: 'Remarque sur la progression',
-    exemple: 'Nous pouvons constater que l’ensemble des participants '
-      + 'avait un niveau théorique inférieur en arrivant à cette '
-      + 'formation et qu’ils ont progressé de […] %.',
+    exemple: 'Votre constat sur la progression du groupe',
   },
   {
     cle: 'commentaireAcquisition',
     titre: 'Remarque sur l’acquisition des compétences',
-    exemple: '[n] participants sur [n] ont réussi à cette session de '
-      + 'formation, pour un pourcentage d’acquisition de […] %.',
+    exemple: 'Votre constat sur les compétences acquises',
   },
 ]
 
 /** Les tableaux de chiffres d'une page, tels que le modele les pose. */
-function TableauxResultats({ tableaux }) {
+/**
+ * Les pages regroupees par grande partie du document.
+ *
+ * Le rapport a ses diapositives de titre — « Detail journalier »,
+ * « Resultat individuel » — qui ouvrent chaque partie. Le sommaire les
+ * reprend comme jalons pour qu'on se repere autrement qu'en comptant.
+ */
+function jalonner(pages) {
+  const partie = p => {
+    const cle = p.cle || ''
+    if (cle.startsWith('jour-')) return ['deroule', 'Déroulé journalier']
+    if (cle.startsWith('fiche-')) return ['fiches', 'Résultats individuels']
+    if (cle === 'resultats' || cle === 'satisfaction' || cle === 'bilan') {
+      return ['bilan', 'Résultats et bilan']
+    }
+    if (cle === 'cloture') return ['cloture', 'Clôture']
+    return ['ouverture', 'Présentation']
+  }
+  const sections = []
+  pages.forEach((page, index) => {
+    const [cle, titre] = partie(page)
+    const derniere = sections[sections.length - 1]
+    if (derniere && derniere.cle === cle) derniere.pages.push({ page, index })
+    else sections.push({ cle, titre, pages: [{ page, index }] })
+  })
+  return sections
+}
+
+function TableauxResultats({ tableaux, compact }) {
   if (!tableaux?.length) return null
   return (
-    <div className="cr-res-tableaux">
+    <div className={`cr-res-tableaux${compact ? ' cr-fiche-tableaux' : ''}`}>
       {tableaux.map(t => (
         <table key={t.titre} className="cr-res-tableau">
           <caption>{t.titre}</caption>
@@ -435,7 +471,7 @@ function FormulairePage({
         {page.type === 'texte' && page.cle !== 'objectifs'
           && page.cle !== 'bilan' && (
           <div className="cr-edition-large cr-res-saisie">
-            <TableauxResultats tableaux={page.tableaux} />
+            <TableauxResultats tableaux={page.tableaux} compact />
             {page.blocs.map(b => (
               <label key={b.cle} className="cr-fiche-appreciation">
                 <span className="cr-field-label">
@@ -498,20 +534,14 @@ function FormulairePage({
         {page.type === 'chiffres' && page.sansCommentaires && (
           <div className="cr-edition-large cr-res-saisie">
             <TableauxResultats tableaux={page.tableaux} />
-            <p className="cr-obj-aide">
-              Ces taux viennent des questionnaires de l’étape 2.
-              Cette diapositive n’a pas de zone à remplir.
-            </p>
+            <p className="cr-obj-aide">Taux calculés à l’étape 2.</p>
           </div>
         )}
 
         {page.type === 'chiffres' && !page.sansCommentaires && (
           <div className="cr-edition-large cr-res-saisie">
             <TableauxResultats tableaux={page.tableaux} />
-            <p className="cr-obj-aide">
-              Les taux viennent de l’étape 2. Ces deux remarques les
-              accompagnent sur la diapositive.
-            </p>
+            <p className="cr-obj-aide">Taux calculés à l’étape 2.</p>
             <div className="cr-res-commentaires">
               {COMMENTAIRES_RESULTATS.map(c => (
                 <label key={c.cle} className="cr-res-commentaire">
@@ -894,6 +924,17 @@ function composerPages(b, session, s) {
 
   if (retenue('fiches')) {
     const pourcent = v => (v == null ? '—' : `${Math.round(v)} %`)
+    const satFiches = syntheseSatisfaction(b.satisfaction)
+    const critere = (criteres, titre, total, valeur) => ({
+      titre,
+      lignes: [
+        ...detailParCritere(b.satisfaction, criteres).map(cr => ({
+          libelle: cr.libelle,
+          valeur: cr.moyenne == null ? '—' : `${Math.round(cr.moyenne)} %`,
+        })),
+        { libelle: total, valeur: afficherTaux(valeur), total: true },
+      ],
+    })
     participants.forEach(p => {
       const c = calculer(p, b.baremes)
       pages.push({
@@ -908,6 +949,10 @@ function composerPages(b, session, s) {
           texte: p.appreciation || appreciationAuto(p, c),
         }],
         tableaux: [
+          critere(CRITERES_FORMATION, 'Qualité de la formation',
+            'Qualité de la formation', satFiches.formation),
+          critere(CRITERES_ACCUEIL, 'Qualité de l’accueil',
+            'Qualité de l’accueil', satFiches.accueil),
           {
             titre: 'Acquisition des compétences',
             lignes: [
