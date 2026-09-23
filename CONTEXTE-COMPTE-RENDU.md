@@ -172,8 +172,12 @@ certification demanderait en plus : niveau, modules requis/validés,
   le marquage (romain / puces / les deux).
 - Photos : envoyées une fois au service (`POST /apercu/photo`, réduites
   à 1600 px), posées sur la diapositive 9 selon la disposition
-  (`services/apercu/photos.py`). Restent les légendes des dispositions
-  légendées et les photos des journées (diapositive 11). Le service
+  (`services/apercu/photos.py`), légendes comprises. Chaque image se
+  recadre (bouton ✥ ou Ctrl + glisser) ; le cadrage suit dans la
+  diapositive. Page 4 (participants) synchronisée : formateur, une
+  ligne par stagiaire (resserrée au-delà de 11), portrait et photo de
+  groupe (`outils/drapeaux_participants.py`). Plusieurs formateurs :
+  le bloc se répète côte à côte (`blocs.py`). Restent les photos des journées (diapositive 11). Le service
   Flask ne recharge pas son code : le relancer après modification.
 - `/portail/compte-rendu/mes-rapports` est référencé mais pas implémenté.
 - Stash `participants-css-abandonne` toujours présent.

@@ -29,6 +29,7 @@ import zipfile
 from pathlib import Path
 
 from composer import composer
+import blocs
 import photos
 from modele import diapos_pour
 
@@ -143,6 +144,74 @@ def repeter(xml, listes):
     return xml
 
 
+RE_LIGNE = re.compile(r'<a:tr [^>]*>(?:(?!</a:tr>).)*?</a:tr>', re.S)
+RE_CADRE_TABLEAU = re.compile(
+    r'(<p:graphicFrame>(?:(?!</p:graphicFrame>).)*?<a:ext cx="\d+" cy=")(\d+)(")'
+    r'((?:(?!</p:graphicFrame>).)*?</p:graphicFrame>)', re.S)
+
+
+def repeter_lignes(xml, tableaux):
+    """Repete la ligne de tableau d'un drapeau, une fois par element.
+
+    `tableaux` associe le drapeau qui designe la ligne porteuse — par
+    exemple `{stagiaire_nom}` — a la liste des lignes a produire, chacune
+    donnant la valeur de chaque drapeau de la ligne.
+
+    Le cadre du tableau, tel que le modele le dessine, est la place dont
+    il dispose. Une liste qui ne tient pas a hauteur normale resserre ses
+    lignes et reduit sa police dans la meme proportion, plutot que de
+    deborder de la page. Une liste vide laisse la ligne porteuse en
+    place, comme toute donnee manquante.
+    """
+    for ancre, lignes in tableaux.items():
+        lignes = [l for l in lignes or [] if isinstance(l, dict)]
+        if not lignes:
+            continue
+        for cadre in RE_CADRE_TABLEAU.finditer(xml):
+            if ancre not in cadre.group(0):
+                continue
+            bloc = cadre.group(0)
+            porteuse = next(m for m in RE_LIGNE.finditer(bloc)
+                            if ancre in m.group(0))
+            h = int(re.search(r'h="(\d+)"', porteuse.group(0)).group(1))
+            autres = sum(int(v) for m in RE_LIGNE.finditer(bloc)
+                         if m.start() != porteuse.start()
+                         for v in re.findall(r'<a:tr h="(\d+)"', m.group(0)))
+            place = int(cadre.group(2))
+            hauteur = min(h, max(1, (place - autres) // len(lignes)))
+            echelle = hauteur / h
+
+            def taille(m, echelle=echelle):
+                return f'sz="{max(700, round(int(m.group(1)) * echelle))}"'
+
+            modele = porteuse.group(0).replace(f'h="{h}"', f'h="{hauteur}"', 1)
+            if echelle < 1:
+                modele = re.sub(r'sz="(\d+)"', taille, modele)
+                # Les marges hautes et basses de la cellule (0,05 pouce
+                # par defaut) fixent une hauteur minimale : elles se
+                # resserrent avec le reste.
+                marge = round(45720 * echelle * echelle)
+                modele = modele.replace(
+                    '<a:tcPr ', f'<a:tcPr marT="{marge}" marB="{marge}" ')
+            copies = []
+            for ligne in lignes:
+                copie = modele
+                for drapeau, valeur in ligne.items():
+                    copie = copie.replace(drapeau, echapper(valeur))
+                copies.append(copie)
+            bloc = (bloc[:porteuse.start()] + ''.join(copies)
+                    + bloc[porteuse.end():])
+            # Le cadre epouse le tableau produit : PowerPoint s'en sert
+            # pour la poignee de selection.
+            total = autres + hauteur * len(lignes)
+            bloc = RE_CADRE_TABLEAU.sub(
+                lambda m: m.group(1) + str(total) + m.group(3) + m.group(4),
+                bloc, count=1)
+            xml = xml[:cadre.start()] + bloc + xml[cadre.end():]
+            break
+    return xml
+
+
 def substituer(xml, valeurs):
     """Remplace les drapeaux dans le texte des runs.
 
@@ -162,6 +231,7 @@ def substituer(xml, valeurs):
     rempli ». La valeur `VIDE` le dit explicitement : le drapeau
     disparait au lieu de laisser le mot du modele s'imprimer.
     """
+    xml = repeter_lignes(xml, valeurs.get('@lignes') or {})
     xml = repeter(xml, {c: v for c, v in valeurs.items() if isinstance(v, list)})
     valeurs = {c: v for c, v in valeurs.items()
                if isinstance(v, str) and not c.startswith('@')}
@@ -189,15 +259,25 @@ def remplir(source, cible, valeurs):
         contenus = {n: z.read(n) for n in infos}
 
     for nom in list(contenus):
-        if re.match(r'ppt/slides/slide\d+\.xml$', nom):
+        numero = re.match(r'ppt/slides/slide(\d+)\.xml$', nom)
+        if numero:
             xml = contenus[nom].decode('utf-8')
+            # Les blocs que le modele ne porte qu'une fois (le formateur)
+            # se repetent avant la substitution des drapeaux communs.
+            xml = blocs.repeter(xml, int(numero.group(1)), valeurs)
             contenus[nom] = substituer(xml, valeurs).encode('utf-8')
 
-    # Les photos, par numero de diapositive : `{'9': [{id, x, y, l, h}]}`.
-    for diapo, liste in (valeurs.get('@photos') or {}).items():
+    # Les photos, par numero de diapositive. Une liste suit une
+    # disposition (`{'9': [{id, x, y, l, h}]}`) ; un objet designe des
+    # emplacements par leur nom (`{'4': {'Emplacement groupe': {id}}}`).
+    for diapo, contenu in (valeurs.get('@photos') or {}).items():
         slide = f'ppt/slides/slide{int(diapo)}.xml'
-        if slide in contenus:
-            photos.poser(contenus, slide, liste, CACHE)
+        if slide not in contenus:
+            continue
+        if isinstance(contenu, dict):
+            photos.poser_nommes(contenus, slide, contenu, CACHE)
+        else:
+            photos.poser(contenus, slide, contenu, CACHE)
 
     with zipfile.ZipFile(cible, 'w', zipfile.ZIP_DEFLATED) as out:
         for nom, donnees in contenus.items():

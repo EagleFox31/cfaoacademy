@@ -99,9 +99,62 @@ function photosDesDiapos(b, refsPhotos) {
     && x.nombre === liste.length) || dispositionsPour(liste.length)[0]
   const cases = rectanglesDe(d)
   const posees = liste
-    .map((p, i) => ({ id: refsPhotos?.[p.id], ...cases[i] }))
+    .map((p, i) => ({
+      id: refsPhotos?.[p.id],
+      ...cases[i],
+      ...(p.cadrage ? { cadrage: p.cadrage } : {}),
+      // Une disposition legendee reserve sa bande meme a une legende
+      // vide : la photo garde la taille que l'editeur lui montre.
+      ...(d.legendes ? { legende: p.legende || '' } : {}),
+    }))
     .filter(p => p.id && p.l != null)
   return posees.length ? { [DIAPO_OBJECTIFS_IMAGES]: posees } : {}
+}
+
+/** Les formateurs saisis, ou a defaut celui de la session. */
+function formateursDe(b, session) {
+  const saisis = (b.formateurs || []).filter(f => f.nom || f.fonction || f.portrait)
+  if (saisis.length) return saisis
+  return session?.formateur ? [{ nom: session.formateur, fonction: 'Formateur' }] : []
+}
+
+/**
+ * Les formateurs de la page des participants.
+ *
+ * Le modele n'a qu'un bloc portrait + nom ; le service le repete, une
+ * copie par formateur, cote a cote.
+ */
+function formateurDe(b, session) {
+  return {
+    '@formateurs': formateursDe(b, session).map(f => ({
+      '{formateur_nom}': f.nom || '',
+      '{formateur_fonction}': f.fonction || '',
+    })),
+  }
+}
+
+/** Les stagiaires presents, une ligne chacun : nom complet et pays. */
+function lignesStagiaires(b) {
+  return (b.participants || [])
+    .filter(p => p.present !== false)
+    .map(p => ({
+      '{stagiaire_nom}': [p.prenom, p.nom].filter(Boolean).join(' '),
+      '{stagiaire_pays}': p.pays || '',
+    }))
+    .filter(l => l['{stagiaire_nom}'])
+}
+
+/** Le portrait et la photo de groupe, chacun dans son emplacement. */
+function photosParticipants(b, refsPhotos) {
+  const poses = {}
+  const pose = (nom, photo) => {
+    const id = photo && refsPhotos?.[photo.id]
+    if (id) poses[nom] = { id, ...(photo.cadrage ? { cadrage: photo.cadrage } : {}) }
+  }
+  // Chaque copie du bloc formateur numerote son emplacement.
+  formateursDe(b).forEach((f, i) => pose(`Emplacement portrait ${i + 1}`, f.portrait))
+  pose('Emplacement groupe', b.photoGroupe)
+  return Object.keys(poses).length ? { [DIAPO_PAR_PAGE.participants]: poses } : {}
 }
 
 /** Les drapeaux du modele, renseignes depuis le brouillon. */
@@ -170,7 +223,12 @@ export function valeursDrapeaux(brouillon, session, synthese, page, refsPhotos) 
 
     // Les photos ne sont pas des drapeaux : le service les pose dans les
     // emplacements de la diapositive, selon la disposition retenue.
-    '@photos': photosDesDiapos(b, refsPhotos),
+    '@photos': { ...photosDesDiapos(b, refsPhotos), ...photosParticipants(b, refsPhotos) },
+
+    // La page des participants : le formateur, puis une ligne de tableau
+    // par stagiaire present, que le service repete.
+    ...formateurDe(b, session),
+    '@lignes': { '{stagiaire_nom}': lignesStagiaires(b) },
 
     // La page courante, quand c'est une fiche, surcharge les drapeaux
     // communs : le modele repete la meme diapositive par stagiaire.

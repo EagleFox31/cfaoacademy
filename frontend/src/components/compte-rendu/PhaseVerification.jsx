@@ -86,7 +86,14 @@ export default function PhaseVerification({
 
   // Les drapeaux transmis au service d'apercu. Memorises : une nouvelle
   // reference relancerait une conversion a chaque rendu.
-  const refsPhotos = useRefsPhotos(brouillon.photos)
+  // Toutes les images a transmettre au service : celles des rubriques,
+  // les portraits des formateurs et la photo de groupe.
+  const aTransmettre = useMemo(() => ({
+    ...(brouillon.photos || {}),
+    portraits: (brouillon.formateurs || []).map(f => f.portrait).filter(Boolean),
+    groupe: brouillon.photoGroupe ? [brouillon.photoGroupe] : [],
+  }), [brouillon.photos, brouillon.formateurs, brouillon.photoGroupe])
+  const refsPhotos = useRefsPhotos(aTransmettre)
   const valeurs = useMemo(
     () => valeursDrapeaux(brouillon, session, synthese, page, refsPhotos),
     [brouillon, session, synthese, page, refsPhotos],
@@ -127,14 +134,23 @@ export default function PhaseVerification({
     })
   }
 
-  function legender(rubrique, id, texte) {
+  function majPhoto(rubrique, id, patch) {
     const actuelles = brouillon.photos?.[rubrique] || []
     maj({
       photos: {
         ...(brouillon.photos || {}),
-        [rubrique]: actuelles.map(p => (p.id === id ? { ...p, legende: texte } : p)),
+        [rubrique]: actuelles.map(p => (p.id === id ? { ...p, ...patch } : p)),
       },
     })
+  }
+
+  function legender(rubrique, id, texte) {
+    majPhoto(rubrique, id, { legende: texte })
+  }
+
+  // La partie de l'image montree dans sa case, en pourcentages.
+  function cadrer(rubrique, id, cadrage) {
+    majPhoto(rubrique, id, { cadrage })
   }
 
   function produire() {
@@ -267,6 +283,7 @@ export default function PhaseVerification({
             onAjouter={f => page?.rubrique && ajouterPhotos(page.rubrique, f)}
             onRetirer={id => page?.rubrique && retirerPhoto(page.rubrique, id)}
             onLegender={(id, t) => page?.rubrique && legender(page.rubrique, id, t)}
+            onCadrer={(id, c) => page?.rubrique && cadrer(page.rubrique, id, c)}
             onDisposition={d => page?.rubrique && maj({
               dispositions: { ...(brouillon.dispositions || {}), [page.rubrique]: d },
             })}
@@ -406,7 +423,7 @@ function TableauxResultats({ tableaux, compact }) {
 
 function FormulairePage({
   page, textes, onTexte, photos, disposition,
-  onAjouter, onRetirer, onLegender, onDisposition,
+  onAjouter, onRetirer, onLegender, onCadrer, onDisposition,
   objectifs, marquage, onObjectifs, onMarquage, onReordonner,
   formateurs, stagiaires, photoGroupe, onFormateurs, onPhotoGroupe,
   jours, onJournee, legendes, onLegende, onProposer,
@@ -536,7 +553,8 @@ function FormulairePage({
               onDisposition={onDisposition}
               onAjouter={onAjouter}
               onRetirer={onRetirer}
-              onLegender={onLegender} />
+              onLegender={onLegender}
+              onCadrer={onCadrer} />
           </div>
         )}
 
@@ -554,7 +572,8 @@ function FormulairePage({
               onRetirer={onRetirer}
               onReordonner={onReordonner}
               onDisposition={onDisposition}
-              onLegender={onLegender} />
+              onLegender={onLegender}
+              onCadrer={onCadrer} />
           </div>
         )}
 
@@ -611,6 +630,7 @@ function FormulairePage({
               onReordonner={onReordonner}
               onDisposition={onDisposition}
               onLegender={onLegender}
+              onCadrer={onCadrer}
               jourPrecedent={Number(numeroJour) > 1
                 ? jours?.[Number(numeroJour) - 1] : null}
               onCopierVeille={() => onJournee(numeroJour,

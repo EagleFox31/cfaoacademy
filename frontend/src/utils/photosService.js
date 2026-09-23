@@ -20,7 +20,7 @@ export function useRefsPhotos(photosParRubrique) {
   useEffect(() => {
     const toutes = Object.values(photosParRubrique || {}).flat()
     toutes.forEach(async p => {
-      if (!p?.apercu || envoyees.current.has(p.id)) return
+      if (!p?.id || !p.apercu || envoyees.current.has(p.id)) return
       envoyees.current.add(p.id)
       try {
         const image = await (await fetch(p.apercu)).blob()

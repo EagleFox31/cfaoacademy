@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import ImageCadree, { BoutonRecadrer } from './ImageCadree'
 import { MAX_PHOTOS, casesDe, dispositionsClassees, dispositionsPour, grilleDe }
   from '../../data/dispositions_photos'
 
@@ -63,7 +64,7 @@ function objectifsDuTexte(texte, anciens = []) {
 export default function EditeurObjectifs({
   objectifs, marquage, photos, disposition,
   onObjectifs, onMarquage, onDisposition, onReordonner,
-  onAjouter, onRetirer, onLegender,
+  onAjouter, onRetirer, onLegender, onCadrer,
 }) {
   const lignes = objectifs?.length ? objectifs : [LIGNE_VIDE]
   const cliches = photos || []
@@ -206,7 +207,7 @@ export default function EditeurObjectifs({
           <PlanchePhotos photos={cliches}
             disposition={choix.find(d => d.id === dispoActive)}
             onRetirer={onRetirer} onReordonner={onReordonner}
-            onAjouter={onAjouter} />
+            onAjouter={onAjouter} onLegender={onLegender} onCadrer={onCadrer} />
         </div>
       </Bloc>
     </div>
@@ -245,9 +246,14 @@ function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
  * page du modele, pas une grille de vignettes. Les images se font
  * glisser d'une case a l'autre, leur ordre fixant leur place.
  */
-function PlanchePhotos({ photos, disposition, onRetirer, onReordonner, onAjouter }) {
+function PlanchePhotos({ photos, disposition, onRetirer, onReordonner, onAjouter,
+  onLegender, onCadrer }) {
   const [saisie, setSaisie] = useState(null)
   const [survol, setSurvol] = useState(null)
+  const [cadrage, setCadrage] = useState(null)
+  // Les dispositions legendees donnent a chaque image sa legende, que la
+  // diapositive pose sous elle.
+  const parImage = !!disposition?.legendes
 
   function deposer(vers) {
     if (saisie == null || saisie === vers) return
@@ -290,13 +296,20 @@ function PlanchePhotos({ photos, disposition, onRetirer, onReordonner, onAjouter
       style={{ ...grilleDe(disposition), '--planche-ratio': disposition?.ratio || 1.17 }}>
       {cases.map((forme, i) => {
         const photo = photos[i]
+        const recadre = cadrage === photo.id
         return (
           <div key={photo.id}
             className={`cr-case${survol === i ? ' cr-case--cible' : ''}`
-              + `${saisie === i ? ' cr-case--prise' : ''}`}
+              + `${saisie === i ? ' cr-case--prise' : ''}`
+              + `${parImage ? ' cr-case--legendee' : ''}`
+              + `${recadre ? ' cr-case--cadrage' : ''}`}
             style={forme}
-            draggable
-            onDragStart={() => setSaisie(i)}
+            draggable={!recadre}
+            onDragStart={e => {
+              // Ctrl + glisser recadre l'image au lieu de deplacer la case.
+              if (e.ctrlKey) { e.preventDefault(); return }
+              setSaisie(i)
+            }}
             onDragOver={e => { e.preventDefault(); setSurvol(i) }}
             onDragLeave={() => setSurvol(null)}
             onDrop={e => {
@@ -305,11 +318,28 @@ function PlanchePhotos({ photos, disposition, onRetirer, onReordonner, onAjouter
               else onAjouter?.(e.dataTransfer.files)
             }}
             onDragEnd={() => { setSaisie(null); setSurvol(null) }}>
-            <img src={photo.apercu} alt="" />
-            <span className="cr-case-rang" aria-hidden="true">{i + 1}</span>
-            <button type="button" className="cr-case-retirer"
-              onClick={() => onRetirer?.(photo.id)}
-              aria-label={`Retirer la photo ${i + 1}`}>×</button>
+            <div className="cr-case-image">
+              <ImageCadree src={photo.apercu} cadrage={photo.cadrage}
+                actif={recadre}
+                onCadrer={onCadrer && (c => onCadrer(photo.id, c))} />
+              <span className="cr-case-rang" aria-hidden="true">{i + 1}</span>
+              {onCadrer && (
+                <BoutonRecadrer actif={recadre} rang={i + 1}
+                  onBasculer={() => setCadrage(recadre ? null : photo.id)} />
+              )}
+              <button type="button" className="cr-case-retirer"
+                onClick={() => onRetirer?.(photo.id)}
+                aria-label={`Retirer la photo ${i + 1}`}>×</button>
+            </div>
+            {parImage && (
+              <input className="cr-case-legende"
+                value={photo.legende || ''}
+                placeholder={`Légende ${i + 1}`}
+                aria-label={`Légende de la photo ${i + 1}`}
+                draggable={false}
+                onDragStart={e => e.stopPropagation()}
+                onChange={e => onLegender?.(photo.id, e.target.value)} />
+            )}
           </div>
         )
       })}

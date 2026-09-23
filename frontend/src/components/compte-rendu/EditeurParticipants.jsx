@@ -17,6 +17,7 @@
  */
 
 import { useState } from 'react'
+import ImageCadree, { BoutonRecadrer } from './ImageCadree'
 
 /** Le portrait du modele est carre ; la photo de groupe est en 1,38. */
 export const RATIO_PORTRAIT = 1
@@ -54,6 +55,7 @@ export default function EditeurParticipants({
     const ancien = liste[i]?.portrait
     if (ancien?.apercu) URL.revokeObjectURL(ancien.apercu)
     majChamp(i, 'portrait', {
+      id: `portrait-${Date.now()}`,
       nom: image.name,
       apercu: URL.createObjectURL(image),
     })
@@ -126,11 +128,13 @@ function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
 function LigneFormateur({ formateur, rang, seul, onChamp, onPortrait, onRetirer }) {
   const champ = `cr-portrait-${rang}`
   const [survol, setSurvol] = useState(false)
+  const [cadrage, setCadrage] = useState(false)
 
   return (
     <div className="cr-part-formateur">
       <div className={`cr-portrait${survol ? ' cr-portrait--over' : ''}`
-        + `${formateur.portrait ? ' cr-portrait--pose' : ''}`}
+        + `${formateur.portrait ? ' cr-portrait--pose' : ''}`
+        + `${cadrage ? ' cr-portrait--cadrage' : ''}`}
         onClick={() => document.getElementById(champ)?.click()}
         onDragOver={e => { e.preventDefault(); setSurvol(true) }}
         onDragLeave={() => setSurvol(false)}
@@ -144,9 +148,15 @@ function LigneFormateur({ formateur, rang, seul, onChamp, onPortrait, onRetirer 
         onKeyDown={e => {
           if (e.key === 'Enter') document.getElementById(champ)?.click()
         }}>
-        {formateur.portrait
-          ? <img src={formateur.portrait.apercu} alt="" />
-          : <span className="cr-portrait-vide">photo</span>}
+        {formateur.portrait ? (
+          <>
+            <ImageCadree src={formateur.portrait.apercu}
+              cadrage={formateur.portrait.cadrage} actif={cadrage}
+              onCadrer={c => onChamp('portrait', { ...formateur.portrait, cadrage: c })} />
+            <BoutonRecadrer actif={cadrage} rang={rang + 1}
+              onBasculer={() => setCadrage(!cadrage)} />
+          </>
+        ) : <span className="cr-portrait-vide">photo</span>}
         <input id={champ} type="file" accept="image/*" hidden
           onChange={e => { onPortrait(e.target.files); e.target.value = '' }} />
       </div>
@@ -209,19 +219,21 @@ function TableauStagiaires({ stagiaires }) {
 /** La photo de groupe, dans le cadre que le modele lui reserve. */
 function CadreGroupe({ photo, onPhoto }) {
   const [survol, setSurvol] = useState(false)
+  const [cadrage, setCadrage] = useState(false)
 
   function poser(fichiers) {
     const image = Array.from(fichiers).find(f => f.type.startsWith('image/'))
     if (!image) return
     if (photo?.apercu) URL.revokeObjectURL(photo.apercu)
-    onPhoto({ nom: image.name, apercu: URL.createObjectURL(image) })
+    onPhoto({ id: `groupe-${Date.now()}`, nom: image.name, apercu: URL.createObjectURL(image) })
   }
 
   return (
     <div className="cr-part-cote">
       <span className="cr-field-label">Photo de groupe</span>
       <div className={`cr-groupe${survol ? ' cr-groupe--over' : ''}`
-        + `${photo ? ' cr-groupe--pose' : ''}`}
+        + `${photo ? ' cr-groupe--pose' : ''}`
+        + `${cadrage ? ' cr-groupe--cadrage' : ''}`}
         onClick={() => document.getElementById('cr-photo-groupe')?.click()}
         onDragOver={e => { e.preventDefault(); setSurvol(true) }}
         onDragLeave={() => setSurvol(false)}
@@ -232,7 +244,11 @@ function CadreGroupe({ photo, onPhoto }) {
         }}>
         {photo ? (
           <>
-            <img src={photo.apercu} alt="" />
+            <ImageCadree src={photo.apercu} cadrage={photo.cadrage}
+              actif={cadrage}
+              onCadrer={c => onPhoto({ ...photo, cadrage: c })} />
+            <BoutonRecadrer actif={cadrage} rang="de groupe"
+              onBasculer={() => setCadrage(!cadrage)} />
             <button type="button" className="cr-case-retirer"
               onClick={e => {
                 e.stopPropagation()

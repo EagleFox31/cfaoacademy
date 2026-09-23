@@ -1997,9 +1997,12 @@
   position: relative;
   display: grid;
   place-items: center;
-  height: 100%;
-  width: auto;
-  aspect-ratio: 1;
+  /* Une taille fixe, et non la hauteur de la ligne : une rangee de
+     grille sans hauteur definie laisse l'image imposer la sienne, et un
+     portrait de 3000 pixels envahissait la page. */
+  width: 64px;
+  height: 64px;
+  flex: none;
   border: 1.5px dashed var(--line, rgba(16, 20, 48, 0.25));
   border-radius: 6px;
   overflow: hidden;
@@ -2010,7 +2013,7 @@
 .cr-portrait:hover,
 .cr-portrait--over { border-color: var(--accent, #e2001a); }
 .cr-portrait--pose { border-style: solid; }
-.cr-portrait img { width: 100%; height: 100%; object-fit: cover; }
+.cr-portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cr-portrait-vide {
   font-size: 0.65rem;
   color: var(--ink-3, #6b7280);
@@ -2124,7 +2127,9 @@
   justify-content: center;
   gap: 4px;
   height: auto;
-  width: auto;
+  /* La largeur de la colonne, la hauteur par le rapport : l'image est
+     posee en absolu et ne dicte plus la taille du cadre. */
+  width: 100%;
   max-width: 100%;
   max-height: 100%;
   aspect-ratio: 1.378;
@@ -2139,7 +2144,7 @@
 .cr-groupe:hover,
 .cr-groupe--over { border-color: var(--accent, #e2001a); }
 .cr-groupe--pose { border-style: solid; }
-.cr-groupe img { width: 100%; height: 100%; object-fit: cover; }
+.cr-groupe img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cr-groupe:hover .cr-case-retirer { opacity: 1; }
 
 /* ---- Journee de formation : rubriques et planche photos ---- */
@@ -2692,3 +2697,48 @@
 }
 /* La note se pose au pied de la zone, sous l'espace libre. */
 .cr-couv-saisie > .cr-obj-aide { margin-top: auto; }
+
+/* ---- Recadrage : faire glisser l'image dans sa case ---- */
+/* En mode recadrage, la case ne se deplace plus : c'est l'image qui
+   glisse dedans. Le contour le dit, le curseur aussi. */
+.cr-image-cadree--actif { cursor: move; }
+.cr-image-cadree--glisse { cursor: grabbing; }
+.cr-case--cadrage { border-color: var(--accent, #e2001a); cursor: default; }
+.cr-case--legendee.cr-case--cadrage .cr-case-image {
+  outline: 2px solid var(--accent, #e2001a);
+  outline-offset: -2px;
+}
+.cr-case-recadrer {
+  position: absolute;
+  top: 5px;
+  right: 28px;
+  width: 19px;
+  height: 19px;
+  border: 0;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  color: #fff;
+  background: rgba(16, 20, 48, 0.78);
+  transition: opacity 0.15s, background 0.15s;
+}
+.cr-case:hover .cr-case-recadrer,
+.cr-case-recadrer--on { opacity: 1; }
+.cr-case-recadrer--on,
+.cr-case-recadrer:hover { background: var(--accent, #e2001a); }
+/* Hors disposition legendee, l'image et ses boutons remplissent la case. */
+.cr-case:not(.cr-case--legendee) > .cr-case-image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Le portrait et la photo de groupe se recadrent aussi : le bouton
+   apparait au survol, a gauche de celui qui retire la photo. */
+.cr-portrait .cr-case-recadrer { top: 3px; right: 3px; width: 17px; height: 17px; }
+.cr-portrait:hover .cr-case-recadrer,
+.cr-groupe:hover .cr-case-recadrer { opacity: 1; }
+.cr-portrait--cadrage,
+.cr-groupe--cadrage { border-color: var(--accent, #e2001a); border-style: solid; }
