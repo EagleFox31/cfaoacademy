@@ -92,6 +92,17 @@ export default function TrainerReportNew() {
   // appellent `sauver` quand on passe de l'un a l'autre.
   useEffect(() => { sauver() }, [phase, sauver])
 
+  // Filet de securite : une frappe non suivie d'un changement d'etape
+  // (fermeture d'onglet sans clic sur « Continuer », onglet tue plutot
+  // que ferme proprement) ne declenchait alors aucune ecriture — des
+  // notes saisies pouvaient disparaitre sans avoir jamais atteint le
+  // stockage. Un court differe apres chaque modification couvre ce cas
+  // sans ecrire a chaque caractere tape.
+  useEffect(() => {
+    const minuteur = setTimeout(sauver, 1500)
+    return () => clearTimeout(minuteur)
+  }, [brouillon, sauver])
+
   useEffect(() => {
     window.addEventListener('beforeunload', sauver)
     return () => {
