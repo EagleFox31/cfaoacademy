@@ -134,7 +134,54 @@ function participant(id, prenom, nom, pays, fonction) {
   return { id, prenom, nom, pays, fonction, present: true }
 }
 
+/** Un inscrit enregistre mais pas encore retenu pour la session. */
+function absent(p) {
+  return { ...p, present: false }
+}
+
 export const SESSIONS_FORMATEUR = [
+  {
+    // Liste d'inscription papier (TOYOTA, presentiel). Les dix-sept
+    // techniciens y figurent ; seuls les huit inscrits a cette session
+    // sont marques presents, les autres restent a cocher. Les noms
+    // suivent l'orthographe deja enregistree dans les resultats des
+    // sessions precedentes et les extractions Team GP.
+    id: 'ses-tsh01-0907',
+    codeSession: 'TSH01/26-09',
+    codeFormation: 'TSH01',
+    moduleFormation: 'Intervention en sécurité sur un véhicule hybride TOYOTA',
+    marque: 'TOYOTA',
+    pole: 'Motors',
+    typeFormation: 'Présentiel',
+    paysHote: 'Cameroun',
+    lieu: 'Centre CFAO Academy — Douala',
+    debut: '2026-09-07',
+    fin: '2026-09-11',
+    duree: '5 jours',
+    nbJours: 5,
+    formateur: 'Eugène EBENE',
+    statut: 'a_rediger',
+    seuil: 70,
+    participants: [
+      absent(participant('h01', 'Joël Evahans', 'RAMIARANTSOA', 'Madagascar', 'Key Instructor')),
+      participant('h02', 'Kodjo', 'EDOH FOLLYKUE', 'Mali', 'Chef d’équipe mécanique'),
+      participant('h03', 'Tanguy Joël', 'BESSAN', 'Bénin', 'Technicien'),
+      absent(participant('h04', 'Aliyou', 'NGOUNGA', 'Cameroun', 'Technicien')),
+      participant('h05', 'Isidore', 'DJAMENI', 'Cameroun', 'Technicien'),
+      participant('h06', 'André', 'TCHATUE DJEMMO', 'Cameroun', 'Technicien'),
+      participant('h07', 'Jonas', 'NCHARE NGOULOURE', 'Cameroun', 'Technicien'),
+      participant('h08', 'Cédric', 'KITIO NGUEFACK', 'Cameroun', 'Technicien'),
+      participant('h09', 'Hermann', 'NGOUMOU AMOUGOU', 'Cameroun', 'Technicien'),
+      participant('h10', 'Yaya', 'SOULEMANOU', 'Cameroun', 'Technicien'),
+      absent(participant('h11', 'Owareni Evrard', 'ALABI', 'Togo', 'Technicien')),
+      absent(participant('h12', 'Gauthier', 'MATONDO NSUNGAMA', 'RDC', 'Technicien')),
+      absent(participant('h13', 'Oscar', 'MAYATA KIASILUA', 'RDC', 'Technicien')),
+      absent(participant('h14', 'Christian', 'VUNDU KAMBI', 'RDC', 'Technicien')),
+      absent(participant('h15', 'Imani', 'MBUYA KISONDWE', 'RDC', 'Technicien')),
+      absent(participant('h16', 'Gaëtan', 'LUHALWE MUTOLE', 'RDC', 'Technicien')),
+      absent(participant('h17', 'Mouhamadou', 'MBAYE', 'Sénégal', 'Technicien')),
+    ],
+  },
   {
     id: 'ses-ts05-g3-0922',
     codeSession: 'TS05-G3/26-09',
