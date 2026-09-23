@@ -267,8 +267,9 @@ function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
  *
  *  Des formes nettement differentes plutot qu'une gradation de visages :
  *  cinq sourires voisins se confondent au clic, une etoile et une croix
- *  jamais. Pas d'emoji, dont le rendu change d'un poste a l'autre, et
- *  pas de couleur : le choix se lit a l'inversion de la case.
+ *  jamais. Pas d'emoji, dont le rendu change d'un poste a l'autre. Au
+ *  repos les icones sont au trait et sans couleur ; la mention retenue
+ *  prend la sienne, du vert au rouge, pour lire la grille d'un coup.
  */
 const TRACES = {
   tres_satisfaisant: (
@@ -323,7 +324,7 @@ function GrilleCriteres({ criteres, participants, reponses, onRepondre }) {
     <div className="cr-satisfaction">
       <ul className="cr-mentions-legende" aria-label="Mentions">
         {MENTIONS.map(m => (
-          <li key={m.cle}>
+          <li key={m.cle} className={`cr-mention--${m.cle}`}>
             <IconeMention cle={m.cle} />
             {m.libelle}
           </li>
@@ -372,7 +373,7 @@ function GrilleCriteres({ criteres, participants, reponses, onRepondre }) {
                           return (
                             <button key={m.cle} type="button" role="radio"
                               aria-checked={on}
-                              className={`cr-mention${on ? ' cr-mention--on' : ''}`}
+                              className={`cr-mention cr-mention--${m.cle}${on ? ' cr-mention--on' : ''}`}
                               title={m.libelle}
                               aria-label={m.libelle}
                               onClick={() => onRepondre(p.id, c.cle, on ? '' : m.cle)}>
