@@ -2850,3 +2850,35 @@
 /* Le premier couloir s'appuie sur le filet de la colonne des criteres :
    pas de double trait. */
 .cr-satis-table tr > :nth-child(2) { border-left: 0; }
+
+/* ---- Resultats : en-tete fige et export ---- */
+/* Le panneau defile seul ; son en-tete s'y colle en haut. Les marges
+   negatives le font deborder sur le rembourrage du panneau, pour qu'aucun
+   tableau ne glisse visiblement au-dessus de lui. */
+.cr-panel-head--fige {
+  position: sticky;
+  top: -28px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: -28px -30px 18px;
+  padding: 22px 30px 14px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+.cr-panel-head--fige .cr-panel-title { margin-bottom: 2px; }
+.cr-panel-head--fige .cr-panel-hint {
+  max-width: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cr-panel-head-texte { min-width: 0; }
+.cr-export {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

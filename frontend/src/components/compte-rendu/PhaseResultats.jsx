@@ -7,6 +7,18 @@ import {
   syntheseSatisfaction,
   afficherTaux,
 } from '../../utils/satisfactionCfao'
+import { exporterEvaluation } from '../../utils/exportEvaluation'
+
+/** Un tableur, au trait, pour le bouton d'export. */
+function IconeTableur() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
+      <path d="M3.5 9h17M3.5 14.5h17M9.5 9v11.5" />
+    </svg>
+  )
+}
 
 /**
  * Phase 2 — les notes brutes et la satisfaction des stagiaires.
@@ -69,20 +81,41 @@ export default function PhaseResultats({
     })
   }
 
+  const [exportEnCours, setExportEnCours] = useState(false)
+  async function exporter() {
+    // Ce qui est a l'ecran part au classeur : on enregistre d'abord.
+    onEnregistrer?.()
+    setExportEnCours(true)
+    try {
+      await exporterEvaluation(brouillon, session)
+    } finally {
+      setExportEnCours(false)
+    }
+  }
+
   function majBareme(cle, valeur) {
     const n = Number(valeur)
     maj({ baremes: { ...baremes, [cle]: Number.isNaN(n) || n <= 0 ? 1 : n } })
   }
 
   return (
-    <div className="cr-panel">
-      <div className="cr-panel-head">
-        <h2 className="cr-panel-title">Les résultats de la session</h2>
-        <p className="cr-panel-hint">
-          Trois volets : les notes des tests, puis les deux
-          questionnaires de fin de session. Dépliez celui que vous
-          remplissez.
-        </p>
+    <div className="cr-panel cr-panel--resultats">
+      {/* L'en-tete reste en haut pendant qu'on remplit : deux lignes, et
+          l'export a droite, la ou l'on cherche une action de la page. */}
+      <div className="cr-panel-head cr-panel-head--fige">
+        <div className="cr-panel-head-texte">
+          <h2 className="cr-panel-title">Les résultats de la session</h2>
+          <p className="cr-panel-hint">
+            Les notes des tests, puis les deux questionnaires de fin de session.
+          </p>
+        </div>
+        <button type="button" className="cr-btn cr-btn--ghost cr-export"
+          disabled={!participants.length || exportEnCours}
+          onClick={exporter}
+          title="Classeur « Données Stagiaires » et « Satisfaction Stagiaires », formules comprises">
+          <IconeTableur />
+          {exportEnCours ? 'Export…' : 'Exporter Excel'}
+        </button>
       </div>
 
       <div className="cr-blocs">

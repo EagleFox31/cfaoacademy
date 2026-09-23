@@ -163,6 +163,15 @@ Trois points à trancher, dans cet ordre suggéré :
 3. **Le poids des images** — aucune stratégie arrêtée (compression,
    redimensionnement, stockage hors document).
 
+**Export Excel des résultats** (`utils/exportEvaluation.js`, bouton de
+l'en-tête de l'étape 2). Format unique tiré des 7 classeurs « Evaluation »
+du formateur : feuille « Données Stagiaires » (saisie : notes brutes +
+barème, mentions en liste) et « Satisfaction Stagiaires » (formules).
+Les plages suivent le nombre de stagiaires présents — les originaux
+figeaient B:M et cassaient au-delà de 12. La progression GLOBAL est la
+moyenne des progressions individuelles, comme dans le rapport. Vérifié
+par recalcul LibreOffice pour 1, 8, 13 et 14 stagiaires.
+
 ### Reporté par décision explicite
 
 **Conditionner certification vs formation simple à l'étape des notes**
