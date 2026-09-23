@@ -101,11 +101,11 @@ export default function EditeurObjectifs({
                   puce par objectif se decalerait des qu'un objectif
                   tient sur deux lignes. */}
               <div className="cr-obj-marge" aria-hidden="true" ref={marge}>
-                {texteDesObjectifs(lignes).split(/\n/).map((l, i) => (
+                {texteDesObjectifs(lignes).split(/\n/).map((l, i, tout) => (
                   <p key={i} className="cr-obj-marge-ligne">
                     {l.trim() && (
                       <span className="cr-obj-marge-puce">
-                        {puceDe(marquage || 'puces', rang(lignes, i))}
+                        {puceDe(marquage || 'puces', tout, i)}
                       </span>
                     )}
                     <span className="cr-obj-marge-ombre">{l || ' '}</span>
@@ -327,16 +327,29 @@ function PlanchePhotos({ photos, disposition, onRetirer, onReordonner, onAjouter
 }
 
 /** Le rang d'une ligne parmi les seules lignes remplies. */
-function rang(lignes, i) {
-  return (lignes || []).slice(0, i)
-    .filter(o => (o.texte || '').trim()).length
+function rang(textes, i) {
+  return textes.slice(0, i).filter(t => t.trim()).length
 }
 
-/** La puce affichee devant une ligne, selon le marquage retenu. */
-function puceDe(marquage, i) {
+/** Une ligne remplie qui suit une ligne vide, ou ouvre la liste. */
+function ouvreGroupe(textes, j) {
+  return Boolean(textes[j].trim()) && (j === 0 || !textes[j - 1].trim())
+}
+
+/** La puce affichee devant une ligne, selon le marquage retenu.
+ *
+ *  En marquage mixte, une ligne vide separe deux groupes : la premiere
+ *  ligne de chaque groupe en porte le titre et prend le chiffre romain,
+ *  les suivantes sont ses sous-objectifs et prennent la puce.
+ */
+function puceDe(marquage, textes, i) {
   const romains = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']
-  if (marquage === 'romain') return `${romains[i] || i + 1}.`
-  if (marquage === 'mixte') return i === 0 ? 'I.' : '•'
+  const romain = n => `${romains[n] || n + 1}.`
+  if (marquage === 'romain') return romain(rang(textes, i))
+  if (marquage === 'mixte') {
+    if (!ouvreGroupe(textes, i)) return '•'
+    return romain(textes.slice(0, i).filter((_, j) => ouvreGroupe(textes, j)).length)
+  }
   return '•'
 }
 
