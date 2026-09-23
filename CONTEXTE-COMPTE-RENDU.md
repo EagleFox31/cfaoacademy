@@ -155,11 +155,18 @@ Trois points à trancher, dans cet ordre suggéré :
    passant `brouillons[0].id`. Une saisie manuelle n'avait par ailleurs
    pas d'id propre (toutes partageaient la clé `'manuel'` et
    s'écrasaient) : elle reçoit désormais `manuel-${Date.now()}`.
-2. **Les chiffres individuels ne sortent pas dans le PPTX.** La
-   diapositive 27 loge ses tableaux dans des **classeurs Excel
-   embarqués** (`ppt/embeddings/Microsoft_Excel_Worksheet5..7.xlsx`), que
-   la composition ne remplit pas. L'aperçu affiche les bons libellés,
-   mais l'export garde les valeurs figées du modèle.
+2. ~~**Les chiffres individuels ne sortent pas dans le PPTX.**~~ Réglé :
+   la fiche (diapositive 27) reçoit ses propres `@classeurs`
+   (`valeursClasseursStagiaire`, mêmes calculs restreints au stagiaire).
+   Son classeur de progression, titré « PROGRESSION », n'était pas
+   reconnu (`NATURES`). Corrigés dans le modèle
+   (`outils/fiche_satisfaction.py`, dépôt compagnon) : zone affichée du
+   classeur de satisfaction qui commençait en ligne 3 (en-tête et
+   « Thèmes abordés » invisibles), critères de l'accueil sans format %,
+   titre de colonne trop long passé sur deux lignes, objet descendu
+   dessous. L'image se cale sur les proportions du **cadre** de l'objet
+   (plus sur `imgW/imgH`, qui différaient en 27 : anneau ovale) ; la
+   légende de l'anneau se mesure sur l'anneau et tient dans l'image.
 3. **Le poids des images** — aucune stratégie arrêtée (compression,
    redimensionnement, stockage hors document).
 

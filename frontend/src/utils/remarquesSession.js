@@ -173,6 +173,21 @@ export function valeursClasseurs(b) {
 }
 
 /**
+ * Les valeurs des classeurs d'une fiche individuelle (diapositive 27) :
+ * les memes calculs, restreints au seul stagiaire.
+ */
+export function valeursClasseursStagiaire(b, id) {
+  const p = (b?.participants || []).find(x => String(x.id) === String(id))
+  if (!p) return valeursClasseurs(b)
+  const reponses = b?.satisfaction?.[p.id] ?? b?.satisfaction?.[String(p.id)]
+  return valeursClasseurs({
+    ...b,
+    participants: [{ ...p, present: true }],
+    satisfaction: reponses ? { [p.id]: reponses } : {},
+  })
+}
+
+/**
  * Une remarque du moteur. Chaque appel tire une graine nouvelle : deux
  * clics sur « Autre proposition » donnent deux textes differents.
  *

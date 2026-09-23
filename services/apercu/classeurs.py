@@ -32,6 +32,8 @@ from pathlib import Path
 
 NATURES = {
     'TAUX DE PROGRESSION': 'progression',
+    # La fiche individuelle (diapositive 27) titre le sien « PROGRESSION ».
+    'PROGRESSION': 'progression',
     'ACQUISITION DES COMPETENCES': 'acquisition',
     'QUALITÉ DE LA FORMATION': 'satisfaction',
 }
@@ -431,24 +433,40 @@ def _legende_anneau(image, entrees, cellules):
     from PIL import ImageDraw, ImageFont
     l, h = image.size
     pixels = image.load()
-    # L'anneau occupe la droite de l'image ; le tableau, a gauche, porte
-    # les memes couleurs et ne doit pas fausser la recherche.
-    xs, ys = [], []
-    for y in range(0, h, 3):
-        for x in range(l // 2, l, 3):
-            r, g, b, a = pixels[x, y]
-            if a and any(abs(r - c[0]) + abs(g - c[1]) + abs(b - c[2]) < 60
-                         for c, _, _ in entrees):
-                xs.append(x)
-                ys.append(y)
-    if not xs:
+    couleurs = [c for c, _, _ in entrees]
+
+    def colore(x, y):
+        r, g, b, a = pixels[x, y]
+        return a and any(abs(r - c[0]) + abs(g - c[1]) + abs(b - c[2]) < 60
+                         for c in couleurs)
+
+    # L'anneau est le bloc colore le plus bas, et le plus a droite : le
+    # tableau, qui porte les memes couleurs, est a sa gauche (page 19) ou
+    # au-dessus (fiche individuelle).
+    rangs = [y for y in range(0, h, 3) if any(colore(x, y) for x in range(l // 2, l, 3))]
+    if not rangs:
         return image
-    gauche, droite, bas = min(xs), max(xs), max(ys)
-    taille = max(14, round(h * 0.045))
-    try:
-        police = ImageFont.truetype('calibrib.ttf', taille)
-    except OSError:
-        police = ImageFont.load_default()
+    bas = haut = rangs[-1]
+    for y in reversed(rangs):
+        if haut - y > 12:
+            break
+        haut = y
+    colonnes = [x for x in range(0, l, 3)
+                if any(colore(x, y) for y in range(haut, bas + 1, 3))]
+    droite = gauche = colonnes[-1]
+    for x in reversed(colonnes):
+        if gauche - x > 12:
+            break
+        gauche = x
+    # Le corps suit la taille de l'anneau, et la legende tient dans l'image.
+    taille = max(12, min(round(h * 0.045), round((droite - gauche) * 0.065)))
+
+    def police_de(t):
+        try:
+            return ImageFont.truetype('calibrib.ttf', t)
+        except OSError:
+            return ImageFont.load_default()
+
     lignes = []
     for couleur, libelle, ref in entrees:
         v = cellules.get(ref)
@@ -456,6 +474,13 @@ def _legende_anneau(image, entrees, cellules):
         # d'Excel : le tableau voisin et la legende disent le meme chiffre.
         lignes.append((couleur, f'{libelle} : {int(float(v) * 100 + 0.5)} %'
                        if v is not None else libelle))
+    mesure = ImageDraw.Draw(image)
+    while True:
+        police = police_de(taille)
+        largeur = max(mesure.textlength(t, font=police) for _, t in lignes) + taille * 1.4
+        if largeur <= l or taille <= 10:
+            break
+        taille -= 1
     pas = round(taille * 1.5)
     besoin = bas + round(taille * 0.8) + pas * len(lignes)
     if besoin > h:
@@ -464,8 +489,7 @@ def _legende_anneau(image, entrees, cellules):
         agrandie.paste(image, (0, 0))
         image = agrandie
     dessin = ImageDraw.Draw(image)
-    largeur = max(dessin.textlength(t, font=police) for _, t in lignes) + taille * 1.4
-    x0 = round((gauche + droite) / 2 - largeur / 2)
+    x0 = min(max(0, round((gauche + droite) / 2 - largeur / 2)), max(0, round(l - largeur)))
     y = bas + round(taille * 0.8)
     for couleur, texte in lignes:
         dessin.rectangle([x0, y + taille * 0.2, x0 + taille * 0.8, y + taille],
@@ -585,7 +609,11 @@ def rafraichir(contenus, slides, valeurs, soffice, profil, cache):
             brut = _ecrire(remplies)
             contenus[emb] = brut
             a_rendre[emb] = brut
-            taille = re.search(r'imgW="(\d+)" imgH="(\d+)"', m.group(0))
+            # L'image s'etire aux proportions du cadre de l'objet, qui ne
+            # sont pas toujours celles de l'EMF (page 27) : c'est sur le
+            # cadre qu'on les prend, sinon l'anneau devient ovale.
+            taille = (re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', m.group(0))
+                      or re.search(r'imgW="(\d+)" imgH="(\d+)"', m.group(0)))
             ratio = int(taille.group(1)) / int(taille.group(2)) if taille else None
             natures[emb] = (quoi, valeurs[quoi], ratio)
             poses += [(rels_nom, rid, emb) for rid in images]
