@@ -109,16 +109,28 @@ export default function PhaseResultats({
             ))}
           </div>
 
-          <div className="cr-table-wrap">
-            <table className="cr-table">
+          {/* L'en-tete reste visible pendant qu'on descend dans la liste :
+              au huitieme stagiaire, on ne sait plus quelle colonne est la
+              theorie. Les largeurs sont fixes pour que les notes restent
+              alignees quelle que soit la longueur des noms. */}
+          <div className="cr-table-wrap cr-table-wrap--fige">
+            <table className="cr-table cr-table--notes">
+              <colgroup>
+                <col />
+                <col style={{ width: 104 }} />
+                <col style={{ width: 104 }} />
+                <col style={{ width: 104 }} />
+                <col style={{ width: 118 }} />
+                <col style={{ width: 118 }} />
+              </colgroup>
               <thead>
                 <tr>
                   <th>Participant</th>
-                  <th style={{ width: 84 }}>Entrée<small>/{baremes.entreeTheorique}</small></th>
-                  <th style={{ width: 84 }}>Théorie<small>/{baremes.sortieTheorique}</small></th>
-                  <th style={{ width: 84 }}>Pratique<small>/{baremes.sortiePratique}</small></th>
-                  <th style={{ width: 96 }}>Progression</th>
-                  <th style={{ width: 96 }}>Score final</th>
+                  <th>Entrée<small>/{baremes.entreeTheorique}</small></th>
+                  <th>Théorie<small>/{baremes.sortieTheorique}</small></th>
+                  <th>Pratique<small>/{baremes.sortiePratique}</small></th>
+                  <th>Progression</th>
+                  <th>Score final</th>
                 </tr>
               </thead>
               <tbody>
@@ -177,21 +189,6 @@ export default function PhaseResultats({
 
           {synthese.saisis > 0 && (
             <div className="cr-kpis" style={{ marginTop: 20 }}>
-              <Indicateur valeur={afficher(synthese.scoreFinal)} legende="Score moyen" />
-              <Indicateur
-                valeur={synthese.progression == null ? '—'
-                  : `${synthese.progression > 0 ? '+' : ''}${synthese.progression} %`}
-                legende="Progression moyenne" />
-              <Indicateur valeur={synthese.enRetrait}
-                legende={`Sous le seuil de ${SEUIL} %`}
-                ton={synthese.enRetrait === 0 ? 'ok' : 'ko'} />
-              <Indicateur valeur={`${synthese.saisis}/${synthese.effectif}`}
-                legende="Résultats saisis" />
-            </div>
-          )}
-
-          {synthese.saisis > 0 && (
-            <div className="cr-kpis" style={{ marginTop: 18 }}>
               <Indicateur valeur={afficher(synthese.scoreFinal)} legende="Score moyen" />
               <Indicateur
                 valeur={synthese.progression == null ? '—'
@@ -266,36 +263,132 @@ function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
   )
 }
 
+/** Le trace de chaque mention, au trait.
+ *
+ *  Des formes nettement differentes plutot qu'une gradation de visages :
+ *  cinq sourires voisins se confondent au clic, une etoile et une croix
+ *  jamais. Pas d'emoji, dont le rendu change d'un poste a l'autre, et
+ *  pas de couleur : le choix se lit a l'inversion de la case.
+ */
+const TRACES = {
+  tres_satisfaisant: (
+    <path d="M12 3.6l2.55 5.2 5.75.84-4.16 4.05.98 5.72L12 16.72l-5.12 2.69.98-5.72L3.7 9.64l5.75-.84z" />
+  ),
+  satisfaisant: (
+    <>
+      <path d="M7.5 10.5V20" />
+      <path d="M14.6 6.2 14 10.5h4.9a1.8 1.8 0 0 1 1.75 2.2l-1.45 6A1.8 1.8 0 0 1 17.45 20H5.3a1.3 1.3 0 0 1-1.3-1.3v-6.9a1.3 1.3 0 0 1 1.3-1.3h2.2L10.9 4a1.9 1.9 0 0 1 3.7 2.2z" />
+    </>
+  ),
+  moyen: (
+    <>
+      <circle cx="12" cy="12" r="8.4" />
+      <path d="M8.2 12h7.6" />
+    </>
+  ),
+  peu_satisfaisant: (
+    <>
+      <path d="M16.5 13.5V4" />
+      <path d="M9.4 17.8 10 13.5H5.1a1.8 1.8 0 0 1-1.75-2.2l1.45-6A1.8 1.8 0 0 1 6.55 4H18.7a1.3 1.3 0 0 1 1.3 1.3v6.9a1.3 1.3 0 0 1-1.3 1.3h-2.2L13.1 20a1.9 1.9 0 0 1-3.7-2.2z" />
+    </>
+  ),
+  insatisfaisant: (
+    <>
+      <circle cx="12" cy="12" r="8.4" />
+      <path d="M9 9l6 6M15 9l-6 6" />
+    </>
+  ),
+}
+
+function IconeMention({ cle }) {
+  return (
+    <svg className="cr-mention-icone" viewBox="0 0 24 24" width="18" height="18"
+      fill="none" stroke="currentColor" strokeWidth="1.7"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {TRACES[cle]}
+    </svg>
+  )
+}
+
 /** Une grille de criteres : une ligne par critere, une colonne par
- *  stagiaire. Le tableau croise tient sur un ecran la ou treize champs
- *  par personne demanderaient une page entiere. */
+ *  stagiaire.
+ *
+ *  Les criteres restent figes a gauche et les noms en tete : on fait
+ *  defiler les stagiaires sans perdre de vue ni la question ni la
+ *  personne. Chaque case offre les cinq mentions en icones ; un second
+ *  clic sur la mention retenue l'efface.
+ */
 function GrilleCriteres({ criteres, participants, reponses, onRepondre }) {
   return (
     <div className="cr-satisfaction">
-      <div className="cr-satis-entete">
-        <span className="cr-satis-critere">Critère</span>
-        {participants.map(p => (
-          <span key={p.id} className="cr-satis-nom" title={`${p.prenom} ${p.nom}`}>
-            {p.prenom} {p.nom.slice(0, 1)}.
-          </span>
+      <ul className="cr-mentions-legende" aria-label="Mentions">
+        {MENTIONS.map(m => (
+          <li key={m.cle}>
+            <IconeMention cle={m.cle} />
+            {m.libelle}
+          </li>
         ))}
+      </ul>
+
+      <div className="cr-satis-wrap">
+        <table className="cr-satis-table">
+          <colgroup>
+            <col className="cr-satis-col-critere" />
+            {participants.map(p => <col key={p.id} className="cr-satis-col" />)}
+          </colgroup>
+          <thead>
+            <tr>
+              <th className="cr-satis-coin" scope="col">Critère</th>
+              {participants.map(p => {
+                const siennes = reponses[p.id] || {}
+                const faites = criteres.filter(c => siennes[c.cle]).length
+                return (
+                  <th key={p.id} scope="col" className="cr-satis-nom"
+                    title={`${p.prenom} ${p.nom}`}>
+                    <span className="cr-satis-nom-texte">{p.prenom} {p.nom}</span>
+                    <small className={faites === criteres.length ? 'cr-satis-complet' : undefined}>
+                      {faites}/{criteres.length}
+                    </small>
+                  </th>
+                )
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {criteres.map(c => (
+              <tr key={c.cle}>
+                <th scope="row" className="cr-satis-critere" title={c.libelle}>
+                  {c.libelle}
+                </th>
+                {participants.map(p => {
+                  const choisie = reponses[p.id]?.[c.cle] || ''
+                  return (
+                    <td key={p.id}>
+                      <div className={`cr-mentions${choisie ? ' cr-mentions--rempli' : ''}`}
+                        role="radiogroup"
+                        aria-label={`${c.libelle} — ${p.prenom} ${p.nom}`}>
+                        {MENTIONS.map(m => {
+                          const on = choisie === m.cle
+                          return (
+                            <button key={m.cle} type="button" role="radio"
+                              aria-checked={on}
+                              className={`cr-mention${on ? ' cr-mention--on' : ''}`}
+                              title={m.libelle}
+                              aria-label={m.libelle}
+                              onClick={() => onRepondre(p.id, c.cle, on ? '' : m.cle)}>
+                              <IconeMention cle={m.cle} />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      {criteres.map(c => (
-        <div key={c.cle} className="cr-satis-ligne">
-          <span className="cr-satis-critere" title={c.libelle}>{c.libelle}</span>
-          {participants.map(p => (
-            <select key={p.id} className="cr-satis-choix"
-              value={reponses[p.id]?.[c.cle] || ''}
-              onChange={e => onRepondre(p.id, c.cle, e.target.value)}
-              aria-label={`${c.libelle} — ${p.prenom} ${p.nom}`}>
-              <option value="">—</option>
-              {MENTIONS.map(m => (
-                <option key={m.cle} value={m.cle}>{m.signe} {m.libelle}</option>
-              ))}
-            </select>
-          ))}
-        </div>
-      ))}
     </div>
   )
 }

@@ -306,6 +306,8 @@
   border-radius: 6px;
   background: var(--paper-3);
   color: var(--muted);
+  display: inline-block;
+  white-space: nowrap;
 }
 .cr-calc--ok { background: #E6F6EC; color: #147a41; }
 .cr-calc--ko { background: var(--red-soft); color: var(--red-deep); }
@@ -1028,87 +1030,176 @@
    ══════════════════════════════════════════════════════════════════ */
 
 .cr-satisfaction {
-  --cr-satis-critere: 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* La legende donne une fois le sens des cinq icones ; chaque bouton le
+   redit au survol. */
+.cr-mentions-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+.cr-mentions-legende li { display: inline-flex; align-items: center; gap: 6px; }
+.cr-mentions-legende .cr-mention-icone { color: var(--ink); }
+
+/* Le cadre defile seul : les noms s'y figent en haut, les criteres a
+   gauche. Sans cadre borne, c'est la page qui defilerait et les
+   en-tetes partiraient avec elle. */
+.cr-satis-wrap {
+  max-height: min(58vh, 560px);
+  overflow: auto;
   border: 1px solid var(--rule);
   border-radius: 12px;
-  overflow: hidden;
 }
-.cr-satis-entete,
-.cr-satis-ligne {
-  display: grid;
-  grid-template-columns: var(--cr-satis-critere) repeat(auto-fit, minmax(96px, 1fr));
-  align-items: center;
-  gap: 8px;
-  padding: 7px 14px;
+.cr-satis-table {
+  width: max-content;
+  min-width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
 }
-.cr-satis-entete {
-  background: var(--paper-2);
+/* Cinq cases de 26 px et leurs ecarts : une colonne de stagiaire ne
+   s'elargit ni ne se resserre avec la longueur de son nom. */
+.cr-satis-col-critere { width: 230px; }
+.cr-satis-col { width: 176px; }
+
+.cr-satis-table th,
+.cr-satis-table td {
+  padding: 8px 10px;
   border-bottom: 1px solid var(--rule);
+  background: var(--paper);
 }
-.cr-satis-nom,
-.cr-satis-entete .cr-satis-critere {
+.cr-satis-table tbody tr:last-child th,
+.cr-satis-table tbody tr:last-child td { border-bottom: 0; }
+.cr-satis-table tbody tr:hover th,
+.cr-satis-table tbody tr:hover td { background: var(--paper-2); }
+
+/* Chaque stagiaire dans son couloir : un filet franc entre deux
+   colonnes et une marge de part et d'autre des cinq mentions, pour
+   qu'un clic ne tombe jamais dans la colonne voisine. */
+.cr-satis-table td,
+.cr-satis-table thead .cr-satis-nom {
+  padding-left: 18px;
+  padding-right: 18px;
+  border-left: 1px solid var(--rule-strong, rgba(16, 20, 48, 0.16));
+}
+.cr-satis-table tbody td { padding-top: 10px; padding-bottom: 10px; }
+
+/* Les noms, figes en haut. */
+.cr-satis-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--paper-3);
+  text-align: center;
+  vertical-align: bottom;
+}
+.cr-satis-nom-texte {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.cr-satis-nom small {
+  display: block;
+  margin-top: 3px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 9.5px;
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--muted-2);
+}
+.cr-satis-nom small.cr-satis-complet { color: #1aab5b; }
+
+/* Les criteres, figes a gauche ; le coin reste au-dessus des deux. */
+.cr-satis-table .cr-satis-coin,
+.cr-satis-table .cr-satis-critere {
+  position: sticky;
+  left: 0;
+  text-align: left;
+  border-right: 1px solid var(--rule);
+}
+.cr-satis-table .cr-satis-coin {
+  z-index: 3;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: .07em;
   text-transform: uppercase;
-  color: var(--muted-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cr-satis-tete {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 9px 14px;
-  background: var(--paper-3);
-  border-top: 1px solid var(--rule);
-}
-.cr-satis-groupe:first-of-type .cr-satis-tete { border-top: 0; }
-.cr-satis-titre { font-size: 13px; font-weight: 600; color: var(--ink); }
-
-/* Un filet sous chaque critère découpait la grille en barreaux : sur
-   treize lignes, l'œil compte les traits au lieu de lire. L'alignement
-   des colonnes suffit à guider ; un léger fond au survol marque la
-   ligne qu'on remplit. */
-.cr-satis-ligne { transition: background .12s; }
-.cr-satis-ligne:hover { background: var(--paper-2); }
-.cr-satis-ligne:focus-within { background: var(--paper-2); }
-.cr-satis-ligne .cr-satis-critere {
-  font-size: 12.5px;
   color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-.cr-satis-choix {
-  width: 100%;
-  min-width: 0;
-  padding: 4px 6px;
+.cr-satis-table .cr-satis-critere {
+  z-index: 1;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+/* Les cinq mentions d'une case. Au trait et sans couleur : la mention
+   retenue s'inverse, les autres s'estompent pour que le choix se lise
+   d'un coup d'oeil sur toute la ligne. */
+.cr-mentions {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+}
+.cr-mention {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
   border: 1px solid var(--rule);
   border-radius: 7px;
   background: var(--paper);
-  font-family: inherit;
-  font-size: 12px;
-  color: var(--ink);
+  color: var(--muted);
   cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s, opacity .12s;
 }
-.cr-satis-choix:focus {
-  outline: none;
-  border-color: var(--red);
+.cr-mention:hover {
+  color: var(--ink);
+  border-color: var(--ink);
 }
-/* Un critère non renseigné ne doit pas se lire comme une mauvaise
-   note : il reste en gris, sans couleur d'alerte. */
-.cr-satis-choix:invalid,
-.cr-satis-choix option[value=''] { color: var(--muted-2); }
+.cr-mention:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 1px;
+}
+.cr-mentions--rempli .cr-mention:not(.cr-mention--on) { opacity: .4; }
+.cr-mentions--rempli .cr-mention:not(.cr-mention--on):hover { opacity: 1; }
+.cr-mention--on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
 
-@media (max-width: 900px) {
-  .cr-satisfaction { --cr-satis-critere: 150px; }
-  .cr-satis-entete,
-  .cr-satis-ligne { grid-template-columns: var(--cr-satis-critere) repeat(auto-fit, minmax(72px, 1fr)); }
+/* ---- Notes des tests : en-tete fige, colonnes a largeur fixe ---- */
+.cr-table-wrap--fige {
+  max-height: min(58vh, 560px);
+  overflow: auto;
 }
+.cr-table--notes { table-layout: fixed; }
+.cr-table--notes thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  /* Une bordure de table fusionnee ne suit pas l'en-tete colle : le
+     filet passe en ombre portee. */
+  border-bottom: 0;
+  box-shadow: inset 0 -1px 0 var(--rule);
+}
+.cr-table--notes .cr-num { width: 100%; }
 
 /* ══════════════════════════════════════════════════════════════════
    Volets dépliables de la phase « résultats »
@@ -2742,3 +2833,6 @@
 .cr-groupe:hover .cr-case-recadrer { opacity: 1; }
 .cr-portrait--cadrage,
 .cr-groupe--cadrage { border-color: var(--accent, #e2001a); border-style: solid; }
+/* Le premier couloir s'appuie sur le filet de la colonne des criteres :
+   pas de double trait. */
+.cr-satis-table tr > :nth-child(2) { border-left: 0; }
