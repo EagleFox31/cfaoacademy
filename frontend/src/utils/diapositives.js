@@ -77,7 +77,11 @@ export function valeursDrapeaux(brouillon, session, synthese, page) {
     const v = t[`couverture.${cle}`]
     return v != null && v !== '' ? v : defaut
   }
-  const couvTitre = couv('titre', titreDeCouverture(b.codeFormation, b.intitule))
+  // Le titre n'est pas saisi : il se recompose depuis le code et
+  // l'intitule, corriges sur la page ou repris de l'etape 1.
+  const couvTitre = titreDeCouverture(
+    couv('code', b.codeFormation || ''),
+    couv('intitule', b.intitule || ''))
   // Un sous-titre laisse vide est un choix, pas un oubli : sans ce
   // marqueur, le service garderait le mot « Sous titre » du modele.
   const couvSousTitre = couv('sousTitre', '') || VIDE
