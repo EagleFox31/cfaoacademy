@@ -164,13 +164,14 @@ Trois points à trancher, dans cet ordre suggéré :
    redimensionnement, stockage hors document).
 
 **Export Excel des résultats** (`utils/exportEvaluation.js`, bouton de
-l'en-tête de l'étape 2). Format unique tiré des 7 classeurs « Evaluation »
-du formateur : feuille « Données Stagiaires » (saisie : notes brutes +
-barème, mentions en liste) et « Satisfaction Stagiaires » (formules).
-Les plages suivent le nombre de stagiaires présents — les originaux
-figeaient B:M et cassaient au-delà de 12. La progression GLOBAL est la
-moyenne des progressions individuelles, comme dans le rapport. Vérifié
-par recalcul LibreOffice pour 1, 8, 13 et 14 stagiaires.
+l'en-tête de l'étape 2). Remplit le **modèle** `frontend/public/modeles/evaluation.xlsx`
+— le classeur « Evaluation … Climatisation » anonymisé, mise en forme
+d'origine intacte (exigence : *« tout doit rester pareil »*). Seules les
+colonnes de stagiaires varient : style des colonnes du modèle recopié,
+GLOBAL et barème décalés, formules réécrites sur les plages réelles (les
+originaux figeaient B:M). Corrigé sans toucher la présentation : ligne
+« aéroport » (lisait le repas CFR) ; progression GLOBAL = moyenne des
+progressions individuelles. Vérifié (LibreOffice) pour 1 à 20 stagiaires.
 
 ### Reporté par décision explicite
 
