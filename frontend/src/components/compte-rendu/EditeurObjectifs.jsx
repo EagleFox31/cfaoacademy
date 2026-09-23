@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { DISPOSITIONS, MAX_PHOTOS, casesDe, dispositionsPour, grilleDe }
+import { MAX_PHOTOS, casesDe, dispositionsClassees, dispositionsPour, grilleDe }
   from '../../data/dispositions_photos'
 
 /**
@@ -93,13 +93,23 @@ export default function EditeurObjectifs({
               Un objectif par ligne
             </span>
             <div className="cr-obj-champ">
-              {/* La marge reprend le marquage choisi, ligne a ligne :
-                  on voit la numerotation du document en tapant. */}
+              {/* La marge est un miroir de la zone de saisie : meme
+                  texte, meme police, meme largeur, pour que ses lignes
+                  se replient exactement comme les siennes. Le texte y
+                  est rendu invisible ; seule la puce, posee en tete de
+                  ligne, se voit. Une marge qui n'afficherait qu'une
+                  puce par objectif se decalerait des qu'un objectif
+                  tient sur deux lignes. */}
               <div className="cr-obj-marge" aria-hidden="true" ref={marge}>
                 {texteDesObjectifs(lignes).split(/\n/).map((l, i) => (
-                  <span key={i} className={l.trim() ? '' : 'cr-obj-marge--vide'}>
-                    {l.trim() ? puceDe(marquage || 'puces', rang(lignes, i)) : ''}
-                  </span>
+                  <p key={i} className="cr-obj-marge-ligne">
+                    {l.trim() && (
+                      <span className="cr-obj-marge-puce">
+                        {puceDe(marquage || 'puces', rang(lignes, i))}
+                      </span>
+                    )}
+                    <span className="cr-obj-marge-ombre">{l || ' '}</span>
+                  </p>
                 ))}
               </div>
               <textarea className="cr-textarea cr-obj-texte"
@@ -171,8 +181,8 @@ export default function EditeurObjectifs({
               onChange={e => { onAjouter?.(e.target.files); e.target.value = '' }} />
 
             <span className="cr-field-label">Disposition</span>
-            <div className="cr-obj-choix cr-obj-choix--colonne">
-              {DISPOSITIONS.map(d => {
+            <div className="cr-obj-choix cr-obj-choix--colonne cr-obj-choix--defile">
+              {dispositionsClassees(cliches.length).map(d => {
                 const possible = d.nombre === cliches.length
                 return (
                   <button key={d.id} type="button"
