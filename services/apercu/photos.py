@@ -18,6 +18,7 @@ photos dans ce cadre selon la disposition choisie par le formateur,
 chacune rognee pour remplir sa case sans se deformer.
 """
 import hashlib
+import html
 import io
 import re
 from pathlib import Path
@@ -32,6 +33,9 @@ QUALITE = 85
 # L'espace entre deux photos, celui que le modele laisse entre ses deux
 # emplacements de la diapositive 9.
 ECART = 125000
+
+# La bande de legende sous une photo, celle des diapositives 12 a 15.
+BANDE_LEGENDE = 329184
 
 NOM_EMPLACEMENT = 'Emplacement photo'
 TYPE_IMAGE = ('http://schemas.openxmlformats.org/officeDocument/2006/'
@@ -110,18 +114,27 @@ def case(cadre_, r):
     return round(ax), round(ay), round(bx - ax), round(by - ay)
 
 
-def rognage(image_l, image_h, case_l, case_h):
+def rognage(image_l, image_h, case_l, case_h, cadrage=None):
     """Le `srcRect` qui fait remplir la case sans deformer l'image.
 
     Les valeurs sont en millemes de pourcent, retires de chaque bord.
+    Le cadrage choisi par le formateur (`{x, y}` en pourcentages, comme
+    `object-position` dans l'editeur) repartit la partie retiree entre
+    les deux bords : a 0, tout est pris a droite ou en bas.
     """
+    cadrage = cadrage or {}
     ratio_image = image_l / image_h
     ratio_case = case_l / case_h
+
+    def partage(retire, pct):
+        avant = retire * min(100, max(0, float(pct))) / 100
+        return int(avant * 100000), int((retire - avant) * 100000)
+
     if ratio_image > ratio_case:
-        part = int((1 - ratio_case / ratio_image) / 2 * 100000)
-        return f'<a:srcRect l="{part}" r="{part}"/>'
-    part = int((1 - ratio_image / ratio_case) / 2 * 100000)
-    return f'<a:srcRect t="{part}" b="{part}"/>'
+        g, d = partage(1 - ratio_case / ratio_image, cadrage.get('x', 50))
+        return f'<a:srcRect l="{g}" r="{d}"/>'
+    h, b = partage(1 - ratio_image / ratio_case, cadrage.get('y', 50))
+    return f'<a:srcRect t="{h}" b="{b}"/>'
 
 
 def forme_image(ident_forme, nom, rid, pos, rect):
@@ -136,13 +149,32 @@ def forme_image(ident_forme, nom, rid, pos, rect):
         '</p:pic>')
 
 
+def forme_legende(ident_forme, rang, pos, texte):
+    """La legende d'une photo, dans le style des diapositives 12 a 15."""
+    x, y, l, h = pos
+    return (
+        f'<p:sp><p:nvSpPr><p:cNvPr id="{ident_forme}" name="Legende {rang}"/>'
+        '<p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr>'
+        f'<a:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="{l}" cy="{h}"/></a:xfrm>'
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>'
+        '<p:txBody><a:bodyPr wrap="square" lIns="0" rIns="0" tIns="0" bIns="0" '
+        'rtlCol="0" anchor="ctr"><a:normAutofit/></a:bodyPr><a:lstStyle/>'
+        '<a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1200" dirty="0">'
+        '<a:solidFill><a:schemeClr val="tx1"/></a:solidFill></a:rPr>'
+        f'<a:t>{html.escape(texte, quote=False)}</a:t></a:r></a:p></p:txBody></p:sp>')
+
+
 def poser(contenus, slide, photos, cache):
     """Pose les photos dans la diapositive `slide` du paquet `contenus`.
 
     `photos` est la liste des `{id, x, y, l, h}` de la disposition, dans
-    l'ordre du formateur. Une photo inconnue du service est ignoree ;
-    sans aucune photo lisible, les emplacements du modele restent, comme
-    toute donnee manquante.
+    l'ordre du formateur, avec au besoin son `cadrage` et sa `legende`.
+    Une photo qui porte une cle `legende` — celles d'une disposition
+    legendee — cede le bas de sa case a une bande de legende.
+
+    Une photo inconnue du service est ignoree ; sans aucune photo
+    lisible, les emplacements du modele restent, comme toute donnee
+    manquante.
     """
     lisibles = [(p, _chemin(p.get('id'), cache)) for p in photos or []]
     lisibles = [(p, c) for p, c in lisibles if c]
@@ -154,22 +186,22 @@ def poser(contenus, slide, photos, cache):
         return
     cadre_ = cadre([pos for _, pos in trouves])
 
-    rels_nom = slide.replace('slides/', 'slides/_rels/') + '.rels'
-    rels = contenus[rels_nom].decode('utf-8')
-    base = Path(slide).stem
     ident_forme = 900
     formes = []
     for i, (p, chemin) in enumerate(lisibles):
-        media = f'ppt/media/{base}_photo{i + 1}.jpg'
-        contenus[media] = chemin.read_bytes()
-        rid = f'rIdPhoto{i + 1}'
-        rels = rels.replace(
-            '</Relationships>',
-            f'<Relationship Id="{rid}" Type="{TYPE_IMAGE}" '
-            f'Target="../media/{Path(media).name}"/></Relationships>')
+        rid = _joindre(contenus, slide, i + 1, chemin)
         pos = case(cadre_, p)
+        if 'legende' in p:
+            x, y, l, h = pos
+            pos = (x, y, l, h - BANDE_LEGENDE)
+            if str(p.get('legende') or '').strip():
+                formes.append(forme_legende(
+                    ident_forme + 50 + i, i + 1,
+                    (x, y + h - BANDE_LEGENDE, l, BANDE_LEGENDE),
+                    str(p['legende'])))
         with Image.open(chemin) as image:
-            rect = rognage(image.width, image.height, pos[2], pos[3])
+            rect = rognage(image.width, image.height, pos[2], pos[3],
+                           p.get('cadrage'))
         formes.append(forme_image(ident_forme + i, f'Photo {i + 1}', rid,
                                   pos, rect))
 
@@ -179,6 +211,49 @@ def poser(contenus, slide, photos, cache):
         xml = xml[:m.start()] + xml[m.end():]
     xml = xml[:premier.start()] + ''.join(formes) + xml[premier.end():]
     contenus[slide] = xml.encode('utf-8')
+
+
+def poser_nommes(contenus, slide, par_nom, cache):
+    """Pose chaque photo a la place de l'emplacement qui porte son nom.
+
+    Pour les pages ou chaque image a un role — le portrait du formateur,
+    la photo de groupe — plutot qu'une place dans une disposition.
+    `par_nom` associe le nom de la forme a `{id, cadrage}`. L'image
+    reprend exactement le cadre de l'emplacement, rognee pour le remplir.
+    """
+    xml = contenus[slide].decode('utf-8')
+    rang = 0
+    for nom, p in (par_nom or {}).items():
+        chemin = _chemin((p or {}).get('id'), cache)
+        if not chemin:
+            continue
+        m = re.search(r'<p:sp>(?:(?!</p:sp>).)*?name="' + re.escape(nom)
+                      + r'".*?</p:sp>', xml, re.S)
+        pos = m and RE_POSITION.search(m.group(0))
+        if not pos:
+            continue
+        pos = tuple(int(v) for v in pos.groups())
+        rang += 1
+        rid = _joindre(contenus, slide, rang, chemin)
+        with Image.open(chemin) as image:
+            rect = rognage(image.width, image.height, pos[2], pos[3],
+                           p.get('cadrage'))
+        xml = (xml[:m.start()] + forme_image(900 + rang, nom, rid, pos, rect)
+               + xml[m.end():])
+    contenus[slide] = xml.encode('utf-8')
+
+
+def _joindre(contenus, slide, rang, chemin):
+    """Joint une image au paquet et a la diapositive ; renvoie sa relation."""
+    base = Path(slide).stem
+    media = f'ppt/media/{base}_photo{rang}.jpg'
+    contenus[media] = chemin.read_bytes()
+    rid = f'rIdPhoto{rang}'
+    rels_nom = slide.replace('slides/', 'slides/_rels/') + '.rels'
+    rels = contenus[rels_nom].decode('utf-8').replace(
+        '</Relationships>',
+        f'<Relationship Id="{rid}" Type="{TYPE_IMAGE}" '
+        f'Target="../media/{Path(media).name}"/></Relationships>')
     contenus[rels_nom] = rels.encode('utf-8')
 
     types = contenus['[Content_Types].xml'].decode('utf-8')
@@ -187,3 +262,4 @@ def poser(contenus, slide, photos, cache):
             '<Default ', '<Default Extension="jpg" ContentType="image/jpeg"/>'
             '<Default ', 1)
         contenus['[Content_Types].xml'] = types.encode('utf-8')
+    return rid

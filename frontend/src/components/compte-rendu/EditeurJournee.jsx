@@ -20,6 +20,7 @@
  */
 
 import { useState } from 'react'
+import ImageCadree, { BoutonRecadrer } from './ImageCadree'
 import { casesDe, dispositionsClassees, dispositionsPour, grilleDe }
   from '../../data/dispositions_photos'
 
@@ -77,7 +78,7 @@ function retenues(lignes) {
 export default function EditeurJournee({
   jour, journee, photos, disposition, legende,
   onJournee, onLegende,
-  onAjouter, onRetirer, onReordonner, onDisposition, onLegender,
+  onAjouter, onRetirer, onReordonner, onDisposition, onLegender, onCadrer,
   jourPrecedent, onCopierVeille,
 }) {
   const contenu = journee || {}
@@ -196,7 +197,7 @@ export default function EditeurJournee({
             parImage={parImage}
             legende={legende}
             onRetirer={onRetirer} onReordonner={onReordonner}
-            onAjouter={onAjouter} onLegender={onLegender}
+            onAjouter={onAjouter} onLegender={onLegender} onCadrer={onCadrer}
             onLegende={onLegende} />
         </div>
       </Bloc>
@@ -226,9 +227,10 @@ function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
 
 /** Les photos posees selon la disposition retenue. */
 function PlanchePhotos({ photos, disposition, jour, parImage, legende,
-  onRetirer, onReordonner, onAjouter, onLegender, onLegende }) {
+  onRetirer, onReordonner, onAjouter, onLegender, onLegende, onCadrer }) {
   const [saisie, setSaisie] = useState(null)
   const [survol, setSurvol] = useState(null)
+  const [cadrage, setCadrage] = useState(null)
   const champ = `cr-jour-fichier-${jour}`
 
   function deposer(vers) {
@@ -269,14 +271,20 @@ function PlanchePhotos({ photos, disposition, jour, parImage, legende,
       <div className="cr-planche" style={grilleDe(disposition)}>
       {cases.map((forme, i) => {
         const photo = photos[i]
+        const recadre = cadrage === photo.id
         return (
           <div key={photo.id}
             className={`cr-case${survol === i ? ' cr-case--cible' : ''}`
               + `${saisie === i ? ' cr-case--prise' : ''}`
-              + `${parImage ? ' cr-case--legendee' : ''}`}
+              + `${parImage ? ' cr-case--legendee' : ''}`
+              + `${recadre ? ' cr-case--cadrage' : ''}`}
             style={forme}
-            draggable
-            onDragStart={() => setSaisie(i)}
+            draggable={!recadre}
+            onDragStart={e => {
+              // Ctrl + glisser recadre l'image au lieu de deplacer la case.
+              if (e.ctrlKey) { e.preventDefault(); return }
+              setSaisie(i)
+            }}
             onDragOver={e => { e.preventDefault(); setSurvol(i) }}
             onDragLeave={() => setSurvol(null)}
             onDrop={e => {
@@ -286,8 +294,14 @@ function PlanchePhotos({ photos, disposition, jour, parImage, legende,
             }}
             onDragEnd={() => { setSaisie(null); setSurvol(null) }}>
             <div className="cr-case-image">
-              <img src={photo.apercu} alt="" />
+              <ImageCadree src={photo.apercu} cadrage={photo.cadrage}
+                actif={recadre}
+                onCadrer={onCadrer && (c => onCadrer(photo.id, c))} />
               <span className="cr-case-rang" aria-hidden="true">{i + 1}</span>
+              {onCadrer && (
+                <BoutonRecadrer actif={recadre} rang={i + 1}
+                  onBasculer={() => setCadrage(recadre ? null : photo.id)} />
+              )}
               <button type="button" className="cr-case-retirer"
                 onClick={() => onRetirer?.(photo.id)}
                 aria-label={`Retirer la photo ${i + 1}`}>×</button>
