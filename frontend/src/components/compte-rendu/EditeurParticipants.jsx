@@ -30,6 +30,7 @@ export default function EditeurParticipants({
   onFormateurs, onPhotoGroupe,
 }) {
   const liste = formateurs?.length ? formateurs : [FORMATEUR_VIDE]
+  const [volet, setVolet] = useState('formateurs')
 
   function majChamp(i, champ, valeur) {
     const suite = liste.map((f, j) => (j === i ? { ...f, [champ]: valeur } : f))
@@ -58,11 +59,18 @@ export default function EditeurParticipants({
     })
   }
 
+  const nommes = liste.filter(f => (f.nom || '').trim()).length
+  const portraits = liste.filter(f => f.portrait).length
+
   return (
-    <div className="cr-part">
-      <div className="cr-part-bloc">
+    <div className="cr-blocs cr-blocs--journee cr-part">
+      <Bloc titre="Les formateurs"
+        resume={portraits ? `${portraits} portrait${portraits > 1 ? 's' : ''}` : 'Nom, fonction, portrait'}
+        valeur={nommes || '—'}
+        ton={nommes ? 'ok' : null}
+        ouvert={volet === 'formateurs'}
+        onOuvrir={() => setVolet('formateurs')}>
         <div className="cr-part-tete">
-          <span className="cr-field-label">Formateur</span>
           <button type="button" className="cr-part-ajout" onClick={ajouter}>
             + Ajouter un formateur
           </button>
@@ -77,15 +85,39 @@ export default function EditeurParticipants({
               onRetirer={() => retirer(i)} />
           ))}
         </div>
-      </div>
+      </Bloc>
 
-      <div className="cr-part-bloc cr-part-bloc--stagiaires">
-        <span className="cr-field-label">Stagiaires</span>
+      <Bloc titre="Les stagiaires"
+        resume={photoGroupe ? 'Photo posée' : 'Photo de groupe'}
+        valeur={(stagiaires || []).length || '—'}
+        ton={(stagiaires || []).length ? 'ok' : null}
+        ouvert={volet === 'stagiaires'}
+        onOuvrir={() => setVolet('stagiaires')}>
         <div className="cr-part-saisie">
           <TableauStagiaires stagiaires={stagiaires} />
           <CadreGroupe photo={photoGroupe} onPhoto={onPhotoGroupe} />
         </div>
-      </div>
+      </Bloc>
+    </div>
+  )
+}
+
+/** Un volet depliable, ouvert ou non selon le parent. */
+function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
+  return (
+    <div className={`cr-bloc${ouvert ? ' cr-bloc--ouvert' : ''}`}>
+      <h3 className="cr-bloc-titre">
+        <button type="button" className="cr-bloc-bouton"
+          aria-expanded={ouvert} onClick={onOuvrir}>
+          <span className="cr-bloc-fleche" aria-hidden="true">▸</span>
+          <span className="cr-bloc-nom">{titre}</span>
+          <span className="cr-bloc-resume">{resume}</span>
+          <span className={`cr-calc${ton ? ` cr-calc--${ton}` : ' cr-calc--vide'}`}>
+            {valeur}
+          </span>
+        </button>
+      </h3>
+      {ouvert && <div className="cr-bloc-corps">{children}</div>}
     </div>
   )
 }

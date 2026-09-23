@@ -159,6 +159,17 @@ export default function EditeurObjectifs({
               le rendu : on choisit une mise en page en voyant l'effet
               qu'elle produit sur ses propres photos. */}
           <div className="cr-obj-cote cr-obj-cote--gauche">
+            <button type="button" className="cr-obj-ajout cr-obj-ajout--haut"
+              disabled={cliches.length >= MAX_PHOTOS}
+              onClick={() => document.getElementById('cr-obj-fichier')?.click()}>
+              + Ajouter une photo
+              <span className="cr-obj-ajout-compte">
+                {cliches.length}/{MAX_PHOTOS}
+              </span>
+            </button>
+            <input id="cr-obj-fichier" type="file" accept="image/*" multiple hidden
+              onChange={e => { onAjouter?.(e.target.files); e.target.value = '' }} />
+
             <span className="cr-field-label">Disposition</span>
             <div className="cr-obj-choix cr-obj-choix--colonne">
               {DISPOSITIONS.map(d => {
@@ -180,16 +191,6 @@ export default function EditeurObjectifs({
               })}
             </div>
 
-            <button type="button" className="cr-obj-ajout"
-              disabled={cliches.length >= MAX_PHOTOS}
-              onClick={() => document.getElementById('cr-obj-fichier')?.click()}>
-              + Ajouter
-              <span className="cr-obj-ajout-compte">
-                {cliches.length}/{MAX_PHOTOS}
-              </span>
-            </button>
-            <input id="cr-obj-fichier" type="file" accept="image/*" multiple hidden
-              onChange={e => { onAjouter?.(e.target.files); e.target.value = '' }} />
           </div>
 
           <PlanchePhotos photos={cliches}
@@ -266,7 +267,13 @@ function PlanchePhotos({ photos, disposition, onRetirer, onReordonner, onAjouter
 
   // Les cases de la disposition, limitees aux photos posees : une case
   // vide repeterait le bouton d'ajout de la colonne de gauche.
-  const cases = casesDe(disposition).slice(0, photos.length)
+  const toutes = casesDe(disposition)
+  const cases = toutes.slice(0, photos.length)
+  // Une case reste ouverte tant que la disposition n'est pas remplie :
+  // on complete sans repasser par la colonne de gauche.
+  // La disposition courante epouse le nombre de photos : la case
+  // d'ajout n'y figure pas, on la pose en fin de grille.
+  const libre = photos.length < MAX_PHOTOS
 
   return (
     <div className="cr-planche"
@@ -296,6 +303,15 @@ function PlanchePhotos({ photos, disposition, onRetirer, onReordonner, onAjouter
           </div>
         )
       })}
+      {libre && (
+        <button type="button" className="cr-case cr-case--libre"
+          onClick={() => document.getElementById('cr-obj-fichier')?.click()}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => { e.preventDefault(); onAjouter?.(e.dataTransfer.files) }}
+          aria-label="Ajouter une photo">
+          <span aria-hidden="true">+</span>
+        </button>
+      )}
     </div>
   )
 }
