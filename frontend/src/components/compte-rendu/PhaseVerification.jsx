@@ -429,39 +429,74 @@ function FormulairePage({
             n'y est fige : le titre porte le code, et le formateur
             reecrit ce qu'il veut sans revenir en arriere. */}
         {page.type === 'couverture' && (page.periode || page.lieu) && (
-          <div className="cr-couv-saisie">
-            <label className="cr-field">
-              <span className="cr-field-label">Titre</span>
-              <input className="cr-input"
-                value={valeur('titre', page.titrePage || '')}
-                placeholder={page.titrePage || 'Code : intitulé de la formation'}
-                onChange={e => onTexte(`${page.cle}.titre`, e.target.value)} />
-            </label>
-            <label className="cr-field">
-              <span className="cr-field-label">
-                Sous-titre <span className="cr-obj-facultatif">facultatif</span>
-              </span>
-              <input className="cr-input"
-                value={valeur('sousTitre', page.sousTitre || '')}
-                placeholder="Laissé vide si rien à préciser"
-                onChange={e => onTexte(`${page.cle}.sousTitre`, e.target.value)} />
-            </label>
-            <div className="cr-couv-duo">
-              <label className="cr-field">
-                <span className="cr-field-label">Période</span>
-                <input className="cr-input"
-                  value={valeur('periode', page.periode || '')}
-                  placeholder={page.periode || 'du 14 au 18 septembre 2026'}
-                  onChange={e => onTexte(`${page.cle}.periode`, e.target.value)} />
-              </label>
-              <label className="cr-field">
-                <span className="cr-field-label">Lieu</span>
-                <input className="cr-input"
-                  value={valeur('lieu', page.lieu || '')}
-                  placeholder={page.lieu || 'Douala'}
-                  onChange={e => onTexte(`${page.cle}.lieu`, e.target.value)} />
-              </label>
+          <div className="cr-couv-saisie cr-edition-large">
+            {/* Le code et l'intitule restent deux champs, comme a
+                l'etape 1 : le titre de couverture les assemble, mais
+                les fondre ici ferait perdre le code au reste du
+                document, qui s'en sert pour nommer la session. */}
+            <div className="cr-form cr-form--couv">
+              <div className="cr-form-ligne cr-form-ligne--code-intitule">
+                <label className="cr-field">
+                  <span className="cr-field-label">Code</span>
+                  <input className="cr-input"
+                    value={valeur('code', page.code || '')}
+                    placeholder="TS05-G3"
+                    onChange={e => onTexte(`${page.cle}.code`, e.target.value)} />
+                </label>
+                <label className="cr-field">
+                  <span className="cr-field-label">Intitulé de la formation</span>
+                  <input className="cr-input"
+                    value={valeur('intitule', page.intitule || '')}
+                    placeholder="Révision et réparation des organes châssis"
+                    onChange={e => onTexte(`${page.cle}.intitule`, e.target.value)} />
+                </label>
+              </div>
+
+              <div className="cr-form-ligne cr-form-ligne--trois">
+                <label className="cr-field">
+                  <span className="cr-field-label">Période</span>
+                  <input className="cr-input"
+                    value={valeur('periode', page.periode || '')}
+                    placeholder="du 14 au 18 septembre 2026"
+                    onChange={e => onTexte(`${page.cle}.periode`, e.target.value)} />
+                </label>
+                <label className="cr-field">
+                  <span className="cr-field-label">Lieu</span>
+                  <input className="cr-input"
+                    value={valeur('lieu', page.lieu || '')}
+                    placeholder="Centre CFAO Academy — Douala"
+                    onChange={e => onTexte(`${page.cle}.lieu`, e.target.value)} />
+                </label>
+                <label className="cr-field">
+                  <span className="cr-field-label">
+                    Sous-titre{' '}
+                    <span className="cr-obj-facultatif">facultatif</span>
+                  </span>
+                  <input className="cr-input"
+                    value={valeur('sousTitre', page.sousTitre || '')}
+                    placeholder="Rien à préciser"
+                    onChange={e => onTexte(`${page.cle}.sousTitre`, e.target.value)} />
+                </label>
+              </div>
             </div>
+
+            {/* Le titre ne se saisit pas : on le montre tel qu'il
+                sortira, pour que le lien entre les deux champs et la
+                couverture soit visible. */}
+            <div className="cr-couv-rendu">
+              <span className="cr-field-label">Titre de la couverture</span>
+              <p className="cr-couv-apercu">
+                {titreDeCouverture(
+                  valeur('code', page.code || ''),
+                  valeur('intitule', page.intitule || ''),
+                ).toUpperCase() || (
+                  <span className="cr-couv-apercu--vide">
+                    Renseignez le code et l’intitulé
+                  </span>
+                )}
+              </p>
+            </div>
+
             <span className="cr-obj-aide">
               Pré-rempli depuis l’étape 1 — à reprendre librement.
             </span>
@@ -645,11 +680,15 @@ function ApercuPage({ page, textes, photos }) {
         aria-label={`Aperçu — ${page.titre}`}>
         <div className="cr-couv">
           <div className="cr-couv-mention">{page.mention}</div>
-          {(textes[`${page.cle}.titre`] ?? page.titrePage) && (
-            <div className="cr-couv-titre">
-              {textes[`${page.cle}.titre`] ?? page.titrePage}
-            </div>
-          )}
+          {/* Le titre suit le code et l'intitule corriges sur la page,
+              comme le fait le document. */}
+          {(() => {
+            const t = titreDeCouverture(
+              textes[`${page.cle}.code`] ?? page.code,
+              textes[`${page.cle}.intitule`] ?? page.intitule,
+            ).toUpperCase() || page.titrePage
+            return t ? <div className="cr-couv-titre">{t}</div> : null
+          })()}
           {(textes[`${page.cle}.sousTitre`] ?? page.sousTitre) && (
             <div className="cr-couv-soustitre">
               {textes[`${page.cle}.sousTitre`] ?? page.sousTitre}
@@ -874,8 +913,12 @@ function composerPages(b, session, s) {
       cle: 'couverture', titre: 'Couverture', type: 'couverture',
       mention: 'COMPTE RENDU DE FORMATION',
       titrePage: titreDeCouverture(b.codeFormation, b.intitule).toUpperCase(),
+      // Le titre de couverture assemble ces deux champs ; ils restent
+      // separes a la saisie, comme a l'etape 1.
+      code: b.codeFormation || '',
+      intitule: b.intitule || '',
       // Le code est passe dans le titre : le sous-titre est libre.
-      sousTitre: b.textes?.sousTitreCouverture || '',
+      sousTitre: '',
       periode,
       lieu: b.lieu || '',
     })

@@ -1873,11 +1873,13 @@
 .cr-edition:has(.cr-blocs--journee),
 .cr-edition:has(.cr-res-saisie),
 .cr-edition:has(.cr-bilan-rubriques),
+.cr-edition:has(.cr-couv-saisie),
 .cr-edition:has(.cr-part) { padding-bottom: 0; }
 .cr-edition-champs:has(.cr-part),
 .cr-edition-champs:has(.cr-res-saisie),
 .cr-edition-champs:has(.cr-bilan-rubriques),
 .cr-edition-champs:has(.cr-blocs--journee),
+.cr-edition-champs:has(.cr-couv-saisie),
 .cr-edition-champs:has(.cr-blocs--objectifs) {
   flex: 1;
   min-height: 0;
@@ -2637,18 +2639,56 @@
 
 /* ---- Couverture : une saisie pre-remplie, jamais figee ---- */
 
+/* Cinq champs courts laissaient les deux tiers de la page vides. La
+   saisie occupe la hauteur disponible et repartit ses trois blocs :
+   les champs en haut, le titre obtenu au milieu, la note en bas. */
 .cr-couv-saisie {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+  /* La note de pied se pose en bas de la zone plutot que de suivre le
+     dernier bloc : la page reste equilibree quel que soit son contenu. */
+  justify-content: flex-start;
+  /* `cr-edition-large` lui donne les deux colonnes de la grille
+     d'edition : un bloc, pas un champ parmi d'autres. */
 }
-/* La periode et le lieu sont courts : les mettre cote a cote evite
-   d'etirer la colonne pour deux champs d'une ligne. */
-.cr-couv-duo {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 14px;
+/* La grille du formulaire de session, reprise telle quelle : le code
+   et l'intitule se retrouvent au meme endroit d'une etape a l'autre. */
+.cr-form--couv {
+  align-content: start;
+  /* Sans largeur imposee, la grille se reduit au contenu et les champs
+     se tassent a gauche : ils doivent occuper la colonne d'edition. */
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
-@media (max-width: 720px) {
-  .cr-couv-duo { grid-template-columns: minmax(0, 1fr); }
+
+/* Le titre obtenu se lit, il ne se saisit pas : cadre sobre, centre
+   dans l'espace laisse libre, pour montrer ce que donnent les deux
+   champs sans se faire passer pour un champ de plus. */
+.cr-couv-rendu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* Le cadre se contente de sa hauteur : etire sur la place restante,
+     son titre flottait au milieu de 280 px de vide. */
+  flex: none;
+  padding: 18px 22px;
+  border: 1px solid var(--line, rgba(16, 20, 48, 0.12));
+  border-radius: 10px;
+  background: var(--surface-2, rgba(16, 20, 48, 0.02));
 }
+.cr-couv-apercu {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink-1, #101430);
+}
+.cr-couv-apercu--vide {
+  font-weight: 400;
+  color: var(--ink-3, #9ca3af);
+}
+/* La note se pose au pied de la zone, sous l'espace libre. */
+.cr-couv-saisie > .cr-obj-aide { margin-top: auto; }
