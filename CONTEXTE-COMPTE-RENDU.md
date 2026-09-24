@@ -165,8 +165,7 @@ Trois points à trancher, dans cet ordre suggéré :
    « Thèmes abordés » invisibles), critères de l'accueil sans format %,
    titre de colonne trop long passé sur deux lignes, objet descendu
    dessous. L'image se cale sur les proportions du **cadre** de l'objet
-   (plus sur `imgW/imgH`, qui différaient en 27 : anneau ovale) ; la
-   légende de l'anneau se mesure sur l'anneau et tient dans l'image.
+   (plus sur `imgW/imgH`, qui différaient en 27 : anneau ovale).
 3. **Le poids des images** — aucune stratégie arrêtée (compression,
    redimensionnement, stockage hors document).
 
@@ -178,9 +177,21 @@ classeur ne suffit pas, PowerPoint/LibreOffice montrent l'image, pas
 le classeur. `services/apercu/classeurs.py` reconnaît chaque classeur à
 sa cellule A1 (`nature()`), y pose les valeurs (`remplir_classeur`),
 puis **redessine l'image** via LibreOffice + PyMuPDF (fond rendu
-transparent, légende ajoutée sous l'anneau de la diapositive 19 car
-les étiquettes natives du modèle chevauchent l'anneau avec de vraies
-valeurs). Le classeur reste éditable au double-clic dans PowerPoint.
+transparent). Le classeur reste éditable au double-clic dans PowerPoint.
+
+**Anneaux de satisfaction (19 et 27) fidèles à Excel.** LibreOffice
+ignore `c:holeSize` (trou à 1/3 du rayon, Excel 75 %) : `_anneau_excel`
+remappe radialement son rendu (angles intacts), remet en blanc les
+secteurs vides, et pose les étiquettes comme Excel — milieu du secteur
++ décalage manuel `dLbl` en fraction du graphique, boîte tenue entre
+−4 pt et +1 pt des bords, trait de rappel. Modèle vérifié contre les
+positions rapportées par Excel (COM `DataLabel.Left/Top`, 8 jeux de
+valeurs, ±1,5 pt) et contre ses EMF. Largeur de colonne par défaut =
+`baseColWidth` + 5/7 (elle valait 8,43 : cadre trop étroit). Format %
+rendu « 85% » comme Excel (format explicite dans la copie de rendu ;
+le format intégré suivait la langue de LibreOffice, « 85 % »).
+Excel/PowerPoint (non activés) sont sur le poste : `CopyPicture` donne
+le vrai EMF, piste non intégrée (licence et Windows côté production).
 Branché dans `service.remplir()` via `@classeurs` dans les valeurs
 (`utils/remarquesSession.js` → `valeursClasseurs()`), calculé une fois
 par page (coûteux : un aller-retour LibreOffice par classeur modifié,
