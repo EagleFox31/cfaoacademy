@@ -17,7 +17,50 @@ import { MENTIONS, CRITERES_FORMATION, CRITERES_ACCUEIL } from './satisfactionCf
  * perdre une ligne serait pire que d'en avoir une a completer.
  */
 
-const L = { noms: 4, entree: 6, sortie: 7, pratique: 10, formation: 13, accueil: 20 }
+const L = { noms: 4, filiale: 5, entree: 6, sortie: 7, pratique: 10, formation: 13, accueil: 20 }
+
+// Les filiales s'ecrivent « CFAO MOBILITY CMR » : le code pays devient
+// le nom qu'affiche l'application.
+const PAYS = {
+  CMR: 'Cameroun', SEN: 'Sénégal', CIV: 'Côte d’Ivoire', GAB: 'Gabon', COG: 'Congo',
+  COD: 'RDC', RDC: 'RDC', MLI: 'Mali', BEN: 'Bénin', TGO: 'Togo', GIN: 'Guinée',
+  MDG: 'Madagascar', BFA: 'Burkina Faso', NER: 'Niger', TCD: 'Tchad', NGA: 'Nigeria',
+  GHA: 'Ghana', KEN: 'Kenya', MAR: 'Maroc', CAF: 'Centrafrique', GNQ: 'Guinée équatoriale',
+}
+
+/** « CFAO MOBILITY CMR » -> « Cameroun » ; un nom de pays reste tel quel. */
+function paysDe(filiale) {
+  const reste = String(filiale ?? '').replace(/CFAO\s*MOBILITY/i, '').trim()
+  if (!reste) return ''
+  return PAYS[reste.toUpperCase()] || reste.charAt(0).toUpperCase() + reste.slice(1).toLowerCase()
+}
+
+const pad = n => String(n).padStart(2, '0')
+const annee = a => (a < 100 ? 2000 + a : a)
+
+/**
+ * La periode de la ligne 2, quelle que soit sa graphie : « du 24-31.07.26 »,
+ * « du 28.08-02.09.26 », « du 07.09.2026 au 11.09.2026 », ou saisie a la
+ * main, « du 24 -au -31. 07 .2026 ». Renvoie `{ debut, fin }` en ISO.
+ */
+export function lirePeriode(texte) {
+  const n = (String(texte ?? '').match(/\d+/g) || []).map(Number)
+  let j1, m1, a1, j2, m2, a2
+  if (n.length === 6) [j1, m1, a1, j2, m2, a2] = n
+  else if (n.length === 5) { [j1, m1, j2, m2, a2] = n; a1 = a2 }
+  else if (n.length === 4) { [j1, j2, m2, a2] = n; m1 = m2; a1 = a2 }
+  else return {}
+  const iso = (j, m, a) => (j >= 1 && j <= 31 && m >= 1 && m <= 12
+    ? `${annee(a)}-${pad(m)}-${pad(j)}` : '')
+  return { debut: iso(j1, m1, a1), fin: iso(j2, m2, a2) }
+}
+
+/** « FORMATION : TSH01: Intitulé » -> code et intitule. */
+function lireTitre(texte) {
+  const t = String(texte ?? '').replace(/^\s*FORMATION\s*:?\s*/i, '').replace(/\s+/g, ' ').trim()
+  const m = t.match(/^([A-Z0-9][A-Z0-9-]{1,11})\s*:\s*(.+)$/)
+  return m ? { codeFormation: m[1], intitule: m[2].trim() } : { codeFormation: '', intitule: t }
+}
 
 const normaliser = t => String(t ?? '')
   .normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -48,7 +91,12 @@ function taux(v) {
 
 const MENTION_PAR_LIBELLE = Object.fromEntries(MENTIONS.map(m => [normaliser(m.libelle), m.cle]))
 
-/** Lit le fichier ; rejette s'il ne porte pas la feuille attendue. */
+/**
+ * Lit le fichier ; rejette s'il ne porte pas la feuille attendue.
+ *
+ * Renvoie `{ entete, stagiaires }` : l'entete (code, intitule, dates,
+ * pays) sert a creer une saisie ; les stagiaires, a la remplir.
+ */
 export async function lireEvaluation(fichier) {
   const { default: ExcelJS } = await import('exceljs')
   const wb = new ExcelJS.Workbook()
@@ -67,7 +115,8 @@ export async function lireEvaluation(fichier) {
       if (mention) reponses[crit.cle] = mention
     })
     stagiaires.push({
-      nom: String(nom).trim(),
+      nom: String(nom).replace(/\s+/g, ' ').trim(),
+      pays: paysDe(valeurDe(ws.getCell(L.filiale, c))),
       entree: taux(valeurDe(ws.getCell(L.entree, c))),
       sortie: taux(valeurDe(ws.getCell(L.sortie, c))),
       pratique: taux(valeurDe(ws.getCell(L.pratique, c))),
@@ -75,7 +124,15 @@ export async function lireEvaluation(fichier) {
     })
   }
   if (!stagiaires.length) throw new Error('Aucun stagiaire dans le classeur')
-  return stagiaires
+  const pays = stagiaires.map(x => x.pays).filter(Boolean)
+  const entete = {
+    ...lireTitre(valeurDe(ws.getCell('A1'))),
+    ...lirePeriode(valeurDe(ws.getCell('A2'))),
+    // Le pays le plus frequent parmi les filiales.
+    pays: pays.sort((a, b) => pays.filter(x => x === b).length
+      - pays.filter(x => x === a).length)[0] || '',
+  }
+  return { entete, stagiaires }
 }
 
 /** Le participant du brouillon qui porte ce nom, s'il y en a un. */
@@ -116,7 +173,7 @@ export function appliquerEvaluation(brouillon, stagiaires) {
     else {
       p = {
         id: `imp-${Date.now()}-${i}`,
-        prenom: '', nom: s.nom, pays: '', fonction: '',
+        prenom: '', nom: s.nom, pays: s.pays || '', fonction: '',
         present: true, entreeBrut: '', sortieTheoBrut: '', sortiePratBrut: '',
         appreciation: '', ajoute: true,
       }

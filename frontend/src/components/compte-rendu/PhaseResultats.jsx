@@ -113,7 +113,7 @@ export default function PhaseResultats({
   async function importer(fichier) {
     if (!fichier) return
     try {
-      const lus = await lireEvaluation(fichier)
+      const { stagiaires: lus } = await lireEvaluation(fichier)
       const r = appliquerEvaluation(brouillon, lus)
       if (r.remplaces && !window.confirm(
         `Le classeur remplace des notes déjà saisies pour ${r.remplaces} stagiaire`

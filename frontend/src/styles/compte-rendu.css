@@ -788,6 +788,16 @@
   text-underline-offset: 3px;
 }
 .cr-echappee-lien:hover { color: var(--red-deep); }
+/* La seconde issue, l'import, reste en retrait : meme lien, sans gras
+   ni rouge, pour ne pas disputer la place a la saisie. */
+.cr-echappee-ou { font-size: 14px; color: var(--muted-2); margin: 0 -6px; }
+.cr-echappee-lien--second { font-weight: 500; color: var(--muted); }
+.cr-echappee-lien--second:hover { color: var(--ink); }
+.cr-panel--choix .cr-import-info { flex: none; }
+/* En-tete du formulaire : le texte a gauche, l'import a droite. */
+.cr-panel-head--actions {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
+}
 
 /* ══════════════════════════════════════════════════════════════════
    Structure : les parties du document

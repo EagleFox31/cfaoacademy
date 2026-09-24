@@ -268,6 +268,13 @@ notes brutes par les barèmes, reconnaît les stagiaires par leurs mots
 de nom (accents et ordre nom/prénom ignorés), ajoute ceux qui manquent,
 ne vide jamais une note sur case vide, confirme avant d'écraser.
 Vérifié sur l'export TSH01 réel (8/8 repris, 13 réponses chacun).
+Aussi à l'étape 1 : lien « partir d'un classeur d'évaluation » sous la
+liste des sessions (crée la saisie manuelle pré-remplie : intitulé et
+code de A1, période de A2 quelle que soit sa graphie — `lirePeriode` —,
+pays tiré des filiales « CFAO MOBILITY CMR », stagiaires, notes,
+satisfaction) et bouton « Importer » dans le formulaire manuel (complète
+sans écraser les champs déjà remplis). Vérifié avec « Evaluation 25 »
+(21 stagiaires, titre et période saisis à la main).
 
 **Export Excel des résultats** (`utils/exportEvaluation.js`, bouton de
 l'en-tête de l'étape 2). Remplit le **modèle** `frontend/public/modeles/evaluation.xlsx`

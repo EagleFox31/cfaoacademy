@@ -1,4 +1,6 @@
+import { useRef, useState } from 'react'
 import { periodeLongue } from '../../utils/compteRendu'
+import { lireEvaluation, appliquerEvaluation } from '../../utils/importEvaluation'
 
 /**
  * Phase 1 — quelle formation, et qui l'a suivie.
@@ -27,6 +29,53 @@ export default function PhaseSession({
 
   const choisir = s => onChoisirSession(s)
   const passerEnManuel = () => onSaisieManuelle()
+
+  // Un classeur d'evaluation porte deja la formation et ses stagiaires :
+  // l'importer evite de recopier vingt noms a la main. Sur le choix
+  // initial, il cree la saisie ; dans la saisie, il la complete sans
+  // ecraser ce qui y est deja ecrit.
+  const fichier = useRef(null)
+  const [importInfo, setImportInfo] = useState(null)
+  async function importer(f) {
+    if (!f) return
+    try {
+      const { entete, stagiaires } = await lireEvaluation(f)
+      if (!mode) {
+        const r = appliquerEvaluation({ participants: [] }, stagiaires)
+        onSaisieManuelle({
+          ...Object.fromEntries(Object.entries(entete).filter(([, v]) => v)),
+          participants: r.participants, satisfaction: r.satisfaction,
+        })
+      } else {
+        const r = appliquerEvaluation(brouillon, stagiaires)
+        if (r.remplaces && !window.confirm(
+          `Le classeur remplace des notes déjà saisies pour ${r.remplaces} stagiaire`
+          + `${r.remplaces > 1 ? 's' : ''}. Continuer ?`)) return
+        const vides = Object.fromEntries(Object.entries(entete)
+          .filter(([k, v]) => v && !String(brouillon[k] || '').trim()))
+        maj({ ...vides, participants: r.participants, satisfaction: r.satisfaction })
+      }
+      setImportInfo({
+        ok: true,
+        texte: `${stagiaires.length} stagiaire${stagiaires.length > 1 ? 's' : ''} repris du classeur,`
+          + ' avec leurs notes et leurs réponses. Vérifiez les noms et prénoms.',
+      })
+    } catch (e) {
+      setImportInfo({ ok: false, texte: `Classeur non reconnu : ${e.message}` })
+    }
+  }
+  const champFichier = (
+    <input ref={fichier} type="file" hidden
+      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      onChange={e => { importer(e.target.files?.[0]); e.target.value = '' }} />
+  )
+  const message = importInfo && (
+    <p className={`cr-import-info${importInfo.ok ? '' : ' cr-import-info--ko'}`} role="status">
+      {importInfo.texte}
+      <button type="button" className="cr-import-fermer" aria-label="Masquer"
+        onClick={() => setImportInfo(null)}>×</button>
+    </p>
+  )
 
   // ── Choix du mode, tant que rien n'est engage
   if (!mode) {
@@ -74,7 +123,15 @@ export default function PhaseSession({
             onClick={passerEnManuel}>
             Saisir les informations moi-même →
           </button>
+          <span className="cr-echappee-ou">ou</span>
+          <button type="button" className="cr-echappee-lien cr-echappee-lien--second"
+            onClick={() => fichier.current?.click()}
+            title="Formation, dates, stagiaires, notes et satisfaction, repris d’un classeur .xlsx">
+            partir d’un classeur d’évaluation
+          </button>
+          {champFichier}
         </div>
+        {message}
       </div>
     )
   }
@@ -83,13 +140,27 @@ export default function PhaseSession({
   if (mode === 'manuel') {
     return (
       <div className="cr-panel cr-panel--formulaire">
-        <div className="cr-panel-head">
-          <h2 className="cr-panel-title">Les informations de la formation</h2>
-          <p className="cr-panel-hint">
-            Renseignez ce que vous savez. L’intitulé et le nombre de
-            participants suffisent pour commencer.
-          </p>
+        <div className="cr-panel-head cr-panel-head--actions">
+          <div className="cr-panel-head-texte">
+            <h2 className="cr-panel-title">Les informations de la formation</h2>
+            <p className="cr-panel-hint">
+              Renseignez ce que vous savez. L’intitulé et le nombre de
+              participants suffisent pour commencer.
+            </p>
+          </div>
+          <button type="button" className="cr-btn cr-btn--ghost cr-export cr-import"
+            onClick={() => fichier.current?.click()}
+            title="Reprendre formation, stagiaires, notes et satisfaction d’un classeur d’évaluation (.xlsx)">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5" />
+              <path d="M4 15.5v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+            </svg>
+            Importer
+          </button>
+          {champFichier}
         </div>
+        {message}
 
         <div className="cr-form">
           {/* Une ligne par nature d'information : ce qui identifie la
