@@ -2969,3 +2969,18 @@
   align-items: center;
   gap: 8px;
 }
+/* L'import, a cote de l'export et plus discret encore : sans bordure,
+   il ne prend de relief qu'au survol. */
+.cr-export-groupe { flex: none; display: inline-flex; align-items: center; gap: 6px; }
+.cr-import { border-color: transparent; color: var(--muted); }
+.cr-import:hover { border-color: var(--rule); color: var(--ink); }
+.cr-import-info {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin: 8px 0 0; padding: 7px 12px; border-radius: 8px;
+  font-size: 13px; background: #E6F6EC; color: #147a41;
+}
+.cr-import-info--ko { background: var(--red-soft); color: var(--red); }
+.cr-import-fermer {
+  border: 0; background: none; color: inherit; font-size: 16px; line-height: 1;
+  cursor: pointer; padding: 0 2px;
+}

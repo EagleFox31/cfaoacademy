@@ -260,6 +260,15 @@ proposition par rubrique).
 par brouillon (`TrainerHome.jsx`) — il n'en montrait qu'une, vers le
 plus récent, rendant les autres inaccessibles.
 
+**Import Excel des résultats** (`utils/importEvaluation.js`, bouton
+« Importer » discret à côté de l'export) : relit « Données Stagiaires »
+(noms ligne 4, taux lignes 6/7/10, mentions 13-25) d'un classeur du même
+modèle — l'export ou un classeur formateur —, reconvertit les taux en
+notes brutes par les barèmes, reconnaît les stagiaires par leurs mots
+de nom (accents et ordre nom/prénom ignorés), ajoute ceux qui manquent,
+ne vide jamais une note sur case vide, confirme avant d'écraser.
+Vérifié sur l'export TSH01 réel (8/8 repris, 13 réponses chacun).
+
 **Export Excel des résultats** (`utils/exportEvaluation.js`, bouton de
 l'en-tête de l'étape 2). Remplit le **modèle** `frontend/public/modeles/evaluation.xlsx`
 — le classeur « Evaluation … Climatisation » anonymisé, mise en forme
