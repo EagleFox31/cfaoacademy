@@ -464,11 +464,7 @@ def _anneau_excel(image, geo, valeurs):
     propre trou. On remappe chaque rayon — les angles ne bougent pas —
     pour retrouver le trou et l'epaisseur des anneaux d'Excel ; les
     secteurs vides reprennent leur remplissage blanc. Les etiquettes
-    sont ensuite posees comme Excel les place : au milieu du secteur,
-    decalees de leur position manuelle (en fraction du graphique),
-    tenues dans son cadre, reliees au secteur par un trait de rappel.
-    Modele verifie contre les positions que rapporte Excel lui-meme
-    (`DataLabel.Left/Top`) sur huit jeux de valeurs, a 1,5 pt pres.
+    ont une place fixe (voir plus bas), au corps du graphique.
     """
     import math
     import numpy as np
@@ -540,70 +536,102 @@ def _anneau_excel(image, geo, valeurs):
     image = Image.fromarray(np.clip(b, 0, 255).astype(np.uint8), 'RGBA')
 
     # Echelle : la zone de trace d'Excel inscrit le cercle dans son plus
-    # petit cote ; on en deduit le cadre du graphique, en pixels.
+    # petit cote ; on en deduit la taille d'un point, en pixels.
     # (Excel l'agrandit d'environ 1,5 % : mesure sur ses propres objets.)
     z = geo['zone']
     larg_emu, haut_emu = geo['cadre']
     px = 2 * rayon / (min(z['w'] * larg_emu, z['h'] * haut_emu) * 1.015)
     pt = 12700 * px
-    W, H = larg_emu * px, haut_emu * px
-    X0, Y0 = cx - (z['x'] + z['w'] / 2) * W, cy - (z['y'] + z['h'] / 2) * H
 
+    # Les etiquettes ont une place fixe, quel que soit le remplissage :
+    # l'anneau interieur (formation) au centre du trou, l'exterieur
+    # (accueil) dehors, a droite. Les traits de rappel ne coupent ni
+    # l'anneau ni l'autre trait : celui du centre reste dans le trou,
+    # l'autre sort de l'anneau dans l'axe du rayon puis le contourne a
+    # angle droit, toujours au-dehors du cercle.
     mesure = ImageDraw.Draw(image)
-    etiquettes = []
-    for i, (serie, v) in enumerate(zip(geo['series'], valeurs)):
-        if v is None:
-            continue
-        corps = max(10, round(serie['pt'] * pt))
+
+    def police_de(corps):
         try:
-            police = ImageFont.truetype('calibrib.ttf', corps)
+            return ImageFont.truetype('calibrib.ttf', corps)
         except OSError:
-            police = ImageFont.load_default()
+            return ImageFont.load_default()
+
+    def texte_de(serie, v):
         mots = serie['nom'].split()
-        texte = [' '.join(mots[:-1]), f"{mots[-1] if mots else ''} {int(float(v) * 100 + 0.5)}%"]
+        return [' '.join(mots[:-1]), f"{mots[-1] if mots else ''} {int(float(v) * 100 + 0.5)}%"]
+
+    def bloc(texte, corps):
+        police = police_de(corps)
         lw = max(mesure.textlength(t, font=police) for t in texte)
-        pas = corps * 1.22
-        lh = pas * len(texte)
+        return police, lw, corps * 1.22 * len(texte)
+
+    series = list(zip(geo['series'], valeurs))
+    etiquettes = []
+    if series and series[0][1] is not None:
+        serie, v = series[0]
+        texte = texte_de(serie, v)
+        # Le texte tient dans le trou, avec une marge.
+        corps = max(10, round(serie['pt'] * pt))
+        police, lw, lh = bloc(texte, corps)
+        while corps > 10 and (lw / 2) ** 2 + (lh / 2) ** 2 > (trou_xl * 0.88) ** 2:
+            corps -= 1
+            police, lw, lh = bloc(texte, corps)
         angle = math.radians(float(v) * 180)
-        rm = trou_xl + (i + 0.5) * ep_xl
-        ps = (cx + rm * math.sin(angle), cy - rm * math.cos(angle))
-        # Excel tient la boite de l'etiquette (texte et marges) entre
-        # -4 pt et +1 pt des bords du graphique.
-        bw, bh = lw + 0.6 * serie['pt'] * pt, (len(texte) * 1.2 + 0.9) * serie['pt'] * pt
-        ex = min(max(ps[0] + serie['dx'] * W, X0 - 4 * pt + bw / 2), X0 + W + pt - bw / 2)
-        ey = min(max(ps[1] + serie['dy'] * H, Y0 - 4 * pt + bh / 2), Y0 + H + pt - bh / 2)
-        etiquettes.append((texte, police, pas, ex, ey, lw, lh, ps))
+        dirx, diry = math.sin(angle), -math.cos(angle)
+        # Sortie du rayon par le bord de la boite, jusqu'au milieu de l'anneau.
+        t = min(lw / 2 / abs(dirx) if abs(dirx) > 1e-6 else math.inf,
+                lh / 2 / abs(diry) if abs(diry) > 1e-6 else math.inf) + 0.04 * rayon
+        rm = trou_xl + 0.5 * ep_xl
+        trait = [(cx + dirx * t, cy + diry * t), (cx + dirx * rm, cy + diry * rm)] \
+            if t < trou_xl - 0.04 * rayon else []
+        etiquettes.append((texte, police, lh, cx, cy, trait))
+    if len(series) > 1 and series[1][1] is not None:
+        serie, v = series[1]
+        texte = texte_de(serie, v)
+        police, lw, lh = bloc(texte, max(10, round(serie['pt'] * pt)))
+        angle = math.radians(float(v) * 180)
+        dirx, diry = math.sin(angle), -math.cos(angle)
+        rm = trou_xl + (1 + 0.5) * ep_xl if n > 1 else rayon - ep_xl / 2
+        couloir = rayon * 1.16                    # hors du cercle
+        sortie = rayon * 1.08
+        ex = cx + couloir + rayon * 0.08 + lw / 2
+        ey = cy + rayon * 0.62
+        q = (cx + dirx * sortie, cy + diry * sortie)
+        trait = [(cx + dirx * rm, cy + diry * rm), q, (cx + couloir, q[1]),
+                 (cx + couloir, ey), (ex - lw / 2 - rayon * 0.03, ey)]
+        etiquettes.append((texte, police, lh, ex, ey, trait))
 
     # La toile s'agrandit si une etiquette deborde de l'image rognee.
-    g = min([0] + [e[3] - e[5] / 2 - 4 for e in etiquettes])
-    d = max([image.width] + [e[3] + e[5] / 2 + 4 for e in etiquettes])
-    t = min([0] + [e[4] - e[6] / 2 - 4 for e in etiquettes])
-    f = max([image.height] + [e[4] + e[6] / 2 + 4 for e in etiquettes])
-    dx0, dy0 = -int(math.floor(g)), -int(math.floor(t))
+    def boite(e):
+        texte, police, lh, ex, ey, _ = e
+        lw = max(mesure.textlength(t, font=police) for t in texte)
+        return ex - lw / 2 - 4, ey - lh / 2 - 4, ex + lw / 2 + 4, ey + lh / 2 + 4
+    # Les traits comptent aussi : sous l'anneau, celui de l'accueil peut
+    # descendre plus bas que l'image rognee.
+    boites = [boite(e) for e in etiquettes] + [
+        (x - 4, y - 4, x + 4, y + 4) for e in etiquettes for x, y in e[5]]
+    g = min([0] + [b[0] for b in boites])
+    t_ = min([0] + [b[1] for b in boites])
+    d = max([image.width] + [b[2] for b in boites])
+    f = max([image.height] + [b[3] for b in boites])
+    dx0, dy0 = -int(math.floor(g)), -int(math.floor(t_))
     if dx0 or dy0 or d > image.width or f > image.height:
         toile = Image.new('RGBA', (int(math.ceil(d)) + dx0, int(math.ceil(f)) + dy0),
                           (255, 255, 255, 0))
         toile.paste(image, (dx0, dy0))
         image = toile
     dessin = ImageDraw.Draw(image)
-    trait = max(1, round(rayon / 180))
+    epaisseur = max(1, round(rayon / 180))
     gris = (89, 89, 89, 255)
-    for texte, police, pas, ex, ey, lw, lh, (sx_, sy_) in etiquettes:
-        ex, ey, sx_, sy_ = ex + dx0, ey + dy0, sx_ + dx0, sy_ + dy0
-        # Trait de rappel : vers le milieu du cote le plus proche, avec un
-        # coude horizontal quand l'etiquette est de cote.
-        ddx, ddy = sx_ - ex, sy_ - ey
-        if math.hypot(ddx, ddy) > max(lw, lh) * 0.6:
-            if abs(ddy) / (lh / 2) >= abs(ddx) / (lw / 2):
-                dessin.line([(sx_, sy_), (ex, ey + math.copysign(lh / 2, ddy))],
-                            fill=gris, width=trait)
-            else:
-                cote = ex + math.copysign(lw / 2, ddx)
-                coude = (cote + math.copysign(rayon * 0.06, ddx), ey)
-                dessin.line([(sx_, sy_), coude, (cote, ey)], fill=gris, width=trait)
-        y = ey - lh / 2
+    for texte, police, lh, ex, ey, trait in etiquettes:
+        if trait:
+            dessin.line([(x + dx0, y + dy0) for x, y in trait], fill=gris,
+                        width=epaisseur, joint='curve')
+        pas = lh / len(texte)
+        y = ey + dy0 - lh / 2
         for ligne in texte:
-            dessin.text((ex - dessin.textlength(ligne, font=police) / 2, y), ligne,
+            dessin.text((ex + dx0 - dessin.textlength(ligne, font=police) / 2, y), ligne,
                         font=police, fill=(0, 0, 0, 255))
             y += pas
     return image
