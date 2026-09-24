@@ -138,10 +138,7 @@ export default function PhaseVerification({
     defauts: constatsParDefaut(brouillon),
     constat: cle => rediger(
       cle === 'commentaireProgression' ? 'progression' : 'acquisition', [`resultats.${cle}`]),
-    bilan: rubrique => rediger('bilan',
-      rubrique ? [`bilan.${rubrique}`]
-        : ['contexte', 'resultats', 'vigilance', 'suites'].map(r => `bilan.${r}`),
-      rubrique),
+    bilan: rubrique => rediger('bilan', [`bilan.${rubrique}`], rubrique),
     annuler: cle => {
       majTexte(cle, avant[cle])
       setAvant(a => { const suite = { ...a }; delete suite[cle]; return suite })

@@ -42,17 +42,11 @@ export default function EditeurBilan({
         ton={remplies ? 'ok' : null}
         ouvert={volet === 'bilan'}
         onOuvrir={() => setVolet('bilan')}>
-        {/* Le moteur redige les quatre rubriques d'un coup, ou une seule :
-            chaque rubrique garde son propre tirage. */}
-        <div className="cr-redac-bilan">
-          <span className="cr-obj-aide">
-            Pré-rempli depuis les notes et les journées — à reprendre librement.
-          </span>
-          <BoutonsRedaction
-            aTexte={remplies > 0}
-            enCours={redaction?.redigeant === 'bilan'}
-            onRediger={() => redaction?.bilan(null)} />
-        </div>
+        {/* Le moteur redige rubrique par rubrique : un bouton global
+            ecrasait d'un coup les quatre textes, retouches comprises. */}
+        <span className="cr-obj-aide">
+          Pré-rempli depuis les notes et les journées — à reprendre librement.
+        </span>
         <div className="cr-jour-rubriques cr-jour-rubriques--bilan">
           {(blocs || []).map(b => {
             const cle = `bilan.${b.cle}`
@@ -62,8 +56,7 @@ export default function EditeurBilan({
                   <label className="cr-field-label" htmlFor={`cr-bilan-${b.cle}`}>{b.titre}</label>
                   <BoutonsRedaction
                     aTexte={!!valeur(b).trim()}
-                    enCours={redaction?.redigeant === 'bilan'
-                      || redaction?.redigeant === cle}
+                    enCours={redaction?.redigeant === cle}
                     onRediger={() => redaction?.bilan(b.cle)}
                     peutAnnuler={cle in (redaction?.avant || {})}
                     onAnnuler={() => redaction?.annuler(cle)} />

@@ -2695,17 +2695,6 @@
 }
 .cr-redac-annuler:hover { color: var(--accent, #e2001a); }
 
-/* Le bandeau au-dessus des quatre rubriques du bilan : l'aide de saisie
-   a gauche, la redaction groupee a droite. */
-.cr-redac-bilan {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-.cr-redac-bilan .cr-obj-aide { margin: 0; }
-
 .cr-redac-panne {
   margin-top: 10px;
   font-size: 0.78rem;
