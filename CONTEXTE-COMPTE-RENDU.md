@@ -183,8 +183,8 @@ transparent). Le classeur reste éditable au double-clic dans PowerPoint.
 ignore `c:holeSize` (trou à 1/3 du rayon, Excel 75 %) : `_anneau_excel`
 remappe radialement son rendu (angles intacts), remet en blanc les
 secteurs vides, et pose les étiquettes comme Excel — milieu du secteur
-+ décalage manuel `dLbl` en fraction du graphique, boîte tenue entre
-−4 pt et +1 pt des bords, trait de rappel. Modèle vérifié contre les
+→ étiquettes à place fixe (demande utilisateur) : formation au centre
+du trou, accueil dehors à droite ; traits sans croisement (radial dans le trou ; sortie radiale puis contour à angle droit hors du cercle). Le placement Excel (milieu de secteur + dLbl) avait été vérifié contre les
 positions rapportées par Excel (COM `DataLabel.Left/Top`, 8 jeux de
 valeurs, ±1,5 pt) et contre ses EMF. Largeur de colonne par défaut =
 `baseColWidth` + 5/7 (elle valait 8,43 : cadre trop étroit). Format %
