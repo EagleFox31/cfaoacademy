@@ -9,6 +9,7 @@ import TeamManagerDashboard from './TeamManagerDashboard'
 import BranchHRDashboard from './BranchHRDashboard'
 import SuperAdminDashboard from './SuperAdminDashboard'
 import TrainerHome from './TrainerHome'
+import RHHome from './RHHome'
 
 const ROLE_PRIORITY = [
   'superadmin', 'build_team', 'group_admin', 'group_hr', 'branch_hr', 'branch_admin',
@@ -29,7 +30,7 @@ function resolveView(roles) {
   if (primary === 'build_team') return <Navigate to="/portail/delivery" replace />
   if (primary === 'group_admin') return <Navigate to="/portail/delivery" replace />
   if (primary === 'superadmin') return <SuperAdminDashboard />
-  if (primary === 'group_hr') return <Navigate to="/portail/rh" replace />
+  if (primary === 'group_hr') return <RHHome />
   if (primary === 'branch_hr' || primary === 'branch_admin') return <BranchHRDashboard />
   if (primary === 'workshop_manager') return <TeamManagerDashboard mode="workshop" />
   if (primary === 'team_manager') return <TeamManagerDashboard mode="team" />
