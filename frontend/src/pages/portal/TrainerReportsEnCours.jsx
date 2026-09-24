@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Nav from '../../components/Nav'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import { periodeLongue } from '../../utils/compteRendu'
-import { brouillonsEnregistres, oublier } from '../../utils/brouillonsCompteRendu'
+import { brouillonsEnregistres, oublier, synchroniser } from '../../utils/brouillonsCompteRendu'
 import '../../styles/compte-rendu.css'
 
 const ETAPES = ['La session', 'Les résultats', 'La structure', 'L’édition']
@@ -41,6 +41,11 @@ export default function TrainerReportsEnCours() {
   useSiteEffects()
   const naviguer = useNavigate()
   const [brouillons, setBrouillons] = useState(() => brouillonsEnregistres())
+  useEffect(() => {
+    let actif = true
+    synchroniser().then(liste => { if (actif && liste) setBrouillons(liste) })
+    return () => { actif = false }
+  }, [])
 
   const reprendre = b => naviguer(`/portail/compte-rendu/nouveau?session=${b.id}`)
 

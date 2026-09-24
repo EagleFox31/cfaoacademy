@@ -54,6 +54,12 @@ export default defineConfig({
         target: 'http://127.0.0.1:5175',
         changeOrigin: true,
       },
+      // Les comptes rendus en cours et leurs photos, conserves par le meme
+      // service (a terme : cfao-core).
+      '/cr-donnees': {
+        target: 'http://127.0.0.1:5175',
+        changeOrigin: true,
+      },
       '/medacap-api': {
         target: 'http://localhost',
         changeOrigin: true,

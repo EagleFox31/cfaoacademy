@@ -4,7 +4,7 @@ import Nav from '../../components/Nav'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import { SESSIONS_FORMATEUR } from '../../data/mock_sessions_formateur'
 import { syntheseGroupe } from '../../utils/baremeCfao'
-import { enregistrer, recuperer } from '../../utils/brouillonsCompteRendu'
+import { enregistrer, recuperer, recupererDuServeur } from '../../utils/brouillonsCompteRendu'
 import { nombreDeJours } from '../../utils/compteRendu'
 import PhaseSession from '../../components/compte-rendu/PhaseSession'
 import PhaseResultats from '../../components/compte-rendu/PhaseResultats'
@@ -75,6 +75,24 @@ export default function TrainerReportNew() {
   const [phase, setPhase] = useState(brouillon.phase || 0)
   const haut = useRef(null)
 
+  // Le brouillon a peut-etre avance sur un autre poste : on demande au
+  // serveur sa version avant tout enregistrement — sinon la copie de ce
+  // navigateur, re-enregistree a l'ouverture, passerait pour la derniere.
+  const synchro = useRef(!sessionDemandee)
+  useEffect(() => {
+    if (!sessionDemandee) return undefined
+    let actif = true
+    recupererDuServeur(sessionDemandee).then(distant => {
+      if (!actif) return
+      if (distant) {
+        setBrouillon(distant)
+        setPhase(distant.phase || 0)
+      }
+      synchro.current = true
+    })
+    return () => { actif = false }
+  }, [sessionDemandee])
+
   // Le brouillon est garde en reference pour etre enregistre sans que
   // l'effet ait a dependre de son contenu : sinon chaque frappe dans
   // une case de note declenche une ecriture.
@@ -82,6 +100,7 @@ export default function TrainerReportNew() {
   dernier.current = { brouillon, phase }
 
   const sauver = useCallback(() => {
+    if (!synchro.current) return
     const { brouillon: b, phase: p } = dernier.current
     const id = b.sessionId || (b.manuel ? 'manuel' : null)
     if (id) enregistrer(id, { ...b, phase: p })
@@ -132,7 +151,12 @@ export default function TrainerReportNew() {
     [brouillon.participants],
   )
 
-  const maj = patch => setBrouillon(b => ({ ...b, ...patch }))
+  // Un patch, ou une fonction de l'etat courant quand la modification
+  // arrive apres un appel reseau : elle se compose alors avec ce qui a
+  // ete saisi entre-temps au lieu de l'ecraser.
+  const maj = useCallback(patch => setBrouillon(b => ({
+    ...b, ...(typeof patch === 'function' ? patch(b) : patch),
+  })), [])
 
   function aller(i) {
     setPhase(Math.max(0, Math.min(i, PHASES.length - 1)))

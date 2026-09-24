@@ -44,10 +44,14 @@ TYPE_IMAGE = ('http://schemas.openxmlformats.org/officeDocument/2006/'
               'relationships/image')
 
 
-def dossier(cache):
-    d = Path(cache) / 'photos'
-    d.mkdir(parents=True, exist_ok=True)
-    return d
+# Les photos sont conservees avec les comptes rendus, pas dans le cache :
+# un brouillon repris sur un autre poste les designe par leur identifiant.
+PERMANENT = Path(__file__).resolve().parent / 'donnees' / 'photos'
+
+
+def dossier(cache=None):
+    PERMANENT.mkdir(parents=True, exist_ok=True)
+    return PERMANENT
 
 
 def enregistrer(donnees, cache):
@@ -65,11 +69,15 @@ def enregistrer(donnees, cache):
     return {'id': ident, 'largeur': image.width, 'hauteur': image.height}
 
 
-def _chemin(ident, cache):
+def _chemin(ident, cache=None):
     if not re.fullmatch(r'[0-9a-f]{16}', str(ident)):
         return None
-    chemin = dossier(cache) / f'{ident}.jpg'
-    return chemin if chemin.exists() else None
+    chemin = dossier() / f'{ident}.jpg'
+    if chemin.exists():
+        return chemin
+    # Photos envoyees avant le stockage permanent : encore dans le cache.
+    ancien = Path(cache) / 'photos' / f'{ident}.jpg' if cache else None
+    return ancien if ancien and ancien.exists() else None
 
 
 RE_FORME = re.compile(r'<p:sp>(?:(?!</p:sp>).)*?</p:sp>', re.S)
