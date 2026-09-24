@@ -189,24 +189,29 @@ export default function TrainerHome() {
                 />
               </div>
 
-              {/* Chaque brouillon a sa propre carte : un seul point d'entree
-                  vers le plus recent laissait les autres inaccessibles —
-                  toujours en memoire, mais sans aucun lien pour y revenir. */}
-              {brouillons.map(b => (
-                <div key={b.id} className="portal-card-anchor">
+              {/* Une seule entree vers les saisies commencees : une carte
+                  par brouillon noyait la section des qu'il y en avait
+                  plusieurs. La liste, avec reprise et suppression, est sur
+                  sa propre page. */}
+              {brouillons.length > 0 && (
+                <div className="portal-card-anchor">
                   <PvCard
                     img={VISUEL_ENTREE.brouillon}
-                    kicker={<span className="portal-status-chip todo">En cours</span>}
-                    title={b.session || 'Compte rendu'}
-                    meta={`Saisie interrompue${b.modifieLe ? ` — ${venuDe(b.modifieLe)}` : ''}.`}
-                    cta="Reprendre"
-                    hoverHint="Reprendre là où vous vous êtes arrêté"
-                    onClick={() => naviguer(
-                      `/portail/compte-rendu/nouveau?session=${b.id}`)}
+                    kicker={
+                      <span className="portal-status-chip todo">
+                        {brouillons.length} en cours
+                      </span>
+                    }
+                    title="Comptes rendus en cours"
+                    meta={`Reprendre ou supprimer une saisie commencée — la dernière ${
+                      venuDe(brouillons[0].modifieLe)}.`}
+                    cta="Voir les saisies"
+                    hoverHint="Choisir un compte rendu à reprendre"
+                    onClick={() => naviguer('/portail/compte-rendu/en-cours')}
                     corner
                   />
                 </div>
-              ))}
+              )}
             </PortalStaggerGrid>
           </div>
         </PortalReveal>
