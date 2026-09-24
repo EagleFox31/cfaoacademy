@@ -9,6 +9,7 @@ import PortalReveal from '../../components/PortalReveal.jsx'
 import PortalStaggerGrid from '../../components/PortalStaggerGrid.jsx'
 import PortalAssistanceSection from '../../components/PortalAssistanceSection.jsx'
 import PvCard from '../../components/PvCard'
+import { AcademyCountryChip } from '../../components/AcademyPaysPanel'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
@@ -29,17 +30,19 @@ const VISUEL = {
 
 const pct = v => (v == null ? '—' : `${v} %`)
 
-/** Couverture en cellule de tableau — meme motif que le tableau des filiales
- * du portail Super Admin : puce de statut, puis barre et pourcentage. */
-function Couverture({ valeur }) {
+/** Couverture sous le nom d'un pays : la barre en ligne du portail, a la
+ * largeur de la carte. Les couleurs sont fixees : la carte reste claire,
+ * meme dans une section sombre ou le portail eclaircit ces textes. */
+function Barre({ valeur, libelle, droite }) {
   const v = valeur ?? 0
+  const texte = { color: 'var(--muted)', minWidth: 0, whiteSpace: 'nowrap' }
   return (
     <div className="portal-inline-bar">
-      <span className={`portal-status-chip ${v >= 50 ? 'done' : 'progress'}`}>{pct(valeur)}</span>
-      <div className="portal-inline-track" style={{ width: 120 }}>
-        <div className="portal-inline-fill"
-          style={{ width: `${v}%`, background: v >= 50 ? '#1aab5b' : undefined }} />
+      {libelle && <span className="portal-inline-pct" style={{ ...texte, width: 64 }}>{libelle}</span>}
+      <div className="portal-inline-track" style={{ flex: 1, width: 'auto', background: 'var(--rule)' }}>
+        <div className="portal-inline-fill" style={{ width: `${v}%`, background: v >= 50 ? '#1aab5b' : undefined }} />
       </div>
+      <span className="portal-inline-pct" style={texte}>{droite ?? pct(valeur)}</span>
     </div>
   )
 }
@@ -238,31 +241,16 @@ export default function RHHome({ filialeFixe = null }) {
               </div>
             </div>
             {vueGroupe && competences.parFiliale.length > 0 && (
-              <div className="portal-table-wrap">
-                <table className="portal-table">
-                  <thead>
-                    <tr>
-                      <th>Filiale</th>
-                      <th>Techniciens</th>
-                      <th>Évalués</th>
-                      <th>Couverture</th>
-                      <th>Score moyen</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {competences.parFiliale.map(f => (
-                      <tr key={f.code} style={{ cursor: 'pointer' }}
-                        title={`Restreindre la page à ${f.pays}`}
-                        onClick={() => changer({ filiale: f.code })}>
-                        <td style={{ fontWeight: 600 }}>{f.pays}</td>
-                        <td>{f.techniciens}</td>
-                        <td>{f.evalues}</td>
-                        <td><Couverture valeur={f.couverture} /></td>
-                        <td>{pct(f.moyenne)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="academy-pays-grid" role="list">
+                {competences.parFiliale.map(f => (
+                  <AcademyCountryChip key={f.code} name={f.pays} code={f.code}
+                    onClick={() => changer({ filiale: f.code })}>
+                    <Barre valeur={f.couverture} />
+                    <span className="academy-pays-country-badge">
+                      {f.evalues}/{f.techniciens} évalués{f.moyenne != null ? ` · moy. ${f.moyenne} %` : ''}
+                    </span>
+                  </AcademyCountryChip>
+                ))}
               </div>
             )}
           </div>
@@ -292,36 +280,19 @@ export default function RHHome({ filialeFixe = null }) {
               </div>
             </div>
             {pif.parFiliale.length > 0 && (
-              <div className="portal-table-wrap">
-                <table className="portal-table">
-                  <thead>
-                    <tr>
-                      <th>Filiale</th>
-                      {buAffichees.map(b => <th key={b}>{b} — PIF / techniciens</th>)}
-                      <th>Validés</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pif.parFiliale.map(f => (
-                      <tr key={f.code}>
-                        <td style={{ fontWeight: 600 }}>{f.pays}</td>
-                        {buAffichees.map(b => (
-                          <td key={b}>
-                            {f.parBU[b].techniciens
-                              ? (
-                                <div className="portal-inline-bar">
-                                  <span style={{ minWidth: 56 }}>{f.parBU[b].avecPif} / {f.parBU[b].techniciens}</span>
-                                  <Couverture valeur={f.parBU[b].couverture} />
-                                </div>
-                              )
-                              : <span style={{ color: 'var(--muted-2)', fontSize: 12 }}>—</span>}
-                          </td>
-                        ))}
-                        <td>{f.valides}</td>
-                      </tr>
+              <div className="academy-pays-grid" role="list">
+                {pif.parFiliale.map(f => (
+                  <AcademyCountryChip key={f.code} name={f.pays} code={f.code}
+                    onClick={() => changer({ filiale: f.code })}>
+                    {buAffichees.filter(b => f.parBU[b].techniciens).map(b => (
+                      <Barre key={b} libelle={b} valeur={f.parBU[b].couverture}
+                        droite={`${f.parBU[b].avecPif}/${f.parBU[b].techniciens}`} />
                     ))}
-                  </tbody>
-                </table>
+                    <span className="academy-pays-country-badge">
+                      {f.valides} PIF validé{f.valides > 1 ? 's' : ''}
+                    </span>
+                  </AcademyCountryChip>
+                ))}
               </div>
             )}
           </div>

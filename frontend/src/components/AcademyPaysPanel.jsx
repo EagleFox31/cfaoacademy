@@ -1,23 +1,43 @@
 import { useMemo, useState } from 'react'
 import cartographie from '../data/academy/pays-cartographie.json'
-import { countryCodeFromName, flagCdnUrlForCountry } from '../utils/countryFlag.js'
+import { countryCodeFromName } from '../utils/countryFlag.js'
 import useLocale from '../hooks/useLocale.js'
 import { localizeAcademyPillar, localizeCartographieRegions } from '../utils/localizeAcademy.js'
 
-function AcademyCountryChip({ name, displayName, status = 'covered', statusPotentialLabel }) {
-  const code = countryCodeFromName(name)
-  const flagUrl = flagCdnUrlForCountry(name, 40)
+/**
+ * Carte d'un pays : drapeau et nom, badge optionnel.
+ *
+ * Reprise ailleurs (portail RH) avec le code ISO du pays (`code`), quand le
+ * nom affiche n'est pas celui de la cartographie, et des chiffres sous le
+ * nom (`children`) ; `onClick` la rend cliquable.
+ */
+export function AcademyCountryChip({
+  name, displayName, status = 'covered', statusPotentialLabel,
+  code: codeIso, children, onClick,
+}) {
+  const code = codeIso ?? countryCodeFromName(name)
+  const flagUrl = code ? `https://flagcdn.com/w40/${code}.png` : null
   const isPotential = status === 'potential'
   const label = displayName ?? name
+  const cliquable = onClick
+    ? {
+      role: 'button',
+      tabIndex: 0,
+      style: { cursor: 'pointer' },
+      onClick,
+      onKeyDown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } },
+    }
+    : {}
 
   return (
-    <div className={`academy-pays-country${isPotential ? ' academy-pays-country--potential' : ''}`}>
+    <div className={`academy-pays-country${isPotential ? ' academy-pays-country--potential' : ''}`}
+      {...cliquable}>
       <div className="academy-pays-country-line">
         {code && flagUrl && (
           <img
             className="academy-pays-country-flag"
             src={flagUrl}
-            srcSet={`${flagCdnUrlForCountry(name, 80)} 2x`}
+            srcSet={`https://flagcdn.com/w80/${code}.png 2x`}
             alt=""
             width={20}
             height={15}
@@ -27,6 +47,7 @@ function AcademyCountryChip({ name, displayName, status = 'covered', statusPoten
         )}
         <span className="academy-pays-country-name">{label}</span>
       </div>
+      {children}
       {isPotential && (
         <span className="academy-pays-country-badge">{statusPotentialLabel}</span>
       )}

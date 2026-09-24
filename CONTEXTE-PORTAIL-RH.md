@@ -204,7 +204,8 @@ L'accueil du profil RH à la connexion, sur le modèle de `TrainerHome` : entêt
 
 1. **Présentation en sections**, comme les autres portails : entête, « À traiter », puis Recrutement, Compétences, PIF, Personnes. Les entrées de la barre de navigation mènent à ces sections ; chacune ouvre son espace (`/portail/rh/<espace>`, pages d'attente pour l'instant).
 2. **Composants du portail uniquement**, sur le modèle du tableau de bord Super Admin — aucune feuille de style propre au RH :
-   - indicateurs `portal-kpi-row` ; tableaux `portal-table` (première colonne en gras, puce de statut + barre de 120 px, seuil 50 %) ;
+   - indicateurs `portal-kpi-row` (même forme que les portails KI, RH filiale et Super Admin) ;
+   - par filiale : **cartes pays** de la page Académie (`AcademyCountryChip`, exportée de `AcademyPaysPanel`, drapeau par code ISO), avec barre de couverture et badge ; un clic restreint la page au pays ;
    - titres `portal-section-head--with-action` + lien `portal-next-actions-more` (« Ouvrir l'espace ») ;
    - périmètre : barre de filtres du plan de formation (`portal-plan-filters--compact`) ;
    - cartes `PvCard` ; liste des pages d'attente `portal-log-list`.
@@ -214,5 +215,5 @@ L'accueil du profil RH à la connexion, sur le modèle de `TrainerHome` : entêt
 ## 6. État — accueil RH Groupe
 
 - `pages/portal/RHHome.jsx` : entête, **À traiter** (une priorité au plus par espace), puis Recrutement, Compétences, PIF, Personnes.
-- Périmètre filiale × BU appliqué à toute la page ; un clic sur une filiale du tableau Compétences restreint la page à celle-ci.
+- Périmètre filiale × BU appliqué à toute la page ; un clic sur une carte pays (Compétences, PIF) restreint la page à ce pays.
 - `utils/rhDonnees.js` : contrat de données (synthèses, répartitions, niveaux, priorités par périmètre).
