@@ -157,11 +157,11 @@ L'accueil du profil RH à la connexion, sur le modèle de `TrainerHome` : entêt
 
 ## 4. Plan d'implémentation
 
-### Étape 0 — Isolation *(préparée)*
+### Étape 0 — Isolation *(faite)*
 
-- `../cfaoacademy-stable` : copie figée sur `66ed0af`. Elle sert le réseau (5174 / 5175) avec les données réelles.
-- Lancement : `basculer.ps1` une fois, puis `demarrer-reseau.ps1` après un redémarrage.
-- Le développement reste ici, sur la branche `feature/portail-rh`. Il sera servi sur d'autres ports, en local uniquement.
+- Le réseau est servi par `cfaoacademy` (branche `feature/compte-rendu-synchronisation`, `66ed0af`), qui n'est plus touché.
+- Le portail RH se développe dans un worktree séparé, `../cfaoacademy-rh` (branche `feature/portail-rh`), servi en local uniquement : `npx vite --port 5176`.
+- `../cfaoacademy-stable` (`basculer.ps1`) reste disponible pour reprendre le développement dans `cfaoacademy` sans toucher les utilisateurs.
 
 ### Étape 1 — Contrat de données *(pas de backend)*
 
@@ -200,8 +200,15 @@ L'accueil du profil RH à la connexion, sur le modèle de `TrainerHome` : entêt
 
 ---
 
-## 5. Décisions à valider
+## 5. Décisions
 
-1. Regrouper les 6 sections en 4 entrées (Recrutement, Compétences, PIF, Personnes) ?
-2. Inclure le profil **RH groupe** dès cet accueil, ou seulement la RH filiale ?
-3. Données de l'accueil : démonstration dérivée de MEDACAP (recommandé pour démarrer), ou pont MEDACAP en lecture tout de suite ?
+1. **Entrées = éléments de la barre de navigation du portail**, et chacune est une section de l'accueil : Recrutement, Compétences, PIF, Personnes. Chaque section mène à son espace (`/portail/rh/<espace>`, pages d'attente pour l'instant).
+2. **RH Groupe d'abord** (`group_hr`, compte de démonstration u11 Clarisse MBARGA). La RH filiale reprendra `RHHome` avec `filialeFixe`.
+3. Données : jeu de démonstration dérivé de MEDACAP, régénérable avec `scripts/rh/extraire-demo-medacap.js`.
+
+## 6. État — accueil RH Groupe
+
+- `pages/portal/RHHome.jsx` : entête, **À traiter** (une priorité au plus par espace), puis Recrutement, Compétences, PIF, Personnes.
+- Périmètre filiale × BU appliqué à toute la page ; un clic sur une filiale du tableau Compétences restreint la page à celle-ci.
+- `utils/rhDonnees.js` : contrat de données (synthèses et priorités par périmètre).
+- `data/rh/medacap-demo.json` : 252 techniciens, 180 candidats, 8 campagnes de recrutement, 11 filiales — sans identité.
