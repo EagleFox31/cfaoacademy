@@ -223,9 +223,9 @@ régénération, annulation) et par appel direct à `/apercu/redaction`.
 
 **Signes + et = du graphique d'acquisition** (diapositives 17 et 27).
 Absents du modèle, mais présents dans 98 classeurs des rapports réels :
-le « + » en forme utilisateur du graphique (`c:userShapes`, `mathPlus`,
-position en fraction du graphique), le « = » en forme de la feuille
-(`drawing1.xml`, `mathEqual`). `classeurs._ajouter_signes_acquisition`
+le « + » et le « = » en formes utilisateur du graphique (`c:userShapes`, `mathPlus`/`mathEqual`,
+position en fraction du graphique : ils restent alignés quel que soit
+le cadre ; dans les originaux le « = » est sur la feuille). `classeurs._ajouter_signes_acquisition`
 les injecte dans l'OLE : ils restent éditables au double-clic, et le
 rendu LibreOffice les montre. Pièges rencontrés : LibreOffice ignore
 une forme sans `<cdr:style>`, sans `xfrm` non nul, ou dont le
