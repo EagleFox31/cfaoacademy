@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import PortalHeader from '../../components/PortalHeader'
@@ -7,11 +6,9 @@ import PortalStickyBar from '../../components/PortalStickyBar'
 import PortalDemoBar from '../../components/PortalDemoBar'
 import PortalReveal from '../../components/PortalReveal.jsx'
 import PortalStaggerGrid from '../../components/PortalStaggerGrid.jsx'
-import PortalAssistanceSection from '../../components/PortalAssistanceSection.jsx'
 import PvCard from '../../components/PvCard'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import useAuth from '../../hooks/useAuth'
-import useLocale from '../../hooks/useLocale'
 import usePortalBackground from '../../hooks/usePortalBackground'
 import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
 import {
@@ -33,27 +30,37 @@ const pct = v => (v == null ? '—' : `${v} %`)
  * (`portal-status-chip` done / progress / todo). */
 const ETAT = [
   [80, 'done', 'Couverte', '#1aab5b'],
-  [50, 'progress', 'En cours', '#996600'],
-  [0, 'todo', 'En retard', 'var(--muted)'],
+  [50, 'progress', 'En cours', '#F28C00'],
+  [0, 'todo', 'En retard', '#E3001B'],
 ]
 const etat = valeur => ETAT.find(([seuil]) => (valeur ?? 0) >= seuil)
 
-/** Puce de statut, suivie du drapeau du pays (celui de « Nos pays »). */
-function Statut({ couverture, code }) {
-  const [, cls, libelle] = etat(couverture)
+/** Le drapeau en entete de carte, traite comme les heros du portail :
+ * voile marine en degrade (fonce a gauche, plus leger a droite), statut
+ * et nom du pays en blanc par-dessus. Le drapeau reste lisible sans dominer. */
+function VisuelPays({ f }) {
+  const [, cls, libelle] = etat(f.couverture)
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-      <span className={`portal-status-chip ${cls}`}>{libelle}</span>
-      <img className="academy-pays-country-flag" src={`https://flagcdn.com/w40/${code}.png`}
-        srcSet={`https://flagcdn.com/w80/${code}.png 2x`} alt="" width={20} height={15} />
-    </span>
+    <div className="pv-card-img" style={{ position: 'relative', height: 112, background: '#0e1126' }}>
+      <img src={`https://flagcdn.com/w640/${f.code}.png`}
+        srcSet={`https://flagcdn.com/w1280/${f.code}.png 2x`} alt="" loading="lazy"
+        style={{ filter: 'saturate(0.9)' }} />
+      <span aria-hidden="true" style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'linear-gradient(105deg, rgba(14,17,38,0.72) 0%, rgba(14,17,38,0.42) 50%, rgba(14,17,38,0.12) 100%)',
+      }} />
+      <span className={`portal-status-chip ${cls}`} style={{ position: 'absolute', top: 14, left: 20 }}>{libelle}</span>
+      <div style={{ position: 'absolute', left: 20, right: 60, bottom: 14, color: '#fff', pointerEvents: 'none' }}>
+        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{f.pays}</div>
+      </div>
+    </div>
   )
 }
 
 /** Barre de progression du portail, a la couleur du statut. Les couleurs
  * sont fixees : la carte reste claire, meme dans une section sombre. */
-function Progression({ libelle, valeur, droite }) {
-  const couleur = etat(valeur)[3]
+function Progression({ libelle, valeur, droite, attente }) {
+  const couleur = attente ? 'var(--muted)' : etat(valeur)[3]
   return (
     <div className="portal-progress-block">
       <div className="portal-progress-head" style={{ marginBottom: 6 }}>
@@ -61,23 +68,22 @@ function Progression({ libelle, valeur, droite }) {
         {droite && <span className="portal-progress-pct" style={{ color: couleur, fontSize: 13 }}>{droite}</span>}
       </div>
       <div className="portal-progress-track" style={{ background: 'var(--rule)' }}>
-        <div className="portal-progress-fill" style={{ width: `${valeur ?? 0}%`, background: couleur }} />
+        <div className="portal-progress-fill" style={{ width: `${attente ? 0 : valeur ?? 0}%`, background: couleur }} />
       </div>
     </div>
   )
 }
 
-/** Carte d'un pays — carte du portail : photo en visuel, puce de statut et
- * drapeau, pays en titre, barres de progression. */
-function CartePays({ f, visuel, meta, onClick }) {
+/** Carte d'un pays — carte du portail : entete drapeau facon heros, chiffre
+ * cle en titre, une barre de progression. */
+function CartePays({ f, titre, meta, onClick }) {
   return (
     <div className="portal-card-anchor">
       <PvCard
-        img={visuel}
-        kicker={<Statut couverture={f.couverture} code={f.code} />}
-        title={f.pays}
+        cardMedia={<VisuelPays f={f} />}
+        title={titre}
         meta={meta}
-        cta="Voir le pays"
+        cta="Filtrer sur ce pays"
         hoverHint={`Restreindre la page à ${f.pays}`}
         onClick={onClick}
         corner
@@ -86,20 +92,12 @@ function CartePays({ f, visuel, meta, onClick }) {
   )
 }
 
-/** Titre de section, avec l'entree vers l'espace complet — meme motif que
- * « Voir plus » des prochaines actions apprenant. */
-function TeteSection({ surtitre, titre, espace, naviguer }) {
+/** Titre de section du portail. */
+function TeteSection({ surtitre, titre }) {
   return (
-    <div className="portal-section-head portal-section-head--with-action">
-      <div>
-        <p className="portal-section-eyebrow">{surtitre}</p>
-        <h2 className="portal-section-title">{titre}</h2>
-      </div>
-      <button type="button" className="portal-next-actions-more"
-        onClick={() => naviguer(`/portail/rh/${espace}`)}>
-        Ouvrir l’espace
-        <span className="portal-next-actions-more-arrow" aria-hidden="true">→</span>
-      </button>
+    <div className="portal-section-head">
+      <p className="portal-section-eyebrow">{surtitre}</p>
+      <h2 className="portal-section-title">{titre}</h2>
     </div>
   )
 }
@@ -118,8 +116,6 @@ function TeteSection({ surtitre, titre, espace, naviguer }) {
 export default function RHHome({ filialeFixe = null }) {
   useSiteEffects()
   const { user } = useAuth()
-  const { t } = useLocale('portal')
-  const naviguer = useNavigate()
   const headerRef = useRef(null)
   usePortalBackground(user)
   usePortalHeaderHeight(headerRef)
@@ -129,13 +125,36 @@ export default function RHHome({ filialeFixe = null }) {
 
   const aTraiter = useMemo(() => priorites(perimetre), [perimetre])
   const recrutement = useMemo(() => syntheseRecrutement(perimetre), [perimetre])
+  // Les chiffres des cartes Recrutement : ouvertes d'un cote, cloturees de l'autre.
+  const { enCours, terminees } = useMemo(() => {
+    const somme = (liste, cle) => liste.reduce((n, c) => n + c[cle], 0)
+    const ouvertes = recrutement.campagnes.filter(c => c.statut === 'ouverte')
+    const closes = recrutement.campagnes.filter(c => c.statut !== 'ouverte')
+    const notees = closes.filter(c => c.moyenne != null && c.testes)
+    const prochaine = ouvertes.map(c => c.fin).filter(Boolean).sort()[0]
+    return {
+      enCours: {
+        nombre: ouvertes.length,
+        candidats: somme(ouvertes, 'candidats'),
+        testes: somme(ouvertes, 'testes'),
+        avancement: Math.round(100 * somme(ouvertes, 'testes') / (somme(ouvertes, 'candidats') || 1)),
+        cloture: prochaine && new Date(prochaine).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }),
+      },
+      terminees: {
+        nombre: closes.length,
+        candidats: somme(closes, 'candidats'),
+        testes: somme(closes, 'testes'),
+        moyenne: notees.length
+          ? Math.round(notees.reduce((n, c) => n + c.moyenne * c.testes, 0) / somme(notees, 'testes'))
+          : null,
+      },
+    }
+  }, [recrutement])
   const competences = useMemo(() => syntheseCompetences(perimetre), [perimetre])
   const pif = useMemo(() => synthesePIF(perimetre), [perimetre])
   const personnes = useMemo(() => synthesePersonnes(perimetre), [perimetre])
 
   if (!user) return null
-
-  const buAffichees = perimetre.bu ? [perimetre.bu] : BU
 
   return (
     <>
@@ -182,11 +201,7 @@ export default function RHHome({ filialeFixe = null }) {
                       kicker={<span className="portal-status-chip progress">{a.nature}</span>}
                       title={a.titre}
                       meta={a.detail}
-                      cta="Traiter"
                       accentColor="#E3001B"
-                      hoverHint="Ouvrir l’espace concerné"
-                      onClick={() => naviguer(`/portail/rh/${a.espace}`)}
-                      corner
                     />
                   </div>
                 ))}
@@ -200,55 +215,51 @@ export default function RHHome({ filialeFixe = null }) {
         {/* ── Recrutement : campagnes et exploitation ──────────── */}
         <PortalReveal id="recrutement">
           <div className="container" style={{ padding: '16px 32px' }}>
-            <TeteSection surtitre="Campagnes et résultats" titre="Recrutement"
-              espace="recrutement" naviguer={naviguer} />
-            <div className="portal-kpi-row">
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value accent">{recrutement.ouvertes}</div>
-                <div className="portal-kpi-label">Campagne{recrutement.ouvertes > 1 ? 's' : ''} ouverte{recrutement.ouvertes > 1 ? 's' : ''}</div>
-              </div>
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value">{recrutement.candidats}</div>
-                <div className="portal-kpi-label">Candidats</div>
-              </div>
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value green">{recrutement.testes}</div>
-                <div className="portal-kpi-label">Candidats testés</div>
-              </div>
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value">{recrutement.campagnes.length}</div>
-                <div className="portal-kpi-label">Campagnes au total</div>
-              </div>
-            </div>
+            <TeteSection surtitre="Campagnes et résultats" titre="Recrutement" />
             <PortalStaggerGrid>
-              {recrutement.campagnes.slice(0, 3).map(c => (
-                <div key={c.id} className="portal-card-anchor">
-                  <PvCard
-                    img={VISUEL.recrutement}
-                    kicker={c.statut === 'ouverte'
-                      ? <span className="portal-status-chip progress">Ouverte</span>
-                      : <span className="portal-status-chip done">Clôturée</span>}
-                    title={c.intitule}
-                    meta={`${nomFiliale(c.f)} · ${c.bu.join(' · ')} · ${c.testes}/${c.candidats} testés${
-                      c.moyenne != null ? ` · moyenne ${c.moyenne} %` : ''}`}
-                    cta={c.statut === 'ouverte' ? 'Suivre la campagne' : 'Exploiter les résultats'}
-                    hoverHint="Ouvrir la campagne"
-                    onClick={() => naviguer('/portail/rh/recrutement')}
-                    corner
-                  />
-                </div>
-              ))}
               <div className="portal-card-anchor">
                 <PvCard
                   img={VISUEL.personnes}
                   kicker={<span className="portal-status-chip todo">Préparer</span>}
-                  title="Nouvelle campagne de recrutement"
-                  meta="Poste, filiale, BU, dates — et import des candidats depuis Excel."
-                  cta="Créer"
+                  title="Créer une campagne"
+                  meta="Poste, filiale, BU, dates et épreuve, puis import des candidats depuis Excel."
                   accentColor="#E3001B"
-                  hoverHint="Créer une campagne"
-                  onClick={() => naviguer('/portail/rh/recrutement')}
-                  corner
+                />
+              </div>
+              <div className="portal-card-anchor">
+                <PvCard
+                  img={VISUEL.recrutement}
+                  kicker={<span className={`portal-status-chip ${enCours.nombre ? 'progress' : 'todo'}`}>
+                    {enCours.nombre ? `${enCours.nombre} ouverte${enCours.nombre > 1 ? 's' : ''}` : 'Aucune ouverte'}
+                  </span>}
+                  title="Campagnes en cours"
+                  meta={enCours.nombre ? (
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      <Progression libelle="Candidats testés" valeur={enCours.avancement}
+                        droite={`${enCours.testes}/${enCours.candidats}`} />
+                      {/* Le score n'est publie qu'a la cloture de la campagne. */}
+                      <Progression libelle="Score moyen" attente droite="En attente" />
+                      {enCours.cloture && <span>Prochaine clôture : {enCours.cloture}</span>}
+                    </div>
+                  ) : 'Aucune campagne ouverte en ce moment.'}
+                />
+              </div>
+              <div className="portal-card-anchor">
+                <PvCard
+                  img={VISUEL.competences}
+                  kicker={<span className="portal-status-chip done">
+                    {terminees.nombre} clôturée{terminees.nombre > 1 ? 's' : ''}
+                  </span>}
+                  title="Campagnes terminées"
+                  meta={terminees.nombre ? (
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      <Progression libelle="Candidats testés"
+                        valeur={Math.round(100 * terminees.testes / (terminees.candidats || 1))}
+                        droite={`${terminees.testes}/${terminees.candidats}`} />
+                      <Progression libelle="Score moyen" valeur={terminees.moyenne}
+                        droite={terminees.moyenne != null ? `${terminees.moyenne} %` : '—'} />
+                    </div>
+                  ) : 'Aucune campagne clôturée.'}
                 />
               </div>
             </PortalStaggerGrid>
@@ -259,18 +270,14 @@ export default function RHHome({ filialeFixe = null }) {
         <PortalReveal id="competences">
           <div className="container" style={{ padding: '16px 32px' }}>
             <TeteSection surtitre={competences.campagne?.intitule ?? 'Mesure des compétences'}
-              titre="Compétences" espace="competences" naviguer={naviguer} />
+              titre="Compétences" />
             {competences.parFiliale.length > 0 && (
               <PortalStaggerGrid>
                 {competences.parFiliale.map(f => (
-                  <CartePays key={f.code} f={f} visuel={VISUEL.competences}
-                    meta={(
-                      <>
-                        <Progression libelle="Techniciens évalués" valeur={f.couverture}
-                          droite={`${f.evalues}/${f.techniciens}`} />
-                        {f.moyenne != null && <Progression libelle="Score moyen" valeur={f.moyenne} />}
-                      </>
-                    )}
+                  <CartePays key={f.code} f={f}
+                    titre={f.moyenne != null ? `Maîtrise globale des compétences : ${f.moyenne} %` : 'Pas encore de score'}
+                    meta={<Progression libelle="Techniciens évalués" valeur={f.couverture}
+                      droite={`${f.evalues}/${f.techniciens}`} />}
                     onClick={() => changer({ filiale: f.code })} />
                 ))}
               </PortalStaggerGrid>
@@ -281,21 +288,14 @@ export default function RHHome({ filialeFixe = null }) {
         {/* ── PIF : par filiale et par BU ──────────────────────── */}
         <PortalReveal id="pif">
           <div className="container" style={{ padding: '16px 32px' }}>
-            <TeteSection surtitre="Plans individuels de formation" titre="PIF par filiale et BU"
-              espace="pif" naviguer={naviguer} />
+            <TeteSection surtitre="Plans individuels de formation" titre="PIF par filiale et BU" />
             {pif.parFiliale.length > 0 && (
               <PortalStaggerGrid>
                 {pif.parFiliale.map(f => (
-                  <CartePays key={f.code} f={f} visuel={VISUEL.pif}
-                    meta={(
-                      <>
-                        {buAffichees.filter(b => f.parBU[b].techniciens).map(b => (
-                          <Progression key={b} libelle={`${b} — avec PIF`} valeur={f.parBU[b].couverture}
-                            droite={`${f.parBU[b].avecPif}/${f.parBU[b].techniciens}`} />
-                        ))}
-                        <div style={{ marginTop: 8 }}>{f.valides} PIF validé{f.valides > 1 ? 's' : ''}</div>
-                      </>
-                    )}
+                  <CartePays key={f.code} f={f}
+                    titre={f.valides ? `${f.valides} PIF validé${f.valides > 1 ? 's' : ''}` : 'Aucun PIF validé'}
+                    meta={<Progression libelle="Techniciens avec PIF" valeur={f.couverture}
+                      droite={`${f.avecPif}/${f.techniciens}`} />}
                     onClick={() => changer({ filiale: f.code })} />
                 ))}
               </PortalStaggerGrid>
@@ -303,35 +303,56 @@ export default function RHHome({ filialeFixe = null }) {
           </div>
         </PortalReveal>
 
-        {/* ── Personnes : candidats et techniciens ─────────────── */}
+        {/* ── Techniciens & candidats : fiches, import, corbeille ─────────────── */}
         <PortalReveal id="personnes">
           <div className="container" style={{ padding: '16px 32px' }}>
-            <TeteSection surtitre="Candidats et techniciens" titre="Personnes"
-              espace="personnes" naviguer={naviguer} />
-            <div className="portal-kpi-row">
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value">{personnes.techniciens}</div>
-                <div className="portal-kpi-label">Techniciens actifs</div>
+            <TeteSection surtitre="Fiches, import et corbeille" titre="Techniciens & candidats" />
+            <PortalStaggerGrid>
+              <div className="portal-card-anchor">
+                <PvCard
+                  img="/assets/img_cards/test_theorie_senior.jpg"
+                  kicker={<span className="portal-status-chip todo">Créer</span>}
+                  title="Ajouter un collaborateur"
+                  meta="Candidat ou technicien : une fiche, ou plusieurs par import Excel."
+                  accentColor="#E3001B"
+                />
               </div>
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value">{personnes.candidats}</div>
-                <div className="portal-kpi-label">Candidats</div>
+              <div className="portal-card-anchor">
+                <PvCard
+                  img="/assets/img_cards/test_theorie_expert.jpg"
+                  kicker={<span className="portal-status-chip progress">
+                    {personnes.candidats} actif{personnes.candidats > 1 ? 's' : ''}
+                  </span>}
+                  title="Candidats"
+                  meta="Consulter, modifier, supprimer. Un candidat retenu passe technicien."
+                />
               </div>
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value">{personnes.supprimes}</div>
-                <div className="portal-kpi-label">Dans la corbeille</div>
+              <div className="portal-card-anchor">
+                <PvCard
+                  img={VISUEL.personnes}
+                  kicker={<span className="portal-status-chip done">
+                    {personnes.techniciens} actif{personnes.techniciens > 1 ? 's' : ''}
+                  </span>}
+                  title="Techniciens"
+                  meta={<Progression libelle="Fiches complètes"
+                    valeur={Math.round(100 * (personnes.techniciens - personnes.aCompleter) / (personnes.techniciens || 1))}
+                    droite={`${personnes.techniciens - personnes.aCompleter}/${personnes.techniciens}`} />}
+                />
               </div>
-              <div className="portal-kpi-card">
-                <div className={`portal-kpi-value ${personnes.aCompleter ? 'accent' : 'green'}`}>
-                  {personnes.aCompleter}
-                </div>
-                <div className="portal-kpi-label">Fiches à compléter</div>
+              <div className="portal-card-anchor">
+                <PvCard
+                  img="/assets/img_cards/test_pratique_expert.jpg"
+                  kicker={<span className="portal-status-chip todo">
+                    {personnes.supprimes} fiche{personnes.supprimes > 1 ? 's' : ''}
+                  </span>}
+                  title="Corbeille"
+                  meta="Fiches supprimées, avec date, auteur et motif : restaurer en un clic."
+                />
               </div>
-            </div>
+            </PortalStaggerGrid>
           </div>
         </PortalReveal>
 
-        <PortalAssistanceSection t={t} variant="learner" />
       </main>
 
       <Footer />

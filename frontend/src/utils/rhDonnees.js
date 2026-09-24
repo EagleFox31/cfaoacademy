@@ -136,7 +136,7 @@ export function synthesePIF(p = PERIMETRE_GROUPE, d = DEMO) {
   return { ...bilan(actifs), parFiliale }
 }
 
-/** Personnes : effectifs actifs, corbeille (suppression douce), fiches a completer. */
+/** Techniciens et candidats : effectifs actifs, corbeille (suppression douce), fiches a completer. */
 export function synthesePersonnes(p = PERIMETRE_GROUPE, d = DEMO) {
   const techniciens = d.techniciens.filter(dansPerimetre(p))
   const candidats = d.candidats.filter(dansPerimetre(p))
