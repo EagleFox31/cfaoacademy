@@ -41,8 +41,23 @@ function cataloguesFallbackPlugin() {
   }
 }
 
+/**
+ * Unites d'ecran compensees de la mise a l'echelle (cf. src/utils/echelle.js).
+ * Sous `zoom`, `100vh` ne couvre plus que 80 % de la fenetre : chaque
+ * `vh`/`vw` est divise par `--echelle` pour garder sa taille a l'ecran.
+ */
+const unitesEcran = {
+  postcssPlugin: 'unites-ecran',
+  Declaration(decl) {
+    if (decl.value.includes('--echelle')) return
+    decl.value = decl.value.replace(/(^|[^\w.-])(-?\d*\.?\d+)([dsl]?v(?:h|w|min|max))(?![\w-])/g,
+      '$1calc($2$3 / var(--echelle, 1))')
+  },
+}
+
 export default defineConfig({
   plugins: [react(), cataloguesFallbackPlugin()],
+  css: { postcss: { plugins: [unitesEcran] } },
   publicDir: 'public',
   server: {
     fs: { allow: ['..'] },

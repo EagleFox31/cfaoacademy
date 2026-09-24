@@ -4785,22 +4785,22 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
 }
 
 /* Écrans courts (portables 13", fenêtre réduite) : la contrainte d'un écran
-   deviendrait illisible — on la relâche et la section reprend sa hauteur. */
-@media (max-height: 720px) {
-  .portal-page .portal-next-actions-viewport {
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    overflow: visible;
-  }
+   deviendrait illisible — on la relâche et la section reprend sa hauteur.
+   Hauteur effective : l'attribut remplace `max-height`, qui verrait la
+   hauteur avant mise a l'echelle (cf. utils/echelle.js). */
+:root[data-bas~="720"] .portal-page .portal-next-actions-viewport {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+}
 
-  .portal-page .portal-next-actions-viewport > .container {
-    height: auto;
-    min-height: 0;
-    max-height: none;
-  }
+:root[data-bas~="720"] .portal-page .portal-next-actions-viewport > .container {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+}
 
-  .portal-page .portal-next-actions-viewport .pv-card {
-    height: auto;
-  }
+:root[data-bas~="720"] .portal-page .portal-next-actions-viewport .pv-card {
+  height: auto;
 }

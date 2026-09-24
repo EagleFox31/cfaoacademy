@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { echelle } from '../utils/echelle'
 
 export default function useSiteEffects() {
   useEffect(() => {
@@ -61,7 +62,10 @@ export default function useSiteEffects() {
     let glowRaf
     if (glow && matchMedia('(pointer:fine)').matches) {
       let x = 0, y = 0, tx = 0, ty = 0
-      const onMove = e => { tx = e.clientX; ty = e.clientY; glow.style.opacity = '1' }
+      const onMove = e => {
+        const z = echelle()
+        tx = e.clientX / z; ty = e.clientY / z; glow.style.opacity = '1'
+      }
       window.addEventListener('mousemove', onMove)
       const loop = () => {
         x += (tx - x) * 0.12; y += (ty - y) * 0.12

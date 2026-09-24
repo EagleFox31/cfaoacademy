@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { echelle } from '../utils/echelle'
 
 /**
  * Publie la hauteur réelle de l'entête portail dans `--portal-header-h`.
@@ -24,7 +25,8 @@ export default function usePortalHeaderHeight(ref, enabled = true) {
     if (!el) return undefined
 
     const publish = () => {
-      const { height } = el.getBoundingClientRect()
+      // Mesure en pixels d'ecran, reportee en pixels CSS.
+      const height = el.getBoundingClientRect().height / echelle()
       root.style.setProperty('--portal-header-h', `${Math.round(height)}px`)
     }
 
