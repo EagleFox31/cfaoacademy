@@ -241,6 +241,21 @@ ramène l'image aux proportions de l'EMF est centré sur les deux axes
 **Aperçu** (`ApercuReel.jsx`) : dès qu'une page change, l'ancienne
 image s'efface au profit d'un cadre neutre avec indicateur centré.
 
+**Appréciation des fiches (page 27)** : nouveau moteur
+`services/redaction/moteur_fiche.py` (`rediger_appreciation`), calqué
+sur les 112 appréciations des fiches réelles : acquisition qualifiée et
+seuil de 70 %, écart théorie/pratique s'il est net, progression lue au
+regard du niveau d'entrée (plafond, recul, nulle, modeste, nette,
+remarquable), évaluation formation/accueil du stagiaire, suite selon le
+palier. Neutre en genre, graine par clic (« Autre proposition » /
+« Annuler » via `BoutonsRedaction`), vérifié sur 5 000 profils
+aléatoires (cohérence qualificatifs/chiffres, élisions, aucun pronom).
+Route `type: 'accueil'` de `/apercu/redaction`. Modèle : intitulé
+« Appréciation du formateur : » gras 16 pt + texte 12 pt
+(`outils/fiche_appreciation.py`). L'ancien `rediger_accueil` n'est plus
+appelé. Bilan : le bouton de rédaction groupée est retiré (une
+proposition par rubrique).
+
 **Brouillons** : l'accueil formateur affiche une carte « Reprendre »
 par brouillon (`TrainerHome.jsx`) — il n'en montrait qu'une, vers le
 plus récent, rendant les autres inaccessibles.

@@ -11,7 +11,7 @@
  */
 
 /** Les chiffres d'un stagiaire, dans la forme qu'attend le moteur. */
-export function participantPourMoteur(p, calcul, satisfaction) {
+export function participantPourMoteur(p, calcul, satisfaction, accueil) {
   const nombre = v => (v == null || v === '' ? undefined : Math.round(Number(v)))
   return {
     nom: p.nom || '',
@@ -24,6 +24,7 @@ export function participantPourMoteur(p, calcul, satisfaction) {
     sortie: nombre(calcul?.sortieTheorique),
     taux_progression: nombre(calcul?.progression),
     satisfaction: nombre(satisfaction),
+    sat_accueil: nombre(accueil),
   }
 }
 
@@ -38,7 +39,10 @@ export async function proposerTexte(participant, type = 'accueil') {
     const reponse = await fetch('/apercu/redaction', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, participant }),
+      // Une graine par clic : « Autre proposition » change de tournure.
+      body: JSON.stringify({
+        type, participant, graine: Math.floor(Math.random() * 2 ** 31),
+      }),
     })
     if (!reponse.ok) return null
     const sortie = await reponse.json()

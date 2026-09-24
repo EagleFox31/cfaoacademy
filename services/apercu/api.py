@@ -20,7 +20,8 @@ import photos
 from service import CACHE, MODELE, SOFFICE, document, image_de
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'redaction'))
-from moteur import rediger, rediger_accueil  # noqa: E402
+from moteur import rediger  # noqa: E402
+from moteur_fiche import rediger_appreciation  # noqa: E402
 from moteur_session import (rediger_acquisition, rediger_bilan,  # noqa: E402
                             rediger_progression)
 
@@ -110,7 +111,9 @@ def redaction():
     if genre:
         participant['genre'] = genre
     try:
-        sortie = (rediger_accueil(participant) if quoi == 'accueil'
+        # « accueil » : l'appreciation du formateur sur la fiche (page 27),
+        # une tournure nouvelle a chaque graine.
+        sortie = (rediger_appreciation(participant, corps.get('graine')) if quoi == 'accueil'
                   else rediger(participant, corps.get('longueur', 'standard')))
     except Exception as erreur:      # le moteur refuse une entree vide
         return jsonify({'erreur': str(erreur)}), 400

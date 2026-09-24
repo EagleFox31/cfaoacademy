@@ -305,12 +305,19 @@ export default function PhaseVerification({
             onPhotoGroupe={v => maj({ photoGroupe: v })}
             redaction={redaction}
             onProposer={async (pg, cle) => {
+              const k = `${pg.cle}.${cle}`
               const reponses = brouillon.satisfaction?.[pg.participant.id]
               const propre = satisfactionStagiaire(reponses || {})
+              setRedigeant(k)
+              setPanne(false)
               const texte = await proposerTexte(
                 participantPourMoteur(pg.participant, pg.calcul,
-                  propre?.formation), 'accueil')
-              if (texte) majTexte(`${pg.cle}.${cle}`, texte)
+                  propre?.formation, propre?.accueil), 'accueil')
+              setRedigeant(null)
+              if (!texte) { setPanne(true); return }
+              const textes = brouillon.textes || {}
+              setAvant(a => ({ ...a, [k]: textes[k] ?? '' }))
+              majTexte(k, texte)
             }}
             jours={brouillon.jours || {}}
             onJournee={(n, v) => maj({
@@ -630,14 +637,14 @@ function FormulairePage({
                 <span className="cr-field-label">
                   {b.titre} <span>facultatif</span>
                   {page.participant && (
-                    <button type="button" className="cr-part-ajout cr-redac"
-                      disabled={!chiffresSuffisants(page.calcul)}
-                      title={chiffresSuffisants(page.calcul)
-                        ? 'Rédige une proposition à partir des notes'
-                        : 'Renseignez les notes à l’étape 2'}
-                      onClick={() => onProposer?.(page, b.cle)}>
-                      Proposer un texte
-                    </button>
+                    <BoutonsRedaction
+                      aTexte={!!String(valeur(b.cle, b.texte) || '').trim()}
+                      enCours={redaction?.redigeant === `${page.cle}.${b.cle}`}
+                      desactive={!chiffresSuffisants(page.calcul)}
+                      raison="Renseignez les notes à l’étape 2"
+                      onRediger={() => onProposer?.(page, b.cle)}
+                      peutAnnuler={`${page.cle}.${b.cle}` in (redaction?.avant || {})}
+                      onAnnuler={() => redaction?.annuler(`${page.cle}.${b.cle}`)} />
                   )}
                 </span>
                 <textarea className="cr-textarea cr-res-texte"
@@ -645,6 +652,11 @@ function FormulairePage({
                   onChange={e => onTexte(`${page.cle}.${b.cle}`, e.target.value)} />
               </label>
             ))}
+            {page.participant && redaction?.panne && (
+              <p className="cr-redac-panne">
+                Le service de rédaction ne répond pas : écrivez l’appréciation, ou réessayez.
+              </p>
+            )}
           </div>
         )}
 
