@@ -202,23 +202,19 @@ L'accueil du profil RH à la connexion, sur le modèle de `TrainerHome` : entêt
 
 ## 5. Décisions
 
-1. **Présentation en sections**, comme les autres portails : entête, « À traiter », puis Recrutement, Compétences, PIF, Personnes. Les entrées de la barre de navigation mènent à ces sections ; chacune ouvre son espace (`/portail/rh/<espace>`, pages d'attente pour l'instant).
-2. **Composants du portail uniquement**, sur le modèle du tableau de bord Super Admin — aucune feuille de style propre au RH :
-   - indicateurs `portal-kpi-row` (même forme que les portails KI, RH filiale et Super Admin) ;
-   - par filiale : **cartes pays** = `PvCard` — photo en visuel, puce de statut suivie du drapeau (`academy-pays-country-flag`, celui de « Nos pays »), pays en titre, **barres de progression** (`portal-progress-*`) aux couleurs des puces : vert ≥ 80 % (Couverte), orange ≥ 50 % (En cours), rouge sinon (En retard) ; un clic restreint la page au pays ;
-   - Compétences et PIF sans indicateurs : les cartes pays portent les chiffres ;
-   - PIF : même carte — titre = PIF validés, une seule barre (« Techniciens avec PIF ») ; le détail par BU passe par le filtre BU ;
-   - Techniciens & candidats (ex-Personnes) sans indicateurs : **cartes CRUD** — Ajouter un collaborateur (fiche ou import Excel), Candidats (puce « n actifs »), Techniciens (puce « n actifs », barre « Fiches complètes »), Corbeille (suppression douce : date, auteur, motif, restauration) ;
-   - Compétences : **en-tête de carte façon héros** — drapeau sous le voile marine des héros (dégradé 0,72 → 0,12, drapeau lisible), puce de statut et nom du pays en blanc, en-tête de 112 px ; titre = « Maîtrise globale des compétences : x % », une seule barre (« Techniciens évalués ») ;
-   - Recrutement sans indicateurs ni liste de campagnes : **cartes de fonctionnalité** selon le cycle — Créer une campagne, Campagnes en cours (puce « n ouvertes », barres « Candidats testés » et « Score moyen » vide « En attente » jusqu'à la clôture, prochaine clôture), Campagnes terminées (puce « n clôturées », barres « Candidats testés » et « Score moyen ») ; 4e carte envisagée : Épreuves (bibliothèque de tests, `create_fixed_paper`) ;
-   - titres `portal-section-head--with-action` + lien `portal-next-actions-more` (« Ouvrir l'espace ») ;
-   - périmètre : barre de filtres du plan de formation (`portal-plan-filters--compact`) ;
-   - cartes `PvCard` ; liste des pages d'attente `portal-log-list`.
+1. **Une seule page, sans navigation** : entête, « À traiter », puis Recrutement, Compétences, PIF, Techniciens & candidats. La barre de navigation mène aux sections de la page. Aucune carte n'ouvre d'autre page tant que les écrans métier ne sont pas construits ; seules les cartes pays sont cliquables, pour restreindre la page au pays.
+2. **Composants du portail uniquement** (`PvCard`, `PortalReveal`, `PortalStaggerGrid`, `portal-section-head`, `portal-status-chip`, `portal-progress-*`, `portal-plan-filters--compact`) — aucune feuille de style propre au RH, aucune rangée d'indicateurs :
+   - couleurs des barres selon `docs/PORTAL_COLORIMETRY.md` : vert `#1aab5b` ≥ 80 % (Couverte), orange `#e67e00` ≥ 50 % (En cours), rouge `var(--red)` sinon (En retard) ;
+   - Recrutement : **cartes de fonctionnalité** selon le cycle — Créer une campagne ; Campagnes en cours (puce « n ouvertes », barres « Candidats testés » et « Score moyen » vide « En attente » jusqu'à la clôture, prochaine clôture) ; Campagnes terminées (puce « n clôturées », barres « Candidats testés » et « Score moyen »). 4e carte envisagée : Épreuves (bibliothèque de tests, `create_fixed_paper`) ;
+   - Compétences et PIF : **cartes pays** `PvCard` avec en-tête façon héros (`cardMedia`) — drapeau sous le voile marine des héros (dégradé 0,72 → 0,12), puce de statut et nom du pays en blanc, 112 px ; une seule barre par carte. Compétences : titre « Maîtrise globale des compétences : x % », barre « Techniciens évalués ». PIF : titre « n PIF validés », barre « Techniciens avec PIF » ; le détail par BU passe par le filtre BU ;
+   - Techniciens & candidats : **cartes CRUD** — Ajouter un collaborateur (fiche ou import Excel), Candidats (puce « n actifs »), Techniciens (puce « n actifs », barre « Fiches complètes »), Corbeille (suppression douce : date, auteur, motif, restauration) ;
+   - périmètre : barre de filtres du plan de formation (`portal-plan-filters--compact`), appliquée à toute la page.
 3. **RH Groupe d'abord** (`group_hr`, compte de démonstration u11 Clarisse MBARGA). La RH filiale reprendra `RHHome` avec `filialeFixe`.
 4. Données : jeu de démonstration dérivé de MEDACAP, régénérable avec `scripts/rh/extraire-demo-medacap.js`.
 
 ## 6. État — accueil RH Groupe
 
-- `pages/portal/RHHome.jsx` : entête, **À traiter** (une priorité au plus par espace), puis Recrutement, Compétences, PIF, Personnes.
+- `pages/portal/RHHome.jsx` : entête, **À traiter** (une priorité au plus par espace), puis Recrutement, Compétences, PIF, Techniciens & candidats.
 - Périmètre filiale × BU appliqué à toute la page ; un clic sur une carte pays (Compétences, PIF) restreint la page à ce pays.
 - `utils/rhDonnees.js` : contrat de données (synthèses, répartitions, niveaux, priorités par périmètre).
+- À venir : écrans métier derrière chaque carte (création de campagne, suivi, résultats, fiches, corbeille), puis la variante RH filiale.

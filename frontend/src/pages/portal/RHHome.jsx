@@ -30,8 +30,8 @@ const pct = v => (v == null ? '—' : `${v} %`)
  * (`portal-status-chip` done / progress / todo). */
 const ETAT = [
   [80, 'done', 'Couverte', '#1aab5b'],
-  [50, 'progress', 'En cours', '#F28C00'],
-  [0, 'todo', 'En retard', '#E3001B'],
+  [50, 'progress', 'En cours', '#e67e00'],
+  [0, 'todo', 'En retard', 'var(--red)'],
 ]
 const etat = valeur => ETAT.find(([seuil]) => (valeur ?? 0) >= seuil)
 
