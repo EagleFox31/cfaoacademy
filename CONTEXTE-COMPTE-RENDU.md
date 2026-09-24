@@ -256,6 +256,13 @@ Route `type: 'accueil'` de `/apercu/redaction`. Modèle : intitulé
 appelé. Bilan : le bouton de rédaction groupée est retiré (une
 proposition par rubrique).
 
+**Brouillons vides** : `enregistrer()` n'écrit que si `aDuContenu()`
+(notes, satisfaction, textes, photos, journées, objectifs, légendes ;
+en saisie libre aussi intitulé, code ou nom de stagiaire). Un brouillon
+redevenu vide est retiré ; les vides déjà stockés sont purgés à la
+lecture de la liste. Choisir une session puis partir ne crée plus de
+carte « Saisie interrompue ».
+
 **Brouillons** : l'accueil formateur affiche une carte « Reprendre »
 par brouillon (`TrainerHome.jsx`) — il n'en montrait qu'une, vers le
 plus récent, rendant les autres inaccessibles.

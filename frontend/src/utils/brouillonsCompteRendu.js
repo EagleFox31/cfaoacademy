@@ -29,10 +29,44 @@ function ecrire(tout) {
   }
 }
 
-/** Enregistre un brouillon sous son identifiant de session. */
+const rempli = v => (Array.isArray(v) ? v.length > 0
+  : v && typeof v === 'object' ? Object.values(v).some(rempli)
+    : v != null && String(v).trim() !== '')
+
+/**
+ * Le brouillon porte-t-il quelque chose que le formateur a saisi ?
+ *
+ * Choisir une session du planning, ou ouvrir le formulaire de saisie
+ * libre, ne suffit pas : ce qui vient du planning se retrouve sans
+ * brouillon, et une carte « Saisie interrompue » sur un formulaire vide
+ * ne reprend rien. Compte ce qui ne s'invente pas : les notes, la
+ * satisfaction, les textes, les photos, les journees, les objectifs —
+ * et pour une saisie libre, l'intitule, le code ou un nom de stagiaire.
+ */
+export function aDuContenu(b) {
+  if (!b) return false
+  const notes = (b.participants || []).some(p =>
+    rempli(p.entreeBrut) || rempli(p.sortieTheoBrut) || rempli(p.sortiePratBrut))
+  const saisieLibre = b.manuel && (rempli(b.intitule) || rempli(b.codeFormation)
+    || (b.participants || []).some(p => rempli(p.nom) || rempli(p.prenom)))
+  return notes || saisieLibre
+    || rempli(b.satisfaction) || rempli(b.textes) || rempli(b.photos)
+    || rempli(b.photoGroupe) || rempli(b.jours) || rempli(b.objectifs)
+    || rempli(b.legendes)
+}
+
+/**
+ * Enregistre un brouillon sous son identifiant de session — seulement
+ * s'il porte une saisie. Un brouillon redevenu vide est retire.
+ */
 export function enregistrer(id, brouillon) {
   if (!id) return false
   const tout = lire()
+  if (!aDuContenu(brouillon)) {
+    if (!(id in tout)) return true
+    delete tout[id]
+    return ecrire(tout)
+  }
   tout[id] = { ...brouillon, modifieLe: new Date().toISOString() }
   return ecrire(tout)
 }
@@ -52,6 +86,12 @@ export function oublier(id) {
 /** Les brouillons en cours, du plus recent au plus ancien. */
 export function brouillonsEnregistres() {
   const tout = lire()
+  // Les brouillons vides enregistres avant cette regle disparaissent.
+  const vides = Object.keys(tout).filter(id => !aDuContenu(tout[id]))
+  if (vides.length) {
+    vides.forEach(id => delete tout[id])
+    ecrire(tout)
+  }
   return Object.entries(tout)
     .map(([id, b]) => ({
       id,
