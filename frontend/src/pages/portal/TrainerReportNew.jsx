@@ -195,12 +195,14 @@ export default function TrainerReportNew() {
                 brouillon={brouillon} maj={maj}
                 sessions={SESSIONS_FORMATEUR}
                 onChoisirSession={s => setBrouillon(depuisSession(s))}
-                onSaisieManuelle={() => setBrouillon({
+                onSaisieManuelle={(depart = {}) => setBrouillon({
                   ...brouillonVide(), manuel: true, participants: [],
                   // Un id propre a cette saisie : sans lui, toutes les
                   // saisies manuelles partageaient la cle 'manuel' et
                   // s'ecrasaient l'une l'autre dans le stockage local.
                   sessionId: `manuel-${Date.now()}`,
+                  // Ce qu'un classeur d'evaluation importe a deja rempli.
+                  ...depart,
                 })}
               />
             )}
