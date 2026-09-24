@@ -133,5 +133,20 @@
       "sinotruk": "JUNIOR"
     },
     "instructorBrands": []
+  },
+  {
+    "id": "u11",
+    "roles": ["group_hr"],
+    "firstName": "Clarisse",
+    "lastName": "MBARGA",
+    "demoLabel": "Clarisse MBARGA — RH Groupe",
+    "orgPath": "groupe",
+    "orgLabel": "CFAO Mobility — Groupe",
+    "pays": "Groupe",
+    "filiale": "CFAO Mobility",
+    "departments": ["motors", "equipment"],
+    "brands": [],
+    "certLevels": {},
+    "instructorBrands": []
   }
 ]

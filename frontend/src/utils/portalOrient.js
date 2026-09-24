@@ -6,6 +6,7 @@ export const PORTAL_ORIENT_KEY_BY_ROLE = {
   team_manager: 'portal_orient_team_manager',
   workshop_manager: 'portal_orient_workshop_manager',
   branch_hr: 'portal_orient_branch_hr',
+  group_hr: 'portal_orient_group_hr',
   branch_admin: 'portal_orient_branch_hr',
   superadmin: 'portal_orient_superadmin',
 }

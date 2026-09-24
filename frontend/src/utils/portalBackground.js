@@ -21,7 +21,7 @@ export const PORTAL_HERO_BG_POSITION = {
 
 const ADMIN_BG_KEYS = new Set(['b2b'])
 
-const ADMIN_ROLES = new Set(['superadmin', 'branch_hr', 'branch_admin'])
+const ADMIN_ROLES = new Set(['superadmin', 'group_hr', 'branch_hr', 'branch_admin'])
 
 /**
  * Clé visuelle hero pour le profil connecté (persona ou vue groupe).
