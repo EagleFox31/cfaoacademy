@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { dispositionsPour, partieRetenue } from '../../data/mock_sessions_formateur'
 import { SEUIL, calculer, afficher } from '../../utils/baremeCfao'
 import { periodeLongue, nombreDeJours, titreDeCouverture }
@@ -11,7 +11,7 @@ import EditeurParticipants from './EditeurParticipants'
 import EditeurJournee, { MAX_PHOTOS_JOUR } from './EditeurJournee'
 import EditeurBilan from './EditeurBilan'
 import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
-import { useRefsPhotos } from '../../utils/photosService'
+import { useRefsPhotos, ancrerPhotos } from '../../utils/photosService'
 import { participantPourMoteur, proposerTexte } from '../../utils/redaction'
 import { chiffresSession, constatsParDefaut, donneesSession, redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
@@ -97,6 +97,15 @@ export default function PhaseVerification({
     groupe: brouillon.photoGroupe ? [brouillon.photoGroupe] : [],
   }), [brouillon.photos, brouillon.formateurs, brouillon.photoGroupe])
   const refsPhotos = useRefsPhotos(aTransmettre)
+
+  // Chaque photo envoyee garde son identifiant serveur dans le brouillon :
+  // elle est enregistree avec lui, et se retrouve sur un autre poste.
+  useEffect(() => {
+    if (!ancrerPhotos(brouillon, refsPhotos)) return
+    maj(b => ancrerPhotos(b, refsPhotos) || {})
+  // `maj` change a chaque rendu ; seul l'etat des photos compte ici.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refsPhotos, brouillon])
   const valeurs = useMemo(
     () => valeursDrapeaux(brouillon, session, synthese, page, refsPhotos),
     [brouillon, session, synthese, page, refsPhotos],
@@ -131,6 +140,51 @@ export default function PhaseVerification({
     }))
     maj({ textes: { ...textes, ...nouveaux } })
   }
+
+  // Premiere redaction : chaque texte que le moteur sait ecrire recoit
+  // une proposition des l'arrivee a l'edition, au lieu d'une phrase de
+  // gabarit sans rapport avec les chiffres. Seuls les champs jamais
+  // renseignes sont concernes — un texte ecrit, ou vide a dessein,
+  // n'est pas touche — et ce qui est saisi pendant la redaction garde
+  // la priorite.
+  const premiere = useRef(false)
+  useEffect(() => {
+    if (premiere.current) return
+    premiere.current = true
+    const t = brouillon.textes || {}
+    const absent = k => t[k] === undefined
+    const donnees = donneesSession(brouillon, session)
+    const travaux = []
+    ;(brouillon.participants || []).filter(p => p.present !== false).forEach(p => {
+      const k = `fiche-${p.id}.appreciation`
+      const c = calculer(p, brouillon.baremes)
+      if (!absent(k) || p.appreciation || !chiffresSuffisants(c)) return
+      const propre = satisfactionStagiaire(brouillon.satisfaction?.[p.id] || {})
+      travaux.push(proposerTexte(participantPourMoteur(p, c, propre?.formation, propre?.accueil),
+        'accueil').then(texte => (texte ? { [k]: texte } : {})))
+    })
+    ;[['resultats.commentaireProgression', 'progression'],
+      ['resultats.commentaireAcquisition', 'acquisition']].forEach(([k, type]) => {
+      if (absent(k)) {
+        travaux.push(redigerRemarque(type, donnees)
+          .then(texte => (texte ? { [k]: texte } : {})))
+      }
+    })
+    const rubriques = ['contexte', 'resultats', 'vigilance', 'suites']
+    if (rubriques.some(r => absent(`bilan.${r}`))) {
+      travaux.push(redigerRemarque('bilan', donnees).then(sortie => Object.fromEntries(
+        rubriques.filter(r => absent(`bilan.${r}`) && sortie?.[r])
+          .map(r => [`bilan.${r}`, sortie[r]]))))
+    }
+    if (!travaux.length) return
+    Promise.all(travaux).then(parts => {
+      const nouveaux = Object.assign({}, ...parts)
+      if (!Object.keys(nouveaux).length) return
+      maj(b => ({ textes: { ...nouveaux, ...(b.textes || {}) } }))
+    })
+  // Une seule fois, a l'arrivee dans l'edition.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const redaction = {
     redigeant, panne, avant,
@@ -1132,13 +1186,12 @@ function composerPages(b, session, s) {
 
   if (retenue('fiches')) {
     const pourcent = v => (v == null ? '—' : `${Math.round(v)} %`)
-    const satFiches = syntheseSatisfaction(b.satisfaction)
-    const critere = (criteres, titre, total, valeur) => ({
+    const critere = (reponses, criteres, titre, total, valeur) => ({
       titre,
       lignes: [
         // Sur la fiche, on reprend l'intitule exact du classeur de la
         // diapositive 27 : c'est ce que le lecteur compare.
-        ...detailParCritere(b.satisfaction, criteres).map(cr => ({
+        ...detailParCritere(reponses, criteres).map(cr => ({
           libelle: cr.modele || cr.libelle,
           valeur: cr.moyenne == null ? '—' : `${Math.round(cr.moyenne)} %`,
         })),
@@ -1147,6 +1200,9 @@ function composerPages(b, session, s) {
     })
     participants.forEach(p => {
       const c = calculer(p, b.baremes)
+      // Les reponses du seul stagiaire : la fiche est la sienne.
+      const siennes = b.satisfaction?.[p.id] ? { [p.id]: b.satisfaction[p.id] } : {}
+      const satPropre = syntheseSatisfaction(siennes)
       pages.push({
         cle: `fiche-${p.id}`, titre: `${p.prenom} ${p.nom}`, type: 'texte',
         participant: p, calcul: c,
@@ -1156,13 +1212,13 @@ function composerPages(b, session, s) {
         blocs: [{
           cle: 'appreciation',
           titre: 'Appréciation de la formation et de l’accueil',
-          texte: p.appreciation || appreciationAuto(p, c),
+          texte: p.appreciation || '',
         }],
         tableaux: [
-          critere(CRITERES_FORMATION, 'Qualité de la formation',
-            'Qualité de la formation', satFiches.formation),
-          critere(CRITERES_ACCUEIL, 'Qualité de l’accueil',
-            'Qualité de l’accueil', satFiches.accueil),
+          critere(siennes, CRITERES_FORMATION, 'Qualité de la formation',
+            'Qualité de la formation', satPropre.formation),
+          critere(siennes, CRITERES_ACCUEIL, 'Qualité de l’accueil',
+            'Qualité de l’accueil', satPropre.accueil),
           {
             titre: 'Acquisition des compétences',
             lignes: [
@@ -1204,21 +1260,6 @@ function composerPages(b, session, s) {
   }
 
   return pages
-}
-
-/** Une appreciation de depart, quand le formateur n'en a pas ecrit. */
-function appreciationAuto(p, c) {
-  if (c.scoreFinal == null) return ''
-  const nom = p.prenom || 'Le participant'
-  if (c.scoreFinal >= 90) {
-    return `${nom} termine cette formation avec des résultats de premier plan `
-      + `(${c.scoreFinal} %).`
-  }
-  if (c.scoreFinal >= SEUIL) {
-    return `${nom} valide cette formation avec un score de ${c.scoreFinal} %.`
-  }
-  return `${nom} n'atteint pas le seuil de validation : ${c.scoreFinal} % `
-    + `pour un seuil fixé à ${SEUIL} %.`
 }
 
 /** Le dossier remis au generateur. */

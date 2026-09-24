@@ -263,6 +263,30 @@ redevenu vide est retiré ; les vides déjà stockés sont purgés à la
 lecture de la liste. Choisir une session puis partir ne crée plus de
 carte « Saisie interrompue ».
 
+**Stockage serveur (solution de démarrage)** : les brouillons sont
+conservés par le service d'aperçu (`services/apercu/stockage.py`, SQLite
+`services/apercu/donnees/comptes-rendus.sqlite`, gitignoré), routes
+`/cr-donnees/brouillons[/<id>]` (GET/PUT/DELETE, en-tête `X-Utilisateur` =
+id du compte de démo, **pas d'authentification : réseau local seulement**)
+et `/cr-donnees/photos/<ref>.jpg` (photos désormais permanentes dans
+`donnees/photos`). Front : `brouillonsCompteRendu.js` garde une copie
+locale par compte (`cfao.comptes-rendus.<id>`), envoie chaque écriture au
+serveur (différée 0,8 s, `keepalive` à la fermeture), `synchroniser()`
+à l'accueil et sur la liste (le plus récent gagne), marques de suppression
+côté serveur pour ne pas ressusciter un brouillon effacé ailleurs ; la
+page d'édition interroge le serveur avant tout enregistrement. Photos :
+chaque photo envoyée reçoit `ref` + adresse serveur dans le brouillon
+(`ancrerPhotos`). **À migrer vers `cfao-core`** (Django/PostgreSQL,
+Keycloak, Cerbos) en gardant le contrat `/cr-donnees`.
+
+**Première rédaction automatique** : à l'arrivée à l'édition, chaque texte
+générable jamais renseigné (appréciations des fiches, deux constats de la
+page 17, quatre rubriques du bilan) reçoit une proposition du moteur ;
+ce qui est saisi entre-temps garde la priorité (`maj` accepte une
+fonction). La phrase de gabarit des fiches (`appreciationAuto`) est
+supprimée. Les tableaux de satisfaction des fiches affichent enfin les
+réponses du stagiaire, plus la moyenne du groupe.
+
 **Comptes rendus en cours** : l'accueil n'a plus qu'une carte
 (« N en cours ») vers `/portail/compte-rendu/en-cours`
 (`TrainerReportsEnCours.jsx`) : cartes au format des sessions (code,

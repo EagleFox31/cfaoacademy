@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
@@ -16,7 +16,7 @@ import usePortalBackground from '../../hooks/usePortalBackground'
 import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
 import { SESSIONS_FORMATEUR } from '../../data/mock_sessions_formateur'
 import { periodeLongue } from '../../utils/compteRendu'
-import { brouillonsEnregistres } from '../../utils/brouillonsCompteRendu'
+import { brouillonsEnregistres, synchroniser } from '../../utils/brouillonsCompteRendu'
 import { resolvePortalCardBrand } from '../../utils/portalCardMedia.js'
 import '../../styles/compte-rendu.css'
 
@@ -100,7 +100,14 @@ export default function TrainerHome() {
       s => s.statut === 'en_cours' || s.statut === 'a_venir'),
     [],
   )
-  const brouillons = useMemo(() => brouillonsEnregistres(), [])
+  // Ceux de ce navigateur tout de suite, puis ceux du serveur — saisis
+  // sur un autre poste — des qu'il repond.
+  const [brouillons, setBrouillons] = useState(() => brouillonsEnregistres())
+  useEffect(() => {
+    let actif = true
+    synchroniser().then(liste => { if (actif && liste) setBrouillons(liste) })
+    return () => { actif = false }
+  }, [])
 
   if (!user) return null
 
