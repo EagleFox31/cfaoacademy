@@ -205,7 +205,7 @@ L'accueil du profil RH à la connexion, sur le modèle de `TrainerHome` : entêt
 1. **Présentation en sections**, comme les autres portails : entête, « À traiter », puis Recrutement, Compétences, PIF, Personnes. Les entrées de la barre de navigation mènent à ces sections ; chacune ouvre son espace (`/portail/rh/<espace>`, pages d'attente pour l'instant).
 2. **Composants du portail uniquement**, sur le modèle du tableau de bord Super Admin — aucune feuille de style propre au RH :
    - indicateurs `portal-kpi-row` (même forme que les portails KI, RH filiale et Super Admin) ;
-   - par filiale : **cartes pays** de la page Académie (`AcademyCountryChip`, exportée de `AcademyPaysPanel`, drapeau par code ISO), avec barre de couverture et badge ; un clic restreint la page au pays ;
+   - par filiale : **cartes pays** = `PvCard`, comme les autres cartes de la page — drapeau en visuel (cadré comme le logo des cartes marque), puce de statut Couverte / En cours / En retard, pays en titre, chiffres en méta ; un clic restreint la page au pays ;
    - titres `portal-section-head--with-action` + lien `portal-next-actions-more` (« Ouvrir l'espace ») ;
    - périmètre : barre de filtres du plan de formation (`portal-plan-filters--compact`) ;
    - cartes `PvCard` ; liste des pages d'attente `portal-log-list`.

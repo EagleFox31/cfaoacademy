@@ -9,7 +9,6 @@ import PortalReveal from '../../components/PortalReveal.jsx'
 import PortalStaggerGrid from '../../components/PortalStaggerGrid.jsx'
 import PortalAssistanceSection from '../../components/PortalAssistanceSection.jsx'
 import PvCard from '../../components/PvCard'
-import { AcademyCountryChip } from '../../components/AcademyPaysPanel'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
@@ -30,19 +29,37 @@ const VISUEL = {
 
 const pct = v => (v == null ? '—' : `${v} %`)
 
-/** Couverture sous le nom d'un pays : la barre en ligne du portail, a la
- * largeur de la carte. Les couleurs sont fixees : la carte reste claire,
- * meme dans une section sombre ou le portail eclaircit ces textes. */
-function Barre({ valeur, libelle, droite }) {
-  const v = valeur ?? 0
-  const texte = { color: 'var(--muted)', minWidth: 0, whiteSpace: 'nowrap' }
+const ETAT = [
+  [80, 'done', 'Couverte'],
+  [50, 'progress', 'En cours'],
+  [0, 'todo', 'En retard'],
+]
+/** Puce de statut d'une couverture, comme celles des cartes du portail. */
+function puce(couverture) {
+  const [, cls, libelle] = ETAT.find(([seuil]) => (couverture ?? 0) >= seuil)
+  return <span className={`portal-status-chip ${cls}`}>{libelle}</span>
+}
+
+/** Carte d'un pays : la carte du portail, drapeau en visuel — cadre
+ * comme le logo des cartes marque (fond blanc, image contenue). */
+function CartePays({ f, kicker, meta, onClick }) {
   return (
-    <div className="portal-inline-bar">
-      {libelle && <span className="portal-inline-pct" style={{ ...texte, width: 64 }}>{libelle}</span>}
-      <div className="portal-inline-track" style={{ flex: 1, width: 'auto', background: 'var(--rule)' }}>
-        <div className="portal-inline-fill" style={{ width: `${v}%`, background: v >= 50 ? '#1aab5b' : undefined }} />
-      </div>
-      <span className="portal-inline-pct" style={texte}>{droite ?? pct(valeur)}</span>
+    <div className="portal-card-anchor">
+      <PvCard
+        cardMedia={(
+          <div className="pv-card-img" style={{ padding: 24, background: 'white' }}>
+            <img src={`https://flagcdn.com/w320/${f.code}.png`} alt={f.pays} loading="lazy"
+              style={{ objectFit: 'contain', width: '100%', height: '100%' }} />
+          </div>
+        )}
+        kicker={kicker}
+        title={f.pays}
+        meta={meta}
+        cta="Voir le pays"
+        hoverHint={`Restreindre la page à ${f.pays}`}
+        onClick={onClick}
+        corner
+      />
     </div>
   )
 }
@@ -241,17 +258,15 @@ export default function RHHome({ filialeFixe = null }) {
               </div>
             </div>
             {vueGroupe && competences.parFiliale.length > 0 && (
-              <div className="academy-pays-grid" role="list">
+              <PortalStaggerGrid>
                 {competences.parFiliale.map(f => (
-                  <AcademyCountryChip key={f.code} name={f.pays} code={f.code}
-                    onClick={() => changer({ filiale: f.code })}>
-                    <Barre valeur={f.couverture} />
-                    <span className="academy-pays-country-badge">
-                      {f.evalues}/{f.techniciens} évalués{f.moyenne != null ? ` · moy. ${f.moyenne} %` : ''}
-                    </span>
-                  </AcademyCountryChip>
+                  <CartePays key={f.code} f={f}
+                    kicker={puce(f.couverture)}
+                    meta={`${f.evalues}/${f.techniciens} techniciens évalués · ${f.couverture ?? 0} %${
+                      f.moyenne != null ? ` · moyenne ${f.moyenne} %` : ''}`}
+                    onClick={() => changer({ filiale: f.code })} />
                 ))}
-              </div>
+              </PortalStaggerGrid>
             )}
           </div>
         </PortalReveal>
@@ -279,21 +294,17 @@ export default function RHHome({ filialeFixe = null }) {
                 <div className="portal-kpi-label">Couverture</div>
               </div>
             </div>
-            {pif.parFiliale.length > 0 && (
-              <div className="academy-pays-grid" role="list">
+            {vueGroupe && pif.parFiliale.length > 0 && (
+              <PortalStaggerGrid>
                 {pif.parFiliale.map(f => (
-                  <AcademyCountryChip key={f.code} name={f.pays} code={f.code}
-                    onClick={() => changer({ filiale: f.code })}>
-                    {buAffichees.filter(b => f.parBU[b].techniciens).map(b => (
-                      <Barre key={b} libelle={b} valeur={f.parBU[b].couverture}
-                        droite={`${f.parBU[b].avecPif}/${f.parBU[b].techniciens}`} />
-                    ))}
-                    <span className="academy-pays-country-badge">
-                      {f.valides} PIF validé{f.valides > 1 ? 's' : ''}
-                    </span>
-                  </AcademyCountryChip>
+                  <CartePays key={f.code} f={f}
+                    kicker={puce(f.couverture)}
+                    meta={`${buAffichees.filter(b => f.parBU[b].techniciens)
+                      .map(b => `${b} ${f.parBU[b].avecPif}/${f.parBU[b].techniciens}`).join(' · ')} · ${
+                      f.valides} validé${f.valides > 1 ? 's' : ''}`}
+                    onClick={() => changer({ filiale: f.code })} />
                 ))}
-              </div>
+              </PortalStaggerGrid>
             )}
           </div>
         </PortalReveal>
