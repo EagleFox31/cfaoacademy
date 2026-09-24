@@ -23,6 +23,7 @@ indexees par nature — `progression`, `acquisition`, `satisfaction` —
 puis par cellule : `{'B2': 0.55, 'B3': 0.8}`.
 """
 import hashlib
+import html
 import io
 import re
 import subprocess
@@ -259,7 +260,11 @@ def _largeur_colonnes(parts, jusqua):
     """
     feuille = parts['xl/worksheets/sheet1.xml'].decode('utf-8')
     defaut = re.search(r'defaultColWidth="([\d.]+)"', feuille)
-    defaut = float(defaut.group(1)) if defaut else 8.43
+    base = re.search(r'baseColWidth="([\d.]+)"', feuille)
+    # Sans largeur par defaut explicite, Excel part de `baseColWidth`
+    # (en caracteres) augmente de ses 5 px de marge.
+    defaut = (float(defaut.group(1)) if defaut
+              else float(base.group(1)) + 5 / 7 if base else 8.43)
     largeurs = {}
     for mn, mx, w in re.findall(r'<col min="(\d+)" max="(\d+)"[^>]*width="([\d.]+)"', feuille):
         for col in range(int(mn), int(mx) + 1):
@@ -406,11 +411,25 @@ def _pour_rendu(parts):
                      '<pageSetup paperSize="9" orientation="landscape" '
                      'fitToWidth="1" fitToHeight="1"/>', feuille, count=1)
     parts['xl/worksheets/sheet1.xml'] = feuille.encode('utf-8')
-    # Les etiquettes d'un anneau sont decalees depuis le milieu de leur
-    # secteur : le modele les loge dans le trou de l'anneau quand les
-    # valeurs sont nulles. Avec de vraies valeurs, et le trou plus petit
-    # que LibreOffice dessine, elles chevauchent l'anneau. Le rendu les
-    # retire ; une legende les remplace (`_legende_anneau`).
+    # Le format « pourcentage » integre (numFmtId 9) suit la langue de
+    # LibreOffice : « 85 % » en francais, quand Excel ecrit « 85% ». Un
+    # format explicite « 0% » s'affiche pareil partout.
+    styles = parts.get('xl/styles.xml', b'').decode('utf-8')
+    if 'numFmtId="9"' in styles:
+        styles = styles.replace('numFmtId="9"', 'numFmtId="190"')
+        fmt = '<numFmt numFmtId="190" formatCode="0%"/>'
+        if '<numFmts' in styles:
+            styles = re.sub(r'(<numFmts[^>]*>)', lambda m: m.group(1) + fmt, styles, count=1)
+        else:
+            styles = re.sub(r'(<styleSheet[^>]*>)',
+                            lambda m: m.group(1) + '<numFmts count="1">' + fmt + '</numFmts>',
+                            styles, count=1)
+        parts['xl/styles.xml'] = styles.encode('utf-8')
+    # LibreOffice ignore la taille du trou d'un anneau (`c:holeSize`) :
+    # il le dessine a un tiers du rayon, Excel a 75 %. Ses etiquettes,
+    # placees pour l'anneau d'Excel, chevaucheraient le sien : le rendu
+    # les retire, `_anneau_excel` redonne a l'anneau ses proportions et
+    # pose les etiquettes comme Excel.
     for nom in [n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)]:
         graphique = parts[nom].decode('utf-8')
         if '<c:doughnutChart>' in graphique:
@@ -420,86 +439,202 @@ def _pour_rendu(parts):
     return parts
 
 
-# La legende d'un anneau : la couleur de chaque serie et son libelle,
-# la valeur lue dans sa cellule.
-LEGENDES = {
-    'satisfaction': [((0, 32, 96), 'Qualité de la formation', 'B9'),
-                     ((255, 192, 0), 'Qualité de l’accueil', 'B18')],
-}
+# Les cellules des valeurs portees par chaque anneau, serie par serie
+# (la premiere serie est l'anneau interieur).
+ANNEAUX = {'satisfaction': ('B9', 'B18')}
 
 
-def _legende_anneau(image, entrees, cellules):
-    """Pose sous l'anneau une legende : pastille, libelle et valeur."""
-    from PIL import ImageDraw, ImageFont
-    l, h = image.size
-    pixels = image.load()
-    couleurs = [c for c, _, _ in entrees]
+def _geometrie_anneau(parts):
+    """Ce qu'il faut du graphique en anneau pour le dessiner comme Excel.
 
-    def colore(x, y):
-        r, g, b, a = pixels[x, y]
-        return a and any(abs(r - c[0]) + abs(g - c[1]) + abs(b - c[2]) < 60
-                         for c in couleurs)
+    Taille du trou, zone de trace, cadre du graphique sur la feuille,
+    et pour chaque serie : nom, decalage manuel de l'etiquette, corps.
+    """
+    graphique = next((parts[n].decode('utf-8') for n in parts
+                      if re.match(r'xl/charts/chart\d+\.xml$', n)
+                      and b'<c:doughnutChart>' in parts[n]), None)
+    dessin = parts.get('xl/drawings/drawing1.xml', b'').decode('utf-8')
+    if not graphique or not dessin:
+        return None
+    trou = re.search(r'<c:holeSize val="(\d+)"', graphique)
+    zone = re.search(r'<c:plotArea><c:layout>.*?</c:layout>', graphique, re.S)
+    zone = dict(re.findall(r'<c:([xywh]) val="([^"]+)"', zone.group(0))) if zone else {}
+    series = []
+    for ser in re.findall(r'<c:ser>.*?</c:ser>', graphique, re.S):
+        nom = re.search(r'<c:tx>.*?<c:v>([^<]*)</c:v>', ser, re.S)
+        dec = re.search(r'<c:dLbl><c:idx val="0"/><c:layout><c:manualLayout>'
+                        r'<c:x val="([^"]+)"/><c:y val="([^"]+)"/>', ser)
+        corps = re.search(r'<c:dLbl>.*?sz="(\d+)"', ser, re.S)
+        series.append({
+            'nom': html.unescape(nom.group(1)) if nom else '',
+            'dx': float(dec.group(1)) if dec else 0.0,
+            'dy': float(dec.group(2)) if dec else 0.0,
+            'pt': int(corps.group(1)) / 100 if corps else 16.0,
+        })
+    _, _, largeur, hauteur = _cadre_graphique(parts, dessin)
+    if not largeur or not hauteur:
+        return None
+    return {
+        'trou': int(trou.group(1)) / 100 if trou else 0.5,
+        'zone': {k: float(v) for k, v in zone.items()} or {'x': 0, 'y': 0, 'w': 1, 'h': 1},
+        'cadre': (largeur, hauteur),
+        'series': series,
+    }
 
-    # L'anneau est le bloc colore le plus bas, et le plus a droite : le
-    # tableau, qui porte les memes couleurs, est a sa gauche (page 19) ou
-    # au-dessus (fiche individuelle).
-    rangs = [y for y in range(0, h, 3) if any(colore(x, y) for x in range(l // 2, l, 3))]
-    if not rangs:
+
+def _anneau_excel(image, geo, valeurs):
+    """Redonne a l'anneau rendu par LibreOffice la geometrie d'Excel.
+
+    LibreOffice trace l'anneau juste (angles, couleurs) mais avec son
+    propre trou. On remappe chaque rayon — les angles ne bougent pas —
+    pour retrouver le trou et l'epaisseur des anneaux d'Excel ; les
+    secteurs vides reprennent leur remplissage blanc. Les etiquettes
+    sont ensuite posees comme Excel les place : au milieu du secteur,
+    decalees de leur position manuelle (en fraction du graphique),
+    tenues dans son cadre, reliees au secteur par un trait de rappel.
+    Modele verifie contre les positions que rapporte Excel lui-meme
+    (`DataLabel.Left/Top`) sur huit jeux de valeurs, a 1,5 pt pres.
+    """
+    import math
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
+    a = np.asarray(image.convert('RGBA')).astype(np.float32)
+    h, l = a.shape[:2]
+    opaque = a[:, :, 3] > 0
+
+    # L'anneau : le bloc le plus bas de la moitie droite, puis, dans ses
+    # rangs, le bloc de colonnes le plus a droite (le tableau est a sa
+    # gauche en page 19, au-dessus sur la fiche). Le contour gris des
+    # secteurs vides en ferme le cercle.
+    def dernier_bloc(indices):
+        fin = len(indices) - 1
+        debut = fin
+        while debut > 0 and indices[debut] - indices[debut - 1] <= 12:
+            debut -= 1
+        return int(indices[debut]), int(indices[fin])
+
+    rangs = np.where(opaque[:, l // 2:].any(axis=1))[0]
+    if not len(rangs):
         return image
-    bas = haut = rangs[-1]
-    for y in reversed(rangs):
-        if haut - y > 12:
-            break
-        haut = y
-    colonnes = [x for x in range(0, l, 3)
-                if any(colore(x, y) for y in range(haut, bas + 1, 3))]
-    droite = gauche = colonnes[-1]
-    for x in reversed(colonnes):
-        if gauche - x > 12:
-            break
-        gauche = x
-    # Le corps suit la taille de l'anneau, et la legende tient dans l'image.
-    taille = max(12, min(round(h * 0.045), round((droite - gauche) * 0.065)))
+    haut, bas = dernier_bloc(rangs)
+    colonnes = np.where(opaque[haut:bas + 1].any(axis=0))[0]
+    gauche, droite = dernier_bloc(colonnes)
+    cx, cy = (gauche + droite) / 2, (haut + bas) / 2
+    rayon = ((droite - gauche) + (bas - haut)) / 4
+    if rayon < 20:
+        return image
 
-    def police_de(t):
-        try:
-            return ImageFont.truetype('calibrib.ttf', t)
-        except OSError:
-            return ImageFont.load_default()
+    # Trou de LibreOffice : le premier rayon ou le cercle est presque
+    # entierement trace (contour ou couleur).
+    ys, xs = np.nonzero(opaque[haut:bas + 1, gauche:droite + 1])
+    r_pts = np.hypot(xs + gauche - cx, ys + haut - cy)
+    profil = np.bincount(np.clip(r_pts, 0, rayon).astype(int), minlength=int(rayon) + 1)
+    rempli = profil / np.maximum(2 * math.pi * np.arange(len(profil)), 1)
+    trou_lo = next((r for r in range(int(rayon * 0.15), int(rayon * 0.9))
+                    if rempli[r] > 0.5), rayon / 3)
+    n = max(1, len(geo['series']))
+    trou_xl = geo['trou'] * rayon
+    ep_lo, ep_xl = (rayon - trou_lo) / n, (rayon - trou_xl) / n
 
-    lignes = []
-    for couleur, libelle, ref in entrees:
-        v = cellules.get(ref)
-        # Arrondi a l'unite superieure des 0,5, comme le format « 0 % »
-        # d'Excel : le tableau voisin et la legende disent le meme chiffre.
-        lignes.append((couleur, f'{libelle} : {int(float(v) * 100 + 0.5)} %'
-                       if v is not None else libelle))
+    # Remappage radial, bilineaire, sur le carre de l'anneau.
+    m = int(rayon) + 3
+    x0, y0 = max(0, int(cx) - m), max(0, int(cy) - m)
+    x1, y1 = min(l, int(cx) + m + 1), min(h, int(cy) + m + 1)
+    gy, gx = np.mgrid[y0:y1, x0:x1].astype(np.float32)
+    dx, dy = gx - cx, gy - cy
+    r = np.hypot(dx, dy)
+    dans = (r >= trou_xl) & (r <= rayon)
+    k = np.clip(((r - trou_xl) / ep_xl).astype(int), 0, n - 1)
+    r_src = trou_lo + k * ep_lo + (r - trou_xl - k * ep_xl) * ep_lo / ep_xl
+    r_src = np.where(r > rayon, r, r_src)
+    echelle = np.where(r > 0, r_src / np.maximum(r, 1e-6), 0)
+    sx, sy = cx + dx * echelle, cy + dy * echelle
+    sx0 = np.clip(np.floor(sx).astype(int), 0, l - 2)
+    sy0 = np.clip(np.floor(sy).astype(int), 0, h - 2)
+    fx, fy = (sx - sx0)[..., None], (sy - sy0)[..., None]
+    pris = (a[sy0, sx0] * (1 - fx) * (1 - fy) + a[sy0, sx0 + 1] * fx * (1 - fy)
+            + a[sy0 + 1, sx0] * (1 - fx) * fy + a[sy0 + 1, sx0 + 1] * fx * fy)
+    # Les secteurs vides sont blancs chez Excel : sous l'anneau, le vide
+    # redevient blanc.
+    blanc = np.array([255, 255, 255, 255], np.float32)
+    alpha = pris[..., 3:4] / 255
+    pris = np.where(dans[..., None], pris * alpha + blanc * (1 - alpha), pris)
+    pris = np.where((r < trou_xl)[..., None], 0, pris)
+    b = a.copy()
+    b[y0:y1, x0:x1] = pris
+    image = Image.fromarray(np.clip(b, 0, 255).astype(np.uint8), 'RGBA')
+
+    # Echelle : la zone de trace d'Excel inscrit le cercle dans son plus
+    # petit cote ; on en deduit le cadre du graphique, en pixels.
+    # (Excel l'agrandit d'environ 1,5 % : mesure sur ses propres objets.)
+    z = geo['zone']
+    larg_emu, haut_emu = geo['cadre']
+    px = 2 * rayon / (min(z['w'] * larg_emu, z['h'] * haut_emu) * 1.015)
+    pt = 12700 * px
+    W, H = larg_emu * px, haut_emu * px
+    X0, Y0 = cx - (z['x'] + z['w'] / 2) * W, cy - (z['y'] + z['h'] / 2) * H
+
     mesure = ImageDraw.Draw(image)
-    while True:
-        police = police_de(taille)
-        largeur = max(mesure.textlength(t, font=police) for _, t in lignes) + taille * 1.4
-        if largeur <= l or taille <= 10:
-            break
-        taille -= 1
-    pas = round(taille * 1.5)
-    besoin = bas + round(taille * 0.8) + pas * len(lignes)
-    if besoin > h:
-        from PIL import Image
-        agrandie = Image.new('RGBA', (l, besoin), (255, 255, 255, 0))
-        agrandie.paste(image, (0, 0))
-        image = agrandie
+    etiquettes = []
+    for i, (serie, v) in enumerate(zip(geo['series'], valeurs)):
+        if v is None:
+            continue
+        corps = max(10, round(serie['pt'] * pt))
+        try:
+            police = ImageFont.truetype('calibrib.ttf', corps)
+        except OSError:
+            police = ImageFont.load_default()
+        mots = serie['nom'].split()
+        texte = [' '.join(mots[:-1]), f"{mots[-1] if mots else ''} {int(float(v) * 100 + 0.5)}%"]
+        lw = max(mesure.textlength(t, font=police) for t in texte)
+        pas = corps * 1.22
+        lh = pas * len(texte)
+        angle = math.radians(float(v) * 180)
+        rm = trou_xl + (i + 0.5) * ep_xl
+        ps = (cx + rm * math.sin(angle), cy - rm * math.cos(angle))
+        # Excel tient la boite de l'etiquette (texte et marges) entre
+        # -4 pt et +1 pt des bords du graphique.
+        bw, bh = lw + 0.6 * serie['pt'] * pt, (len(texte) * 1.2 + 0.9) * serie['pt'] * pt
+        ex = min(max(ps[0] + serie['dx'] * W, X0 - 4 * pt + bw / 2), X0 + W + pt - bw / 2)
+        ey = min(max(ps[1] + serie['dy'] * H, Y0 - 4 * pt + bh / 2), Y0 + H + pt - bh / 2)
+        etiquettes.append((texte, police, pas, ex, ey, lw, lh, ps))
+
+    # La toile s'agrandit si une etiquette deborde de l'image rognee.
+    g = min([0] + [e[3] - e[5] / 2 - 4 for e in etiquettes])
+    d = max([image.width] + [e[3] + e[5] / 2 + 4 for e in etiquettes])
+    t = min([0] + [e[4] - e[6] / 2 - 4 for e in etiquettes])
+    f = max([image.height] + [e[4] + e[6] / 2 + 4 for e in etiquettes])
+    dx0, dy0 = -int(math.floor(g)), -int(math.floor(t))
+    if dx0 or dy0 or d > image.width or f > image.height:
+        toile = Image.new('RGBA', (int(math.ceil(d)) + dx0, int(math.ceil(f)) + dy0),
+                          (255, 255, 255, 0))
+        toile.paste(image, (dx0, dy0))
+        image = toile
     dessin = ImageDraw.Draw(image)
-    x0 = min(max(0, round((gauche + droite) / 2 - largeur / 2)), max(0, round(l - largeur)))
-    y = bas + round(taille * 0.8)
-    for couleur, texte in lignes:
-        dessin.rectangle([x0, y + taille * 0.2, x0 + taille * 0.8, y + taille],
-                         fill=couleur + (255,))
-        dessin.text((x0 + taille * 1.4, y), texte, font=police, fill=(0, 0, 0, 255))
-        y += pas
+    trait = max(1, round(rayon / 180))
+    gris = (89, 89, 89, 255)
+    for texte, police, pas, ex, ey, lw, lh, (sx_, sy_) in etiquettes:
+        ex, ey, sx_, sy_ = ex + dx0, ey + dy0, sx_ + dx0, sy_ + dy0
+        # Trait de rappel : vers le milieu du cote le plus proche, avec un
+        # coude horizontal quand l'etiquette est de cote.
+        ddx, ddy = sx_ - ex, sy_ - ey
+        if math.hypot(ddx, ddy) > max(lw, lh) * 0.6:
+            if abs(ddy) / (lh / 2) >= abs(ddx) / (lw / 2):
+                dessin.line([(sx_, sy_), (ex, ey + math.copysign(lh / 2, ddy))],
+                            fill=gris, width=trait)
+            else:
+                cote = ex + math.copysign(lw / 2, ddx)
+                coude = (cote + math.copysign(rayon * 0.06, ddx), ey)
+                dessin.line([(sx_, sy_), coude, (cote, ey)], fill=gris, width=trait)
+        y = ey - lh / 2
+        for ligne in texte:
+            dessin.text((ex - dessin.textlength(ligne, font=police) / 2, y), ligne,
+                        font=police, fill=(0, 0, 0, 255))
+            y += pas
     return image
 
 
-def _rogner(pixmap_png, legende=None, cellules=None, ratio=None):
+def _rogner(pixmap_png, anneau=None, ratio=None):
     """L'image rognee a son contenu, le blanc rendu transparent.
 
     L'EMF du modele n'a pas de fond : pose sur la moitie grise de la
@@ -516,8 +651,8 @@ def _rogner(pixmap_png, legende=None, cellules=None, ratio=None):
     boite = image.getbbox()
     if boite:
         image = image.crop(boite)
-    if legende:
-        image = _legende_anneau(image, legende, cellules or {})
+    if anneau:
+        image = _anneau_excel(image, *anneau)
     # L'objet etire son image aux proportions de l'EMF d'origine : on les
     # retrouve par un bord transparent, centre sur les deux axes pour ne
     # pas laisser le contenu glisser vers un coin de son cadre.
@@ -568,7 +703,12 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
             with fitz.open(pdf) as doc:
                 png = doc[0].get_pixmap(dpi=200).tobytes('png')
             quoi, cellules, ratio = (legendes or {}).get(cle, (None, None, None))
-            image = _rogner(png, LEGENDES.get(quoi), cellules, ratio)
+            anneau = None
+            if quoi in ANNEAUX:
+                geo = _geometrie_anneau(_lire(classeurs_bruts[cle]))
+                if geo:
+                    anneau = (geo, [(cellules or {}).get(ref) for ref in ANNEAUX[quoi]])
+            image = _rogner(png, anneau, ratio)
             (dossier / f'{empreinte}.png').write_bytes(image)
             images[cle] = image
     return images
