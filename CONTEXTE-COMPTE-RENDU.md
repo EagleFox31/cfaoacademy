@@ -263,6 +263,14 @@ redevenu vide est retiré ; les vides déjà stockés sont purgés à la
 lecture de la liste. Choisir une session puis partir ne crée plus de
 carte « Saisie interrompue ».
 
+**Comptes rendus en cours** : l'accueil n'a plus qu'une carte
+(« N en cours ») vers `/portail/compte-rendu/en-cours`
+(`TrainerReportsEnCours.jsx`) : cartes au format des sessions (code,
+intitulé, période, effectif, étape atteinte, notes saisies, dernière
+modification), clic pour reprendre, corbeille avec confirmation
+(`oublier`). La mention ci-dessous d'une carte par brouillon est
+dépassée.
+
 **Brouillons** : l'accueil formateur affiche une carte « Reprendre »
 par brouillon (`TrainerHome.jsx`) — il n'en montrait qu'une, vers le
 plus récent, rendant les autres inaccessibles.

@@ -93,13 +93,25 @@ export function brouillonsEnregistres() {
     ecrire(tout)
   }
   return Object.entries(tout)
-    .map(([id, b]) => ({
-      id,
-      // L'id d'une saisie manuelle (`manuel-<horodatage>`) n'est pas un
-      // titre presentable : mieux vaut dire que rien n'est encore saisi.
-      session: b.intitule || (b.sessionId?.startsWith('manuel-') ? null : b.sessionId),
-      modifieLe: b.modifieLe,
-      phase: b.phase ?? 0,
-    }))
+    .map(([id, b]) => {
+      const presents = (b.participants || []).filter(p => p.present !== false)
+      return {
+        id,
+        // L'id d'une saisie manuelle (`manuel-<horodatage>`) n'est pas un
+        // titre presentable : mieux vaut dire que rien n'est encore saisi.
+        session: b.intitule || (b.sessionId?.startsWith('manuel-') ? null : b.sessionId),
+        code: b.codeFormation || '',
+        manuel: !!b.manuel,
+        debut: b.debut || '',
+        fin: b.fin || '',
+        marque: b.marque || '',
+        lieu: b.lieu || '',
+        effectif: presents.length,
+        notes: presents.filter(p => rempli(p.entreeBrut) || rempli(p.sortieTheoBrut)
+          || rempli(p.sortiePratBrut)).length,
+        modifieLe: b.modifieLe,
+        phase: b.phase ?? 0,
+      }
+    })
     .sort((a, b) => String(b.modifieLe).localeCompare(String(a.modifieLe)))
 }
