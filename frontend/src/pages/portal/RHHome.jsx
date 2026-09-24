@@ -29,26 +29,52 @@ const VISUEL = {
 
 const pct = v => (v == null ? '—' : `${v} %`)
 
+/** Seuils et couleurs des statuts : celles des puces du portail
+ * (`portal-status-chip` done / progress / todo). */
 const ETAT = [
-  [80, 'done', 'Couverte'],
-  [50, 'progress', 'En cours'],
-  [0, 'todo', 'En retard'],
+  [80, 'done', 'Couverte', '#1aab5b'],
+  [50, 'progress', 'En cours', '#996600'],
+  [0, 'todo', 'En retard', 'var(--muted)'],
 ]
-/** Puce de statut d'une couverture, comme celles des cartes du portail. */
-function puce(couverture) {
-  const [, cls, libelle] = ETAT.find(([seuil]) => (couverture ?? 0) >= seuil)
-  return <span className={`portal-status-chip ${cls}`}>{libelle}</span>
+const etat = valeur => ETAT.find(([seuil]) => (valeur ?? 0) >= seuil)
+
+/** Puce de statut, suivie du drapeau du pays (celui de « Nos pays »). */
+function Statut({ couverture, code }) {
+  const [, cls, libelle] = etat(couverture)
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+      <span className={`portal-status-chip ${cls}`}>{libelle}</span>
+      <img className="academy-pays-country-flag" src={`https://flagcdn.com/w40/${code}.png`}
+        srcSet={`https://flagcdn.com/w80/${code}.png 2x`} alt="" width={20} height={15} />
+    </span>
+  )
 }
 
-/** Carte d'un pays — comme les cartes de session du formateur : une photo
- * en visuel, et le drapeau a la place du logo de marque. */
-function CartePays({ f, visuel, kicker, meta, onClick }) {
+/** Barre de progression du portail, a la couleur du statut. Les couleurs
+ * sont fixees : la carte reste claire, meme dans une section sombre. */
+function Progression({ libelle, valeur, droite }) {
+  const couleur = etat(valeur)[3]
+  return (
+    <div className="portal-progress-block">
+      <div className="portal-progress-head" style={{ marginBottom: 6 }}>
+        <span className="portal-progress-lbl" style={{ color: 'var(--navy)', fontSize: 13 }}>{libelle}</span>
+        {droite && <span className="portal-progress-pct" style={{ color: couleur, fontSize: 13 }}>{droite}</span>}
+      </div>
+      <div className="portal-progress-track" style={{ background: 'var(--rule)' }}>
+        <div className="portal-progress-fill" style={{ width: `${valeur ?? 0}%`, background: couleur }} />
+      </div>
+    </div>
+  )
+}
+
+/** Carte d'un pays — carte du portail : photo en visuel, puce de statut et
+ * drapeau, pays en titre, barres de progression. */
+function CartePays({ f, visuel, meta, onClick }) {
   return (
     <div className="portal-card-anchor">
       <PvCard
         img={visuel}
-        logo={`https://flagcdn.com/w80/${f.code}.png`}
-        kicker={kicker}
+        kicker={<Statut couverture={f.couverture} code={f.code} />}
         title={f.pays}
         meta={meta}
         cta="Voir le pays"
@@ -238,9 +264,13 @@ export default function RHHome({ filialeFixe = null }) {
               <PortalStaggerGrid>
                 {competences.parFiliale.map(f => (
                   <CartePays key={f.code} f={f} visuel={VISUEL.competences}
-                    kicker={puce(f.couverture)}
-                    meta={`${f.evalues}/${f.techniciens} techniciens évalués · ${f.couverture ?? 0} %${
-                      f.moyenne != null ? ` · moyenne ${f.moyenne} %` : ''}`}
+                    meta={(
+                      <>
+                        <Progression libelle="Techniciens évalués" valeur={f.couverture}
+                          droite={`${f.evalues}/${f.techniciens}`} />
+                        {f.moyenne != null && <Progression libelle="Score moyen" valeur={f.moyenne} />}
+                      </>
+                    )}
                     onClick={() => changer({ filiale: f.code })} />
                 ))}
               </PortalStaggerGrid>
@@ -257,10 +287,15 @@ export default function RHHome({ filialeFixe = null }) {
               <PortalStaggerGrid>
                 {pif.parFiliale.map(f => (
                   <CartePays key={f.code} f={f} visuel={VISUEL.pif}
-                    kicker={puce(f.couverture)}
-                    meta={`${buAffichees.filter(b => f.parBU[b].techniciens)
-                      .map(b => `${b} ${f.parBU[b].avecPif}/${f.parBU[b].techniciens}`).join(' · ')} · ${
-                      f.valides} validé${f.valides > 1 ? 's' : ''}`}
+                    meta={(
+                      <>
+                        {buAffichees.filter(b => f.parBU[b].techniciens).map(b => (
+                          <Progression key={b} libelle={`${b} — avec PIF`} valeur={f.parBU[b].couverture}
+                            droite={`${f.parBU[b].avecPif}/${f.parBU[b].techniciens}`} />
+                        ))}
+                        <div style={{ marginTop: 8 }}>{f.valides} PIF validé{f.valides > 1 ? 's' : ''}</div>
+                      </>
+                    )}
                     onClick={() => changer({ filiale: f.code })} />
                 ))}
               </PortalStaggerGrid>
