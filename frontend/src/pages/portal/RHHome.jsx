@@ -75,17 +75,13 @@ function Progression({ libelle, valeur, droite, attente }) {
 
 /** Carte d'un pays — carte du portail : entete drapeau facon heros, chiffre
  * cle en titre, une barre de progression. */
-function CartePays({ f, titre, meta, onClick }) {
+function CartePays({ f, titre, meta }) {
   return (
     <div className="portal-card-anchor">
       <PvCard
         cardMedia={<VisuelPays f={f} />}
         title={titre}
         meta={meta}
-        cta="Filtrer sur ce pays"
-        hoverHint={`Restreindre la page à ${f.pays}`}
-        onClick={onClick}
-        corner
       />
     </div>
   )
@@ -174,7 +170,7 @@ export default function RHHome({ filialeFixe = null }) {
               {!filialeFixe && (
                 <label className="portal-plan-filter-field">
                   <span>Filiale</span>
-                  <select value={perimetre.filiale ?? ''}
+                  <select disabled value={perimetre.filiale ?? ''}
                     onChange={e => changer({ filiale: e.target.value || null })}>
                     <option value="">Toutes les filiales</option>
                     {filiales().map(f => <option key={f.code} value={f.code}>{f.pays}</option>)}
@@ -183,7 +179,7 @@ export default function RHHome({ filialeFixe = null }) {
               )}
               <label className="portal-plan-filter-field">
                 <span>BU</span>
-                <select value={perimetre.bu ?? ''} onChange={e => changer({ bu: e.target.value || null })}>
+                <select disabled value={perimetre.bu ?? ''} onChange={e => changer({ bu: e.target.value || null })}>
                   <option value="">Toutes les BU</option>
                   {BU.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
@@ -275,8 +271,7 @@ export default function RHHome({ filialeFixe = null }) {
                   <CartePays key={f.code} f={f}
                     titre={f.moyenne != null ? `Maîtrise globale des compétences : ${f.moyenne} %` : 'Pas encore de score'}
                     meta={<Progression libelle="Techniciens évalués" valeur={f.couverture}
-                      droite={`${f.evalues}/${f.techniciens}`} />}
-                    onClick={() => changer({ filiale: f.code })} />
+                      droite={`${f.evalues}/${f.techniciens}`} />} />
                 ))}
               </PortalStaggerGrid>
             )}
@@ -293,8 +288,7 @@ export default function RHHome({ filialeFixe = null }) {
                   <CartePays key={f.code} f={f}
                     titre={f.valides ? `${f.valides} PIF validé${f.valides > 1 ? 's' : ''}` : 'Aucun PIF validé'}
                     meta={<Progression libelle="Techniciens avec PIF" valeur={f.couverture}
-                      droite={`${f.avecPif}/${f.techniciens}`} />}
-                    onClick={() => changer({ filiale: f.code })} />
+                      droite={`${f.avecPif}/${f.techniciens}`} />} />
                 ))}
               </PortalStaggerGrid>
             )}
