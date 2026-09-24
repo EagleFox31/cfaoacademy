@@ -148,9 +148,11 @@ def remplir_classeur(parts, cellules):
 # les deux ont ete recoupees avec la position en pixels mesuree sur
 # l'image rendue du meme fichier, qui les confirme a moins de 0.1 pres.
 SIGNES_ACQUISITION = {
-    '+': dict(x0=0.33998, x1=0.43425, y0=0.65262, y1=0.80805, id_forme=2,
+    '+': dict(x0=0.33998, x1=0.43425, y0=0.62262, y1=0.77805, id_forme=2,
              nom='Signe Plus 1', nom_creation='8DE92517-B108-41BF-95A9-B83710DCFBEC'),
-    '=': dict(x0=0.6535, x1=0.7365, y0=0.659, y1=0.721, id_forme=3,
+    # Centre sur la hauteur du « + », un peu moins haut que lui : les
+    # deux signes se lisent sur une meme ligne.
+    '=': dict(x0=0.6535, x1=0.7365, y0=0.63814, y1=0.76253, id_forme=3,
              nom='Est égal à 2', nom_creation='5DD21F7B-8417-4D58-A2B9-C26DBC982262'),
 }
 
@@ -176,8 +178,8 @@ _LSTSTYLE_FORME = (
     + '</a:lstStyle>')
 
 
-def _userShapes_plus(prst, x0, x1, y0, y1, id_forme, nom, nom_creation, off_x, off_y):
-    """Une forme du graphique (`c:userShapes`), en fraction de son cadre.
+def _ancre_signe(prst, x0, x1, y0, y1, id_forme, nom, nom_creation, off_x, off_y):
+    """Une forme du graphique (`cdr:relSizeAnchor`), en fraction de son cadre.
 
     `off_x`/`off_y` (EMU) alimentent le `xfrm` de la forme : un `<a:off>`
     a zero, correct pour la position reelle (donnee par le
@@ -186,10 +188,6 @@ def _userShapes_plus(prst, x0, x1, y0, y1, id_forme, nom, nom_creation, off_x, o
     quand `relSizeAnchor` prime dans PowerPoint.
     """
     return (
-        '<c:userShapes xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" '
-        'xmlns:cdr="http://schemas.openxmlformats.org/drawingml/2006/chartDrawing" '
-        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
-        'xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main">'
         '<cdr:relSizeAnchor>'
         f'<cdr:from><cdr:x>{x0}</cdr:x><cdr:y>{y0}</cdr:y></cdr:from>'
         f'<cdr:to><cdr:x>{x1}</cdr:x><cdr:y>{y1}</cdr:y></cdr:to>'
@@ -205,35 +203,18 @@ def _userShapes_plus(prst, x0, x1, y0, y1, id_forme, nom, nom_creation, off_x, o
         + '<cdr:txBody><a:bodyPr rtlCol="0" anchor="ctr"/>'
         + _LSTSTYLE_FORME
         + '<a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></cdr:txBody></cdr:sp>'
-          '</cdr:relSizeAnchor></c:userShapes>'
+          '</cdr:relSizeAnchor>'
     )
 
 
-def _drawing_egal(x, y, prst='mathEqual', id_forme=3, nom='Est égal à 2',
-                  nom_creation='5DD21F7B-8417-4D58-A2B9-C26DBC982262'):
-    """La forme « = », en EMU absolus sur la feuille (`xdr:absoluteAnchor`).
-
-    Une ancre absolue evite l'ecueil d'une ancre a une cellule dont le
-    decalage depasserait la largeur de la colonne (comportement indefini
-    en dehors d'Excel) : la position ne depend d'aucune largeur de
-    colonne ni hauteur de ligne, differentes d'un classeur a l'autre.
-    """
+def _userShapes(ancres):
+    """Les formes du graphique ; les espaces de noms sur la racine."""
     return (
-        '<xdr:absoluteAnchor>'
-        f'<xdr:pos x="{x}" y="{y}"/>'
-        '<xdr:ext cx="504000" cy="504000"/>'
-        f'<xdr:sp macro="" textlink=""><xdr:nvSpPr><xdr:cNvPr id="{id_forme}" name="{nom}">'
-        '<a:extLst><a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">'
-        '<a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" '
-        f'id="{{{nom_creation}}}"/></a:ext></a:extLst></xdr:cNvPr><xdr:cNvSpPr/></xdr:nvSpPr>'
-        f'<xdr:spPr><a:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="504000" cy="504000"/></a:xfrm>'
-        f'<a:prstGeom prst="{prst}"><a:avLst/></a:prstGeom>' + _STYLE_FORME
-        + '</xdr:spPr><xdr:style>' + _REF_STYLE + '</xdr:style>'
-        + '<xdr:txBody><a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>'
-        + _LSTSTYLE_FORME
-        + '<a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-CM">'
-          '<a:solidFill><a:schemeClr val="tx1"/></a:solidFill></a:endParaRPr></a:p>'
-          '</xdr:txBody></xdr:sp><xdr:clientData/></xdr:absoluteAnchor>'
+        '<c:userShapes xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" '
+        'xmlns:cdr="http://schemas.openxmlformats.org/drawingml/2006/chartDrawing" '
+        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+        'xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main">'
+        + ''.join(ancres) + '</c:userShapes>'
     )
 
 
@@ -330,11 +311,15 @@ def _ajouter_signes_acquisition(parts):
     d1_nom = 'xl/drawings/drawing1.xml'
     cx, cy, cl, ch = _cadre_graphique(parts, parts[d1_nom].decode('utf-8'))
 
-    plus = SIGNES_ACQUISITION['+']
-    contenu_drawing = _userShapes_plus(
-        'mathPlus', plus['x0'], plus['x1'], plus['y0'], plus['y1'],
-        plus['id_forme'], plus['nom'], plus['nom_creation'],
-        cx + round(plus['x0'] * cl), cy + round(plus['y0'] * ch))
+    # Les deux signes dans le graphique, en fraction de son cadre : ils
+    # suivent ses dimensions ensemble et restent alignes quel que soit
+    # le classeur (un « = » pose sur la feuille, en position absolue,
+    # derivait des que le cadre mesure differait de celui d'Excel).
+    contenu_drawing = _userShapes([
+        _ancre_signe(prst, f['x0'], f['x1'], f['y0'], f['y1'], f['id_forme'], f['nom'],
+                     f['nom_creation'], cx + round(f['x0'] * cl), cy + round(f['y0'] * ch))
+        for prst, f in (('mathPlus', SIGNES_ACQUISITION['+']),
+                        ('mathEqual', SIGNES_ACQUISITION['=']))])
 
     if ref_existante and drawing_existant:
         # La reference et la relation existent deja : on ne fait que
@@ -373,16 +358,6 @@ def _ajouter_signes_acquisition(parts):
                                   'drawingml.chartshapes+xml"/></Types>')
         parts['[Content_Types].xml'] = types.encode('utf-8')
 
-    # Le « = », sur le dessin de la feuille qui porte deja l'ancrage du
-    # graphique : sa position EMU absolue se lit sur le meme cadre,
-    # a laquelle on applique la fraction verifiee (voir SIGNES_ACQUISITION).
-    egal = SIGNES_ACQUISITION['=']
-    x = cx + round(egal['x0'] * cl)
-    y = cy + round(egal['y0'] * ch)
-    forme_egal = _drawing_egal(x, y, 'mathEqual', egal['id_forme'], egal['nom'],
-                               egal['nom_creation'])
-    d1 = parts[d1_nom].decode('utf-8')
-    parts[d1_nom] = d1.replace('</xdr:wsDr>', forme_egal + '</xdr:wsDr>').encode('utf-8')
     return parts
 
 
