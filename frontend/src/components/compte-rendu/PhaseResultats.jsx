@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { BAREMES, SEUIL, calculer, anomalies, afficher } from '../../utils/baremeCfao'
 import {
   MENTIONS,
@@ -8,6 +8,7 @@ import {
   afficherTaux,
 } from '../../utils/satisfactionCfao'
 import { exporterEvaluation } from '../../utils/exportEvaluation'
+import { lireEvaluation, appliquerEvaluation } from '../../utils/importEvaluation'
 
 /** Un tableur, au trait, pour le bouton d'export. */
 function IconeTableur() {
@@ -16,6 +17,17 @@ function IconeTableur() {
       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
       <path d="M3.5 9h17M3.5 14.5h17M9.5 9v11.5" />
+    </svg>
+  )
+}
+
+/** Une fleche entrant dans un plateau, pour l'import. */
+function IconeImport() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5" />
+      <path d="M4 15.5v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
     </svg>
   )
 }
@@ -93,6 +105,31 @@ export default function PhaseResultats({
     }
   }
 
+  // L'import relit un classeur d'evaluation du meme modele — celui de
+  // l'export, ou celui d'un formateur — et en reprend notes et
+  // satisfaction. Il demande confirmation avant d'ecraser une note.
+  const fichierImport = useRef(null)
+  const [importInfo, setImportInfo] = useState(null)
+  async function importer(fichier) {
+    if (!fichier) return
+    try {
+      const lus = await lireEvaluation(fichier)
+      const r = appliquerEvaluation(brouillon, lus)
+      if (r.remplaces && !window.confirm(
+        `Le classeur remplace des notes déjà saisies pour ${r.remplaces} stagiaire`
+        + `${r.remplaces > 1 ? 's' : ''}. Continuer ?`)) return
+      maj({ participants: r.participants, satisfaction: r.satisfaction })
+      onEnregistrer?.()
+      setImportInfo({
+        ok: true,
+        texte: `${lus.length} stagiaire${lus.length > 1 ? 's' : ''} repris du classeur`
+          + (r.ajoutes ? ` (${r.ajoutes} ajouté${r.ajoutes > 1 ? 's' : ''} à la liste)` : ''),
+      })
+    } catch (e) {
+      setImportInfo({ ok: false, texte: `Classeur non reconnu : ${e.message}` })
+    }
+  }
+
   function majBareme(cle, valeur) {
     const n = Number(valeur)
     maj({ baremes: { ...baremes, [cle]: Number.isNaN(n) || n <= 0 ? 1 : n } })
@@ -109,14 +146,32 @@ export default function PhaseResultats({
             Les notes des tests, puis les deux questionnaires de fin de session.
           </p>
         </div>
-        <button type="button" className="cr-btn cr-btn--ghost cr-export"
-          disabled={!participants.length || exportEnCours}
-          onClick={exporter}
-          title="Classeur « Données Stagiaires » et « Satisfaction Stagiaires », formules comprises">
-          <IconeTableur />
-          {exportEnCours ? 'Export…' : 'Exporter Excel'}
-        </button>
+        <div className="cr-export-groupe">
+          <button type="button" className="cr-btn cr-btn--ghost cr-export cr-import"
+            onClick={() => fichierImport.current?.click()}
+            title="Reprendre les notes et la satisfaction d’un classeur d’évaluation (.xlsx)">
+            <IconeImport />
+            Importer
+          </button>
+          <input ref={fichierImport} type="file" hidden
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            onChange={e => { importer(e.target.files?.[0]); e.target.value = '' }} />
+          <button type="button" className="cr-btn cr-btn--ghost cr-export"
+            disabled={!participants.length || exportEnCours}
+            onClick={exporter}
+            title="Classeur « Données Stagiaires » et « Satisfaction Stagiaires », formules comprises">
+            <IconeTableur />
+            {exportEnCours ? 'Export…' : 'Exporter Excel'}
+          </button>
+        </div>
       </div>
+      {importInfo && (
+        <p className={`cr-import-info${importInfo.ok ? '' : ' cr-import-info--ko'}`} role="status">
+          {importInfo.texte}
+          <button type="button" className="cr-import-fermer" aria-label="Masquer"
+            onClick={() => setImportInfo(null)}>×</button>
+        </p>
+      )}
 
       <div className="cr-blocs">
         <Bloc titre="Résultats des tests"
