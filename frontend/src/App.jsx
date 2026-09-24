@@ -9,6 +9,7 @@ import TrainerReportNew from './pages/portal/TrainerReportNew.jsx'
 import TrainerReportsEnCours from './pages/portal/TrainerReportsEnCours.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
 import RouteMotion from './components/RouteMotion.jsx'
+import AnnonceMaintenance from './components/AnnonceMaintenance.jsx'
 import Accueil from './pages/Accueil.jsx'
 import Formations from './pages/Formations.jsx'
 import Publics from './pages/Publics.jsx'
@@ -27,6 +28,7 @@ export default function App() {
     <AuthProvider>
     <LocaleProvider>
       <ScrollToTop />
+      <AnnonceMaintenance />
       <RouteMotion>
         <Routes>
           <Route path="/" element={<Accueil />} />
