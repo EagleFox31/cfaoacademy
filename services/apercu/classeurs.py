@@ -28,8 +28,14 @@ import io
 import re
 import subprocess
 import tempfile
+import threading
 import zipfile
 from pathlib import Path
+
+# LibreOffice n'accepte qu'un processus par profil : deux conversions
+# lancees en meme temps (deux formateurs sur le reseau) font echouer la
+# seconde. Toutes les conversions du service passent par ce verrou.
+LIBREOFFICE = threading.Lock()
 
 NATURES = {
     'TAUX DE PROGRESSION': 'progression',
@@ -694,11 +700,12 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
         for empreinte, brut in a_faire.values():
             copie = _ecrire(_pour_rendu(_lire(brut)))
             (travail / f'{empreinte}.xlsx').write_bytes(copie)
-        subprocess.run(
-            [soffice, '--headless', '--norestore', f'-env:UserInstallation={profil}',
-             '--convert-to', 'pdf', '--outdir', str(travail)]
-            + [str(travail / f'{e}.xlsx') for e, _ in a_faire.values()],
-            capture_output=True, timeout=120)
+        with LIBREOFFICE:
+            subprocess.run(
+                [soffice, '--headless', '--norestore', f'-env:UserInstallation={profil}',
+                 '--convert-to', 'pdf', '--outdir', str(travail)]
+                + [str(travail / f'{e}.xlsx') for e, _ in a_faire.values()],
+                capture_output=True, timeout=120)
         for cle, (empreinte, _) in a_faire.items():
             pdf = travail / f'{empreinte}.pdf'
             if not pdf.exists():

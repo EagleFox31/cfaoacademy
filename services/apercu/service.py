@@ -25,6 +25,8 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
+import uuid
 import zipfile
 from pathlib import Path
 
@@ -309,11 +311,12 @@ def empreinte(diapo, valeurs):
 
 def convertir(pptx, dossier, format_='png'):
     """Convertit un PPTX via LibreOffice et renvoie le fichier produit."""
-    subprocess.run(
-        [SOFFICE, '--headless', '--norestore',
-         f'-env:UserInstallation={PROFIL}',
-         '--convert-to', format_, '--outdir', str(dossier), str(pptx)],
-        capture_output=True, timeout=120)
+    with classeurs.LIBREOFFICE:
+        subprocess.run(
+            [SOFFICE, '--headless', '--norestore',
+             f'-env:UserInstallation={PROFIL}',
+             '--convert-to', format_, '--outdir', str(dossier), str(pptx)],
+            capture_output=True, timeout=120)
     produits = list(Path(dossier).glob(f'*.{format_}'))
     if not produits:
         raise RuntimeError(f'conversion {format_} sans resultat')
@@ -340,6 +343,24 @@ def image_de(diapo, valeurs):
         shutil.rmtree(travail, ignore_errors=True)
 
 
+def _fichier_rapport(extension):
+    """Un fichier propre a cet export.
+
+    Un nom fixe laissait deux formateurs exportant en meme temps
+    s'ecraser l'un l'autre : chacun pouvait recevoir le rapport de
+    l'autre. Les exports de plus d'une heure sont effaces au passage.
+    """
+    dossier = CACHE / 'rapports'
+    dossier.mkdir(parents=True, exist_ok=True)
+    for ancien in dossier.iterdir():
+        try:
+            if time.time() - ancien.stat().st_mtime > 3600:
+                ancien.unlink()
+        except OSError:
+            pass
+    return dossier / f'{uuid.uuid4().hex}.{extension}'
+
+
 def document(parties, valeurs, nb_jours=0, nb_participants=0, format_='pptx',
              variantes=None):
     """Le rapport complet, limite aux parties retenues."""
@@ -351,13 +372,11 @@ def document(parties, valeurs, nb_jours=0, nb_participants=0, format_='pptx',
         sortie = travail / 'rapport.pptx'
         composer(str(rempli), str(sortie), numeros)
         if format_ == 'pptx':
-            final = CACHE / 'rapport.pptx'
-            CACHE.mkdir(parents=True, exist_ok=True)
+            final = _fichier_rapport('pptx')
             shutil.move(str(sortie), final)
             return final
         pdf = convertir(sortie, travail, 'pdf')
-        final = CACHE / 'rapport.pdf'
-        CACHE.mkdir(parents=True, exist_ok=True)
+        final = _fichier_rapport('pdf')
         shutil.move(str(pdf), final)
         return final
     finally:

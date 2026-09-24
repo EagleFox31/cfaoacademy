@@ -137,7 +137,7 @@ def doc():
             corps.get('format') or 'pptx', corps.get('variantes'))
     except Exception as e:  # noqa: BLE001
         return jsonify({'erreur': str(e)}), 500
-    return send_file(chemin, as_attachment=True, download_name=chemin.name)
+    return send_file(chemin, as_attachment=True, download_name=f'rapport{chemin.suffix}')
 
 
 @app.post('/apercu/redaction')
