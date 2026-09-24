@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
-import LocaleSwitch from '../../components/LocaleSwitch'
-import PortalDemoBar from '../../components/PortalDemoBar'
+import { Navigate } from 'react-router-dom'
+import CockpitShell, { CockpitBar } from '../../components/cockpit/CockpitShell'
 import CockpitSkeleton from '../../components/delivery/CockpitSkeleton'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import useAuth from '../../hooks/useAuth'
@@ -55,10 +54,6 @@ const NAV = [
 ]
 
 /* ── petits composants ───────────────────────────── */
-function Bar({ pct, tone = '' }) {
-  return <div className={`dlv-bar ${tone}`}><i style={{ width: `${pct}%` }} /></div>
-}
-
 function TestDots({ story, editable, onTestChange, t }) {
   return (
     <div className="dlv-story-tests">
@@ -84,8 +79,7 @@ export default function Delivery() {
   useSiteEffects()
   const { user } = useAuth()
   usePortalBackground(user)
-  const { t, locale, setLocale } = useLocale('delivery')
-  const { t: commonT } = useLocale('common')
+  const { t, locale } = useLocale('delivery')
   const L = obj => pickLocale(obj, locale)
   const PHASE_BY_KEY = Object.fromEntries(DELIVERY_PHASES.map(p => [p.key, p]))
 
@@ -161,89 +155,44 @@ export default function Delivery() {
   }
 
   return (
-    <>
-      <main className="dlv-page">
-        <div className="dlv-app">
-          {/* ── Sidebar ── */}
-          <aside className="dlv-aside">
-            <div className="dlv-brand">
-              <div className="dlv-brand-badge">15</div>
-              <div className="dlv-brand-txt">
-                <b>CFAO Academy</b>
-                <span>{t.project_label}</span>
-              </div>
-            </div>
-            <nav className="dlv-nav">
-              {NAV.map(grp => (
-                <div key={grp.group}>
-                  <div className="dlv-nav-group">{t[grp.group]}</div>
-                  {grp.items.map(it => (
-                    <button key={it.id} type="button"
-                      className={`dlv-nav-item ${view === it.id ? 'is-active' : ''}`}
-                      onClick={() => setView(it.id)}>
-                      <span className="dlv-nav-ico">{it.ico}</span>
-                      {t[`nav_${it.id}`]}
-                      {navCount[it.id] != null && <span className="dlv-nav-count">{navCount[it.id]}</span>}
-                    </button>
-                  ))}
-                </div>
-              ))}
-            </nav>
-            <div className="dlv-aside-foot">
-              <Link to="/portail" className="dlv-aside-back">← {t.back_portal}</Link>
-            </div>
-          </aside>
-
-          {/* ── Main ── */}
-          <div className="dlv-main">
-            <header className="dlv-topbar">
-              <div className="dlv-topbar-l">
-                <div className="dlv-eyebrow">{t.page_eyebrow}</div>
-                <h1>{t.page_title}</h1>
-                <p className="dlv-lead">{t.page_lead}</p>
-              </div>
-              <div className="dlv-topbar-r">
-                <div className="dlv-topbar-actions">
-                  <LocaleSwitch
-                    locale={locale}
-                    onChange={setLocale}
-                    ariaLabel={commonT.langSwitchAria}
-                    className="locale-switch--dlv"
-                  />
-                  <Link to="/" className="dlv-topbar-back">{t.back_to_site} →</Link>
-                </div>
-                <div className="dlv-topbar-chips">
-                  <span className="dlv-week-chip">{t.week_label} {WEEKLY_STATUS_DRAFT.week}</span>
-                  <span className={`dlv-role-chip ${editable ? '' : 'ro'}`}>
-                    {user.firstName} {user.lastName} · {editable ? 'build' : 'MOA'}
-                  </span>
-                </div>
-              </div>
-            </header>
-
-            {!editable && <div className="dlv-readonly">{t.read_only_banner}</div>}
-
-            <div className="dlv-view">
-              {booting ? (
-                <CockpitSkeleton />
-              ) : (
-                <>
-                  {view === 'overview' && renderOverview()}
-                  {view === 'roadmap' && renderRoadmap()}
-                  {view === 'phases' && renderPhases()}
-                  {view === 'backlog' && renderBacklog()}
-                  {view === 'gate' && renderGate()}
-                  {view === 'events' && renderEvents()}
-                  {view === 'reporting' && renderReporting()}
-                  {view === 'git' && renderGit()}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
-      <PortalDemoBar />
-    </>
+    <CockpitShell
+      brand={{ badge: '15', title: 'CFAO Academy', subtitle: t.project_label }}
+      nav={NAV.map(grp => ({
+        group: t[grp.group],
+        items: grp.items.map(it => ({ ...it, label: t[`nav_${it.id}`], count: navCount[it.id] })),
+      }))}
+      view={view}
+      onView={setView}
+      eyebrow={t.page_eyebrow}
+      title={t.page_title}
+      lead={t.page_lead}
+      chips={(
+        <>
+          <span className="dlv-week-chip">{t.week_label} {WEEKLY_STATUS_DRAFT.week}</span>
+          <span className={`dlv-role-chip ${editable ? '' : 'ro'}`}>
+            {user.firstName} {user.lastName} · {editable ? 'build' : 'MOA'}
+          </span>
+        </>
+      )}
+      banner={!editable && <div className="dlv-readonly">{t.read_only_banner}</div>}
+      backPortalLabel={t.back_portal}
+      backSiteLabel={t.back_to_site}
+    >
+      {booting ? (
+        <CockpitSkeleton />
+      ) : (
+        <>
+          {view === 'overview' && renderOverview()}
+          {view === 'roadmap' && renderRoadmap()}
+          {view === 'phases' && renderPhases()}
+          {view === 'backlog' && renderBacklog()}
+          {view === 'gate' && renderGate()}
+          {view === 'events' && renderEvents()}
+          {view === 'reporting' && renderReporting()}
+          {view === 'git' && renderGit()}
+        </>
+      )}
+    </CockpitShell>
   )
 
   /* ───────────────────── VUES ───────────────────── */
@@ -257,7 +206,7 @@ export default function Delivery() {
             <div className="dlv-kpi-k">{t.kpi_stories_done}</div>
             <div className="dlv-kpi-v">{kpis.pct}<small>%</small></div>
             <div className="dlv-kpi-m">{kpis.done} / {kpis.total} stories</div>
-            <Bar pct={kpis.pct} />
+            <CockpitBar pct={kpis.pct} />
           </div>
           <div className="dlv-kpi" style={{ '--dlv-accent': 'var(--dlv-navy)' }}>
             <div className="dlv-kpi-k">{t.kpi_in_progress}</div>
@@ -268,7 +217,7 @@ export default function Delivery() {
             <div className="dlv-kpi-k">{t.kpi_gate}</div>
             <div className="dlv-kpi-v">{gateProgress.pct}<small>%</small></div>
             <div className="dlv-kpi-m">{gateProgress.done} / {gateProgress.total}</div>
-            <Bar pct={gateProgress.pct} tone="red" />
+            <CockpitBar pct={gateProgress.pct} tone="red" />
           </div>
           <div className="dlv-kpi" style={{ '--dlv-accent': 'var(--dlv-red)' }}>
             <div className="dlv-kpi-k">{t.kpi_critical_te}</div>
@@ -299,7 +248,7 @@ export default function Delivery() {
                     {crit && <span className="dlv-chip node crit">{t.critical_chip}</span>}
                     <span className={`dlv-proj-state ${state}`}>{t[`proj_state_${state}`]}</span>
                   </div>
-                  <Bar pct={pct} tone={state === 'done' ? '' : 'navy'} />
+                  <CockpitBar pct={pct} tone={state === 'done' ? '' : 'navy'} />
                 </div>
                 <span className="dlv-proj-pct">
                   {pct}<small>%</small>
@@ -426,7 +375,7 @@ export default function Delivery() {
                   <span className="dlv-chip">{t.phase_calendar}: {ph.calendar}</span>
                   <span className="dlv-prow-pct">{p.pct}%</span>
                 </div>
-                <Bar pct={p.pct} tone="navy" />
+                <CockpitBar pct={p.pct} tone="navy" />
                 <div className="dlv-prow-obj"><b>{t.phase_objective} :</b> {L(ph.objective)}</div>
                 <div className="dlv-prow-nodes">
                   {ph.nodes.map(nid => (
@@ -506,7 +455,7 @@ export default function Delivery() {
                 </span>
                 <span className="dlv-chip phase">{t.node_phase} {epic.phase}</span>
                 <div className="dlv-epic-prog">
-                  <Bar pct={prog.pct} />
+                  <CockpitBar pct={prog.pct} />
                   <small>{prog.done}/{prog.total} · {prog.pct}%</small>
                 </div>
               </div>

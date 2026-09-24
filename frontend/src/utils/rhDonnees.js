@@ -34,6 +34,18 @@ export function nomFiliale(code, d = DEMO) {
 const dansPerimetre = ({ filiale, bu }) => x =>
   (!filiale || x.f === filiale) && (!bu || (x.bu || []).includes(bu))
 
+export const NIVEAUX = ['Junior', 'Senior', 'Expert']
+
+/** Repartition des scores : au moins 70 %, de 50 a 69 %, sous 50 %. */
+export function repartition(scores) {
+  const v = scores.filter(x => x != null)
+  return {
+    fort: v.filter(x => x >= 70).length,
+    moyen: v.filter(x => x >= 50 && x < 70).length,
+    faible: v.filter(x => x < 50).length,
+  }
+}
+
 const taux = (n, total) => (total ? Math.round((n / total) * 100) : null)
 const moyenne = l => {
   const v = l.filter(x => x != null)
@@ -53,6 +65,7 @@ export function syntheseRecrutement(p = PERIMETRE_GROUPE, d = DEMO) {
         testes: testes.length,
         avancement: taux(testes.length, candidats.length),
         moyenne: moyenne(testes.map(x => x.score)),
+        repartition: repartition(testes.map(x => x.score)),
       }
     })
     .sort((a, b) => (a.statut === b.statut
@@ -76,10 +89,20 @@ export function syntheseCompetences(p = PERIMETRE_GROUPE, d = DEMO) {
       evalues: evalues.length,
       couverture: taux(evalues.length, liste.length),
       moyenne: moyenne(evalues.map(t => t.score)),
+      repartition: repartition(evalues.map(t => t.score)),
+      niveaux: Object.fromEntries(NIVEAUX.map(n => [n, evalues.filter(t => t.niveau === n).length])),
     }
   }
   const parFiliale = filiales(d)
-    .map(f => ({ code: f.code, pays: f.pays, ...bilan(actifs.filter(t => t.f === f.code)) }))
+    .map(f => {
+      const ici = actifs.filter(t => t.f === f.code)
+      return {
+        code: f.code,
+        pays: f.pays,
+        ...bilan(ici),
+        parBU: Object.fromEntries(BU.map(b => [b, bilan(ici.filter(t => t.bu.includes(b)))])),
+      }
+    })
     .filter(l => l.techniciens > 0)
     .sort((a, b) => (a.couverture ?? 0) - (b.couverture ?? 0))
   return { campagne: d.campagnesMesure[0], ...bilan(actifs), parFiliale }
@@ -117,14 +140,25 @@ export function synthesePIF(p = PERIMETRE_GROUPE, d = DEMO) {
 export function synthesePersonnes(p = PERIMETRE_GROUPE, d = DEMO) {
   const techniciens = d.techniciens.filter(dansPerimetre(p))
   const candidats = d.candidats.filter(dansPerimetre(p))
-  return {
-    techniciens: techniciens.filter(t => t.actif).length,
-    candidats: candidats.filter(c => c.actif).length,
-    supprimes: techniciens.filter(t => !t.actif).length + candidats.filter(c => !c.actif).length,
-    // Hors perimetre filiale/BU par definition : c'est ce qui manque.
-    aCompleter: d.techniciens.filter(t => t.actif && t.incomplet
-      && (!p.filiale || t.f === p.filiale || !t.f)).length,
-  }
+  const bilan = (tech, cand, incomplets) => ({
+    techniciens: tech.filter(t => t.actif).length,
+    candidats: cand.filter(c => c.actif).length,
+    supprimes: tech.filter(t => !t.actif).length + cand.filter(c => !c.actif).length,
+    aCompleter: incomplets.length,
+  })
+  // Une fiche incomplete echappe au filtre BU (c'est ce qui lui manque) ;
+  // sans filiale, elle reste visible de la RH groupe.
+  const incomplets = d.techniciens.filter(t => t.actif && t.incomplet
+    && (!p.filiale || t.f === p.filiale))
+  const lignes = [...filiales(d).map(f => ({ code: f.code, pays: f.pays })),
+    ...(p.filiale ? [] : [{ code: null, pays: 'Sans filiale' }])]
+    .map(f => ({
+      ...f,
+      ...bilan(techniciens.filter(t => t.f === f.code), candidats.filter(c => c.f === f.code),
+        incomplets.filter(t => t.f === f.code)),
+    }))
+    .filter(l => l.techniciens + l.candidats + l.supprimes + l.aCompleter > 0)
+  return { ...bilan(techniciens, candidats, incomplets), parFiliale: lignes }
 }
 
 /**

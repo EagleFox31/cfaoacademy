@@ -202,13 +202,14 @@ L'accueil du profil RH à la connexion, sur le modèle de `TrainerHome` : entêt
 
 ## 5. Décisions
 
-1. **Entrées = éléments de la barre de navigation du portail**, et chacune est une section de l'accueil : Recrutement, Compétences, PIF, Personnes. Chaque section mène à son espace (`/portail/rh/<espace>`, pages d'attente pour l'instant).
-2. **RH Groupe d'abord** (`group_hr`, compte de démonstration u11 Clarisse MBARGA). La RH filiale reprendra `RHHome` avec `filialeFixe`.
-3. Données : jeu de démonstration dérivé de MEDACAP, régénérable avec `scripts/rh/extraire-demo-medacap.js`.
+1. **Présentation : celle du cockpit d'administration** (« Pilotage projet », `Delivery.jsx`), pas celle des accueils apprenant/formateur. Le cadre est partagé : `components/cockpit/CockpitShell.jsx` (barre latérale par thème, barre du haut, bandeau) et `CockpitBar`, utilisés par Delivery et par le cockpit RH — Delivery rend au pixel près comme avant.
+2. **Les sections retenues sont les entrées de la barre latérale**, groupées dans l'ordre du cycle : Pilotage (vue d'ensemble) · Campagnes (recrutement, mesure des compétences) · Exploitation (résultats recrutement, résultats compétences) · Formation (PIF filiales et BU) · Administration (utilisateurs).
+3. **RH Groupe d'abord** (`group_hr`, compte de démonstration u11 Clarisse MBARGA), `/portail/rh`. La RH filiale reprendra le cockpit avec `filialeFixe`.
+4. Données : jeu de démonstration dérivé de MEDACAP, régénérable avec `scripts/rh/extraire-demo-medacap.js`.
 
-## 6. État — accueil RH Groupe
+## 6. État — cockpit RH Groupe
 
-- `pages/portal/RHHome.jsx` : entête, **À traiter** (une priorité au plus par espace), puis Recrutement, Compétences, PIF, Personnes.
-- Périmètre filiale × BU appliqué à toute la page ; un clic sur une filiale du tableau Compétences restreint la page à celle-ci.
-- `utils/rhDonnees.js` : contrat de données (synthèses et priorités par périmètre).
-- `data/rh/medacap-demo.json` : 252 techniciens, 180 candidats, 8 campagnes de recrutement, 11 filiales — sans identité.
+- `pages/portal/RHCockpit.jsx` : 7 vues, périmètre filiale × BU commun (sélecteurs `dlv-field`), rappelé dans la puce de la barre du haut.
+- Vue d'ensemble : 4 indicateurs, « À traiter » (une priorité au plus par section, un clic ouvre la vue), couverture de la mesure par filiale (un clic restreint le périmètre).
+- Les actions (créer une campagne, importer, valider un PIF, CRUD utilisateurs avec corbeille) sont annoncées, pas encore faites.
+- `utils/rhDonnees.js` : contrat de données (synthèses, répartitions, niveaux, priorités par périmètre).

@@ -7,7 +7,7 @@ import Delivery from './pages/portal/Delivery.jsx'
 import TrainerHome from './pages/portal/TrainerHome.jsx'
 import TrainerReportNew from './pages/portal/TrainerReportNew.jsx'
 import TrainerReportsEnCours from './pages/portal/TrainerReportsEnCours.jsx'
-import RHEspace from './pages/portal/RHEspace.jsx'
+import RHCockpit from './pages/portal/RHCockpit.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
 import RouteMotion from './components/RouteMotion.jsx'
 import Accueil from './pages/Accueil.jsx'
@@ -49,7 +49,7 @@ export default function App() {
           <Route path="/portail/formateur" element={<TrainerHome />} />
           <Route path="/portail/compte-rendu/nouveau" element={<TrainerReportNew />} />
           <Route path="/portail/compte-rendu/en-cours" element={<TrainerReportsEnCours />} />
-          <Route path="/portail/rh/:espace" element={<RHEspace />} />
+          <Route path="/portail/rh" element={<RHCockpit />} />
         </Routes>
       </RouteMotion>
     </LocaleProvider>
