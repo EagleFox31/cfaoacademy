@@ -246,12 +246,17 @@ function remplirSynthese(ws, n) {
 }
 
 /** Le nom du fichier, lisible et sans caractere interdit. */
+/**
+ * Le nom du fichier, sur le modele des classeurs des formateurs :
+ * « Evaluation Diagnostic des Systèmes de Climatisation du 10-14.08.26 ».
+ * L'intitule plutot que le code : c'est lui qu'on cherche dans un dossier.
+ */
 export function nomFichier(brouillon, session) {
-  const code = brouillon.codeFormation || session?.codeFormation || 'session'
-  const du = (brouillon.debut || '').split('-').reverse().join('.')
-  const au = (brouillon.fin || '').split('-').reverse().join('.')
-  const dates = du && au ? ` du ${du} au ${au}` : ''
-  return `Evaluation ${code}${dates}.xlsx`.replace(/[\\/:*?"<>|]+/g, '-')
+  const intitule = (brouillon.intitule || session?.moduleFormation || '').trim()
+  const nom = intitule || brouillon.codeFormation || session?.codeFormation || 'session'
+  const periode = periodeCourte(brouillon.debut, brouillon.fin)
+  return `Evaluation ${nom}${periode ? ` ${periode}` : ''}.xlsx`
+    .replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ')
 }
 
 /**
