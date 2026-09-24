@@ -40,18 +40,14 @@ function puce(couverture) {
   return <span className={`portal-status-chip ${cls}`}>{libelle}</span>
 }
 
-/** Carte d'un pays : la carte du portail, drapeau en visuel — cadre
- * comme le logo des cartes marque (fond blanc, image contenue). */
-function CartePays({ f, kicker, meta, onClick }) {
+/** Carte d'un pays — comme les cartes de session du formateur : une photo
+ * en visuel, et le drapeau a la place du logo de marque. */
+function CartePays({ f, visuel, kicker, meta, onClick }) {
   return (
     <div className="portal-card-anchor">
       <PvCard
-        cardMedia={(
-          <div className="pv-card-img" style={{ padding: 24, background: 'white' }}>
-            <img src={`https://flagcdn.com/w320/${f.code}.png`} alt={f.pays} loading="lazy"
-              style={{ objectFit: 'contain', width: '100%', height: '100%' }} />
-          </div>
-        )}
+        img={visuel}
+        logo={`https://flagcdn.com/w80/${f.code}.png`}
         kicker={kicker}
         title={f.pays}
         meta={meta}
@@ -113,7 +109,6 @@ export default function RHHome({ filialeFixe = null }) {
 
   if (!user) return null
 
-  const vueGroupe = !perimetre.filiale
   const buAffichees = perimetre.bu ? [perimetre.bu] : BU
 
   return (
@@ -239,28 +234,10 @@ export default function RHHome({ filialeFixe = null }) {
           <div className="container" style={{ padding: '16px 32px' }}>
             <TeteSection surtitre={competences.campagne?.intitule ?? 'Mesure des compétences'}
               titre="Compétences" espace="competences" naviguer={naviguer} />
-            <div className="portal-kpi-row">
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value">{competences.techniciens}</div>
-                <div className="portal-kpi-label">Techniciens</div>
-              </div>
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value green">{competences.evalues}</div>
-                <div className="portal-kpi-label">Évalués</div>
-              </div>
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value accent">{pct(competences.couverture)}</div>
-                <div className="portal-kpi-label">Couverture</div>
-              </div>
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value">{pct(competences.moyenne)}</div>
-                <div className="portal-kpi-label">Score moyen</div>
-              </div>
-            </div>
-            {vueGroupe && competences.parFiliale.length > 0 && (
+            {competences.parFiliale.length > 0 && (
               <PortalStaggerGrid>
                 {competences.parFiliale.map(f => (
-                  <CartePays key={f.code} f={f}
+                  <CartePays key={f.code} f={f} visuel={VISUEL.competences}
                     kicker={puce(f.couverture)}
                     meta={`${f.evalues}/${f.techniciens} techniciens évalués · ${f.couverture ?? 0} %${
                       f.moyenne != null ? ` · moyenne ${f.moyenne} %` : ''}`}
@@ -276,28 +253,10 @@ export default function RHHome({ filialeFixe = null }) {
           <div className="container" style={{ padding: '16px 32px' }}>
             <TeteSection surtitre="Plans individuels de formation" titre="PIF par filiale et BU"
               espace="pif" naviguer={naviguer} />
-            <div className="portal-kpi-row">
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value">{pif.evalues}</div>
-                <div className="portal-kpi-label">Techniciens évalués</div>
-              </div>
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value">{pif.avecPif}</div>
-                <div className="portal-kpi-label">Avec un PIF</div>
-              </div>
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value green">{pif.valides}</div>
-                <div className="portal-kpi-label">PIF validés</div>
-              </div>
-              <div className="portal-kpi-card">
-                <div className="portal-kpi-value accent">{pct(pif.couverture)}</div>
-                <div className="portal-kpi-label">Couverture</div>
-              </div>
-            </div>
-            {vueGroupe && pif.parFiliale.length > 0 && (
+            {pif.parFiliale.length > 0 && (
               <PortalStaggerGrid>
                 {pif.parFiliale.map(f => (
-                  <CartePays key={f.code} f={f}
+                  <CartePays key={f.code} f={f} visuel={VISUEL.pif}
                     kicker={puce(f.couverture)}
                     meta={`${buAffichees.filter(b => f.parBU[b].techniciens)
                       .map(b => `${b} ${f.parBU[b].avecPif}/${f.parBU[b].techniciens}`).join(' · ')} · ${
