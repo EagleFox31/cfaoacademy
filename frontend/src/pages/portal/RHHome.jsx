@@ -11,7 +11,7 @@ import useSiteEffects from '../../hooks/useSiteEffects'
 import useAuth from '../../hooks/useAuth'
 import usePortalBackground from '../../hooks/usePortalBackground'
 import {
-  BU, PERIMETRE_GROUPE, filiales, nomFiliale, priorites,
+  BU, PERIMETRE_GROUPE, filiales, priorites,
   syntheseRecrutement, syntheseCompetences, synthesePIF, synthesePersonnes,
 } from '../../utils/rhDonnees'
 
@@ -34,13 +34,24 @@ const ETAT = [
 ]
 const etat = valeur => ETAT.find(([seuil]) => (valeur ?? 0) >= seuil)
 
-/** Le drapeau en entete de carte, traite comme les heros du portail :
- * voile marine en degrade (fonce a gauche, plus leger a droite), statut
- * et nom du pays en blanc par-dessus. Le drapeau reste lisible sans dominer. */
-function VisuelPays({ f }) {
-  const [, cls, libelle] = etat(f.couverture)
+/** Hauteur commune des visuels de carte, photos comme drapeaux. */
+const HAUTEUR_VISUEL = 150
+
+/** Photo de carte, a la hauteur commune. */
+function Photo({ src }) {
   return (
-    <div className="pv-card-img" style={{ position: 'relative', height: 112, background: '#0e1126' }}>
+    <div className="pv-card-img" style={{ height: HAUTEUR_VISUEL }}>
+      <img src={src} alt="" loading="lazy" />
+    </div>
+  )
+}
+
+/** Le drapeau en visuel de carte, traite comme les heros du portail :
+ * voile marine en degrade (fonce a gauche, plus leger a droite) et nom
+ * du pays en blanc par-dessus. Le drapeau reste lisible sans dominer. */
+function VisuelPays({ f }) {
+  return (
+    <div className="pv-card-img" style={{ position: 'relative', height: HAUTEUR_VISUEL, background: '#0e1126' }}>
       <img src={`https://flagcdn.com/w640/${f.code}.png`}
         srcSet={`https://flagcdn.com/w1280/${f.code}.png 2x`} alt="" loading="lazy"
         style={{ filter: 'saturate(0.9)' }} />
@@ -48,9 +59,8 @@ function VisuelPays({ f }) {
         position: 'absolute', inset: 0, pointerEvents: 'none',
         background: 'linear-gradient(105deg, rgba(14,17,38,0.72) 0%, rgba(14,17,38,0.42) 50%, rgba(14,17,38,0.12) 100%)',
       }} />
-      <span className={`portal-status-chip ${cls}`} style={{ position: 'absolute', top: 14, left: 20 }}>{libelle}</span>
-      <div style={{ position: 'absolute', left: 20, right: 60, bottom: 14, color: '#fff', pointerEvents: 'none' }}>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{f.pays}</div>
+      <div style={{ position: 'absolute', left: 20, right: 60, bottom: 16, color: '#fff', pointerEvents: 'none' }}>
+        <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{f.pays}</div>
       </div>
     </div>
   )
@@ -61,7 +71,7 @@ function VisuelPays({ f }) {
 function Progression({ libelle, valeur, droite, attente }) {
   const couleur = attente ? 'var(--muted)' : etat(valeur)[3]
   return (
-    <div className="portal-progress-block">
+    <div className="portal-progress-block" style={{ margin: 0 }}>
       <div className="portal-progress-head" style={{ marginBottom: 6 }}>
         <span className="portal-progress-lbl" style={{ color: 'var(--navy)', fontSize: 13 }}>{libelle}</span>
         {droite && <span className="portal-progress-pct" style={{ color: couleur, fontSize: 13 }}>{droite}</span>}
@@ -73,20 +83,44 @@ function Progression({ libelle, valeur, droite, attente }) {
   )
 }
 
-/** Carte d'un pays — carte du portail : entete drapeau facon heros, chiffre
- * cle en titre, une barre de progression. */
-function CartePays({ f, titre, meta }) {
+/** Deux barres cote a cote : deux chiffres sur la hauteur d'une seule. */
+function DeuxBarres({ children }) {
+  return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>{children}</div>
+}
+
+/**
+ * Carte de l'accueil RH : `PvCard` a gabarit fixe, pour que toutes les
+ * cartes de la page aient la meme hauteur — visuel de hauteur commune,
+ * puce de statut, titre sur deux lignes reservees, contenu sur la hauteur
+ * d'une barre ou de deux lignes de texte, ligne d'action.
+ */
+function Carte({ img, media, statut, titre, contenu, action, survol, accent }) {
   return (
     <div className="portal-card-anchor">
       <PvCard
-        cardMedia={<VisuelPays f={f} />}
-        title={titre}
-        meta={meta}
-        cta="Voir le pays"
-        hoverHint="Voir le pays"
+        cardMedia={media ?? <Photo src={img} />}
+        kicker={statut}
+        title={<span style={{ display: 'block', minHeight: '2.3em' }}>{titre}</span>}
+        meta={<div style={{ minHeight: 42 }}>{contenu}</div>}
+        accentColor={accent}
+        cta={action}
+        hoverHint={survol}
         corner
       />
     </div>
+  )
+}
+
+/** Puce de statut. */
+const Puce = ({ cls, children }) => <span className={`portal-status-chip ${cls}`}>{children}</span>
+
+/** Carte d'un pays : drapeau en visuel, statut de couverture, chiffre cle
+ * en titre, une barre de progression. */
+function CartePays({ f, titre, contenu }) {
+  const [, cls, libelle] = etat(f.couverture)
+  return (
+    <Carte media={<VisuelPays f={f} />} statut={<Puce cls={cls}>{libelle}</Puce>}
+      titre={titre} contenu={contenu} action="Voir le pays" survol="Voir le pays" />
   )
 }
 
@@ -128,14 +162,12 @@ export default function RHHome({ filialeFixe = null }) {
     const ouvertes = recrutement.campagnes.filter(c => c.statut === 'ouverte')
     const closes = recrutement.campagnes.filter(c => c.statut !== 'ouverte')
     const notees = closes.filter(c => c.moyenne != null && c.testes)
-    const prochaine = ouvertes.map(c => c.fin).filter(Boolean).sort()[0]
     return {
       enCours: {
         nombre: ouvertes.length,
         candidats: somme(ouvertes, 'candidats'),
         testes: somme(ouvertes, 'testes'),
         avancement: Math.round(100 * somme(ouvertes, 'testes') / (somme(ouvertes, 'candidats') || 1)),
-        cloture: prochaine && new Date(prochaine).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }),
       },
       terminees: {
         nombre: closes.length,
@@ -192,18 +224,10 @@ export default function RHHome({ filialeFixe = null }) {
             {aTraiter.length > 0 ? (
               <PortalStaggerGrid>
                 {aTraiter.map(a => (
-                  <div key={`${a.nature}-${a.titre}`} className="portal-card-anchor">
-                    <PvCard
-                      img={VISUEL[a.espace]}
-                      kicker={<span className="portal-status-chip progress">{a.nature}</span>}
-                      title={a.titre}
-                      meta={a.detail}
-                      accentColor="#E3001B"
-                      cta="Traiter"
-                      hoverHint="Traiter la priorité"
-                      corner
-                    />
-                  </div>
+                  <Carte key={`${a.nature}-${a.titre}`} img={VISUEL[a.espace]}
+                    statut={<Puce cls="progress">{a.nature}</Puce>}
+                    titre={a.titre} contenu={a.detail} accent="#E3001B"
+                    action="Traiter" survol="Traiter la priorité" />
                 ))}
               </PortalStaggerGrid>
             ) : (
@@ -217,60 +241,37 @@ export default function RHHome({ filialeFixe = null }) {
           <div className="container" style={{ padding: '16px 32px' }}>
             <TeteSection surtitre="Campagnes et résultats" titre="Recrutement" />
             <PortalStaggerGrid>
-              <div className="portal-card-anchor">
-                <PvCard
-                  img={VISUEL.personnes}
-                  kicker={<span className="portal-status-chip todo">Préparer</span>}
-                  title="Créer une campagne"
-                  meta="Poste, filiale, BU, dates et épreuve, puis import des candidats depuis Excel."
-                  accentColor="#E3001B"
-                  cta="Créer"
-                  hoverHint="Nouvelle campagne"
-                  corner
-                />
-              </div>
-              <div className="portal-card-anchor">
-                <PvCard
-                  img={VISUEL.recrutement}
-                  kicker={<span className={`portal-status-chip ${enCours.nombre ? 'progress' : 'todo'}`}>
-                    {enCours.nombre ? `${enCours.nombre} ouverte${enCours.nombre > 1 ? 's' : ''}` : 'Aucune ouverte'}
-                  </span>}
-                  title="Campagnes en cours"
-                  meta={enCours.nombre ? (
-                    <div style={{ display: 'grid', gap: 10 }}>
-                      <Progression libelle="Candidats testés" valeur={enCours.avancement}
-                        droite={`${enCours.testes}/${enCours.candidats}`} />
-                      {/* Le score n'est publie qu'a la cloture de la campagne. */}
-                      <Progression libelle="Score moyen" attente droite="En attente" />
-                      {enCours.cloture && <span>Prochaine clôture : {enCours.cloture}</span>}
-                    </div>
-                  ) : 'Aucune campagne ouverte en ce moment.'}
-                  cta="Suivre"
-                  hoverHint="Suivre les campagnes"
-                  corner
-                />
-              </div>
-              <div className="portal-card-anchor">
-                <PvCard
-                  img={VISUEL.competences}
-                  kicker={<span className="portal-status-chip done">
-                    {terminees.nombre} clôturée{terminees.nombre > 1 ? 's' : ''}
-                  </span>}
-                  title="Campagnes terminées"
-                  meta={terminees.nombre ? (
-                    <div style={{ display: 'grid', gap: 10 }}>
-                      <Progression libelle="Candidats testés"
-                        valeur={Math.round(100 * terminees.testes / (terminees.candidats || 1))}
-                        droite={`${terminees.testes}/${terminees.candidats}`} />
-                      <Progression libelle="Score moyen" valeur={terminees.moyenne}
-                        droite={terminees.moyenne != null ? `${terminees.moyenne} %` : '—'} />
-                    </div>
-                  ) : 'Aucune campagne clôturée.'}
-                  cta="Exploiter les résultats"
-                  hoverHint="Voir les résultats"
-                  corner
-                />
-              </div>
+              <Carte img={VISUEL.personnes} statut={<Puce cls="todo">Préparer</Puce>}
+                titre="Créer une campagne"
+                contenu="Poste, filiale, BU, dates et épreuve, puis import des candidats depuis Excel."
+                accent="#E3001B" action="Créer" survol="Nouvelle campagne" />
+              <Carte img={VISUEL.recrutement}
+                statut={<Puce cls={enCours.nombre ? 'progress' : 'todo'}>
+                  {enCours.nombre ? `${enCours.nombre} ouverte${enCours.nombre > 1 ? 's' : ''}` : 'Aucune ouverte'}
+                </Puce>}
+                titre="Campagnes en cours"
+                contenu={enCours.nombre ? (
+                  <DeuxBarres>
+                    <Progression libelle="Testés" valeur={enCours.avancement}
+                      droite={`${enCours.testes}/${enCours.candidats}`} />
+                    {/* Le score n'est publie qu'a la cloture de la campagne. */}
+                    <Progression libelle="Score" attente droite="À venir" />
+                  </DeuxBarres>
+                ) : 'Aucune campagne ouverte en ce moment.'}
+                action="Suivre" survol="Suivre les campagnes" />
+              <Carte img={VISUEL.competences}
+                statut={<Puce cls="done">{terminees.nombre} clôturée{terminees.nombre > 1 ? 's' : ''}</Puce>}
+                titre="Campagnes terminées"
+                contenu={terminees.nombre ? (
+                  <DeuxBarres>
+                    <Progression libelle="Testés"
+                      valeur={Math.round(100 * terminees.testes / (terminees.candidats || 1))}
+                      droite={`${terminees.testes}/${terminees.candidats}`} />
+                    <Progression libelle="Score" valeur={terminees.moyenne}
+                      droite={terminees.moyenne != null ? `${terminees.moyenne} %` : '—'} />
+                  </DeuxBarres>
+                ) : 'Aucune campagne clôturée.'}
+                action="Exploiter les résultats" survol="Voir les résultats" />
             </PortalStaggerGrid>
           </div>
         </PortalReveal>
@@ -285,7 +286,7 @@ export default function RHHome({ filialeFixe = null }) {
                 {competences.parFiliale.map(f => (
                   <CartePays key={f.code} f={f}
                     titre={f.moyenne != null ? `Maîtrise globale des compétences : ${f.moyenne} %` : 'Pas encore de score'}
-                    meta={<Progression libelle="Techniciens évalués" valeur={f.couverture}
+                    contenu={<Progression libelle="Techniciens évalués" valeur={f.couverture}
                       droite={`${f.evalues}/${f.techniciens}`} />} />
                 ))}
               </PortalStaggerGrid>
@@ -302,7 +303,7 @@ export default function RHHome({ filialeFixe = null }) {
                 {pif.parFiliale.map(f => (
                   <CartePays key={f.code} f={f}
                     titre={f.valides ? `${f.valides} PIF validé${f.valides > 1 ? 's' : ''}` : 'Aucun PIF validé'}
-                    meta={<Progression libelle="Techniciens avec PIF" valeur={f.couverture}
+                    contenu={<Progression libelle="Techniciens avec PIF" valeur={f.couverture}
                       droite={`${f.avecPif}/${f.techniciens}`} />} />
                 ))}
               </PortalStaggerGrid>
@@ -315,59 +316,27 @@ export default function RHHome({ filialeFixe = null }) {
           <div className="container" style={{ padding: '16px 32px' }}>
             <TeteSection surtitre="Fiches, import et corbeille" titre="Techniciens & candidats" />
             <PortalStaggerGrid>
-              <div className="portal-card-anchor">
-                <PvCard
-                  img="/assets/img_cards/test_theorie_senior.jpg"
-                  kicker={<span className="portal-status-chip todo">Créer</span>}
-                  title="Ajouter un collaborateur"
-                  meta="Candidat ou technicien : une fiche, ou plusieurs par import Excel."
-                  accentColor="#E3001B"
-                  cta="Ajouter"
-                  hoverHint="Nouvelle fiche"
-                  corner
-                />
-              </div>
-              <div className="portal-card-anchor">
-                <PvCard
-                  img="/assets/img_cards/test_theorie_expert.jpg"
-                  kicker={<span className="portal-status-chip progress">
-                    {personnes.candidats} actif{personnes.candidats > 1 ? 's' : ''}
-                  </span>}
-                  title="Candidats"
-                  meta="Consulter, modifier, supprimer. Un candidat retenu passe technicien."
-                  cta="Gérer"
-                  hoverHint="Voir les candidats"
-                  corner
-                />
-              </div>
-              <div className="portal-card-anchor">
-                <PvCard
-                  img={VISUEL.personnes}
-                  kicker={<span className="portal-status-chip done">
-                    {personnes.techniciens} actif{personnes.techniciens > 1 ? 's' : ''}
-                  </span>}
-                  title="Techniciens"
-                  meta={<Progression libelle="Fiches complètes"
-                    valeur={Math.round(100 * (personnes.techniciens - personnes.aCompleter) / (personnes.techniciens || 1))}
-                    droite={`${personnes.techniciens - personnes.aCompleter}/${personnes.techniciens}`} />}
-                  cta="Gérer"
-                  hoverHint="Voir les techniciens"
-                  corner
-                />
-              </div>
-              <div className="portal-card-anchor">
-                <PvCard
-                  img="/assets/img_cards/test_pratique_expert.jpg"
-                  kicker={<span className="portal-status-chip todo">
-                    {personnes.supprimes} fiche{personnes.supprimes > 1 ? 's' : ''}
-                  </span>}
-                  title="Corbeille"
-                  meta="Fiches supprimées, avec date, auteur et motif : restaurer en un clic."
-                  cta="Ouvrir"
-                  hoverHint="Ouvrir la corbeille"
-                  corner
-                />
-              </div>
+              <Carte img="/assets/img_cards/test_theorie_senior.jpg" statut={<Puce cls="todo">Créer</Puce>}
+                titre="Ajouter un collaborateur"
+                contenu="Candidat ou technicien : une fiche, ou plusieurs par import Excel."
+                accent="#E3001B" action="Ajouter" survol="Nouvelle fiche" />
+              <Carte img="/assets/img_cards/test_theorie_expert.jpg"
+                statut={<Puce cls="progress">{personnes.candidats} actif{personnes.candidats > 1 ? 's' : ''}</Puce>}
+                titre="Candidats"
+                contenu="Consulter, modifier, supprimer. Un candidat retenu passe technicien."
+                action="Gérer" survol="Voir les candidats" />
+              <Carte img={VISUEL.personnes}
+                statut={<Puce cls="done">{personnes.techniciens} actif{personnes.techniciens > 1 ? 's' : ''}</Puce>}
+                titre="Techniciens"
+                contenu={<Progression libelle="Fiches complètes"
+                  valeur={Math.round(100 * (personnes.techniciens - personnes.aCompleter) / (personnes.techniciens || 1))}
+                  droite={`${personnes.techniciens - personnes.aCompleter}/${personnes.techniciens}`} />}
+                action="Gérer" survol="Voir les techniciens" />
+              <Carte img="/assets/img_cards/test_pratique_expert.jpg"
+                statut={<Puce cls="todo">{personnes.supprimes} fiche{personnes.supprimes > 1 ? 's' : ''}</Puce>}
+                titre="Corbeille"
+                contenu="Fiches supprimées, avec date, auteur et motif : restaurer en un clic."
+                action="Ouvrir" survol="Ouvrir la corbeille" />
             </PortalStaggerGrid>
           </div>
         </PortalReveal>
