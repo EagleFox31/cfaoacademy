@@ -83,6 +83,9 @@ function CartePays({ f, titre, meta }) {
         cardMedia={<VisuelPays f={f} />}
         title={titre}
         meta={meta}
+        cta="Voir le pays"
+        hoverHint={`Détail de ${f.pays}`}
+        corner
       />
     </div>
   )
@@ -198,6 +201,9 @@ export default function RHHome({ filialeFixe = null }) {
                       title={a.titre}
                       meta={a.detail}
                       accentColor="#E3001B"
+                      cta="Traiter"
+                      hoverHint="Ouvrir l’espace concerné"
+                      corner
                     />
                   </div>
                 ))}
@@ -220,6 +226,9 @@ export default function RHHome({ filialeFixe = null }) {
                   title="Créer une campagne"
                   meta="Poste, filiale, BU, dates et épreuve, puis import des candidats depuis Excel."
                   accentColor="#E3001B"
+                  cta="Créer"
+                  hoverHint="Créer une campagne de recrutement"
+                  corner
                 />
               </div>
               <div className="portal-card-anchor">
@@ -238,6 +247,9 @@ export default function RHHome({ filialeFixe = null }) {
                       {enCours.cloture && <span>Prochaine clôture : {enCours.cloture}</span>}
                     </div>
                   ) : 'Aucune campagne ouverte en ce moment.'}
+                  cta="Suivre"
+                  hoverHint="Suivre, modifier, relancer ou clôturer"
+                  corner
                 />
               </div>
               <div className="portal-card-anchor">
@@ -256,6 +268,9 @@ export default function RHHome({ filialeFixe = null }) {
                         droite={terminees.moyenne != null ? `${terminees.moyenne} %` : '—'} />
                     </div>
                   ) : 'Aucune campagne clôturée.'}
+                  cta="Exploiter les résultats"
+                  hoverHint="Classements, décisions et export"
+                  corner
                 />
               </div>
             </PortalStaggerGrid>
@@ -309,6 +324,9 @@ export default function RHHome({ filialeFixe = null }) {
                   title="Ajouter un collaborateur"
                   meta="Candidat ou technicien : une fiche, ou plusieurs par import Excel."
                   accentColor="#E3001B"
+                  cta="Ajouter"
+                  hoverHint="Créer une fiche candidat ou technicien"
+                  corner
                 />
               </div>
               <div className="portal-card-anchor">
@@ -319,6 +337,9 @@ export default function RHHome({ filialeFixe = null }) {
                   </span>}
                   title="Candidats"
                   meta="Consulter, modifier, supprimer. Un candidat retenu passe technicien."
+                  cta="Gérer"
+                  hoverHint="Liste des candidats"
+                  corner
                 />
               </div>
               <div className="portal-card-anchor">
@@ -331,6 +352,9 @@ export default function RHHome({ filialeFixe = null }) {
                   meta={<Progression libelle="Fiches complètes"
                     valeur={Math.round(100 * (personnes.techniciens - personnes.aCompleter) / (personnes.techniciens || 1))}
                     droite={`${personnes.techniciens - personnes.aCompleter}/${personnes.techniciens}`} />}
+                  cta="Gérer"
+                  hoverHint="Consulter, modifier, supprimer"
+                  corner
                 />
               </div>
               <div className="portal-card-anchor">
@@ -341,6 +365,9 @@ export default function RHHome({ filialeFixe = null }) {
                   </span>}
                   title="Corbeille"
                   meta="Fiches supprimées, avec date, auteur et motif : restaurer en un clic."
+                  cta="Ouvrir"
+                  hoverHint="Restaurer une fiche supprimée"
+                  corner
                 />
               </div>
             </PortalStaggerGrid>

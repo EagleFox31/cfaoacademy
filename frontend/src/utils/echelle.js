@@ -1,12 +1,12 @@
 /**
- * Mise a l'echelle de l'interface selon l'ecran.
+ * Mise a l'echelle de l'interface selon la fenetre.
  *
- * L'interface est dessinee pour un ecran de 1920 pixels de large. Sur un
- * portable dont Windows agrandit l'affichage (125 %, 150 %), le navigateur
- * ne voit plus que 1536 ou 1280 pixels : tout parait trop gros et il
- * fallait dezoomer a la main pour retrouver la page d'un ecran a 100 %.
- * On applique ici ce dezoom, d'apres la largeur de l'ecran — pas de la
- * fenetre : une fenetre reduite garde sa mise en page adaptative.
+ * L'interface est dessinee pour 1920 pixels de large. Sur un autre ecran
+ * (portable a 125 %, ecran 1366, ecran 2560) ou dans une fenetre reduite,
+ * la page ne se resserre pas : elle est agrandie ou reduite d'un bloc,
+ * comme avec le zoom du navigateur, et garde sa composition de reference.
+ * Sous 1024 pixels (tablette, telephone), la mise en page adaptative
+ * reprend la main, sans reduction.
  *
  * `zoom` sur la racine a deux angles morts, compenses ailleurs :
  * - les unites d'ecran (`vh`, `vw`) ne sont pas corrigees : Vite les
@@ -17,24 +17,26 @@
  * d'ecran : les reporter en CSS demande de les diviser par `echelle()`.
  */
 const REFERENCE = 1920
-const PLANCHER = 0.75
+const LARGEUR_MINIMALE = 1024
+const PLANCHER = 0.6
+const PLAFOND = 2
 // Les seuils de hauteur des feuilles de style (`:root[data-bas~="820"]`).
 const SEUILS_HAUTEUR = [540, 720, 820]
 
-/** Le facteur applique a l'interface (1 sur un ecran de reference). */
+/** Le facteur applique a l'interface (1 a la largeur de reference). */
 export function echelle() {
   return Number(document.documentElement.dataset.echelle) || 1
 }
 
 function appliquer() {
   const racine = document.documentElement
-  const largeur = window.screen?.width || REFERENCE
-  // Au-dessous de 1280, c'est une tablette ou un telephone : leur mise
-  // en page propre s'applique, sans reduction.
-  const z = largeur >= 1280 && largeur < REFERENCE
-    ? Math.round(Math.max(PLANCHER, largeur / REFERENCE) * 1000) / 1000
+  // `innerWidth` ignore le `zoom` de la racine : c'est la largeur de la
+  // fenetre en pixels CSS, quel que soit le facteur deja applique.
+  const largeur = window.innerWidth || REFERENCE
+  const z = largeur >= LARGEUR_MINIMALE
+    ? Math.round(Math.min(PLAFOND, Math.max(PLANCHER, largeur / REFERENCE)) * 1000) / 1000
     : 1
-  if (z < 1) {
+  if (z !== 1) {
     racine.style.zoom = String(z)
     racine.style.setProperty('--echelle', String(z))
     racine.dataset.echelle = String(z)
@@ -47,14 +49,12 @@ function appliquer() {
   racine.dataset.bas = SEUILS_HAUTEUR.filter(n => hauteur <= n).join(' ')
 }
 
-/** A appeler avant le premier rendu ; suit les changements d'ecran. */
+/**
+ * A appeler avant le premier rendu. Un redimensionnement, comme le passage
+ * sur un ecran d'une autre mise a l'echelle, change `innerWidth` : `resize`
+ * suffit a suivre les deux.
+ */
 export function suivreEchelle() {
   appliquer()
   window.addEventListener('resize', appliquer)
-  // Fenetre passee sur un ecran d'une autre mise a l'echelle.
-  const suivreDensite = () => {
-    const mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`)
-    mq.addEventListener('change', () => { appliquer(); suivreDensite() }, { once: true })
-  }
-  suivreDensite()
 }
