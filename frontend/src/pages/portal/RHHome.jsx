@@ -83,7 +83,7 @@ function CartePays({ f, titre, meta }) {
         title={titre}
         meta={meta}
         cta="Voir le pays"
-        hoverHint={`Détail de ${f.pays}`}
+        hoverHint="Voir le pays"
         corner
       />
     </div>
@@ -200,7 +200,7 @@ export default function RHHome({ filialeFixe = null }) {
                       meta={a.detail}
                       accentColor="#E3001B"
                       cta="Traiter"
-                      hoverHint="Ouvrir l’espace concerné"
+                      hoverHint="Traiter la priorité"
                       corner
                     />
                   </div>
@@ -225,7 +225,7 @@ export default function RHHome({ filialeFixe = null }) {
                   meta="Poste, filiale, BU, dates et épreuve, puis import des candidats depuis Excel."
                   accentColor="#E3001B"
                   cta="Créer"
-                  hoverHint="Créer une campagne de recrutement"
+                  hoverHint="Nouvelle campagne"
                   corner
                 />
               </div>
@@ -246,7 +246,7 @@ export default function RHHome({ filialeFixe = null }) {
                     </div>
                   ) : 'Aucune campagne ouverte en ce moment.'}
                   cta="Suivre"
-                  hoverHint="Suivre, modifier, relancer ou clôturer"
+                  hoverHint="Suivre les campagnes"
                   corner
                 />
               </div>
@@ -267,7 +267,7 @@ export default function RHHome({ filialeFixe = null }) {
                     </div>
                   ) : 'Aucune campagne clôturée.'}
                   cta="Exploiter les résultats"
-                  hoverHint="Classements, décisions et export"
+                  hoverHint="Voir les résultats"
                   corner
                 />
               </div>
@@ -323,7 +323,7 @@ export default function RHHome({ filialeFixe = null }) {
                   meta="Candidat ou technicien : une fiche, ou plusieurs par import Excel."
                   accentColor="#E3001B"
                   cta="Ajouter"
-                  hoverHint="Créer une fiche candidat ou technicien"
+                  hoverHint="Nouvelle fiche"
                   corner
                 />
               </div>
@@ -336,7 +336,7 @@ export default function RHHome({ filialeFixe = null }) {
                   title="Candidats"
                   meta="Consulter, modifier, supprimer. Un candidat retenu passe technicien."
                   cta="Gérer"
-                  hoverHint="Liste des candidats"
+                  hoverHint="Voir les candidats"
                   corner
                 />
               </div>
@@ -351,7 +351,7 @@ export default function RHHome({ filialeFixe = null }) {
                     valeur={Math.round(100 * (personnes.techniciens - personnes.aCompleter) / (personnes.techniciens || 1))}
                     droite={`${personnes.techniciens - personnes.aCompleter}/${personnes.techniciens}`} />}
                   cta="Gérer"
-                  hoverHint="Consulter, modifier, supprimer"
+                  hoverHint="Voir les techniciens"
                   corner
                 />
               </div>
@@ -364,7 +364,7 @@ export default function RHHome({ filialeFixe = null }) {
                   title="Corbeille"
                   meta="Fiches supprimées, avec date, auteur et motif : restaurer en un clic."
                   cta="Ouvrir"
-                  hoverHint="Restaurer une fiche supprimée"
+                  hoverHint="Ouvrir la corbeille"
                   corner
                 />
               </div>
