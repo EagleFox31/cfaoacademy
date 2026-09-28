@@ -1,5 +1,6 @@
 import { BAREMES } from './baremeCfao'
 import { MENTIONS, CRITERES_FORMATION, CRITERES_ACCUEIL } from './satisfactionCfao'
+import { estCertification, niveauDe } from './certification'
 
 /**
  * Le classeur d'evaluation d'une session, rempli dans le modele du
@@ -104,7 +105,7 @@ function poserColonne(ws, snap, lignes, source, cible, garderValeur) {
 }
 
 /** « du 07-11.09.26 », ou « du 28.08-02.09.26 » a cheval sur deux mois. */
-function periodeCourte(debut, fin) {
+export function periodeCourte(debut, fin) {
   if (!debut) return ''
   const [a1, m1, j1] = debut.split('-')
   const [a2, m2, j2] = (fin || debut).split('-')
@@ -113,7 +114,37 @@ function periodeCourte(debut, fin) {
   return `du ${j1}.${m1}-${au}`
 }
 
-function remplirDonnees(ws, stagiaires, brouillon, session) {
+/**
+ * Les lignes TP de « Données Stagiaires ». Le modele en a deux (TP 1 et
+ * TP 6, lignes 8 et 9), vides pour une formation. Une certification y
+ * met la note de chaque module, comme le classeur G2 des formateurs
+ * (« TP 1 (G28001) ») : une ligne par module, et tout ce qui suit
+ * descend d'autant. Renvoie la geometrie qui en resulte.
+ */
+function poserLignesTp(ws, nbModules) {
+  const nb = Math.max(nbModules, 2)
+  if (nb > 2) {
+    ws.spliceRows(9, 0, ...Array.from({ length: nb - 2 }, () => []))
+    const modele = ws.getRow(8)
+    for (let r = 9; r < nb + 7; r++) {
+      const ligne = ws.getRow(r)
+      ligne.height = modele.height
+      for (let c = 1; c <= D.colonnesModele; c++) ligne.getCell(c).style = copie(modele.getCell(c).style)
+    }
+  }
+  // Les listes de mentions du modele visent des lignes fixes (B13:O25) :
+  // on les retire, chaque case recoit plus bas la sienne.
+  ws.dataValidations.model = {}
+  const d = nb - 2
+  return {
+    ...D, tp: 8, nbTp: nb,
+    pratique: D.pratique + d, acquisition: D.acquisition + d,
+    formation: D.formation + d, accueil: D.accueil + d, derniere: D.derniere + d,
+  }
+}
+
+// `D` : la geometrie de `poserLignesTp`, qui masque celle du modele.
+function remplirDonnees(ws, stagiaires, brouillon, session, D, modules = []) {
   const n = stagiaires.length
   const snap = instantane(ws, D.derniere, D.colonnesModele)
   vider(ws, D.derniere, 2, Math.max(D.colonnesModele, n + 1))
@@ -127,6 +158,10 @@ function remplirDonnees(ws, stagiaires, brouillon, session) {
   const intitule = brouillon.intitule || session?.moduleFormation || ''
   ws.getCell('A1').value = `FORMATION : ${[code, intitule].filter(Boolean).join(': ')}`
   ws.getCell('A2').value = periodeCourte(brouillon.debut, brouillon.fin)
+  modules.forEach((m, j) => {
+    ws.getCell(D.tp + j, 1).value = `TP ${j + 1}${m.code ? ` (${m.code})` : ''}`
+  })
+  if (modules.length === 1) ws.getCell(D.tp + 1, 1).value = null
 
   const baremes = brouillon.baremes || BAREMES
   const taux = (v, sur) => (v === '' || v == null || !sur ? null : Number(v) / sur)
@@ -140,7 +175,24 @@ function remplirDonnees(ws, stagiaires, brouillon, session) {
     ws.getCell(`${c}${D.filiale}`).value = p.pays ? `CFAO MOBILITY ${p.pays.toUpperCase()}` : null
     ws.getCell(`${c}${D.entree}`).value = taux(p.entreeBrut, baremes.entreeTheorique)
     ws.getCell(`${c}${D.sortie}`).value = taux(p.sortieTheoBrut, baremes.sortieTheorique)
-    ws.getCell(`${c}${D.pratique}`).value = taux(p.sortiePratBrut, baremes.sortiePratique)
+    if (modules.length) {
+      // Certification : une note sur 100 par TP, et le test pratique en
+      // est la moyenne, en taux comme dans le modele.
+      modules.forEach((m, j) => {
+        const cell = ws.getCell(`${c}${D.tp + j}`)
+        const v = p.notesModules?.[m.id]
+        cell.value = v === '' || v == null ? null : Number(v)
+        cell.numFmt = '0'
+        cell.dataValidation = {
+          type: 'whole', operator: 'between', allowBlank: true, showErrorMessage: true,
+          formulae: [0, 100], errorTitle: 'Note', error: 'Une note entière de 0 à 100.',
+        }
+      })
+      const tps = `${c}${D.tp}:${c}${D.tp + modules.length - 1}`
+      ws.getCell(`${c}${D.pratique}`).value = { formula: `IF(COUNT(${tps})=0,"",AVERAGE(${tps})/100)` }
+    } else {
+      ws.getCell(`${c}${D.pratique}`).value = taux(p.sortiePratBrut, baremes.sortiePratique)
+    }
     ws.getCell(`${c}${D.acquisition}`).value = {
       formula: `IF(COUNT(${c}${D.sortie},${c}${D.pratique})=0,"",AVERAGE(${c}${D.sortie},${c}${D.pratique}))`,
     }
@@ -156,11 +208,13 @@ function remplirDonnees(ws, stagiaires, brouillon, session) {
   // Mise en forme conditionnelle du modele (vert >= 70 %, rouge sinon),
   // etendue aux colonnes reelles.
   ws.conditionalFormattings?.forEach(cf => {
-    cf.ref = `B${D.sortie}:${DERNIERE}${D.sortie} B${D.pratique}:${DERNIERE}${D.acquisition}`
+    // Pas de test theorique en certification : sa ligne vide passerait
+    // pour une note sous le seuil.
+    cf.ref = `${modules.length ? '' : `B${D.sortie}:${DERNIERE}${D.sortie} `}B${D.pratique}:${DERNIERE}${D.acquisition}`
   })
 }
 
-function remplirSynthese(ws, n) {
+function remplirSynthese(ws, n, D) {
   const snap = instantane(ws, S.derniereMobile, S.finModele)
   const fusions = ['N5:N6', 'N14:N21', 'N23:N29']
   fusions.forEach(f => { try { ws.unMergeCells(f) } catch { /* deja defaite */ } })
@@ -252,6 +306,15 @@ function remplirSynthese(ws, n) {
  * L'intitule plutot que le code : c'est lui qu'on cherche dans un dossier.
  */
 export function nomFichier(brouillon, session) {
+  // En certification, le nom du classeur G3 des formateurs :
+  // « Evaluation Post Certification G3 GUINEE du 13-17.04.26 ».
+  if (estCertification(brouillon)) {
+    const pays = String(brouillon.pays || session?.paysHote || '').toUpperCase()
+    const periode = periodeCourte(brouillon.debut, brouillon.fin)
+    return ['Evaluation Post Certification', niveauDe(brouillon), pays, periode]
+      .filter(Boolean).join(' ').concat('.xlsx')
+      .replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ')
+  }
   const intitule = (brouillon.intitule || session?.moduleFormation || '').trim()
   const nom = intitule || brouillon.codeFormation || session?.codeFormation || 'session'
   const periode = periodeCourte(brouillon.debut, brouillon.fin)
@@ -263,9 +326,10 @@ export function nomFichier(brouillon, session) {
  * Remplit le modele et le propose au telechargement.
  *
  * Seuls les stagiaires presents y figurent, dans l'ordre de la saisie.
+ * `modele` : le fichier est un modele vierge, et son nom le dit.
  * La bibliotheque et le modele ne sont charges qu'au moment de l'export.
  */
-export async function exporterEvaluation(brouillon, session) {
+export async function exporterEvaluation(brouillon, session, { modele = false } = {}) {
   const [{ default: ExcelJS }, reponse] = await Promise.all([
     import('exceljs'),
     fetch(MODELE_EVALUATION),
@@ -279,7 +343,7 @@ export async function exporterEvaluation(brouillon, session) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = nomFichier(brouillon, session)
+  a.download = `${modele ? 'Modèle ' : ''}${nomFichier(brouillon, session)}`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -292,8 +356,11 @@ export async function construireClasseur(ExcelJS, modele, brouillon, session) {
   const stagiaires = (brouillon.participants || []).filter(p => p.present !== false)
   const wb = new ExcelJS.Workbook()
   await wb.xlsx.load(modele)
-  remplirDonnees(wb.getWorksheet(DONNEES), stagiaires, brouillon, session)
-  remplirSynthese(wb.getWorksheet(SYNTHESE), Math.max(stagiaires.length, 1))
+  const modules = estCertification(brouillon) ? brouillon.modules || [] : []
+  const donnees = wb.getWorksheet(DONNEES)
+  const geometrie = poserLignesTp(donnees, modules.length)
+  remplirDonnees(donnees, stagiaires, brouillon, session, geometrie, modules)
+  remplirSynthese(wb.getWorksheet(SYNTHESE), Math.max(stagiaires.length, 1), geometrie)
   // Excel recalcule a l'ouverture : les valeurs s'affichent sans
   // qu'on ait a appuyer sur F9.
   wb.calcProperties = { fullCalcOnLoad: true }

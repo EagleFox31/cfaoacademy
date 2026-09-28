@@ -1,5 +1,6 @@
 import { BAREMES } from './baremeCfao'
 import { MENTIONS, CRITERES_FORMATION, CRITERES_ACCUEIL } from './satisfactionCfao'
+import { chargerClasseur } from './chargerClasseur'
 
 /**
  * Relit un classeur d'evaluation — celui qu'exporte l'etape 2, ou un
@@ -17,6 +18,9 @@ import { MENTIONS, CRITERES_FORMATION, CRITERES_ACCUEIL } from './satisfactionCf
  * perdre une ligne serait pire que d'en avoir une a completer.
  */
 
+// Les lignes du modele de l'application ; celles d'un classeur de
+// formateur se retrouvent a leur libelle (cf. `lignesDe`) : les lignes
+// TP y sont plus nombreuses, et tout ce qui suit descend d'autant.
 const L = { noms: 4, filiale: 5, entree: 6, sortie: 7, pratique: 10, formation: 13, accueil: 20 }
 
 // Les filiales s'ecrivent « CFAO MOBILITY CMR » : le code pays devient
@@ -29,7 +33,7 @@ const PAYS = {
 }
 
 /** « CFAO MOBILITY CMR » -> « Cameroun » ; un nom de pays reste tel quel. */
-function paysDe(filiale) {
+export function paysDe(filiale) {
   const reste = String(filiale ?? '').replace(/CFAO\s*MOBILITY/i, '').trim()
   if (!reste) return ''
   return PAYS[reste.toUpperCase()] || reste.charAt(0).toUpperCase() + reste.slice(1).toLowerCase()
@@ -62,14 +66,14 @@ function lireTitre(texte) {
   return m ? { codeFormation: m[1], intitule: m[2].trim() } : { codeFormation: '', intitule: t }
 }
 
-const normaliser = t => String(t ?? '')
+export const normaliser = t => String(t ?? '')
   .normalize('NFD').replace(/[̀-ͯ]/g, '')
   .toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim()
 
 const mots = t => new Set(normaliser(t).split(' ').filter(Boolean))
 
 /** La valeur affichee d'une cellule : formule, texte riche ou valeur. */
-function valeurDe(cell) {
+export function valeurDe(cell) {
   const v = cell?.value
   if (v == null) return null
   if (typeof v === 'object') {
@@ -79,6 +83,13 @@ function valeurDe(cell) {
     if (v.error) return null
   }
   return v
+}
+
+/** Une note sur 100, ecrite en nombre ou en texte ; `null` sinon. */
+function note(v) {
+  if (v == null || v === '') return null
+  const n = typeof v === 'number' ? v : Number(String(v).replace(',', '.').trim())
+  return Number.isFinite(n) && n >= 0 && n <= 100 ? Math.round(n) : null
 }
 
 /** Un taux lu dans le classeur, en fraction : 0,6 ou « 60 % ». */
@@ -92,17 +103,41 @@ function taux(v) {
 const MENTION_PAR_LIBELLE = Object.fromEntries(MENTIONS.map(m => [normaliser(m.libelle), m.cle]))
 
 /**
+ * Les lignes de la feuille, trouvees par leur libelle en colonne A ; a
+ * defaut, celles du modele. Les lignes « TP 1 (G28001) » d'une
+ * certification portent chacune la note d'un module.
+ */
+function lignesDe(ws) {
+  const trouvees = {}
+  const tps = []
+  for (let r = 1; r <= Math.min(ws.rowCount, 80); r++) {
+    const t = normaliser(valeurDe(ws.getCell(r, 1)))
+    if (!t) continue
+    const tp = t.match(/^TP (\d+)(?: ([A-Z0-9]+))?$/)
+    if (tp) tps.push({ ligne: r, numero: Number(tp[1]), code: tp[2] || '' })
+    else if (t === 'FILIALE') trouvees.filiale ??= r
+    else if (t.startsWith('TEST THEORIQUE D ENTREE')) trouvees.entree ??= r
+    else if (t.startsWith('TEST THEORIQUE DE SORTIE')) trouvees.sortie ??= r
+    else if (t.startsWith('TEST PRATIQUE')) trouvees.pratique ??= r
+    else if (t.startsWith('THEMES ABORDES')) trouvees.formation ??= r
+    else if (t.startsWith('ACCUEIL A L AEROPORT')) trouvees.accueil ??= r
+  }
+  const l = { ...L, ...trouvees }
+  if (trouvees.filiale) l.noms = trouvees.filiale - 1
+  return { ...l, tps }
+}
+
+/**
  * Lit le fichier ; rejette s'il ne porte pas la feuille attendue.
  *
  * Renvoie `{ entete, stagiaires }` : l'entete (code, intitule, dates,
  * pays) sert a creer une saisie ; les stagiaires, a la remplir.
  */
 export async function lireEvaluation(fichier) {
-  const { default: ExcelJS } = await import('exceljs')
-  const wb = new ExcelJS.Workbook()
-  await wb.xlsx.load(await fichier.arrayBuffer())
+  const wb = await chargerClasseur(fichier)
   const ws = wb.worksheets.find(f => normaliser(f.name).startsWith('DONNEES'))
   if (!ws) throw new Error('Feuille « Données Stagiaires » introuvable')
+  const L = lignesDe(ws)
   const stagiaires = []
   for (let c = 2; c < 80; c++) {
     const nom = valeurDe(ws.getCell(L.noms, c))
@@ -120,6 +155,9 @@ export async function lireEvaluation(fichier) {
       entree: taux(valeurDe(ws.getCell(L.entree, c))),
       sortie: taux(valeurDe(ws.getCell(L.sortie, c))),
       pratique: taux(valeurDe(ws.getCell(L.pratique, c))),
+      // Les notes des TP, sur 100 : celles des modules en certification.
+      tps: L.tps.map(t => ({ numero: t.numero, code: t.code, note: note(valeurDe(ws.getCell(t.ligne, c))) }))
+        .filter(t => t.note != null),
       reponses,
     })
   }
@@ -136,7 +174,7 @@ export async function lireEvaluation(fichier) {
 }
 
 /** Le participant du brouillon qui porte ce nom, s'il y en a un. */
-function reconnaitre(nom, participants, pris) {
+export function reconnaitre(nom, participants, pris) {
   const cible = mots(nom)
   let meilleur = null
   let score = 0
@@ -145,6 +183,10 @@ function reconnaitre(nom, participants, pris) {
     const siens = mots(`${p.nom || ''} ${p.prenom || ''}`)
     if (!siens.size) return
     const communs = [...cible].filter(m => siens.has(m)).length
+    // Un seul mot commun ne suffit pas quand les deux noms en ont
+    // plusieurs : KEITA Mohamed n'est pas Sekou KEITA. Les noms de
+    // famille courants d'une filiale se partagent entre collegues.
+    if (communs < Math.min(2, cible.size, siens.size)) return
     const s = communs / Math.max(cible.size, siens.size)
     if (s > score) { score = s; meilleur = p }
   })
@@ -187,10 +229,23 @@ export function appliquerEvaluation(brouillon, stagiaires) {
       ['sortieTheoBrut', s.sortie, baremes.sortieTheorique],
       ['sortiePratBrut', s.pratique, baremes.sortiePratique],
     ].filter(([, v]) => v != null).map(([k, v, sur]) => [k, brut(v, sur)]))
-    const change = Object.entries(notes).some(([k, v]) => p[k] !== '' && p[k] != null && p[k] !== v)
+    let change = Object.entries(notes).some(([k, v]) => p[k] !== '' && p[k] != null && p[k] !== v)
+    // En certification, chaque TP est la note d'un module : reconnu a
+    // son code (« TP 1 (G28001) »), sinon a son rang.
+    const modules = brouillon.type === 'certification' ? brouillon.modules || [] : []
+    const notesModules = { ...(p.notesModules || {}) }
+    ;(s.tps || []).forEach(t => {
+      const m = (t.code && modules.find(x => normaliser(x.code) === t.code))
+        || (!t.code && modules[t.numero - 1])
+      if (!m) return
+      const v = String(t.note)
+      const avant = notesModules[m.id]
+      if (avant !== '' && avant != null && String(avant) !== v) change = true
+      notesModules[m.id] = v
+    })
     if (change) remplaces++
     const k = participants.findIndex(x => x.id === p.id)
-    participants[k] = { ...p, ...notes, present: true }
+    participants[k] = { ...p, ...notes, ...(modules.length ? { notesModules } : {}), present: true }
     if (Object.keys(s.reponses).length) satisfaction[p.id] = { ...satisfaction[p.id], ...s.reponses }
   })
   return { participants, satisfaction, reconnus, ajoutes, remplaces }

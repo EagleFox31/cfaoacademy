@@ -13,12 +13,13 @@
 
 import { useState } from 'react'
 import ImageCadree, { BoutonRecadrer } from './ImageCadree'
+import ChoixLegende from './ChoixLegende'
 import BoutonsRedaction from './BoutonsRedaction'
 import { casesDe, dispositionsClassees, dispositionsPour, grilleDe, MAX_PHOTOS }
   from '../../data/dispositions_photos'
 
 export default function EditeurBilan({
-  blocs, textes, photos, disposition, legende,
+  blocs, textes, photos, disposition, legende, modeLegende, onModeLegende,
   onTexte, onLegende,
   onAjouter, onRetirer, onReordonner, onDisposition, onLegender, onCadrer,
   redaction,
@@ -31,7 +32,8 @@ export default function EditeurBilan({
   const choix = dispositionsPour(cliches.length)
   const dispoActive = disposition || choix[0]?.id
   const dispo = choix.find(d => d.id === dispoActive)
-  const parImage = !!dispo?.legendes
+  const parImage = modeLegende === 'chaque'
+  const commune = modeLegende === 'commune'
   const restantes = MAX_PHOTOS - cliches.length
 
   return (
@@ -45,7 +47,7 @@ export default function EditeurBilan({
         {/* Le moteur redige rubrique par rubrique : un bouton global
             ecrasait d'un coup les quatre textes, retouches comprises. */}
         <span className="cr-obj-aide">
-          Pré-rempli depuis les notes et les journées — à reprendre librement.
+          Déjà écrit à partir de vos notes et de vos journées. Modifiez si besoin.
         </span>
         <div className="cr-jour-rubriques cr-jour-rubriques--bilan">
           {(blocs || []).map(b => {
@@ -76,7 +78,7 @@ export default function EditeurBilan({
         )}
       </Bloc>
 
-      <Bloc titre="Intégrer les images"
+      <Bloc titre="Ajouter des photos"
         resume={cliches.length
           ? `${restantes} place${restantes > 1 ? 's' : ''} restante${restantes > 1 ? 's' : ''}`
           : 'Facultatif'}
@@ -98,7 +100,7 @@ export default function EditeurBilan({
               accept="image/*" multiple hidden
               onChange={e => { onAjouter?.(e.target.files); e.target.value = '' }} />
 
-            <span className="cr-field-label">Disposition</span>
+            <span className="cr-field-label">Présentation des photos</span>
             <div className="cr-obj-choix cr-obj-choix--colonne cr-obj-choix--defile">
               {dispositionsClassees(cliches.length).map(d => {
                 const possible = d.nombre === cliches.length
@@ -118,10 +120,11 @@ export default function EditeurBilan({
                 )
               })}
             </div>
+            <ChoixLegende nombre={cliches.length} mode={modeLegende} onMode={onModeLegende} />
           </div>
 
           <PlanchePhotos photos={cliches} disposition={dispo}
-            parImage={parImage} legende={legende}
+            parImage={parImage} commune={commune} legende={legende}
             onRetirer={onRetirer} onReordonner={onReordonner}
             onAjouter={onAjouter} onLegender={onLegender} onCadrer={onCadrer}
             onLegende={onLegende} />
@@ -152,7 +155,7 @@ function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
 }
 
 /** Les photos posees selon la disposition retenue. */
-function PlanchePhotos({ photos, disposition, parImage, legende,
+function PlanchePhotos({ photos, disposition, parImage, commune, legende,
   onRetirer, onReordonner, onAjouter, onLegender, onLegende, onCadrer }) {
   const [saisie, setSaisie] = useState(null)
   const [survol, setSurvol] = useState(null)
@@ -242,7 +245,7 @@ function PlanchePhotos({ photos, disposition, parImage, legende,
           )
         })}
       </div>
-      {!parImage && (
+      {commune && (
         <input className="cr-case-legende cr-planche-legende"
           value={legende || ''}
           placeholder="Légende de l’ensemble"

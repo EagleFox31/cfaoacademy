@@ -2,6 +2,8 @@ import { calculer, syntheseGroupe, SEUIL } from './baremeCfao'
 import { satisfactionStagiaire, detailParCritere, CRITERES_FORMATION, CRITERES_ACCUEIL }
   from './satisfactionCfao'
 import { periodeLongue } from './compteRendu'
+import { estCertification } from './certification'
+import { rubriquesBilanCertification } from './remarquesCertification'
 
 /**
  * Les remarques de session : les deux constats de la page des resultats
@@ -119,6 +121,7 @@ export function constatsParDefaut(b) {
 
 /** Les quatre rubriques du bilan, pre-remplies depuis les chiffres. */
 export function rubriquesBilan(b) {
+  if (estCertification(b)) return rubriquesBilanCertification(b)
   const s = chiffresSession(b)
   const periode = periodeLongue(b?.debut, b?.fin)
   const lieu = b?.pays ? ` au Centre CFAO ${b.pays}` : ''
@@ -206,7 +209,7 @@ export async function redigerRemarque(type, donnees, rubrique) {
     })
     if (!reponse.ok) return null
     const sortie = await reponse.json()
-    return type === 'bilan' ? sortie?.rubriques || null : sortie?.texte || null
+    return type.startsWith('bilan') ? sortie?.rubriques || null : sortie?.texte || null
   } catch {
     return null
   }

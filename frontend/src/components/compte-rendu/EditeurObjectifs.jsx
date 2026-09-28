@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import ImageCadree, { BoutonRecadrer } from './ImageCadree'
+import ChoixLegende from './ChoixLegende'
 import { MAX_PHOTOS, casesDe, dispositionsClassees, dispositionsPour, grilleDe }
   from '../../data/dispositions_photos'
 
@@ -16,16 +17,17 @@ import { MAX_PHOTOS, casesDe, dispositionsClassees, dispositionsPour, grilleDe }
  * passe au tableau avec la colonne d'images. Le formateur n'a donc pas
  * a choisir une presentation — il depose des photos, ou non.
  *
- * Restent deux vrais choix, chacun dans son volet : le marquage de la
- * liste (rien ne permet de le deviner) et, des qu'il y a plusieurs
+ * Restent deux vrais choix, chacun dans son volet : le marquage des
+ * objectifs (rien ne permet de le deviner ; il vaut aussi dans le
+ * tableau a photos) et, des qu'il y a plusieurs
  * photos, leur disposition. L'ordre des photos fixe leur place dans
  * cette disposition ; on les reordonne en les faisant glisser.
  */
 
 /** Les trois marquages de liste retenus par le modele. */
 export const MARQUAGES = [
-  { id: 'puces', nom: 'Puces', apercu: ['•', '•', '•'] },
-  { id: 'romain', nom: 'Romain', apercu: ['I.', 'II.', 'III.'] },
+  { id: 'puces', nom: 'Tirets', apercu: ['•', '•', '•'] },
+  { id: 'romain', nom: 'Numéros', apercu: ['I.', 'II.', 'III.'] },
   { id: 'mixte', nom: 'Les deux', apercu: ['I.', '•', '•'] },
 ]
 
@@ -33,7 +35,7 @@ export const MARQUAGES = [
 export const LIGNE_VIDE = { code: '', intitule: '', texte: '' }
 
 const PLACEHOLDER = [
-  'Collez vos objectifs, un par ligne.',
+  'Un objectif par ligne. Exemple :',
   '',
   'Identifier les organes du circuit',
   'Contrôler les pressions au banc',
@@ -62,7 +64,7 @@ function objectifsDuTexte(texte, anciens = []) {
 }
 
 export default function EditeurObjectifs({
-  objectifs, marquage, photos, disposition,
+  objectifs, marquage, photos, disposition, modeLegende, onModeLegende, legende, onLegende,
   onObjectifs, onMarquage, onDisposition, onReordonner,
   onAjouter, onRetirer, onLegender, onCadrer,
 }) {
@@ -79,8 +81,8 @@ export default function EditeurObjectifs({
 
   return (
     <div className="cr-blocs cr-blocs--objectifs">
-      <Bloc titre="Remplir les objectifs"
-        resume={avecImages ? 'En tableau' : 'En liste'}
+      <Bloc titre="Les objectifs"
+        resume={avecImages ? 'Avec photos' : 'Sans photo'}
         valeur={remplies || '—'}
         ton={remplies ? 'ok' : null}
         ouvert={volet === 'objectifs'}
@@ -128,39 +130,38 @@ export default function EditeurObjectifs({
             </span>
           </label>
 
-          {/* Le marquage ne concerne que la liste : avec des photos, le
-              modele numerote lui-meme les lignes du tableau. */}
+          {/* Le marquage vaut pour la liste comme pour le tableau a
+              photos : le service numerote aussi les lignes du tableau. */}
           <div className="cr-obj-cote">
-            <span className="cr-field-label">Disposition</span>
-            {avecImages ? (
+            <span className="cr-field-label">Présentation</span>
+            <div className="cr-obj-choix cr-obj-choix--colonne">
+              {MARQUAGES.map(m => (
+                <button key={m.id} type="button"
+                  className={`cr-obj-opt${(marquage || 'puces') === m.id ? ' cr-obj-opt--on' : ''}`}
+                  aria-pressed={(marquage || 'puces') === m.id}
+                  onClick={() => onMarquage(m.id)}>
+                  <span className="cr-obj-opt-vue" aria-hidden="true">
+                    {m.apercu.map((x, j) => <em key={j}>{x}</em>)}
+                  </span>
+                  <span className="cr-obj-opt-nom">{m.nom}</span>
+                </button>
+              ))}
+            </div>
+            {avecImages && (
               <p className="cr-obj-aide">
-                Des photos sont intégrées : le modèle passe au tableau et
-                numérote lui-même les lignes.
+                Avec les photos, les objectifs passent dans le tableau du
+                modèle, dans la présentation choisie.
               </p>
-            ) : (
-              <div className="cr-obj-choix cr-obj-choix--colonne">
-                {MARQUAGES.map(m => (
-                  <button key={m.id} type="button"
-                    className={`cr-obj-opt${(marquage || 'puces') === m.id ? ' cr-obj-opt--on' : ''}`}
-                    aria-pressed={(marquage || 'puces') === m.id}
-                    onClick={() => onMarquage(m.id)}>
-                    <span className="cr-obj-opt-vue" aria-hidden="true">
-                      {m.apercu.map((x, j) => <em key={j}>{x}</em>)}
-                    </span>
-                    <span className="cr-obj-opt-nom">{m.nom}</span>
-                  </button>
-                ))}
-              </div>
             )}
           </div>
         </div>
 
       </Bloc>
 
-      <Bloc titre="Intégrer les images"
+      <Bloc titre="Ajouter des photos"
         resume={avecImages
           ? `${MAX_PHOTOS - cliches.length} place${MAX_PHOTOS - cliches.length > 1 ? 's' : ''} restante${MAX_PHOTOS - cliches.length > 1 ? 's' : ''}`
-          : 'Facultatif — la page reste en liste'}
+          : 'Facultatif'}
         valeur={cliches.length || '—'}
         ton={avecImages ? 'ok' : null}
         ouvert={volet === 'images'}
@@ -181,7 +182,7 @@ export default function EditeurObjectifs({
             <input id="cr-obj-fichier" type="file" accept="image/*" multiple hidden
               onChange={e => { onAjouter?.(e.target.files); e.target.value = '' }} />
 
-            <span className="cr-field-label">Disposition</span>
+            <span className="cr-field-label">Présentation</span>
             <div className="cr-obj-choix cr-obj-choix--colonne cr-obj-choix--defile">
               {dispositionsClassees(cliches.length).map(d => {
                 const possible = d.nombre === cliches.length
@@ -201,11 +202,13 @@ export default function EditeurObjectifs({
                 )
               })}
             </div>
-
+            <ChoixLegende nombre={cliches.length} mode={modeLegende} onMode={onModeLegende} />
           </div>
 
           <PlanchePhotos photos={cliches}
             disposition={choix.find(d => d.id === dispoActive)}
+            parImage={modeLegende === 'chaque'}
+            commune={modeLegende === 'commune'} legende={legende} onLegende={onLegende}
             onRetirer={onRetirer} onReordonner={onReordonner}
             onAjouter={onAjouter} onLegender={onLegender} onCadrer={onCadrer} />
         </div>
@@ -246,14 +249,11 @@ function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
  * page du modele, pas une grille de vignettes. Les images se font
  * glisser d'une case a l'autre, leur ordre fixant leur place.
  */
-function PlanchePhotos({ photos, disposition, onRetirer, onReordonner, onAjouter,
-  onLegender, onCadrer }) {
+function PlanchePhotos({ photos, disposition, parImage, commune, legende, onLegende,
+  onRetirer, onReordonner, onAjouter, onLegender, onCadrer }) {
   const [saisie, setSaisie] = useState(null)
   const [survol, setSurvol] = useState(null)
   const [cadrage, setCadrage] = useState(null)
-  // Les dispositions legendees donnent a chaque image sa legende, que la
-  // diapositive pose sous elle.
-  const parImage = !!disposition?.legendes
 
   function deposer(vers) {
     if (saisie == null || saisie === vers) return
@@ -288,8 +288,9 @@ function PlanchePhotos({ photos, disposition, onRetirer, onReordonner, onAjouter
   const cases = toutes.slice(0, photos.length)
 
   return (
-    <div className="cr-planche"
-      style={{ ...grilleDe(disposition), '--planche-ratio': disposition?.ratio || 1.17 }}>
+    <div className="cr-planche-cadre"
+      style={{ '--planche-ratio': disposition?.ratio || 1.17 }}>
+    <div className="cr-planche" style={grilleDe(disposition)}>
       {cases.map((forme, i) => {
         const photo = photos[i]
         const recadre = cadrage === photo.id
@@ -339,6 +340,16 @@ function PlanchePhotos({ photos, disposition, onRetirer, onReordonner, onAjouter
           </div>
         )
       })}
+    </div>
+      {/* Une seule legende pour l'ensemble, sous les photos, la ou la
+          diapositive la posera. */}
+      {commune && (
+        <input className="cr-case-legende cr-planche-legende"
+          value={legende || ''}
+          placeholder="Légende de l’ensemble"
+          aria-label="Légende de l’ensemble des photos"
+          onChange={e => onLegende?.(e.target.value)} />
+      )}
     </div>
   )
 }

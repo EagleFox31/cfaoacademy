@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import Nav from '../../components/Nav'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import { periodeLongue } from '../../utils/compteRendu'
-import { brouillonsEnregistres, oublier, synchroniser } from '../../utils/brouillonsCompteRendu'
+import { brouillonsEnCours, oublier, synchroniser } from '../../utils/brouillonsCompteRendu'
 import '../../styles/compte-rendu.css'
 
-const ETAPES = ['La session', 'Les résultats', 'La structure', 'L’édition']
+const ETAPES = ['La formation', 'Les notes', 'Les pages', 'Compléter']
 
 /** « il y a 2 jours », pour situer une reprise sans afficher une date brute. */
 function venuDe(iso) {
   if (!iso) return ''
-  const jours = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
+  const minuit = d => { const j = new Date(d); j.setHours(0, 0, 0, 0); return j.getTime() }
+  const jours = Math.round((minuit(Date.now()) - minuit(iso)) / 86400000)
   if (jours <= 0) return "aujourd'hui"
   if (jours === 1) return 'hier'
   if (jours < 14) return `il y a ${jours} jours`
@@ -40,10 +41,10 @@ function IconeCorbeille() {
 export default function TrainerReportsEnCours() {
   useSiteEffects()
   const naviguer = useNavigate()
-  const [brouillons, setBrouillons] = useState(() => brouillonsEnregistres())
+  const [brouillons, setBrouillons] = useState(() => brouillonsEnCours())
   useEffect(() => {
     let actif = true
-    synchroniser().then(liste => { if (actif && liste) setBrouillons(liste) })
+    synchroniser().then(liste => { if (actif && liste) setBrouillons(brouillonsEnCours(liste)) })
     return () => { actif = false }
   }, [])
 
@@ -54,7 +55,7 @@ export default function TrainerReportsEnCours() {
     if (!window.confirm(`Supprimer « ${titre} » ? Les notes, textes et photos déjà `
       + 'saisis seront perdus.')) return
     oublier(b.id)
-    setBrouillons(brouillonsEnregistres())
+    setBrouillons(brouillonsEnCours())
   }
 
   return (
@@ -102,7 +103,7 @@ export default function TrainerReportsEnCours() {
                       <h3 className="cr-session-title">{b.session || 'Compte rendu sans intitulé'}</h3>
                       <div className="cr-session-meta">
                         {b.debut && <span>{periodeLongue(b.debut, b.fin)}</span>}
-                        <span>{b.effectif} participant{b.effectif > 1 ? 's' : ''}</span>
+                        <span>{b.effectif} stagiaire{b.effectif > 1 ? 's' : ''}</span>
                       </div>
                       <div className="cr-session-meta">
                         <span>

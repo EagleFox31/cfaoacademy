@@ -1,6 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { periodeLongue } from '../../utils/compteRendu'
+import Consigne from './Consigne'
+import RepriseStagiaires from './RepriseStagiaires'
 import { lireEvaluation, appliquerEvaluation } from '../../utils/importEvaluation'
+import { brouillonsEnregistres, estTermine, synchroniser } from '../../utils/brouillonsCompteRendu'
+import { certificationDe } from '../../data/certifications'
+import { CERTIFICATION, FORMATION, champsDeType, estCertification } from '../../utils/certification'
 
 /**
  * Phase 1 — quelle formation, et qui l'a suivie.
@@ -17,6 +22,10 @@ import { lireEvaluation, appliquerEvaluation } from '../../utils/importEvaluatio
  * « Je n'ai pas de compte » d'un formulaire de connexion. Presente en
  * sixieme carte de la grille, au meme format que les sessions, il se
  * lisait comme une session de plus et personne ne le voyait.
+ *
+ * La page se remplit en deux volets, comme celle des notes, un seul
+ * ouvert a la fois : la formation d'abord — son type compris, qui
+ * decide de toute la suite —, puis les participants.
  */
 export default function PhaseSession({
   brouillon, maj, sessions, onChoisirSession, onSaisieManuelle,
@@ -27,8 +36,40 @@ export default function PhaseSession({
   const mode = brouillon.manuel ? 'manuel'
     : brouillon.sessionId ? 'planning' : null
 
+  // Deux volets, un seul ouvert : on termine la formation avant de
+  // passer aux participants.
+  const [volet, setVolet] = useState('formation')
+
+  // Une session du planning peut etre fausse ou incomplete (dates,
+  // lieu, un stagiaire mal orthographie) : « Modifier » l'ouvre dans le
+  // formulaire de la saisie libre, stagiaires compris.
+  const [edition, setEdition] = useState(false)
+  const saisie = mode === 'manuel' || edition
+
+  // Les comptes rendus deja commences, ici ou sur un autre poste : la
+  // liste des formations dit ou en est chacune, pas seulement le
+  // planning. Cliquer une formation commencee la reprend.
+  const [commences, setCommences] = useState(() => (mode ? [] : brouillonsEnregistres()))
+  useEffect(() => {
+    if (mode) return undefined
+    let actif = true
+    synchroniser().then(liste => { if (actif && liste) setCommences(liste) })
+    return () => { actif = false }
+  }, [mode])
+
+  // La session choisie apporte son type (d'apres son code) et ses
+  // stagiaires : le type ne se corrige qu'ensuite, dans le volet.
   const choisir = s => onChoisirSession(s)
   const passerEnManuel = () => onSaisieManuelle()
+  const type = estCertification(brouillon) ? CERTIFICATION : FORMATION
+  function choisirType(t) {
+    if (t === type) return
+    maj(t === CERTIFICATION && (brouillon.modules || []).length
+      ? { type: t }
+      : champsDeType(t, brouillon.codeFormation))
+  }
+  const participants = brouillon.participants || []
+  const presents = participants.filter(p => p.present !== false).length
 
   // Un classeur d'evaluation porte deja la formation et ses stagiaires :
   // l'importer evite de recopier vingt noms a la main. Sur le choix
@@ -77,36 +118,42 @@ export default function PhaseSession({
     </p>
   )
 
-  // ── Choix du mode, tant que rien n'est engage
-  if (!mode) {
-    const proposables = sessions.filter(s => s.statut !== 'a_venir')
-    return (
-      <div className="cr-panel cr-panel--choix">
-        <div className="cr-panel-head">
-          <h2 className="cr-panel-title">De quelle formation s’agit-il ?</h2>
-          <p className="cr-panel-hint">
-            Choisissez-la parmi vos sessions.
-          </p>
-        </div>
+  // Un compte rendu termine n'est plus a faire : sa formation quitte la
+  // liste et se retrouve dans « Mes comptes rendus ». Une session deja
+  // documentee au planning n'y revient que si une saisie la reprend.
+  const proposables = sessions.filter(s => {
+    if (s.statut === 'a_venir') return false
+    const b = commences.find(x => x.id === s.id)
+    if (estTermine(b)) return false
+    return s.statut !== 'termine' || !!b
+  })
 
+  // ── Le volet de la formation : le type, puis la formation elle-meme
+  let formation
+  if (!mode) {
+    formation = (
+      <>
         <div className="cr-session-grid">
           {proposables.map(s => (
             <button key={s.id} type="button" className="cr-session"
               onClick={() => choisir(s)}>
               <div className="cr-session-top">
                 <span className="cr-session-code">{s.codeSession}</span>
-                {s.statut === 'a_rediger' && (
-                  <span className="cr-badge cr-badge--warn">À rédiger</span>
-                )}
+                <StatutSession session={s} commence={commences.find(b => b.id === s.id)} />
               </div>
-              <h3 className="cr-session-title">{s.moduleFormation}</h3>
+              <h3 className="cr-session-title" title={s.moduleFormation}>{s.moduleFormation}</h3>
               <div className="cr-session-meta">
                 <span>{periodeLongue(s.debut, s.fin)}</span>
-                <span>{s.participants.length} participants</span>
+                <span>{s.participants.length} stagiaire{s.participants.length > 1 ? 's' : ''}</span>
               </div>
-              <div className="cr-session-meta">
+              {/* Le type ferme la carte, a droite : le statut garde le haut
+                  pour lui seul, et la carte ne grandit pas. */}
+              <div className="cr-session-meta cr-session-pied">
                 <span>{s.marque}</span>
-                <span>{s.lieu}</span>
+                <span className="cr-session-lieu" title={s.lieu}>{s.lieu}</span>
+                {certificationDe(s.codeFormation)
+                  ? <span className="cr-session-type cr-session-type--certif">Certification</span>
+                  : <span className="cr-session-type">Formation</span>}
               </div>
             </button>
           ))}
@@ -126,93 +173,53 @@ export default function PhaseSession({
           <span className="cr-echappee-ou">ou</span>
           <button type="button" className="cr-echappee-lien cr-echappee-lien--second"
             onClick={() => fichier.current?.click()}
-            title="Formation, dates, stagiaires, notes et satisfaction, repris d’un classeur .xlsx">
-            partir d’un classeur d’évaluation
+            title="Formation, dates, stagiaires, notes et satisfaction, repris d’un fichier Excel">
+            j’ai déjà les notes dans un fichier Excel
           </button>
           {champFichier}
         </div>
         {message}
-      </div>
+      </>
     )
-  }
-
-  // ── Saisie manuelle
-  if (mode === 'manuel') {
-    return (
-      <div className="cr-panel cr-panel--formulaire">
-        <div className="cr-panel-head cr-panel-head--actions">
-          <div className="cr-panel-head-texte">
-            <h2 className="cr-panel-title">Les informations de la formation</h2>
-            <p className="cr-panel-hint">
-              Renseignez ce que vous savez. L’intitulé et le nombre de
-              participants suffisent pour commencer.
-            </p>
-          </div>
-          <button type="button" className="cr-btn cr-btn--ghost cr-export cr-import"
-            onClick={() => fichier.current?.click()}
-            title="Reprendre formation, stagiaires, notes et satisfaction d’un classeur d’évaluation (.xlsx)">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-              strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5" />
-              <path d="M4 15.5v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
-            </svg>
-            Importer
-          </button>
-          {champFichier}
-        </div>
-        {message}
-
-        <div className="cr-form">
-          {/* Une ligne par nature d'information : ce qui identifie la
-              formation, quand elle a eu lieu, ou et avec combien de
-              personnes. */}
-          <div className="cr-form-ligne cr-form-ligne--code-intitule">
-            <Champ label="Code" valeur={brouillon.codeFormation}
-              surSaisie={v => maj({ codeFormation: v })} exemple="TS05-G3" />
-            <Champ label="Intitulé de la formation"
-              valeur={brouillon.intitule}
-              surSaisie={v => maj({ intitule: v })}
-              exemple="Révision et réparation des organes châssis" />
-          </div>
-
-          <div className="cr-form-ligne cr-form-ligne--trois">
-            <Champ label="Marque" valeur={brouillon.marque}
-              surSaisie={v => maj({ marque: v })} exemple="TOYOTA" />
-            <Champ label="Début" type="date" valeur={brouillon.debut}
-              surSaisie={v => maj({ debut: v })} />
-            <Champ label="Fin" type="date" valeur={brouillon.fin}
-              surSaisie={v => maj({ fin: v })} />
-          </div>
-
-          <div className="cr-form-ligne cr-form-ligne--trois">
-            <Champ label="Lieu" valeur={brouillon.lieu}
-              surSaisie={v => maj({ lieu: v })}
-              exemple="Centre CFAO Academy — Douala" />
-            <Champ label="Pays" valeur={brouillon.pays}
-              surSaisie={v => maj({ pays: v })} exemple="Cameroun" />
-            <ChampEffectif brouillon={brouillon} maj={maj} />
-          </div>
+  } else if (saisie) {
+    formation = (
+      <div className="cr-form">
+        {/* Une ligne par nature d'information : ce qui identifie la
+            formation, quand elle a eu lieu, ou et avec combien de
+            personnes. */}
+        <div className="cr-form-ligne cr-form-ligne--code-intitule">
+          <Champ label="Code" valeur={brouillon.codeFormation}
+            surSaisie={v => maj({ codeFormation: v })} exemple="Exemple : TS05-G3" />
+          <Champ label="Intitulé de la formation"
+            valeur={brouillon.intitule}
+            surSaisie={v => maj({ intitule: v })}
+            exemple="Exemple : Révision et réparation des organes châssis" />
         </div>
 
-        <ListeParticipants brouillon={brouillon} maj={maj} modifiable />
+        <div className="cr-form-ligne cr-form-ligne--trois">
+          <Champ label="Marque" valeur={brouillon.marque}
+            surSaisie={v => maj({ marque: v })} exemple="Exemple : TOYOTA" />
+          <Champ label="Début" type="date" valeur={brouillon.debut}
+            surSaisie={v => maj({ debut: v })} />
+          <Champ label="Fin" type="date" valeur={brouillon.fin}
+            surSaisie={v => maj({ fin: v })} />
+        </div>
+
+        <div className="cr-form-ligne cr-form-ligne--trois">
+          <Champ label="Lieu" valeur={brouillon.lieu}
+            surSaisie={v => maj({ lieu: v })}
+            exemple="Exemple : Centre CFAO Academy, Douala" />
+          <Champ label="Pays" valeur={brouillon.pays}
+            surSaisie={v => maj({ pays: v })} exemple="Exemple : Cameroun" />
+          <ChampEffectif brouillon={brouillon} maj={maj} />
+        </div>
       </div>
     )
-  }
-
-  // ── Session reprise du planning : verification
-  return (
-    <div className="cr-panel cr-panel--fiche">
-      <div className="cr-panel-head">
-        <h2 className="cr-panel-title">Vérifiez les informations</h2>
-        <p className="cr-panel-hint">
-          Tout vient du planning. Décochez les absents, ajoutez un
-          participant non inscrit si besoin.
-        </p>
-      </div>
-
-      {/* L'intitule porte l'identite de la session : il est le titre,
-          pas une colonne parmi cinq. Le reste sont des attributs, de
-          longueur comparable, alignes sur une seule ligne. */}
+  } else {
+    // L'intitule porte l'identite de la session : il est le titre, pas
+    // une colonne parmi cinq. Le reste sont des attributs, de longueur
+    // comparable, alignes sur une seule ligne.
+    formation = (
       <div className="cr-fiche">
         <div className="cr-fiche-tete">
           <h3 className="cr-fiche-titre">{brouillon.intitule}</h3>
@@ -228,8 +235,170 @@ export default function PhaseSession({
           <Attribut cle="Pays" valeur={brouillon.pays} />
         </dl>
       </div>
+    )
+  }
 
-      <ListeParticipants brouillon={brouillon} maj={maj} />
+  // ── Rien d'engage : la liste des formations, seule. Une session du
+  // planning porte deja son type et ses stagiaires.
+  if (!mode) {
+    return (
+      <div className="cr-panel cr-panel--choix">
+        <Consigne faire="Cliquez sur la formation de ce compte rendu."
+          ensuite="Puis : vérifiez la formation et ses participants. Ensuite : les notes." />
+        {formation}
+      </div>
+    )
+  }
+
+  // Le titre annonce les deux volets de l'etape ; la ligne dessous suit
+  // le volet ouvert, puis nomme la suite, comme a l'etape des notes.
+  const consigne = ['Renseignez les informations de la formation et des participants.',
+    volet === 'formation'
+      ? 'D’abord la formation. Puis : les participants, juste en dessous. Ensuite : les notes.'
+      : saisie
+        ? 'Nom, pays et fonction de chaque stagiaire. Ensuite : les notes.'
+        : 'Décochez les absents, ajoutez ceux qui manquent. Ensuite : les notes.']
+
+  return (
+    <div className={`cr-panel ${mode === 'manuel' ? 'cr-panel--formulaire' : 'cr-panel--fiche'}`}>
+      <Consigne faire={consigne[0]} ensuite={consigne[1]}>
+        {mode === 'planning' && (
+          <button type="button" className="cr-btn cr-btn--ghost cr-export"
+            onClick={() => setEdition(e => !e)}
+            title={edition ? 'Revenir à la fiche de la formation'
+              : 'Corriger la formation ou les stagiaires dans le formulaire de saisie'}>
+            {edition ? '✓ Terminer la modification' : '✎ Modifier les informations'}
+          </button>
+        )}
+        {mode === 'manuel' && (
+          <>
+            <button type="button" className="cr-btn cr-btn--ghost cr-export cr-import"
+              onClick={() => fichier.current?.click()}
+              title="Reprendre formation, stagiaires, notes et satisfaction d’un fichier Excel">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5" />
+                <path d="M4 15.5v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+              </svg>
+              Reprendre d’un fichier Excel
+            </button>
+            {champFichier}
+          </>
+        )}
+      </Consigne>
+      {mode === 'manuel' && message}
+
+      <div className="cr-blocs cr-blocs--etape1">
+        <Bloc titre="1. Formation"
+          resume={brouillon.codeFormation || 'Saisie libre'}
+          valeur={libelleType(type)} ton="ok"
+          ouvert={volet === 'formation'} onOuvrir={() => setVolet('formation')}>
+          <div className="cr-baremes cr-type-cadre">
+            <span className="cr-baremes-label">Type de compte rendu</span>
+            <ChoixType valeur={type} onChoisir={choisirType} />
+          </div>
+          {formation}
+          <SuiteVolet onClick={() => setVolet('participants')}>
+            Passer aux participants
+          </SuiteVolet>
+        </Bloc>
+
+        <Bloc titre="2. Participants"
+          resume={`${participants.length} stagiaire${participants.length > 1 ? 's' : ''}`}
+          valeur={`${presents} présent${presents > 1 ? 's' : ''}`}
+          ton={presents ? 'ok' : null}
+          ouvert={volet === 'participants'}
+          onOuvrir={() => setVolet('participants')}>
+          <ListeParticipants brouillon={brouillon} maj={maj} modifiable={saisie} />
+        </Bloc>
+      </div>
+    </div>
+  )
+}
+
+const ETAPES = ['la formation', 'les notes', 'les pages', 'compléter']
+
+/**
+ * Ou en est le compte rendu d'une session.
+ *
+ * Un compte rendu commence l'emporte sur le statut du planning, qui ne
+ * sait rien de la redaction : sans cela, une formation a moitie saisie
+ * s'affichait encore « À rédiger ».
+ */
+function StatutSession({ session, commence }) {
+  if (commence) {
+    const i = Math.min(commence.phase ?? 0, ETAPES.length - 1)
+    return (
+      <span className="cr-badge cr-badge--info" title={`Reprendre à l’étape ${i + 1} : ${ETAPES[i]}`}>
+        En cours · étape {i + 1}
+      </span>
+    )
+  }
+  if (session.statut === 'a_rediger') return <span className="cr-badge cr-badge--warn">À rédiger</span>
+  if (session.statut === 'en_cours') return <span className="cr-badge cr-badge--muted">Session en cours</span>
+  return null
+}
+
+/** Le passage au volet suivant, la ou l'on arrive en finissant celui-ci. */
+function SuiteVolet({ onClick, children }) {
+  return (
+    <div className="cr-suite-volet">
+      <button type="button" className="cr-btn cr-btn--ghost" onClick={onClick}>
+        {children} ↓
+      </button>
+    </div>
+  )
+}
+
+/** Un volet depliable, ouvert ou non selon le parent : le meme qu'a l'etape des notes. */
+function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
+  return (
+    <div className={`cr-bloc${ouvert ? ' cr-bloc--ouvert' : ''}`}>
+      <h3 className="cr-bloc-titre">
+        <button type="button" className="cr-bloc-bouton"
+          aria-expanded={ouvert} onClick={onOuvrir}>
+          <span className="cr-bloc-fleche" aria-hidden="true">▸</span>
+          <span className="cr-bloc-nom">{titre}</span>
+          <span className="cr-bloc-resume">{resume}</span>
+          <span className={`cr-calc${ton ? ` cr-calc--${ton}` : ' cr-calc--vide'}`}>
+            {valeur}
+          </span>
+        </button>
+      </h3>
+      {ouvert && <div className="cr-bloc-corps">{children}</div>}
+    </div>
+  )
+}
+
+const TYPES = [
+  [FORMATION, 'Formation',
+    'Test d’entrée, théorie finale et pratique, notés selon un barème.'],
+  [CERTIFICATION, 'Certification',
+    'Modules pratiques notés sur 100, et e-learning à valider.'],
+]
+const libelleType = type => TYPES.find(([t]) => t === type)?.[1] || ''
+
+/**
+ * Formation ou certification.
+ *
+ * Deux boutons radio plutot que deux cartes : le choix tient sur une
+ * ligne, et chacun dit comment les stagiaires sont evalues — c'est ce
+ * que le formateur sait sans hesiter. Une session du planning arrive
+ * deja reglee d'apres son code ; le choix reste visible pour corriger.
+ */
+function ChoixType({ valeur, onChoisir }) {
+  return (
+    <div className="cr-type-radios" role="radiogroup" aria-label="Type de compte rendu">
+      {TYPES.map(([type, libelle, description]) => (
+        <label key={type} className="cr-radio">
+          <input type="radio" name="type-compte-rendu" value={type}
+            checked={valeur === type} onChange={() => onChoisir(type)} />
+          <span>
+            <span className="cr-radio-libelle">{libelle}</span>
+            <small>{description}</small>
+          </span>
+        </label>
+      ))}
     </div>
   )
 }
@@ -277,7 +446,7 @@ function ChampEffectif({ brouillon, maj }) {
 
   return (
     <label className="cr-field">
-      <span className="cr-field-label">Nombre de participants</span>
+      <span className="cr-field-label">Nombre de stagiaires</span>
       <input className="cr-input cr-input--nombre" type="number"
         min="0" max="60" inputMode="numeric"
         value={participants.length || ''}
@@ -311,10 +480,52 @@ function Champ({ label, valeur, surSaisie, exemple, type = 'text', large }) {
   )
 }
 
-/** La liste des participants, en lecture ou en saisie. */
+/**
+ * Prenom et nom d'une saisie « Prénom NOM » : les mots en capitales
+ * forment le nom, les autres le prenom — l'usage des feuilles de
+ * presence. Sans capitales, le dernier mot est le nom.
+ */
+function decouperNom(texte) {
+  const mots = texte.trim().split(/\s+/).filter(Boolean)
+  const capitales = mots.filter(m => m.length > 1 && m === m.toUpperCase() && m !== m.toLowerCase())
+  if (capitales.length && capitales.length < mots.length) {
+    return {
+      prenom: mots.filter(m => !capitales.includes(m)).join(' '),
+      nom: capitales.join(' '),
+    }
+  }
+  if (capitales.length || mots.length < 2) return { prenom: '', nom: mots.join(' ') }
+  return { prenom: mots.slice(0, -1).join(' '), nom: mots[mots.length - 1] }
+}
+
+const motsTries = t => t.trim().split(/\s+/).sort().join(' ')
+const memesMots = (a, b) => motsTries(a) === motsTries(b)
+
+/**
+ * Le nom complet d'un stagiaire, en un seul champ.
+ *
+ * Le texte tape reste tel quel pendant la saisie ; prenom et nom en
+ * sont tires a chaque frappe. Une valeur venue d'ailleurs — reprise,
+ * import — remplace le texte.
+ */
+function ChampNomComplet({ p, onChange }) {
+  const complet = `${p.prenom || ''} ${p.nom || ''}`.trim()
+  const [texte, setTexte] = useState(complet)
+  useEffect(() => {
+    if (!memesMots(texte, complet)) setTexte(complet)
+  // Seule une valeur exterieure doit ecraser la saisie.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [complet])
+  return (
+    <input className="cr-input cr-input--nom" placeholder="Prénom NOM"
+      value={texte}
+      onChange={e => { setTexte(e.target.value); onChange(decouperNom(e.target.value)) }} />
+  )
+}
+
+/** La liste des stagiaires, en lecture ou en saisie. */
 function ListeParticipants({ brouillon, maj, modifiable }) {
   const participants = brouillon.participants || []
-  const presents = participants.filter(p => p.present !== false)
 
   function basculer(id) {
     maj({
@@ -334,17 +545,22 @@ function ListeParticipants({ brouillon, maj, modifiable }) {
     maj({ participants: participants.filter(p => p.id !== id) })
   }
 
+  // Les stagiaires repris d'un autre compte rendu prennent d'abord les
+  // lignes laissees vides par le nombre de stagiaires, puis s'ajoutent.
+  const [reprise, setReprise] = useState(false)
+  function reprendre(nouveaux) {
+    const reste = [...nouveaux]
+    const suite = participants.map(p => (estVide(p) && reste.length ? reste.shift() : p))
+    maj({ participants: [...suite, ...reste] })
+    setReprise(false)
+  }
+
   return (
     <div className="cr-participants">
-      <div className="cr-sous-titre">
-        Participants
-        <span className="cr-compte">{presents.length}</span>
-      </div>
-
       {participants.length === 0 ? (
         <p className="cr-vide-texte">
-          Indiquez le nombre de participants ci-dessus : les lignes à
-          renseigner apparaîtront ici.
+          Indiquez le nombre de stagiaires dans « 1. Formation » : une
+          ligne par stagiaire apparaîtra ici.
         </p>
       ) : (
         <div className="cr-table-wrap">
@@ -352,7 +568,7 @@ function ListeParticipants({ brouillon, maj, modifiable }) {
             <thead>
               <tr>
                 <th style={{ width: 54 }}>Présent</th>
-                <th>Participant</th>
+                <th>Stagiaire</th>
                 <th>Pays</th>
                 <th>Fonction</th>
                 <th style={{ width: 44 }} aria-label="Retirer" />
@@ -369,12 +585,10 @@ function ListeParticipants({ brouillon, maj, modifiable }) {
                   </td>
                   <td>
                     {(modifiable || p.ajoute) ? (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <input className="cr-input" style={{ width: 106 }} placeholder="Prénom"
-                          value={p.prenom} onChange={e => modifier(p.id, 'prenom', e.target.value)} />
-                        <input className="cr-input" style={{ width: 116 }} placeholder="NOM"
-                          value={p.nom} onChange={e => modifier(p.id, 'nom', e.target.value)} />
-                      </div>
+                      <ChampNomComplet p={p}
+                        onChange={noms => maj({
+                          participants: participants.map(x => (x.id === p.id ? { ...x, ...noms } : x)),
+                        })} />
                     ) : (
                       <span className="cr-name">{p.prenom} {p.nom}</span>
                     )}
@@ -408,6 +622,22 @@ function ListeParticipants({ brouillon, maj, modifiable }) {
         </div>
       )}
 
+      <div className="cr-ajouts-stagiaires">
+        <button type="button" className="cr-echappee-lien cr-ajout-stagiaire"
+          onClick={() => maj({ participants: [...participants, ligneVide(participants.length)] })}>
+          + Ajouter un stagiaire
+        </button>
+        {!reprise && (
+          <button type="button" className="cr-echappee-lien cr-ajout-stagiaire"
+            onClick={() => setReprise(true)}>
+            ↺ Reprendre des stagiaires d’un autre compte rendu
+          </button>
+        )}
+      </div>
+      {reprise && (
+        <RepriseStagiaires brouillon={brouillon} onAjouter={reprendre}
+          onFermer={() => setReprise(false)} />
+      )}
     </div>
   )
 }

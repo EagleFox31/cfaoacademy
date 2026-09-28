@@ -9,6 +9,13 @@ import {
 } from '../../utils/satisfactionCfao'
 import { exporterEvaluation } from '../../utils/exportEvaluation'
 import { lireEvaluation, appliquerEvaluation } from '../../utils/importEvaluation'
+import Consigne from './Consigne'
+import MenuExcel from './MenuExcel'
+import SaisieCertification from './SaisieCertification'
+import { estCertification } from '../../utils/certification'
+import {
+  exporterCertification, lireCertification, appliquerCertification,
+} from '../../utils/classeurCertification'
 
 /** Un tableur, au trait, pour le bouton d'export. */
 function IconeTableur() {
@@ -30,6 +37,18 @@ function IconeImport() {
       <path d="M4 15.5v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
     </svg>
   )
+}
+
+/** Le brouillon sans notes ni avis : les noms seuls, pour un modele
+ *  a remplir. */
+function vierge(b) {
+  return {
+    ...b,
+    satisfaction: {},
+    participants: (b.participants || []).map(p => ({
+      ...p, entreeBrut: '', sortieTheoBrut: '', sortiePratBrut: '', notesModules: {}, elearning: {},
+    })),
+  }
 }
 
 /**
@@ -57,6 +76,9 @@ export default function PhaseResultats({
 }) {
   const participants = (brouillon.participants || []).filter(p => p.present !== false)
   const baremes = brouillon.baremes || BAREMES
+  // Une certification se note module par module : seul le premier volet
+  // change, les deux questionnaires restent les memes.
+  const certif = estCertification(brouillon)
 
   // Un seul volet ouvert a la fois : les trois saisies sont
   // independantes, et trois tableaux deplies obligeaient a chercher
@@ -83,6 +105,13 @@ export default function PhaseResultats({
 
   const reponses = brouillon.satisfaction || {}
   const satisfaction = syntheseSatisfaction(reponses)
+  const complets = criteres => participants
+    .filter(p => criteres.every(c => reponses[p.id]?.[c.cle])).length
+  const SECTIONS_AVIS = [
+    { titre: 'Sur la formation', criteres: CRITERES_FORMATION },
+    { titre: 'Sur l’accueil', criteres: CRITERES_ACCUEIL },
+  ]
+  const CRITERES_AVIS = [...CRITERES_FORMATION, ...CRITERES_ACCUEIL]
 
   function repondre(idParticipant, critere, mention) {
     maj({
@@ -93,17 +122,37 @@ export default function PhaseResultats({
     })
   }
 
+  // En certification, deux classeurs, comme dans les dossiers G3 : les
+  // resultats (notes et e-learning) et l'evaluation post-certification
+  // (les avis). On enregistre l'un, l'autre ou les deux ; vierges, ce
+  // sont les modeles a remplir a la main puis a reprendre ici.
   const [exportEnCours, setExportEnCours] = useState(false)
-  async function exporter() {
+  async function exporter({ resultats = false, evaluation = false, modele = false }) {
     // Ce qui est a l'ecran part au classeur : on enregistre d'abord.
     onEnregistrer?.()
     setExportEnCours(true)
+    const b = modele ? vierge(brouillon) : brouillon
     try {
-      await exporterEvaluation(brouillon, session)
+      if (resultats) await exporterCertification(b, session, { modele })
+      if (evaluation) await exporterEvaluation(b, session, { modele })
     } finally {
       setExportEnCours(false)
     }
   }
+  const menuClasseurs = modele => (certif
+    ? [
+      { libelle: modele ? 'Modèle des résultats' : 'Résultats',
+        detail: modele ? 'Notes des modules et e-learning, à remplir' : 'Notes, e-learning et fiche de chaque candidat',
+        action: () => exporter({ resultats: true, modele }) },
+      { libelle: modele ? 'Modèle d’évaluation' : 'Évaluation',
+        detail: modele ? 'Avis des stagiaires, à remplir' : 'Avis des stagiaires sur la formation',
+        action: () => exporter({ evaluation: true, modele }) },
+      { libelle: modele ? 'Les deux modèles' : 'Tout télécharger',
+        detail: 'Résultats et évaluation, en deux fichiers',
+        action: () => exporter({ resultats: true, evaluation: true, modele }) },
+    ]
+    : [{ libelle: 'Modèle d’évaluation', detail: 'Notes des tests et avis des stagiaires, à remplir',
+      action: () => exporter({ evaluation: true, modele }) }])
 
   // L'import relit un classeur d'evaluation du meme modele — celui de
   // l'export, ou celui d'un formateur — et en reprend notes et
@@ -112,8 +161,18 @@ export default function PhaseResultats({
   const [importInfo, setImportInfo] = useState(null)
   async function importer(fichier) {
     if (!fichier) return
+    // En certification, le classeur des resultats ou celui de
+    // l'evaluation post-certification : on reconnait le second a sa
+    // feuille « Données Stagiaires ».
+    let lus
     try {
-      const { stagiaires: lus } = await lireEvaluation(fichier)
+      ;({ stagiaires: lus } = await lireEvaluation(fichier))
+    } catch (e) {
+      if (certif) return importerCertification(fichier)
+      setImportInfo({ ok: false, texte: `Classeur non reconnu : ${e.message}` })
+      return
+    }
+    try {
       const r = appliquerEvaluation(brouillon, lus)
       if (r.remplaces && !window.confirm(
         `Le classeur remplace des notes déjà saisies pour ${r.remplaces} stagiaire`
@@ -122,13 +181,96 @@ export default function PhaseResultats({
       onEnregistrer?.()
       setImportInfo({
         ok: true,
-        texte: `${lus.length} stagiaire${lus.length > 1 ? 's' : ''} repris du classeur`
+        texte: `${certif ? 'Avis de ' : ''}${lus.length} stagiaire${lus.length > 1 ? 's' : ''} repris du classeur`
           + (r.ajoutes ? ` (${r.ajoutes} ajouté${r.ajoutes > 1 ? 's' : ''} à la liste)` : ''),
       })
     } catch (e) {
       setImportInfo({ ok: false, texte: `Classeur non reconnu : ${e.message}` })
     }
   }
+
+  async function importerCertification(fichier) {
+    try {
+      const lu = await lireCertification(fichier)
+      const r = appliquerCertification(brouillon, lu)
+      if (r.remplaces && !window.confirm(
+        `Le classeur remplace des notes déjà saisies pour ${r.remplaces} candidat`
+        + `${r.remplaces > 1 ? 's' : ''}. Continuer ?`)) return
+      maj({ modules: r.modules, participants: r.participants })
+      onEnregistrer?.()
+      setImportInfo({
+        ok: true,
+        texte: `${lu.candidats.length} candidat${lu.candidats.length > 1 ? 's' : ''} et `
+          + `${lu.modules.length} modules repris du classeur`
+          + (r.ajoutes ? ` (${r.ajoutes} ajouté${r.ajoutes > 1 ? 's' : ''} à la liste)` : ''),
+      })
+    } catch (e) {
+      setImportInfo({ ok: false, texte: `Classeur non reconnu : ${e.message}` })
+    }
+  }
+
+  // Effacer des notes ou des reponses, pour un stagiaire ou pour tous.
+  // Chaque effacement se rattrape : le bandeau garde l'etat d'avant et
+  // son bouton « Annuler » le remet. L'effacement de tout le groupe
+  // demande en plus confirmation — c'est le seul qui coute cher.
+  // `reinitialiseLe` fait enregistrer le brouillon meme devenu vide :
+  // sans lui, un brouillon vide n'est pas ecrit, et les anciennes notes
+  // reviendraient au prochain chargement.
+  const [annulable, setAnnulable] = useState(null)
+  function effacer(texte, transformer) {
+    setAnnulable({
+      texte,
+      avant: { participants: brouillon.participants, satisfaction: brouillon.satisfaction },
+    })
+    maj(b => ({ ...transformer(b), reinitialiseLe: new Date().toISOString() }))
+  }
+  function annulerEffacement() {
+    if (!annulable) return
+    maj(annulable.avant)
+    setAnnulable(null)
+  }
+  const nom = p => `${p.prenom || ''} ${p.nom || ''}`.trim()
+  const sansNotes = p => (certif
+    ? { ...p, notesModules: {}, elearning: {} }
+    : { ...p, entreeBrut: '', sortieTheoBrut: '', sortiePratBrut: '' })
+
+  /** Les notes d'un stagiaire, ou de tous (`p` absent). */
+  function effacerNotes(p) {
+    if (!p && !window.confirm(
+      `Effacer les notes des ${participants.length} stagiaires ? `
+      + 'Les questionnaires ne sont pas touchés, et vous pourrez annuler juste après.')) return
+    effacer(p ? `Notes de ${nom(p)} effacées.` : 'Toutes les notes sont effacées.',
+      b => ({
+        participants: b.participants.map(x =>
+          (p ? x.id === p.id : x.present !== false) ? sansNotes(x) : x),
+      }))
+  }
+
+  /** Les reponses aux deux questionnaires, d'un stagiaire ou de tous. */
+  function effacerReponses(p) {
+    if (!p && !window.confirm(
+      'Effacer toutes les réponses aux questionnaires sur la formation et sur l’accueil ? '
+      + 'Vous pourrez annuler juste après.')) return
+    const cles = new Set(CRITERES_AVIS.map(c => c.cle))
+    effacer(p ? `Réponses de ${nom(p)} effacées.`
+      : 'Toutes les réponses aux questionnaires effacées.',
+    b => ({
+      satisfaction: Object.fromEntries(Object.entries(b.satisfaction || {}).map(([id, r]) => [
+        id,
+        !p || String(id) === String(p.id)
+          ? Object.fromEntries(Object.entries(r || {}).filter(([k]) => !cles.has(k)))
+          : r,
+      ])),
+    }))
+  }
+
+  const aDesNotes = certif
+    ? participants.some(p => Object.values(p.notesModules || {}).some(v => String(v ?? '').trim())
+      || Object.values(p.elearning || {}).some(v => String(v ?? '').trim()))
+    : participants.some(p => [p.entreeBrut, p.sortieTheoBrut, p.sortiePratBrut]
+      .some(v => String(v ?? '').trim()))
+  const aDesReponses = criteres => participants.some(p =>
+    criteres.some(c => reponses[p.id]?.[c.cle]))
 
   function majBareme(cle, valeur) {
     const n = Number(valeur)
@@ -139,32 +281,55 @@ export default function PhaseResultats({
     <div className="cr-panel cr-panel--resultats">
       {/* L'en-tete reste en haut pendant qu'on remplit : deux lignes, et
           l'export a droite, la ou l'on cherche une action de la page. */}
-      <div className="cr-panel-head cr-panel-head--fige">
-        <div className="cr-panel-head-texte">
-          <h2 className="cr-panel-title">Les résultats de la session</h2>
-          <p className="cr-panel-hint">
-            Les notes des tests, puis les deux questionnaires de fin de session.
-          </p>
-        </div>
+      <Consigne className="cr-panel-head cr-panel-head--fige"
+        faire={volet === 'tests'
+          ? (certif ? 'Saisissez la note de chaque module, pour chaque candidat.'
+            : 'Saisissez les notes de chaque stagiaire.')
+          : 'Cliquez sur la réponse de chaque stagiaire, question par question.'}
+        ensuite={volet === 'tests'
+          ? (certif
+            ? 'Puis : l’e-learning, sous les notes, et les avis des stagiaires. Ensuite : le choix des pages.'
+            : 'Puis : les avis des stagiaires, juste en dessous. Ensuite : le choix des pages.')
+          : 'La formation puis l’accueil, dans le même tableau. Ensuite : le choix des pages.'}>
         <div className="cr-export-groupe">
-          <button type="button" className="cr-btn cr-btn--ghost cr-export cr-import"
-            onClick={() => fichierImport.current?.click()}
-            title="Reprendre les notes et la satisfaction d’un classeur d’évaluation (.xlsx)">
-            <IconeImport />
-            Importer
-          </button>
+          <MenuExcel className="cr-import" icone={<IconeImport />} libelle="Reprendre d’un fichier Excel"
+            disabled={exportEnCours}
+            choix={[
+              { libelle: 'Importer un fichier Excel',
+                detail: certif ? 'Résultats ou évaluation, reconnu automatiquement'
+                  : 'Classeur d’évaluation : notes et avis',
+                action: () => fichierImport.current?.click() },
+              // Le modele porte deja les noms : il faut une liste.
+              ...(participants.length
+                ? [{ groupe: 'Télécharger un modèle vide' }, ...menuClasseurs(true)] : []),
+            ]} />
           <input ref={fichierImport} type="file" hidden
             accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             onChange={e => { importer(e.target.files?.[0]); e.target.value = '' }} />
-          <button type="button" className="cr-btn cr-btn--ghost cr-export"
-            disabled={!participants.length || exportEnCours}
-            onClick={exporter}
-            title="Classeur « Données Stagiaires » et « Satisfaction Stagiaires », formules comprises">
-            <IconeTableur />
-            {exportEnCours ? 'Export…' : 'Exporter Excel'}
-          </button>
+          {certif ? (
+            <MenuExcel icone={<IconeTableur />}
+              libelle={exportEnCours ? 'Enregistrement…' : 'Enregistrer en Excel'}
+              disabled={!participants.length || exportEnCours}
+              choix={menuClasseurs(false)} />
+          ) : (
+            <button type="button" className="cr-btn cr-btn--ghost cr-export"
+              disabled={!participants.length || exportEnCours}
+              onClick={() => exporter({ evaluation: true })}
+              title="Classeur « Données Stagiaires » et « Satisfaction Stagiaires », formules comprises">
+              <IconeTableur />
+              {exportEnCours ? 'Enregistrement…' : 'Enregistrer en Excel'}
+            </button>
+          )}
         </div>
-      </div>
+      </Consigne>
+      {annulable && (
+        <p className="cr-import-info cr-annulable" role="status">
+          {annulable.texte}
+          <button type="button" className="cr-annuler" onClick={annulerEffacement}>Annuler</button>
+          <button type="button" className="cr-import-fermer" aria-label="Masquer"
+            onClick={() => setAnnulable(null)}>×</button>
+        </p>
+      )}
       {importInfo && (
         <p className={`cr-import-info${importInfo.ok ? '' : ' cr-import-info--ko'}`} role="status">
           {importInfo.texte}
@@ -174,27 +339,59 @@ export default function PhaseResultats({
       )}
 
       <div className="cr-blocs">
-        <Bloc titre="Résultats des tests"
-          resume={`${synthese.saisis}/${synthese.effectif} saisis`}
+        {certif ? (
+          <Bloc titre="1. Notes des modules"
+            resume={`${synthese.saisis}/${synthese.effectif} candidats`}
+            valeur={afficher(synthese.scoreFinal)}
+            ton={synthese.scoreFinal == null ? null
+              : synthese.scoreFinal >= SEUIL ? 'ok' : 'ko'}
+            ouvert={volet === 'tests'} onOuvrir={() => ouvrir('tests')}>
+            <OutilsVolet>
+              <BoutonEffacer disabled={!aDesNotes} onClick={() => effacerNotes(null)}>
+                Effacer toutes les notes
+              </BoutonEffacer>
+            </OutilsVolet>
+            <SaisieCertification brouillon={brouillon} maj={maj} onEffacer={effacerNotes} />
+            {synthese.saisis > 0 && (
+              <div className="cr-kpis" style={{ marginTop: 20 }}>
+                <Indicateur valeur={afficher(synthese.scoreFinal)} legende="Moyenne du groupe" />
+                <Indicateur valeur={`${synthese.reussis}/${synthese.saisis}`}
+                  legende={`Pratique validée (${SEUIL} %)`}
+                  ton={synthese.enRetrait === 0 ? 'ok' : 'ko'} />
+                <Indicateur valeur={synthese.certifies} legende="Certifiés" />
+                <Indicateur valeur={`${synthese.saisis}/${synthese.effectif}`}
+                  legende="Notes complètes" />
+              </div>
+            )}
+            <SuiteVolet onClick={() => ouvrir('avis')}>
+              Passer aux avis des stagiaires
+            </SuiteVolet>
+          </Bloc>
+        ) : (
+        <Bloc titre="1. Notes des tests"
+          resume={`${synthese.saisis}/${synthese.effectif} stagiaires`}
           valeur={afficher(synthese.scoreFinal)}
           ton={synthese.scoreFinal == null ? null
             : synthese.scoreFinal >= SEUIL ? 'ok' : 'ko'}
           ouvert={volet === 'tests'} onOuvrir={() => ouvrir('tests')}>
           <div className="cr-baremes">
-            <span className="cr-baremes-label">Barèmes</span>
+            <span className="cr-baremes-label">Notés sur</span>
             {[
-              ['entreeTheorique', 'Entrée théorique'],
-              ['sortieTheorique', 'Sortie théorique'],
-              ['sortiePratique', 'Sortie pratique'],
+              ['entreeTheorique', 'Test d’entrée'],
+              ['sortieTheorique', 'Théorie finale'],
+              ['sortiePratique', 'Pratique'],
             ].map(([cle, libelle]) => (
               <label key={cle} className="cr-bareme">
-                {libelle} sur
+                {libelle}
                 <input className="cr-num cr-num--court" type="number"
                   min="1" max="200" inputMode="numeric"
                   value={baremes[cle]} onChange={e => majBareme(cle, e.target.value)}
                   aria-label={`Barème ${libelle}`} />
               </label>
             ))}
+            <BoutonEffacer disabled={!aDesNotes} onClick={() => effacerNotes(null)}>
+              Effacer toutes les notes
+            </BoutonEffacer>
           </div>
 
           {/* L'en-tete reste visible pendant qu'on descend dans la liste :
@@ -210,15 +407,17 @@ export default function PhaseResultats({
                 <col style={{ width: 104 }} />
                 <col style={{ width: 118 }} />
                 <col style={{ width: 118 }} />
+                <col style={{ width: 44 }} />
               </colgroup>
               <thead>
                 <tr>
-                  <th>Participant</th>
-                  <th>Entrée<small>/{baremes.entreeTheorique}</small></th>
-                  <th>Théorie<small>/{baremes.sortieTheorique}</small></th>
-                  <th>Pratique<small>/{baremes.sortiePratique}</small></th>
-                  <th>Progression</th>
-                  <th>Score final</th>
+                  <th>Stagiaire</th>
+                  <th>Test d’entrée<small>sur {baremes.entreeTheorique}</small></th>
+                  <th>Théorie finale<small>sur {baremes.sortieTheorique}</small></th>
+                  <th>Pratique<small>sur {baremes.sortiePratique}</small></th>
+                  <th>Progrès<small>calculé</small></th>
+                  <th>Note finale<small>calculée</small></th>
+                  <th aria-label="Effacer" />
                 </tr>
               </thead>
               <tbody>
@@ -226,7 +425,9 @@ export default function PhaseResultats({
                   const c = calculer(p, baremes)
                   const faits = anomalies(p, baremes)
                   const erreurs = new Set(faits.filter(f => f.niveau === 'erreur').map(f => f.champ))
+                  // La couleur signale deja l'ecart ; le motif reste au survol.
                   const avertis = faits.filter(f => f.niveau === 'avertissement')
+                    .map(f => f.message).join(' ')
 
                   return (
                     <tr key={p.id}>
@@ -261,12 +462,18 @@ export default function PhaseResultats({
                       </td>
                       <td>
                         <span className={`cr-calc${c.scoreFinal == null ? ' cr-calc--vide'
-                          : c.scoreFinal >= SEUIL ? ' cr-calc--ok' : ' cr-calc--ko'}`}>
+                          : c.scoreFinal >= SEUIL ? ' cr-calc--ok' : ' cr-calc--ko'}`}
+                          title={avertis || undefined}>
                           {afficher(c.scoreFinal)}
                         </span>
-                        {avertis.map(a => (
-                          <div key={a.champ} className="cr-avertissement">{a.message}</div>
-                        ))}
+                      </td>
+                      <td>
+                        {[p.entreeBrut, p.sortieTheoBrut, p.sortiePratBrut].some(v => String(v ?? '').trim()) && (
+                          <button type="button" className="cr-effacer-un"
+                            onClick={() => effacerNotes(p)}
+                            title={`Effacer les notes de ${nom(p)}`}
+                            aria-label={`Effacer les notes de ${nom(p)}`}>↺</button>
+                        )}
                       </td>
                     </tr>
                   )
@@ -277,43 +484,73 @@ export default function PhaseResultats({
 
           {synthese.saisis > 0 && (
             <div className="cr-kpis" style={{ marginTop: 20 }}>
-              <Indicateur valeur={afficher(synthese.scoreFinal)} legende="Score moyen" />
+              <Indicateur valeur={afficher(synthese.scoreFinal)} legende="Note finale moyenne" />
               <Indicateur
                 valeur={synthese.progression == null ? '—'
                   : `${synthese.progression > 0 ? '+' : ''}${synthese.progression} %`}
-                legende="Progression moyenne" />
+                legende="Progrès moyen" />
               <Indicateur valeur={synthese.enRetrait}
                 legende={`Sous le seuil de ${SEUIL} %`}
                 ton={synthese.enRetrait === 0 ? 'ok' : 'ko'} />
               <Indicateur valeur={`${synthese.saisis}/${synthese.effectif}`}
-                legende="Résultats saisis" />
+                legende="Notes saisies" />
             </div>
           )}
+          <SuiteVolet onClick={() => ouvrir('avis')}>
+            Passer aux avis des stagiaires
+          </SuiteVolet>
         </Bloc>
+        )}
 
-        <Bloc titre="Qualité de la formation"
-          resume={`${CRITERES_FORMATION.length} critères`}
-          valeur={afficherTaux(satisfaction.formation)}
-          ton={satisfaction.formation == null ? null
-            : satisfaction.formation >= 75 ? 'ok' : null}
-          ouvert={volet === 'formation'} onOuvrir={() => ouvrir('formation')}>
-          <GrilleCriteres criteres={CRITERES_FORMATION}
+        <Bloc titre="2. Avis des stagiaires"
+          resume={`${complets(CRITERES_AVIS)}/${participants.length} stagiaires`}
+          valeurs={[
+            ['Formation', satisfaction.formation],
+            ['Accueil', satisfaction.accueil],
+          ].map(([libelle, taux]) => ({
+            libelle,
+            valeur: afficherTaux(taux),
+            ton: taux == null ? null : taux >= 75 ? 'ok' : null,
+          }))}
+          ouvert={volet === 'avis'} onOuvrir={() => ouvrir('avis')}>
+          <GrilleCriteres sections={SECTIONS_AVIS}
             participants={participants} reponses={reponses}
-            onRepondre={repondre} />
-        </Bloc>
-
-        <Bloc titre="Qualité de l’accueil"
-          resume={`${CRITERES_ACCUEIL.length} critères`}
-          valeur={afficherTaux(satisfaction.accueil)}
-          ton={satisfaction.accueil == null ? null
-            : satisfaction.accueil >= 75 ? 'ok' : null}
-          ouvert={volet === 'accueil'} onOuvrir={() => ouvrir('accueil')}>
-          <GrilleCriteres criteres={CRITERES_ACCUEIL}
-            participants={participants} reponses={reponses}
-            onRepondre={repondre} />
+            onRepondre={repondre}
+            actions={(
+              <BoutonEffacer disabled={!aDesReponses(CRITERES_AVIS)}
+                onClick={() => effacerReponses(null)}>
+                Effacer toutes les réponses
+              </BoutonEffacer>
+            )} />
         </Bloc>
       </div>
     </div>
+  )
+}
+
+/** Le passage au volet suivant, la ou l'on arrive en finissant celui-ci. */
+function SuiteVolet({ onClick, children }) {
+  return (
+    <div className="cr-suite-volet">
+      <button type="button" className="cr-btn cr-btn--ghost" onClick={onClick}>
+        {children} ↓
+      </button>
+    </div>
+  )
+}
+
+/** Les actions d'un volet, alignees a droite au-dessus de son tableau. */
+function OutilsVolet({ children }) {
+  return <div className="cr-volet-outils">{children}</div>
+}
+
+function BoutonEffacer({ disabled, onClick, children }) {
+  return (
+    <button type="button" className="cr-btn cr-btn--ghost cr-btn--petit cr-effacer"
+      disabled={disabled} onClick={onClick}
+      title={disabled ? 'Rien à effacer' : undefined}>
+      ↺ {children}
+    </button>
   )
 }
 
@@ -332,7 +569,7 @@ function Indicateur({ valeur, legende, ton }) {
  *  est la saisie. Un seul volet est ouvert a la fois — les trois
  *  chiffres restent lisibles en permanence dans les en-tetes.
  */
-function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
+function Bloc({ titre, resume, valeur, ton, valeurs, ouvert, onOuvrir, children }) {
   return (
     <div className={`cr-bloc${ouvert ? ' cr-bloc--ouvert' : ''}`}>
       <h3 className="cr-bloc-titre">
@@ -341,9 +578,12 @@ function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
           <span className="cr-bloc-fleche" aria-hidden="true">▸</span>
           <span className="cr-bloc-nom">{titre}</span>
           <span className="cr-bloc-resume">{resume}</span>
-          <span className={`cr-calc${ton ? ` cr-calc--${ton}` : ' cr-calc--vide'}`}>
-            {valeur}
-          </span>
+          {(valeurs || [{ valeur, ton }]).map((v, i) => (
+            <span key={i} className={`cr-calc${v.ton ? ` cr-calc--${v.ton}` : ' cr-calc--vide'}`}>
+              {v.libelle && <small className="cr-calc-libelle">{v.libelle}</small>}
+              {v.valeur}
+            </span>
+          ))}
         </button>
       </h3>
       {ouvert && <div className="cr-bloc-corps">{children}</div>}
@@ -400,24 +640,31 @@ function IconeMention({ cle }) {
 }
 
 /** Une grille de criteres : une ligne par critere, une colonne par
- *  stagiaire.
+ *  stagiaire, les criteres groupes par questionnaire.
+ *
+ *  Les deux questionnaires tiennent dans un seul tableau : les noms ne
+ *  se relisent qu'une fois, et un bandeau sur toute la largeur marque
+ *  le passage de la formation a l'accueil.
  *
  *  Les criteres restent figes a gauche et les noms en tete : on fait
  *  defiler les stagiaires sans perdre de vue ni la question ni la
  *  personne. Chaque case offre les cinq mentions en icones ; un second
  *  clic sur la mention retenue l'efface.
  */
-function GrilleCriteres({ criteres, participants, reponses, onRepondre }) {
+function GrilleCriteres({ sections, participants, reponses, onRepondre, actions }) {
   return (
     <div className="cr-satisfaction">
-      <ul className="cr-mentions-legende" aria-label="Mentions">
-        {MENTIONS.map(m => (
-          <li key={m.cle} className={`cr-mention--${m.cle}`}>
-            <IconeMention cle={m.cle} />
-            {m.libelle}
-          </li>
-        ))}
-      </ul>
+      <div className="cr-satis-barre">
+        <ul className="cr-mentions-legende" aria-label="Mentions">
+          {MENTIONS.map(m => (
+            <li key={m.cle} className={`cr-mention--${m.cle}`}>
+              <IconeMention cle={m.cle} />
+              {m.libelle}
+            </li>
+          ))}
+        </ul>
+        {actions}
+      </div>
 
       <div className="cr-satis-wrap">
         <table className="cr-satis-table">
@@ -427,24 +674,37 @@ function GrilleCriteres({ criteres, participants, reponses, onRepondre }) {
           </colgroup>
           <thead>
             <tr>
-              <th className="cr-satis-coin" scope="col">Critère</th>
-              {participants.map(p => {
-                const siennes = reponses[p.id] || {}
-                const faites = criteres.filter(c => siennes[c.cle]).length
-                return (
-                  <th key={p.id} scope="col" className="cr-satis-nom"
-                    title={`${p.prenom} ${p.nom}`}>
-                    <span className="cr-satis-nom-texte">{p.prenom} {p.nom}</span>
-                    <small className={faites === criteres.length ? 'cr-satis-complet' : undefined}>
-                      {faites}/{criteres.length}
-                    </small>
-                  </th>
-                )
-              })}
+              <th className="cr-satis-coin" scope="col">Question</th>
+              {/* Le nom seul : l'avancement se lit dans les bandeaux. */}
+              {participants.map(p => (
+                <th key={p.id} scope="col" className="cr-satis-nom"
+                  title={`${p.prenom} ${p.nom}`}>
+                  <span className="cr-satis-nom-texte">{p.prenom} {p.nom}</span>
+                </th>
+              ))}
             </tr>
           </thead>
-          <tbody>
-            {criteres.map(c => (
+          {/* La premiere section suit directement les noms : seul le
+              bandeau des suivantes la separe de la precedente. */}
+          {sections.map((s, k) => (
+          <tbody key={s.titre} className="cr-satis-groupe">
+            {k > 0 && <tr className="cr-satis-section">
+              <th scope="rowgroup" className="cr-satis-section-titre">
+                {s.titre}
+                <small>{s.criteres.length} questions</small>
+              </th>
+              {participants.map(p => {
+                const faites = s.criteres.filter(c => reponses[p.id]?.[c.cle]).length
+                return (
+                  <td key={p.id} className="cr-satis-section-compte">
+                    <small className={faites === s.criteres.length ? 'cr-satis-complet' : undefined}>
+                      {faites}/{s.criteres.length}
+                    </small>
+                  </td>
+                )
+              })}
+            </tr>}
+            {s.criteres.map(c => (
               <tr key={c.cle}>
                 <th scope="row" className="cr-satis-critere" title={c.libelle}>
                   {c.libelle}
@@ -476,6 +736,7 @@ function GrilleCriteres({ criteres, participants, reponses, onRepondre }) {
               </tr>
             ))}
           </tbody>
+          ))}
         </table>
       </div>
     </div>

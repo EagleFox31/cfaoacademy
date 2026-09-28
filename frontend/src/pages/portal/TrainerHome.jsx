@@ -16,7 +16,9 @@ import usePortalBackground from '../../hooks/usePortalBackground'
 import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
 import { SESSIONS_FORMATEUR } from '../../data/mock_sessions_formateur'
 import { periodeLongue } from '../../utils/compteRendu'
-import { brouillonsEnregistres, synchroniser } from '../../utils/brouillonsCompteRendu'
+import {
+  brouillonsEnCours, brouillonsEnregistres, brouillonsTermines, synchroniser,
+} from '../../utils/brouillonsCompteRendu'
 import { resolvePortalCardBrand } from '../../utils/portalCardMedia.js'
 import '../../styles/compte-rendu.css'
 
@@ -87,14 +89,6 @@ export default function TrainerHome() {
   // occuper exactement le reste de l'ecran.
   usePortalHeaderHeight(headerRef)
 
-  const aRediger = useMemo(
-    () => SESSIONS_FORMATEUR.filter(s => s.statut === 'a_rediger'),
-    [],
-  )
-  const termines = useMemo(
-    () => SESSIONS_FORMATEUR.filter(s => s.statut === 'termine'),
-    [],
-  )
   const aVenir = useMemo(
     () => SESSIONS_FORMATEUR.filter(
       s => s.statut === 'en_cours' || s.statut === 'a_venir'),
@@ -108,6 +102,12 @@ export default function TrainerHome() {
     synchroniser().then(liste => { if (actif && liste) setBrouillons(liste) })
     return () => { actif = false }
   }, [])
+  // Les comptes rendus termines vont a l'archive, et leur session ne
+  // figure plus parmi celles a documenter.
+  const enCours = brouillonsEnCours(brouillons)
+  const termines = brouillonsTermines(brouillons)
+  const aRediger = SESSIONS_FORMATEUR.filter(s => s.statut === 'a_rediger'
+    && !termines.some(b => b.id === s.id))
 
   if (!user) return null
 
@@ -140,8 +140,8 @@ export default function TrainerHome() {
                         <span className="portal-status-chip progress">À rédiger</span>
                       }
                       title={s.moduleFormation}
-                      meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} participants`}
-                      cta="Rédiger le compte rendu"
+                      meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} stagiaires`}
+                      cta="Écrire le compte rendu"
                       accentColor="#E3001B"
                       hoverHint="Ouvrir le compte rendu"
                       onClick={() => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)}
@@ -188,7 +188,9 @@ export default function TrainerHome() {
                     </span>
                   }
                   title="Mes comptes rendus"
-                  meta="Consulter, télécharger ou reprendre un rapport produit."
+                  meta={termines.length
+                    ? `Les comptes rendus terminés — le dernier ${venuDe(termines[0].termineLe)}.`
+                    : 'Les comptes rendus terminés s’y rangent.'}
                   cta="Ouvrir l’archive"
                   hoverHint="Voir les rapports produits"
                   onClick={() => naviguer('/portail/compte-rendu/mes-rapports')}
@@ -200,18 +202,18 @@ export default function TrainerHome() {
                   par brouillon noyait la section des qu'il y en avait
                   plusieurs. La liste, avec reprise et suppression, est sur
                   sa propre page. */}
-              {brouillons.length > 0 && (
+              {enCours.length > 0 && (
                 <div className="portal-card-anchor">
                   <PvCard
                     img={VISUEL_ENTREE.brouillon}
                     kicker={
                       <span className="portal-status-chip todo">
-                        {brouillons.length} en cours
+                        {enCours.length} en cours
                       </span>
                     }
                     title="Comptes rendus en cours"
                     meta={`Reprendre ou supprimer une saisie commencée — la dernière ${
-                      venuDe(brouillons[0].modifieLe)}.`}
+                      venuDe(enCours[0].modifieLe)}.`}
                     cta="Voir les saisies"
                     hoverHint="Choisir un compte rendu à reprendre"
                     onClick={() => naviguer('/portail/compte-rendu/en-cours')}
@@ -243,7 +245,7 @@ export default function TrainerHome() {
                         </span>
                       }
                       title={s.moduleFormation}
-                      meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} participants · ${s.lieu}`}
+                      meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} stagiaires · ${s.lieu}`}
                       cta="Voir la session"
                       hoverHint="Voir la session"
                       onClick={() => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)}

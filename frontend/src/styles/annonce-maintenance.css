@@ -76,3 +76,16 @@
   font-size: 28px;
   font-weight: 800;
 }
+
+.maj-fermer {
+  margin-top: 18px;
+  padding: 9px 22px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--red, #e3001b);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.maj-fermer:hover { filter: brightness(0.92); }

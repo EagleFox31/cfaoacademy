@@ -1,8 +1,15 @@
 import { periodeLongue, titreDeCouverture } from './compteRendu'
-import { DISPOSITIONS, dispositionsPour, rectanglesDe } from '../data/dispositions_photos'
+import {
+  DISPOSITIONS, dispositionsPour, idDisposition, modeLegende, rectanglesDe,
+} from '../data/dispositions_photos'
 import {
   constatsParDefaut, rubriquesBilan, valeursClasseurs, valeursClasseursStagiaire,
 } from './remarquesSession'
+import {
+  CERTIFIE, ECHOUE, NON_CERTIFIE, NON_FINALISE, VALIDE,
+  calculerCertification, estCertification, niveauDe,
+} from './certification'
+import { SEUIL } from './baremeCfao'
 
 /**
  * Le lien entre les pages de l'assistant et les diapositives du modele.
@@ -36,6 +43,9 @@ export const DIAPO_PAR_PAGE = {
  * Des qu'il y a une photo, le modele passe au tableau avec sa colonne
  * d'images (9) ; sans photo, il pose une liste, dans le marquage choisi.
  */
+/** La fiche d'un candidat de certification : e-learning, modules, resultat final. */
+export const DIAPO_FICHE_CERTIFICATION = 26
+
 const DIAPO_OBJECTIFS = { romain: 6, puces: 7, mixte: 8 }
 const DIAPO_OBJECTIFS_IMAGES = 9
 
@@ -67,7 +77,9 @@ export function diapoDe(page, brouillon) {
   const cle = page.cle || ''
   if (cle === 'objectifs') return diapoObjectifs(brouillon)
   if (cle.startsWith('jour-')) return diapoJour(numeroJour(cle))
-  if (cle.startsWith('fiche-')) return DIAPO_PAR_PAGE.fiches
+  if (cle.startsWith('fiche-')) {
+    return estCertification(brouillon) ? DIAPO_FICHE_CERTIFICATION : DIAPO_PAR_PAGE.fiches
+  }
   return DIAPO_PAR_PAGE[cle] ?? null
 }
 
@@ -107,14 +119,14 @@ function photosDesDiapos(b, refsPhotos, page) {
   const poses = {}
   if (diapoObjectifs(b) === DIAPO_OBJECTIFS_IMAGES) {
     const objectifs = photosPosees(b, 'objectifs', refsPhotos)
-    if (objectifs.length) poses[DIAPO_OBJECTIFS_IMAGES] = objectifs
+    if (objectifs) poses[DIAPO_OBJECTIFS_IMAGES] = objectifs
   }
   const bilan = photosPosees(b, 'bilan', refsPhotos)
-  if (bilan.length) poses[DIAPO_PAR_PAGE.bilan] = bilan
+  if (bilan) poses[DIAPO_PAR_PAGE.bilan] = bilan
   const jour = numeroJour(page?.cle)
   if (jour) {
     const photos = photosPosees(b, page.cle, refsPhotos)
-    if (photos.length) poses[diapoJour(jour)] = photos
+    if (photos) poses[diapoJour(jour)] = photos
   }
   return poses
 }
@@ -122,26 +134,39 @@ function photosDesDiapos(b, refsPhotos, page) {
 /** La disposition retenue pour une rubrique, ou la premiere possible. */
 function dispositionDe(b, rubrique) {
   const n = (b.photos?.[rubrique] || []).length
-  return DISPOSITIONS.find(x => x.id === b.dispositions?.[rubrique] && x.nombre === n)
+  const id = idDisposition(b.dispositions?.[rubrique])
+  return DISPOSITIONS.find(x => x.id === id && x.nombre === n)
     || dispositionsPour(n)[0]
 }
 
-/** Les photos d'une rubrique, placees selon sa disposition. */
+/**
+ * Les photos d'une rubrique, placees selon sa disposition, avec leur
+ * mode de legende : `{ photos, legendes, commune }`, ou `null` sans
+ * photo prete.
+ *
+ * `legendes` vaut `aucune` (les photos prennent tout le cadre),
+ * `chaque` (une bande sous chaque photo, reservee meme vide : la photo
+ * garde la taille que l'editeur lui montre) ou `commune` (une bande
+ * sous l'ensemble, portant `commune`).
+ */
 function photosPosees(b, rubrique, refsPhotos) {
   const liste = b.photos?.[rubrique] || []
-  if (!liste.length) return []
+  if (!liste.length) return null
   const d = dispositionDe(b, rubrique)
+  const mode = modeLegende(b, rubrique)
+  const commune = String(b.legendes?.[rubrique] || '').trim()
   const cases = rectanglesDe(d)
-  return liste
+  const photos = liste
     .map((p, i) => ({
       id: refsPhotos?.[p.id],
       ...cases[i],
       ...(p.cadrage ? { cadrage: p.cadrage } : {}),
-      // Une disposition legendee reserve sa bande meme a une legende
-      // vide : la photo garde la taille que l'editeur lui montre.
-      ...(d.legendes ? { legende: p.legende || '' } : {}),
+      // Une photo seule « avec legende » reprend, a defaut de la sienne,
+      // une legende commune saisie avant.
+      ...(mode === 'chaque' ? { legende: p.legende || (liste.length === 1 ? commune : '') } : {}),
     }))
     .filter(p => p.id && p.l != null)
+  return photos.length ? { photos, legendes: mode, commune } : null
 }
 
 /**
@@ -158,9 +183,8 @@ function drapeauxDeJour(b, page) {
   if (!n) return {}
   const j = b.jours?.[n] || {}
   const lignes = cle => (j[cle] || []).map(l => String(l).trim()).filter(Boolean)
-  const parImage = !!dispositionDe(b, page.cle)?.legendes
-    && (b.photos?.[page.cle] || []).length > 0
-  const commune = parImage ? '' : String(b.legendes?.[page.cle] || '').trim()
+  const commune = modeLegende(b, page.cle) === 'commune'
+    ? String(b.legendes?.[page.cle] || '').trim() : ''
   return {
     '{jour_numero}': String(n),
     '{jour_thematique}': lignes('thematiques'),
@@ -239,6 +263,9 @@ export function valeursDrapeaux(brouillon, session, synthese, page, refsPhotos) 
   const couvPeriode = couv('periode', periode)
   const couvLieu = couv('lieu', b.lieu || '')
   return {
+    // Une certification reprend les pages du modele sous son nom.
+    ...motsCertification(b),
+
     // Les couvertures du modele portent des mots nus plutot que des
     // drapeaux entre accolades : le service les remplace quand le run
     // ne contient que le mot.
@@ -269,6 +296,8 @@ export function valeursDrapeaux(brouillon, session, synthese, page, refsPhotos) 
     '{code_formation}': couv('code', b.codeFormation || ''),
     '{intitule_formation}': couv('intitule', b.intitule || ''),
     '{objectif_1}': objectifsDe(b),
+    // La page a photos numerote aussi ses objectifs selon ce choix.
+    '@marquage': b.marquageObjectifs || 'puces',
 
     // Les deux constats de la diapositive 17 : le modele y pose des
     // phrases completes, pas des drapeaux. Le service substitue le run
@@ -300,8 +329,85 @@ export function valeursDrapeaux(brouillon, session, synthese, page, refsPhotos) 
 
     // La page courante, quand c'est une fiche, surcharge les drapeaux
     // communs : le modele repete la meme diapositive par stagiaire.
-    ...drapeauxDeFiche(brouillon, page),
+    ...(estCertification(b) ? drapeauxDeFicheCertification(b, page) : drapeauxDeFiche(brouillon, page)),
     ...drapeauxDeJour(b, page),
+  }
+}
+
+/**
+ * Les titres du modele, au nom de la certification.
+ *
+ * Ils sont ecrits en toutes lettres dans le modele, chacun seul dans son
+ * run : le service remplace un run dont le texte entier correspond. Les
+ * pages jour portent leur numero, d'ou une entree par jour.
+ */
+function motsCertification(b) {
+  if (!estCertification(b)) return {}
+  const jours = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [
+    `${i + 1}° jour de formation`, `${i + 1}° jour de certification`]))
+  return {
+    'COMPTE RENDU DE FORMATION': 'COMPTE RENDU DE CERTIFICATION',
+    'objectifs DE LA FORMATION': 'objectifs DE LA CERTIFICATION',
+    'Détail journalier DE LA FORMATION': 'Détail journalier DE LA CERTIFICATION',
+    'Bilan de la formation': 'Bilan de la certification',
+    'RESULTAT INDIVIDUEL DE FORMATION :': 'RÉSULTAT INDIVIDUEL DE LA CERTIFICATION : ',
+    ...jours,
+  }
+}
+
+/**
+ * Les drapeaux d'une fiche de certification (diapositive 26).
+ *
+ * Le tableau suit les rapports de reference : la filiale en tete, une
+ * ligne « code: intitule / 100 » par module, que le service repete en
+ * resserrant le tableau si la place manque, puis le total, le
+ * pourcentage et le resultat de la session pratique. Une note sous le
+ * seuil passe au rouge.
+ */
+function drapeauxDeFicheCertification(b, page) {
+  const cle = page?.cle || ''
+  if (!cle.startsWith('fiche-')) return {}
+  const id = cle.slice('fiche-'.length)
+  const p = (b.participants || []).find(x => String(x.id) === id)
+  if (!p) return {}
+  const c = calculerCertification(p, b.modules)
+  const e = c.elearning
+  const texte = v => (v == null ? '' : String(v))
+  const niveau = niveauDe(b)
+  return {
+    '{nom_complet}': `${p.prenom || ''} ${p.nom || ''}`.trim(),
+    '{niveau}': niveau || VIDE,
+    '{filiale}': ['CFAO MOBILITY', p.pays || b.pays].filter(Boolean).join(' ').toUpperCase(),
+    '{total_points}': c.complet ? texte(c.total) : '',
+    '{total_max}': texte(c.max),
+    '{pourcentage}': c.pourcentage == null ? '' : String(Math.round(c.pourcentage)),
+    '{modules_requis}': texte(e.requis),
+    '{modules_valides}': texte(e.valides),
+    '{taux_participation}': texte(e.taux),
+    '{statut_elearning}': e.statut || '',
+    '{resultat_pratique}': c.pratique || '',
+    '{resultat_final}': c.final || '',
+    '{appréciation_formateur}': b.textes?.[`${cle}.appreciation`] || '',
+    // Le code couleur des rapports de certification : vert quand c'est
+    // acquis, rouge sinon ; le service recolore les cases de ces drapeaux.
+    '@couleurs': Object.fromEntries([
+      ['{resultat_pratique}', c.pratique, VALIDE, ECHOUE],
+      ['{pourcentage}', c.pratique, VALIDE, ECHOUE],
+      ['{statut_elearning}', e.statut, VALIDE, NON_FINALISE],
+      ['{resultat_final}', c.final, CERTIFIE, NON_CERTIFIE],
+    ].filter(([, v, ok, ko]) => v === ok || v === ko)
+      .map(([drapeau, v, ok]) => [drapeau, v === ok ? 'ok' : 'ko'])),
+    // Le tableau descend dans la place libre avant de resserrer ses lignes.
+    '@etendre': ['{code_module_1}'],
+    '@lignes': {
+      '{stagiaire_nom}': lignesStagiaires(b),
+      '{code_module_1}': (b.modules || []).map((m, i) => ({
+        '{code_module_1}': m.code || '',
+        '{intitule_module_1}': m.intitule || '',
+        '{note_1}': texte(c.notes[i]),
+        '@couleurs': c.notes[i] != null && c.notes[i] < SEUIL ? { '{note_1}': 'alerte' } : {},
+      })),
+    },
   }
 }
 
@@ -331,8 +437,8 @@ function drapeauxBilan(b) {
 /**
  * Les objectifs a poser, sous la forme qu'attend leur page.
  *
- * Une liste simple pour les puces, le romain et le tableau. En marquage
- * mixte sans photo, une ligne vide separe les groupes : la premiere
+ * Une liste simple pour les puces et le romain. En marquage mixte, avec
+ * ou sans photo, une ligne vide separe les groupes : la premiere
  * ligne de chacun en est le titre, les suivantes ses sous-objectifs —
  * c'est ainsi que l'editeur les numerote.
  *
@@ -344,7 +450,7 @@ function objectifsDe(b) {
     ? b.objectifs.map(o => o.texte || '')
     : String(b.textes?.['objectifs.objectifs'] ?? b.textes?.objectifs ?? '')
       .split(/\r?\n/)).map(l => l.trim())
-  if (diapoObjectifs(b) !== DIAPO_OBJECTIFS.mixte) return lignes.filter(Boolean)
+  if (b.marquageObjectifs !== 'mixte') return lignes.filter(Boolean)
   const groupes = []
   lignes.forEach((l, i) => {
     if (!l) return

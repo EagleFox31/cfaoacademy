@@ -35,19 +35,21 @@ export default function BoutonsRedaction({
     <div className="cr-redac-actions">
       {peutAnnuler && !enCours && (
         <button type="button" className="cr-redac-annuler" onClick={onAnnuler}
-          title="Revenir au texte d’avant la proposition">
+          title="Revenir au texte d’avant">
           Annuler
         </button>
       )}
       <button type="button" className="cr-part-ajout cr-redac"
         disabled={desactive || enCours}
         title={desactive ? raison : aTexte
-          ? 'Une autre tournure, à partir des mêmes chiffres'
-          : 'Rédige une proposition à partir des chiffres de la session'}
+          ? 'Une autre façon de le dire, à partir des mêmes chiffres'
+          : 'Écrit un texte à partir des chiffres de la session'}
         onClick={onRediger}>
         <IconeRedaction autre={aTexte} />
-        {enCours ? 'Rédaction…' : aTexte ? 'Autre proposition' : 'Proposer un texte'}
+        {enCours ? 'Écriture…' : aTexte ? 'Écrire autrement' : 'Écrire pour moi'}
       </button>
+      {/* Grise, le bouton dit pourquoi, sans attendre le survol. */}
+      {desactive && raison && <span className="cr-redac-raison">{raison}</span>}
     </div>
   )
 }

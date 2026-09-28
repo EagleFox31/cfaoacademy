@@ -15,6 +15,9 @@
  * arrete. Chaque acces est garde : un brouillon non synchronise est un
  * desagrement, une page blanche est une panne.
  */
+import { pagesARemplir } from '../components/compte-rendu/PhaseVerification'
+import { SESSIONS_FORMATEUR } from '../data/mock_sessions_formateur'
+
 const CLE_ANCIENNE = 'cfao.comptes-rendus'
 const API = '/cr-donnees/brouillons'
 
@@ -89,14 +92,22 @@ const rempli = v => (Array.isArray(v) ? v.length > 0
  */
 export function aDuContenu(b) {
   if (!b) return false
-  const notes = (b.participants || []).some(p =>
-    rempli(p.entreeBrut) || rempli(p.sortieTheoBrut) || rempli(p.sortiePratBrut))
+  const notes = (b.participants || []).some(p => aDesNotes(p) || rempli(p.elearning))
   const saisieLibre = b.manuel && (rempli(b.intitule) || rempli(b.codeFormation)
     || (b.participants || []).some(p => rempli(p.nom) || rempli(p.prenom)))
   return notes || saisieLibre
     || rempli(b.satisfaction) || rempli(b.textes) || rempli(b.photos)
     || rempli(b.photoGroupe) || rempli(b.jours) || rempli(b.objectifs)
     || rempli(b.legendes)
+    // Des notes effacees a dessein : le brouillon doit s'enregistrer
+    // quand meme, sinon l'ancienne version reviendrait au chargement.
+    || rempli(b.reinitialiseLe)
+}
+
+/** Des notes de tests, ou de modules pour une certification. */
+function aDesNotes(p) {
+  return rempli(p.entreeBrut) || rempli(p.sortieTheoBrut) || rempli(p.sortiePratBrut)
+    || rempli(p.notesModules)
 }
 
 const plusRecent = (a, b) => String(a?.modifieLe || '') > String(b?.modifieLe || '')
@@ -136,12 +147,12 @@ if (typeof window !== 'undefined') {
 export function enregistrer(id, brouillon) {
   if (!id) return false
   const tout = lire()
-  if (!aDuContenu(brouillon)) {
-    if (!(id in tout)) return true
-    delete tout[id]
-    serveur(`/${encodeURIComponent(id)}`, { method: 'DELETE' })
-    return ecrire(tout)
-  }
+  // Un brouillon vide n'est jamais ecrit, et n'efface jamais rien.
+  // Il effacait autrefois la copie existante : choisir une deuxieme fois
+  // une session deja commencee repartait d'une page blanche, et cette
+  // page blanche supprimait le travail enregistre, ici et sur le serveur.
+  // Seule la corbeille (`oublier`) supprime un brouillon.
+  if (!aDuContenu(brouillon)) return true
   // Rien n'a change : on ne re-date pas, sinon une copie ancienne
   // ouverte sur un autre poste passerait pour la plus recente.
   const sans = b => JSON.stringify({ ...b, _id: undefined, modifieLe: undefined })
@@ -237,11 +248,39 @@ export function brouillonsEnregistres() {
         marque: b.marque || '',
         lieu: b.lieu || '',
         effectif: presents.length,
-        notes: presents.filter(p => rempli(p.entreeBrut) || rempli(p.sortieTheoBrut)
-          || rempli(p.sortiePratBrut)).length,
+        notes: presents.filter(aDesNotes).length,
+        certification: b.type === 'certification',
         modifieLe: b.modifieLe,
         phase: b.phase ?? 0,
+        // Termine : toutes les pages remplies, selon la regle du sommaire
+        // de l'etape « Completer ». Calcule, pas enregistre : un compte
+        // rendu corrige jusqu'a laisser une page vide redevient en cours.
+        termine: pagesARemplir(b, sessionDuBrouillon(b)) === 0,
+        // Date du dernier « Terminer », a defaut de la derniere saisie.
+        termineLe: b.termineLe || b.modifieLe,
       }
     })
     .sort((a, b) => String(b.modifieLe).localeCompare(String(a.modifieLe)))
 }
+
+/** La session d'un brouillon : celle du planning, ou celle qu'il decrit. */
+export function sessionDuBrouillon(b) {
+  if (b.manuel) {
+    return {
+      moduleFormation: b.intitule, codeFormation: b.codeFormation, marque: b.marque,
+      lieu: b.lieu, paysHote: b.pays, debut: b.debut, fin: b.fin, nbJours: b.nbJours,
+    }
+  }
+  return SESSIONS_FORMATEUR.find(s => s.id === b.sessionId) || null
+}
+
+/** Un compte rendu termine quitte les saisies en cours pour l'archive. */
+export const estTermine = b => !!b?.termine
+
+/** Les saisies en cours, sans les comptes rendus termines. */
+export const brouillonsEnCours = (liste = brouillonsEnregistres()) => liste.filter(b => !estTermine(b))
+
+/** Les comptes rendus termines, du plus recent au plus ancien. */
+export const brouillonsTermines = (liste = brouillonsEnregistres()) => liste
+  .filter(estTermine)
+  .sort((a, b) => String(b.termineLe).localeCompare(String(a.termineLe)))

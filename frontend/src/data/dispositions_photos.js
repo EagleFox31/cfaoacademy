@@ -116,50 +116,6 @@ export const DISPOSITIONS = [
     note: 'La première domine, trois la soutiennent',
   },
   {
-    id: 'deux-empilees-legendees',
-    nom: 'Superposées, légendées',
-    nombre: 2,
-    poidsRangees: [1, 1],
-    rangees: [[1], [1]],
-    ratio: 1.08,
-    legendes: true,
-    source: 'slide12',
-    note: 'Deux images, chacune avec sa légende',
-  },
-  {
-    id: 'trois-une-deux-legendees',
-    nom: 'Une grande, deux petites, légendées',
-    nombre: 3,
-    poidsRangees: [1.57, 1],
-    rangees: [[1], [1, 1]],
-    ratio: 1.17,
-    legendes: true,
-    source: 'slide13',
-    note: 'La première domine, chacune légendée',
-  },
-  {
-    id: 'quatre-grille-legendee',
-    nom: 'Quadrillage, légendé',
-    nombre: 4,
-    poidsRangees: [1, 1],
-    rangees: [[1, 1], [1, 1]],
-    ratio: 1.17,
-    legendes: true,
-    source: 'slide14',
-    note: 'Quatre images à égalité, chacune légendée',
-  },
-  {
-    id: 'quatre-une-trois-legendees',
-    nom: 'Une grande, trois petites, légendées',
-    nombre: 4,
-    poidsRangees: [1.57, 1],
-    rangees: [[1], [1, 1, 1]],
-    ratio: 1.17,
-    legendes: true,
-    source: 'slide15',
-    note: 'La première domine, chacune légendée',
-  },
-  {
     id: 'cinq-une-quatre',
     nom: 'Une grande, quatre petites',
     nombre: 5,
@@ -170,6 +126,54 @@ export const DISPOSITIONS = [
     note: 'La première domine, quatre en bandeau',
   },
 ]
+
+/**
+ * Les anciennes dispositions « legendees » : la legende est devenue un
+ * choix a part (`MODES_LEGENDE`). Un brouillon qui en avait retenu une
+ * retrouve sa disposition, avec une legende par photo.
+ */
+const ANCIENNES_LEGENDEES = {
+  'deux-empilees-legendees': 'deux-empilees',
+  'trois-une-deux-legendees': 'trois-une-deux',
+  'quatre-grille-legendee': 'quatre-grille',
+  'quatre-une-trois-legendees': 'quatre-une-trois',
+}
+
+/** L'identifiant actuel d'une disposition enregistree. */
+export const idDisposition = id => ANCIENNES_LEGENDEES[id] || id || null
+
+/**
+ * Les legendes des photos, choisies a part de la disposition : toute
+ * disposition existe sans legende, avec une legende sous chaque photo,
+ * ou avec une legende commune sous l'ensemble. Pour une seule photo,
+ * les deux dernieres reviennent au meme : « avec legende ».
+ */
+export const MODES_LEGENDE = [
+  { id: 'aucune', nom: 'Sans légende', note: 'Les photos prennent toute la place' },
+  { id: 'chaque', nom: 'Une par photo', note: 'Une légende sous chaque photo' },
+  { id: 'commune', nom: 'Une pour toutes', note: 'Une seule légende sous l’ensemble' },
+]
+
+/** Les modes proposes pour un nombre de photos. */
+export function modesLegendePour(nombre) {
+  if (nombre > 1) return MODES_LEGENDE
+  return [MODES_LEGENDE[0], { ...MODES_LEGENDE[1], nom: 'Avec légende', note: 'Une légende sous la photo' }]
+}
+
+/**
+ * Le mode de legende d'une rubrique. Choisi, il prime ; sinon on le
+ * deduit de l'ancien brouillon : disposition legendee, legende commune
+ * deja saisie, ou rien. Une seule photo n'a pas de legende « commune ».
+ */
+export function modeLegende(b, rubrique) {
+  const n = (b?.photos?.[rubrique] || []).length
+  let mode = b?.modesLegende?.[rubrique]
+  if (!mode) {
+    if (ANCIENNES_LEGENDEES[b?.dispositions?.[rubrique]]) mode = 'chaque'
+    else mode = String(b?.legendes?.[rubrique] || '').trim() ? 'commune' : 'aucune'
+  }
+  return n <= 1 && mode === 'commune' ? 'chaque' : mode
+}
 
 /**
  * Les dispositions possibles pour un nombre de photos.

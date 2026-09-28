@@ -37,8 +37,8 @@ export const PARTIES_RAPPORT = [
   {
     id: 'couverture',
     numero: 1,
-    titre: 'Couverture',
-    resume: 'Intitulé, dates, lieu',
+    titre: 'Page de garde',
+    resume: 'Titre, dates, lieu',
     obligatoire: true,
     presence: 100,
     auto: true,
@@ -56,7 +56,7 @@ export const PARTIES_RAPPORT = [
   {
     id: 'participants',
     numero: 3,
-    titre: 'Participants',
+    titre: 'Stagiaires',
     resume: 'Liste et photo de groupe',
     obligatoire: false,
     presence: 92,
@@ -65,7 +65,7 @@ export const PARTIES_RAPPORT = [
   {
     id: 'deroule',
     numero: 4,
-    titre: 'Déroulé journalier',
+    titre: 'Les journées',
     resume: 'Une page par jour',
     obligatoire: false,
     presence: 92,
@@ -74,8 +74,8 @@ export const PARTIES_RAPPORT = [
   {
     id: 'resultats',
     numero: 5,
-    titre: 'Résultats globaux',
-    resume: 'Progression, acquisition, qualité et accueil',
+    titre: 'Résultats du groupe',
+    resume: 'Progrès, compétences et satisfaction',
     obligatoire: false,
     presence: 92,
     aide: 'Calculés depuis les notes et les questionnaires saisis.',
@@ -84,7 +84,7 @@ export const PARTIES_RAPPORT = [
     id: 'bilan',
     numero: 6,
     titre: 'Bilan',
-    resume: 'Synthèse en quatre rubriques',
+    resume: 'Le résumé de la session en quatre cases',
     obligatoire: false,
     presence: 92,
     aide: 'Rédigé automatiquement, relisez avant diffusion.',
@@ -92,8 +92,8 @@ export const PARTIES_RAPPORT = [
   {
     id: 'fiches',
     numero: 7,
-    titre: 'Fiches individuelles',
-    resume: 'Une page par participant',
+    titre: 'Fiches des stagiaires',
+    resume: 'Une page par stagiaire',
     obligatoire: false,
     presence: 78,
     aide: 'Appréciation nominative pour chaque stagiaire.',
@@ -101,8 +101,8 @@ export const PARTIES_RAPPORT = [
   {
     id: 'cloture',
     numero: 8,
-    titre: 'Clôture',
-    resume: 'Page de fin',
+    titre: 'Dernière page',
+    resume: 'Remerciements',
     obligatoire: true,
     presence: 21,
     auto: true,
@@ -130,8 +130,14 @@ export function partieRetenue(parties, id) {
   return parties?.[id] ?? true
 }
 
+// Les noms de la demonstration sont fictifs. Les vrais noms d'un planning
+// restent sur le poste qui l'anime : `noms.local.js`, ignore par Git,
+// associe l'identifiant d'un stagiaire a son prenom et son nom.
+const NOMS_LOCAUX = Object.values(
+  import.meta.glob('./noms.local.js', { eager: true, import: 'NOMS' }))[0] || {}
+
 function participant(id, prenom, nom, pays, fonction) {
-  return { id, prenom, nom, pays, fonction, present: true }
+  return { id, prenom, nom, pays, fonction, present: true, ...NOMS_LOCAUX[id] }
 }
 
 /** Un inscrit enregistre mais pas encore retenu pour la session. */

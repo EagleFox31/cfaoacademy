@@ -21,6 +21,7 @@
 
 import { useState } from 'react'
 import ImageCadree, { BoutonRecadrer } from './ImageCadree'
+import ChoixLegende from './ChoixLegende'
 import { casesDe, dispositionsClassees, dispositionsPour, grilleDe }
   from '../../data/dispositions_photos'
 
@@ -34,20 +35,20 @@ export const RUBRIQUES = [
   {
     cle: 'thematiques',
     titre: 'Thématiques abordées',
-    exemple: 'Rappel théorique sur le système étudié\n'
+    exemple: 'Exemple :\nRappel théorique sur le système étudié\n'
       + 'Consultation du manuel de réparation\n'
       + 'Désassemblage et contrôle des composants',
   },
   {
     cle: 'forts',
     titre: 'Les points forts',
-    exemple: 'Stagiaires dynamiques et engagés\n'
+    exemple: 'Exemple :\nStagiaires dynamiques et engagés\n'
       + 'Bonne maîtrise des outils de mesure',
   },
   {
     cle: 'ameliorations',
     titre: 'Les points d’amélioration',
-    exemple: 'Niveau hétérogène à renforcer en amont\n'
+    exemple: 'Exemple :\nNiveau hétérogène à renforcer en amont\n'
       + 'Prérequis e-learning à terminer avant la session',
   },
 ]
@@ -76,7 +77,7 @@ function retenues(lignes) {
 }
 
 export default function EditeurJournee({
-  jour, journee, photos, disposition, legende,
+  jour, journee, photos, disposition, legende, modeLegende, onModeLegende,
   onJournee, onLegende,
   onAjouter, onRetirer, onReordonner, onDisposition, onLegender, onCadrer,
   jourPrecedent, onCopierVeille,
@@ -91,9 +92,10 @@ export default function EditeurJournee({
     .filter(d => d.nombre <= MAX_PHOTOS_JOUR)
   const dispoActive = disposition || choix[0]?.id
   const dispo = choix.find(d => d.id === dispoActive)
-  // La disposition commande : legendee, chaque image a son champ ;
-  // sinon une seule legende vaut pour le cadre entier.
-  const parImage = !!dispo?.legendes
+  // Les legendes se choisissent a part de la disposition : une par
+  // image, une pour le cadre entier, ou aucune.
+  const parImage = modeLegende === 'chaque'
+  const commune = modeLegende === 'commune'
   const restantes = MAX_PHOTOS_JOUR - cliches.length
 
   function majRubrique(cle, texte) {
@@ -102,8 +104,8 @@ export default function EditeurJournee({
 
   return (
     <div className="cr-blocs cr-blocs--journee">
-      <Bloc titre={`Remplir le jour ${jour}`}
-        resume={total ? `${total} ligne${total > 1 ? 's' : ''}` : 'Trois rubriques'}
+      <Bloc titre={`Le texte du jour ${jour}`}
+        resume={total ? `${total} ligne${total > 1 ? 's' : ''}` : '3 cases à remplir'}
         valeur={total || '—'}
         ton={total ? 'ok' : null}
         ouvert={volet === 'journee'}
@@ -142,10 +144,11 @@ export default function EditeurJournee({
 
       </Bloc>
 
-      <Bloc titre="Intégrer les images"
+      <Bloc titre="Ajouter des photos"
         resume={cliches.length
           ? `${restantes} place${restantes > 1 ? 's' : ''} restante${restantes > 1 ? 's' : ''}`
-          : 'Facultatif'}
+          // Sans photo, la page garderait les emplacements du modele.
+          : 'À ajouter'}
         valeur={cliches.length || '—'}
         ton={cliches.length ? 'ok' : null}
         ouvert={volet === 'images'}
@@ -166,7 +169,7 @@ export default function EditeurJournee({
               accept="image/*" multiple hidden
               onChange={e => { onAjouter?.(e.target.files); e.target.value = '' }} />
 
-            <span className="cr-field-label">Disposition</span>
+            <span className="cr-field-label">Présentation des photos</span>
             <div className="cr-obj-choix cr-obj-choix--colonne cr-obj-choix--defile">
               {dispositionsClassees(cliches.length).map(d => {
                 const possible = d.nombre === cliches.length
@@ -186,15 +189,15 @@ export default function EditeurJournee({
                 )
               })}
             </div>
+            <ChoixLegende nombre={cliches.length} mode={modeLegende} onMode={onModeLegende} />
           </div>
 
-          {/* Deux familles dans le modele : soit chaque image porte sa
-              legende (diapos 12 a 15), soit une seule vaut pour
-              l'ensemble. Dans les deux cas elle se saisit dans le cadre,
+          {/* La legende, par image ou commune, se saisit dans le cadre,
               a la place qu'elle occupera sur la diapositive. */}
           <PlanchePhotos photos={cliches} jour={jour}
             disposition={dispo}
             parImage={parImage}
+            commune={commune}
             legende={legende}
             onRetirer={onRetirer} onReordonner={onReordonner}
             onAjouter={onAjouter} onLegender={onLegender} onCadrer={onCadrer}
@@ -226,7 +229,7 @@ function Bloc({ titre, resume, valeur, ton, ouvert, onOuvrir, children }) {
 }
 
 /** Les photos posees selon la disposition retenue. */
-function PlanchePhotos({ photos, disposition, jour, parImage, legende,
+function PlanchePhotos({ photos, disposition, jour, parImage, commune, legende,
   onRetirer, onReordonner, onAjouter, onLegender, onLegende, onCadrer }) {
   const [saisie, setSaisie] = useState(null)
   const [survol, setSurvol] = useState(null)
@@ -318,7 +321,7 @@ function PlanchePhotos({ photos, disposition, jour, parImage, legende,
       </div>
       {/* Une seule legende pour le cadre : elle se pose sous les images,
           la ou elle figurera sur la diapositive. */}
-      {!parImage && (
+      {commune && (
         <input className="cr-case-legende cr-planche-legende"
           value={legende || ''}
           placeholder="Légende de l’ensemble"

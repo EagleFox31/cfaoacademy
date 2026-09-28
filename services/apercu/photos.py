@@ -36,6 +36,8 @@ ECART = 125000
 
 # La bande de legende sous une photo, celle des diapositives 12 a 15.
 BANDE_LEGENDE = 329184
+# Entre les photos et une legende commune ajoutee : la moitie d'un ecart.
+ECART_LEGENDE = ECART // 2
 
 NOM_EMPLACEMENT = 'Emplacement photo'
 # La legende commune d'une page jour, sous le cadre des photos.
@@ -174,13 +176,22 @@ def forme_legende(ident_forme, rang, pos, texte):
         f'<a:t>{html.escape(texte, quote=False)}</a:t></a:r></a:p></p:txBody></p:sp>')
 
 
-def poser(contenus, slide, photos, cache):
+def poser(contenus, slide, photos, cache, legendes=None, commune=''):
     """Pose les photos dans la diapositive `slide` du paquet `contenus`.
 
     `photos` est la liste des `{id, x, y, l, h}` de la disposition, dans
     l'ordre du formateur, avec au besoin son `cadrage` et sa `legende`.
-    Une photo qui porte une cle `legende` — celles d'une disposition
-    legendee — cede le bas de sa case a une bande de legende.
+    Une photo qui porte une cle `legende` cede le bas de sa case a une
+    bande de legende.
+
+    `legendes` dit ou vont les legendes, choisies a part de la
+    disposition : `aucune` (les photos prennent tout le cadre), `chaque`
+    (une bande par photo) ou `commune` (une bande sous l'ensemble, qui
+    porte `commune`). La page jour a deja sa bande commune, « Legende
+    ensemble », remplie par son drapeau : elle ne reste qu'en mode
+    `commune`, et rejoint le cadre des photos sinon. Les autres pages
+    n'en ont pas : le mode `commune` la cree au bas du cadre. Sans mode
+    (ancien appel), seule une photo legendee retire la bande commune.
 
     Une photo inconnue du service est ignoree ; sans aucune photo
     lisible, les emplacements du modele restent, comme toute donnee
@@ -191,20 +202,28 @@ def poser(contenus, slide, photos, cache):
     if not lisibles:
         return
     xml = contenus[slide].decode('utf-8')
-    # Une page jour porte une legende commune sous son cadre. Des que
-    # chaque photo a la sienne, la bande commune rejoint le cadre.
-    commune = None
-    if any('legende' in p for p, _ in lisibles):
-        m = re.search(r'<p:sp>(?:(?!</p:sp>).)*?name="' + LEGENDE_COMMUNE
-                      + r'".*?</p:sp>', xml, re.S)
-        pos = m and RE_POSITION.search(m.group(0))
+    retirer = (legendes in ('aucune', 'chaque') if legendes
+               else any('legende' in p for p, _ in lisibles))
+    bande_commune = None
+    m = re.search(r'<p:sp>(?:(?!</p:sp>).)*?name="' + LEGENDE_COMMUNE
+                  + r'".*?</p:sp>', xml, re.S)
+    if m and retirer:
+        pos = RE_POSITION.search(m.group(0))
         if pos:
-            commune = tuple(int(v) for v in pos.groups())
+            bande_commune = tuple(int(v) for v in pos.groups())
             xml = xml[:m.start()] + xml[m.end():]
     trouves = emplacements(xml)
     if not trouves:
         return
-    cadre_ = cadre([pos for _, pos in trouves] + ([commune] if commune else []))
+    cadre_ = cadre([pos for _, pos in trouves] + ([bande_commune] if bande_commune else []))
+    # Legende commune sans bande dans le modele : on la prend au bas du
+    # cadre, sur toute sa largeur.
+    legende_ajoutee = None
+    if legendes == 'commune' and not m:
+        x, y, l, h = cadre_
+        cadre_ = (x, y, l, h - BANDE_LEGENDE - ECART_LEGENDE)
+        if str(commune or '').strip():
+            legende_ajoutee = (x, y + h - BANDE_LEGENDE, l, BANDE_LEGENDE)
 
     ident_forme = 900
     formes = []
@@ -224,6 +243,9 @@ def poser(contenus, slide, photos, cache):
                            p.get('cadrage'))
         formes.append(forme_image(ident_forme + i, f'Photo {i + 1}', rid,
                                   pos, rect))
+    if legende_ajoutee:
+        formes.append(forme_legende(ident_forme + 99, 'ensemble', legende_ajoutee,
+                                    str(commune)))
 
     # Les emplacements s'effacent, les photos prennent la place du premier.
     premier = trouves[0][0]

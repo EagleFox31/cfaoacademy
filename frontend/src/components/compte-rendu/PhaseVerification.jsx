@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { dispositionsPour, partieRetenue } from '../../data/mock_sessions_formateur'
-import { SEUIL, calculer, afficher } from '../../utils/baremeCfao'
+import { idDisposition, modeLegende } from '../../data/dispositions_photos'
+import { calculer, afficher } from '../../utils/baremeCfao'
 import { periodeLongue, nombreDeJours, titreDeCouverture }
   from '../../utils/compteRendu'
 import { syntheseSatisfaction, satisfactionStagiaire, afficherTaux, detailParCritere,
   CRITERES_FORMATION, CRITERES_ACCUEIL } from '../../utils/satisfactionCfao'
 import ApercuReel from './ApercuReel'
+import Consigne from './Consigne'
 import EditeurObjectifs from './EditeurObjectifs'
 import EditeurParticipants from './EditeurParticipants'
 import EditeurJournee, { MAX_PHOTOS_JOUR } from './EditeurJournee'
@@ -16,6 +18,9 @@ import { participantPourMoteur, proposerTexte } from '../../utils/redaction'
 import { chiffresSession, constatsParDefaut, donneesSession, redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
 import BoutonsRedaction from './BoutonsRedaction'
+import { estCertification, calculerCertification, libelleModule } from '../../utils/certification'
+import { candidatPourMoteur, donneesCertification, statutElearning }
+  from '../../utils/remarquesCertification'
 
 /**
  * Phase 4 — l'edition du rapport.
@@ -124,7 +129,11 @@ export default function PhaseVerification({
   async function rediger(type, cles, rubrique) {
     setRedigeant(rubrique ? `bilan.${rubrique}` : type)
     setPanne(false)
-    const sortie = await redigerRemarque(type, donneesSession(brouillon, session), rubrique)
+    const certif = estCertification(brouillon)
+    const sortie = await redigerRemarque(
+      certif && type === 'bilan' ? 'bilan_certification' : type,
+      certif ? donneesCertification(brouillon, session) : donneesSession(brouillon, session),
+      rubrique)
     setRedigeant(null)
     if (!sortie) { setPanne(true); return }
     const textes = brouillon.textes || {}
@@ -153,18 +162,22 @@ export default function PhaseVerification({
     premiere.current = true
     const t = brouillon.textes || {}
     const absent = k => t[k] === undefined
-    const donnees = donneesSession(brouillon, session)
+    const certif = estCertification(brouillon)
+    const donnees = certif ? donneesCertification(brouillon, session) : donneesSession(brouillon, session)
     const travaux = []
     ;(brouillon.participants || []).filter(p => p.present !== false).forEach(p => {
       const k = `fiche-${p.id}.appreciation`
-      const c = calculer(p, brouillon.baremes)
+      const c = certif ? calculerCertification(p, brouillon.modules) : calculer(p, brouillon.baremes)
       if (!absent(k) || p.appreciation || !chiffresSuffisants(c)) return
       const propre = satisfactionStagiaire(brouillon.satisfaction?.[p.id] || {})
-      travaux.push(proposerTexte(participantPourMoteur(p, c, propre?.formation, propre?.accueil),
-        'accueil').then(texte => (texte ? { [k]: texte } : {})))
+      travaux.push((certif
+        ? proposerTexte(candidatPourMoteur(p, brouillon), 'certification')
+        : proposerTexte(participantPourMoteur(p, c, propre?.formation, propre?.accueil), 'accueil'))
+        .then(texte => (texte ? { [k]: texte } : {})))
     })
-    ;[['resultats.commentaireProgression', 'progression'],
-      ['resultats.commentaireAcquisition', 'acquisition']].forEach(([k, type]) => {
+    // La page de progression n'existe pas en certification.
+    ;(certif ? [] : [['resultats.commentaireProgression', 'progression'],
+      ['resultats.commentaireAcquisition', 'acquisition']]).forEach(([k, type]) => {
       if (absent(k)) {
         travaux.push(redigerRemarque(type, donnees)
           .then(texte => (texte ? { [k]: texte } : {})))
@@ -172,7 +185,7 @@ export default function PhaseVerification({
     })
     const rubriques = ['contexte', 'resultats', 'vigilance', 'suites']
     if (rubriques.some(r => absent(`bilan.${r}`))) {
-      travaux.push(redigerRemarque('bilan', donnees).then(sortie => Object.fromEntries(
+      travaux.push(redigerRemarque(certif ? 'bilan_certification' : 'bilan', donnees).then(sortie => Object.fromEntries(
         rubriques.filter(r => absent(`bilan.${r}`) && sortie?.[r])
           .map(r => [`bilan.${r}`, sortie[r]]))))
     }
@@ -249,33 +262,89 @@ export default function PhaseVerification({
     majPhoto(rubrique, id, { cadrage })
   }
 
-  function produire() {
-    setEtat('production')
-    const donnees = dossier(brouillon, session, synthese)
-    const blob = new Blob([JSON.stringify(donnees, null, 1)], { type: 'application/json' })
+  // Le PowerPoint produit, garde pour le telecharger a nouveau.
+  const [fichier, setFichier] = useState(null)
+  const [echec, setEchec] = useState(false)
+
+  function telecharger(blob) {
+    // Le code de la formation, ou son intitule pour une saisie libre.
+    const nom = (brouillon.codeFormation || session?.codeFormation || brouillon.intitule || 'session')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `compte-rendu-${(session?.codeFormation || 'session')
-      .replace(/\W+/g, '-').toLowerCase()}.json`
+    a.download = `compte-rendu-${nom.replace(/\W+/g, '-').replace(/^-|-$/g, '').toLowerCase()}.pptx`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    setTimeout(() => setEtat('fait'), 500)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
+
+  // Le document final reprend page par page ce que montrent les
+  // apercus : meme diapositive, memes valeurs. Les pages repetees
+  // (jours, fiches) y gardent chacune les leurs.
+  async function produire() {
+    setEtat('production')
+    setEchec(false)
+    const corps = {
+      pages: pages
+        .map(p => ({
+          diapo: diapoDe(p, brouillon),
+          valeurs: valeursDrapeaux(brouillon, session, synthese, p, refsPhotos),
+        }))
+        .filter(p => p.diapo),
+    }
+    try {
+      const r = await fetch('/apercu/rapport', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(corps),
+      })
+      if (!r.ok) throw new Error(String(r.status))
+      const blob = await r.blob()
+      setFichier(blob)
+      telecharger(blob)
+      // Toutes les pages remplies, le compte rendu est deja a l'archive ;
+      // on y date sa sortie. Sinon le PowerPoint n'est qu'une version de
+      // travail, et la saisie reste en cours.
+      if (resteAFaire === 0) maj({ termineLe: new Date().toISOString() })
+      setEtat('fait')
+    } catch {
+      setEchec(true)
+      setEtat('revue')
+    }
+  }
+
+  const resteAFaire = pages.filter(p => etatPage(p, brouillon, session) === 'afaire').length
 
   if (etat === 'fait') {
     return (
       <div className="cr-panel">
         <div className="cr-empty">
-          <div style={{ fontSize: 38, color: '#1aab5b' }} aria-hidden="true">✓</div>
-          <div className="cr-empty-title">Compte rendu produit</div>
-          <p className="cr-empty-text">
-            Le document est dans vos téléchargements.
-          </p>
+          {resteAFaire === 0 ? (
+            <>
+              <div style={{ fontSize: 38, color: '#1aab5b' }} aria-hidden="true">✓</div>
+              <div className="cr-empty-title">Compte rendu terminé</div>
+              <p className="cr-empty-text">
+                Le PowerPoint est dans vos téléchargements. Le compte rendu
+                est rangé dans « Mes comptes rendus ».
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="cr-empty-title">Version de travail téléchargée</div>
+              <p className="cr-empty-text">
+                {resteAFaire} page{resteAFaire > 1 ? 's restent' : ' reste'} à remplir :
+                le compte rendu reste en cours jusqu’à ce que tout soit rempli.
+              </p>
+            </>
+          )}
         </div>
         <div className="cr-actions" style={{ justifyContent: 'center' }}>
+          <button type="button" className="cr-btn cr-btn--primary"
+            onClick={() => fichier && telecharger(fichier)}>
+            Télécharger à nouveau
+          </button>
           <button type="button" className="cr-btn cr-btn--ghost" onClick={onTerminer}>
             Retour à mes comptes rendus
           </button>
@@ -290,7 +359,12 @@ export default function PhaseVerification({
     <div className="cr-revue">
       {/* ── Sommaire des pages ────────────────────────────── */}
       <aside className="cr-sommaire" aria-label="Pages du rapport">
-        <div className="cr-sommaire-titre">{pages.length} pages</div>
+        <div className="cr-sommaire-titre">
+          {pages.length} pages
+          {resteAFaire > 0
+            ? <span className="cr-sommaire-reste"> · {resteAFaire} à remplir</span>
+            : <span className="cr-sommaire-fini"> · tout est rempli</span>}
+        </div>
         <div className="cr-fil">
           {jalonner(pages).map(section => (
             <div key={section.cle} className="cr-fil-section">
@@ -308,10 +382,21 @@ export default function PhaseVerification({
                       <span className="cr-fil-num">{i + 1}</span>
                       <span className="cr-fil-nom">{p.titre}</span>
                       {p.rubrique && (brouillon.photos?.[p.rubrique]?.length > 0) && (
-                        <span className="cr-sommaire-pastille" aria-label="photos ajoutées">
+                        <span className="cr-sommaire-pastille" aria-label="photos ajoutées"
+                          title="Photos ajoutées">
                           {brouillon.photos[p.rubrique].length}
                         </span>
                       )}
+                      {/* L'etat ferme la ligne, toujours a la meme place. */}
+                      {(() => {
+                        const manques = manquesDe(p, brouillon, session)
+                        return manques.length
+                          ? <span className="cr-fil-etat cr-fil-etat--afaire"
+                            title={`À remplir : ${manques.join(', ')}`}
+                            aria-label={`à remplir : ${manques.join(', ')}`}>●</span>
+                          : <span className="cr-fil-etat cr-fil-etat--fait" title="Rempli"
+                            aria-label="rempli">✓</span>
+                      })()}
                     </button>
                   </li>
                 ))}
@@ -323,12 +408,15 @@ export default function PhaseVerification({
 
       {/* ── La page, telle qu'elle sortira ────────────────── */}
       <div className="cr-scene">
-        <div className="cr-scene-tete">
-          <span className="cr-scene-nom">{page?.titre}</span>
+        <Consigne className="cr-scene-tete"
+          faire={consigneDe(page)}
+          ensuite={active < pages.length - 1
+            ? `${page?.titre} · page ${active + 1} sur ${pages.length}. Ensuite : ${pages[active + 1].titre}.`
+            : `${page?.titre} · dernière page. Il ne reste qu’à cliquer sur « Terminer le compte rendu ».`}>
           <div className="cr-modes" role="tablist" aria-label="Mode d’affichage">
             {[
-              ['edition', 'Édition', '✎'],
-              ['apercu', 'Aperçu', '▢'],
+              ['edition', 'Remplir', '✎'],
+              ['apercu', 'Voir la page', '▢'],
             ].map(([cle, libelle, signe]) => (
               <button key={cle} type="button" role="tab"
                 aria-selected={mode === cle}
@@ -338,7 +426,7 @@ export default function PhaseVerification({
               </button>
             ))}
           </div>
-        </div>
+        </Consigne>
 
         {mode === 'edition' ? (
           <FormulairePage
@@ -364,9 +452,10 @@ export default function PhaseVerification({
               const propre = satisfactionStagiaire(reponses || {})
               setRedigeant(k)
               setPanne(false)
-              const texte = await proposerTexte(
-                participantPourMoteur(pg.participant, pg.calcul,
-                  propre?.formation, propre?.accueil), 'accueil')
+              const texte = await (estCertification(brouillon)
+                ? proposerTexte(candidatPourMoteur(pg.participant, brouillon), 'certification')
+                : proposerTexte(participantPourMoteur(pg.participant, pg.calcul,
+                  propre?.formation, propre?.accueil), 'accueil'))
               setRedigeant(null)
               if (!texte) { setPanne(true); return }
               const textes = brouillon.textes || {}
@@ -383,7 +472,11 @@ export default function PhaseVerification({
             })}
             photos={photos}
             disposition={page?.rubrique
-              ? brouillon.dispositions?.[page.rubrique] : null}
+              ? idDisposition(brouillon.dispositions?.[page.rubrique]) : null}
+            modeLegende={page?.rubrique ? modeLegende(brouillon, page.rubrique) : null}
+            onModeLegende={m => page?.rubrique && maj({
+              modesLegende: { ...(brouillon.modesLegende || {}), [page.rubrique]: m },
+            })}
             onAjouter={f => page?.rubrique && ajouterPhotos(page.rubrique, f)}
             onRetirer={id => page?.rubrique && retirerPhoto(page.rubrique, id)}
             onLegender={(id, t) => page?.rubrique && legender(page.rubrique, id, t)}
@@ -407,16 +500,30 @@ export default function PhaseVerification({
             ← Page précédente
           </button>
           <div className="cr-actions-right">
-            {active < pages.length - 1 ? (
-              <button type="button" className="cr-btn cr-btn--ghost"
+            {etat === 'production' ? (
+              <span className="cr-actions-info">
+                Le PowerPoint se prépare, cela peut prendre une minute.
+              </span>
+            ) : echec ? (
+              <span className="cr-actions-info cr-actions-info--erreur" role="alert">
+                Le PowerPoint n’a pas pu être préparé. Réessayez dans un instant.
+              </span>
+            ) : resteAFaire > 0 && (
+              <span className="cr-actions-info">
+                Il reste {resteAFaire} page{resteAFaire > 1 ? 's' : ''} à remplir
+              </span>
+            )}
+            <button type="button"
+              className={`cr-btn ${active < pages.length - 1 ? 'cr-btn--ghost' : 'cr-btn--primary'}`}
+              onClick={produire} disabled={etat === 'production'}>
+              {etat === 'production' ? 'Préparation du PowerPoint…' : 'Terminer le compte rendu'}
+            </button>
+            {active < pages.length - 1 && (
+              <button type="button" className="cr-btn cr-btn--primary"
                 onClick={() => setActive(active + 1)}>
                 Page suivante →
               </button>
-            ) : null}
-            <button type="button" className="cr-btn cr-btn--primary"
-              onClick={produire} disabled={etat === 'production'}>
-              {etat === 'production' ? 'Production…' : 'Produire le compte rendu'}
-            </button>
+            )}
           </div>
         </div>
       </div>
@@ -471,10 +578,108 @@ const COMMENTAIRES_RESULTATS = [
  * saisie. On exige donc le score final et la progression.
  */
 function chiffresSuffisants(calcul) {
-  return calcul?.scoreFinal != null && calcul?.progression != null
+  // En certification, pas de progression : le resultat pratique en tient lieu.
+  return calcul?.scoreFinal != null && (calcul?.progression != null || calcul?.pratique != null)
 }
 
 /** Les tableaux de chiffres d'une page, tels que le modele les pose. */
+/**
+ * Ce qui reste a faire sur une page : `afaire`, `fait`, ou rien quand la
+ * page se remplit toute seule (page de garde, chiffres, derniere page).
+ *
+ * Seules les pages que le formateur doit ecrire lui-meme comptent : les
+ * objectifs, les journees, et les fiches, qui ne s'ecrivent qu'avec des
+ * notes. Le reste est pre-rempli et se relit.
+ */
+/**
+ * Ce qui manque a une page pour etre terminee, en mots ; vide si rien.
+ *
+ * La regle est stricte : une page est remplie quand tout ce que sa
+ * diapositive affiche est renseigne — sinon le PowerPoint garderait le
+ * drapeau ou l'emplacement photo du modele. Les pages qui ne se
+ * remplissent pas (resultats, satisfaction, derniere page) sont
+ * remplies d'office : leurs chiffres viennent de l'etape 2.
+ */
+function manquesDe(page, b, session) {
+  const cle = page?.cle || ''
+  const t = b.textes || {}
+  const rempli = v => String(v ?? '').trim() !== ''
+  const lignes = v => (v || []).some(rempli)
+  const photos = rubrique => (b.photos?.[rubrique] || []).length > 0
+  const manques = []
+  const exiger = (ok, quoi) => { if (!ok) manques.push(quoi) }
+
+  if (cle === 'couverture') {
+    const champ = (k, defaut) => t[`couverture.${k}`] ?? defaut
+    exiger(rempli(champ('code', page.code)) || rempli(champ('intitule', page.intitule)), 'le titre')
+    exiger(rempli(champ('periode', page.periode)), 'les dates')
+    exiger(rempli(champ('lieu', page.lieu)), 'le lieu')
+  } else if (cle === 'objectifs') {
+    const objectifs = b.objectifs ?? objectifsInitiaux(b, page) ?? []
+    exiger(objectifs.some(o => rempli(o?.texte)), 'les objectifs')
+  } else if (cle === 'participants') {
+    // Le formateur et la photo de groupe ne sont pas des photos de
+    // rubrique : ils vivent dans `formateurs` et `photoGroupe`.
+    // Sans saisie, la page montre le formateur de la session.
+    const formateurs = (b.formateurs || formateursInitiaux(session)).filter(f => rempli(f.nom))
+    exiger(formateurs.length > 0, 'le formateur')
+    exiger(formateurs.every(f => f.portrait), 'le portrait du formateur')
+    exiger((b.participants || []).some(p => p.present !== false), 'les stagiaires')
+    exiger(!!b.photoGroupe, 'la photo de groupe')
+  } else if (cle.startsWith('jour-')) {
+    const j = b.jours?.[cle.slice(5)] || {}
+    exiger(lignes(j.thematiques), 'les thématiques')
+    exiger(lignes(j.forts), 'les points forts')
+    exiger(lignes(j.ameliorations), 'les points d’amélioration')
+    exiger(photos(cle), 'les photos')
+  } else if (cle === 'bilan') {
+    const vides = (page.blocs || []).filter(r => !rempli(t[`bilan.${r.cle}`] ?? r.texte))
+    exiger(!vides.length, vides.map(r => r.titre.toLowerCase()).join(', '))
+  } else if (cle.startsWith('fiche-')) {
+    const c = page.calcul || {}
+    exiger(estCertification(b) ? c.final != null : c.scoreFinal != null,
+      estCertification(b) ? 'les notes et l’e-learning (étape 2)' : 'les notes (étape 2)')
+    exiger(rempli(t[`${cle}.appreciation`]), 'l’appréciation')
+  }
+  return manques
+}
+
+/**
+ * Le nombre de pages encore a remplir d'un compte rendu, hors de
+ * l'ecran de saisie : les listes s'en servent pour ranger un compte
+ * rendu termine (zero) dans l'archive. Meme composition, meme regle
+ * que le sommaire.
+ */
+export function pagesARemplir(b, session) {
+  return composerPages(b, session, {}).filter(p => manquesDe(p, b, session).length).length
+}
+
+function etatPage(page, b, session) {
+  return manquesDe(page, b, session).length ? 'afaire' : 'fait'
+}
+
+/** Ce que le formateur doit faire sur une page, en une phrase. */
+function consigneDe(page) {
+  const cle = page?.cle || ''
+  if (cle === 'couverture') return 'Vérifiez le titre, les dates et le lieu.'
+  if (cle === 'objectifs') return 'Écrivez les objectifs de la formation, un par ligne.'
+  if (cle === 'participants') return 'Vérifiez la liste et ajoutez la photo de groupe.'
+  if (cle.startsWith('jour-')) {
+    return `Écrivez ce que vous avez fait le jour ${cle.slice(5)}. Une idée par ligne.`
+  }
+  if (cle === 'resultats') return 'Relisez les chiffres, puis écrivez une remarque sous chaque tableau.'
+  if (cle === 'satisfaction') return 'Relisez l’avis des stagiaires. Rien d’autre à faire.'
+  if (cle === 'bilan') return 'Relisez le bilan de la session et modifiez-le si besoin.'
+  if (cle.startsWith('fiche-')) {
+    const prenom = page.participant?.prenom || 'ce stagiaire'
+    return page.calcul?.scoreFinal == null
+      ? `Saisissez d’abord les notes de ${prenom} (étape 2, « Les notes »).`
+      : `Relisez l’appréciation de ${prenom}. Modifiez-la si besoin.`
+  }
+  if (cle === 'cloture') return 'Rien à remplir sur cette page.'
+  return 'Vérifiez cette page.'
+}
+
 /**
  * Les pages regroupees par grande partie du document.
  *
@@ -485,12 +690,12 @@ function chiffresSuffisants(calcul) {
 function jalonner(pages) {
   const partie = p => {
     const cle = p.cle || ''
-    if (cle.startsWith('jour-')) return ['deroule', 'Déroulé journalier']
-    if (cle.startsWith('fiche-')) return ['fiches', 'Résultats individuels']
+    if (cle.startsWith('jour-')) return ['deroule', 'Les journées']
+    if (cle.startsWith('fiche-')) return ['fiches', 'Fiches des stagiaires']
     if (cle === 'resultats' || cle === 'satisfaction' || cle === 'bilan') {
       return ['bilan', 'Résultats et bilan']
     }
-    if (cle === 'cloture') return ['cloture', 'Clôture']
+    if (cle === 'cloture') return ['cloture', 'Fin']
     return ['ouverture', 'Présentation']
   }
   const sections = []
@@ -526,7 +731,7 @@ function TableauxResultats({ tableaux, compact }) {
 }
 
 function FormulairePage({
-  page, textes, onTexte, photos, disposition,
+  page, textes, onTexte, photos, disposition, modeLegende, onModeLegende,
   onAjouter, onRetirer, onLegender, onCadrer, onDisposition,
   objectifs, marquage, onObjectifs, onMarquage, onReordonner,
   formateurs, stagiaires, photoGroupe, onFormateurs, onPhotoGroupe,
@@ -563,14 +768,14 @@ function FormulairePage({
                   <span className="cr-field-label">Code</span>
                   <input className="cr-input"
                     value={valeur('code', page.code || '')}
-                    placeholder="TS05-G3"
+                    placeholder="Exemple : TS05-G3"
                     onChange={e => onTexte(`${page.cle}.code`, e.target.value)} />
                 </label>
                 <label className="cr-field">
                   <span className="cr-field-label">Intitulé de la formation</span>
                   <input className="cr-input"
                     value={valeur('intitule', page.intitule || '')}
-                    placeholder="Révision et réparation des organes châssis"
+                    placeholder="Exemple : Révision et réparation des organes châssis"
                     onChange={e => onTexte(`${page.cle}.intitule`, e.target.value)} />
                 </label>
               </div>
@@ -580,14 +785,14 @@ function FormulairePage({
                   <span className="cr-field-label">Période</span>
                   <input className="cr-input"
                     value={valeur('periode', page.periode || '')}
-                    placeholder="du 14 au 18 septembre 2026"
+                    placeholder="Exemple : du 14 au 18 septembre 2026"
                     onChange={e => onTexte(`${page.cle}.periode`, e.target.value)} />
                 </label>
                 <label className="cr-field">
                   <span className="cr-field-label">Lieu</span>
                   <input className="cr-input"
                     value={valeur('lieu', page.lieu || '')}
-                    placeholder="Centre CFAO Academy — Douala"
+                    placeholder="Exemple : Centre CFAO Academy, Douala"
                     onChange={e => onTexte(`${page.cle}.lieu`, e.target.value)} />
                 </label>
                 <label className="cr-field">
@@ -607,7 +812,7 @@ function FormulairePage({
                 sortira, pour que le lien entre les deux champs et la
                 couverture soit visible. */}
             <div className="cr-couv-rendu">
-              <span className="cr-field-label">Titre de la couverture</span>
+              <span className="cr-field-label">Titre de la page de garde</span>
               <p className="cr-couv-apercu">
                 {titreDeCouverture(
                   valeur('code', page.code || ''),
@@ -621,7 +826,7 @@ function FormulairePage({
             </div>
 
             <span className="cr-obj-aide">
-              Pré-rempli depuis l’étape 1 — à reprendre librement.
+              Déjà rempli avec votre session. Modifiez si besoin.
             </span>
           </div>
         )}
@@ -651,6 +856,8 @@ function FormulairePage({
               marquage={marquage}
               photos={photos || []}
               disposition={disposition}
+              modeLegende={modeLegende}
+              onModeLegende={onModeLegende}
               onObjectifs={onObjectifs}
               onMarquage={onMarquage}
               onReordonner={onReordonner}
@@ -658,6 +865,8 @@ function FormulairePage({
               onAjouter={onAjouter}
               onRetirer={onRetirer}
               onLegender={onLegender}
+              legende={legendes?.[page.cle]}
+              onLegende={v => onLegende(page.cle, v)}
               onCadrer={onCadrer} />
           </div>
         )}
@@ -669,6 +878,8 @@ function FormulairePage({
               textes={textes}
               photos={photos || []}
               disposition={disposition}
+              modeLegende={modeLegende}
+              onModeLegende={onModeLegende}
               legende={legendes?.[page.cle]}
               onTexte={onTexte}
               onLegende={v => onLegende(page.cle, v)}
@@ -695,7 +906,7 @@ function FormulairePage({
                       aTexte={!!String(valeur(b.cle, b.texte) || '').trim()}
                       enCours={redaction?.redigeant === `${page.cle}.${b.cle}`}
                       desactive={!chiffresSuffisants(page.calcul)}
-                      raison="Renseignez les notes à l’étape 2"
+                      raison="Saisissez d’abord les notes (étape 2)"
                       onRediger={() => onProposer?.(page, b.cle)}
                       peutAnnuler={`${page.cle}.${b.cle}` in (redaction?.avant || {})}
                       onAnnuler={() => redaction?.annuler(`${page.cle}.${b.cle}`)} />
@@ -732,6 +943,8 @@ function FormulairePage({
               journee={jours?.[numeroJour]}
               photos={photos || []}
               disposition={disposition}
+              modeLegende={modeLegende}
+              onModeLegende={onModeLegende}
               legende={legendes?.[page.cle]}
               onJournee={v => onJournee(numeroJour, v)}
               onLegende={v => onLegende(page.cle, v)}
@@ -758,14 +971,14 @@ function FormulairePage({
         {page.type === 'chiffres' && page.sansCommentaires && (
           <div className="cr-edition-large cr-res-saisie">
             <TableauxResultats tableaux={page.tableaux} />
-            <p className="cr-obj-aide">Taux calculés à l’étape 2.</p>
+            <p className="cr-obj-aide">Calculé avec les notes que vous avez saisies.</p>
           </div>
         )}
 
         {page.type === 'chiffres' && !page.sansCommentaires && (
           <div className="cr-edition-large cr-res-saisie">
             <TableauxResultats tableaux={page.tableaux} />
-            <p className="cr-obj-aide">Taux calculés à l’étape 2.</p>
+            <p className="cr-obj-aide">Calculé avec les notes que vous avez saisies.</p>
             <div className="cr-res-commentaires">
               {COMMENTAIRES_RESULTATS.map(c => {
                 const cle = `${page.cle}.${c.cle}`
@@ -782,7 +995,7 @@ function FormulairePage({
                         aTexte={!!valeur(c.cle, '').trim()}
                         enCours={redaction?.redigeant === type}
                         desactive={!possible}
-                        raison="Renseignez les notes à l’étape 2"
+                        raison="Saisissez d’abord les notes (étape 2)"
                         onRediger={() => redaction?.constat(c.cle)}
                         peutAnnuler={cle in (redaction?.avant || {})}
                         onAnnuler={() => redaction?.annuler(cle)} />
@@ -1001,7 +1214,7 @@ function PanneauPhotos({
           {reglable && choix.length > 1 && (
             <>
               <div className="cr-outils-tete" style={{ marginTop: 16 }}>
-                Disposition — {photos.length} photo{photos.length > 1 ? 's' : ''}
+                Présentation des photos — {photos.length} photo{photos.length > 1 ? 's' : ''}
               </div>
               <div className="cr-layouts">
                 {choix.map(d => (
@@ -1046,6 +1259,50 @@ function Vignette({ disposition: d }) {
   )
 }
 
+/**
+ * La fiche d'un candidat de certification (diapositive 26).
+ *
+ * Elle montre ce que la diapositive posera : les notes de chaque module,
+ * l'e-learning et le resultat final. Seule l'appreciation s'ecrit ici ;
+ * le reste vient de l'etape 2.
+ */
+function ficheCertification(b, p) {
+  const c = calculerCertification(p, b.modules)
+  const pc = v => (v == null ? '—' : `${Math.round(v)} %`)
+  const e = c.elearning
+  return {
+    cle: `fiche-${p.id}`, titre: `${p.prenom} ${p.nom}`, type: 'texte',
+    participant: p, calcul: c,
+    titrePage: `RÉSULTAT INDIVIDUEL DE CERTIFICATION — ${p.prenom} ${p.nom}`.toUpperCase(),
+    sousTitre: `Pratique ${pc(c.pourcentage)}${c.pratique ? ` (${c.pratique})` : ''}`
+      + ` · e-learning ${statutElearning(c).toLowerCase()}`
+      + (c.final ? ` · ${c.final}` : ''),
+    blocs: [{ cle: 'appreciation', titre: 'Appréciation du formateur', texte: p.appreciation || '' }],
+    tableaux: [
+      {
+        titre: 'Modules pratiques',
+        lignes: [
+          ...(b.modules || []).map((m, i) => ({
+            libelle: libelleModule(m) || `Module ${i + 1}`,
+            valeur: c.notes[i] == null ? '—' : String(c.notes[i]),
+          })),
+          { libelle: 'Résultat de la session pratique', valeur: c.pratique || pc(c.pourcentage), total: true },
+        ],
+      },
+      {
+        titre: 'E-learning',
+        lignes: [
+          { libelle: 'Modules requis', valeur: e.requis ?? '—' },
+          { libelle: 'Modules validés', valeur: e.valides ?? '—' },
+          { libelle: 'Taux de participation', valeur: pc(e.taux) },
+          { libelle: 'Statut', valeur: statutElearning(c) },
+          { libelle: 'Résultat final', valeur: c.final || '—', total: true },
+        ],
+      },
+    ],
+  }
+}
+
 /* ─────────────────────────────────────────────────────────────
    Composition des pages depuis les donnees saisies.
    ───────────────────────────────────────────────────────────── */
@@ -1053,6 +1310,10 @@ function composerPages(b, session, s) {
   const periode = periodeLongue(b.debut, b.fin)
   const participants = (b.participants || []).filter(p => p.present !== false)
   const pages = []
+  // Une certification garde les memes pages, sous son nom ; seules ses
+  // fiches different, et elle n'a pas de page de progression.
+  const certif = estCertification(b)
+  const quoi = certif ? 'CERTIFICATION' : 'FORMATION'
 
   // La phase « structure » a dit ce que le document contient. Une
   // partie ecartee ne doit pas reapparaitre ici : composer puis laisser
@@ -1063,8 +1324,8 @@ function composerPages(b, session, s) {
     // La couverture du modele : mention centree, intitule, puis periode
     // et lieu sur deux lignes, le tout au centre de la diapositive.
     pages.push({
-      cle: 'couverture', titre: 'Couverture', type: 'couverture',
-      mention: 'COMPTE RENDU DE FORMATION',
+      cle: 'couverture', titre: 'Page de garde', type: 'couverture',
+      mention: `COMPTE RENDU DE ${quoi}`,
       titrePage: titreDeCouverture(b.codeFormation, b.intitule).toUpperCase(),
       // Le titre de couverture assemble ces deux champs ; ils restent
       // separes a la saisie, comme a l'etape 1.
@@ -1080,11 +1341,11 @@ function composerPages(b, session, s) {
   if (retenue('objectifs')) {
     pages.push({
       cle: 'objectifs', titre: 'Objectifs', type: 'texte',
-      titrePage: 'OBJECTIFS DE LA FORMATION',
+      titrePage: `OBJECTIFS DE LA ${quoi}`,
       rubrique: 'objectifs',
       blocs: [{
         cle: 'objectifs',
-        titre: 'À l’issue de la formation',
+        titre: `À l’issue de la ${quoi.toLowerCase()}`,
         texte: b.textes?.objectifs || '',
       }],
     })
@@ -1092,7 +1353,7 @@ function composerPages(b, session, s) {
 
   if (retenue('participants')) {
     pages.push({
-      cle: 'participants', titre: 'Participants', type: 'tableau',
+      cle: 'participants', titre: 'Stagiaires', type: 'tableau',
       titrePage: 'LES PARTICIPANTS',
       rubrique: 'participants',
       colonnes: ['Nom et prénom', 'Pays', 'Fonction'],
@@ -1105,7 +1366,7 @@ function composerPages(b, session, s) {
     for (let i = 1; i <= Math.max(jours, 1); i++) {
       pages.push({
         cle: `jour-${i}`, titre: `Jour ${i}`, type: 'photos',
-        titrePage: `${i}ᵉ JOUR DE FORMATION`,
+        titrePage: `${i}ᵉ JOUR DE ${quoi}`,
         rubrique: `jour-${i}`,
         sousTitre: '',
       })
@@ -1120,7 +1381,7 @@ function composerPages(b, session, s) {
     // Les deux tableaux de la diapositive 17, lignes comprises : ils
     // se lisent mieux ainsi que sous forme de compteurs isoles.
     const pc = v => (v == null ? '—' : `${Math.round(v)} %`)
-    pages.push({
+    if (!certif) pages.push({
       cle: 'resultats', titre: 'Résultats', type: 'chiffres',
       titrePage: 'RÉSULTAT GLOBAL DE LA SESSION',
       tableaux: [
@@ -1178,7 +1439,7 @@ function composerPages(b, session, s) {
   if (retenue('bilan')) {
     pages.push({
       cle: 'bilan', titre: 'Bilan', type: 'texte',
-      titrePage: 'BILAN DE LA FORMATION',
+      titrePage: `BILAN DE LA ${quoi}`,
       rubrique: 'bilan',
       blocs: rubriquesBilan(b),
     })
@@ -1198,7 +1459,8 @@ function composerPages(b, session, s) {
         { libelle: total, valeur: afficherTaux(valeur), total: true },
       ],
     })
-    participants.forEach(p => {
+    if (certif) participants.forEach(p => pages.push(ficheCertification(b, p)))
+    else participants.forEach(p => {
       const c = calculer(p, b.baremes)
       // Les reponses du seul stagiaire : la fiche est la sienne.
       const siennes = b.satisfaction?.[p.id] ? { [p.id]: b.satisfaction[p.id] } : {}
@@ -1250,7 +1512,7 @@ function composerPages(b, session, s) {
 
   if (retenue('cloture')) {
     pages.push({
-      cle: 'cloture', titre: 'Clôture', type: 'couverture',
+      cle: 'cloture', titre: 'Dernière page', type: 'couverture',
       mention: 'MERCI DE VOTRE ATTENTION',
       titrePage: '',
       sousTitre: '',
@@ -1260,43 +1522,4 @@ function composerPages(b, session, s) {
   }
 
   return pages
-}
-
-/** Le dossier remis au generateur. */
-function dossier(b, session, s) {
-  return {
-    formation: b.intitule,
-    code_formation: b.codeFormation,
-    marque: b.marque,
-    date_debut: b.debut,
-    date_fin: b.fin,
-    lieu: b.lieu,
-    pays: b.pays,
-    seuil: SEUIL,
-    effectif: s.effectif,
-    score_moyen: s.scoreFinal,
-    progression: s.progression,
-    nb_en_retrait: s.enRetrait,
-    taux_reussite: s.tauxReussite,
-    textes: b.textes,
-    dispositions: b.dispositions,
-    photos: Object.fromEntries(
-      Object.entries(b.photos || {}).map(([k, v]) => [
-        k, v.map(p => ({ nom: p.nom, legende: p.legende })),
-      ])),
-    participants: (b.participants || [])
-      .filter(p => p.present !== false)
-      .map(p => {
-        const c = calculer(p, b.baremes)
-        return {
-          nom: p.nom, prenom: p.prenom, pays: p.pays, fonction: p.fonction,
-          entree_brut: p.entreeBrut, sortie_theo_brut: p.sortieTheoBrut,
-          sortie_prat_brut: p.sortiePratBrut,
-          entree: c.entree, sortie_theorique: c.sortieTheorique,
-          sortie_pratique: c.sortiePratique,
-          progression: c.progression, score_final: c.scoreFinal,
-          appreciation: p.appreciation || null,
-        }
-      }),
-  }
 }

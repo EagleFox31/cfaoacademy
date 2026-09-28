@@ -93,6 +93,21 @@ def _poser_cellule(feuille, ref, valeur):
     return feuille[:m.start()] + neuf + feuille[m.end():]
 
 
+def _poser_tiret(feuille, ref):
+    """Un tiret a la place d'une valeur absente : questionnaire ou note non rempli.
+
+    Un zero laisserait croire a une evaluation nulle. La formule tombe
+    avec la valeur : une moyenne sur des cellules vides redonnerait 0.
+    """
+    motif = re.compile(r'<c r="' + ref + r'"([^>]*?)(/>|>(.*?)</c>)', re.S)
+    m = motif.search(feuille)
+    if not m:
+        return feuille
+    attributs = re.sub(r'\s+t="\w+"', '', m.group(1))
+    neuf = f'<c r="{ref}"{attributs} t="inlineStr"><is><t>-</t></is></c>'
+    return feuille[:m.start()] + neuf + feuille[m.end():]
+
+
 def _plage(ref):
     """`Feuil1!$B$2:$B$4` -> ['B2', 'B3', 'B4'] (une ligne ou une colonne)."""
     m = re.search(r'\$?([A-Z]+)\$?(\d+)(?::\$?([A-Z]+)\$?(\d+))?$', ref)
@@ -109,12 +124,14 @@ def _cache(graphique, cellules):
     """Les caches numeriques des series, repris des cellules."""
     def sur_serie(m):
         cellules_serie = _plage(m.group(2))
-        # Une valeur encore absente (notes ou questionnaires pas saisis)
-        # laisse la serie telle que le modele la porte.
-        if not cellules_serie or not all(cellules.get(c) is not None for c in cellules_serie):
+        # Une serie dont on ne fournit aucune cellule garde le modele. Une
+        # valeur absente (notes ou questionnaires pas remplis) laisse un
+        # trou dans la serie, plutot qu'un zero.
+        if not cellules_serie or not any(c in cellules for c in cellules_serie):
             return m.group(0)
         points = ''.join(f'<c:pt idx="{i}"><c:v>{float(cellules[c]):.10g}</c:v></c:pt>'
-                         for i, c in enumerate(cellules_serie))
+                         for i, c in enumerate(cellules_serie)
+                         if cellules.get(c) is not None)
         cache = re.sub(r'(<c:ptCount val="\d+"/>).*?(</c:numCache>)',
                        lambda k: k.group(1) + points + k.group(2),
                        m.group(3), count=1, flags=re.S)
@@ -128,8 +145,8 @@ def remplir_classeur(parts, cellules):
     parts = dict(parts)
     feuille = parts['xl/worksheets/sheet1.xml'].decode('utf-8')
     for ref, valeur in cellules.items():
-        if valeur is not None:
-            feuille = _poser_cellule(feuille, ref, valeur)
+        feuille = (_poser_cellule(feuille, ref, valeur) if valeur is not None
+                   else _poser_tiret(feuille, ref))
     parts['xl/worksheets/sheet1.xml'] = feuille.encode('utf-8')
     for nom in [n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)]:
         parts[nom] = _cache(parts[nom].decode('utf-8'), cellules).encode('utf-8')
@@ -564,8 +581,10 @@ def _anneau_excel(image, geo, valeurs):
             return ImageFont.load_default()
 
     def texte_de(serie, v):
+        # Un questionnaire non rempli s'affiche d'un tiret, pas de 0 %.
         mots = serie['nom'].split()
-        return [' '.join(mots[:-1]), f"{mots[-1] if mots else ''} {int(float(v) * 100 + 0.5)}%"]
+        taux = '-' if v is None else f'{int(float(v) * 100 + 0.5)}%'
+        return [' '.join(mots[:-1]), f"{mots[-1] if mots else ''} {taux}"]
 
     def bloc(texte, corps):
         police = police_de(corps)
@@ -574,7 +593,7 @@ def _anneau_excel(image, geo, valeurs):
 
     series = list(zip(geo['series'], valeurs))
     etiquettes = []
-    if series and series[0][1] is not None:
+    if series:
         serie, v = series[0]
         texte = texte_de(serie, v)
         # Le texte tient dans le trou, avec une marge.
@@ -583,20 +602,20 @@ def _anneau_excel(image, geo, valeurs):
         while corps > 10 and (lw / 2) ** 2 + (lh / 2) ** 2 > (trou_xl * 0.88) ** 2:
             corps -= 1
             police, lw, lh = bloc(texte, corps)
-        angle = math.radians(float(v) * 180)
+        angle = math.radians(float(v or 0) * 180)
         dirx, diry = math.sin(angle), -math.cos(angle)
         # Sortie du rayon par le bord de la boite, jusqu'au milieu de l'anneau.
         t = min(lw / 2 / abs(dirx) if abs(dirx) > 1e-6 else math.inf,
                 lh / 2 / abs(diry) if abs(diry) > 1e-6 else math.inf) + 0.04 * rayon
         rm = trou_xl + 0.5 * ep_xl
         trait = [(cx + dirx * t, cy + diry * t), (cx + dirx * rm, cy + diry * rm)] \
-            if t < trou_xl - 0.04 * rayon else []
+            if t < trou_xl - 0.04 * rayon and v is not None else []
         etiquettes.append((texte, police, lh, cx, cy, trait))
-    if len(series) > 1 and series[1][1] is not None:
+    if len(series) > 1:
         serie, v = series[1]
         texte = texte_de(serie, v)
         police, lw, lh = bloc(texte, max(10, round(serie['pt'] * pt)))
-        angle = math.radians(float(v) * 180)
+        angle = math.radians(float(v or 0) * 180)
         dirx, diry = math.sin(angle), -math.cos(angle)
         rm = trou_xl + (1 + 0.5) * ep_xl if n > 1 else rayon - ep_xl / 2
         couloir = rayon * 1.16                    # hors du cercle
@@ -604,8 +623,9 @@ def _anneau_excel(image, geo, valeurs):
         ex = cx + couloir + rayon * 0.08 + lw / 2
         ey = cy + rayon * 0.62
         q = (cx + dirx * sortie, cy + diry * sortie)
+        # Sans valeur, pas d'arc a designer : l'etiquette reste seule.
         trait = [(cx + dirx * rm, cy + diry * rm), q, (cx + couloir, q[1]),
-                 (cx + couloir, ey), (ex - lw / 2 - rayon * 0.03, ey)]
+                 (cx + couloir, ey), (ex - lw / 2 - rayon * 0.03, ey)] if v is not None else []
         etiquettes.append((texte, police, lh, ex, ey, trait))
 
     # La toile s'agrandit si une etiquette deborde de l'image rognee.
@@ -714,10 +734,13 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                 png = doc[0].get_pixmap(dpi=200).tobytes('png')
             quoi, cellules, ratio = (legendes or {}).get(cle, (None, None, None))
             anneau = None
-            if quoi in ANNEAUX:
+            taux = [(cellules or {}).get(ref) for ref in ANNEAUX.get(quoi, ())]
+            # Aucun questionnaire rempli : LibreOffice ne trace pas
+            # d'anneau, il n'y a rien a reprendre ni a legender.
+            if quoi in ANNEAUX and any(v is not None for v in taux):
                 geo = _geometrie_anneau(_lire(classeurs_bruts[cle]))
                 if geo:
-                    anneau = (geo, [(cellules or {}).get(ref) for ref in ANNEAUX[quoi]])
+                    anneau = (geo, taux)
             image = _rogner(png, anneau, ratio)
             (dossier / f'{empreinte}.png').write_bytes(image)
             images[cle] = image
@@ -730,11 +753,21 @@ def rafraichir(contenus, slides, valeurs, soffice, profil, cache):
     `valeurs` : `{nature: {cellule: valeur}}`. Un classeur dont la nature
     n'a pas de valeurs garde son etat du modele.
     """
-    if not valeurs:
-        return
+    rafraichir_pages(contenus, [(s, valeurs) for s in slides], soffice, profil, cache)
+
+
+def rafraichir_pages(contenus, pages, soffice, profil, cache):
+    """Comme `rafraichir`, chaque diapositive avec ses propres valeurs.
+
+    `pages` : `[(diapositive, valeurs)]`. Le rapport complet porte une
+    fiche par stagiaire, chacune avec son graphique : tous passent dans
+    un seul lancement de LibreOffice plutot qu'un par page.
+    """
     types = contenus['[Content_Types].xml'].decode('utf-8')
     a_rendre, poses, natures = {}, [], {}
-    for slide in slides:
+    for slide, valeurs in pages:
+        if not valeurs:
+            continue
         rels_nom = slide.replace('slides/', 'slides/_rels/') + '.rels'
         if slide not in contenus or rels_nom not in contenus:
             continue

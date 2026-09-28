@@ -1,4 +1,14 @@
 import { PARTIES_RAPPORT, partieRetenue } from '../../data/mock_sessions_formateur'
+import Consigne from './Consigne'
+import { estCertification } from '../../utils/certification'
+
+// Une certification n'a ni test d'entree ni progression : ses resultats
+// de groupe se limitent a la satisfaction, et ses fiches sont celles
+// des candidats.
+const RESUMES_CERTIFICATION = {
+  resultats: 'Satisfaction des candidats',
+  fiches: 'Une page par candidat : modules, e-learning, résultat final',
+}
 
 /**
  * Phase 3 — ce que le document contiendra.
@@ -8,10 +18,9 @@ import { PARTIES_RAPPORT, partieRetenue } from '../../data/mock_sessions_formate
  * a decider. Tout le reste se choisit, y compris ce que l'usage rend
  * habituel.
  *
- * Le taux affiche a cote de chaque partie vient de l'analyse des
- * quatorze comptes rendus existants. Il informe sans contraindre :
- * savoir que le deroule journalier figure dans 92 % des rapports aide
- * a decider, mais la session peut justifier de s'en passer.
+ * Tout est coche par defaut : le formateur ne decide que s'il veut
+ * retirer une partie. Les taux de presence dans les comptes rendus
+ * existants, un temps affiches, ajoutaient de la lecture sans aider.
  *
  * Une partie sans matiere est signalee comme telle plutot que cochee
  * d'office : proposer « Fiches individuelles » quand aucune note n'est
@@ -30,16 +39,16 @@ export default function PhaseStructure({ brouillon, maj, session, synthese }) {
   /** Ce qui manque pour qu'une partie ait du contenu, le cas echeant. */
   function manque(id) {
     if (id === 'fiches' && synthese.saisis === 0) {
-      return 'Aucune note saisie : les fiches seraient vides.'
+      return 'Aucune note saisie : ces pages seraient vides.'
     }
     if (id === 'objectifs' && !session?.codeFormation) {
-      return 'Formation hors catalogue : à saisir vous-même.'
+      return 'À écrire vous-même : formation hors catalogue.'
     }
     if (id === 'deroule' && jours === 0) {
-      return 'Durée inconnue : une seule page sera produite.'
+      return 'Dates inconnues : une seule page de journée.'
     }
     if (id === 'resultats' && synthese.saisis === 0) {
-      return 'Aucun résultat saisi.'
+      return 'Aucune note saisie : cette page serait vide.'
     }
     return null
   }
@@ -49,14 +58,8 @@ export default function PhaseStructure({ brouillon, maj, session, synthese }) {
 
   return (
     <div className="cr-panel cr-panel--structure">
-      <div className="cr-panel-head">
-        <h2 className="cr-panel-title">Que contiendra le document ?</h2>
-        <p className="cr-panel-hint">
-          Décochez ce que cette session ne justifie pas. Le pourcentage
-          rappelle la fréquence de chaque partie dans les comptes rendus
-          existants.
-        </p>
-      </div>
+      <Consigne faire="Tout est déjà coché. Décochez seulement une partie que vous ne voulez pas."
+        ensuite="Ensuite : compléter les pages, une par une." />
 
       <div className="cr-parties">
         {PARTIES_RAPPORT.map(p => {
@@ -77,11 +80,11 @@ export default function PhaseStructure({ brouillon, maj, session, synthese }) {
               <span className="cr-partie-corps">
                 <span className="cr-partie-tete">
                   <span className="cr-partie-titre">{p.titre}</span>
-                  {p.obligatoire
-                    ? <span className="cr-partie-etiq">Toujours incluse</span>
-                    : <span className="cr-partie-freq">{p.presence} % des rapports</span>}
+                  {p.obligatoire && <span className="cr-partie-etiq">Obligatoire</span>}
                 </span>
-                <span className="cr-partie-resume">{p.resume}</span>
+                <span className="cr-partie-resume">
+                  {(estCertification(brouillon) && RESUMES_CERTIFICATION[p.id]) || p.resume}
+                </span>
                 {alerte && <span className="cr-partie-alerte">{alerte}</span>}
               </span>
             </label>
@@ -94,10 +97,10 @@ export default function PhaseStructure({ brouillon, maj, session, synthese }) {
           plus dans la grille. */}
       <div className="cr-structure-pied">
         <span className="cr-structure-compte">
-          <strong>{nbPages}</strong> page{nbPages > 1 ? 's' : ''} au total
+          <strong>{nbPages}</strong> page{nbPages > 1 ? 's' : ''} dans le compte rendu
         </span>
         <span className="cr-structure-detail">
-          {retenues.length} partie{retenues.length > 1 ? 's' : ''} retenue
+          {retenues.length} partie{retenues.length > 1 ? 's' : ''} cochée
           {retenues.length > 1 ? 's' : ''} sur {PARTIES_RAPPORT.length}
         </span>
       </div>
