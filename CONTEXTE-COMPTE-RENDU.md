@@ -11,9 +11,11 @@ pourquoi, et ce qui reste ouvert.
 | | |
 |---|---|
 | Dépôt applicatif | `C:\Users\IBRAH\Documents\Projets\cfaoacademy\` |
-| Branche courante | **`feature/compte-rendu-synchronisation`** |
+| Branche courante | **`feature/04-5-rapports-formateur`** (poussée, historique anonymisé) |
+| Branche de travail d'origine | `feature/compte-rendu-synchronisation` (locale) |
 | Branche précédente | `feature/module-formateur-compte-rendu` (close sur `48aa1e6`) |
-| Dépôt compagnon | `C:\Users\IBRAH\Documents\Projets\Formation Mr Eugène\` — modèle PPTX anonymisé + outillage Python |
+| Modèle PPTX | `services/apercu/modeles/MODELE-REFERENCES.pptx` — versionné ; plus aucun dossier externe requis |
+| Documentation du module | [docs/MODULE_RAPPORTS_FORMATEUR.md](docs/MODULE_RAPPORTS_FORMATEUR.md) |
 
 **Attention :** le `git status` affiché au démarrage d'une session porte
 souvent sur le dépôt compagnon, pas sur `cfaoacademy` où se fait tout le
@@ -325,6 +327,56 @@ originaux figeaient B:M). Corrigé sans toucher la présentation : ligne
 « aéroport » (lisait le repas CFR) ; progression GLOBAL = moyenne des
 progressions individuelles. Vérifié (LibreOffice) pour 1 à 20 stagiaires.
 
+**Simplification pour les formateurs (25 sept. 2026)** — suite à une
+étude d'usage (formateurs techniques, peu à l'aise avec l'informatique,
+perdus au premier usage) :
+- `components/compte-rendu/Consigne.jsx` : en tête de chaque écran, une
+  phrase d'action (« Décochez les stagiaires absents. ») et la suite
+  (« Ensuite : les notes. »). À l'étape 4, une consigne par page
+  (`consigneDe`) avec « page X sur N. Ensuite : … ».
+- Lexique appliqué : stagiaires (jamais participants), étapes « La
+  formation / Les notes / Les pages / Compléter », page de garde,
+  dernière page, « Écrire pour moi », « Reprendre d'un fichier Excel » /
+  « Enregistrer en Excel », « Remplir / Voir la page ». Exemples
+  préfixés « Exemple : ». Taux « % des rapports » retirés de l'étape 3.
+- Boutons qui disent où ils mènent (« Passer aux notes → ») ; raison
+  affichée à côté d'un bouton grisé ; « ✓ Enregistré à 10 h 25 » sous
+  le titre.
+- Étape 2 : volets numérotés avec compteur de stagiaires, bouton vers
+  le questionnaire suivant, alerte « Il manque les notes de N
+  stagiaires » avant de quitter (saisir / continuer quand même).
+- Étape 4 : état de chaque page dans la liste (● à remplir, ✓ rempli,
+  `etatPage`), « Page suivante » en bouton principal, « Terminer le
+  compte rendu » ne le devient qu'à la dernière page.
+- Mode d'emploi en quatre étapes au premier usage (une fois par poste,
+  clé `cfao.cr-mode-emploi-vu`).
+- **Encore ouvert** : fusionner l'étape « Les pages » dans l'étape 4
+  (3 étapes au lieu de 4), après essai avec deux formateurs.
+- **Perte de brouillon corrigée** : choisir une session déjà commencée
+  repartait d'un brouillon vierge, et un brouillon vide supprimait la
+  copie enregistrée (ici et sur le serveur). Désormais la session
+  reprend son brouillon (`reprendreOuCommencer`, pas d'écriture avant
+  la réponse du serveur) et un brouillon vide n'efface jamais rien ;
+  seule la corbeille supprime. Le rapport TSH01 effacé ainsi par un
+  test le 25 septembre a été reconstitué depuis les pages libres du
+  fichier SQLite et restauré.
+- « Terminer le compte rendu » télécharge le PowerPoint
+  (`POST /apercu/rapport`, `service.rapport`) : l'interface envoie,
+  page par page, la diapositive et les valeurs de son aperçu. Chaque
+  page reçoit sa copie de la diapositive du modèle, classeurs embarqués
+  compris : jours et fiches individuelles gardent chacun leurs valeurs.
+  Tous les graphiques passent dans un seul lancement de LibreOffice
+  (`classeurs.rafraichir_pages`) ; compter une minute environ, moins
+  si les aperçus ont déjà été vus (cache). L'ancien export `.json`
+  est retiré.
+- Un lien direct vers un brouillon, ouvert sur un poste qui ne l'a
+  jamais vu, montrait une page vide (double montage du mode strict :
+  le second appel ne trouvait plus rien de plus récent sur le serveur).
+  Corrigé dans `TrainerReportNew.jsx`.
+- Annonce de mise à jour : `maintenance.json` accepte un `message`
+  affiché à la fin (bouton « Compris »). Un onglet rechargé pendant la
+  mise à jour retrouve l'annonce (en cours, puis terminée).
+
 ### Reporté par décision explicite
 
 **Conditionner certification vs formation simple à l'étape des notes**
@@ -356,8 +408,8 @@ certification demanderait en plus : niveau, modules requis/validés,
   par le cadre si légendes par photo). Le service
   Flask ne recharge pas son code : le relancer après modification.
 - `/apercu/document` compose le rapport avec un seul jeu de valeurs :
-  les pages répétées (jours, fiches) y reçoivent toutes les mêmes. Non
-  appelé par l'interface pour l'instant.
+  les pages répétées (jours, fiches) y reçoivent toutes les mêmes.
+  Remplacé dans l'interface par `/apercu/rapport`.
 - `/portail/compte-rendu/mes-rapports` est référencé mais pas implémenté.
 - Stash `participants-css-abandonne` toujours présent.
 - `Compte rendu Eugène.zip` (209 Mo) conservé dans le dépôt compagnon.

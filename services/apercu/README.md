@@ -2,7 +2,11 @@
 
 Convertit une diapositive du modèle en image, pour que l'assistant de
 compte rendu montre la page telle qu'elle sortira de PowerPoint plutôt
-qu'une reconstitution HTML.
+qu'une reconstitution HTML. Il produit aussi le rapport complet et
+conserve les brouillons.
+
+Documentation complète du module (parcours, drapeaux, tests, écarts) :
+[docs/MODULE_RAPPORTS_FORMATEUR.md](../../docs/MODULE_RAPPORTS_FORMATEUR.md).
 
 ## Démarrer
 
@@ -17,10 +21,11 @@ sur le rendu HTML et le signale.
 ## Prérequis
 
 - **LibreOffice** — chemin par défaut `C:\Program Files\LibreOffice\program\soffice.exe`
-- **Flask**
+- **Python** — `pip install -r services/requirements.txt`
+- **Modèle** — `modeles/MODELE-REFERENCES.pptx`, versionné avec le service
 
-Trois variables permettent de s'écarter des valeurs par défaut :
-`CR_MODELE`, `CR_CACHE`, `CR_SOFFICE`.
+Variables : `CR_MODELE`, `CR_CACHE`, `CR_SOFFICE`, `CR_HOTE`, `CR_PORT`.
+En conteneur : `services/Dockerfile`, service `rapports` du `docker-compose.yml`.
 
 ## Routes
 
@@ -28,7 +33,11 @@ Trois variables permettent de s'écarter des valeurs par défaut :
 |---|---|
 | `GET /apercu/sante` | le service et LibreOffice répondent-ils |
 | `POST /apercu/page` | l'image PNG d'une diapositive |
-| `POST /apercu/document` | le rapport complet, `pptx` ou `pdf` |
+| `POST /apercu/rapport` | le rapport complet, page par page, `pptx` ou `pdf` |
+| `POST /apercu/document` | le rapport complet à partir des parties |
+| `POST /apercu/photo` | dépôt d'une photo |
+| `POST /apercu/redaction` | texte proposé par le moteur de rédaction |
+| `/cr-donnees/brouillons[/<id>]` | brouillons de l'utilisateur (GET, PUT, DELETE) |
 
 ## Pourquoi c'est rapide
 
