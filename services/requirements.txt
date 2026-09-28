@@ -1,0 +1,6 @@
+# Services du compte rendu formateur : apercu (Flask) et moteur de redaction.
+# LibreOffice s'installe a part (voir docs/MODULE_RAPPORTS_FORMATEUR.md).
+flask>=3.1,<4
+pillow>=12,<13
+pymupdf>=1.27,<2
+numpy>=2,<3

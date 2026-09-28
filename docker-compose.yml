@@ -189,6 +189,27 @@ services:
           cpus: "${CPU_OPS:-0.50}"
           memory: "${MEM_OPS:-256M}"
 
+  # Story 04-5 : rapports formateur (apercu, production PPTX/PDF, brouillons).
+  # Service technique transitoire, sans authentification propre : il n'est
+  # joignable que par la passerelle. Voir docs/MODULE_RAPPORTS_FORMATEUR.md.
+  rapports:
+    build: ./services
+    restart: unless-stopped
+    volumes: [rapports-donnees:/srv/apercu/donnees]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:5175/apercu/sante"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          # LibreOffice convertit une page a la fois, mais un rapport complet
+          # monte a plusieurs centaines de Mo.
+          cpus: "${CPU_RAPPORTS:-1.0}"
+          memory: "${MEM_RAPPORTS:-1G}"
+
   gateway:
     image: nginx:1.27-alpine
     restart: unless-stopped
@@ -197,6 +218,7 @@ services:
     depends_on:
       core: { condition: service_healthy }
       operations: { condition: service_healthy }
+      rapports: { condition: service_healthy }
     deploy:
       resources:
         limits:
@@ -216,3 +238,4 @@ volumes:
   keycloak-db-data:
   core-db-data:
   ops-db-data:
+  rapports-donnees:

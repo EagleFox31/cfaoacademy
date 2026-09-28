@@ -1,0 +1,52 @@
+import { describe, expect, it } from 'vitest'
+import { valeursDrapeaux } from './diapositives'
+import { ECHOUE, VALIDE } from './certification'
+
+// Une certification G3 fictive : trois modules, un candidat.
+const brouillon = {
+  type: 'certification',
+  codeFormation: 'TS07-G3',
+  pays: 'Cameroun',
+  modules: [
+    { id: 'm1', code: 'G38001', intitule: 'Décharge de la pression' },
+    { id: 'm2', code: 'G38002', intitule: 'Dépose et pose du piston' },
+    { id: 'm3', code: 'G38003', intitule: 'Dépose de l’arbre à cames' },
+  ],
+  participants: [{
+    id: 'c1', prenom: 'Paul', nom: 'KAMGA',
+    notesModules: { m1: 90, m2: 23, m3: 80 },
+    elearning: { requis: 136, valides: 112, statut: 'Non finalisé' },
+  }],
+}
+const fiche = { cle: 'fiche-c1' }
+
+describe('fiche individuelle de certification', () => {
+  const v = valeursDrapeaux(brouillon, null, {}, fiche, {})
+
+  it('porte la filiale, le total et le pourcentage arrondi', () => {
+    expect(v['{filiale}']).toBe('CFAO MOBILITY CAMEROUN')
+    expect(v['{total_points}']).toBe('193')
+    expect(v['{total_max}']).toBe('300')
+    expect(v['{pourcentage}']).toBe('64')
+    expect(v['{resultat_pratique}']).toBe(ECHOUE)
+  })
+
+  it('repete une ligne par module et rougit les notes sous le seuil', () => {
+    const lignes = v['@lignes']['{code_module_1}']
+    expect(lignes.map(l => l['{code_module_1}'])).toEqual(['G38001', 'G38002', 'G38003'])
+    expect(lignes.map(l => l['@couleurs'])).toEqual([{}, { '{note_1}': 'alerte' }, {}])
+  })
+
+  it('applique le code couleur vert / rouge des resultats', () => {
+    expect(v['@couleurs']).toMatchObject({
+      '{resultat_pratique}': 'ko', '{pourcentage}': 'ko', '{statut_elearning}': 'ko',
+    })
+    const reussi = {
+      ...brouillon,
+      participants: [{ ...brouillon.participants[0], notesModules: { m1: 90, m2: 80, m3: 80 } }],
+    }
+    const w = valeursDrapeaux(reussi, null, {}, fiche, {})
+    expect(w['{resultat_pratique}']).toBe(VALIDE)
+    expect(w['@couleurs']['{pourcentage}']).toBe('ok')
+  })
+})

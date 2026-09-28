@@ -20,3 +20,6 @@ dist/
 
 # Comptes rendus et photos conserves par le service d'apercu
 services/apercu/donnees/
+
+# Donnees reelles propres a un poste (noms des stagiaires) : jamais versionnees
+*.local.js
