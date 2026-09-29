@@ -2,8 +2,9 @@
 
 Convertit une diapositive du modèle en image, pour que l'assistant de
 compte rendu montre la page telle qu'elle sortira de PowerPoint plutôt
-qu'une reconstitution HTML. Il produit aussi le rapport complet et
-conserve les brouillons.
+qu'une reconstitution HTML. Il produit aussi le rapport complet et garde
+les photos ; les brouillons sont conservés par `cfao-operations`
+(`/api/v1/ops/reports`).
 
 Documentation complète du module (parcours, drapeaux, tests, écarts) :
 [docs/MODULE_RAPPORTS_FORMATEUR.md](../../docs/MODULE_RAPPORTS_FORMATEUR.md).
@@ -37,7 +38,7 @@ En conteneur : `services/Dockerfile`, service `rapports` du `docker-compose.yml`
 | `POST /apercu/document` | le rapport complet à partir des parties |
 | `POST /apercu/photo` | dépôt d'une photo |
 | `POST /apercu/redaction` | texte proposé par le moteur de rédaction |
-| `/cr-donnees/brouillons[/<id>]` | brouillons de l'utilisateur (GET, PUT, DELETE) |
+| `GET /apercu/photos/<id>.jpg` | photo enregistrée |
 
 ## Pourquoi c'est rapide
 

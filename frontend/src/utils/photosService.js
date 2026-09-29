@@ -48,7 +48,7 @@ export function useRefsPhotos(photosParRubrique) {
 }
 
 /** L'adresse d'une photo conservee par le serveur. */
-export const adressePhoto = ref => `/cr-donnees/photos/${ref}.jpg`
+export const adressePhoto = ref => `/apercu/photos/${ref}.jpg`
 
 /**
  * Inscrit dans le brouillon l'identifiant serveur des photos envoyees.

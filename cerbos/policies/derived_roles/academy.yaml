@@ -1,0 +1,12 @@
+# Roles derives du centre Academy (app 04 · Espace formateur).
+apiVersion: api.cerbos.dev/v1
+derivedRoles:
+  name: academy_scope
+  definitions:
+    # Supervision : le directeur du centre voit le travail des formateurs de son perimetre.
+    - name: academy_supervisor_within_scope
+      parentRoles:
+        - center_director
+      condition:
+        match:
+          expr: request.principal.attr.scopeNodes.exists(s, s in request.resource.attr.orgPath)

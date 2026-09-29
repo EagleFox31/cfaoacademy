@@ -265,21 +265,18 @@ redevenu vide est retiré ; les vides déjà stockés sont purgés à la
 lecture de la liste. Choisir une session puis partir ne crée plus de
 carte « Saisie interrompue ».
 
-**Stockage serveur (solution de démarrage)** : les brouillons sont
-conservés par le service d'aperçu (`services/apercu/stockage.py`, SQLite
-`services/apercu/donnees/comptes-rendus.sqlite`, gitignoré), routes
-`/cr-donnees/brouillons[/<id>]` (GET/PUT/DELETE, en-tête `X-Utilisateur` =
-id du compte de démo, **pas d'authentification : réseau local seulement**)
-et `/cr-donnees/photos/<ref>.jpg` (photos désormais permanentes dans
-`donnees/photos`). Front : `brouillonsCompteRendu.js` garde une copie
-locale par compte (`cfao.comptes-rendus.<id>`), envoie chaque écriture au
-serveur (différée 0,8 s, `keepalive` à la fermeture), `synchroniser()`
-à l'accueil et sur la liste (le plus récent gagne), marques de suppression
-côté serveur pour ne pas ressusciter un brouillon effacé ailleurs ; la
-page d'édition interroge le serveur avant tout enregistrement. Photos :
-chaque photo envoyée reçoit `ref` + adresse serveur dans le brouillon
-(`ancrerPhotos`). **À migrer vers `cfao-core`** (Django/PostgreSQL,
-Keycloak, Cerbos) en gardant le contrat `/cr-donnees`.
+**Stockage serveur** (depuis 04-5.2) : les brouillons sont dans
+`cfao-operations`, module `reports` (`/api/v1/ops/reports/drafts`, ops-db
+PostgreSQL), derrière le JWT Keycloak et la policy Cerbos `trainer_report` ;
+le navigateur n'envoie plus d'identifiant (cookie du BFF). L'ancien stockage
+SQLite du service d'aperçu est retiré ; `exporter_brouillons.py` +
+`npm run importer:brouillons` reprennent ses données. Les photos restent
+dans le service de rendu, sous `/apercu/photos/<ref>.jpg` (l'ancienne
+adresse `/cr-donnees/photos/` est réécrite à la lecture et à l'import).
+Front : `brouillonsCompteRendu.js` garde une copie locale par compte,
+envoie chaque écriture au serveur (différée 0,8 s, `keepalive`),
+`synchroniser()` à l'accueil (le plus récent gagne), suppressions gardées
+côté serveur. Détail : `docs/MODULE_RAPPORTS_FORMATEUR.md`.
 
 **Première rédaction automatique** : à l'arrivée à l'édition, chaque texte
 générable jamais renseigné (appréciations des fiches, deux constats de la

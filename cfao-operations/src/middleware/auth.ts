@@ -8,6 +8,8 @@ export interface Principal {
   roles: string[]
   attr: {
     scopeNode: string
+    // MULTI-SCOPE, comme cfao-core : les roles derives Cerbos lisent `scopeNodes`.
+    scopeNodes: string[]
     departments: string[]
     brands: string[]
     orgPath: string[]
@@ -39,11 +41,13 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       audience: config.oidcAudience,
     })
     const roles = ((payload.realm_access as { roles?: string[] } | undefined)?.roles) ?? []
+    const scopeNode = (payload.scopeNode as string) ?? ''
     req.principal = {
       id: String(payload.sub),
       roles,
       attr: {
-        scopeNode: (payload.scopeNode as string) ?? '',
+        scopeNode,
+        scopeNodes: scopeNode ? [scopeNode] : [],
         departments: (payload.departments as string[]) ?? [],
         brands: (payload.brands as string[]) ?? [],
         orgPath: (payload.orgPath as string[]) ?? [],

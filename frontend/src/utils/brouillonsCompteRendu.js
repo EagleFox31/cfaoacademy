@@ -4,8 +4,9 @@
  * Une session se documente rarement d'un trait : le formateur saisit
  * les notes le vendredi, ajoute les photos le lundi — et pas forcement
  * sur le meme poste. Le brouillon est donc conserve par le serveur
- * (`/cr-donnees/brouillons`, service d'apercu pour l'instant, `cfao-core`
- * a terme), rattache au compte du formateur.
+ * (`cfao-operations`, `/api/v1/ops/reports/drafts`), rattache au compte
+ * Keycloak du formateur : le serveur le deduit du jeton de session, et
+ * Cerbos decide de chaque acces (story 04-5.2).
  *
  * Le navigateur en garde une copie : la saisie reste fluide et survit a
  * une coupure du serveur. Chaque ecriture part aux deux ; a la lecture,
@@ -19,9 +20,9 @@ import { pagesARemplir } from '../components/compte-rendu/PhaseVerification'
 import { SESSIONS_FORMATEUR } from '../data/mock_sessions_formateur'
 
 const CLE_ANCIENNE = 'cfao.comptes-rendus'
-const API = '/cr-donnees/brouillons'
+const API = '/api/v1/ops/reports/drafts'
 
-/** Le compte connecte (demonstration) : ses brouillons ne sont qu'a lui. */
+/** Le compte connecte : la copie locale de ses brouillons n'est qu'a lui. */
 function utilisateur() {
   try {
     return JSON.parse(sessionStorage.getItem('cfao_mock_user') || 'null')?.id || null
@@ -32,10 +33,14 @@ function utilisateur() {
 
 const cle = () => `${CLE_ANCIENNE}.${utilisateur() || 'anonyme'}`
 
+// Les photos etaient servies sous /cr-donnees/photos ; les brouillons
+// d'avant la story 04-5.2 gardent cette adresse, reecrite a la lecture.
+const photosActuelles = texte => texte.replaceAll('/cr-donnees/photos/', '/apercu/photos/')
+
 function lire() {
   try {
     const brut = localStorage.getItem(cle())
-    if (brut) return JSON.parse(brut)
+    if (brut) return JSON.parse(photosActuelles(brut))
     // Les brouillons d'avant le rattachement au compte : repris par le
     // premier compte qui ouvre ce navigateur.
     const ancien = localStorage.getItem(CLE_ANCIENNE)
@@ -59,18 +64,22 @@ function ecrire(tout) {
   }
 }
 
-/** Un appel au serveur ; `null` s'il ne repond pas. */
+/**
+ * Un appel au serveur ; `null` s'il ne repond pas ou refuse l'acces.
+ *
+ * Aucun identifiant n'est envoye : le cookie de session du BFF porte
+ * l'identite, le serveur en deduit le proprietaire.
+ */
 async function serveur(chemin, options = {}) {
-  const u = utilisateur()
-  if (!u) return null
   try {
     const r = await fetch(`${API}${chemin}`, {
       ...options,
-      headers: { 'Content-Type': 'application/json', 'X-Utilisateur': u, ...(options.headers || {}) },
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     })
     if (r.status === 404) return undefined
     if (!r.ok) return null
-    return await r.json()
+    return JSON.parse(photosActuelles(await r.text()))
   } catch {
     return null
   }

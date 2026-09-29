@@ -55,6 +55,9 @@ const unitesEcran = {
   },
 }
 
+// Le BFF de la stack Docker (service oauth2-proxy du docker-compose).
+const BFF = process.env.CFAO_BFF || 'http://127.0.0.1:4180'
+
 export default defineConfig({
   plugins: [react(), cataloguesFallbackPlugin()],
   css: { postcss: { plugins: [unitesEcran] } },
@@ -69,12 +72,11 @@ export default defineConfig({
         target: 'http://127.0.0.1:5175',
         changeOrigin: true,
       },
-      // Les comptes rendus en cours et leurs photos, conserves par le meme
-      // service (a terme : cfao-core).
-      '/cr-donnees': {
-        target: 'http://127.0.0.1:5175',
-        changeOrigin: true,
-      },
+      // Les API de la plateforme passent par le BFF (oauth2-proxy), comme en
+      // production : le navigateur ne parle qu'a cette origine et garde son
+      // cookie de session (architecture_complement.md §5, « En dev local »).
+      '/api': { target: BFF, changeOrigin: false },
+      '/oauth2': { target: BFF, changeOrigin: false },
       '/medacap-api': {
         target: 'http://localhost',
         changeOrigin: true,

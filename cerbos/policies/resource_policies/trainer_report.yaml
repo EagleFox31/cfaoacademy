@@ -1,0 +1,27 @@
+# Ressource « trainer_report » (story 04-5) : brouillon d'un rapport post-formation,
+# stocke par cfao-operations. Default-deny : toute action non listee est refusee.
+# Attributs : ownerId (sub Keycloak du formateur), orgPath (perimetre a la creation).
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: trainer_report
+  importDerivedRoles:
+    - academy_scope
+  rules:
+    # Un formateur ne cree, lit, modifie et supprime que ses propres rapports.
+    - actions: ["create", "view", "update", "delete"]
+      effect: EFFECT_ALLOW
+      roles: ["trainer", "center_director"]
+      condition:
+        match:
+          expr: request.resource.attr.ownerId == request.principal.id
+
+    # Le directeur du centre consulte les rapports de son perimetre, sans les modifier.
+    - actions: ["view"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - academy_supervisor_within_scope
+
+    - actions: ["*"]
+      effect: EFFECT_ALLOW
+      roles: ["superadmin"]

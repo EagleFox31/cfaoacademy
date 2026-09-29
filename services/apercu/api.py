@@ -8,9 +8,8 @@ Trois routes, appelees par l'assistant de compte rendu :
     POST /apercu/document           le rapport complet (pptx ou pdf)
     POST /apercu/rapport            le rapport complet, page par page
 
-S'y ajoutent les comptes rendus en cours et leurs photos, conserves pour
-qu'un formateur les retrouve sur tout poste du reseau
-(`/cr-donnees/...`, voir `stockage.py`).
+S'y ajoutent les photos des rapports (`/apercu/photo`, `/apercu/photos/<id>.jpg`).
+Les brouillons, eux, sont conserves par cfao-operations (`/api/v1/ops/reports`).
 """
 
 from pathlib import Path
@@ -20,7 +19,6 @@ import sys
 from flask import Flask, jsonify, request, send_file
 
 import photos
-import stockage
 from service import CACHE, MODELE, SOFFICE, document, image_de, rapport
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'redaction'))
@@ -73,53 +71,7 @@ def photo():
         return jsonify({'erreur': str(e)}), 400
 
 
-# ── Comptes rendus en cours, conserves cote serveur ────────────────────
-# L'utilisateur est celui du compte de demonstration, transmis par
-# l'interface : pas d'authentification encore, reseau local seulement.
-
-def _utilisateur():
-    u = request.headers.get('X-Utilisateur', '')
-    return u if stockage.valide(u) else None
-
-
-@app.get('/cr-donnees/brouillons')
-def brouillons_liste():
-    u = _utilisateur()
-    if not u:
-        return jsonify({'erreur': 'utilisateur attendu'}), 401
-    brouillons, supprimes = stockage.lister(u)
-    return jsonify({'brouillons': brouillons, 'supprimes': supprimes})
-
-
-@app.get('/cr-donnees/brouillons/<ident>')
-def brouillon_lire(ident):
-    u = _utilisateur()
-    if not u or not stockage.valide(ident):
-        return jsonify({'erreur': 'requete invalide'}), 400
-    b = stockage.lire(u, ident)
-    return (jsonify(b), 200) if b else (jsonify({'erreur': 'introuvable'}), 404)
-
-
-@app.put('/cr-donnees/brouillons/<ident>')
-def brouillon_ecrire(ident):
-    u = _utilisateur()
-    corps = request.get_json(force=True, silent=True)
-    if not u or not stockage.valide(ident) or not isinstance(corps, dict):
-        return jsonify({'erreur': 'requete invalide'}), 400
-    garde, ecrit = stockage.ecrire(u, ident, corps)
-    return jsonify({'ecrit': ecrit, 'brouillon': garde})
-
-
-@app.delete('/cr-donnees/brouillons/<ident>')
-def brouillon_supprimer(ident):
-    u = _utilisateur()
-    if not u or not stockage.valide(ident):
-        return jsonify({'erreur': 'requete invalide'}), 400
-    stockage.supprimer(u, ident)
-    return jsonify({'supprime': True})
-
-
-@app.get('/cr-donnees/photos/<ident>.jpg')
+@app.get('/apercu/photos/<ident>.jpg')
 def photo_servir(ident):
     chemin = photos._chemin(ident, CACHE)
     if not chemin:

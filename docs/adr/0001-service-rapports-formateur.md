@@ -19,11 +19,12 @@ Aucun de ces services n'embarque de quoi convertir un PPTX en image.
 1. Le rendu vit dans un **service technique Python** (`services/`, Flask), qui remplit le modèle
    PowerPoint versionné et le convertit avec **LibreOffice**. Il est packagé comme les autres
    services (`services/Dockerfile`, service `rapports` du `docker-compose.yml`) et n'est joignable
-   que par la passerelle (`/apercu/*`, `/cr-donnees/*`).
+   que par la passerelle (`/apercu/*`).
 2. Le modèle (`services/apercu/modeles/MODELE-REFERENCES.pptx`) est **versionné** : la production
    d'un rapport ne dépend d'aucun dossier extérieur au dépôt.
-3. **Transitoire** : le même service conserve pour l'instant les brouillons (SQLite) et identifie
-   l'utilisateur par un en-tête. Ces deux points sortent du service dès que possible (§ Suites).
+3. Les **brouillons** ne sont pas dans ce service : ils vivent dans `cfao-operations` (ops-db,
+   JWT Keycloak, Cerbos `trainer_report`) depuis la story `04-5.2`. Le service de rendu ne garde
+   que des ressources techniques (photos, cache d'images).
 
 ## Conséquences
 
@@ -37,7 +38,7 @@ Aucun de ces services n'embarque de quoi convertir un PPTX en image.
 | Story | Objet |
 |---|---|
 | `04-5.1` | JWT Keycloak validé par le service, policy Cerbos `compte_rendu` + tests négatifs |
-| `04-5.2` | Brouillons dans `cfao-operations` (PostgreSQL) ; le service ne garde que le rendu |
+| `04-5.2` ✅ | Brouillons dans `cfao-operations` (PostgreSQL) ; le service ne garde que le rendu |
 | `04-5.3` | Textes d'interface dans `frontend/src/i18n/` |
 | `04-5.4` | Parcours E2E formateur sur la stack Compose |
 | `04-5.5` | Sessions lues depuis l'API `planning` au lieu du planning de démonstration |

@@ -41,23 +41,27 @@ toutes les pages sont ✓ est **terminé** : il quitte « en cours » et rejoint
 ## 2. Architecture
 
 ```
-Navigateur (SPA React)                     services/  (Python)
+Navigateur (SPA React)                     services/  (Python, rendu)
 ┌──────────────────────────┐   /apercu/*    ┌─────────────────────────────────┐
 │ frontend/src/…compte-rendu│ ─────────────▶ │ apercu/api.py (Flask)            │
-│  - saisie, brouillon      │  /cr-donnees/* │  - service.py : drapeaux → PPTX  │
-│  - valeursDrapeaux()      │ ─────────────▶ │  - composer/alleger : PPTX réduit│
+│  - saisie, brouillon      │                │  - service.py : drapeaux → PPTX  │
+│  - valeursDrapeaux()      │                │  - composer/alleger : PPTX réduit│
 │  - export/import Excel    │                │  - LibreOffice : PPTX → PNG/PDF  │
-│    (exceljs, dans le      │                │  - stockage.py : brouillons      │
-│     navigateur)           │                │  - photos.py : photos, légendes  │
-└──────────────────────────┘                │ redaction/ : moteur de texte     │
-                                            │ apercu/modeles/MODELE-REFERENCES │
-                                            └─────────────────────────────────┘
+│    (exceljs, dans le      │                │  - photos.py : photos, légendes  │
+│     navigateur)           │                │ redaction/ : moteur de texte     │
+└──────────────────────────┘                │ apercu/modeles/MODELE-REFERENCES │
+              │ /api/v1/ops/reports/*       └─────────────────────────────────┘
+              ▼
+┌──────────────────────────────────────────┐
+│ cfao-operations (Node) · module reports   │  JWT Keycloak → Cerbos trainer_report
+│  brouillons dans ops-db (PostgreSQL)      │  listes : query plan Cerbos → SQL
+└──────────────────────────────────────────┘
 ```
 
-- **Dev** : le serveur Vite relaie `/apercu` et `/cr-donnees` vers `127.0.0.1:5175`
-  (`frontend/vite.config.js`).
-- **Docker Compose** : service `rapports` (`services/Dockerfile`), joignable seulement par la
-  passerelle nginx, qui route les mêmes chemins (`gateway/nginx.conf`).
+- **Dev** : le serveur Vite relaie `/apercu` vers `127.0.0.1:5175`, et `/api` et `/oauth2` vers le
+  BFF (`CFAO_BFF`, par défaut `127.0.0.1:4180`) — `frontend/vite.config.js`.
+- **Docker Compose** : service `rapports` (`services/Dockerfile`) pour le rendu, joignable seulement
+  par la passerelle (`/apercu/`) ; brouillons dans le service `operations` (`/api/v1/ops/`).
 
 Ce service Flask est un **écart assumé et transitoire** par rapport à l'architecture cible
 (Django / Node, Keycloak, Cerbos, PostgreSQL) : voir
@@ -113,7 +117,8 @@ et case Validé / Échoué ; bloc e-learning ; appréciation ; bandeau
 ### Brouillon
 
 Un rapport en cours est un **brouillon** JSON, enregistré au fil de la saisie
-(`utils/brouillonsCompteRendu.js` → `PUT /cr-donnees/brouillons/<id>`), relu sur tout poste.
+(`utils/brouillonsCompteRendu.js` → `PUT /api/v1/ops/reports/drafts/<id>`), relu sur tout poste.
+Le propriétaire est le `sub` du jeton Keycloak : le navigateur n'envoie aucun identifiant.
 **La version la plus récente l'emporte** (`modifieLe`) : deux onglets ouverts sur le même rapport
 s'écrasent l'un l'autre.
 
@@ -122,8 +127,20 @@ Champs principaux : `type` (`formation` | `certification`), `codeFormation`, `in
 (certification), `satisfaction`, `textes` (clé `page.champ`), `photos` (par rubrique),
 `dispositions`, `modesLegende`, `legendes`, `marquageObjectifs`, `termineLe`.
 
-Stockage : SQLite dans `services/apercu/donnees/` (ignoré par Git ; volume `rapports-donnees`
-en conteneur). Photos : `services/apercu/donnees/photos/`.
+Stockage : **ops-db** (PostgreSQL), tables `trainer_report_drafts` (propriétaire, périmètre
+`org_path` à la création, contenu JSONB) et `trainer_report_deletions` ; migrations numérotées
+appliquées au démarrage (`cfao-operations/src/db/migrations.ts`). Photos : service de rendu,
+`services/apercu/donnees/photos/` (volume `rapports-donnees` en conteneur).
+
+**Reprise de l'ancien stockage SQLite** (avant 04-5.2) :
+
+```bash
+python services/apercu/exporter_brouillons.py > brouillons.json
+cd cfao-operations && npm run build && npm run importer:brouillons -- brouillons.json   --compte "u10=<sub Keycloak>@groupe,groupe.cmr,groupe.cmr.douala"
+```
+
+L'import est rejouable (la version la plus récente l'emporte) et réécrit l'ancienne adresse des
+photos (`/cr-donnees/photos/` → `/apercu/photos/`).
 
 ### Planning de démonstration et données personnelles
 
@@ -160,7 +177,22 @@ Le texte proposé reste à relire par le formateur.
 
 ---
 
-## 4. API du service
+## 4. API
+
+**cfao-operations** (`/api/v1/ops`, JWT Keycloak obligatoire, décision Cerbos `trainer_report`) :
+
+| Route | Effet | Action Cerbos |
+|---|---|---|
+| `GET /reports/drafts` | brouillons du connecté et suppressions ; `?portee=tous` : tout le périmètre visible | `view` (query plan) |
+| `GET /reports/drafts/<id>[?proprietaire=]` | un brouillon | `view` |
+| `PUT /reports/drafts/<id>` | enregistre (la version la plus récente l'emporte) | `create` / `update` |
+| `DELETE /reports/drafts/<id>` | supprime et garde la trace de la suppression | `delete` |
+
+Policy : `cerbos/policies/resource_policies/trainer_report.yaml` — le formateur gère ses rapports,
+le directeur du centre consulte ceux de son périmètre, le super admin a tous les droits ; tout le
+reste est refusé (tests négatifs dans `cerbos/tests/trainer_report_test.yaml`).
+
+**Service de rendu** (`services/apercu`) :
 
 | Route | Effet |
 |---|---|
@@ -169,9 +201,8 @@ Le texte proposé reste à relire par le formateur.
 | `POST /apercu/rapport` | rapport complet, page par page (`{pages, format}`) |
 | `POST /apercu/document` | rapport complet à partir des parties |
 | `POST /apercu/photo` | dépôt d'une photo, renvoie son identifiant |
+| `GET /apercu/photos/<id>.jpg` | photo enregistrée |
 | `POST /apercu/redaction` | texte proposé par le moteur |
-| `GET/PUT/DELETE /cr-donnees/brouillons[/<id>]` | brouillons de l'utilisateur (`X-Utilisateur`) |
-| `GET /cr-donnees/photos/<id>.jpg` | photo enregistrée |
 
 ---
 
@@ -211,7 +242,12 @@ cd services && pip install -r requirements-dev.txt && pytest -q tests
 | `frontend/src/utils/diapositives.test.js` | drapeaux de la fiche de certification, code couleur |
 | `frontend/src/data/dispositions_photos.test.js` | dispositions, modes de légende, anciens brouillons |
 | `services/tests/test_service.py` | substitution, lignes répétées, couleurs, modèle versionné, rendu LibreOffice |
-| `services/tests/test_brouillons.py` | contrat `/cr-donnees`, cloisonnement par utilisateur |
+| `services/tests/test_brouillons.py` | export de l'ancien stockage, brouillons retirés du service de rendu |
+| `cfao-operations/test/reports.test.ts` | JWT, PEP Cerbos, query plan, version la plus récente, suppressions, refus |
+| `cfao-operations/test/plan.test.ts` | traduction du query plan en SQL paramétré, fail-closed |
+| `cfao-operations/test/importer.test.ts` | reprise de l'ancien stockage |
+| `frontend/src/utils/brouillonsCompteRendu.test.js` | appel de l'API avec le cookie de session, sans identifiant |
+| `cerbos/tests/trainer_report_test.yaml` | policy : propriétaire, supervision, refus |
 
 Le rendu LibreOffice est sauté en CI (LibreOffice absent du runner) ; il s'exécute en local.
 **Les tests n'écrivent jamais dans `services/apercu/donnees/`** : base temporaire par test.
@@ -245,8 +281,8 @@ Le rendu LibreOffice est sauté en CI (LibreOffice absent du runner) ; il s'exé
 
 | Écart | Cible | Story |
 |---|---|---|
-| Utilisateur transmis par l'en-tête `X-Utilisateur`, sans jeton | JWT Keycloak validé, policy Cerbos `compte_rendu` avec tests négatifs | `04-5.1` |
-| Brouillons en SQLite dans le service | module `cfao-operations` (PostgreSQL), le service ne fait plus que le rendu | `04-5.2` |
+| Service de rendu sans jeton ; connexion du navigateur par profils de démonstration | JWT Keycloak validé par le service de rendu, BFF oauth2-proxy actif, policy Cerbos avec tests négatifs | `04-5.1` |
+| ~~Brouillons en SQLite dans le service~~ | **fait** : module `reports` de `cfao-operations` (PostgreSQL), JWT + Cerbos | `04-5.2` ✅ |
 | Textes d'interface en français dans les composants | `frontend/src/i18n/` (FR, EN, PT) | `04-5.3` |
 | Pas de test de bout en bout | parcours formateur E2E sur la stack Compose | `04-5.4` |
 | Planning de démonstration dans le frontend | API `planning` de `cfao-operations` | `04-5.5` |

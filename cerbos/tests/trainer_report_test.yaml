@@ -1,0 +1,142 @@
+# Tests de policy trainer_report (story 04-5.1), tests NEGATIFS inclus.
+name: TrainerReportSuite
+description: Rapports post-formation — proprietaire, supervision du centre, refus
+
+principals:
+  formateur_a:
+    id: t_a
+    roles: ["trainer"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+  formateur_b:
+    id: t_b
+    roles: ["trainer"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+  directeur_cmr:
+    id: d_cmr
+    roles: ["center_director"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+      orgPath: ["groupe", "groupe.cmr"]
+  directeur_civ:
+    id: d_civ
+    roles: ["center_director"]
+    attr:
+      scopeNodes: ["groupe.civ"]
+      orgPath: ["groupe", "groupe.civ"]
+  apprenant:
+    id: l_1
+    roles: ["learner"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+  admin_filiale:
+    id: a_cmr
+    roles: ["branch_admin"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+      orgPath: ["groupe", "groupe.cmr"]
+  super:
+    id: s_1
+    roles: ["superadmin"]
+    attr:
+      scopeNodes: ["groupe"]
+      orgPath: ["groupe"]
+
+resources:
+  rapport_a:
+    kind: trainer_report
+    id: manuel-1
+    attr:
+      ownerId: t_a
+      orgPath: ["groupe", "groupe.cmr", "groupe.cmr.douala"]
+
+tests:
+  - name: le formateur gere son propre rapport
+    input:
+      principals: ["formateur_a"]
+      resources: ["rapport_a"]
+      actions: ["create", "view", "update", "delete"]
+    expected:
+      - principal: formateur_a
+        resource: rapport_a
+        actions:
+          create: EFFECT_ALLOW
+          view: EFFECT_ALLOW
+          update: EFFECT_ALLOW
+          delete: EFFECT_ALLOW
+
+  - name: un autre formateur NE lit NI ne modifie le rapport (négatif)
+    input:
+      principals: ["formateur_b"]
+      resources: ["rapport_a"]
+      actions: ["create", "view", "update", "delete"]
+    expected:
+      - principal: formateur_b
+        resource: rapport_a
+        actions:
+          create: EFFECT_DENY
+          view: EFFECT_DENY
+          update: EFFECT_DENY
+          delete: EFFECT_DENY
+
+  - name: le directeur du centre consulte dans son périmètre sans modifier
+    input:
+      principals: ["directeur_cmr"]
+      resources: ["rapport_a"]
+      actions: ["view", "update", "delete"]
+    expected:
+      - principal: directeur_cmr
+        resource: rapport_a
+        actions:
+          view: EFFECT_ALLOW
+          update: EFFECT_DENY
+          delete: EFFECT_DENY
+
+  - name: un directeur hors périmètre ne voit rien (négatif)
+    input:
+      principals: ["directeur_civ"]
+      resources: ["rapport_a"]
+      actions: ["view"]
+    expected:
+      - principal: directeur_civ
+        resource: rapport_a
+        actions:
+          view: EFFECT_DENY
+
+  - name: apprenant et admin filiale n'ont aucun accès (négatif)
+    input:
+      principals: ["apprenant", "admin_filiale"]
+      resources: ["rapport_a"]
+      actions: ["create", "view", "update", "delete"]
+    expected:
+      - principal: apprenant
+        resource: rapport_a
+        actions:
+          create: EFFECT_DENY
+          view: EFFECT_DENY
+          update: EFFECT_DENY
+          delete: EFFECT_DENY
+      - principal: admin_filiale
+        resource: rapport_a
+        actions:
+          create: EFFECT_DENY
+          view: EFFECT_DENY
+          update: EFFECT_DENY
+          delete: EFFECT_DENY
+
+  - name: le super admin a tous les droits
+    input:
+      principals: ["super"]
+      resources: ["rapport_a"]
+      actions: ["view", "update", "delete"]
+    expected:
+      - principal: super
+        resource: rapport_a
+        actions:
+          view: EFFECT_ALLOW
+          update: EFFECT_ALLOW
+          delete: EFFECT_ALLOW

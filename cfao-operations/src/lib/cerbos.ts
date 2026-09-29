@@ -28,3 +28,35 @@ export async function check(
     return false // PDP indisponible ⇒ refus
   }
 }
+
+/** Filtre renvoye par le query plan de Cerbos (PlanResources). */
+export interface PlanFilter {
+  kind: 'KIND_ALWAYS_ALLOWED' | 'KIND_ALWAYS_DENIED' | 'KIND_CONDITIONAL'
+  condition?: unknown
+}
+
+/**
+ * Query plan pour une LISTE (architecture.md §5.3, etape 3b) : Cerbos dit sous
+ * quelle condition une ressource du type est visible, a traduire en filtre SQL.
+ * Toute erreur ⇒ tout refuse.
+ */
+export async function plan(principal: Principal, kind: string, action: string): Promise<PlanFilter> {
+  const body = {
+    requestId: randomUUID(),
+    action,
+    principal: { id: principal.id, roles: principal.roles.length ? principal.roles : ['_anon'], attr: principal.attr },
+    resource: { kind },
+  }
+  try {
+    const resp = await fetch(`${config.cerbosHttp}/api/plan/resources`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!resp.ok) return { kind: 'KIND_ALWAYS_DENIED' }
+    const data = (await resp.json()) as { filter?: PlanFilter }
+    return data.filter ?? { kind: 'KIND_ALWAYS_DENIED' }
+  } catch {
+    return { kind: 'KIND_ALWAYS_DENIED' }
+  }
+}
