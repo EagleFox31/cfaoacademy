@@ -26,7 +26,8 @@ cp .env.example .env        # ajuster les mots de passe de dev
 docker compose up --build
 ```
 
-- Gateway : http://localhost:8000 (`/healthz`, `/api/v1/core/...`, `/api/v1/ops/...`)
+- BFF (point d'entrée, connexion Keycloak) : http://localhost:8000
+- Gateway en direct, pour les appels avec Bearer : http://localhost:8001 (`/healthz`, `/api/v1/core/...`, `/api/v1/ops/...`, `/apercu/...`)
 - Keycloak : http://localhost:8080  · Cerbos : http://localhost:3592
 
 **Itération dev sans rebuild.** `docker-compose.override.yml` (chargé automatiquement) **bind-monte
@@ -81,7 +82,7 @@ et des **users de démo** (mot de passe `demo`).
 docker compose up keycloak-config-cli
 # Obtenir un token de dev (client public PKCE) puis tester la chaîne /me :
 #   réaliser le flow sur http://localhost:8080/realms/cfao  (client cfao-spa)
-#   puis : curl -H "Authorization: Bearer <token>" http://localhost:8000/api/v1/core/me
+#   puis : curl -H "Authorization: Bearer <token>" http://localhost:8001/api/v1/core/me
 ```
 
 Secrets (`OAUTH2_PROXY_CLIENT_SECRET`, `GOOGLE_*`, `MS_*`) injectés via `$(env:VAR)` — jamais

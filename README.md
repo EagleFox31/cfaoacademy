@@ -25,7 +25,8 @@ docker compose up --build
 
 | Service | URL |
 |---------|-----|
-| Gateway (API) | http://localhost:8000 |
+| BFF — point d'entrée (connexion) | http://localhost:8000 |
+| Gateway (API, Bearer direct) | http://localhost:8001 |
 | Keycloak | http://localhost:8080 |
 | Cerbos | http://localhost:3592 |
 

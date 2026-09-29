@@ -1,0 +1,15 @@
+# Ressource « report_rendering » (story 04-5.1) : le service de rendu des rapports
+# formateur (apercu des pages, rapport PPTX/PDF, photos, textes proposes).
+# Il ne detient aucune donnee de rapport : l'acces se decide sur le role.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: report_rendering
+  rules:
+    - actions: ["render", "photo", "redaction"]
+      effect: EFFECT_ALLOW
+      roles: ["trainer", "center_director"]
+
+    - actions: ["*"]
+      effect: EFFECT_ALLOW
+      roles: ["superadmin"]

@@ -1,0 +1,65 @@
+# Tests de policy report_rendering (story 04-5.1), tests NEGATIFS inclus.
+name: ReportRenderingSuite
+description: Service de rendu des rapports — formateurs et direction du centre seulement
+
+principals:
+  formateur:
+    id: t_a
+    roles: ["trainer"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+  directeur:
+    id: d_cmr
+    roles: ["center_director"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+  apprenant:
+    id: l_1
+    roles: ["learner"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+  ki:
+    id: k_1
+    roles: ["ki"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+  super:
+    id: s_1
+    roles: ["superadmin"]
+    attr:
+      scopeNodes: ["groupe"]
+
+resources:
+  rendu:
+    kind: report_rendering
+    id: rendu
+
+tests:
+  - name: formateur et directeur du centre utilisent le rendu
+    input:
+      principals: ["formateur", "directeur", "super"]
+      resources: ["rendu"]
+      actions: ["render", "photo", "redaction"]
+    expected:
+      - principal: formateur
+        resource: rendu
+        actions: { render: EFFECT_ALLOW, photo: EFFECT_ALLOW, redaction: EFFECT_ALLOW }
+      - principal: directeur
+        resource: rendu
+        actions: { render: EFFECT_ALLOW, photo: EFFECT_ALLOW, redaction: EFFECT_ALLOW }
+      - principal: super
+        resource: rendu
+        actions: { render: EFFECT_ALLOW, photo: EFFECT_ALLOW, redaction: EFFECT_ALLOW }
+
+  - name: apprenant et KI n'y ont pas accès (négatif)
+    input:
+      principals: ["apprenant", "ki"]
+      resources: ["rendu"]
+      actions: ["render", "photo", "redaction"]
+    expected:
+      - principal: apprenant
+        resource: rendu
+        actions: { render: EFFECT_DENY, photo: EFFECT_DENY, redaction: EFFECT_DENY }
+      - principal: ki
+        resource: rendu
+        actions: { render: EFFECT_DENY, photo: EFFECT_DENY, redaction: EFFECT_DENY }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { appelPlateforme } from '../../utils/appelPlateforme'
 
 /**
  * L'image reelle de la diapositive, convertie depuis le modele.
@@ -38,7 +39,7 @@ export default function ApercuReel({ diapo, valeurs, secours }) {
     // caractere lancerait une conversion.
     const minuteur = setTimeout(async () => {
       try {
-        const r = await fetch('/apercu/page', {
+        const r = await appelPlateforme('/apercu/page', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ diapo, valeurs }),

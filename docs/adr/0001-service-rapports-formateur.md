@@ -30,14 +30,14 @@ Aucun de ces services n'embarque de quoi convertir un PPTX en image.
 
 - Rendu fidèle au modèle, aperçu réel par page, rapport PPTX ou PDF.
 - Une image plus lourde (LibreOffice, ~500 Mo) et une conversion sérialisée par service.
-- Tant que l'authentification n'est pas branchée, le service ne doit pas être exposé hors de la
-  passerelle et du réseau interne.
+- Le service valide lui-même le jeton et consulte Cerbos (04-5.1) ; il reste derrière la passerelle,
+  qui lui transmet le jeton réinjecté par le BFF.
 
 ## Suites
 
 | Story | Objet |
 |---|---|
-| `04-5.1` | JWT Keycloak validé par le service, policy Cerbos `compte_rendu` + tests négatifs |
+| `04-5.1` ✅ | JWT Keycloak validé par le service, policies Cerbos `trainer_report` et `report_rendering` + tests négatifs, BFF actif |
 | `04-5.2` ✅ | Brouillons dans `cfao-operations` (PostgreSQL) ; le service ne garde que le rendu |
 | `04-5.3` | Textes d'interface dans `frontend/src/i18n/` |
 | `04-5.4` | Parcours E2E formateur sur la stack Compose |

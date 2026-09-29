@@ -58,10 +58,15 @@ Navigateur (SPA React)                     services/  (Python, rendu)
 └──────────────────────────────────────────┘
 ```
 
-- **Dev** : le serveur Vite relaie `/apercu` vers `127.0.0.1:5175`, et `/api` et `/oauth2` vers le
-  BFF (`CFAO_BFF`, par défaut `127.0.0.1:4180`) — `frontend/vite.config.js`.
-- **Docker Compose** : service `rapports` (`services/Dockerfile`) pour le rendu, joignable seulement
-  par la passerelle (`/apercu/`) ; brouillons dans le service `operations` (`/api/v1/ops/`).
+- **Connexion** : le navigateur ne détient aucun jeton. Le BFF (oauth2-proxy, port 8000) porte
+  la session dans un cookie httpOnly et réinjecte le Bearer Keycloak vers la passerelle, qui route
+  `/api/v1/ops/` vers `operations` et `/apercu/` vers `rapports`. Un appel sans session reçoit 401 :
+  `appelPlateforme()` (`utils/appelPlateforme.js`) envoie alors vers `/oauth2/start`, puis ramène
+  sur la page.
+- **Chaque service valide le jeton** (signature JWKS, émetteur) et consulte Cerbos :
+  `trainer_report` pour les brouillons, `report_rendering` pour le rendu (`services/apercu/acces.py`).
+- **Dev** : le serveur Vite relaie `/apercu`, `/api` et `/oauth2` vers le BFF (`CFAO_BFF`, par défaut
+  `127.0.0.1:8000`) — `frontend/vite.config.js`.
 
 Ce service Flask est un **écart assumé et transitoire** par rapport à l'architecture cible
 (Django / Node, Keycloak, Cerbos, PostgreSQL) : voir
@@ -192,7 +197,9 @@ Policy : `cerbos/policies/resource_policies/trainer_report.yaml` — le formateu
 le directeur du centre consulte ceux de son périmètre, le super admin a tous les droits ; tout le
 reste est refusé (tests négatifs dans `cerbos/tests/trainer_report_test.yaml`).
 
-**Service de rendu** (`services/apercu`) :
+**Service de rendu** (`services/apercu`, JWT Keycloak obligatoire sauf `/apercu/sante`, décision
+Cerbos `report_rendering` : actions `render`, `photo`, `redaction` — formateur, directeur du centre,
+super admin) :
 
 | Route | Effet |
 |---|---|
@@ -208,23 +215,24 @@ reste est refusé (tests négatifs dans `cerbos/tests/trainer_report_test.yaml`)
 
 ## 5. Démarrer en local
 
-Prérequis : Node 20, Python 3.12, **LibreOffice** (Impress).
+Le module s'exécute sur la stack de la plateforme : Keycloak, Cerbos, `operations` et sa base,
+`rapports`, passerelle et BFF.
 
 ```bash
-# Service (port 5175, boucle locale)
-pip install -r services/requirements.txt
-python services/apercu/api.py
-
-# Interface (port 5174)
-cd frontend && npm ci && npm run dev
-# puis /portail/compte-rendu/nouveau avec un profil formateur
+cp .env.example .env        # OAUTH2_PROXY_CLIENT_SECRET = secret du client cfao-portal (realm dev),
+                            # OAUTH2_PROXY_COOKIE_SECRET = 32 caractères
+docker compose up           # BFF sur http://localhost:8000
+cd frontend && npm ci && npm run dev   # interface sur :5174, API relayées vers le BFF
 ```
 
-Variables : `CR_MODELE` (autre modèle), `CR_CACHE` (cache des images), `CR_SOFFICE` (chemin de
-LibreOffice, par défaut celui de Windows), `CR_HOTE` / `CR_PORT` (écoute).
+Puis `/portail/compte-rendu/nouveau` : la première requête renvoie vers la connexion Keycloak
+(`eugene.ebene` / `demo` pour le formateur, `direction.centre` / `demo` pour la supervision), puis
+ramène sur l'assistant.
 
-En conteneur : `docker compose up rapports gateway` — l'image embarque LibreOffice et des polices
-métriquement compatibles (Liberation, Carlito). Le rendu Linux peut différer de quelques pixels
+Sans Docker, les tests couvrent chaque service isolément (§ 6). Variables du service de rendu :
+`CR_MODELE`, `CR_CACHE`, `CR_SOFFICE`, `CR_HOTE`, `CR_PORT`, `OIDC_JWKS_URL`, `OIDC_ISSUER`,
+`OIDC_AUDIENCE`, `CERBOS_HTTP`. L'image `rapports` embarque LibreOffice et des polices
+métriquement compatibles (Liberation, Carlito) : le rendu Linux peut différer de quelques pixels
 du rendu Windows.
 
 ---
@@ -248,6 +256,9 @@ cd services && pip install -r requirements-dev.txt && pytest -q tests
 | `cfao-operations/test/importer.test.ts` | reprise de l'ancien stockage |
 | `frontend/src/utils/brouillonsCompteRendu.test.js` | appel de l'API avec le cookie de session, sans identifiant |
 | `cerbos/tests/trainer_report_test.yaml` | policy : propriétaire, supervision, refus |
+| `cerbos/tests/report_rendering_test.yaml` | policy du rendu : rôles admis, refus |
+| `services/tests/test_acces.py` | rendu : jeton absent, clé étrangère, expiré, autre émetteur, refus Cerbos, PDP injoignable |
+| `frontend/src/utils/appelPlateforme.test.js` | cookie de session, 401 → connexion, sans boucle |
 
 Le rendu LibreOffice est sauté en CI (LibreOffice absent du runner) ; il s'exécute en local.
 **Les tests n'écrivent jamais dans `services/apercu/donnees/`** : base temporaire par test.
@@ -281,11 +292,11 @@ Le rendu LibreOffice est sauté en CI (LibreOffice absent du runner) ; il s'exé
 
 | Écart | Cible | Story |
 |---|---|---|
-| Service de rendu sans jeton ; connexion du navigateur par profils de démonstration | JWT Keycloak validé par le service de rendu, BFF oauth2-proxy actif, policy Cerbos avec tests négatifs | `04-5.1` |
+| ~~Service de rendu sans jeton~~ | **fait** : JWT validé par le service de rendu, Cerbos `report_rendering`, BFF oauth2-proxy actif en point d'entrée | `04-5.1` ✅ |
 | ~~Brouillons en SQLite dans le service~~ | **fait** : module `reports` de `cfao-operations` (PostgreSQL), JWT + Cerbos | `04-5.2` ✅ |
 | Textes d'interface en français dans les composants | `frontend/src/i18n/` (FR, EN, PT) | `04-5.3` |
 | Pas de test de bout en bout | parcours formateur E2E sur la stack Compose | `04-5.4` |
 | Planning de démonstration dans le frontend | API `planning` de `cfao-operations` | `04-5.5` |
 
-Tant que `04-5.1` n'est pas livrée, le service ne doit être exposé que derrière la passerelle,
-sur un réseau interne.
+Le service de rendu reste joignable uniquement derrière la passerelle : c'est elle, via le BFF,
+qui lui transmet le jeton.

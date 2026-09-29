@@ -9,6 +9,7 @@
  * Si le service est arrete, la fonction renvoie `null` plutot que de
  * lever : la saisie manuelle reste le chemin normal.
  */
+import { appelPlateforme } from './appelPlateforme'
 
 /** Les chiffres d'un stagiaire, dans la forme qu'attend le moteur. */
 export function participantPourMoteur(p, calcul, satisfaction, accueil) {
@@ -36,7 +37,7 @@ export function participantPourMoteur(p, calcul, satisfaction, accueil) {
  */
 export async function proposerTexte(participant, type = 'accueil') {
   try {
-    const reponse = await fetch('/apercu/redaction', {
+    const reponse = await appelPlateforme('/apercu/redaction', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // Une graine par clic : « Autre proposition » change de tournure.

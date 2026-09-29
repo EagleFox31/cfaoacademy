@@ -195,7 +195,7 @@ docker compose up --build
 |-----|-------|
 | http://localhost:8000/healthz | Gateway vivant ? |
 | http://localhost:8080 | Console Keycloak (admin / mot de passe .env) |
-| http://localhost:8000/api/v1/core/me | Test chaîne JWT + Cerbos (avec un vrai token) |
+| http://localhost:8001/api/v1/core/me | Test chaîne JWT + Cerbos (avec un vrai token) |
 
 Tests sans Docker pour Django :
 

@@ -18,6 +18,7 @@
  */
 import { pagesARemplir } from '../components/compte-rendu/PhaseVerification'
 import { SESSIONS_FORMATEUR } from '../data/mock_sessions_formateur'
+import { appelPlateforme } from './appelPlateforme'
 
 const CLE_ANCIENNE = 'cfao.comptes-rendus'
 const API = '/api/v1/ops/reports/drafts'
@@ -72,9 +73,8 @@ function ecrire(tout) {
  */
 async function serveur(chemin, options = {}) {
   try {
-    const r = await fetch(`${API}${chemin}`, {
+    const r = await appelPlateforme(`${API}${chemin}`, {
       ...options,
-      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     })
     if (r.status === 404) return undefined

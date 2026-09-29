@@ -55,8 +55,8 @@ const unitesEcran = {
   },
 }
 
-// Le BFF de la stack Docker (service oauth2-proxy du docker-compose).
-const BFF = process.env.CFAO_BFF || 'http://127.0.0.1:4180'
+// Le BFF de la stack Docker (service oauth2-proxy, point d'entree sur le port 8000).
+const BFF = process.env.CFAO_BFF || 'http://127.0.0.1:8000'
 
 export default defineConfig({
   plugins: [react(), cataloguesFallbackPlugin()],
@@ -65,13 +65,9 @@ export default defineConfig({
   server: {
     fs: { allow: ['..'] },
     proxy: {
-      // Le service d'apercu convertit les diapositives du modele en
-      // images. Il tourne a part : LibreOffice n'a pas sa place dans
-      // le serveur de developpement.
-      '/apercu': {
-        target: 'http://127.0.0.1:5175',
-        changeOrigin: true,
-      },
+      // Le rendu des rapports (LibreOffice, service `rapports`) passe lui
+      // aussi par le BFF : il exige le jeton que le BFF reinjecte.
+      '/apercu': { target: BFF, changeOrigin: false },
       // Les API de la plateforme passent par le BFF (oauth2-proxy), comme en
       // production : le navigateur ne parle qu'a cette origine et garde son
       // cookie de session (architecture_complement.md §5, « En dev local »).

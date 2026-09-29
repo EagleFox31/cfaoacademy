@@ -21,6 +21,7 @@ import BoutonsRedaction from './BoutonsRedaction'
 import { estCertification, calculerCertification, libelleModule } from '../../utils/certification'
 import { candidatPourMoteur, donneesCertification, statutElearning }
   from '../../utils/remarquesCertification'
+import { appelPlateforme } from '../../utils/appelPlateforme'
 
 /**
  * Phase 4 — l'edition du rapport.
@@ -295,7 +296,7 @@ export default function PhaseVerification({
         .filter(p => p.diapo),
     }
     try {
-      const r = await fetch('/apercu/rapport', {
+      const r = await appelPlateforme('/apercu/rapport', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(corps),

@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """L'interface HTTP du service d'apercu.
 
+Toute route sauf `/apercu/sante` exige un jeton Keycloak et une decision
+Cerbos sur `report_rendering` (voir `acces.py`, story 04-5.1).
+
 Trois routes, appelees par l'assistant de compte rendu :
 
     GET  /apercu/sante              le service repond-il, LibreOffice est-il la
@@ -19,6 +22,7 @@ import sys
 from flask import Flask, jsonify, request, send_file
 
 import photos
+from acces import protege
 from service import CACHE, MODELE, SOFFICE, document, image_de, rapport
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'redaction'))
@@ -42,6 +46,7 @@ def sante():
 
 
 @app.post('/apercu/page')
+@protege('render')
 def page():
     """L'image d'une diapositive, pour le mode apercu."""
     corps = request.get_json(force=True) or {}
@@ -56,6 +61,7 @@ def page():
 
 
 @app.post('/apercu/photo')
+@protege('photo')
 def photo():
     """Recoit une photo, la reduit et renvoie son identifiant.
 
@@ -72,6 +78,7 @@ def photo():
 
 
 @app.get('/apercu/photos/<ident>.jpg')
+@protege('photo')
 def photo_servir(ident):
     chemin = photos._chemin(ident, CACHE)
     if not chemin:
@@ -80,6 +87,7 @@ def photo_servir(ident):
 
 
 @app.post('/apercu/document')
+@protege('render')
 def doc():
     """Le rapport complet, une fois la relecture terminee."""
     corps = request.get_json(force=True) or {}
@@ -97,6 +105,7 @@ def doc():
 
 
 @app.post('/apercu/rapport')
+@protege('render')
 def rapport_complet():
     """Le rapport termine : chaque page avec ses propres valeurs.
 
@@ -116,6 +125,7 @@ def rapport_complet():
 
 
 @app.post('/apercu/redaction')
+@protege('redaction')
 def redaction():
     """Une proposition d'appreciation, a partir des chiffres d'un stagiaire.
 

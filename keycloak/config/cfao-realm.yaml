@@ -333,3 +333,43 @@ users:
         - "groupe.afrique_centrale.cameroun.douala"
     credentials:
       - { type: password, value: demo, temporary: false }
+
+  # Espace formateur (04-5) : persona u10 du front, et la direction du centre qui supervise.
+  - username: eugene.ebene
+    id: "11111111-1111-1111-1111-000000000010"
+    enabled: true
+    emailVerified: true
+    email: eugene.ebene@cfao.example
+    firstName: Eugène
+    lastName: EBENE
+    realmRoles: [trainer]
+    attributes:
+      scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
+      departments: ["motors"]
+      brands: ["toyota"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_centrale"
+        - "groupe.afrique_centrale.cameroun"
+        - "groupe.afrique_centrale.cameroun.douala"
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: direction.centre
+    id: "11111111-1111-1111-1111-000000000011"
+    enabled: true
+    emailVerified: true
+    email: direction.centre@cfao.example
+    firstName: Direction
+    lastName: Centre Academy
+    realmRoles: [center_director]
+    attributes:
+      scopeNode: ["groupe.afrique_centrale.cameroun"]
+      departments: ["motors"]
+      brands: []
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_centrale"
+        - "groupe.afrique_centrale.cameroun"
+    credentials:
+      - { type: password, value: demo, temporary: false }

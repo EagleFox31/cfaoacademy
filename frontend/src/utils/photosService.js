@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { appelPlateforme } from './appelPlateforme'
 
 /**
  * Les photos du brouillon, telles que le service d'apercu les connait.
@@ -32,7 +33,7 @@ export function useRefsPhotos(photosParRubrique) {
       envoyees.current.add(p.id)
       try {
         const image = await (await fetch(p.apercu)).blob()
-        const r = await fetch('/apercu/photo', { method: 'POST', body: image })
+        const r = await appelPlateforme('/apercu/photo', { method: 'POST', body: image })
         if (!r.ok) throw new Error(String(r.status))
         const { id } = await r.json()
         setRefs(avant => ({ ...avant, [p.id]: id }))
