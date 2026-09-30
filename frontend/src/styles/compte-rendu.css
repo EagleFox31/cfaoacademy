@@ -3554,3 +3554,16 @@
 
 /* Page « à documenter » : second groupe (à commencer) sous les saisies. */
 .cr-panel-head--suite { margin-top: 28px; }
+
+/* Carte commune : le badge d'etat et, pour une saisie en cours, sa corbeille. */
+.cr-session-etat { display: inline-flex; align-items: center; gap: 6px; }
+.cr-carte-suppr { padding: 3px 5px; }
+
+/* Page « à documenter » : deux groupes de cartes dans un même panneau.
+   Ils défilent ensemble, à leur hauteur naturelle, plutôt que chacun
+   dans son cadre. */
+.cr-assistant .cr-panel--choix .cr-groupes {
+  flex: 1; min-height: 0; overflow-y: auto; padding: 0 6px 12px 4px;
+}
+.cr-assistant .cr-panel--choix .cr-groupes .cr-session-grid { flex: none; overflow: visible; }
+.cr-assistant .cr-panel--choix .cr-groupes .cr-session-grid::after { display: none; }

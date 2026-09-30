@@ -4,32 +4,12 @@ import Nav from '../../components/Nav'
 import useAuth from '../../hooks/useAuth'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
-import { periodeLongue } from '../../utils/compteRendu'
+import CarteCompteRendu, {
+  BadgeCompteRendu, carteDeBrouillon, carteDeSession,
+} from '../../components/compte-rendu/CarteCompteRendu'
 import { brouillonsEnregistres, oublier, synchroniser } from '../../utils/brouillonsCompteRendu'
 import { aDocumenter } from '../../utils/planningFormateur.js'
 import '../../styles/compte-rendu.css'
-
-const ETAPES = ['La formation', 'Les notes', 'Les pages', 'Compléter']
-
-/** « il y a 2 jours », pour situer une reprise sans afficher une date brute. */
-function venuDe(iso) {
-  if (!iso) return ''
-  const minuit = d => { const j = new Date(d); j.setHours(0, 0, 0, 0); return j.getTime() }
-  const jours = Math.round((minuit(Date.now()) - minuit(iso)) / 86400000)
-  if (jours <= 0) return "aujourd'hui"
-  if (jours === 1) return 'hier'
-  if (jours < 14) return `il y a ${jours} jours`
-  return `il y a ${Math.round(jours / 7)} semaines`
-}
-
-function IconeCorbeille() {
-  return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l.9 12.5h9.2L17.5 7M10 11v5M14 11v5" />
-    </svg>
-  )
-}
 
 /**
  * Les comptes rendus commences, avant d'en reprendre un.
@@ -88,95 +68,51 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
         <section className="cr-etape">
           <div className="container" style={{ padding: '12px 32px 20px' }}>
             <div className="cr-panel cr-panel--choix">
-              <div className="cr-panel-head">
-                <h2 className="cr-panel-title">
-                  {aDocumenterAussi ? `À continuer (${brouillons.length})` : 'Reprendre une saisie'}
-                </h2>
-                <p className="cr-panel-hint">
-                  {brouillons.length
-                    ? 'Les comptes rendus commencés, du plus récent au plus ancien.'
-                    : 'Aucun compte rendu en cours.'}
-                </p>
-              </div>
-
-              {brouillons.length > 0 && (
-                <div className="cr-session-grid">
-                  {brouillons.map(b => (
-                    <div key={b.id} className="cr-session cr-brouillon" role="button" tabIndex={0}
-                      onClick={() => reprendre(b)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); reprendre(b) }
-                      }}>
-                      <div className="cr-session-top">
-                        <span className="cr-session-code">
-                          {b.code || (b.manuel ? 'Saisie libre' : '—')}
-                        </span>
-                        <span className="cr-badge cr-badge--warn">
-                          Étape {Math.min(b.phase, 3) + 1} · {ETAPES[Math.min(b.phase, 3)]}
-                        </span>
-                      </div>
-                      <h3 className="cr-session-title">{b.session || 'Compte rendu sans intitulé'}</h3>
-                      <div className="cr-session-meta">
-                        {b.debut && <span>{periodeLongue(b.debut, b.fin)}</span>}
-                        <span>{b.effectif} stagiaire{b.effectif > 1 ? 's' : ''}</span>
-                      </div>
-                      <div className="cr-session-meta">
-                        <span>
-                          {b.notes ? `Notes : ${b.notes}/${b.effectif}` : 'Aucune note saisie'}
-                        </span>
-                        <span>Modifié {venuDe(b.modifieLe)}</span>
-                      </div>
-                      <div className="cr-brouillon-pied">
-                        <span className="cr-brouillon-reprendre">Reprendre →</span>
-                        <button type="button" className="cr-brouillon-suppr"
-                          title="Supprimer ce compte rendu en cours"
-                          onClick={e => { e.stopPropagation(); supprimer(b) }}
-                          onKeyDown={e => e.stopPropagation()}>
-                          <IconeCorbeille /> Supprimer
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+              {/* Les deux groupes defilent ensemble ; l'echappee reste au bas. */}
+              <div className="cr-groupes">
+                <div className="cr-panel-head">
+                  <h2 className="cr-panel-title">
+                    {aDocumenterAussi ? `À continuer (${brouillons.length})` : 'Reprendre une saisie'}
+                  </h2>
+                  <p className="cr-panel-hint">
+                    {brouillons.length
+                      ? 'Les comptes rendus commencés, du plus récent au plus ancien.'
+                      : 'Aucun compte rendu en cours.'}
+                  </p>
                 </div>
-              )}
 
-              {aDocumenterAussi && (
-                <>
-                  <div className="cr-panel-head cr-panel-head--suite">
-                    <h2 className="cr-panel-title">À commencer ({aCommencer.length})</h2>
-                    <p className="cr-panel-hint">
-                      {aCommencer.length
-                        ? 'Les sessions de formation passées qui attendent encore leur compte rendu.'
-                        : 'Toutes vos sessions de formation passées ont leur compte rendu.'}
-                    </p>
+                {brouillons.length > 0 && (
+                  <div className="cr-session-grid">
+                    {brouillons.map(b => (
+                      <CarteCompteRendu key={b.id} carte={carteDeBrouillon(b)}
+                        badge={<BadgeCompteRendu etat="en_cours_redaction" phase={b.phase} />}
+                        onClick={() => reprendre(b)} onSupprimer={() => supprimer(b)} />
+                    ))}
                   </div>
-                  {aCommencer.length > 0 && (
-                    <div className="cr-session-grid">
-                      {aCommencer.map(s => (
-                        <div key={s.id} className="cr-session" role="button" tabIndex={0}
-                          onClick={() => commencer(s)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); commencer(s) }
-                          }}>
-                          <div className="cr-session-top">
-                            <span className="cr-session-code">{s.codeFormation || '—'}</span>
-                            <span className="cr-badge cr-badge--warn">À rédiger</span>
-                          </div>
-                          <h3 className="cr-session-title">{s.moduleFormation}</h3>
-                          <div className="cr-session-meta">
-                            <span>{periodeLongue(s.debut, s.fin)}</span>
-                            <span>{s.participants.length} stagiaire{s.participants.length > 1 ? 's' : ''}</span>
-                          </div>
-                          <div className="cr-session-meta"><span>{s.lieu}</span></div>
-                          <div className="cr-brouillon-pied">
-                            <span className="cr-brouillon-reprendre">Commencer →</span>
-                          </div>
-                        </div>
-                      ))}
+                )}
+
+                {aDocumenterAussi && (
+                  <>
+                    <div className="cr-panel-head cr-panel-head--suite">
+                      <h2 className="cr-panel-title">À commencer ({aCommencer.length})</h2>
+                      <p className="cr-panel-hint">
+                        {aCommencer.length
+                          ? 'Les sessions de formation passées qui attendent encore leur compte rendu.'
+                          : 'Toutes vos sessions de formation passées ont leur compte rendu.'}
+                      </p>
                     </div>
-                  )}
-                </>
-              )}
+                    {aCommencer.length > 0 && (
+                      <div className="cr-session-grid">
+                        {aCommencer.map(s => (
+                          <CarteCompteRendu key={s.id} carte={carteDeSession(s)}
+                            badge={<BadgeCompteRendu etat="a_rediger" />}
+                            onClick={() => commencer(s)} />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
 
               <div className="cr-echappee">
                 <span className="cr-echappee-texte">Une autre formation à documenter ?</span>

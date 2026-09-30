@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { periodeLongue } from '../../utils/compteRendu'
+import CarteCompteRendu, { BadgeCompteRendu, carteDeSession } from './CarteCompteRendu'
 import Consigne from './Consigne'
 import RepriseStagiaires from './RepriseStagiaires'
 import { lireEvaluation, appliquerEvaluation } from '../../utils/importEvaluation'
 import { brouillonsEnregistres, estTermine, synchroniser } from '../../utils/brouillonsCompteRendu'
-import { certificationDe } from '../../data/certifications'
 import { CERTIFICATION, FORMATION, champsDeType, estCertification } from '../../utils/certification'
 
 /**
@@ -134,29 +134,16 @@ export default function PhaseSession({
     formation = (
       <>
         <div className="cr-session-grid">
-          {proposables.map(s => (
-            <button key={s.id} type="button" className="cr-session"
-              onClick={() => choisir(s)}>
-              <div className="cr-session-top">
-                <span className="cr-session-code">{s.codeSession}</span>
-                <StatutSession session={s} commence={commences.find(b => b.id === s.id)} />
-              </div>
-              <h3 className="cr-session-title" title={s.moduleFormation}>{s.moduleFormation}</h3>
-              <div className="cr-session-meta">
-                <span>{periodeLongue(s.debut, s.fin)}</span>
-                <span>{s.participants.length} stagiaire{s.participants.length > 1 ? 's' : ''}</span>
-              </div>
-              {/* Le type ferme la carte, a droite : le statut garde le haut
-                  pour lui seul, et la carte ne grandit pas. */}
-              <div className="cr-session-meta cr-session-pied">
-                <span>{s.marque}</span>
-                <span className="cr-session-lieu" title={s.lieu}>{s.lieu}</span>
-                {certificationDe(s.codeFormation)
-                  ? <span className="cr-session-type cr-session-type--certif">Certification</span>
-                  : <span className="cr-session-type">Formation</span>}
-              </div>
-            </button>
-          ))}
+          {proposables.map(s => {
+            const commence = commences.find(b => b.id === s.id)
+            return (
+              <CarteCompteRendu key={s.id} carte={carteDeSession(s)} onClick={() => choisir(s)}
+                badge={<BadgeCompteRendu phase={commence?.phase}
+                  etat={commence ? 'en_cours_redaction'
+                    : s.statut === 'a_rediger' ? 'a_rediger'
+                      : s.statut === 'en_cours' ? 'session_en_cours' : null} />} />
+            )
+          })}
         </div>
 
         {/* Sous la liste, comme le « Je n'ai pas de compte » d'un
@@ -314,29 +301,6 @@ export default function PhaseSession({
       </div>
     </div>
   )
-}
-
-const ETAPES = ['la formation', 'les notes', 'les pages', 'compléter']
-
-/**
- * Ou en est le compte rendu d'une session.
- *
- * Un compte rendu commence l'emporte sur le statut du planning, qui ne
- * sait rien de la redaction : sans cela, une formation a moitie saisie
- * s'affichait encore « À rédiger ».
- */
-function StatutSession({ session, commence }) {
-  if (commence) {
-    const i = Math.min(commence.phase ?? 0, ETAPES.length - 1)
-    return (
-      <span className="cr-badge cr-badge--info" title={`Reprendre à l’étape ${i + 1} : ${ETAPES[i]}`}>
-        En cours · étape {i + 1}
-      </span>
-    )
-  }
-  if (session.statut === 'a_rediger') return <span className="cr-badge cr-badge--warn">À rédiger</span>
-  if (session.statut === 'en_cours') return <span className="cr-badge cr-badge--muted">Session en cours</span>
-  return null
 }
 
 /** Le passage au volet suivant, la ou l'on arrive en finissant celui-ci. */
