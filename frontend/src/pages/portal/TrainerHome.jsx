@@ -73,6 +73,17 @@ function visuelSession(session) {
  *      reprendre un brouillon, relire les precedents.
  *   3. **Vos prochaines sessions** — ce qu'il anime bientot.
  */
+function SectionVide({ titre, children }) {
+  return (
+    <div className="cr-panel">
+      <div className="cr-empty">
+        <div className="cr-empty-title">{titre}</div>
+        <p className="cr-empty-text">{children}</p>
+      </div>
+    </div>
+  )
+}
+
 export default function TrainerHome() {
   useSiteEffects()
   const { user } = useAuth()
@@ -122,9 +133,10 @@ export default function TrainerHome() {
         </div>
 
         {/* ── 1. Les sessions qui attendent leur compte rendu ──── */}
-        {aRediger.length > 0 && (
-          <PortalReveal id="a-documenter"
-            className="portal-next-actions-viewport cr-viewport">
+        {/* Toujours presente : les onglets de l'entete y menent, meme pour
+            un formateur dont le planning est encore vide. */}
+        <PortalReveal id="a-documenter"
+          className={aRediger.length > 0 ? 'portal-next-actions-viewport cr-viewport' : undefined}>
             <div className="container" style={{ padding: '16px 32px' }}>
               <div className="portal-section-head">
                 <p className="portal-section-eyebrow">Priorité — compte rendu</p>
@@ -132,6 +144,12 @@ export default function TrainerHome() {
               </div>
               {/* Section tenue a un ecran : la meta se limite aux dates et
                   a l'effectif. Le lieu se lit sur la fiche de session. */}
+              {aRediger.length === 0 ? (
+                <SectionVide titre="Aucune session à documenter">
+                  Les sessions de votre planning apparaîtront ici une fois terminées.
+                  En attendant, « Nouveau compte rendu » permet une saisie libre.
+                </SectionVide>
+              ) : (
               <PortalStaggerGrid>
                 {aRediger.map(s => (
                   <div key={s.id} className="portal-card-anchor">
@@ -151,9 +169,9 @@ export default function TrainerHome() {
                   </div>
                 ))}
               </PortalStaggerGrid>
+              )}
             </div>
           </PortalReveal>
-        )}
 
         {/* ── 2. Le module compte rendu ─────────────────────────── */}
         <PortalReveal id="comptes-rendus">
@@ -227,13 +245,17 @@ export default function TrainerHome() {
         </PortalReveal>
 
         {/* ── 3. Ce qu'il anime bientot ─────────────────────────── */}
-        {aVenir.length > 0 && (
           <PortalReveal id="sessions-a-venir">
             <div className="container" style={{ padding: '16px 32px' }}>
               <div className="portal-section-head">
                 <p className="portal-section-eyebrow">Planning — animation</p>
                 <h2 className="portal-section-title">Vos prochaines sessions</h2>
               </div>
+              {aVenir.length === 0 ? (
+                <SectionVide titre="Aucune session planifiée">
+                  Les sessions que vous animerez s’afficheront ici.
+                </SectionVide>
+              ) : (
               <PortalStaggerGrid>
                 {aVenir.map(s => (
                   <div key={s.id} className="portal-card-anchor">
@@ -255,9 +277,9 @@ export default function TrainerHome() {
                   </div>
                 ))}
               </PortalStaggerGrid>
+              )}
             </div>
           </PortalReveal>
-        )}
 
         <PortalAssistanceSection t={t} variant="learner" />
       </main>

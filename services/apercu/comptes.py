@@ -16,7 +16,7 @@ module et par les trois routes `/cr-donnees/connexion|session|deconnexion`.
 Creer ou modifier un compte, depuis la racine du depot :
 
     python services/apercu/comptes.py creer <identifiant> <profil.json>
-    python services/apercu/comptes.py mot-de-passe <identifiant>
+    python services/apercu/comptes.py mot-de-passe <identifiant> [mot de passe]
     python services/apercu/comptes.py liste
 """
 import hashlib
@@ -38,6 +38,7 @@ DUREE_PERSISTANTE = 30 * 24 * 3600
 DUREE_NAVIGATEUR = 12 * 3600
 # Apres cinq echecs, un identifiant attend une minute avant de reessayer.
 ECHECS_MAX, ATTENTE = 5, 60
+LONGUEUR_MIN = 4
 
 _verrou = threading.Lock()
 _echecs = {}
@@ -64,8 +65,8 @@ def enregistrer(identifiant, mot_de_passe, profil):
     identifiant = identifiant.strip().lower()
     if not stockage.valide(identifiant) or not stockage.valide(profil.get('id')):
         raise ValueError('identifiant ou id de profil invalide')
-    if len(mot_de_passe) < 8:
-        raise ValueError('mot de passe de 8 caracteres au moins')
+    if len(mot_de_passe) < LONGUEUR_MIN:
+        raise ValueError(f'mot de passe de {LONGUEUR_MIN} caracteres au moins')
     profil = {**profil, 'compte': True}
     with _verrou, _connexion() as cx:
         cx.execute(
@@ -77,8 +78,8 @@ def enregistrer(identifiant, mot_de_passe, profil):
 
 def changer_mot_de_passe(identifiant, mot_de_passe):
     """Nouveau mot de passe ; les sessions ouvertes sont fermees."""
-    if len(mot_de_passe) < 8:
-        raise ValueError('mot de passe de 8 caracteres au moins')
+    if len(mot_de_passe) < LONGUEUR_MIN:
+        raise ValueError(f'mot de passe de {LONGUEUR_MIN} caracteres au moins')
     with _verrou, _connexion() as cx:
         n = cx.execute('UPDATE comptes SET empreinte = ? WHERE identifiant = ?',
                        (generate_password_hash(mot_de_passe), identifiant)).rowcount
@@ -148,8 +149,8 @@ if __name__ == '__main__':
         mdp = _mot_de_passe_genere()
         enregistrer(sys.argv[2], mdp, profil)
         print(f'compte {sys.argv[2].lower()} pret, mot de passe : {mdp}')
-    elif commande == 'mot-de-passe' and len(sys.argv) == 3:
-        mdp = _mot_de_passe_genere()
+    elif commande == 'mot-de-passe' and len(sys.argv) in (3, 4):
+        mdp = sys.argv[3] if len(sys.argv) == 4 else _mot_de_passe_genere()
         changer_mot_de_passe(sys.argv[2].lower(), mdp)
         print(f'nouveau mot de passe de {sys.argv[2].lower()} : {mdp}')
     elif commande == 'liste':
