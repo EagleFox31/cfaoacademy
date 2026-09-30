@@ -51,6 +51,7 @@ export default function App() {
           <Route path="/portail/formateur" element={<TrainerHome />} />
           <Route path="/portail/compte-rendu/nouveau" element={<TrainerReportNew />} />
           <Route path="/portail/compte-rendu/en-cours" element={<TrainerReportsEnCours />} />
+          <Route path="/portail/compte-rendu/a-documenter" element={<TrainerReportsEnCours aDocumenterAussi />} />
           <Route path="/portail/compte-rendu/mes-rapports" element={<TrainerReportsTermines />} />
         </Routes>
       </RouteMotion>

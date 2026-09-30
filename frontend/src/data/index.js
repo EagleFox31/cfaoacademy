@@ -2,6 +2,7 @@
 import { isPlMedacapVariant } from '../utils/portalVariant.js'
 import { isMedacapLearner, medacapLearnerSections } from '../utils/medacapLearner.js'
 import { sessionsDuFormateur } from './mock_sessions_formateur.js'
+import { sessionsAVenir } from '../utils/planningFormateur.js'
 
 /** Masqué temporairement — section #sessions accueil + entrée navbar */
 export const HOME_SESSIONS_SECTION_VISIBLE = false
@@ -153,7 +154,7 @@ export function resolvePortalNavSections(roles, lms, user) {
   const sections = getPortalNavSections(roles)
   // Formateur : l'onglet des sessions suit la section, absente sans session a venir.
   if (getPrimaryRole(roles) === 'trainer') {
-    const aVenir = sessionsDuFormateur(user).some(s => s.statut === 'en_cours' || s.statut === 'a_venir')
+    const aVenir = sessionsAVenir(sessionsDuFormateur(user)).length > 0
     return aVenir ? sections : sections.filter(s => s.key !== 'sessions-a-venir')
   }
   if (getPrimaryRole(roles) !== 'learner' || !lms) return sections

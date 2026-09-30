@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Nav from '../../components/Nav'
+import useAuth from '../../hooks/useAuth'
 import useSiteEffects from '../../hooks/useSiteEffects'
+import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
 import { periodeLongue } from '../../utils/compteRendu'
-import { brouillonsEnCours, oublier, synchroniser } from '../../utils/brouillonsCompteRendu'
+import { brouillonsEnregistres, oublier, synchroniser } from '../../utils/brouillonsCompteRendu'
+import { aDocumenter } from '../../utils/planningFormateur.js'
 import '../../styles/compte-rendu.css'
 
 const ETAPES = ['La formation', 'Les notes', 'Les pages', 'Compléter']
@@ -37,16 +40,24 @@ function IconeCorbeille() {
  * intitule, periode, effectif — avec ce qui distingue un brouillon :
  * l'etape atteinte, les notes deja saisies, la derniere modification.
  * Un clic la reprend ; la corbeille la supprime, apres confirmation.
+ *
+ * Avec `aDocumenterAussi` (carte « Comptes rendus a documenter » de
+ * l'accueil), la page liste aussi ce qui reste a commencer : les sessions
+ * de formation passees qui n'ont encore aucun compte rendu.
  */
-export default function TrainerReportsEnCours() {
+export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
   useSiteEffects()
   const naviguer = useNavigate()
-  const [brouillons, setBrouillons] = useState(() => brouillonsEnCours())
+  const { user } = useAuth()
+  const sessions = useMemo(() => sessionsDuFormateur(user), [user])
+  const [tous, setTous] = useState(() => brouillonsEnregistres())
   useEffect(() => {
     let actif = true
-    synchroniser().then(liste => { if (actif && liste) setBrouillons(brouillonsEnCours(liste)) })
+    synchroniser().then(liste => { if (actif && liste) setTous(liste) })
     return () => { actif = false }
   }, [])
+  const { aContinuer: brouillons, aCommencer } = aDocumenter(sessions, tous)
+  const commencer = s => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)
 
   const reprendre = b => naviguer(`/portail/compte-rendu/nouveau?session=${b.id}`)
 
@@ -55,7 +66,7 @@ export default function TrainerReportsEnCours() {
     if (!window.confirm(`Supprimer « ${titre} » ? Les notes, textes et photos déjà `
       + 'saisis seront perdus.')) return
     oublier(b.id)
-    setBrouillons(brouillonsEnCours())
+    setTous(brouillonsEnregistres())
   }
 
   return (
@@ -68,7 +79,9 @@ export default function TrainerReportsEnCours() {
               onClick={() => naviguer('/portail/formateur')}>
               ← Mes comptes rendus
             </button>
-            <h1 className="cr-home-title cr-home-title--sm">Comptes rendus en cours</h1>
+            <h1 className="cr-home-title cr-home-title--sm">
+              {aDocumenterAussi ? 'Comptes rendus à documenter' : 'Comptes rendus en cours'}
+            </h1>
           </div>
         </header>
 
@@ -76,7 +89,9 @@ export default function TrainerReportsEnCours() {
           <div className="container" style={{ padding: '12px 32px 20px' }}>
             <div className="cr-panel cr-panel--choix">
               <div className="cr-panel-head">
-                <h2 className="cr-panel-title">Reprendre une saisie</h2>
+                <h2 className="cr-panel-title">
+                  {aDocumenterAussi ? `À continuer (${brouillons.length})` : 'Reprendre une saisie'}
+                </h2>
                 <p className="cr-panel-hint">
                   {brouillons.length
                     ? 'Les comptes rendus commencés, du plus récent au plus ancien.'
@@ -123,6 +138,44 @@ export default function TrainerReportsEnCours() {
                     </div>
                   ))}
                 </div>
+              )}
+
+              {aDocumenterAussi && (
+                <>
+                  <div className="cr-panel-head cr-panel-head--suite">
+                    <h2 className="cr-panel-title">À commencer ({aCommencer.length})</h2>
+                    <p className="cr-panel-hint">
+                      {aCommencer.length
+                        ? 'Les sessions de formation passées qui attendent encore leur compte rendu.'
+                        : 'Toutes vos sessions de formation passées ont leur compte rendu.'}
+                    </p>
+                  </div>
+                  {aCommencer.length > 0 && (
+                    <div className="cr-session-grid">
+                      {aCommencer.map(s => (
+                        <div key={s.id} className="cr-session" role="button" tabIndex={0}
+                          onClick={() => commencer(s)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); commencer(s) }
+                          }}>
+                          <div className="cr-session-top">
+                            <span className="cr-session-code">{s.codeFormation || '—'}</span>
+                            <span className="cr-badge cr-badge--warn">À rédiger</span>
+                          </div>
+                          <h3 className="cr-session-title">{s.moduleFormation}</h3>
+                          <div className="cr-session-meta">
+                            <span>{periodeLongue(s.debut, s.fin)}</span>
+                            <span>{s.participants.length} stagiaire{s.participants.length > 1 ? 's' : ''}</span>
+                          </div>
+                          <div className="cr-session-meta"><span>{s.lieu}</span></div>
+                          <div className="cr-brouillon-pied">
+                            <span className="cr-brouillon-reprendre">Commencer →</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="cr-echappee">

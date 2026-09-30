@@ -17,9 +17,10 @@ import usePortalBackground from '../../hooks/usePortalBackground'
 import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
 import useAjustementEcran from '../../hooks/useAjustementEcran.js'
 import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
+import { aDocumenter, sessionsAVenir } from '../../utils/planningFormateur.js'
 import { periodeLongue } from '../../utils/compteRendu'
 import {
-  brouillonsEnCours, brouillonsEnregistres, brouillonsTermines, synchroniser,
+  brouillonsEnregistres, brouillonsTermines, synchroniser,
 } from '../../utils/brouillonsCompteRendu'
 import { resolvePortalCardBrand } from '../../utils/portalCardMedia.js'
 import '../../styles/compte-rendu.css'
@@ -102,11 +103,7 @@ export default function TrainerHome() {
   useAjustementEcran(contenuPriorites, [Boolean(user)])
 
   const sessions = useMemo(() => sessionsDuFormateur(user), [user])
-  const aVenir = useMemo(
-    () => sessions.filter(
-      s => s.statut === 'en_cours' || s.statut === 'a_venir'),
-    [sessions],
-  )
+  const aVenir = useMemo(() => sessionsAVenir(sessions), [sessions])
   // Ceux de ce navigateur tout de suite, puis ceux du serveur — saisis
   // sur un autre poste — des qu'il repond.
   const [brouillons, setBrouillons] = useState(() => brouillonsEnregistres())
@@ -115,26 +112,23 @@ export default function TrainerHome() {
     synchroniser().then(liste => { if (actif && liste) setBrouillons(liste) })
     return () => { actif = false }
   }, [])
-  // Les comptes rendus termines vont a l'archive, et leur session ne
-  // figure plus parmi celles a documenter.
-  const enCours = brouillonsEnCours(brouillons)
+  // Les comptes rendus termines vont a l'archive ; a documenter : les
+  // saisies a continuer et les sessions passees encore sans compte rendu.
   const termines = brouillonsTermines(brouillons)
-  const aRediger = sessions.filter(s => s.statut === 'a_rediger'
-    && !termines.some(b => b.id === s.id))
+  const { aContinuer: enCours, aCommencer } = aDocumenter(sessions, brouillons)
 
   // Assistance aux techniciens : module a venir, rien n'attend encore.
   const assistanceEnAttente = 0
-  const aDocumenter = aRediger.length + enCours.length
+  const nbADocumenter = aCommencer.length + enCours.length
   // Une carte par zone du portail, au modele des autres : la pastille
   // porte le nombre d'elements qui attendent le formateur, 0 compris.
   const priorites = [
     {
-      id: 'cr', img: VISUEL_PRIORITE.comptesRendus, nombre: aDocumenter,
+      id: 'cr', img: VISUEL_PRIORITE.comptesRendus, nombre: nbADocumenter,
       enAttente: 'à documenter', titre: 'Comptes rendus à documenter',
-      meta: `${aRediger.length} session${aRediger.length > 1 ? 's' : ''} de formation à documenter, ${
-        enCours.length} saisie${enCours.length > 1 ? 's' : ''} en cours.`,
+      meta: `${enCours.length} à continuer, ${aCommencer.length} à commencer.`,
       metaVide: 'Tous vos comptes rendus sont à jour.',
-      section: 'comptes-rendus', cta: 'Voir les comptes rendus',
+      lien: '/portail/compte-rendu/a-documenter', cta: 'Voir les comptes rendus à documenter',
     },
     {
       id: 'sessions', img: VISUEL_PRIORITE.sessions, nombre: aVenir.length,
@@ -184,11 +178,12 @@ export default function TrainerHome() {
                     }
                     title={c.titre}
                     meta={c.nombre ? c.meta : c.metaVide}
-                    cta={c.section ? c.cta : undefined}
+                    cta={c.lien || c.section ? c.cta : undefined}
                     accentColor={c.nombre ? '#E3001B' : undefined}
-                    hoverHint={c.section ? c.cta : undefined}
-                    onClick={c.section ? () => scrollToPortalSection(c.section) : undefined}
-                    corner={Boolean(c.section)}
+                    hoverHint={c.lien || c.section ? c.cta : undefined}
+                    onClick={c.lien ? () => naviguer(c.lien)
+                      : c.section ? () => scrollToPortalSection(c.section) : undefined}
+                    corner={Boolean(c.lien || c.section)}
                   />
                 </div>
               ))}
@@ -212,8 +207,8 @@ export default function TrainerHome() {
                 <PvCard
                   img={VISUEL_ENTREE.nouveau}
                   kicker={
-                    <span className={`portal-status-chip ${aRediger.length ? 'progress' : 'done'}`}>
-                      {`${aRediger.length} à rédiger`}
+                    <span className={`portal-status-chip ${aCommencer.length ? 'progress' : 'done'}`}>
+                      {`${aCommencer.length} à rédiger`}
                     </span>
                   }
                   title="Nouveau compte rendu"

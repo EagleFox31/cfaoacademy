@@ -3551,3 +3551,6 @@
   font-weight: 500;
   opacity: .75;
 }
+
+/* Page « à documenter » : second groupe (à commencer) sous les saisies. */
+.cr-panel-head--suite { margin-top: 28px; }
