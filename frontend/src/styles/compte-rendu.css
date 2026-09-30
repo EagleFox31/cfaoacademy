@@ -3597,8 +3597,3 @@
   font-weight: 500;
   opacity: .75;
 }
-
-/* Accueil formateur : sous-titres de la section Comptes rendus. */
-.cr-sous-titre { font-size: 15px; font-weight: 600; margin: 8px 0 12px; color: var(--navy); }
-.cr-sous-titre ~ .cr-sous-titre { margin-top: 44px; }
-section:nth-of-type(even) .cr-sous-titre { color: #fff; }

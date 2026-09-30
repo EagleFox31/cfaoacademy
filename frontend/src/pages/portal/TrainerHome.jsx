@@ -201,33 +201,27 @@ export default function TrainerHome() {
               <h2 className="portal-section-title">Comptes rendus</h2>
             </div>
 
-            {aRediger.length > 0 && (
-              <>
-                <h3 className="cr-sous-titre">Sessions de formation à documenter</h3>
-                <PortalStaggerGrid>
-                  {aRediger.map(s => (
-                    <div key={s.id} className="portal-card-anchor">
-                      <PvCard
-                        {...visuelSession(s)}
-                        kicker={
-                          <span className="portal-status-chip progress">À rédiger</span>
-                        }
-                        title={s.moduleFormation}
-                        meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} stagiaires`}
-                        cta="Écrire le compte rendu"
-                        accentColor="#E3001B"
-                        hoverHint="Ouvrir le compte rendu"
-                        onClick={() => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)}
-                        corner
-                      />
-                    </div>
-                  ))}
-                </PortalStaggerGrid>
-                <h3 className="cr-sous-titre">Rédiger et retrouver</h3>
-              </>
-            )}
-
+            {/* Une seule grille : les sessions de formation a documenter,
+                puis l'entree du module. */}
             <PortalStaggerGrid>
+              {aRediger.map(s => (
+                <div key={s.id} className="portal-card-anchor">
+                  <PvCard
+                    {...visuelSession(s)}
+                    kicker={
+                      <span className="portal-status-chip progress">À rédiger</span>
+                    }
+                    title={s.moduleFormation}
+                    meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} stagiaires`}
+                    cta="Écrire le compte rendu"
+                    accentColor="#E3001B"
+                    hoverHint="Ouvrir le compte rendu"
+                    onClick={() => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)}
+                    corner
+                  />
+                </div>
+              ))}
+
               <div className="portal-card-anchor">
                 <PvCard
                   img={VISUEL_ENTREE.nouveau}
