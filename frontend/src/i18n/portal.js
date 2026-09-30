@@ -392,7 +392,7 @@ export const PORTAL_COPY = {
     nav_sec_directory: 'Annuaire',
     nav_sec_branches:  'Filiales',
     nav_sec_logs:      'Activité',
-    nav_sec_a_documenter:     'À documenter',
+    nav_sec_a_documenter:     'Priorités',
     nav_sec_comptes_rendus:   'Vos comptes rendus',
     nav_sec_sessions_animees: 'Vos sessions',
 
@@ -925,7 +925,7 @@ export const PORTAL_COPY = {
     nav_sec_directory: 'Directory',
     nav_sec_branches:  'Branches',
     nav_sec_logs:      'Activity',
-    nav_sec_a_documenter:     'To document',
+    nav_sec_a_documenter:     'Priorities',
     nav_sec_comptes_rendus:   'Your reports',
     nav_sec_sessions_animees: 'Your sessions',
 
@@ -1414,7 +1414,7 @@ export const PORTAL_COPY = {
     nav_sec_directory: 'Annuaire',
     nav_sec_branches: 'Filials',
     nav_sec_logs: 'Activité',
-    nav_sec_a_documenter: 'A documentar',
+    nav_sec_a_documenter: 'Prioridades',
     nav_sec_comptes_rendus: 'Vos comptes rendus',
     nav_sec_sessions_animees: 'Vos sessions',
     eyebrow_assistance: 'Hotline técnica · oficina',

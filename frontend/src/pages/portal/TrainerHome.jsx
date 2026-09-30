@@ -9,6 +9,7 @@ import PortalReveal from '../../components/PortalReveal.jsx'
 import PortalStaggerGrid from '../../components/PortalStaggerGrid.jsx'
 import PortalAssistanceSection from '../../components/PortalAssistanceSection.jsx'
 import PvCard from '../../components/PvCard'
+import { scrollToPortalSection } from '../../utils/portalScroll.js'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
@@ -73,17 +74,6 @@ function visuelSession(session) {
  *      reprendre un brouillon, relire les precedents.
  *   3. **Vos prochaines sessions** — ce qu'il anime bientot.
  */
-function SectionVide({ titre, children }) {
-  return (
-    <div className="cr-panel">
-      <div className="cr-empty">
-        <div className="cr-empty-title">{titre}</div>
-        <p className="cr-empty-text">{children}</p>
-      </div>
-    </div>
-  )
-}
-
 export default function TrainerHome() {
   useSiteEffects()
   const { user } = useAuth()
@@ -121,6 +111,17 @@ export default function TrainerHome() {
   const aRediger = sessions.filter(s => s.statut === 'a_rediger'
     && !termines.some(b => b.id === s.id))
 
+  // Assistance aux techniciens : module a venir, rien n'attend encore.
+  const assistanceEnAttente = 0
+  const indicateurs = [
+    { id: 'cr', nombre: aRediger.length + enCours.length, section: 'comptes-rendus',
+      libelle: 'Comptes rendus à documenter' },
+    { id: 'sessions', nombre: aVenir.length, section: 'sessions-a-venir',
+      libelle: 'Sessions à venir' },
+    { id: 'assistance', nombre: assistanceEnAttente, section: null,
+      libelle: 'Demandes d’assistance en attente' },
+  ]
+
   if (!user) return null
 
   return (
@@ -132,46 +133,28 @@ export default function TrainerHome() {
           <PortalHeader user={user} />
         </div>
 
-        {/* ── 1. Les sessions qui attendent leur compte rendu ──── */}
-        {/* Toujours presente : les onglets de l'entete y menent, meme pour
-            un formateur dont le planning est encore vide. */}
-        <PortalReveal id="a-documenter"
-          className={aRediger.length > 0 ? 'portal-next-actions-viewport cr-viewport' : undefined}>
-            <div className="container" style={{ padding: '16px 32px' }}>
-              <div className="portal-section-head">
-                <p className="portal-section-eyebrow">Priorité — compte rendu</p>
-                <h2 className="portal-section-title">Vos sessions à documenter</h2>
-              </div>
-              {/* Section tenue a un ecran : la meta se limite aux dates et
-                  a l'effectif. Le lieu se lit sur la fiche de session. */}
-              {aRediger.length === 0 ? (
-                <SectionVide titre="Aucune session à documenter">
-                  Les sessions de votre planning apparaîtront ici une fois terminées.
-                  En attendant, « Nouveau compte rendu » permet une saisie libre.
-                </SectionVide>
-              ) : (
-              <PortalStaggerGrid>
-                {aRediger.map(s => (
-                  <div key={s.id} className="portal-card-anchor">
-                    <PvCard
-                      {...visuelSession(s)}
-                      kicker={
-                        <span className="portal-status-chip progress">À rédiger</span>
-                      }
-                      title={s.moduleFormation}
-                      meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} stagiaires`}
-                      cta="Écrire le compte rendu"
-                      accentColor="#E3001B"
-                      hoverHint="Ouvrir le compte rendu"
-                      onClick={() => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)}
-                      corner
-                    />
-                  </div>
-                ))}
-              </PortalStaggerGrid>
-              )}
+        {/* ── 1. Priorites : ce qui attend une action du formateur ── */}
+        {/* Un compteur par section, a 0 quand rien n'attend : le formateur
+            voit d'un coup d'oeil ou agir, sans carte vide. */}
+        <PortalReveal id="a-documenter">
+          <div className="container" style={{ padding: '16px 32px' }}>
+            <div className="portal-section-head">
+              <p className="portal-section-eyebrow">Priorités</p>
+              <h2 className="portal-section-title">Ce qui attend votre action</h2>
             </div>
-          </PortalReveal>
+            <div className="portal-kpi-row">
+              {indicateurs.map(i => (
+                <button key={i.id} type="button"
+                  className="portal-kpi-card cr-indicateur"
+                  disabled={!i.nombre || !i.section}
+                  onClick={() => scrollToPortalSection(i.section)}>
+                  <div className={`portal-kpi-value${i.nombre ? ' accent' : ''}`}>{i.nombre}</div>
+                  <div className="portal-kpi-label">{i.libelle}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </PortalReveal>
 
         {/* ── 2. Le module compte rendu ─────────────────────────── */}
         <PortalReveal id="comptes-rendus">
@@ -180,6 +163,32 @@ export default function TrainerHome() {
               <p className="portal-section-eyebrow">Vos documents</p>
               <h2 className="portal-section-title">Comptes rendus</h2>
             </div>
+
+            {aRediger.length > 0 && (
+              <>
+                <h3 className="cr-sous-titre">Sessions à documenter</h3>
+                <PortalStaggerGrid>
+                  {aRediger.map(s => (
+                    <div key={s.id} className="portal-card-anchor">
+                      <PvCard
+                        {...visuelSession(s)}
+                        kicker={
+                          <span className="portal-status-chip progress">À rédiger</span>
+                        }
+                        title={s.moduleFormation}
+                        meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} stagiaires`}
+                        cta="Écrire le compte rendu"
+                        accentColor="#E3001B"
+                        hoverHint="Ouvrir le compte rendu"
+                        onClick={() => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)}
+                        corner
+                      />
+                    </div>
+                  ))}
+                </PortalStaggerGrid>
+                <h3 className="cr-sous-titre">Rédiger et retrouver</h3>
+              </>
+            )}
 
             <PortalStaggerGrid>
               <div className="portal-card-anchor">
@@ -245,17 +254,13 @@ export default function TrainerHome() {
         </PortalReveal>
 
         {/* ── 3. Ce qu'il anime bientot ─────────────────────────── */}
+        {aVenir.length > 0 && (
           <PortalReveal id="sessions-a-venir">
             <div className="container" style={{ padding: '16px 32px' }}>
               <div className="portal-section-head">
                 <p className="portal-section-eyebrow">Planning — animation</p>
                 <h2 className="portal-section-title">Vos prochaines sessions</h2>
               </div>
-              {aVenir.length === 0 ? (
-                <SectionVide titre="Aucune session planifiée">
-                  Les sessions que vous animerez s’afficheront ici.
-                </SectionVide>
-              ) : (
               <PortalStaggerGrid>
                 {aVenir.map(s => (
                   <div key={s.id} className="portal-card-anchor">
@@ -277,9 +282,9 @@ export default function TrainerHome() {
                   </div>
                 ))}
               </PortalStaggerGrid>
-              )}
             </div>
           </PortalReveal>
+        )}
 
         <PortalAssistanceSection t={t} variant="learner" />
       </main>
