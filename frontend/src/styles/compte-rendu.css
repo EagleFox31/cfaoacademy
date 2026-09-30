@@ -3598,11 +3598,7 @@
   opacity: .75;
 }
 
-/* Indicateurs de l'accueil formateur : cartes KPI du portail, cliquables
-   quand une action attend. */
-.cr-indicateur { font: inherit; text-align: left; cursor: pointer; transition: transform .15s, box-shadow .15s; }
-.cr-indicateur:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(14,17,38,0.12); }
-.cr-indicateur:disabled { cursor: default; }
+/* Accueil formateur : sous-titres de la section Comptes rendus. */
 .cr-sous-titre { font-size: 15px; font-weight: 600; margin: 8px 0 12px; color: var(--navy); }
 .cr-sous-titre ~ .cr-sous-titre { margin-top: 44px; }
 section:nth-of-type(even) .cr-sous-titre { color: #fff; }

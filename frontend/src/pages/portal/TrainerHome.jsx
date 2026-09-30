@@ -34,6 +34,13 @@ const VISUEL_POLE = {
   Carrosserie: '/assets/publics/carrossiers.jpg',
 }
 
+/** Visuel des cartes de priorite, une par zone du portail. */
+const VISUEL_PRIORITE = {
+  comptesRendus: '/assets/img_cards/test_theorie_senior.jpg',
+  sessions: '/assets/publics/clients.jpg',
+  assistance: '/assets/publics/techniciens.jpg',
+}
+
 /** Visuel des cartes d'entree du module. */
 const VISUEL_ENTREE = {
   nouveau: '/assets/publics/process-sav.jpg',
@@ -113,13 +120,32 @@ export default function TrainerHome() {
 
   // Assistance aux techniciens : module a venir, rien n'attend encore.
   const assistanceEnAttente = 0
-  const indicateurs = [
-    { id: 'cr', nombre: aRediger.length + enCours.length, section: 'comptes-rendus',
-      libelle: 'Comptes rendus à documenter' },
-    { id: 'sessions', nombre: aVenir.length, section: 'sessions-a-venir',
-      libelle: 'Sessions à venir' },
-    { id: 'assistance', nombre: assistanceEnAttente, section: null,
-      libelle: 'Demandes d’assistance en attente' },
+  const aDocumenter = aRediger.length + enCours.length
+  // Une carte par zone du portail, au modele des autres : la pastille
+  // porte le nombre d'elements qui attendent le formateur, 0 compris.
+  const priorites = [
+    {
+      id: 'cr', img: VISUEL_PRIORITE.comptesRendus, nombre: aDocumenter,
+      enAttente: 'à documenter', titre: 'Comptes rendus à documenter',
+      meta: `${aRediger.length} session${aRediger.length > 1 ? 's' : ''} à documenter, ${
+        enCours.length} saisie${enCours.length > 1 ? 's' : ''} en cours.`,
+      metaVide: 'Tous vos comptes rendus sont à jour.',
+      section: 'comptes-rendus', cta: 'Voir les comptes rendus',
+    },
+    {
+      id: 'sessions', img: VISUEL_PRIORITE.sessions, nombre: aVenir.length,
+      enAttente: 'à venir', titre: 'Sessions à venir',
+      meta: 'Les sessions que vous animez prochainement.',
+      metaVide: 'Aucune session planifiée pour le moment.',
+      section: aVenir.length ? 'sessions-a-venir' : null, cta: 'Voir les sessions',
+    },
+    {
+      id: 'assistance', img: VISUEL_PRIORITE.assistance, nombre: assistanceEnAttente,
+      enAttente: 'en attente', titre: 'Assistance aux techniciens',
+      meta: 'Des techniciens attendent votre aide.',
+      metaVide: 'Aucune demande d’assistance en attente.',
+      section: null, cta: 'Voir les demandes',
+    },
   ]
 
   if (!user) return null
@@ -136,23 +162,34 @@ export default function TrainerHome() {
         {/* ── 1. Priorites : ce qui attend une action du formateur ── */}
         {/* Un compteur par section, a 0 quand rien n'attend : le formateur
             voit d'un coup d'oeil ou agir, sans carte vide. */}
-        <PortalReveal id="a-documenter">
+        <PortalReveal id="a-documenter"
+          className="portal-next-actions-viewport cr-viewport">
           <div className="container" style={{ padding: '16px 32px' }}>
             <div className="portal-section-head">
-              <p className="portal-section-eyebrow">Priorités</p>
-              <h2 className="portal-section-title">Ce qui attend votre action</h2>
+              <p className="portal-section-eyebrow">{t.eyebrow_next_actions}</p>
+              <h2 className="portal-section-title">{t.title_next_actions}</h2>
             </div>
-            <div className="portal-kpi-row">
-              {indicateurs.map(i => (
-                <button key={i.id} type="button"
-                  className="portal-kpi-card cr-indicateur"
-                  disabled={!i.nombre || !i.section}
-                  onClick={() => scrollToPortalSection(i.section)}>
-                  <div className={`portal-kpi-value${i.nombre ? ' accent' : ''}`}>{i.nombre}</div>
-                  <div className="portal-kpi-label">{i.libelle}</div>
-                </button>
+            <PortalStaggerGrid>
+              {priorites.map(c => (
+                <div key={c.id} className="portal-card-anchor">
+                  <PvCard
+                    img={c.img}
+                    kicker={
+                      <span className={`portal-status-chip ${c.nombre ? 'progress' : 'done'}`}>
+                        {`${c.nombre} ${c.enAttente}`}
+                      </span>
+                    }
+                    title={c.titre}
+                    meta={c.nombre ? c.meta : c.metaVide}
+                    cta={c.section ? c.cta : undefined}
+                    accentColor={c.nombre ? '#E3001B' : undefined}
+                    hoverHint={c.section ? c.cta : undefined}
+                    onClick={c.section ? () => scrollToPortalSection(c.section) : undefined}
+                    corner={Boolean(c.section)}
+                  />
+                </div>
               ))}
-            </div>
+            </PortalStaggerGrid>
           </div>
         </PortalReveal>
 
