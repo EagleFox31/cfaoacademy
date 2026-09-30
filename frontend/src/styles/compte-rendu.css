@@ -692,52 +692,6 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   Accueil formateur : la section prioritaire tenue à un écran
-
-   `portal-next-actions-viewport` (portal.css) fixe la hauteur de la
-   section à `100dvh - appbar - entête` et coupe ce qui dépasse. Le
-   corps des cartes y arrivait à 224 px pour 148 disponibles : le titre
-   passait, la méta et le lien étaient tranchés.
-
-   Le corps du portail porte `min-height: 148px` et des marges taillées
-   pour une page qui défile. Ici la place est comptée : on resserre, et
-   la vignette absorbe le reste.
-
-   Ces règles portent sur `.cr-viewport`, pas sur la classe du portail :
-   le tableau de bord apprenant utilise la même section prioritaire, et
-   ses cartes — plus hautes, avec pays, durée et formateur — se
-   faisaient couper quand le resserrement les atteignait aussi.
-   ══════════════════════════════════════════════════════════════════ */
-
-.portal-page .cr-viewport .pv-card-body {
-  gap: 6px;
-  padding: 13px 16px 15px;
-  min-height: 0;
-}
-
-/* La vignette cède la hauteur dont le texte a besoin, sans descendre
-   sous une bande où la photo reste lisible. */
-.portal-page .cr-viewport .pv-card-img {
-  aspect-ratio: auto;
-  min-height: 84px;
-  max-height: 128px;
-}
-
-/* Un module de formation tient en deux lignes ; au-delà, l'ellipse. */
-.portal-page .cr-viewport .pv-card-body h3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* La rangée de marque et la méta ne réclament pas la place d'une ligne
-   vide quand elles sont courtes. */
-.portal-page .cr-viewport .pv-card-brand-row {
-  min-height: 0;
-}
-
-/* ══════════════════════════════════════════════════════════════════
    Échappée « ma formation n'est pas dans la liste »
 
    Sous la grille, séparée par un filet : la place où le regard arrive

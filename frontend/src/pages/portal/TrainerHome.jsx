@@ -15,6 +15,7 @@ import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
 import usePortalBackground from '../../hooks/usePortalBackground'
 import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
+import useAjustementEcran from '../../hooks/useAjustementEcran.js'
 import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
 import { periodeLongue } from '../../utils/compteRendu'
 import {
@@ -27,18 +28,19 @@ import '../../styles/compte-rendu.css'
  *
  * Surtout pas la fiche catalogue : `technicien_<marque>.png` est le
  * schema des niveaux de competences, lisible sur une fiche A4, illisible
- * et hors sujet en vignette de carte. */
+ * et hors sujet en vignette de carte. Les `*-carte.jpg` sont les visuels
+ * des publics sans leur cadre blanc : la photo couvre toute la vignette. */
 const VISUEL_POLE = {
-  Motors: '/assets/publics/techniciens.jpg',
-  Equipment: '/assets/publics/techniciens.jpg',
+  Motors: '/assets/img_cards/techniciens-carte.jpg',
+  Equipment: '/assets/img_cards/techniciens-carte.jpg',
   Carrosserie: '/assets/publics/carrossiers.jpg',
 }
 
 /** Visuel des cartes de priorite, une par zone du portail. */
 const VISUEL_PRIORITE = {
   comptesRendus: '/assets/img_cards/test_theorie_senior.jpg',
-  sessions: '/assets/publics/clients.jpg',
-  assistance: '/assets/publics/techniciens.jpg',
+  sessions: '/assets/img_cards/clients-carte.jpg',
+  assistance: '/assets/img_cards/techniciens-carte.jpg',
 }
 
 /** Visuel des cartes d'entree du module. */
@@ -60,7 +62,7 @@ function venuDe(iso) {
 function visuelSession(session) {
   const { logo, label } = resolvePortalCardBrand(session.marque)
   return {
-    img: VISUEL_POLE[session.pole] ?? '/assets/publics/techniciens.jpg',
+    img: VISUEL_POLE[session.pole] ?? '/assets/img_cards/techniciens-carte.jpg',
     logo,
     brandLabel: logo ? undefined : label,
   }
@@ -96,6 +98,8 @@ export default function TrainerHome() {
   // Publie la hauteur de l'entete : la section prioritaire s'en sert pour
   // occuper exactement le reste de l'ecran.
   usePortalHeaderHeight(headerRef)
+  const contenuPriorites = useRef(null)
+  useAjustementEcran(contenuPriorites, [Boolean(user)])
 
   const sessions = useMemo(() => sessionsDuFormateur(user), [user])
   const aVenir = useMemo(
@@ -162,9 +166,8 @@ export default function TrainerHome() {
         {/* ── 1. Priorites : ce qui attend une action du formateur ── */}
         {/* Un compteur par section, a 0 quand rien n'attend : le formateur
             voit d'un coup d'oeil ou agir, sans carte vide. */}
-        <PortalReveal id="a-documenter"
-          className="portal-next-actions-viewport cr-viewport">
-          <div className="container" style={{ padding: '16px 32px' }}>
+        <PortalReveal id="a-documenter" className="portal-next-actions-viewport">
+          <div ref={contenuPriorites} className="container" style={{ padding: '16px 32px' }}>
             <div className="portal-section-head">
               <p className="portal-section-eyebrow">{t.eyebrow_next_actions}</p>
               <h2 className="portal-section-title">{t.title_next_actions}</h2>
@@ -208,7 +211,11 @@ export default function TrainerHome() {
               <div className="portal-card-anchor">
                 <PvCard
                   img={VISUEL_ENTREE.nouveau}
-                  kicker={<span className="portal-status-chip progress">Rédiger</span>}
+                  kicker={
+                    <span className={`portal-status-chip ${aRediger.length ? 'progress' : 'done'}`}>
+                      {`${aRediger.length} à rédiger`}
+                    </span>
+                  }
                   title="Nouveau compte rendu"
                   meta="Depuis une session de formation planifiée, ou en saisissant tout manuellement."
                   cta="Commencer"

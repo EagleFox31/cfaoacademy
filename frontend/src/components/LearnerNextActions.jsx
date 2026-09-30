@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import PortalReveal from './PortalReveal.jsx'
 import PortalStaggerGrid from './PortalStaggerGrid.jsx'
 import PvCard from './PvCard'
@@ -5,6 +6,7 @@ import EvalCardMedia from './EvalCardMedia.jsx'
 import PortalSessionCard from './PortalSessionCard.jsx'
 import LearnerEvalCard from './LearnerEvalCard.jsx'
 import useLocale from '../hooks/useLocale'
+import useAjustementEcran from '../hooks/useAjustementEcran.js'
 import { portalPvCardMedia } from '../utils/portalCardMedia.js'
 import {
   evalAccentColor,
@@ -154,6 +156,8 @@ function PlMedacapNextActions({ user, lms, actions, onEval }) {
   const sectionId = actions?.sectionId ?? null
 
   const isRedirectCategory = category === 'results' || category === 'pif'
+  const contenu = useRef(null)
+  useAjustementEcran(contenu, [category, items.length])
   if (!category || (!isRedirectCategory && !items.length)) return null
 
   const titleByCategory = {
@@ -183,7 +187,7 @@ function PlMedacapNextActions({ user, lms, actions, onEval }) {
 
   return (
     <PortalReveal id="next-actions" className="portal-next-actions-viewport">
-      <div className="container" style={{ padding: '16px 32px' }}>
+      <div ref={contenu} className="container" style={{ padding: '16px 32px' }}>
         <div className="portal-section-head portal-section-head--with-action">
           <div>
             <p className="portal-section-eyebrow">{eyebrowByCategory[category]}</p>

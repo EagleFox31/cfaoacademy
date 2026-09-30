@@ -4730,44 +4730,30 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
 }
 
 .portal-page .portal-next-actions-viewport {
-  /* La section occupe EXACTEMENT le reste de l'écran : `height` et non
-     `min-height`, pour qu'elle ne puisse ni laisser de vide ni déborder. */
-  height: var(--portal-priorities-h);
+  /* La section couvre au moins le reste de l'écran, sans vide sous l'entête.
+     Ses cartes gardent la taille de celles des autres sections : quand elles
+     ne tiennent pas, tout le contenu est réduit d'un même facteur
+     (cf. hooks/useAjustementEcran.js), borné pour que le texte reste
+     lisible ; au-delà, la section s'allonge et la page défile. */
+  min-height: var(--portal-priorities-h);
   margin-bottom: 0;
-  display: flex;
-  /* Le contenu démarre en HAUT de la section : centrer créait le vide au-dessus
-     du titre « Vos priorités ». */
-  align-items: flex-start;
-  overflow: hidden;
+  /* Marges fluides : pleines (48 px) sur un écran de 1080 px de haut,
+     resserrées sur un portable, jamais sous 12 px. Les cartes et le texte
+     gardent leur taille ; seul l'air autour se réduit. */
+  padding-top: clamp(12px, calc(9vh - 49px), 48px);
+  padding-bottom: clamp(12px, calc(9vh - 49px), 48px);
 }
 
 .portal-page .portal-next-actions-viewport > .container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
   /* Léger espace au-dessus du titre, pour ne pas coller à l'entête. */
-  padding-top: 18px !important;
+  padding-top: clamp(6px, calc(3vh - 14px), 18px) !important;
 }
 
-/* La grille ne doit PAS s'étirer pour remplir la hauteur réservée : `flex: 1`
-   ajoutait sous les cartes un vide proportionnel à la place restante, bien plus
-   large que la marge des autres sections. Elle garde sa hauteur naturelle et
-   se contente de ne pas déborder. */
-.portal-page .portal-next-actions-viewport .portal-stagger-grid {
-  flex: 0 1 auto;
-  min-height: 0;
-  align-content: start;
-}
-
-/* Les cartes suivent la hauteur disponible plutôt que de la dépasser : la
-   rangée se comprime, et le média de chaque carte absorbe la réduction. */
-.portal-page .portal-next-actions-viewport .portal-stagger-grid > * {
-  min-height: 0;
-}
-
-.portal-page .portal-next-actions-viewport .pv-card {
-  height: 100%;
+/* L'entête qui partage l'écran avec « Vos priorités » : mêmes marges
+   fluides (56 / 48 px à 1080 px de haut). */
+.portal-page .portal-page-header.page-header {
+  padding-top: clamp(16px, calc(10vh - 52px), 56px);
+  padding-bottom: clamp(12px, calc(9vh - 49px), 48px);
 }
 
 /* Respiration entre l'entête de section et la grille. */
@@ -4775,32 +4761,9 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   margin-bottom: 14px;
 }
 
-/* Média des cartes : ratio de base plus bas, mais surtout autorisé à se
-   comprimer si la hauteur manque — sans cela `height: 100%` sur la carte la
-   ferait déborder de la section. */
-.portal-page .portal-next-actions-viewport .pv-card-img {
-  aspect-ratio: 16 / 10;
-  min-height: 0;
-  flex-shrink: 1;
-}
-
-/* Écrans courts (portables 13", fenêtre réduite) : la contrainte d'un écran
-   deviendrait illisible — on la relâche et la section reprend sa hauteur.
-   Hauteur effective : l'attribut remplace `max-height`, qui verrait la
-   hauteur avant mise a l'echelle (cf. utils/echelle.js). */
+/* Écrans courts (portables 13", fenêtre réduite) : la section ne réserve
+   pas tout l'écran. Hauteur effective : l'attribut remplace `max-height`,
+   qui verrait la hauteur avant mise a l'echelle (cf. utils/echelle.js). */
 :root[data-bas~="720"] .portal-page .portal-next-actions-viewport {
-  height: auto;
   min-height: 0;
-  max-height: none;
-  overflow: visible;
-}
-
-:root[data-bas~="720"] .portal-page .portal-next-actions-viewport > .container {
-  height: auto;
-  min-height: 0;
-  max-height: none;
-}
-
-:root[data-bas~="720"] .portal-page .portal-next-actions-viewport .pv-card {
-  height: auto;
 }

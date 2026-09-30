@@ -17,7 +17,9 @@
  * d'ecran : les reporter en CSS demande de les diviser par `echelle()`.
  */
 const REFERENCE = 1920
-const PLANCHER = 0.75
+// Echelle minimale de lecture : 13 px (texte secondaire des cartes) restent
+// au moins 10,4 px a l'ecran, 15 px (texte courant) au moins 12 px.
+export const ECHELLE_MIN = 0.8
 // Les seuils de hauteur des feuilles de style (`:root[data-bas~="820"]`).
 const SEUILS_HAUTEUR = [540, 720, 820]
 
@@ -32,7 +34,7 @@ function appliquer() {
   // Au-dessous de 1280, c'est une tablette ou un telephone : leur mise
   // en page propre s'applique, sans reduction.
   const z = largeur >= 1280 && largeur < REFERENCE
-    ? Math.round(Math.max(PLANCHER, largeur / REFERENCE) * 1000) / 1000
+    ? Math.round(Math.max(ECHELLE_MIN, largeur / REFERENCE) * 1000) / 1000
     : 1
   if (z < 1) {
     racine.style.zoom = String(z)
