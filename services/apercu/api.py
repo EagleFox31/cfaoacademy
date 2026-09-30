@@ -16,7 +16,11 @@ qu'un formateur les retrouve sur tout poste du reseau
 from pathlib import Path
 
 import os
+import re
 import sys
+import threading
+import time
+import uuid
 from flask import Flask, jsonify, request, send_file
 
 import photos
@@ -161,6 +165,69 @@ def rapport_complet():
     except Exception as e:  # noqa: BLE001
         return jsonify({'erreur': str(e)}), 500
     return send_file(chemin, as_attachment=True, download_name=f'rapport{chemin.suffix}')
+
+
+# ── Production du rapport en tache de fond ──────────────────────────────
+# Un rapport complet demande 40 s a plus d'une minute sans qu'un octet ne
+# parte : des postes formateurs (antivirus, pare-feu, proxy) coupent une
+# requete restee aussi longtemps muette, et le PowerPoint, pourtant produit,
+# n'arrivait jamais. La production se lance, l'interface suit son etat par
+# des requetes courtes, puis telecharge le fichier.
+
+_TACHES = {}
+_verrou_taches = threading.Lock()
+_IDENT_TACHE = re.compile(r'[0-9a-f]{32}')
+DUREE_TACHE = 3600  # comme les fichiers de rapport, effaces apres une heure
+
+
+def _produire(ident, pages, format_):
+    try:
+        resultat = {'etat': 'pret', 'chemin': rapport(pages, format_)}
+    except Exception as e:  # noqa: BLE001 — l'interface affiche l'echec
+        resultat = {'etat': 'echec', 'erreur': str(e)}
+    with _verrou_taches:
+        _TACHES[ident].update(resultat)
+
+
+def _tache(ident):
+    if not _IDENT_TACHE.fullmatch(ident):
+        return None
+    with _verrou_taches:
+        return dict(_TACHES.get(ident) or {}) or None
+
+
+@app.post('/apercu/rapports')
+def rapport_lancer():
+    """Lance la production du rapport ; renvoie l'identifiant a suivre."""
+    corps = request.get_json(force=True, silent=True) or {}
+    pages = [p for p in corps.get('pages') or [] if isinstance(p, dict) and p.get('diapo')]
+    if not pages:
+        return jsonify({'erreur': 'aucune page'}), 400
+    format_ = 'pdf' if corps.get('format') == 'pdf' else 'pptx'
+    ident = uuid.uuid4().hex
+    with _verrou_taches:
+        limite = time.time() - DUREE_TACHE
+        for vieux in [k for k, t in _TACHES.items() if t['debut'] < limite]:
+            del _TACHES[vieux]
+        _TACHES[ident] = {'etat': 'en_cours', 'debut': time.time(), 'format': format_}
+    threading.Thread(target=_produire, args=(ident, pages, format_), daemon=True).start()
+    return jsonify({'id': ident}), 202
+
+
+@app.get('/apercu/rapports/<ident>')
+def rapport_etat(ident):
+    t = _tache(ident)
+    if not t:
+        return jsonify({'erreur': 'introuvable'}), 404
+    return jsonify({'etat': t['etat'], **({'erreur': t['erreur']} if t['etat'] == 'echec' else {})})
+
+
+@app.get('/apercu/rapports/<ident>/fichier')
+def rapport_fichier(ident):
+    t = _tache(ident)
+    if not t or t['etat'] != 'pret' or not Path(t['chemin']).exists():
+        return jsonify({'erreur': 'rapport indisponible'}), 404
+    return send_file(t['chemin'], as_attachment=True, download_name=f"rapport.{t['format']}")
 
 
 @app.post('/apercu/redaction')

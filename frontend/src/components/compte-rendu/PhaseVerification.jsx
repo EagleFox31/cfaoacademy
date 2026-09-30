@@ -280,6 +280,44 @@ export default function PhaseVerification({
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 
+  /**
+   * Le PowerPoint, produit en tache de fond par le service.
+   *
+   * La production dure de 40 s a plus d'une minute sans que rien ne
+   * transite : des postes coupent une requete aussi longtemps muette, et
+   * le rapport, pourtant pret, n'arrivait jamais. On lance donc la
+   * production, on suit son etat par des requetes courtes, puis on
+   * telecharge le fichier. Quelques coupures pendant le suivi sont
+   * tolerees ; au-dela de dix minutes, on abandonne.
+   */
+  async function rapportProduit(corps) {
+    const json = { 'Content-Type': 'application/json' }
+    const lancement = await fetch('/apercu/rapports', { method: 'POST', headers: json, body: JSON.stringify(corps) })
+    if (!lancement.ok) throw new Error(String(lancement.status))
+    const { id } = await lancement.json()
+    const limite = Date.now() + 10 * 60_000
+    let coupures = 0
+    for (;;) {
+      await new Promise(r => setTimeout(r, 2000))
+      if (Date.now() > limite) throw new Error('delai')
+      let etat
+      try {
+        const r = await fetch(`/apercu/rapports/${id}`)
+        if (!r.ok) throw new Error(String(r.status))
+        ;({ etat } = await r.json())
+        coupures = 0
+      } catch (e) {
+        if (++coupures > 5) throw e
+        continue
+      }
+      if (etat === 'pret') break
+      if (etat === 'echec') throw new Error('echec')
+    }
+    const fichier = await fetch(`/apercu/rapports/${id}/fichier`)
+    if (!fichier.ok) throw new Error(String(fichier.status))
+    return fichier.blob()
+  }
+
   // Le document final reprend page par page ce que montrent les
   // apercus : meme diapositive, memes valeurs. Les pages repetees
   // (jours, fiches) y gardent chacune les leurs.
@@ -295,13 +333,7 @@ export default function PhaseVerification({
         .filter(p => p.diapo),
     }
     try {
-      const r = await fetch('/apercu/rapport', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(corps),
-      })
-      if (!r.ok) throw new Error(String(r.status))
-      const blob = await r.blob()
+      const blob = await rapportProduit(corps)
       setFichier(blob)
       telecharger(blob)
       // Toutes les pages remplies, le compte rendu est deja a l'archive ;
