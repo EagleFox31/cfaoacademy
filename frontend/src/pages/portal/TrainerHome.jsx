@@ -127,17 +127,17 @@ export default function TrainerHome() {
     {
       id: 'cr', img: VISUEL_PRIORITE.comptesRendus, nombre: aDocumenter,
       enAttente: 'à documenter', titre: 'Comptes rendus à documenter',
-      meta: `${aRediger.length} session${aRediger.length > 1 ? 's' : ''} à documenter, ${
+      meta: `${aRediger.length} session${aRediger.length > 1 ? 's' : ''} de formation à documenter, ${
         enCours.length} saisie${enCours.length > 1 ? 's' : ''} en cours.`,
       metaVide: 'Tous vos comptes rendus sont à jour.',
       section: 'comptes-rendus', cta: 'Voir les comptes rendus',
     },
     {
       id: 'sessions', img: VISUEL_PRIORITE.sessions, nombre: aVenir.length,
-      enAttente: 'à venir', titre: 'Sessions à venir',
-      meta: 'Les sessions que vous animez prochainement.',
-      metaVide: 'Aucune session planifiée pour le moment.',
-      section: aVenir.length ? 'sessions-a-venir' : null, cta: 'Voir les sessions',
+      enAttente: 'à venir', titre: 'Sessions de formation à venir',
+      meta: 'Les sessions de formation que vous animez prochainement.',
+      metaVide: 'Aucune session de formation planifiée pour le moment.',
+      section: aVenir.length ? 'sessions-a-venir' : null, cta: 'Voir les sessions de formation',
     },
     {
       id: 'assistance', img: VISUEL_PRIORITE.assistance, nombre: assistanceEnAttente,
@@ -203,7 +203,7 @@ export default function TrainerHome() {
 
             {aRediger.length > 0 && (
               <>
-                <h3 className="cr-sous-titre">Sessions à documenter</h3>
+                <h3 className="cr-sous-titre">Sessions de formation à documenter</h3>
                 <PortalStaggerGrid>
                   {aRediger.map(s => (
                     <div key={s.id} className="portal-card-anchor">
@@ -233,7 +233,7 @@ export default function TrainerHome() {
                   img={VISUEL_ENTREE.nouveau}
                   kicker={<span className="portal-status-chip progress">Rédiger</span>}
                   title="Nouveau compte rendu"
-                  meta="Depuis une session planifiée, ou en saisissant tout manuellement."
+                  meta="Depuis une session de formation planifiée, ou en saisissant tout manuellement."
                   cta="Commencer"
                   accentColor="#E3001B"
                   hoverHint="Ouvrir un compte rendu"
@@ -296,7 +296,7 @@ export default function TrainerHome() {
             <div className="container" style={{ padding: '16px 32px' }}>
               <div className="portal-section-head">
                 <p className="portal-section-eyebrow">Planning — animation</p>
-                <h2 className="portal-section-title">Vos prochaines sessions</h2>
+                <h2 className="portal-section-title">Vos prochaines sessions de formation</h2>
               </div>
               <PortalStaggerGrid>
                 {aVenir.map(s => (
@@ -311,8 +311,8 @@ export default function TrainerHome() {
                       }
                       title={s.moduleFormation}
                       meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} stagiaires · ${s.lieu}`}
-                      cta="Voir la session"
-                      hoverHint="Voir la session"
+                      cta="Voir la session de formation"
+                      hoverHint="Voir la session de formation"
                       onClick={() => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)}
                       corner
                     />
