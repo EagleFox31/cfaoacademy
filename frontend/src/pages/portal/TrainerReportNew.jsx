@@ -2,7 +2,8 @@ import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Nav from '../../components/Nav'
 import useSiteEffects from '../../hooks/useSiteEffects'
-import { SESSIONS_FORMATEUR } from '../../data/mock_sessions_formateur'
+import useAuth from '../../hooks/useAuth'
+import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
 import { syntheseGroupe } from '../../utils/baremeCfao'
 import { estCertification, syntheseCertification, typeDepuisCode } from '../../utils/certification'
 import { enregistrer, recuperer, recupererDuServeur } from '../../utils/brouillonsCompteRendu'
@@ -72,12 +73,14 @@ export default function TrainerReportNew() {
   const naviguer = useNavigate()
   const [params] = useSearchParams()
   const sessionDemandee = params.get('session')
+  const { user } = useAuth()
+  const sessions = useMemo(() => sessionsDuFormateur(user), [user])
 
   const [brouillon, setBrouillon] = useState(() => {
     if (sessionDemandee) {
       const repris = recuperer(sessionDemandee)
       if (repris) return repris
-      const s = SESSIONS_FORMATEUR.find(x => x.id === sessionDemandee)
+      const s = sessions.find(x => x.id === sessionDemandee)
       if (s) return depuisSession(s)
     }
     return brouillonVide()
@@ -165,8 +168,8 @@ export default function TrainerReportNew() {
         nbJours: brouillon.nbJours,
       }
     }
-    return SESSIONS_FORMATEUR.find(s => s.id === brouillon.sessionId) || null
-  }, [brouillon])
+    return sessions.find(s => s.id === brouillon.sessionId) || null
+  }, [brouillon, sessions])
 
   const certification = estCertification(brouillon)
   const synthese = useMemo(
@@ -277,7 +280,7 @@ export default function TrainerReportNew() {
             {phase === 0 && (
               <PhaseSession
                 brouillon={brouillon} maj={maj}
-                sessions={SESSIONS_FORMATEUR}
+                sessions={sessions}
                 onChoisirSession={reprendreOuCommencer}
                 onSaisieManuelle={(depart = {}) => setBrouillon({
                   ...brouillonVide(), manuel: true, participants: [],

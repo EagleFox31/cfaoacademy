@@ -59,9 +59,13 @@ const SSO_PROVIDERS = [
 export default function Login() {
   useSiteEffects()
   const { locale, t } = useLocale('login')
-  const auth = useAuthForm(locale)
-  const { login, profiles } = useAuth()
+  const { login, connexion, profiles } = useAuth()
   const navigate = useNavigate()
+  const auth = useAuthForm(locale, async (identifiant, motDePasse, seSouvenir) => {
+    const refus = await connexion(identifiant, motDePasse, seSouvenir)
+    if (!refus) navigate('/portail')
+    return refus
+  })
   const [demoOpen, setDemoOpen] = useState(() => {
     if (typeof window === 'undefined') return false
     return window.matchMedia('(min-width: 961px)').matches

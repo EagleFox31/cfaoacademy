@@ -18,11 +18,11 @@ def attendre(client, ident, secondes=5):
     return 'en_cours'
 
 
-def test_lance_suit_puis_sert_le_fichier(tmp_path, monkeypatch):
+def test_lance_suit_puis_sert_le_fichier(tmp_path, monkeypatch, connecte):
     fichier = tmp_path / 'r.pptx'
     fichier.write_bytes(b'PK-rapport')
     monkeypatch.setattr(api, 'rapport', lambda pages, format_: fichier)
-    client = api.app.test_client()
+    client = connecte()
     r = client.post('/apercu/rapports', json={'pages': [{'diapo': 1, 'valeurs': {}}]})
     assert r.status_code == 202
     ident = r.get_json()['id']
@@ -32,18 +32,18 @@ def test_lance_suit_puis_sert_le_fichier(tmp_path, monkeypatch):
     assert f.data == b'PK-rapport'
 
 
-def test_un_echec_de_production_est_signale(monkeypatch):
+def test_un_echec_de_production_est_signale(monkeypatch, connecte):
     def panne(pages, format_):
         raise RuntimeError('conversion pptx sans resultat')
     monkeypatch.setattr(api, 'rapport', panne)
-    client = api.app.test_client()
+    client = connecte()
     ident = client.post('/apercu/rapports', json={'pages': [{'diapo': 1}]}).get_json()['id']
     assert attendre(client, ident) == 'echec'
     assert client.get(f'/apercu/rapports/{ident}/fichier').status_code == 404
 
 
-def test_refuse_une_demande_vide_ou_un_identifiant_invalide():
-    client = api.app.test_client()
+def test_refuse_une_demande_vide_ou_un_identifiant_invalide(connecte):
+    client = connecte()
     assert client.post('/apercu/rapports', json={'pages': []}).status_code == 400
     assert client.get('/apercu/rapports/..%2Fx').status_code == 404
     assert client.get('/apercu/rapports/' + '0' * 32).status_code == 404

@@ -145,6 +145,13 @@ function absent(p) {
   return { ...p, present: false }
 }
 
+/** Les sessions animees par ce formateur : chacun ne voit que les siennes. */
+export function sessionsDuFormateur(user) {
+  const nom = v => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase()
+  const lui = nom(`${user?.firstName || ''} ${user?.lastName || ''}`)
+  return lui ? SESSIONS_FORMATEUR.filter(s => nom(s.formateur) === lui) : []
+}
+
 export const SESSIONS_FORMATEUR = [
   {
     // Liste d'inscription papier (TOYOTA, presentiel). Les dix-sept

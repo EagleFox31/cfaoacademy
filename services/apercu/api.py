@@ -11,6 +11,10 @@ Trois routes, appelees par l'assistant de compte rendu :
 S'y ajoutent les comptes rendus en cours et leurs photos, conserves pour
 qu'un formateur les retrouve sur tout poste du reseau
 (`/cr-donnees/...`, voir `stockage.py`).
+
+Tout demande une session ouverte par le formulaire de connexion
+(`/cr-donnees/connexion`, voir `comptes.py`) : chaque formateur ne voit
+que ses propres comptes rendus.
 """
 
 from pathlib import Path
@@ -21,8 +25,9 @@ import sys
 import threading
 import time
 import uuid
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, g, jsonify, request, send_file
 
+import comptes
 import photos
 import stockage
 from service import CACHE, MODELE, SOFFICE, document, image_de, rapport
@@ -77,13 +82,56 @@ def photo():
         return jsonify({'erreur': str(e)}), 400
 
 
+# ── Connexion ──────────────────────────────────────────────────────────
+COOKIE = 'cfao_session'
+LIBRES = {'/apercu/sante', '/cr-donnees/connexion', '/cr-donnees/session',
+          '/cr-donnees/deconnexion'}
+
+
+@app.before_request
+def _session_requise():
+    """Sans session ouverte, rien d'autre que la connexion ne repond."""
+    g.profil = comptes.profil_de(request.cookies.get(COOKIE))
+    if request.path not in LIBRES and not g.profil:
+        return jsonify({'erreur': 'connexion requise'}), 401
+
+
+@app.post('/cr-donnees/connexion')
+def connexion():
+    corps = request.get_json(force=True, silent=True) or {}
+    identifiant = str(corps.get('identifiant') or '')
+    try:
+        profil = comptes.verifier(identifiant, str(corps.get('motDePasse') or ''))
+    except PermissionError:
+        return jsonify({'erreur': 'trop de tentatives, reessayez dans une minute'}), 429
+    if not profil:
+        return jsonify({'erreur': 'identifiant ou mot de passe incorrect'}), 401
+    persistante = bool(corps.get('seSouvenir'))
+    jeton, duree = comptes.ouvrir_session(identifiant, persistante)
+    r = jsonify(profil)
+    r.set_cookie(COOKIE, jeton, max_age=duree if persistante else None,
+                 httponly=True, samesite='Lax', path='/')
+    return r
+
+
+@app.get('/cr-donnees/session')
+def session_ouverte():
+    return (jsonify(g.profil), 200) if g.profil else (jsonify({'erreur': 'aucune session'}), 401)
+
+
+@app.post('/cr-donnees/deconnexion')
+def deconnexion():
+    comptes.fermer_session(request.cookies.get(COOKIE))
+    r = jsonify({'deconnecte': True})
+    r.delete_cookie(COOKIE, path='/')
+    return r
+
+
 # ── Comptes rendus en cours, conserves cote serveur ────────────────────
-# L'utilisateur est celui du compte de demonstration, transmis par
-# l'interface : pas d'authentification encore, reseau local seulement.
+# Ranges sous l'id du profil connecte : chacun ne voit que les siens.
 
 def _utilisateur():
-    u = request.headers.get('X-Utilisateur', '')
-    return u if stockage.valide(u) else None
+    return g.profil['id']
 
 
 @app.get('/cr-donnees/brouillons')

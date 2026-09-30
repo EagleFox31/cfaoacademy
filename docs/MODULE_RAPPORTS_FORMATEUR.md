@@ -167,11 +167,33 @@ Le texte proposé reste à relire par le formateur.
 | `GET /apercu/sante` | le service, le modèle et LibreOffice sont-ils prêts |
 | `POST /apercu/page` | PNG d'une diapositive (`{diapo, valeurs}`) |
 | `POST /apercu/rapport` | rapport complet, page par page (`{pages, format}`) |
+| `POST /apercu/rapports`, `GET /apercu/rapports/<id>[/fichier]` | même rapport, préparé en tâche de fond puis téléchargé |
 | `POST /apercu/document` | rapport complet à partir des parties |
 | `POST /apercu/photo` | dépôt d'une photo, renvoie son identifiant |
 | `POST /apercu/redaction` | texte proposé par le moteur |
-| `GET/PUT/DELETE /cr-donnees/brouillons[/<id>]` | brouillons de l'utilisateur (`X-Utilisateur`) |
+| `POST /cr-donnees/connexion` | `{identifiant, motDePasse, seSouvenir}` → profil + cookie `cfao_session` (HttpOnly) |
+| `GET /cr-donnees/session`, `POST /cr-donnees/deconnexion` | profil connecté (401 sinon), fermeture de la session |
+| `GET/PUT/DELETE /cr-donnees/brouillons[/<id>]` | brouillons du compte connecté |
 | `GET /cr-donnees/photos/<id>.jpg` | photo enregistrée |
+
+Hors `sante` et les trois routes de connexion, tout répond 401 sans session.
+
+### Comptes des formateurs
+
+Chaque formateur se connecte par le formulaire de `/login` ; les profils de démonstration de la
+liste ne comptent aucun formateur. Les comptes (empreinte du mot de passe, profil avec le vrai
+nom) sont dans `services/apercu/donnees/comptes.sqlite`, hors dépôt ; la base ne garde que
+l'empreinte des jetons de session. « Se souvenir de moi » : 30 jours, sinon la session s'arrête
+avec le navigateur (12 h au plus). Cinq échecs bloquent l'identifiant une minute.
+
+```bash
+python services/apercu/comptes.py creer <identifiant> <profil.json>   # affiche le mot de passe
+python services/apercu/comptes.py mot-de-passe <identifiant>          # nouveau mot de passe, sessions fermées
+python services/apercu/comptes.py liste
+```
+
+L'`id` du profil range les brouillons : le garder quand on recrée un compte. Le planning affiché
+ne retient que les sessions dont le formateur est le compte connecté.
 
 ---
 
@@ -245,7 +267,7 @@ Le rendu LibreOffice est sauté en CI (LibreOffice absent du runner) ; il s'exé
 
 | Écart | Cible | Story |
 |---|---|---|
-| Utilisateur transmis par l'en-tête `X-Utilisateur`, sans jeton | JWT Keycloak validé, policy Cerbos `compte_rendu` avec tests négatifs | `04-5.1` |
+| Comptes et sessions propres au service (SQLite, cookie) | JWT Keycloak validé, policy Cerbos `compte_rendu` avec tests négatifs | `04-5.1` |
 | Brouillons en SQLite dans le service | module `cfao-operations` (PostgreSQL), le service ne fait plus que le rendu | `04-5.2` |
 | Textes d'interface en français dans les composants | `frontend/src/i18n/` (FR, EN, PT) | `04-5.3` |
 | Pas de test de bout en bout | parcours formateur E2E sur la stack Compose | `04-5.4` |

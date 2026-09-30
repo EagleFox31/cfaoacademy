@@ -21,7 +21,7 @@ import { SESSIONS_FORMATEUR } from '../data/mock_sessions_formateur'
 const CLE_ANCIENNE = 'cfao.comptes-rendus'
 const API = '/cr-donnees/brouillons'
 
-/** Le compte connecte (demonstration) : ses brouillons ne sont qu'a lui. */
+/** Le compte connecte : ses brouillons ne sont qu'a lui (le serveur le tient de la session). */
 function utilisateur() {
   try {
     return JSON.parse(sessionStorage.getItem('cfao_mock_user') || 'null')?.id || null
@@ -66,7 +66,8 @@ async function serveur(chemin, options = {}) {
   try {
     const r = await fetch(`${API}${chemin}`, {
       ...options,
-      headers: { 'Content-Type': 'application/json', 'X-Utilisateur': u, ...(options.headers || {}) },
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     })
     if (r.status === 404) return undefined
     if (!r.ok) return null

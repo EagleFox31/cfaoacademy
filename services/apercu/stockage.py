@@ -8,8 +8,8 @@ PostgreSQL, Keycloak, Cerbos) : tout passe par ce module, qu'il suffira
 de remplacer, et le contrat HTTP (`/cr-donnees/...`) restera le meme.
 
 Un brouillon est un document JSON opaque, range sous (utilisateur, id).
-L'utilisateur est celui du compte de demonstration : il n'y a pas encore
-d'authentification — ce stockage ne doit pas sortir du reseau local.
+L'utilisateur est l'id du profil connecte (voir `comptes.py`) : l'interface
+ne peut pas le choisir, il vient de la session.
 """
 import json
 import re

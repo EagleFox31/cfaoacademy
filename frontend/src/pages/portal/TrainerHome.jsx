@@ -14,7 +14,7 @@ import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
 import usePortalBackground from '../../hooks/usePortalBackground'
 import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
-import { SESSIONS_FORMATEUR } from '../../data/mock_sessions_formateur'
+import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
 import { periodeLongue } from '../../utils/compteRendu'
 import {
   brouillonsEnCours, brouillonsEnregistres, brouillonsTermines, synchroniser,
@@ -89,10 +89,11 @@ export default function TrainerHome() {
   // occuper exactement le reste de l'ecran.
   usePortalHeaderHeight(headerRef)
 
+  const sessions = useMemo(() => sessionsDuFormateur(user), [user])
   const aVenir = useMemo(
-    () => SESSIONS_FORMATEUR.filter(
+    () => sessions.filter(
       s => s.statut === 'en_cours' || s.statut === 'a_venir'),
-    [],
+    [sessions],
   )
   // Ceux de ce navigateur tout de suite, puis ceux du serveur — saisis
   // sur un autre poste — des qu'il repond.
@@ -106,7 +107,7 @@ export default function TrainerHome() {
   // figure plus parmi celles a documenter.
   const enCours = brouillonsEnCours(brouillons)
   const termines = brouillonsTermines(brouillons)
-  const aRediger = SESSIONS_FORMATEUR.filter(s => s.statut === 'a_rediger'
+  const aRediger = sessions.filter(s => s.statut === 'a_rediger'
     && !termines.some(b => b.id === s.id))
 
   if (!user) return null
