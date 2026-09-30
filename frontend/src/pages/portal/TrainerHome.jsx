@@ -201,27 +201,10 @@ export default function TrainerHome() {
               <h2 className="portal-section-title">Comptes rendus</h2>
             </div>
 
-            {/* Une seule grille : les sessions de formation a documenter,
-                puis l'entree du module. */}
+            {/* Trois entrees, toujours presentes : commencer, reprendre,
+                retrouver. Les sessions a documenter se choisissent a
+                l'ouverture d'un nouveau compte rendu. */}
             <PortalStaggerGrid>
-              {aRediger.map(s => (
-                <div key={s.id} className="portal-card-anchor">
-                  <PvCard
-                    {...visuelSession(s)}
-                    kicker={
-                      <span className="portal-status-chip progress">À rédiger</span>
-                    }
-                    title={s.moduleFormation}
-                    meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} stagiaires`}
-                    cta="Écrire le compte rendu"
-                    accentColor="#E3001B"
-                    hoverHint="Ouvrir le compte rendu"
-                    onClick={() => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)}
-                    corner
-                  />
-                </div>
-              ))}
-
               <div className="portal-card-anchor">
                 <PvCard
                   img={VISUEL_ENTREE.nouveau}
@@ -232,6 +215,28 @@ export default function TrainerHome() {
                   accentColor="#E3001B"
                   hoverHint="Ouvrir un compte rendu"
                   onClick={() => naviguer('/portail/compte-rendu/nouveau')}
+                  corner
+                />
+              </div>
+
+              {/* Une seule entree vers les saisies commencees : la liste,
+                  avec reprise et suppression, est sur sa propre page. */}
+              <div className="portal-card-anchor">
+                <PvCard
+                  img={VISUEL_ENTREE.brouillon}
+                  kicker={
+                    <span className="portal-status-chip todo">
+                      {enCours.length} en cours
+                    </span>
+                  }
+                  title="Comptes rendus en cours"
+                  meta={enCours.length
+                    ? `Reprendre ou supprimer une saisie commencée — la dernière ${
+                      venuDe(enCours[0].modifieLe)}.`
+                    : 'Les saisies commencées s’y retrouvent, sur tout poste.'}
+                  cta="Voir les saisies"
+                  hoverHint="Choisir un compte rendu à reprendre"
+                  onClick={() => naviguer('/portail/compte-rendu/en-cours')}
                   corner
                 />
               </div>
@@ -256,30 +261,6 @@ export default function TrainerHome() {
                   corner
                 />
               </div>
-
-              {/* Une seule entree vers les saisies commencees : une carte
-                  par brouillon noyait la section des qu'il y en avait
-                  plusieurs. La liste, avec reprise et suppression, est sur
-                  sa propre page. */}
-              {enCours.length > 0 && (
-                <div className="portal-card-anchor">
-                  <PvCard
-                    img={VISUEL_ENTREE.brouillon}
-                    kicker={
-                      <span className="portal-status-chip todo">
-                        {enCours.length} en cours
-                      </span>
-                    }
-                    title="Comptes rendus en cours"
-                    meta={`Reprendre ou supprimer une saisie commencée — la dernière ${
-                      venuDe(enCours[0].modifieLe)}.`}
-                    cta="Voir les saisies"
-                    hoverHint="Choisir un compte rendu à reprendre"
-                    onClick={() => naviguer('/portail/compte-rendu/en-cours')}
-                    corner
-                  />
-                </div>
-              )}
             </PortalStaggerGrid>
           </div>
         </PortalReveal>
