@@ -295,7 +295,9 @@ export default function TrainerHome() {
                       meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} stagiaires · ${s.lieu}`}
                       cta="Voir la session de formation"
                       hoverHint="Voir la session de formation"
-                      onClick={() => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)}
+                      // La fiche de session n'existe pas encore : la carte
+                      // reagit au clic, sans rediriger.
+                      onClick={() => {}}
                       corner
                     />
                   </div>
