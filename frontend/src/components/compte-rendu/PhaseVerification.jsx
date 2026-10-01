@@ -15,7 +15,8 @@ import EditeurBilan from './EditeurBilan'
 import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
 import { useRefsPhotos, ancrerPhotos } from '../../utils/photosService'
 import { participantPourMoteur, proposerTexte } from '../../utils/redaction'
-import { chiffresSession, constatsParDefaut, donneesSession, redigerRemarque, rubriquesBilan }
+import { chiffresSession, constatsParDefaut, donneesSession, formeBilan, paragrapheBilan,
+  redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
 import BoutonsRedaction from './BoutonsRedaction'
 import { estCertification, calculerCertification, libelleModule } from '../../utils/certification'
@@ -142,6 +143,7 @@ export default function PhaseVerification({
       : { [cles[0]]: sortie }
     const defauts = {
       ...Object.fromEntries(rubriquesBilan(brouillon).map(r => [`bilan.${r.cle}`, r.texte])),
+      'bilan.paragraphe': paragrapheBilan(textes, rubriquesBilan(brouillon)),
     }
     setAvant(a => ({
       ...a,
@@ -184,6 +186,12 @@ export default function PhaseVerification({
       }
     })
     const rubriques = ['contexte', 'resultats', 'vigilance', 'suites']
+    // Le paragraphe a sa propre redaction, plus liee que les rubriques mises
+    // bout a bout — sauf si une rubrique a deja ete ecrite : elle le compose.
+    if (absent('bilan.paragraphe') && rubriques.every(r => absent(`bilan.${r}`))) {
+      travaux.push(redigerRemarque(certif ? 'bilan_certification' : 'bilan', donnees, 'paragraphe')
+        .then(sortie => (sortie?.paragraphe ? { 'bilan.paragraphe': sortie.paragraphe } : {})))
+    }
     if (rubriques.some(r => absent(`bilan.${r}`))) {
       travaux.push(redigerRemarque(certif ? 'bilan_certification' : 'bilan', donnees).then(sortie => Object.fromEntries(
         rubriques.filter(r => absent(`bilan.${r}`) && sortie?.[r])
@@ -664,6 +672,8 @@ function manquesDe(page, b, session) {
     exiger(lignes(j.forts), 'les points forts')
     exiger(lignes(j.ameliorations), 'les points d’amélioration')
     exiger(photos(cle), 'les photos')
+  } else if (cle === 'bilan' && formeBilan(t) === 'paragraphe') {
+    exiger(rempli(paragrapheBilan(t, page.blocs)), 'le bilan')
   } else if (cle === 'bilan') {
     const vides = (page.blocs || []).filter(r => !rempli(t[`bilan.${r.cle}`] ?? r.texte))
     exiger(!vides.length, vides.map(r => r.titre.toLowerCase()).join(', '))

@@ -153,6 +153,28 @@ export function rubriquesBilan(b) {
 }
 
 /**
+ * La forme du bilan : un paragraphe, comme dans les comptes rendus de
+ * reference, ou les quatre rubriques de la diapositive. Le paragraphe
+ * est la forme par defaut.
+ */
+export function formeBilan(textes) {
+  return textes?.['bilan.forme'] === 'rubriques' ? 'rubriques' : 'paragraphe'
+}
+
+/**
+ * Le bilan en un paragraphe : celui qu'a ecrit le formateur, ou a defaut
+ * ses quatre rubriques mises bout a bout — passer d'une forme a l'autre
+ * ne perd rien de ce qui a ete saisi.
+ */
+export function paragrapheBilan(textes, rubriques) {
+  const saisi = textes?.['bilan.paragraphe']
+  if (saisi != null) return saisi
+  return (rubriques || [])
+    .map(r => String(textes?.[`bilan.${r.cle}`] ?? r.texte ?? '').trim())
+    .filter(Boolean).join(' ')
+}
+
+/**
  * Les valeurs des classeurs embarques, en fractions comme Excel les
  * tient. Le service reconnait chaque classeur a son titre et pose ces
  * valeurs dans ses cellules, puis redessine l'objet.

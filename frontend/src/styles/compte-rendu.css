@@ -2356,6 +2356,9 @@
   flex: 1;
   min-height: 0;
 }
+/* Le bilan en un paragraphe : la place des quatre rubriques. */
+.cr-jour-texte.cr-bilan-paragraphe { min-height: 300px; }
+.cr-legende-modes--ligne { flex-direction: row; flex-wrap: wrap; }
 .cr-jour-rubriques--bilan {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(96px, 1fr));

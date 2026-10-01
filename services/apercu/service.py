@@ -167,6 +167,22 @@ def retirer_lignes(xml, ancres):
         lambda m: '' if any(a in m.group(0) for a in ancres) else m.group(0), xml)
 
 
+def retirer_paragraphes(xml, textes):
+    """Retire les paragraphes dont le texte entier est l'un de `textes`.
+
+    Le bilan en un paragraphe n'a que faire des intertitres de ses quatre
+    rubriques, ni des drapeaux des trois rubriques qu'il absorbe : effaces
+    seulement, ils laisseraient des lignes blanches.
+    """
+    if not textes:
+        return xml
+    voulus = {t.strip() for t in textes}
+    return re.sub(
+        r'<a:p>(?:(?!</a:p>).)*?</a:p>',
+        lambda m: '' if ''.join(re.findall(r'<a:t>([^<]*)</a:t>', m.group(0))).strip() in voulus
+        else m.group(0), xml, flags=re.S)
+
+
 RE_FORME = re.compile(
     r'<p:(sp|pic|graphicFrame|cxnSp)>(?:(?!</p:\1>).)*?'
     r'<a:off x="(\d+)" y="(\d+)"/>\s*<a:ext cx="(\d+)" cy="(\d+)"/>', re.S)
@@ -440,6 +456,7 @@ def substituer(xml, valeurs):
     disparait au lieu de laisser le mot du modele s'imprimer.
     """
     xml = retirer_lignes(xml, valeurs.get('@retirer') or [])
+    xml = retirer_paragraphes(xml, valeurs.get('@retirer_paragraphes') or [])
     xml = marquer(xml, valeurs.get('@marquage'))
     xml = ancrer_objectifs(xml)
     xml = colorer(xml, valeurs.get('@couleurs'))

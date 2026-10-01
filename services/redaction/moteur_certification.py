@@ -191,7 +191,7 @@ def rediger_bilan_certification(session, graine=None, rubrique=None):
                 f'{_liste(en_retrait, maximum=6, minuscule=False)} '
                 f'{"restent" if len(en_retrait) > 1 else "reste"} sous le seuil de {SEUIL} %.',
                 f'{len(en_retrait)} candidat{"s" if len(en_retrait) > 1 else ""} '
-                f'n’atteigne{"nt" if len(en_retrait) > 1 else ""} pas le seuil de validation.'))
+                f'n’attei{"gnent" if len(en_retrait) > 1 else "nt"} pas le seuil de validation.'))
         else:
             vig.append('L’ensemble des candidats atteint le seuil de validation de la partie pratique.')
         if faibles:
@@ -214,4 +214,8 @@ def rediger_bilan_certification(session, graine=None, rubrique=None):
                    'e-learning sont validés.')
         r['suites'] = ' '.join(sui)
     r = {k: _finir(v) for k, v in r.items()}
+    if rubrique == 'paragraphe':
+        # Le modele des comptes rendus : les rubriques d'un seul tenant.
+        return {'paragraphe': ' '.join(r[k] for k in ('contexte', 'resultats', 'vigilance', 'suites')
+                                       if r.get(k))}
     return {rubrique: r.get(rubrique, '')} if rubrique else r

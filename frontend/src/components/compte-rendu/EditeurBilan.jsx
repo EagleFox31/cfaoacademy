@@ -9,6 +9,10 @@
  * `{bilan_contexte}`, `{bilan_resultats}`, `{bilan_vigilance}` et
  * `{bilan_suites}`. Elles sont pre-remplies depuis les notes de
  * l'etape 2, a charge pour le formateur de les reecrire.
+ *
+ * Par defaut pourtant, le bilan tient en un paragraphe, comme dans les
+ * comptes rendus de reference : il prend la place de la premiere
+ * rubrique et la page perd ses intertitres (`drapeauxBilan`).
  */
 
 import { useState } from 'react'
@@ -17,6 +21,28 @@ import ChoixLegende from './ChoixLegende'
 import BoutonsRedaction from './BoutonsRedaction'
 import { casesDe, dispositionsClassees, dispositionsPour, grilleDe, MAX_PHOTOS }
   from '../../data/dispositions_photos'
+import { formeBilan, paragrapheBilan } from '../../utils/remarquesSession'
+
+const FORMES = [
+  { id: 'paragraphe', nom: 'Un paragraphe', note: 'Comme dans les comptes rendus de référence' },
+  { id: 'rubriques', nom: 'Quatre rubriques', note: 'Contexte, résultats, vigilance, suites, avec intertitres' },
+]
+
+/** La forme en miniature : un bloc de lignes, ou quatre intertitres. */
+function VignetteForme({ forme }) {
+  const lignes = forme === 'paragraphe'
+    ? [2, 5, 8, 11, 14].map(y => <rect key={y} x="2" y={y} width={y === 14 ? 12 : 20} height="2" rx="1"
+      fill="currentColor" opacity=".45" />)
+    : [1, 9].flatMap(y => [
+      <rect key={`t${y}`} x="2" y={y} width="9" height="2" rx="1" fill="currentColor" />,
+      <rect key={`l${y}`} x="2" y={y + 4} width="20" height="2" rx="1" fill="currentColor" opacity=".45" />,
+    ])
+  return (
+    <svg viewBox="0 0 24 18" width="22" height="16" aria-hidden="true" className="cr-legende-vue">
+      {lignes}
+    </svg>
+  )
+}
 
 export default function EditeurBilan({
   blocs, textes, photos, disposition, legende, modeLegende, onModeLegende,
@@ -28,7 +54,11 @@ export default function EditeurBilan({
   const [volet, setVolet] = useState('bilan')
 
   const valeur = b => textes[`bilan.${b.cle}`] ?? b.texte ?? ''
-  const remplies = (blocs || []).filter(b => valeur(b).trim()).length
+  const forme = formeBilan(textes)
+  const paragraphe = paragrapheBilan(textes, blocs)
+  const remplies = forme === 'paragraphe'
+    ? (paragraphe.trim() ? 1 : 0)
+    : (blocs || []).filter(b => valeur(b).trim()).length
   const choix = dispositionsPour(cliches.length)
   const dispoActive = disposition || choix[0]?.id
   const dispo = choix.find(d => d.id === dispoActive)
@@ -39,16 +69,49 @@ export default function EditeurBilan({
   return (
     <div className="cr-blocs cr-blocs--journee">
       <Bloc titre="Rédiger le bilan"
-        resume={remplies ? `${remplies} sur ${blocs.length}` : 'Quatre rubriques'}
+        resume={forme === 'paragraphe'
+          ? (remplies ? 'Un paragraphe' : 'À rédiger')
+          : (remplies ? `${remplies} sur ${blocs.length}` : 'Quatre rubriques')}
         valeur={remplies || '—'}
         ton={remplies ? 'ok' : null}
         ouvert={volet === 'bilan'}
         onOuvrir={() => setVolet('bilan')}>
-        {/* Le moteur redige rubrique par rubrique : un bouton global
-            ecrasait d'un coup les quatre textes, retouches comprises. */}
+        <span className="cr-field-label">Présentation</span>
+        <div className="cr-legende-modes cr-legende-modes--ligne" role="radiogroup"
+          aria-label="Présentation du bilan">
+          {FORMES.map(f => (
+            <button key={f.id} type="button" role="radio"
+              className={`cr-legende-mode${forme === f.id ? ' cr-legende-mode--on' : ''}`}
+              aria-checked={forme === f.id}
+              title={f.note}
+              onClick={() => onTexte('bilan.forme', f.id)}>
+              <VignetteForme forme={f.id} />
+              {f.nom}
+            </button>
+          ))}
+        </div>
         <span className="cr-obj-aide">
           Déjà écrit à partir de vos notes et de vos journées. Modifiez si besoin.
         </span>
+        {forme === 'paragraphe' ? (
+          <div className="cr-jour-rubrique">
+            <div className="cr-redac-entete">
+              <label className="cr-field-label" htmlFor="cr-bilan-paragraphe">Bilan de la formation</label>
+              <BoutonsRedaction
+                aTexte={!!paragraphe.trim()}
+                enCours={redaction?.redigeant === 'bilan.paragraphe'}
+                onRediger={() => redaction?.bilan('paragraphe')}
+                peutAnnuler={'bilan.paragraphe' in (redaction?.avant || {})}
+                onAnnuler={() => redaction?.annuler('bilan.paragraphe')} />
+            </div>
+            <textarea id="cr-bilan-paragraphe" className="cr-textarea cr-jour-texte cr-bilan-paragraphe"
+              value={paragraphe}
+              placeholder="Contexte, résultats, points de vigilance et suites, en un paragraphe"
+              onChange={e => onTexte('bilan.paragraphe', e.target.value)} />
+          </div>
+        ) : (
+        /* Le moteur redige rubrique par rubrique : un bouton global
+           ecrasait d'un coup les quatre textes, retouches comprises. */
         <div className="cr-jour-rubriques cr-jour-rubriques--bilan">
           {(blocs || []).map(b => {
             const cle = `bilan.${b.cle}`
@@ -71,6 +134,7 @@ export default function EditeurBilan({
             )
           })}
         </div>
+        )}
         {redaction?.panne && (
           <p className="cr-redac-panne">
             Le service de rédaction ne répond pas : écrivez le bilan, ou réessayez.

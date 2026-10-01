@@ -3,7 +3,8 @@ import {
   DISPOSITIONS, dispositionsPour, idDisposition, modeLegende, rectanglesDe,
 } from '../data/dispositions_photos'
 import {
-  constatsParDefaut, rubriquesBilan, valeursClasseurs, valeursClasseursStagiaire,
+  constatsParDefaut, formeBilan, paragrapheBilan, rubriquesBilan, valeursClasseurs,
+  valeursClasseursStagiaire,
 } from './remarquesSession'
 import {
   CERTIFIE, ECHOUE, NON_CERTIFIE, NON_FINALISE, VALIDE,
@@ -418,15 +419,30 @@ function dateCourte(iso) {
   return j && m && a ? `${j}/${m}/${a}` : ''
 }
 
+/** Les intertitres des rubriques du bilan, tels que le modele les ecrit. */
+const INTERTITRES_BILAN = [
+  'Contexte et appréciation', 'Résultats et acquis', 'Points de vigilance', 'Suites à donner',
+]
+
 /**
  * Les quatre rubriques du bilan (diapositive 20).
  *
  * Ce que le formateur a ecrit prime ; a defaut, le pre-remplissage que
  * l'editeur lui montre. Une rubrique videe a dessein disparait de la
  * page au lieu de laisser son drapeau.
+ *
+ * En un paragraphe, le texte prend la place de la premiere rubrique ; les
+ * intertitres et les trois autres drapeaux sont retires de la page.
  */
 function drapeauxBilan(b) {
   const t = b.textes || {}
+  if (formeBilan(t) === 'paragraphe') {
+    return {
+      '{bilan_contexte}': paragrapheBilan(t, rubriquesBilan(b)).trim() || VIDE,
+      '@retirer_paragraphes': [...INTERTITRES_BILAN,
+        '{bilan_resultats}', '{bilan_vigilance}', '{bilan_suites}'],
+    }
+  }
   return Object.fromEntries(rubriquesBilan(b).map(r => {
     const saisi = t[`bilan.${r.cle}`]
     const valeur = saisi == null ? r.texte : saisi

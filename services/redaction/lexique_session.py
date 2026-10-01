@@ -388,8 +388,8 @@ SUITES = {
         "participants n’ayant pas validé.",
         "Les participants en retrait [gagneront à|devront] [achever|reprendre] leur parcours "
         "e-learning avant toute nouvelle session.",
-        "[Une remise à niveau|Un temps de remédiation] est recommandé pour les participants "
-        "sous le seuil.",
+        "[Une remise à niveau est recommandée|Un temps de remédiation est recommandé] pour les "
+        "participants sous le seuil.",
     ],
     "consolidation": [
         "La mise en pratique en atelier [consolidera|ancrera] ces acquis.",
@@ -402,6 +402,29 @@ SUITES = {
         "[Les participants validés|Les mieux classés] peuvent être [orientés|présentés] vers "
         "le niveau de certification suivant.",
     ],
+}
+
+# ── Bilan en un paragraphe ──────────────────────────────────────────────
+# Le modele des comptes rendus : contexte, resultats, nuance, suites, dans
+# un seul paragraphe que des liaisons enchainent.
+PRATIQUE_EN_RETRAIT = [
+    "[Toutefois|Cependant], le score pratique, en retrait à {pratique} %, [met en évidence|"
+    "souligne] la nécessité de consolider la maîtrise opérationnelle.",
+    "[Toutefois|Cependant], la pratique ({pratique} %) reste en deçà de la théorie "
+    "({theorie} %) : la maîtrise opérationnelle demande encore à être consolidée.",
+]
+
+SUITE_PRATIQUE = [
+    "Il est donc recommandé de [multiplier|renforcer] les travaux pratiques en atelier, "
+    "[sous le suivi du Key Instructor|avec un suivi de proximité], afin que chacun "
+    "[gagne en aisance|s’exerce sur des cas réels].",
+]
+
+LIAISON = {
+    "retrait": ["Toutefois, ", "Cependant, ", "En revanche, "],
+    "retrait_suite": ["Par ailleurs, ", "En outre, ", "De plus, "],
+    "reussite": ["Au final, ", "En fin de session, ", ""],
+    "suites": ["Aussi, ", "Dès lors, ", "En conséquence, ", ""],
 }
 
 NOMBRES = ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit",

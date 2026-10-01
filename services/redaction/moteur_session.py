@@ -24,11 +24,11 @@ import re
 
 from lexique_session import (
     AMELIORATIONS, CLIMAT, CONCLUSION_ACQUISITION, CONSTATER, CONTEXTE,
-    ENTREE, EQUILIBRE, EVOLUTION, GROUPE, LECTURE, MEILLEURE_PROGRESSION,
+    ENTREE, EQUILIBRE, EVOLUTION, GROUPE, LECTURE, LIAISON, MEILLEURE_PROGRESSION,
     NIVEAU_ENTREE, PALIERS_GROUPE, PALIERS_PROGRESSION, PALIERS_TAUX,
-    PARTICIPANTS, POINTS_FORTS, QUALIFICATIF, REGRESSIONS, RESULTATS,
-    RESULTATS_TAUX, RETRAIT_NOMME, REUSSITE, SATISFACTION, SESSION, SEUIL,
-    SUITES, TAUX, THEMATIQUES, VIGILANCE, en_mots, palier)
+    PARTICIPANTS, POINTS_FORTS, PRATIQUE_EN_RETRAIT, QUALIFICATIF, REGRESSIONS,
+    RESULTATS, RESULTATS_TAUX, RETRAIT_NOMME, REUSSITE, SATISFACTION, SESSION, SEUIL,
+    SUITE_PRATIQUE, SUITES, TAUX, THEMATIQUES, VIGILANCE, en_mots, palier)
 
 FRAGMENTS = {
     'groupe': GROUPE, 'session': SESSION, 'participants': PARTICIPANTS,
@@ -252,11 +252,14 @@ def rediger_bilan(session, graine=None, rubrique=None):
     """Les rubriques du bilan ; une seule si `rubrique` est donnee.
 
     Chaque rubrique a son propre tirage : en regenerer une ne change pas
-    les autres.
+    les autres. `rubrique='paragraphe'` donne le bilan d'un seul tenant,
+    comme dans les comptes rendus (`{'paragraphe': texte}`).
     """
     d = _donnees(session)
     if d['effectif'] and d['reussis'] is not None:
         d['taux_reussite'] = round(100 * d['reussis'] / d['effectif'])
+    if rubrique == 'paragraphe':
+        return {'paragraphe': _bilan_paragraphe(d, Tirage(graine))}
     base = random.Random(graine).randrange(1 << 30)
     voulues = [rubrique] if rubrique in RUBRIQUES else list(RUBRIQUES)
     sortie = {}
@@ -310,6 +313,50 @@ def _bilan_suites(d, t):
         parties.append(_phrase(SUITES['consolidation'], d, t))
         if (d['taux'] or 0) >= 85 and t.peut_etre(0.5):
             parties.append(_phrase(SUITES['certification'], d, t))
+    return _assembler(parties)
+
+
+def _lier(liaison, phrase):
+    """« Toutefois, » devant une phrase, dont la majuscule tombe."""
+    if not phrase or not liaison:
+        return phrase
+    return liaison + phrase[0].lower() + phrase[1:]
+
+
+def _bilan_paragraphe(d, t):
+    """Le bilan d'un seul tenant, sur le modele des comptes rendus.
+
+    Contexte et satisfaction, resultats chiffres, puis la nuance (pratique
+    en retrait, participants sous le seuil) et la recommandation qui en
+    decoule. Les listes des journees (points forts, themes) restent aux
+    pages jour : elles alourdiraient le paragraphe.
+    """
+    parties = [_phrase(CONTEXTE, d, t)]
+    if d['sat_formation'] is not None:
+        parties.append(_phrase(SATISFACTION, d, t))
+    if d['entree'] is not None and d['sortie'] is not None and d['progression'] is not None:
+        parties.append(_phrase(RESULTATS, d, t))
+    pratique, theorie = d['pratique'], d['theorie']
+    # Une pratique a 93 % n'est pas « en retrait », meme sous une theorie a 98 %.
+    en_retrait = (pratique is not None and theorie is not None
+                  and pratique < 80 and pratique <= theorie - 5)
+    if d['taux'] is not None:
+        # « La theorie et la pratique se repondent » contredirait la nuance.
+        parties.append(_phrase([m for m in RESULTATS_TAUX
+                                if not (en_retrait and 'se répondent' in m)], d, t))
+    if en_retrait:
+        parties.append(_phrase(PRATIQUE_EN_RETRAIT, d, t))
+    n, eff = d.get('n_retrait'), d['effectif']
+    if n is not None and eff:
+        cle = 'aucun' if n == 0 else 'majorite' if n > eff / 2 else 'quelques_uns'
+        liaison = ('reussite' if n == 0 else 'retrait_suite' if en_retrait else 'retrait')
+        parties.append(_lier(t.rnd.choice(LIAISON[liaison]), _phrase(VIGILANCE[cle], d, t)))
+    if en_retrait and not n:
+        parties.append(_phrase(SUITE_PRATIQUE, d, t))
+    else:
+        suites = _bilan_suites(d, t)
+        if suites:
+            parties.append(_lier(t.rnd.choice(LIAISON['suites']), suites))
     return _assembler(parties)
 
 

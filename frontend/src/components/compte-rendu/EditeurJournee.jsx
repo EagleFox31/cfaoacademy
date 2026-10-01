@@ -61,9 +61,14 @@ export const RUBRIQUES = [
  */
 export const MAX_PHOTOS_JOUR = 4
 
-/** Les lignes d'une rubrique, telles qu'on les colle. */
+/** Les lignes d'une rubrique, telles qu'on les colle.
+ *
+ *  Les lignes vides de fin restent : retirees, la touche Entree en fin de
+ *  texte etait aussitot annulee. Elles ne comptent pas au document
+ *  (voir `retenues`).
+ */
 function texteDeRubrique(lignes) {
-  return (lignes || []).join('\n').replace(/\n+$/, '')
+  return (lignes || []).join('\n')
 }
 
 /** Les lignes retenues : une par ligne saisie, les vides ignorees. */
