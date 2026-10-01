@@ -1,0 +1,17 @@
+---
+server:
+  httpListenAddr: ":3592"
+  adminAPI:
+    enabled: true
+
+storage:
+  driver: "disk"
+  disk:
+    directory: "/policies"
+    watchForChanges: true
+
+telemetry:
+  disabled: true
+
+audit:
+  enabled: true

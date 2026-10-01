@@ -1,0 +1,78 @@
+---
+name: "sample_resource_tests"
+description: "Tests de validation des règles d'autorisation pour sample_resource"
+
+principals:
+  super_admin:
+    id: "admin-01"
+    roles: ["superadmin"]
+    attr: {}
+
+  chef_cmr_toyota:
+    id: "chef-01"
+    roles: ["workshop_manager"]
+    attr:
+      scopeNodes: ["CMR", "CMR-DLA"]
+      brands: ["TOYOTA"]
+
+  chef_ci_peugeot:
+    id: "chef-02"
+    roles: ["workshop_manager"]
+    attr:
+      scopeNodes: ["CIV", "CIV-ABJ"]
+      brands: ["PEUGEOT"]
+
+resources:
+  cmr_toyota_resource:
+    kind: "sample_resource"
+    id: "res-01"
+    attr:
+      scopeNode: "CMR"
+      brand: "TOYOTA"
+
+  civ_peugeot_resource:
+    kind: "sample_resource"
+    id: "res-02"
+    attr:
+      scopeNode: "CIV"
+      brand: "PEUGEOT"
+
+tests:
+  # Test 1 : Superadmin peut tout faire
+  - name: "Superadmin a tous les droits"
+    input:
+      principals: ["super_admin"]
+      resources: ["cmr_toyota_resource"]
+      actions: ["read", "create", "update", "delete"]
+    expected:
+      - resource: "cmr_toyota_resource"
+        actions:
+          read: EFFECT_ALLOW
+          create: EFFECT_ALLOW
+          update: EFFECT_ALLOW
+          delete: EFFECT_ALLOW
+
+  # Test 2 (Positif) : Chef d'atelier Cameroun accède à sa ressource Toyota Cameroun
+  - name: "Chef atelier accède à son périmètre"
+    input:
+      principals: ["chef_cmr_toyota"]
+      resources: ["cmr_toyota_resource"]
+      actions: ["read", "update"]
+    expected:
+      - resource: "cmr_toyota_resource"
+        actions:
+          read: EFFECT_ALLOW
+          update: EFFECT_ALLOW
+
+  # Test 3 (Négatif OBLIGATOIRE) : Chef d'atelier Cameroun tente d'accéder à la ressource Côte d'Ivoire (interdit)
+  - name: "Chef atelier rejeté hors périmètre"
+    input:
+      principals: ["chef_cmr_toyota"]
+      resources: ["civ_peugeot_resource"]
+      actions: ["read", "update", "delete"]
+    expected:
+      - resource: "civ_peugeot_resource"
+        actions:
+          read: EFFECT_DENY
+          update: EFFECT_DENY
+          delete: EFFECT_DENY
