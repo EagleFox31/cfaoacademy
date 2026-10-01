@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { dispositionsPour } from '../../data/mock_sessions_formateur'
 import { joursDeSession } from '../../utils/compteRendu'
 
@@ -29,14 +29,10 @@ export default function CrPhotos({ brouillon, maj, session, parties }) {
   const choix = dispositionsPour(photos.length)
   const dispoActive = brouillon.dispositions?.[actif]
 
-  useEffect(() => () => {
-    // Les apercus sont des URL d'objet : le navigateur ne les libere
-    // pas tout seul.
-    Object.values(brouillon.photos || {}).flat().forEach(p => {
-      if (p.apercu) URL.revokeObjectURL(p.apercu)
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // Pas de liberation des URL d'objet au demontage : les photos restent
+  // dans le brouillon et sont reaffichees par les autres ecrans (apercu,
+  // verification). Les liberer ici les laissait en blanc tant que le
+  // service ne les avait pas ancrees. Elles sont liberees au retrait.
 
   function ajouter(fichiers) {
     const nouvelles = Array.from(fichiers)

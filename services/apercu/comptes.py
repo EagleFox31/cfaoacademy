@@ -32,7 +32,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 import stockage
 
-DONNEES = Path(__file__).resolve().parent / 'donnees'
+DONNEES = stockage.DONNEES
 BASE = DONNEES / 'comptes.sqlite'
 DUREE_PERSISTANTE = 30 * 24 * 3600
 DUREE_NAVIGATEUR = 12 * 3600

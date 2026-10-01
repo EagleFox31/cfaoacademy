@@ -12,13 +12,17 @@ L'utilisateur est l'id du profil connecte (voir `comptes.py`) : l'interface
 ne peut pas le choisir, il vient de la session.
 """
 import json
+import os
 import re
 import sqlite3
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
-DONNEES = Path(__file__).resolve().parent / 'donnees'
+# Reglable pour travailler sur une copie, sans toucher aux donnees des
+# formateurs.
+DONNEES = Path(os.environ.get(
+    'CR_DONNEES', Path(__file__).resolve().parent / 'donnees'))
 BASE = DONNEES / 'comptes-rendus.sqlite'
 
 _verrou = threading.Lock()

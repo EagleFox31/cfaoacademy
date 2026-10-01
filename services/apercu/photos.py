@@ -20,6 +20,7 @@ chacune rognee pour remplir sa case sans se deformer.
 import hashlib
 import html
 import io
+import os
 import re
 from pathlib import Path
 
@@ -48,7 +49,8 @@ TYPE_IMAGE = ('http://schemas.openxmlformats.org/officeDocument/2006/'
 
 # Les photos sont conservees avec les comptes rendus, pas dans le cache :
 # un brouillon repris sur un autre poste les designe par leur identifiant.
-PERMANENT = Path(__file__).resolve().parent / 'donnees' / 'photos'
+PERMANENT = Path(os.environ.get(
+    'CR_DONNEES', Path(__file__).resolve().parent / 'donnees')) / 'photos'
 
 
 def dossier(cache=None):
@@ -66,20 +68,29 @@ def enregistrer(donnees, cache):
     brut = tampon.getvalue()
     ident = hashlib.sha1(brut).hexdigest()[:16]
     chemin = dossier(cache) / f'{ident}.jpg'
-    if not chemin.exists():
-        chemin.write_bytes(brut)
+    # Une ecriture interrompue laissait un fichier vide que le meme envoi,
+    # meme identifiant, ne reparait jamais : il est recrit, et d'un bloc.
+    if not _present(chemin) or chemin.stat().st_size != len(brut):
+        provisoire = chemin.with_suffix('.tmp')
+        provisoire.write_bytes(brut)
+        os.replace(provisoire, chemin)
     return {'id': ident, 'largeur': image.width, 'hauteur': image.height}
+
+
+def _present(chemin):
+    """Un fichier vide n'est pas une photo : il ferait echouer tout l'apercu."""
+    return chemin.is_file() and chemin.stat().st_size > 0
 
 
 def _chemin(ident, cache=None):
     if not re.fullmatch(r'[0-9a-f]{16}', str(ident)):
         return None
     chemin = dossier() / f'{ident}.jpg'
-    if chemin.exists():
+    if _present(chemin):
         return chemin
     # Photos envoyees avant le stockage permanent : encore dans le cache.
     ancien = Path(cache) / 'photos' / f'{ident}.jpg' if cache else None
-    return ancien if ancien and ancien.exists() else None
+    return ancien if ancien and _present(ancien) else None
 
 
 RE_FORME = re.compile(r'<p:sp>(?:(?!</p:sp>).)*?</p:sp>', re.S)

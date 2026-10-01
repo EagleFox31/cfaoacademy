@@ -10,12 +10,14 @@ import pytest  # noqa: E402
 
 import api  # noqa: E402
 import comptes  # noqa: E402
+import photos  # noqa: E402
 import stockage  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
 def bases_temporaires(tmp_path, monkeypatch):
-    """Comptes et brouillons dans des bases temporaires, jamais dans `donnees/`."""
+    """Comptes, brouillons et photos dans des dossiers temporaires, jamais dans `donnees/`."""
+    monkeypatch.setattr(photos, 'PERMANENT', tmp_path / 'photos')
     monkeypatch.setattr(stockage, 'DONNEES', tmp_path)
     monkeypatch.setattr(stockage, 'BASE', tmp_path / 'brouillons.sqlite')
     monkeypatch.setattr(comptes, 'DONNEES', tmp_path)
