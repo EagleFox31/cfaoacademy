@@ -289,6 +289,7 @@ export function valeursDrapeaux(brouillon, session, synthese, page, refsPhotos) 
       ? String(synthese.progression) : '',
     '{taux_acquis}': synthese?.acquis != null ? String(synthese.acquis) : '',
     ...drapeauxBilan(b),
+    ...formuleCertification(b),
     '{objectifs}': t.objectifs || '',
 
     // Les pages des objectifs (6 a 9) : la session en tete du tableau,
@@ -417,6 +418,20 @@ function dateCourte(iso) {
   if (!iso) return ''
   const [a, m, j] = String(iso).split('-')
   return j && m && a ? `${j}/${m}/${a}` : ''
+}
+
+/**
+ * La formule des comptes rendus de certification, sous le bilan : tests
+ * e-learning + tests pratique = certification. Le service la dessine
+ * sur la page du bilan seulement ; la formation n'en a pas.
+ */
+export function formuleCertification(b) {
+  if (!estCertification(b)) return {}
+  const marque = String(b.marque || '').trim().toUpperCase()
+  return {
+    '@formule_certification': `Nous rappelons que la certification${marque ? ` ${marque}` : ''} `
+      + 'pour chacun des niveaux est obtenue de la façon suivante :',
+  }
 }
 
 /** Les intertitres des rubriques du bilan, tels que le modele les ecrit. */

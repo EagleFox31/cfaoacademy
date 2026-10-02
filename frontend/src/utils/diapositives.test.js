@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { valeursDrapeaux } from './diapositives'
+import { valeursDrapeaux, formuleCertification } from './diapositives'
 import { ECHOUE, VALIDE } from './certification'
 
 // Une certification G3 fictive : trois modules, un candidat.
@@ -48,5 +48,23 @@ describe('fiche individuelle de certification', () => {
     const w = valeursDrapeaux(reussi, null, {}, fiche, {})
     expect(w['{resultat_pratique}']).toBe(VALIDE)
     expect(w['@couleurs']['{pourcentage}']).toBe('ok')
+  })
+})
+
+describe('formuleCertification', () => {
+  it('rappelle la règle de certification de la marque', () => {
+    const v = formuleCertification({ type: 'certification', marque: 'toyota' })
+    expect(v['@formule_certification']).toBe(
+      'Nous rappelons que la certification TOYOTA pour chacun des niveaux '
+      + 'est obtenue de la façon suivante :')
+  })
+
+  it('omet la marque quand elle est absente', () => {
+    const v = formuleCertification({ type: 'certification' })
+    expect(v['@formule_certification']).toContain('la certification pour chacun')
+  })
+
+  it('ne dit rien pour une formation', () => {
+    expect(formuleCertification({ type: 'formation', marque: 'toyota' })).toEqual({})
   })
 })

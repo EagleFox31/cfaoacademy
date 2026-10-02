@@ -33,6 +33,7 @@ from pathlib import Path
 from composer import composer
 import blocs
 import classeurs
+import formule
 import photos
 from modele import diapos_pour
 
@@ -457,6 +458,7 @@ def substituer(xml, valeurs):
     """
     xml = retirer_lignes(xml, valeurs.get('@retirer') or [])
     xml = retirer_paragraphes(xml, valeurs.get('@retirer_paragraphes') or [])
+    xml = formule.ajouter_formule(xml, valeurs.get('@formule_certification'))
     xml = marquer(xml, valeurs.get('@marquage'))
     xml = ancrer_objectifs(xml)
     xml = colorer(xml, valeurs.get('@couleurs'))
