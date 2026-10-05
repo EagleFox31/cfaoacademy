@@ -8,7 +8,8 @@ import {
   afficherTaux,
 } from '../../utils/satisfactionCfao'
 import { exporterEvaluation } from '../../utils/exportEvaluation'
-import { lireEvaluation, appliquerEvaluation } from '../../utils/importEvaluation'
+import { exporterResultats } from '../../utils/exportResultats'
+import { lireEvaluation, lireResultats, appliquerEvaluation } from '../../utils/importEvaluation'
 import Consigne from './Consigne'
 import MenuExcel from './MenuExcel'
 import SaisieCertification from './SaisieCertification'
@@ -133,7 +134,9 @@ export default function PhaseResultats({
     setExportEnCours(true)
     const b = modele ? vierge(brouillon) : brouillon
     try {
-      if (resultats) await exporterCertification(b, session, { modele })
+      if (resultats) {
+        await (certif ? exporterCertification : exporterResultats)(b, session, { modele })
+      }
       if (evaluation) await exporterEvaluation(b, session, { modele })
     } finally {
       setExportEnCours(false)
@@ -151,8 +154,18 @@ export default function PhaseResultats({
         detail: 'Résultats et évaluation, en deux fichiers',
         action: () => exporter({ resultats: true, evaluation: true, modele }) },
     ]
-    : [{ libelle: 'Modèle d’évaluation', detail: 'Notes des tests et avis des stagiaires, à remplir',
-      action: () => exporter({ evaluation: true, modele }) }])
+    : [
+      { libelle: modele ? 'Modèle des résultats' : 'Résultats',
+        detail: modele ? 'Notes des tests, à remplir' : 'Notes des tests, pourcentages et progression',
+        action: () => exporter({ resultats: true, modele }) },
+      { libelle: modele ? 'Modèle d’évaluation' : 'Évaluation',
+        detail: modele ? 'Notes des tests et avis des stagiaires, à remplir'
+          : 'Notes des tests et avis des stagiaires',
+        action: () => exporter({ evaluation: true, modele }) },
+      { libelle: modele ? 'Les deux modèles' : 'Tout télécharger',
+        detail: 'Résultats et évaluation, en deux fichiers',
+        action: () => exporter({ resultats: true, evaluation: true, modele }) },
+    ])
 
   // L'import relit un classeur d'evaluation du meme modele — celui de
   // l'export, ou celui d'un formateur — et en reprend notes et
@@ -169,8 +182,13 @@ export default function PhaseResultats({
       ;({ stagiaires: lus } = await lireEvaluation(fichier))
     } catch (e) {
       if (certif) return importerCertification(fichier)
-      setImportInfo({ ok: false, texte: `Classeur non reconnu : ${e.message}` })
-      return
+      // Hors certification : le classeur « Résultats » des formateurs.
+      try {
+        ;({ stagiaires: lus } = await lireResultats(fichier))
+      } catch {
+        setImportInfo({ ok: false, texte: `Classeur non reconnu : ${e.message}` })
+        return
+      }
     }
     try {
       const r = appliquerEvaluation(brouillon, lus)
@@ -296,8 +314,7 @@ export default function PhaseResultats({
             disabled={exportEnCours}
             choix={[
               { libelle: 'Importer un fichier Excel',
-                detail: certif ? 'Résultats ou évaluation, reconnu automatiquement'
-                  : 'Classeur d’évaluation : notes et avis',
+                detail: 'Résultats ou évaluation, reconnu automatiquement',
                 action: () => fichierImport.current?.click() },
               // Le modele porte deja les noms : il faut une liste.
               ...(participants.length
@@ -306,20 +323,10 @@ export default function PhaseResultats({
           <input ref={fichierImport} type="file" hidden
             accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             onChange={e => { importer(e.target.files?.[0]); e.target.value = '' }} />
-          {certif ? (
-            <MenuExcel icone={<IconeTableur />}
-              libelle={exportEnCours ? 'Enregistrement…' : 'Enregistrer en Excel'}
-              disabled={!participants.length || exportEnCours}
-              choix={menuClasseurs(false)} />
-          ) : (
-            <button type="button" className="cr-btn cr-btn--ghost cr-export"
-              disabled={!participants.length || exportEnCours}
-              onClick={() => exporter({ evaluation: true })}
-              title="Classeur « Données Stagiaires » et « Satisfaction Stagiaires », formules comprises">
-              <IconeTableur />
-              {exportEnCours ? 'Enregistrement…' : 'Enregistrer en Excel'}
-            </button>
-          )}
+          <MenuExcel icone={<IconeTableur />}
+            libelle={exportEnCours ? 'Enregistrement…' : 'Enregistrer en Excel'}
+            disabled={!participants.length || exportEnCours}
+            choix={menuClasseurs(false)} />
         </div>
       </Consigne>
       {annulable && (
