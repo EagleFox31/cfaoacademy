@@ -34,6 +34,7 @@ from composer import composer
 import blocs
 import classeurs
 import formule
+import mise_en_page
 import photos
 from modele import diapos_pour
 
@@ -512,6 +513,12 @@ def remplir(source, cible, valeurs, diapos=None):
             continue
         poser_photos(contenus, slide, contenu)
 
+    # Tailles de texte ecrites en clair, rien sous les logos, pas de pied
+    # de page : l'apercu montre ce que PowerPoint ouvrira.
+    for nom in list(contenus):
+        if re.match(r'ppt/slides/slide\d+\.xml$', nom):
+            contenus[nom] = mise_en_page.ajuster(contenus[nom].decode('utf-8')).encode('utf-8')
+
     # Les tableaux et graphiques des resultats : classeurs embarques,
     # remplis puis redessines (voir `classeurs.py`).
     if diapos:
@@ -530,7 +537,7 @@ def remplir(source, cible, valeurs, diapos=None):
 
 # A changer quand le rendu d'une page change sans que ses valeurs changent :
 # les images en cache portant l'ancienne version ne sont plus reprises.
-VERSION_RENDU = 3
+VERSION_RENDU = 4
 
 
 def empreinte(diapo, valeurs):
@@ -665,6 +672,8 @@ def rapport(pages, format_='pptx'):
         poses = (valeurs.get('@photos') or {}).get(str(numero))
         if poses:
             poser_photos(contenus, nom, poses)
+        xml = mise_en_page.ajuster(contenus[nom].decode('utf-8'))
+        contenus[nom] = mise_en_page.numeroter(xml, rang + 1).encode('utf-8')
         a_rafraichir.append((nom, valeurs.get('@classeurs') or {}))
         copies.append(copie)
     # Les graphiques de toutes les pages, en un seul passage.

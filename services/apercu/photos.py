@@ -26,6 +26,8 @@ from pathlib import Path
 
 from PIL import Image, ImageOps
 
+import mise_en_page
+
 # Le plus grand cote conserve : assez pour une case pleine largeur
 # imprimee, sans garder la definition d'un capteur de telephone.
 COTE_MAX = 1600
@@ -35,10 +37,17 @@ QUALITE = 85
 # emplacements de la diapositive 9.
 ECART = 125000
 
-# La bande de legende sous une photo, celle des diapositives 12 a 15.
+# La bande de legende sous une photo, celle des diapositives 12 a 15 :
+# la hauteur minimale, une legende de deux lignes l'agrandit.
 BANDE_LEGENDE = 329184
 # Entre les photos et une legende commune ajoutee : la moitie d'un ecart.
 ECART_LEGENDE = ECART // 2
+# Le corps des legendes, en centiemes de point : une legende sous une
+# photo descend jusqu'au minimum pour tenir sur deux lignes.
+CORPS_LEGENDE = 1100
+CORPS_LEGENDE_MIN = 1000
+CORPS_COMMUNE = 1200
+LIGNES_LEGENDE = 2
 
 NOM_EMPLACEMENT = 'Emplacement photo'
 # La legende commune d'une page jour, sous le cadre des photos.
@@ -172,7 +181,25 @@ def forme_image(ident_forme, nom, rid, pos, rect):
         '</p:pic>')
 
 
-def forme_legende(ident_forme, rang, pos, texte):
+def mesure_legende(texte, largeur, corps, corps_min=None):
+    """Le corps et la hauteur de bande d'une legende dans `largeur`.
+
+    Le corps diminue jusqu'a `corps_min` tant que la legende depasse
+    deux lignes ; la bande grandit avec le nombre de lignes.
+    """
+    corps_min = corps_min or corps
+    while True:
+        # Un peu de largeur en reserve : la police de remplacement des
+        # apercus est plus large que celle de PowerPoint.
+        n = mise_en_page.lignes_texte(texte, largeur * 0.9, corps)
+        if n <= LIGNES_LEGENDE or corps <= corps_min:
+            break
+        corps -= 100
+    hauteur = round(n * mise_en_page.hauteur_ligne(corps)) + 2 * ECART_LEGENDE
+    return corps, max(BANDE_LEGENDE, hauteur)
+
+
+def forme_legende(ident_forme, rang, pos, texte, corps=CORPS_LEGENDE):
     """La legende d'une photo, dans le style des diapositives 12 a 15."""
     x, y, l, h = pos
     return (
@@ -182,9 +209,107 @@ def forme_legende(ident_forme, rang, pos, texte):
         '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>'
         '<p:txBody><a:bodyPr wrap="square" lIns="0" rIns="0" tIns="0" bIns="0" '
         'rtlCol="0" anchor="ctr"><a:normAutofit/></a:bodyPr><a:lstStyle/>'
-        '<a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1200" dirty="0">'
+        f'<a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="{corps}" dirty="0">'
         '<a:solidFill><a:schemeClr val="tx1"/></a:solidFill></a:rPr>'
         f'<a:t>{html.escape(texte, quote=False)}</a:t></a:r></a:p></p:txBody></p:sp>')
+
+
+def caler_commune(forme):
+    """La bande « Legende ensemble » du modele, a la mesure de son texte.
+
+    Le texte prend un corps fixe ; la bande grandit vers le haut s'il
+    faut une seconde ligne et ne descend pas sous la limite des logos.
+    Renvoie la forme et le haut de la bande, que les photos ne passent
+    pas.
+    """
+    pos = RE_POSITION.search(forme)
+    texte = html.unescape(''.join(re.findall(r'<a:t>([^<]*)</a:t>', forme))).strip()
+    if not pos or not texte:
+        return forme, None
+    x, y, l, h = (int(v) for v in pos.groups())
+    body = re.search(r'<a:bodyPr\b[^>]*', forme)
+    marges = sum(int(v) for v in re.findall(r'\b[lr]Ins="(\d+)"', body.group(0))) \
+        if body and re.search(r'\b[lr]Ins=', body.group(0)) else 2 * 91440
+    corps, bande = mesure_legende(texte, l - marges, CORPS_COMMUNE)
+    bas = min(y + h, mise_en_page.LIMITE_BAS)
+    haut = bas - max(h, bande)
+    forme = RE_POSITION.sub(f'<a:off x="{x}" y="{haut}"/><a:ext cx="{l}" cy="{bas - haut}"/>',
+                            forme, count=1)
+
+    def taille(m):
+        balise = re.sub(r'\ssz="\d+"', '', m.group(0))
+        return balise.replace(m.group(1), f'{m.group(1)} sz="{corps}"', 1)
+    forme = re.sub(r'(<a:(?:rPr|endParaRPr))\b[^>]*?(?=/?>)', taille, forme)
+    return forme, haut
+
+
+def disposer(cadre_, liste):
+    """Les cases des photos et les legendes qui les accompagnent.
+
+    Seule une rangee dont une photo au moins a une legende ecrite garde
+    une bande : une legende vide ne laisse plus de blanc. Deux photos
+    voisines de la meme rangee qui disent la meme chose partagent une
+    seule legende, sur leurs deux largeurs. Toutes les legendes de la
+    page prennent le meme corps, et la bande d'une rangee la hauteur de
+    sa plus longue legende.
+
+    Quand les rangees se suivent sans se chevaucher (photos cote a cote,
+    ou l'une sous l'autre), la hauteur rendue par une rangee sans legende
+    est repartie entre toutes les photos ; sinon chaque case cede
+    simplement sa bande. Renvoie les cases et `[(pos, texte, corps, rang)]`.
+    """
+    x0, y0, l0, h0 = cadre_
+    cases = [case(cadre_, p) for p in liste]
+    if not any('legende' in p for p in liste):
+        return cases, []
+
+    def cle(p):
+        return round(float(p.get('y', 0)), 3), round(float(p.get('h', 1)), 3)
+
+    def largeur(ids):
+        return cases[ids[-1]][0] + cases[ids[-1]][2] - cases[ids[0]][0]
+
+    rangs = sorted({cle(p) for p in liste})
+    groupes = {}
+    for r in rangs:
+        ordre = sorted((i for i, p in enumerate(liste) if cle(p) == r),
+                       key=lambda i: cases[i][0])
+        suite = []
+        for i in ordre:
+            texte = str(liste[i].get('legende') or '').strip()
+            voisin = suite and suite[-1][1] == texte and abs(
+                cases[suite[-1][0][-1]][0] + cases[suite[-1][0][-1]][2] + ECART - cases[i][0]) <= 2
+            if texte and voisin:
+                suite[-1][0].append(i)
+            else:
+                suite.append(([i], texte))
+        groupes[r] = [(ids, texte) for ids, texte in suite if texte]
+
+    ecrites = [(ids, texte) for g in groupes.values() for ids, texte in g]
+    corps = min((mesure_legende(texte, largeur(ids), CORPS_LEGENDE, CORPS_LEGENDE_MIN)[0]
+                 for ids, texte in ecrites), default=CORPS_LEGENDE)
+    bandes = {r: max((mesure_legende(texte, largeur(ids), corps)[1] for ids, texte in g),
+                     default=0) for r, g in groupes.items()}
+
+    if all(a[0] + a[1] <= b[0] + 0.001 for a, b in zip(rangs, rangs[1:])):
+        total = sum(r[1] for r in rangs) or 1
+        hauteur = h0 - sum(bandes.values()) - ECART * (len(rangs) - 1)
+        lignes, haut = {}, y0
+        for r in rangs:
+            h = round(hauteur * r[1] / total)
+            lignes[r] = (haut, h)
+            haut += h + bandes[r] + ECART
+        cases = [(c[0], lignes[cle(p)][0], c[2], lignes[cle(p)][1])
+                 for c, p in zip(cases, liste)]
+    else:
+        cases = [(c[0], c[1], c[2], c[3] - bandes[cle(p)]) for c, p in zip(cases, liste)]
+
+    poses = []
+    for r, g in groupes.items():
+        for ids, texte in g:
+            c = cases[ids[0]]
+            poses.append(((c[0], c[1] + c[3], largeur(ids), bandes[r]), texte, corps, ids[0]))
+    return cases, poses
 
 
 def poser(contenus, slide, photos, cache, legendes=None, commune=''):
@@ -192,8 +317,8 @@ def poser(contenus, slide, photos, cache, legendes=None, commune=''):
 
     `photos` est la liste des `{id, x, y, l, h}` de la disposition, dans
     l'ordre du formateur, avec au besoin son `cadrage` et sa `legende`.
-    Une photo qui porte une cle `legende` cede le bas de sa case a une
-    bande de legende.
+    Une photo qui porte une cle `legende` peut ceder le bas de sa case a
+    une bande de legende (voir `disposer`).
 
     `legendes` dit ou vont les legendes, choisies a part de la
     disposition : `aucune` (les photos prennent tout le cadre), `chaque`
@@ -203,6 +328,8 @@ def poser(contenus, slide, photos, cache, legendes=None, commune=''):
     `commune`, et rejoint le cadre des photos sinon. Les autres pages
     n'en ont pas : le mode `commune` la cree au bas du cadre. Sans mode
     (ancien appel), seule une photo legendee retire la bande commune.
+
+    Rien ne descend sous `mise_en_page.LIMITE_BAS`, au-dessus des logos.
 
     Une photo inconnue du service est ignoree ; sans aucune photo
     lisible, les emplacements du modele restent, comme toute donnee
@@ -216,6 +343,7 @@ def poser(contenus, slide, photos, cache, legendes=None, commune=''):
     retirer = (legendes in ('aucune', 'chaque') if legendes
                else any('legende' in p for p, _ in lisibles))
     bande_commune = None
+    haut_commune = None
     m = re.search(r'<p:sp>(?:(?!</p:sp>).)*?name="' + LEGENDE_COMMUNE
                   + r'".*?</p:sp>', xml, re.S)
     if m and retirer:
@@ -223,40 +351,40 @@ def poser(contenus, slide, photos, cache, legendes=None, commune=''):
         if pos:
             bande_commune = tuple(int(v) for v in pos.groups())
             xml = xml[:m.start()] + xml[m.end():]
+    elif m:
+        forme, haut_commune = caler_commune(m.group(0))
+        xml = xml[:m.start()] + forme + xml[m.end():]
     trouves = emplacements(xml)
     if not trouves:
         return
-    cadre_ = cadre([pos for _, pos in trouves] + ([bande_commune] if bande_commune else []))
+    x0, y0, l0, h0 = cadre([pos for _, pos in trouves] + ([bande_commune] if bande_commune else []))
+    h0 = min(h0, mise_en_page.LIMITE_BAS - y0)
+    if haut_commune is not None:
+        h0 = min(h0, haut_commune - ECART_LEGENDE - y0)
     # Legende commune sans bande dans le modele : on la prend au bas du
     # cadre, sur toute sa largeur.
     legende_ajoutee = None
-    if legendes == 'commune' and not m:
-        x, y, l, h = cadre_
-        cadre_ = (x, y, l, h - BANDE_LEGENDE - ECART_LEGENDE)
-        if str(commune or '').strip():
-            legende_ajoutee = (x, y + h - BANDE_LEGENDE, l, BANDE_LEGENDE)
+    commune = str(commune or '').strip()
+    if legendes == 'commune' and not m and commune:
+        corps, bande = mesure_legende(commune, l0, CORPS_COMMUNE)
+        h0 -= bande + ECART_LEGENDE
+        legende_ajoutee = ((x0, y0 + h0 + ECART_LEGENDE, l0, bande), corps)
 
+    cases, poses = disposer((x0, y0, l0, h0), [p for p, _ in lisibles])
     ident_forme = 900
     formes = []
-    for i, (p, chemin) in enumerate(lisibles):
+    for i, ((p, chemin), pos) in enumerate(zip(lisibles, cases)):
         rid = _joindre(contenus, slide, i + 1, chemin)
-        pos = case(cadre_, p)
-        if 'legende' in p:
-            x, y, l, h = pos
-            pos = (x, y, l, h - BANDE_LEGENDE)
-            if str(p.get('legende') or '').strip():
-                formes.append(forme_legende(
-                    ident_forme + 50 + i, i + 1,
-                    (x, y + h - BANDE_LEGENDE, l, BANDE_LEGENDE),
-                    str(p['legende'])))
         with Image.open(chemin) as image:
             rect = rognage(image.width, image.height, pos[2], pos[3],
                            p.get('cadrage'))
         formes.append(forme_image(ident_forme + i, f'Photo {i + 1}', rid,
                                   pos, rect))
+    for pos, texte, corps, i in poses:
+        formes.append(forme_legende(ident_forme + 50 + i, i + 1, pos, texte, corps))
     if legende_ajoutee:
-        formes.append(forme_legende(ident_forme + 99, 'ensemble', legende_ajoutee,
-                                    str(commune)))
+        pos, corps = legende_ajoutee
+        formes.append(forme_legende(ident_forme + 99, 'ensemble', pos, commune, corps))
 
     # Les emplacements s'effacent, les photos prennent la place du premier.
     premier = trouves[0][0]

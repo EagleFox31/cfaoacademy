@@ -85,6 +85,22 @@ Règles à connaître avant de toucher au modèle ou aux drapeaux :
   `@marquage` (numérotation des objectifs).
 - **Hauteur des lignes répétées** : le service estime les retours à la ligne de chaque case
   (`hauteur_utile()`) et resserre police et marges pour que le tableau tienne dans la page.
+- **Mise en page finale** (`mise_en_page.ajuster()`, appliquée au rapport *et* aux aperçus) :
+  - rien ne descend sous **17,65 cm** (`LIMITE_BAS`), les logos du bas commencent à 17,90 cm ;
+  - le pied de page (titre de la formation) est retiré ;
+  - les tailles de texte sont **écrites en clair** : PowerPoint ne recalcule pas l'ajustement
+    automatique (`normAutofit`, `spAutoFit`) tant que le texte n'est pas retouché ;
+  - une zone qui déborde descend par pas de 2,5 %, arrondie au point entier ;
+  - un commentaire passe à 12 pt puis remonte de 0,75 cm au plus ;
+  - un tableau cède l'excès à sa dernière ligne ;
+  - le numéro de page affiché suit le rang dans le rapport.
+  - Estimation calibrée sur les corrections faites à la main dans PowerPoint
+    (`CHASSE`, `INTERLIGNE`).
+- **Légendes photos** (`photos.disposer()`) :
+  - pas de bande pour une ligne de photos sans légende ;
+  - deux voisines de même légende n'en portent qu'une, sur toute leur largeur ;
+  - un seul corps par page, 11 pt, réduit jusqu'à 10 pt pour tenir sur deux lignes ;
+  - légende commune à 12 pt.
 
 ### Diapositives du modèle
 
@@ -240,6 +256,7 @@ cd services && pip install -r requirements-dev.txt && pytest -q tests
 | `frontend/src/data/dispositions_photos.test.js` | dispositions, modes de légende, anciens brouillons |
 | `services/tests/test_service.py` | substitution, lignes répétées, couleurs, modèle versionné, rendu LibreOffice |
 | `services/tests/test_brouillons.py` | contrat `/cr-donnees`, cloisonnement par utilisateur |
+| `services/tests/test_mise_en_page.py` | limite des logos, pied de page, tailles en clair, légendes |
 
 Le rendu LibreOffice est sauté en CI (LibreOffice absent du runner) ; il s'exécute en local.
 **Les tests n'écrivent jamais dans `services/apercu/donnees/`** : base temporaire par test.
