@@ -31,7 +31,6 @@ import subprocess
 import tempfile
 import threading
 import zipfile
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 # LibreOffice n'accepte qu'un processus par profil : deux conversions
@@ -508,7 +507,8 @@ def _anneau_excel(image, geo, valeurs):
     import math
     import numpy as np
     from PIL import Image, ImageDraw, ImageFont
-    a = np.asarray(image.convert('RGBA')).astype(np.float32)
+    # En octets : seul le carre de l'anneau passe en flottants, plus bas.
+    a = np.asarray(image.convert('RGBA'))
     h, l = a.shape[:2]
     opaque = a[:, :, 3] > 0
 
@@ -562,8 +562,9 @@ def _anneau_excel(image, geo, valeurs):
     sx0 = np.clip(np.floor(sx).astype(int), 0, l - 2)
     sy0 = np.clip(np.floor(sy).astype(int), 0, h - 2)
     fx, fy = (sx - sx0)[..., None], (sy - sy0)[..., None]
-    pris = (a[sy0, sx0] * (1 - fx) * (1 - fy) + a[sy0, sx0 + 1] * fx * (1 - fy)
-            + a[sy0 + 1, sx0] * (1 - fx) * fy + a[sy0 + 1, sx0 + 1] * fx * fy)
+    f = np.float32
+    pris = (a[sy0, sx0].astype(f) * (1 - fx) * (1 - fy) + a[sy0, sx0 + 1].astype(f) * fx * (1 - fy)
+            + a[sy0 + 1, sx0].astype(f) * (1 - fx) * fy + a[sy0 + 1, sx0 + 1].astype(f) * fx * fy)
     # Les secteurs vides sont blancs chez Excel : sous l'anneau, le vide
     # redevient blanc.
     blanc = np.array([255, 255, 255, 255], np.float32)
@@ -571,8 +572,8 @@ def _anneau_excel(image, geo, valeurs):
     pris = np.where(dans[..., None], pris * alpha + blanc * (1 - alpha), pris)
     pris = np.where((r < trou_xl)[..., None], 0, pris)
     b = a.copy()
-    b[y0:y1, x0:x1] = pris
-    image = Image.fromarray(np.clip(b, 0, 255).astype(np.uint8), 'RGBA')
+    b[y0:y1, x0:x1] = np.clip(pris, 0, 255).astype(np.uint8)
+    image = Image.fromarray(b, 'RGBA')
 
     # Echelle : la zone de trace d'Excel inscrit le cercle dans son plus
     # petit cote ; on en deduit la taille d'un point, en pixels.
@@ -755,14 +756,19 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                  '--convert-to', 'pdf', '--outdir', str(travail)]
                 + [str(travail / f'{s}.xlsx') for s in uniques],
                 capture_output=True, timeout=120)
-        rendus, travaux = {}, []
-        for cle, (empreinte, source, _) in a_faire.items():
-            pdf = travail / f'{source}.pdf'
-            if source not in rendus and pdf.exists():
-                with fitz.open(pdf) as doc:
-                    pixmap = doc[0].get_pixmap(dpi=200)
-                rendus[source] = Image.frombytes('RGB', (pixmap.width, pixmap.height), pixmap.samples)
-            if source not in rendus:
+        # Une image a la fois, liberee aussitot : chacune pese une
+        # dizaine de Mo une fois decodee, et la machine en a peu.
+        source_vue, rendu = None, None
+        for cle, (empreinte, source, _) in sorted(a_faire.items(), key=lambda t: t[1][1]):
+            if source != source_vue:
+                source_vue, rendu = source, None
+                pdf = travail / f'{source}.pdf'
+                if pdf.exists():
+                    with fitz.open(pdf) as doc:
+                        pixmap = doc[0].get_pixmap(dpi=200)
+                    rendu = Image.frombytes('RGB', (pixmap.width, pixmap.height), pixmap.samples)
+                    del pixmap
+            if rendu is None:
                 continue
             quoi, cellules, ratio = (legendes or {}).get(cle, (None, None, None))
             anneau = None
@@ -778,13 +784,9 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                 geo = _geometrie_anneau(_lire(classeurs_bruts[cle]))
                 if geo:
                     anneau = (geo, taux)
-            travaux.append((cle, empreinte, rendus[source], anneau, ratio))
-        # Le rognage (numpy, PIL) libere le GIL : les images se font en parallele.
-        with ThreadPoolExecutor(4) as pool:
-            faites = pool.map(lambda t: _rogner(*t[2:]), travaux)
-            for (cle, empreinte, *_), image in zip(travaux, faites):
-                (dossier / f'{empreinte}.png').write_bytes(image)
-                images[cle] = image
+            image = _rogner(rendu, anneau, ratio)
+            (dossier / f'{empreinte}.png').write_bytes(image)
+            images[cle] = image
     finally:
         shutil.rmtree(travail, ignore_errors=True)
     return images
