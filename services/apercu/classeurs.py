@@ -774,6 +774,7 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
         xml = contenus[slide].decode('utf-8')
         rels = contenus[rels_nom].decode('utf-8')
         cibles = dict(re.findall(r'Id="([^"]+)"[^>]*?Target="([^"]+)"', rels))
+        retirer = []
         for m in RE_OLE.finditer(xml):
             objet = re.search(r'<p:oleObj [^>]*r:id="([^"]+)"', m.group(0))
             images = set(re.findall(r'<a:blip r:embed="([^"]+)"', m.group(0)))
@@ -785,6 +786,11 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             parts = _lire(contenus[emb])
             quoi = nature(parts)
             if quoi not in valeurs:
+                continue
+            # Sans aucune note de qualite, ni tableaux ni anneau : on
+            # retire l'objet plutot que d'afficher des tirets.
+            if quoi == 'satisfaction' and all(v is None for v in valeurs[quoi].values()):
+                retirer.append(m.span())
                 continue
             remplies = remplir_classeur(parts, valeurs[quoi])
             if quoi == 'acquisition':
@@ -800,6 +806,10 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             ratio = int(taille.group(1)) / int(taille.group(2)) if taille else None
             natures[emb] = (quoi, valeurs[quoi], ratio)
             poses += [(rels_nom, rid, emb) for rid in images]
+        if retirer:
+            for debut, fin in reversed(retirer):
+                xml = xml[:debut] + xml[fin:]
+            contenus[slide] = xml.encode('utf-8')
     if not a_rendre:
         return
     rendus = rendre(a_rendre, soffice, profil, cache, natures)

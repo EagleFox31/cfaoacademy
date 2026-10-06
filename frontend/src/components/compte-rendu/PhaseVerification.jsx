@@ -1465,16 +1465,19 @@ function composerPages(b, session, s) {
         { libelle: total, valeur: afficherTaux(valeur), total: true },
       ],
     })
-    pages.push({
+    // Sans note sur la formation ni sur l'accueil, la page n'a rien à
+    // montrer : ni tableau, ni anneau.
+    const tableauxSatisfaction = [
+      sat.formation != null && critere(CRITERES_FORMATION, 'Qualité de la formation',
+        'Qualité de la formation', sat.formation),
+      sat.accueil != null && critere(CRITERES_ACCUEIL, 'Qualité de l’accueil',
+        'Qualité de l’accueil', sat.accueil),
+    ].filter(Boolean)
+    if (tableauxSatisfaction.length) pages.push({
       cle: 'satisfaction', titre: 'Satisfaction', type: 'chiffres',
       titrePage: 'RÉSULTAT GLOBAL DE LA SESSION',
       sansCommentaires: true,
-      tableaux: [
-        critere(CRITERES_FORMATION, 'Qualité de la formation',
-          'Qualité de la formation', sat.formation),
-        critere(CRITERES_ACCUEIL, 'Qualité de l’accueil',
-          'Qualité de l’accueil', sat.accueil),
-      ],
+      tableaux: tableauxSatisfaction,
     })
   }
 
