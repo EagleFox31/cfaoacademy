@@ -43,6 +43,7 @@ NATURES = {
     'PROGRESSION': 'progression',
     'ACQUISITION DES COMPETENCES': 'acquisition',
     'QUALITÉ DE LA FORMATION': 'satisfaction',
+    "QUALITÉ DE L'ACCUEIL": 'satisfaction',
 }
 
 RE_OLE = re.compile(r'<p:graphicFrame>(?:(?!</p:graphicFrame>).)*?<p:oleObj .*?'
@@ -63,9 +64,20 @@ def _ecrire(parts):
 
 
 def nature(parts):
-    """La nature d'un classeur, d'apres le texte de sa cellule A1."""
+    """La nature d'un classeur, d'apres le texte de sa cellule A1.
+
+    Sans note de formation, le classeur de satisfaction a perdu son A1 :
+    le titre de l'accueil (A11) le fait reconnaitre.
+    """
     feuille = parts.get('xl/worksheets/sheet1.xml', b'').decode('utf-8')
-    m = re.search(r'<c r="A1"([^>]*?)(?:/>|>(.*?)</c>)', feuille, re.S)
+    trouvee = _nature_de(parts, feuille, 'A1')
+    if trouvee is None and _nature_de(parts, feuille, 'A11') == 'satisfaction':
+        return 'satisfaction'
+    return trouvee
+
+
+def _nature_de(parts, feuille, ref):
+    m = re.search(rf'<c r="{ref}"([^>]*?)(?:/>|>(.*?)</c>)', feuille, re.S)
     if not m or not m.group(2):
         return None
     genre = re.search(r'\bt="(\w+)"', m.group(1))
@@ -713,14 +725,7 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
     dossier.mkdir(parents=True, exist_ok=True)
     images, a_faire = {}, {}
     for cle, brut in classeurs_bruts.items():
-        # L'image ne depend pas que du classeur : les moities sans note
-        # sont videes a l'impression seulement (`_sans_moitie_absente`).
-        # Elles entrent dans l'empreinte, avec la version du rendu.
-        quoi, cellules, _ = (legendes or {}).get(cle, (None, None, None))
-        absentes = [i for i, (refs, _) in enumerate(MOITIES_SATISFACTION)
-                    if quoi == 'satisfaction' and cellules
-                    and all(cellules.get(r) is None for r in refs)]
-        empreinte = hashlib.sha1(brut + f'|v{VERSION_IMAGES}|{absentes}'.encode()).hexdigest()[:16]
+        empreinte = hashlib.sha1(brut + f'|v{VERSION_IMAGES}'.encode()).hexdigest()[:16]
         chemin = dossier / f'{empreinte}.png'
         if chemin.exists():
             images[cle] = chemin.read_bytes()
@@ -729,11 +734,7 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
     if a_faire:
         travail = Path(tempfile.mkdtemp(prefix='cr-classeurs-'))
         for cle, (empreinte, brut) in a_faire.items():
-            parts = _pour_rendu(_lire(brut))
-            quoi, cellules, _ = (legendes or {}).get(cle, (None, None, None))
-            if quoi == 'satisfaction' and cellules:
-                parts = _sans_moitie_absente(parts, cellules)
-            copie = _ecrire(parts)
+            copie = _ecrire(_pour_rendu(_lire(brut)))
             (travail / f'{empreinte}.xlsx').write_bytes(copie)
         with LIBREOFFICE:
             subprocess.run(
@@ -750,6 +751,11 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
             quoi, cellules, ratio = (legendes or {}).get(cle, (None, None, None))
             anneau = None
             taux = [(cellules or {}).get(ref) for ref in ANNEAUX.get(quoi, ())]
+            # La serie d'une note absente a quitte le graphique : les taux
+            # restants suivent les series restantes.
+            if quoi == 'satisfaction' and cellules:
+                absentes = _moities_absentes(cellules)
+                taux = [t for i, t in enumerate(taux) if i not in absentes]
             # Aucun questionnaire rempli : LibreOffice ne trace pas
             # d'anneau, il n'y a rien a reprendre ni a legender.
             if quoi in ANNEAUX and any(v is not None for v in taux):
@@ -780,24 +786,52 @@ MOITIES_SATISFACTION = (
 )
 
 
-def _sans_moitie_absente(parts, valeurs):
-    """Vide le tableau dont aucune note n'existe : ni cases, ni tirets.
+def _moities_absentes(valeurs):
+    """Les index des moities dont aucune note n'existe."""
+    return [i for i, (cellules, _) in enumerate(MOITIES_SATISFACTION)
+            if all(valeurs.get(c) is None for c in cellules)]
 
-    Seule la copie imprimee est vidée : le classeur embarque garde ses
-    tableaux et son titre (A1), qui le font reconnaitre. Les lignes gardent
-    leur place, le graphique reste ancre ou il est ; il ne reste que l'anneau de l'autre moitie (l'etiquette de l'absente est
-    retiree au dessin, voir `_anneau_excel`).
+
+def _sans_moitie_absente(parts, valeurs):
+    """Retire du classeur le tableau et l'anneau d'une note absente.
+
+    C'est le classeur embarque qui change, pas seulement son image :
+    ouvert dans PowerPoint, il ne montre plus que la note presente.
+    Cellules (titre compris) et fusion du titre disparaissent, la serie
+    du graphique aussi ; il reste un anneau, celui de l'autre note. Les
+    lignes gardent leur place, le graphique reste ancre ou il est.
     """
+    absentes = _moities_absentes(valeurs)
+    if not absentes:
+        return parts
+    parts = dict(parts)
     feuille = parts['xl/worksheets/sheet1.xml'].decode('utf-8')
-    for cellules, lignes in MOITIES_SATISFACTION:
-        if any(valeurs.get(c) is not None for c in cellules):
-            continue
+    for i in absentes:
+        lignes = MOITIES_SATISFACTION[i][1]
         for n in lignes:
             feuille = re.sub(
                 rf'<c r="([A-C]){n}"[^>]*?(?:/>|>.*?</c>)',
                 lambda m, n=n: f'<c r="{m.group(1)}{n}"/>', feuille, flags=re.S)
-    parts = dict(parts)
+        feuille = re.sub(rf'<mergeCell ref="A{lignes[0]}:[A-Z]+{lignes[0]}"/>', '', feuille)
+    reste = len(re.findall(r'<mergeCell ', feuille))
+    feuille = (re.sub(r'<mergeCells count="\d+">', f'<mergeCells count="{reste}">', feuille)
+               if reste else re.sub(r'<mergeCells[^>]*>\s*</mergeCells>', '', feuille))
     parts['xl/worksheets/sheet1.xml'] = feuille.encode('utf-8')
+    # La serie d'une moitie : celle dont une reference tombe sur ses lignes.
+    lignes_absentes = {n for i in absentes for n in MOITIES_SATISFACTION[i][1]}
+
+    def hors_moitie(m):
+        refs = re.findall(r'<c:f>[^<]*?\$?[A-Z]+\$?(\d+)', m.group(0))
+        return '' if any(int(n) in lignes_absentes for n in refs) else m.group(0)
+    for nom in [n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)]:
+        graphique = parts[nom].decode('utf-8')
+        if '<c:doughnutChart>' in graphique:
+            graphique = re.sub(r'<c:ser>.*?</c:ser>', hors_moitie, graphique, flags=re.S)
+            # Seule, une serie donne son nom en titre au graphique : ce
+            # titre automatique n'existe pas dans le modele.
+            graphique = graphique.replace('<c:autoTitleDeleted val="0"/>',
+                                          '<c:autoTitleDeleted val="1"/>')
+            parts[nom] = graphique.encode('utf-8')
     return parts
 
 
@@ -855,6 +889,8 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             remplies = remplir_classeur(parts, valeurs[quoi])
             if quoi == 'acquisition':
                 remplies = _ajouter_signes_acquisition(remplies)
+            if quoi == 'satisfaction' and valeurs[quoi]:
+                remplies = _sans_moitie_absente(remplies, valeurs[quoi])
             brut = _ecrire(remplies)
             contenus[emb] = brut
             a_rendre[emb] = brut

@@ -1,5 +1,4 @@
 """Sans note de qualite, plus de tableaux ni d'anneau de satisfaction."""
-import hashlib
 import re
 import zipfile
 from xml.dom import minidom
@@ -77,42 +76,63 @@ def remplies(parts, lignes):
             if int(n) in lignes and contenu]
 
 
-def test_une_seule_note_vide_le_tableau_de_l_autre_a_l_impression(contenus):
-    base = classeur_de_satisfaction(contenus, FICHE)
-    formation = {**CELLULES, 'B2': 0.8, 'B9': 0.8, 'C9': 0.2}
-    imprimee = classeurs._sans_moitie_absente(classeurs.remplir_classeur(base, formation), formation)
-    assert remplies(imprimee, range(2, 10)) and not remplies(imprimee, range(11, 19))
-    accueil = {**CELLULES, 'B12': 0.8, 'B18': 0.75, 'C18': 0.25}
-    imprimee = classeurs._sans_moitie_absente(classeurs.remplir_classeur(base, accueil), accueil)
-    assert remplies(imprimee, range(12, 19)) and not remplies(imprimee, range(2, 10))
+def series(parts):
+    graphique = next(parts[n].decode('utf-8') for n in parts
+                     if re.match(r'xl/charts/chart\d+\.xml$', n))
+    minidom.parseString(graphique)
+    return [re.findall(r'<c:f>([^<]*)</c:f>', s) for s in re.findall(r'<c:ser>.*?</c:ser>', graphique, re.S)]
 
 
-def test_le_classeur_embarque_garde_ses_deux_tableaux(contenus):
-    rafraichir(contenus, FICHE, {**CELLULES, 'B2': 0.8, 'B9': 0.8, 'C9': 0.2})
-    assert 'satisfaction' in natures(contenus, FICHE)
+def fusions(parts):
+    feuille = parts['xl/worksheets/sheet1.xml'].decode('utf-8')
+    minidom.parseString(feuille)
+    return re.findall(r'<mergeCell ref="([^"]+)"/>', feuille)
+
+
+@pytest.mark.parametrize('slide', [PAGE_RESULTATS, FICHE])
+def test_sans_note_d_accueil_le_classeur_embarque_n_a_plus_ni_tableau_ni_anneau(contenus, slide):
+    rafraichir(contenus, slide, {**CELLULES, 'B2': 0.8, 'B9': 0.8, 'C9': 0.2})
+    parts = classeur_de_satisfaction(contenus, slide)
+    assert remplies(parts, range(1, 10)) and not remplies(parts, range(11, 19))
+    assert fusions(parts) == ['A1:B1']
+    assert series(parts) == [['Feuil1!$A$9', 'Feuil1!$B$9:$C$9']]
+    assert b'<c:autoTitleDeleted val="1"/>' in parts['xl/charts/chart1.xml']
+
+
+@pytest.mark.parametrize('slide', [PAGE_RESULTATS, FICHE])
+def test_sans_note_de_formation_le_classeur_embarque_n_a_plus_ni_tableau_ni_anneau(contenus, slide):
+    rafraichir(contenus, slide, {**CELLULES, 'B12': 0.8, 'B18': 0.75, 'C18': 0.25})
+    parts = classeur_de_satisfaction(contenus, slide)  # reconnu par son A11
+    assert remplies(parts, range(11, 19)) and not remplies(parts, range(1, 10))
+    assert fusions(parts) == ['A11:B11']
+    assert series(parts) == [['Feuil1!$A$18', 'Feuil1!$B$18:$C$18']]
+
+
+def test_avec_les_deux_notes_le_classeur_garde_tout(contenus):
+    rafraichir(contenus, FICHE, {**CELLULES, 'B9': 0.8, 'C9': 0.2, 'B18': 0.7, 'C18': 0.3})
     parts = classeur_de_satisfaction(contenus, FICHE)
-    assert remplies(parts, range(11, 19))  # les tirets de l'accueil, pas un vide
+    assert remplies(parts, range(1, 10)) and remplies(parts, range(11, 19))
+    assert fusions(parts) == ['A1:B1', 'A11:B11']
+    assert len(series(parts)) == 2
 
 
-def test_l_image_en_cache_tient_compte_de_la_moitie_absente(tmp_path, monkeypatch):
-    """Meme classeur embarque, moitie videe ou non : deux images distinctes."""
-    vus = []
-    monkeypatch.setattr(classeurs.subprocess, 'run', lambda cmd, **k: vus.append(cmd))
+def test_les_taux_de_l_anneau_suivent_les_series_restantes(tmp_path, monkeypatch):
+    """Sans note de formation, la seule serie restante porte le taux de l'accueil."""
     with zipfile.ZipFile(service.MODELE) as z:
         base = {n: z.read(n) for n in z.namelist()}
-    brut = classeurs._ecrire(classeur_de_satisfaction(base, FICHE))
-    complet = {**CELLULES, 'B9': 0.8, 'B18': 0.7}
-    sans_accueil = {**CELLULES, 'B9': 0.8}
-    (tmp_path / 'classeurs').mkdir()
-    # Une image deja en cache pour le classeur complet...
-    classeurs.rendre({'a': brut}, 'soffice', 'profil', tmp_path, {'a': ('satisfaction', complet, None)})
-    assert len(vus) == 1
-    for png in (tmp_path / 'classeurs').glob('*'):
-        png.unlink()
-    nom = lambda c: hashlib.sha1(brut + f'|v{classeurs.VERSION_IMAGES}|{c}'.encode()).hexdigest()[:16]
-    (tmp_path / 'classeurs' / f'{nom([])}.png').write_bytes(b'ancienne')
-    # ...ne doit pas servir quand l'accueil n'a pas de note.
-    images = classeurs.rendre({'a': brut}, 'soffice', 'profil', tmp_path,
-                              {'a': ('satisfaction', sans_accueil, None)})
-    assert images.get('a') != b'ancienne'
-    assert len(vus) == 2
+    accueil = {**CELLULES, 'B12': 0.8, 'B18': 0.75, 'C18': 0.25}
+    parts = classeurs._sans_moitie_absente(
+        classeurs.remplir_classeur(classeur_de_satisfaction(base, FICHE), accueil), accueil)
+    def convertir(cmd, **k):
+        # Un PDF vide tient lieu du rendu de LibreOffice.
+        import fitz
+        doc = fitz.open()
+        doc.new_page()
+        doc.save(cmd[-1].replace('.xlsx', '.pdf'))
+    monkeypatch.setattr(classeurs.subprocess, 'run', convertir)
+    vus = []
+    monkeypatch.setattr(classeurs, '_rogner', lambda png, anneau=None, ratio=None: vus.append(anneau) or b'png')
+    classeurs.rendre({'a': classeurs._ecrire(parts)}, 'soffice', 'profil', tmp_path,
+                     {'a': ('satisfaction', accueil, None)})
+    geo, taux = vus[0]
+    assert len(geo['series']) == 1 and taux == [0.75]
