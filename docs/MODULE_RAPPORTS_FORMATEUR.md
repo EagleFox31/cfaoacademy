@@ -173,7 +173,7 @@ Le texte proposé reste à relire par le formateur.
 | `GET /apercu/sante` | le service, le modèle et LibreOffice sont-ils prêts |
 | `POST /apercu/page` | PNG d'une diapositive (`{diapo, valeurs}`) |
 | `POST /apercu/rapport` | rapport complet, page par page (`{pages, format}`) |
-| `POST /apercu/rapports`, `GET /apercu/rapports/<id>[/fichier]` | même rapport, préparé en tâche de fond puis téléchargé |
+| `POST /apercu/rapports`, `GET /apercu/rapports/<id>[/fichier]` | même rapport, préparé en tâche de fond puis téléchargé par un simple lien (`?nom=` donne le nom du fichier) ; les images des classeurs déjà rendus sortent du cache |
 | `POST /apercu/document` | rapport complet à partir des parties |
 | `POST /apercu/photo` | dépôt d'une photo, renvoie son identifiant |
 | `POST /apercu/redaction` | texte proposé par le moteur |

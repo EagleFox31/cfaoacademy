@@ -26,10 +26,12 @@ import hashlib
 import html
 import io
 import re
+import shutil
 import subprocess
 import tempfile
 import threading
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 # LibreOffice n'accepte qu'un processus par profil : deux conversions
@@ -56,10 +58,12 @@ def _lire(brut):
 
 
 def _ecrire(parts):
+    # Date fixe : a contenu egal, octets egaux, sinon l'empreinte du
+    # cache d'images change a chaque seconde et le cache ne sert jamais.
     tampon = io.BytesIO()
     with zipfile.ZipFile(tampon, 'w', zipfile.ZIP_DEFLATED) as z:
         for n, d in parts.items():
-            z.writestr(n, d)
+            z.writestr(zipfile.ZipInfo(n, (1980, 1, 1, 0, 0, 0)), d, zipfile.ZIP_DEFLATED)
     return tampon.getvalue()
 
 
@@ -683,7 +687,8 @@ def _rogner(pixmap_png, anneau=None, ratio=None):
     devient donc transparent.
     """
     from PIL import Image, ImageChops
-    image = Image.open(io.BytesIO(pixmap_png)).convert('RGB')
+    image = (pixmap_png.convert('RGB') if isinstance(pixmap_png, Image.Image)
+             else Image.open(io.BytesIO(pixmap_png)).convert('RGB'))
     blanc = None
     for canal in image.split():
         clair = canal.point(lambda v: 255 if v >= 248 else 0)
@@ -705,8 +710,9 @@ def _rogner(pixmap_png, anneau=None, ratio=None):
             cadre = Image.new('RGBA', (cible_l, cible_h), (255, 255, 255, 0))
             cadre.paste(image, ((cible_l - l) // 2, (cible_h - h) // 2))
             image = cadre
+    # optimize=True quadruple le temps pour un fichier a peine plus petit.
     sortie = io.BytesIO()
-    image.save(sortie, 'PNG', optimize=True)
+    image.save(sortie, 'PNG', compress_level=6)
     return sortie.getvalue()
 
 
@@ -721,33 +727,43 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
     c'est son lancement qui coute.
     """
     import fitz
+    from PIL import Image
     dossier = Path(cache) / 'classeurs'
     dossier.mkdir(parents=True, exist_ok=True)
     images, a_faire = {}, {}
     for cle, brut in classeurs_bruts.items():
-        empreinte = hashlib.sha1(brut + f'|v{VERSION_IMAGES}'.encode()).hexdigest()[:16]
+        # Le meme classeur peut tenir dans deux cadres de proportions
+        # differentes : l'image en depend aussi.
+        ratio = (legendes or {}).get(cle, (None, None, None))[2]
+        empreinte = hashlib.sha1(brut + f'|v{VERSION_IMAGES}|{ratio}'.encode()).hexdigest()[:16]
         chemin = dossier / f'{empreinte}.png'
         if chemin.exists():
             images[cle] = chemin.read_bytes()
         else:
-            a_faire[cle] = (empreinte, brut)
-    if a_faire:
-        travail = Path(tempfile.mkdtemp(prefix='cr-classeurs-'))
-        for cle, (empreinte, brut) in a_faire.items():
-            copie = _ecrire(_pour_rendu(_lire(brut)))
-            (travail / f'{empreinte}.xlsx').write_bytes(copie)
+            a_faire[cle] = (empreinte, hashlib.sha1(brut).hexdigest()[:16], brut)
+    if not a_faire:
+        return images
+    travail = Path(tempfile.mkdtemp(prefix='cr-classeurs-'))
+    try:
+        # Deux classeurs identiques ne passent qu'une fois par LibreOffice.
+        uniques = {source: brut for _, source, brut in a_faire.values()}
+        for source, brut in uniques.items():
+            (travail / f'{source}.xlsx').write_bytes(_ecrire(_pour_rendu(_lire(brut))))
         with LIBREOFFICE:
             subprocess.run(
                 [soffice, '--headless', '--norestore', f'-env:UserInstallation={profil}',
                  '--convert-to', 'pdf', '--outdir', str(travail)]
-                + [str(travail / f'{e}.xlsx') for e, _ in a_faire.values()],
+                + [str(travail / f'{s}.xlsx') for s in uniques],
                 capture_output=True, timeout=120)
-        for cle, (empreinte, _) in a_faire.items():
-            pdf = travail / f'{empreinte}.pdf'
-            if not pdf.exists():
+        rendus, travaux = {}, []
+        for cle, (empreinte, source, _) in a_faire.items():
+            pdf = travail / f'{source}.pdf'
+            if source not in rendus and pdf.exists():
+                with fitz.open(pdf) as doc:
+                    pixmap = doc[0].get_pixmap(dpi=200)
+                rendus[source] = Image.frombytes('RGB', (pixmap.width, pixmap.height), pixmap.samples)
+            if source not in rendus:
                 continue
-            with fitz.open(pdf) as doc:
-                png = doc[0].get_pixmap(dpi=200).tobytes('png')
             quoi, cellules, ratio = (legendes or {}).get(cle, (None, None, None))
             anneau = None
             taux = [(cellules or {}).get(ref) for ref in ANNEAUX.get(quoi, ())]
@@ -762,9 +778,15 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                 geo = _geometrie_anneau(_lire(classeurs_bruts[cle]))
                 if geo:
                     anneau = (geo, taux)
-            image = _rogner(png, anneau, ratio)
-            (dossier / f'{empreinte}.png').write_bytes(image)
-            images[cle] = image
+            travaux.append((cle, empreinte, rendus[source], anneau, ratio))
+        # Le rognage (numpy, PIL) libere le GIL : les images se font en parallele.
+        with ThreadPoolExecutor(4) as pool:
+            faites = pool.map(lambda t: _rogner(*t[2:]), travaux)
+            for (cle, empreinte, *_), image in zip(travaux, faites):
+                (dossier / f'{empreinte}.png').write_bytes(image)
+                images[cle] = image
+    finally:
+        shutil.rmtree(travail, ignore_errors=True)
     return images
 
 

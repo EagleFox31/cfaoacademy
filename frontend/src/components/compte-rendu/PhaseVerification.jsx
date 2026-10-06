@@ -270,22 +270,27 @@ export default function PhaseVerification({
     majPhoto(rubrique, id, { cadrage })
   }
 
-  // Le PowerPoint produit, garde pour le telecharger a nouveau.
+  // L'adresse du PowerPoint produit, gardee pour le telecharger a nouveau
+  // (le service le garde une heure).
   const [fichier, setFichier] = useState(null)
   const [echec, setEchec] = useState(false)
 
-  function telecharger(blob) {
-    // Le code de la formation, ou son intitule pour une saisie libre.
-    const nom = (brouillon.codeFormation || session?.codeFormation || brouillon.intitule || 'session')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    const url = URL.createObjectURL(blob)
+  // Un simple lien : le navigateur ecrit le fichier sur le disque au fil
+  // de l'eau. Le lire d'abord en memoire (blob) echouait sur les gros
+  // rapports, pourtant bien produits.
+  function telecharger(url) {
     const a = document.createElement('a')
     a.href = url
-    a.download = `compte-rendu-${nom.replace(/\W+/g, '-').replace(/^-|-$/g, '').toLowerCase()}.pptx`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  // Le code de la formation, ou son intitule pour une saisie libre.
+  function nomDuFichier() {
+    const nom = (brouillon.codeFormation || session?.codeFormation || brouillon.intitule || 'session')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    return `compte-rendu-${nom.replace(/\W+/g, '-').replace(/^-|-$/g, '').toLowerCase()}`
   }
 
   /**
@@ -321,9 +326,7 @@ export default function PhaseVerification({
       if (etat === 'pret') break
       if (etat === 'echec') throw new Error('echec')
     }
-    const fichier = await fetch(`/apercu/rapports/${id}/fichier`)
-    if (!fichier.ok) throw new Error(String(fichier.status))
-    return fichier.blob()
+    return `/apercu/rapports/${id}/fichier?nom=${encodeURIComponent(nomDuFichier())}`
   }
 
   // Le document final reprend page par page ce que montrent les
@@ -341,9 +344,9 @@ export default function PhaseVerification({
         .filter(p => p.diapo),
     }
     try {
-      const blob = await rapportProduit(corps)
-      setFichier(blob)
-      telecharger(blob)
+      const url = await rapportProduit(corps)
+      setFichier(url)
+      telecharger(url)
       // Toutes les pages remplies, le compte rendu est deja a l'archive ;
       // on y date sa sortie. Sinon le PowerPoint n'est qu'une version de
       // travail, et la saisie reste en cours.

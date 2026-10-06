@@ -278,7 +278,9 @@ def rapport_fichier(ident):
     t = _tache(ident)
     if not t or t['etat'] != 'pret' or not Path(t['chemin']).exists():
         return jsonify({'erreur': 'rapport indisponible'}), 404
-    return send_file(t['chemin'], as_attachment=True, download_name=f"rapport.{t['format']}")
+    # Le navigateur telecharge par un simple lien : le nom vient d'ici.
+    nom = re.sub(r'[^a-z0-9-]+', '', request.args.get('nom', '').lower())[:80] or 'rapport'
+    return send_file(t['chemin'], as_attachment=True, download_name=f"{nom}.{t['format']}")
 
 
 @app.post('/apercu/redaction')
