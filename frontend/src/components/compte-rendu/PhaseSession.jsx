@@ -3,7 +3,7 @@ import { periodeLongue } from '../../utils/compteRendu'
 import CarteCompteRendu, { BadgeCompteRendu, carteDeSession } from './CarteCompteRendu'
 import Consigne from './Consigne'
 import RepriseStagiaires from './RepriseStagiaires'
-import { lireEvaluation, appliquerEvaluation } from '../../utils/importEvaluation'
+import { lireEvaluation, lireResultats, appliquerEvaluation } from '../../utils/importEvaluation'
 import { brouillonsEnregistres, estTermine, synchroniser } from '../../utils/brouillonsCompteRendu'
 import { CERTIFICATION, FORMATION, champsDeType, estCertification } from '../../utils/certification'
 
@@ -80,7 +80,13 @@ export default function PhaseSession({
   async function importer(f) {
     if (!f) return
     try {
-      const { entete, stagiaires } = await lireEvaluation(f)
+      let lu
+      try {
+        lu = await lireEvaluation(f)
+      } catch (e1) {
+        try { lu = await lireResultats(f) } catch { throw e1 }
+      }
+      const { entete, stagiaires } = lu
       if (!mode) {
         const r = appliquerEvaluation({ participants: [] }, stagiaires)
         onSaisieManuelle({
