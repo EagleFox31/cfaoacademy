@@ -800,6 +800,10 @@ def _sans_moitie_absente(parts, valeurs):
     Cellules (titre compris) et fusion du titre disparaissent, la serie
     du graphique aussi ; il reste un anneau, celui de l'autre note. Les
     lignes gardent leur place, le graphique reste ancre ou il est.
+
+    Le retrait est definitif : il s'applique a un classeur tire du modele
+    (`rapport` et `remplir` repartent toujours de lui), jamais a un
+    classeur deja traite.
     """
     absentes = _moities_absentes(valeurs)
     if not absentes:
@@ -831,8 +835,40 @@ def _sans_moitie_absente(parts, valeurs):
             # titre automatique n'existe pas dans le modele.
             graphique = graphique.replace('<c:autoTitleDeleted val="0"/>',
                                           '<c:autoTitleDeleted val="1"/>')
+            restante = next((i for i in range(len(MOITIES_SATISFACTION)) if i not in absentes), None)
+            if restante is not None:
+                graphique = _etiquette_au_centre(
+                    parts, graphique, valeurs.get(ANNEAUX['satisfaction'][restante]))
             parts[nom] = graphique.encode('utf-8')
     return parts
+
+
+def _etiquette_au_centre(parts, graphique, v):
+    """L'etiquette de l'anneau seul, au centre de son trou, comme sur l'image.
+
+    Le decalage du modele (`manualLayout` de l'etiquette) vaut pour deux
+    anneaux. Excel le compte depuis la place par defaut de l'etiquette :
+    le milieu du secteur, a mi-epaisseur de l'anneau. Le decalage qui
+    ramene cette place au centre en est l'oppose, en fraction du graphique.
+    """
+    import math
+    dessin = parts.get('xl/drawings/drawing1.xml', b'').decode('utf-8')
+    zone = re.search(r'<c:plotArea><c:layout>.*?</c:layout>', graphique, re.S)
+    trou = re.search(r'<c:holeSize val="(\d+)"', graphique)
+    if not dessin or not zone:
+        return graphique
+    _, _, largeur, hauteur = _cadre_graphique(parts, dessin)
+    z = {k: float(x) for k, x in re.findall(r'<c:([wh]) val="([^"]+)"', zone.group(0))}
+    if not largeur or not hauteur or set(z) != {'w', 'h'}:
+        return graphique
+    rayon = min(z['w'] * largeur, z['h'] * hauteur) / 2
+    milieu = rayon * (1 + (int(trou.group(1)) / 100 if trou else 0.5)) / 2
+    angle = math.pi * float(v or 0)
+    dx = -milieu * math.sin(angle) / largeur
+    dy = milieu * math.cos(angle) / hauteur
+    return re.sub(
+        r'(<c:dLbl><c:idx val="0"/><c:layout><c:manualLayout>)<c:x val="[^"]+"/><c:y val="[^"]+"/>',
+        lambda m: m.group(1) + f'<c:x val="{dx:.6g}"/><c:y val="{dy:.6g}"/>', graphique, count=1)
 
 
 def _sans_orphelins(xml):
@@ -883,7 +919,8 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
                 continue
             # Sans aucune note de qualite, ni tableaux ni anneau : on
             # retire l'objet plutot que d'afficher des tirets.
-            if quoi == 'satisfaction' and valeurs[quoi] and all(v is None for v in valeurs[quoi].values()):
+            if (quoi == 'satisfaction' and valeurs[quoi]
+                    and len(_moities_absentes(valeurs[quoi])) == len(MOITIES_SATISFACTION)):
                 retirer.append(m.span())
                 continue
             remplies = remplir_classeur(parts, valeurs[quoi])

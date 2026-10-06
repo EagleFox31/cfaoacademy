@@ -106,6 +106,23 @@ def test_sans_note_de_formation_le_classeur_embarque_n_a_plus_ni_tableau_ni_anne
     assert remplies(parts, range(11, 19)) and not remplies(parts, range(1, 10))
     assert fusions(parts) == ['A11:B11']
     assert series(parts) == [['Feuil1!$A$18', 'Feuil1!$B$18:$C$18']]
+    assert b'<c:autoTitleDeleted val="1"/>' in parts['xl/charts/chart1.xml']
+
+
+@pytest.mark.parametrize('slide', [PAGE_RESULTATS, FICHE])
+def test_l_etiquette_de_l_anneau_seul_va_au_centre(contenus, slide):
+    """Le decalage ramene la place par defaut (mi-anneau, milieu du secteur) au centre."""
+    rafraichir(contenus, slide, {**CELLULES, 'B12': 0.8, 'B18': 0.5, 'C18': 0.5})
+    graphique = classeur_de_satisfaction(contenus, slide)['xl/charts/chart1.xml'].decode('utf-8')
+    x, y = map(float, re.search(r'<c:dLbl><c:idx val="0"/><c:layout><c:manualLayout>'
+                                r'<c:x val="([^"]+)"/><c:y val="([^"]+)"/>', graphique).groups())
+    # A 50 %, le milieu du secteur est a droite (90°) : retour a gauche, sans ecart vertical.
+    assert x < 0 and abs(y) < 1e-6
+
+
+def test_une_cle_en_trop_ne_vide_pas_l_objet_sans_le_retirer(contenus):
+    rafraichir(contenus, PAGE_RESULTATS, {**CELLULES, 'X1': 0.5})
+    assert 'satisfaction' not in natures(contenus, PAGE_RESULTATS)
 
 
 def test_avec_les_deux_notes_le_classeur_garde_tout(contenus):

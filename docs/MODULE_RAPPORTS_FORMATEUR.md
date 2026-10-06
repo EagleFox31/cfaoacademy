@@ -106,6 +106,12 @@ une ligne `G38001: intitulé / 100` par module (note rouge sous 70), `Total/ N`,
 et case Validé / Échoué ; bloc e-learning ; appréciation ; bandeau
 *Résultat pratique + E-learning = Résultat final* en vert / rouge.
 
+**Qualité de la formation et de l'accueil (19 et 27)** — une note absente (aucune réponse des
+présents) retire son tableau et son anneau du classeur Excel embarqué lui-même, pas seulement
+de l'image : cellules, série du graphique, titre automatique ; l'étiquette de l'anneau restant
+passe au centre. Sans aucune des deux notes, l'objet et sa pastille ou son titre de colonne
+sont retirés de la page (`_sans_moitie_absente`, `services/apercu/classeurs.py`).
+
 ---
 
 ## 3. Données
