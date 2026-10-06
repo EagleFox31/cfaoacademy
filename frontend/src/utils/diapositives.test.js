@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { valeursDrapeaux, formuleCertification } from './diapositives'
+import { valeursDrapeaux, formuleCertification, diapoDe } from './diapositives'
 import { ECHOUE, VALIDE } from './certification'
 
 // Une certification G3 fictive : trois modules, un candidat.
@@ -48,6 +48,12 @@ describe('fiche individuelle de certification', () => {
     const w = valeursDrapeaux(reussi, null, {}, fiche, {})
     expect(w['{resultat_pratique}']).toBe(VALIDE)
     expect(w['@couleurs']['{pourcentage}']).toBe('ok')
+  })
+})
+
+describe('pages jour', () => {
+  it('suivent toutes le meme sens, sans alternance', () => {
+    expect([1, 2, 3, 4, 5].map(n => diapoDe({ cle: `jour-${n}` }, {}))).toEqual([11, 11, 11, 11, 11])
   })
 })
 

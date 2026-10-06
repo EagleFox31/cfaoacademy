@@ -93,7 +93,7 @@ Règles à connaître avant de toucher au modèle ou aux drapeaux :
 | Couverture | 1 |
 | Participants | 3, 4 |
 | Objectifs | 5 puis 6 (romain), 7 (puces), 8 (mixte) ou 9 (avec photos) |
-| Déroulé | 10, puis 11 / 13 en alternance par jour |
+| Déroulé | 10, puis 11 pour chaque jour (texte à gauche, photos à droite ; plus d'alternance avec 13) |
 | Résultats, satisfaction | 16 à 19 |
 | Bilan | 20 |
 | Fiches | 25, puis 27 par stagiaire (formation) ou **26** par candidat (certification) |

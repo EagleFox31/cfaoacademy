@@ -58,11 +58,10 @@ export function diapoObjectifs(brouillon) {
 }
 
 /**
- * Les pages jour alternent, comme dans le modele : texte a gauche et
- * photos a droite les jours impairs (11), l'inverse les jours pairs (13).
+ * Toutes les pages jour suivent le meme sens : texte a gauche, photos a
+ * droite (11). L'alternance du modele (13 les jours pairs) a ete refusee.
  */
-const DIAPOS_JOUR = [DIAPO_PAR_PAGE.deroule, 13]
-export const diapoJour = n => DIAPOS_JOUR[(Math.max(n, 1) - 1) % DIAPOS_JOUR.length]
+export const diapoJour = () => DIAPO_PAR_PAGE.deroule
 const numeroJour = cle => Number(/^jour-(\d+)$/.exec(cle || '')?.[1]) || null
 
 /** Le numero de diapositive d'une page, ou null si elle n'en a pas.
