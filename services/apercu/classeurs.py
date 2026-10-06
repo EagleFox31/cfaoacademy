@@ -747,6 +747,22 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
     return images
 
 
+# Ce qui n'a de sens qu'avec l'objet de satisfaction : le titre de sa
+# colonne sur la fiche individuelle, la pastille entre ses deux tableaux
+# sur la page de resultats.
+RE_ORPHELINS = (
+    re.compile(r'<p:sp>(?:(?!</p:sp>).)*?<a:t>APPRECIATION DE LA FORMATION ET DE L.ACCUEIL</a:t>'
+               r'(?:(?!</p:sp>).)*?</p:sp>', re.S),
+    re.compile(r'<p:grpSp>(?:(?!</p:grpSp>).)*?name="Groupe 13".*?</p:grpSp>', re.S),
+)
+
+
+def _sans_orphelins(xml):
+    for motif in RE_ORPHELINS:
+        xml = motif.sub('', xml)
+    return xml
+
+
 def rafraichir(contenus, slides, valeurs, soffice, profil, cache):
     """Remplit les classeurs des diapositives `slides` et refait leur image.
 
@@ -789,7 +805,7 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
                 continue
             # Sans aucune note de qualite, ni tableaux ni anneau : on
             # retire l'objet plutot que d'afficher des tirets.
-            if quoi == 'satisfaction' and all(v is None for v in valeurs[quoi].values()):
+            if quoi == 'satisfaction' and valeurs[quoi] and all(v is None for v in valeurs[quoi].values()):
                 retirer.append(m.span())
                 continue
             remplies = remplir_classeur(parts, valeurs[quoi])
@@ -809,6 +825,7 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
         if retirer:
             for debut, fin in reversed(retirer):
                 xml = xml[:debut] + xml[fin:]
+            xml = _sans_orphelins(xml)
             contenus[slide] = xml.encode('utf-8')
     if not a_rendre:
         return

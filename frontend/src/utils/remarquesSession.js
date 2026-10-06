@@ -40,7 +40,7 @@ function lignesDesJours(b, rubrique) {
 }
 
 /** La satisfaction des seuls presents : un absent n'a rien evalue. */
-function satisfactionPresents(b) {
+export function satisfactionPresents(b) {
   const ids = new Set(presents(b).map(p => String(p.id)))
   return Object.fromEntries(Object.entries(b?.satisfaction || {})
     .filter(([id]) => ids.has(String(id))))

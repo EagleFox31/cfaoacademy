@@ -15,7 +15,7 @@ import EditeurBilan from './EditeurBilan'
 import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
 import { useRefsPhotos, ancrerPhotos } from '../../utils/photosService'
 import { participantPourMoteur, proposerTexte } from '../../utils/redaction'
-import { chiffresSession, constatsParDefaut, donneesSession, formeBilan, paragrapheBilan,
+import { chiffresSession, satisfactionPresents, constatsParDefaut, donneesSession, formeBilan, paragrapheBilan,
   redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
 import BoutonsRedaction from './BoutonsRedaction'
@@ -1419,7 +1419,9 @@ function composerPages(b, session, s) {
     // Le modele consacre deux diapositives distinctes aux resultats :
     // la 17 pour la progression et l'acquisition, la 19 pour les taux
     // de satisfaction. On compose donc deux pages, pas une.
-    const sat = syntheseSatisfaction(b.satisfaction)
+    // Les présents seuls, comme le rapport : un absent n'a rien évalué.
+    const reponsesPresents = satisfactionPresents(b)
+    const sat = syntheseSatisfaction(reponsesPresents)
     // Les deux tableaux de la diapositive 17, lignes comprises : ils
     // se lisent mieux ainsi que sous forme de compteurs isoles.
     const pc = v => (v == null ? '—' : `${Math.round(v)} %`)
@@ -1458,7 +1460,7 @@ function composerPages(b, session, s) {
     const critere = (criteres, titre, total, valeur) => ({
       titre,
       lignes: [
-        ...detailParCritere(b.satisfaction, criteres).map(c => ({
+        ...detailParCritere(reponsesPresents, criteres).map(c => ({
           libelle: c.libelle,
           valeur: c.moyenne == null ? '—' : `${Math.round(c.moyenne)} %`,
         })),
@@ -1466,18 +1468,19 @@ function composerPages(b, session, s) {
       ],
     })
     // Sans note sur la formation ni sur l'accueil, la page n'a rien à
-    // montrer : ni tableau, ni anneau.
-    const tableauxSatisfaction = [
-      sat.formation != null && critere(CRITERES_FORMATION, 'Qualité de la formation',
-        'Qualité de la formation', sat.formation),
-      sat.accueil != null && critere(CRITERES_ACCUEIL, 'Qualité de l’accueil',
-        'Qualité de l’accueil', sat.accueil),
-    ].filter(Boolean)
-    if (tableauxSatisfaction.length) pages.push({
+    // montrer : ni tableau, ni anneau. Avec l'une des deux, l'objet du
+    // modèle (deux tableaux, un anneau double) reste entier, comme dans
+    // le rapport ; la note absente s'y lit « — ».
+    if (sat.formation != null || sat.accueil != null) pages.push({
       cle: 'satisfaction', titre: 'Satisfaction', type: 'chiffres',
       titrePage: 'RÉSULTAT GLOBAL DE LA SESSION',
       sansCommentaires: true,
-      tableaux: tableauxSatisfaction,
+      tableaux: [
+        critere(CRITERES_FORMATION, 'Qualité de la formation',
+          'Qualité de la formation', sat.formation),
+        critere(CRITERES_ACCUEIL, 'Qualité de l’accueil',
+          'Qualité de l’accueil', sat.accueil),
+      ],
     })
   }
 
@@ -1522,10 +1525,14 @@ function composerPages(b, session, s) {
           texte: p.appreciation || '',
         }],
         tableaux: [
-          critere(siennes, CRITERES_FORMATION, 'Qualité de la formation',
-            'Qualité de la formation', satPropre.formation),
-          critere(siennes, CRITERES_ACCUEIL, 'Qualité de l’accueil',
-            'Qualité de l’accueil', satPropre.accueil),
+          // Sans réponse du stagiaire, la fiche du rapport n'a ni tableaux
+          // de qualité ni anneau : l'écran non plus.
+          ...(satPropre.formation != null || satPropre.accueil != null ? [
+            critere(siennes, CRITERES_FORMATION, 'Qualité de la formation',
+              'Qualité de la formation', satPropre.formation),
+            critere(siennes, CRITERES_ACCUEIL, 'Qualité de l’accueil',
+              'Qualité de l’accueil', satPropre.accueil),
+          ] : []),
           {
             titre: 'Acquisition des compétences',
             lignes: [

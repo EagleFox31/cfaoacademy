@@ -528,9 +528,14 @@ def remplir(source, cible, valeurs, diapos=None):
             out.writestr(zi, donnees)
 
 
+# A changer quand le rendu d'une page change sans que ses valeurs changent :
+# les images en cache portant l'ancienne version ne sont plus reprises.
+VERSION_RENDU = 2
+
+
 def empreinte(diapo, valeurs):
     """L'identite d'une image : sa diapositive et les valeurs qui s'y posent."""
-    brut = json.dumps({'d': diapo, 'v': valeurs}, sort_keys=True,
+    brut = json.dumps({'d': diapo, 'v': valeurs, 'm': VERSION_RENDU}, sort_keys=True,
                       ensure_ascii=False)
     return hashlib.sha1(brut.encode('utf-8')).hexdigest()[:16]
 
