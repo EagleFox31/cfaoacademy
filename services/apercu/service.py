@@ -530,7 +530,7 @@ def remplir(source, cible, valeurs, diapos=None):
 
 # A changer quand le rendu d'une page change sans que ses valeurs changent :
 # les images en cache portant l'ancienne version ne sont plus reprises.
-VERSION_RENDU = 2
+VERSION_RENDU = 3
 
 
 def empreinte(diapo, valeurs):

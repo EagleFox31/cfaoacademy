@@ -60,3 +60,34 @@ def test_la_fiche_garde_les_autres_objets_et_l_appreciation(contenus):
 def test_une_note_ou_aucune_valeur_garde_l_objet(contenus, cellules):
     rafraichir(contenus, PAGE_RESULTATS, cellules)
     assert 'satisfaction' in natures(contenus, PAGE_RESULTATS)
+
+
+def classeur_de_satisfaction(contenus, slide):
+    rels = contenus[slide.replace('slides/', 'slides/_rels/') + '.rels'].decode('utf-8')
+    for cible in re.findall(r'Target="\.\./(embeddings/[^"]+)"', rels):
+        parts = classeurs._lire(contenus['ppt/' + cible])
+        if classeurs.nature(parts) == 'satisfaction':
+            return parts
+
+
+def remplies(parts, lignes):
+    feuille = parts['xl/worksheets/sheet1.xml'].decode('utf-8')
+    return [n for n, contenu in re.findall(r'<c r="[A-C](\d+)"[^>]*?(?:/>|>(.*?)</c>)', feuille, flags=re.S)
+            if int(n) in lignes and contenu]
+
+
+def test_une_seule_note_vide_le_tableau_de_l_autre_a_l_impression(contenus):
+    base = classeur_de_satisfaction(contenus, FICHE)
+    formation = {**CELLULES, 'B2': 0.8, 'B9': 0.8, 'C9': 0.2}
+    imprimee = classeurs._sans_moitie_absente(classeurs.remplir_classeur(base, formation), formation)
+    assert remplies(imprimee, range(2, 10)) and not remplies(imprimee, range(11, 19))
+    accueil = {**CELLULES, 'B12': 0.8, 'B18': 0.75, 'C18': 0.25}
+    imprimee = classeurs._sans_moitie_absente(classeurs.remplir_classeur(base, accueil), accueil)
+    assert remplies(imprimee, range(12, 19)) and not remplies(imprimee, range(2, 10))
+
+
+def test_le_classeur_embarque_garde_ses_deux_tableaux(contenus):
+    rafraichir(contenus, FICHE, {**CELLULES, 'B2': 0.8, 'B9': 0.8, 'C9': 0.2})
+    assert 'satisfaction' in natures(contenus, FICHE)
+    parts = classeur_de_satisfaction(contenus, FICHE)
+    assert remplies(parts, range(11, 19))  # les tirets de l'accueil, pas un vide

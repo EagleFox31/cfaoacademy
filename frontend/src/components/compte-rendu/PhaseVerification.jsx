@@ -1468,19 +1468,19 @@ function composerPages(b, session, s) {
       ],
     })
     // Sans note sur la formation ni sur l'accueil, la page n'a rien à
-    // montrer : ni tableau, ni anneau. Avec l'une des deux, l'objet du
-    // modèle (deux tableaux, un anneau double) reste entier, comme dans
-    // le rapport ; la note absente s'y lit « — ».
-    if (sat.formation != null || sat.accueil != null) pages.push({
+    // montrer : ni tableau, ni anneau. Avec une seule des deux, seul le
+    // tableau (et l'anneau) de celle-ci reste, comme dans le rapport.
+    const tableauxSatisfaction = [
+      sat.formation != null && critere(CRITERES_FORMATION, 'Qualité de la formation',
+        'Qualité de la formation', sat.formation),
+      sat.accueil != null && critere(CRITERES_ACCUEIL, 'Qualité de l’accueil',
+        'Qualité de l’accueil', sat.accueil),
+    ].filter(Boolean)
+    if (tableauxSatisfaction.length) pages.push({
       cle: 'satisfaction', titre: 'Satisfaction', type: 'chiffres',
       titrePage: 'RÉSULTAT GLOBAL DE LA SESSION',
       sansCommentaires: true,
-      tableaux: [
-        critere(CRITERES_FORMATION, 'Qualité de la formation',
-          'Qualité de la formation', sat.formation),
-        critere(CRITERES_ACCUEIL, 'Qualité de l’accueil',
-          'Qualité de l’accueil', sat.accueil),
-      ],
+      tableaux: tableauxSatisfaction,
     })
   }
 
@@ -1525,14 +1525,12 @@ function composerPages(b, session, s) {
           texte: p.appreciation || '',
         }],
         tableaux: [
-          // Sans réponse du stagiaire, la fiche du rapport n'a ni tableaux
-          // de qualité ni anneau : l'écran non plus.
-          ...(satPropre.formation != null || satPropre.accueil != null ? [
-            critere(siennes, CRITERES_FORMATION, 'Qualité de la formation',
-              'Qualité de la formation', satPropre.formation),
-            critere(siennes, CRITERES_ACCUEIL, 'Qualité de l’accueil',
-              'Qualité de l’accueil', satPropre.accueil),
-          ] : []),
+          // Une note absente n'a ni tableau ni anneau dans le rapport :
+          // l'écran non plus.
+          ...(satPropre.formation != null ? [critere(siennes, CRITERES_FORMATION,
+            'Qualité de la formation', 'Qualité de la formation', satPropre.formation)] : []),
+          ...(satPropre.accueil != null ? [critere(siennes, CRITERES_ACCUEIL,
+            'Qualité de l’accueil', 'Qualité de l’accueil', satPropre.accueil)] : []),
           {
             titre: 'Acquisition des compétences',
             lignes: [

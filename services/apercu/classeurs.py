@@ -593,7 +593,7 @@ def _anneau_excel(image, geo, valeurs):
 
     series = list(zip(geo['series'], valeurs))
     etiquettes = []
-    if series:
+    if series and series[0][1] is not None:
         serie, v = series[0]
         texte = texte_de(serie, v)
         # Le texte tient dans le trou, avec une marge.
@@ -611,7 +611,7 @@ def _anneau_excel(image, geo, valeurs):
         trait = [(cx + dirx * t, cy + diry * t), (cx + dirx * rm, cy + diry * rm)] \
             if t < trou_xl - 0.04 * rayon and v is not None else []
         etiquettes.append((texte, police, lh, cx, cy, trait))
-    if len(series) > 1:
+    if len(series) > 1 and series[1][1] is not None:
         serie, v = series[1]
         texte = texte_de(serie, v)
         police, lw, lh = bloc(texte, max(10, round(serie['pt'] * pt)))
@@ -717,8 +717,12 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
             a_faire[cle] = (empreinte, brut)
     if a_faire:
         travail = Path(tempfile.mkdtemp(prefix='cr-classeurs-'))
-        for empreinte, brut in a_faire.values():
-            copie = _ecrire(_pour_rendu(_lire(brut)))
+        for cle, (empreinte, brut) in a_faire.items():
+            parts = _pour_rendu(_lire(brut))
+            quoi, cellules, _ = (legendes or {}).get(cle, (None, None, None))
+            if quoi == 'satisfaction' and cellules:
+                parts = _sans_moitie_absente(parts, cellules)
+            copie = _ecrire(parts)
             (travail / f'{empreinte}.xlsx').write_bytes(copie)
         with LIBREOFFICE:
             subprocess.run(
@@ -755,6 +759,35 @@ RE_ORPHELINS = (
                r'(?:(?!</p:sp>).)*?</p:sp>', re.S),
     re.compile(r'<p:grpSp>(?:(?!</p:grpSp>).)*?name="Groupe 13".*?</p:grpSp>', re.S),
 )
+
+
+# Les deux moities du classeur de satisfaction : les cellules de chacune
+# et les lignes qu'elle occupe (formation en haut, accueil dessous).
+MOITIES_SATISFACTION = (
+    (('B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9', 'C9'), range(1, 10)),
+    (('B12', 'B13', 'B14', 'B15', 'B16', 'B17', 'B18', 'C18'), range(11, 19)),
+)
+
+
+def _sans_moitie_absente(parts, valeurs):
+    """Vide le tableau dont aucune note n'existe : ni cases, ni tirets.
+
+    Seule la copie imprimee est vidée : le classeur embarque garde ses
+    tableaux et son titre (A1), qui le font reconnaitre. Les lignes gardent
+    leur place, le graphique reste ancre ou il est ; il ne reste que l'anneau de l'autre moitie (l'etiquette de l'absente est
+    retiree au dessin, voir `_anneau_excel`).
+    """
+    feuille = parts['xl/worksheets/sheet1.xml'].decode('utf-8')
+    for cellules, lignes in MOITIES_SATISFACTION:
+        if any(valeurs.get(c) is not None for c in cellules):
+            continue
+        for n in lignes:
+            feuille = re.sub(
+                rf'<c r="([A-C]){n}"[^>]*?(?:/>|>.*?</c>)',
+                lambda m, n=n: f'<c r="{m.group(1)}{n}"/>', feuille, flags=re.S)
+    parts = dict(parts)
+    parts['xl/worksheets/sheet1.xml'] = feuille.encode('utf-8')
+    return parts
 
 
 def _sans_orphelins(xml):
