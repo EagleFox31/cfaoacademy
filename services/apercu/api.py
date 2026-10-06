@@ -232,6 +232,9 @@ def _produire(ident, pages, format_):
     try:
         resultat = {'etat': 'pret', 'chemin': rapport(pages, format_)}
     except Exception as e:  # noqa: BLE001 — l'interface affiche l'echec
+        # La cause reste dans le journal du service : l'interface n'en
+        # montre qu'un message generique.
+        app.logger.exception('rapport %s en echec', ident)
         resultat = {'etat': 'echec', 'erreur': str(e)}
     with _verrou_taches:
         _TACHES[ident].update(resultat)

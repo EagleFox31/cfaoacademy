@@ -349,7 +349,8 @@ export default function PhaseVerification({
       // travail, et la saisie reste en cours.
       if (resteAFaire === 0) maj({ termineLe: new Date().toISOString() })
       setEtat('fait')
-    } catch {
+    } catch (e) {
+      console.error('Rapport non produit :', e)
       setEchec(true)
       setEtat('revue')
     }
