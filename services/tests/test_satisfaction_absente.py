@@ -148,7 +148,7 @@ def test_les_taux_de_l_anneau_suivent_les_series_restantes(tmp_path, monkeypatch
         doc.save(cmd[-1].replace('.xlsx', '.pdf'))
     monkeypatch.setattr(classeurs.subprocess, 'run', convertir)
     vus = []
-    monkeypatch.setattr(classeurs, '_rogner', lambda png, anneau=None, ratio=None: vus.append(anneau) or b'png')
+    monkeypatch.setattr(classeurs, '_rogner', lambda png, anneau=None, ratio=None, cadre=None: vus.append(anneau) or b'png')
     classeurs.rendre({'a': classeurs._ecrire(parts)}, 'soffice', 'profil', tmp_path,
                      {'a': ('satisfaction', accueil, None)})
     geo, taux = vus[0]

@@ -677,29 +677,48 @@ def _anneau_excel(image, geo, valeurs):
             dessin.text((ex + dx0 - dessin.textlength(ligne, font=police) / 2, y), ligne,
                         font=police, fill=(0, 0, 0, 255))
             y += pas
+    # Ou l'image d'entree a atterri sur la toile agrandie.
+    image.info['decalage'] = (dx0, dy0)
     return image
 
 
-def _rogner(pixmap_png, anneau=None, ratio=None):
-    """L'image rognee a son contenu, le blanc rendu transparent.
-
-    L'EMF du modele n'a pas de fond : pose sur la moitie grise de la
-    page, le tableau prend la couleur de la page. Le blanc du rendu
-    devient donc transparent.
-    """
-    from PIL import Image, ImageChops
-    image = (pixmap_png.convert('RGB') if isinstance(pixmap_png, Image.Image)
-             else Image.open(io.BytesIO(pixmap_png)).convert('RGB'))
+def _sans_blanc(image):
+    """L'image en RGBA, son blanc rendu transparent."""
+    from PIL import ImageChops
+    image = image.convert('RGB')
     blanc = None
     for canal in image.split():
         clair = canal.point(lambda v: 255 if v >= 248 else 0)
         blanc = clair if blanc is None else ImageChops.multiply(blanc, clair)
     image.putalpha(ImageChops.invert(blanc))
-    boite = image.getbbox()
+    return image
+
+
+def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
+    """L'image rognee a son contenu, le blanc rendu transparent.
+
+    L'EMF du modele n'a pas de fond : pose sur la moitie grise de la
+    page, le tableau prend la couleur de la page. Le blanc du rendu
+    devient donc transparent.
+
+    `cadre` impose celui de l'image complete (voir `_cadre_de`) : une
+    note absente laisse sa place vide, le reste garde place et echelle.
+    """
+    from PIL import Image
+    image = _sans_blanc(pixmap_png if isinstance(pixmap_png, Image.Image)
+                        else Image.open(io.BytesIO(pixmap_png)))
+    boite = cadre[:4] if cadre else image.getbbox()
     if boite:
         image = image.crop(boite)
     if anneau:
         image = _anneau_excel(image, *anneau)
+    if cadre:
+        largeur, hauteur, ox, oy = cadre[4:]
+        dx, dy = image.info.get('decalage', (0, 0))
+        toile = Image.new('RGBA', (max(largeur, image.width), max(hauteur, image.height)),
+                          (255, 255, 255, 0))
+        toile.paste(image, (max(0, ox - dx), max(0, oy - dy)))
+        image = toile
     # L'objet etire son image aux proportions de l'EMF d'origine : on les
     # retrouve par un bord transparent, centre sur les deux axes pour ne
     # pas laisser le contenu glisser vers un coin de son cadre.
@@ -718,7 +737,32 @@ def _rogner(pixmap_png, anneau=None, ratio=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 2
+VERSION_IMAGES = 3
+
+
+def _cadre_de(rendu, reference):
+    """Le cadre de l'image complete : sa boite sur la page rendue, puis la
+    taille de sa toile et la place de la boite sur celle-ci, une fois les
+    etiquettes de l'anneau posees (celle de l'accueil l'elargit)."""
+    image = _sans_blanc(rendu)
+    boite = image.getbbox()
+    if not boite:
+        return None
+    image = image.crop(boite)
+    geo = _geometrie_anneau(_lire(reference))
+    if geo:
+        taux = [NOTES_DE_REFERENCE[ref] for ref in ANNEAUX['satisfaction']]
+        image = _anneau_excel(image, geo, taux)
+    return (*boite, image.width, image.height, *image.info.get('decalage', (0, 0)))
+
+
+def _page_rendue(pdf):
+    """La premiere page d'un PDF de LibreOffice, en image."""
+    import fitz
+    from PIL import Image
+    with fitz.open(pdf) as doc:
+        pixmap = doc[0].get_pixmap(dpi=200)
+    return Image.frombytes('RGB', (pixmap.width, pixmap.height), pixmap.samples)
 
 
 def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
@@ -726,28 +770,42 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
 
     Tous les classeurs a rendre passent dans un seul appel a LibreOffice :
     c'est son lancement qui coute.
+
+    `legendes[cle]` : `(nature, cellules, ratio[, reference])`. La
+    reference est un classeur dont l'image donne le cadre de celle-ci.
     """
-    import fitz
-    from PIL import Image
     dossier = Path(cache) / 'classeurs'
     dossier.mkdir(parents=True, exist_ok=True)
-    images, a_faire = {}, {}
+
+    def legende(cle):
+        return (tuple((legendes or {}).get(cle, ())) + (None,) * 4)[:4]
+
+    def signe(brut):
+        return hashlib.sha1(brut).hexdigest()[:16]
+
+    images, a_faire, cadres, references = {}, {}, {}, {}
     for cle, brut in classeurs_bruts.items():
         # Le meme classeur peut tenir dans deux cadres de proportions
         # differentes : l'image en depend aussi.
-        ratio = (legendes or {}).get(cle, (None, None, None))[2]
+        _, _, ratio, reference = legende(cle)
         empreinte = hashlib.sha1(brut + f'|v{VERSION_IMAGES}|{ratio}'.encode()).hexdigest()[:16]
         chemin = dossier / f'{empreinte}.png'
         if chemin.exists():
             images[cle] = chemin.read_bytes()
-        else:
-            a_faire[cle] = (empreinte, hashlib.sha1(brut).hexdigest()[:16], brut)
+            continue
+        a_faire[cle] = (empreinte, signe(brut), brut)
+        if reference:
+            cadre = dossier / f'{signe(reference)}-v{VERSION_IMAGES}.cadre'
+            if cadre.exists():
+                cadres[signe(reference)] = tuple(map(int, cadre.read_text().split()))
+            else:
+                references[signe(reference)] = reference
     if not a_faire:
         return images
     travail = Path(tempfile.mkdtemp(prefix='cr-classeurs-'))
     try:
         # Deux classeurs identiques ne passent qu'une fois par LibreOffice.
-        uniques = {source: brut for _, source, brut in a_faire.values()}
+        uniques = {source: brut for _, source, brut in a_faire.values()} | references
         for source, brut in uniques.items():
             (travail / f'{source}.xlsx').write_bytes(_ecrire(_pour_rendu(_lire(brut))))
         with LIBREOFFICE:
@@ -756,6 +814,13 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                  '--convert-to', 'pdf', '--outdir', str(travail)]
                 + [str(travail / f'{s}.xlsx') for s in uniques],
                 capture_output=True, timeout=120)
+        for source, reference in references.items():
+            pdf = travail / f'{source}.pdf'
+            cadre = _cadre_de(_page_rendue(pdf), reference) if pdf.exists() else None
+            if cadre:
+                cadre = tuple(int(v) for v in cadre)
+                cadres[source] = cadre
+                (dossier / f'{source}-v{VERSION_IMAGES}.cadre').write_text(' '.join(map(str, cadre)))
         # Une image a la fois, liberee aussitot : chacune pese une
         # dizaine de Mo une fois decodee, et la machine en a peu.
         source_vue, rendu = None, None
@@ -764,13 +829,10 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                 source_vue, rendu = source, None
                 pdf = travail / f'{source}.pdf'
                 if pdf.exists():
-                    with fitz.open(pdf) as doc:
-                        pixmap = doc[0].get_pixmap(dpi=200)
-                    rendu = Image.frombytes('RGB', (pixmap.width, pixmap.height), pixmap.samples)
-                    del pixmap
+                    rendu = _page_rendue(pdf)
             if rendu is None:
                 continue
-            quoi, cellules, ratio = (legendes or {}).get(cle, (None, None, None))
+            quoi, cellules, ratio, reference = legende(cle)
             anneau = None
             taux = [(cellules or {}).get(ref) for ref in ANNEAUX.get(quoi, ())]
             # La serie d'une note absente a quitte le graphique : les taux
@@ -784,7 +846,8 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                 geo = _geometrie_anneau(_lire(classeurs_bruts[cle]))
                 if geo:
                     anneau = (geo, taux)
-            image = _rogner(rendu, anneau, ratio)
+            cadre = cadres.get(signe(reference)) if reference else None
+            image = _rogner(rendu, anneau, ratio, cadre)
             (dossier / f'{empreinte}.png').write_bytes(image)
             images[cle] = image
     finally:
@@ -808,6 +871,11 @@ MOITIES_SATISFACTION = (
     (('B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9', 'C9'), range(1, 10)),
     (('B12', 'B13', 'B14', 'B15', 'B16', 'B17', 'B18', 'C18'), range(11, 19)),
 )
+
+
+# Deux notes fictives, le temps de mesurer le cadre de l'image complete.
+NOTES_DE_REFERENCE = {c: 0.88 for cellules, _ in MOITIES_SATISFACTION for c in cellules} | {
+    'C9': 0.12, 'C18': 0.12}
 
 
 def _moities_absentes(valeurs):
@@ -950,8 +1018,12 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             remplies = remplir_classeur(parts, valeurs[quoi])
             if quoi == 'acquisition':
                 remplies = _ajouter_signes_acquisition(remplies)
-            if quoi == 'satisfaction' and valeurs[quoi]:
+            reference = None
+            if quoi == 'satisfaction' and valeurs[quoi] and _moities_absentes(valeurs[quoi]):
                 remplies = _sans_moitie_absente(remplies, valeurs[quoi])
+                # Le cadre de l'image vient du classeur aux deux notes : le
+                # tableau restant garde sa place et l'anneau son echelle.
+                reference = _ecrire(remplir_classeur(parts, NOTES_DE_REFERENCE))
             brut = _ecrire(remplies)
             contenus[emb] = brut
             a_rendre[emb] = brut
@@ -961,7 +1033,7 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             taille = (re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', m.group(0))
                       or re.search(r'imgW="(\d+)" imgH="(\d+)"', m.group(0)))
             ratio = int(taille.group(1)) / int(taille.group(2)) if taille else None
-            natures[emb] = (quoi, valeurs[quoi], ratio)
+            natures[emb] = (quoi, valeurs[quoi], ratio, reference)
             poses += [(rels_nom, rid, emb) for rid in images]
         if retirer:
             for debut, fin in reversed(retirer):
