@@ -1,4 +1,5 @@
 """Sans note de qualite, plus de tableaux ni d'anneau de satisfaction."""
+import hashlib
 import re
 import zipfile
 from xml.dom import minidom
@@ -91,3 +92,27 @@ def test_le_classeur_embarque_garde_ses_deux_tableaux(contenus):
     assert 'satisfaction' in natures(contenus, FICHE)
     parts = classeur_de_satisfaction(contenus, FICHE)
     assert remplies(parts, range(11, 19))  # les tirets de l'accueil, pas un vide
+
+
+def test_l_image_en_cache_tient_compte_de_la_moitie_absente(tmp_path, monkeypatch):
+    """Meme classeur embarque, moitie videe ou non : deux images distinctes."""
+    vus = []
+    monkeypatch.setattr(classeurs.subprocess, 'run', lambda cmd, **k: vus.append(cmd))
+    with zipfile.ZipFile(service.MODELE) as z:
+        base = {n: z.read(n) for n in z.namelist()}
+    brut = classeurs._ecrire(classeur_de_satisfaction(base, FICHE))
+    complet = {**CELLULES, 'B9': 0.8, 'B18': 0.7}
+    sans_accueil = {**CELLULES, 'B9': 0.8}
+    (tmp_path / 'classeurs').mkdir()
+    # Une image deja en cache pour le classeur complet...
+    classeurs.rendre({'a': brut}, 'soffice', 'profil', tmp_path, {'a': ('satisfaction', complet, None)})
+    assert len(vus) == 1
+    for png in (tmp_path / 'classeurs').glob('*'):
+        png.unlink()
+    nom = lambda c: hashlib.sha1(brut + f'|v{classeurs.VERSION_IMAGES}|{c}'.encode()).hexdigest()[:16]
+    (tmp_path / 'classeurs' / f'{nom([])}.png').write_bytes(b'ancienne')
+    # ...ne doit pas servir quand l'accueil n'a pas de note.
+    images = classeurs.rendre({'a': brut}, 'soffice', 'profil', tmp_path,
+                              {'a': ('satisfaction', sans_accueil, None)})
+    assert images.get('a') != b'ancienne'
+    assert len(vus) == 2

@@ -698,6 +698,10 @@ def _rogner(pixmap_png, anneau=None, ratio=None):
     return sortie.getvalue()
 
 
+# A changer quand le dessin d'un classeur change a classeur identique.
+VERSION_IMAGES = 2
+
+
 def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
     """Les images des classeurs, depuis le cache ou fraichement rendues.
 
@@ -709,7 +713,14 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
     dossier.mkdir(parents=True, exist_ok=True)
     images, a_faire = {}, {}
     for cle, brut in classeurs_bruts.items():
-        empreinte = hashlib.sha1(brut).hexdigest()[:16]
+        # L'image ne depend pas que du classeur : les moities sans note
+        # sont videes a l'impression seulement (`_sans_moitie_absente`).
+        # Elles entrent dans l'empreinte, avec la version du rendu.
+        quoi, cellules, _ = (legendes or {}).get(cle, (None, None, None))
+        absentes = [i for i, (refs, _) in enumerate(MOITIES_SATISFACTION)
+                    if quoi == 'satisfaction' and cellules
+                    and all(cellules.get(r) is None for r in refs)]
+        empreinte = hashlib.sha1(brut + f'|v{VERSION_IMAGES}|{absentes}'.encode()).hexdigest()[:16]
         chemin = dossier / f'{empreinte}.png'
         if chemin.exists():
             images[cle] = chemin.read_bytes()
