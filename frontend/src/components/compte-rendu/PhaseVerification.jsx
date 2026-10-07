@@ -6,6 +6,7 @@ import { periodeLongue, nombreDeJours, titreDeCouverture }
   from '../../utils/compteRendu'
 import { syntheseSatisfaction, satisfactionStagiaire, afficherTaux, detailParCritere,
   CRITERES_FORMATION, CRITERES_ACCUEIL } from '../../utils/satisfactionCfao'
+import { nomCompteRendu } from '../../utils/exportEvaluation'
 import ApercuReel from './ApercuReel'
 import Consigne from './Consigne'
 import EditeurObjectifs from './EditeurObjectifs'
@@ -298,12 +299,6 @@ export default function PhaseVerification({
     document.body.removeChild(a)
   }
 
-  // Le code de la formation, ou son intitule pour une saisie libre.
-  function nomDuFichier() {
-    const nom = (brouillon.codeFormation || session?.codeFormation || brouillon.intitule || 'session')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    return `compte-rendu-${nom.replace(/\W+/g, '-').replace(/^-|-$/g, '').toLowerCase()}`
-  }
 
   /**
    * Le PowerPoint, produit en tache de fond par le service.
@@ -338,7 +333,7 @@ export default function PhaseVerification({
       if (etat === 'pret') break
       if (etat === 'echec') throw new Error('echec')
     }
-    return `/apercu/rapports/${id}/fichier?nom=${encodeURIComponent(nomDuFichier())}`
+    return `/apercu/rapports/${id}/fichier?nom=${encodeURIComponent(nomCompteRendu(brouillon, session))}`
   }
 
   // Le document final reprend page par page ce que montrent les

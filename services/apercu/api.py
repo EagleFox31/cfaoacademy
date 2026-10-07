@@ -253,6 +253,12 @@ def _tache(ident):
         return dict(_TACHES.get(ident) or {}) or None
 
 
+def nom_de_fichier(brut):
+    """« Compte rendu formation … du 06-10.07.26 », sans caractere interdit."""
+    nom = re.sub(r'[\\/:*?"<>|\x00-\x1f]+', '-', brut or '')
+    return re.sub(r'\s+', ' ', nom).strip(' .')[:150].strip() or 'rapport'
+
+
 @app.post('/apercu/rapports')
 def rapport_lancer():
     """Lance la production du rapport ; renvoie l'identifiant a suivre."""
@@ -284,8 +290,10 @@ def rapport_fichier(ident):
     t = _tache(ident)
     if not t or t['etat'] != 'pret' or not Path(t['chemin']).exists():
         return jsonify({'erreur': 'rapport indisponible'}), 404
-    # Le navigateur telecharge par un simple lien : le nom vient d'ici.
-    nom = re.sub(r'[^a-z0-9-]+', '', request.args.get('nom', '').lower())[:80] or 'rapport'
+    # Le navigateur telecharge par un simple lien : le nom vient d'ici. Il
+    # garde accents et espaces, comme les comptes rendus des formateurs ;
+    # seuls les caracteres interdits dans un nom de fichier sont retires.
+    nom = nom_de_fichier(request.args.get('nom', ''))
     return send_file(t['chemin'], as_attachment=True, download_name=f"{nom}.{t['format']}")
 
 
