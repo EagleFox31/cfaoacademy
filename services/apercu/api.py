@@ -54,13 +54,19 @@ def sante():
 
 @app.post('/apercu/page')
 def page():
-    """L'image d'une diapositive, pour le mode apercu."""
+    """L'image d'une diapositive, pour le mode apercu.
+
+    `voisines` : les pages qui partagent ses tailles de texte (les autres
+    journees pour un jour), `[{diapo, valeurs}]`.
+    """
     corps = request.get_json(force=True) or {}
     diapo = corps.get('diapo')
     if not isinstance(diapo, int):
         return jsonify({'erreur': 'diapo attendue (entier)'}), 400
+    voisines = [v for v in corps.get('voisines') or []
+                if isinstance(v, dict) and isinstance(v.get('diapo'), int)]
     try:
-        chemin = image_de(diapo, corps.get('valeurs') or {})
+        chemin = image_de(diapo, corps.get('valeurs') or {}, voisines)
     except Exception as e:  # noqa: BLE001 — l'interface affiche le motif
         return jsonify({'erreur': str(e)}), 500
     return send_file(chemin, mimetype='image/png')

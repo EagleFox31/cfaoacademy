@@ -42,12 +42,13 @@ ECART = 125000
 BANDE_LEGENDE = 329184
 # Entre les photos et une legende commune ajoutee : la moitie d'un ecart.
 ECART_LEGENDE = ECART // 2
-# Le corps des legendes, en centiemes de point : une legende sous une
-# photo descend jusqu'au minimum pour tenir sur deux lignes.
+# Le corps des legendes, en centiemes de point, le meme dans tout le
+# rapport : une longue legende prend une ligne de plus, et ne descend
+# au minimum que pour tenir sur trois lignes.
 CORPS_LEGENDE = 1100
 CORPS_LEGENDE_MIN = 1000
 CORPS_COMMUNE = 1200
-LIGNES_LEGENDE = 2
+LIGNES_LEGENDE = 3
 
 NOM_EMPLACEMENT = 'Emplacement photo'
 # La legende commune d'une page jour, sous le cadre des photos.
@@ -185,7 +186,7 @@ def mesure_legende(texte, largeur, corps, corps_min=None):
     """Le corps et la hauteur de bande d'une legende dans `largeur`.
 
     Le corps diminue jusqu'a `corps_min` tant que la legende depasse
-    deux lignes ; la bande grandit avec le nombre de lignes.
+    `LIGNES_LEGENDE` lignes ; la bande grandit avec le nombre de lignes.
     """
     corps_min = corps_min or corps
     while True:

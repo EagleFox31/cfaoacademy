@@ -116,6 +116,18 @@ export default function PhaseVerification({
     () => valeursDrapeaux(brouillon, session, synthese, page, refsPhotos),
     [brouillon, session, synthese, page, refsPhotos],
   )
+  // Les autres journees, pour l'apercu d'un jour : tous les resumes
+  // prennent la taille du plus long, comme dans le rapport.
+  const voisines = useMemo(() => {
+    if (!(page?.cle || '').startsWith('jour-')) return null
+    return pages
+      .filter(p => p !== page && (p.cle || '').startsWith('jour-'))
+      .map(p => ({
+        diapo: diapoDe(p, brouillon),
+        valeurs: valeursDrapeaux(brouillon, session, synthese, p, refsPhotos),
+      }))
+      .filter(p => p.diapo)
+  }, [brouillon, session, synthese, pages, page, refsPhotos])
 
   function majTexte(cle, valeur) {
     maj({ textes: { ...(brouillon.textes || {}), [cle]: valeur } })
@@ -533,6 +545,7 @@ export default function PhaseVerification({
           <ApercuReel
             diapo={diapoDe(page, brouillon)}
             valeurs={valeurs}
+            voisines={voisines}
             secours={<ApercuPage page={page} textes={brouillon.textes || {}}
               photos={photos} />} />
         )}

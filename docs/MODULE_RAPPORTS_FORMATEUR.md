@@ -93,6 +93,11 @@ Règles à connaître avant de toucher au modèle ou aux drapeaux :
   - tailles uniformes d'une page à l'autre : une zone garde la taille du modèle, et si elle
     déborde tous ses textes perdent 2 pt à la fois (`PALIER`) : 16/22 → 14/20 → 12/18…,
     8 pt au minimum ;
+  - une même partie garde la même taille sur tout le rapport : les zones d'une même famille
+    (nom de forme + taille du modèle, `famille()`) prennent toutes le retrait de la plus longue
+    (`besoins()` puis `service.paliers()`) ; l'aperçu d'un jour reçoit les autres jours
+    (`voisines`) pour afficher la même taille que le rapport ;
+  - les résumés de jour sont au moins à 14/20 (`STANDARDS`), même courts ;
   - tous les commentaires des résultats (« Rectangle » du modèle) sont à 12 pt
     (`CORPS_COMMENTAIRE`) ; s'ils débordent, ils remontent de 0,75 cm au plus puis diminuent ;
   - un tableau cède l'excès à sa dernière ligne ;
@@ -103,7 +108,8 @@ Règles à connaître avant de toucher au modèle ou aux drapeaux :
   - pas de bande pour une ligne de photos sans légende ;
   - deux voisines de même légende n'en portent qu'une, sur toute leur largeur ;
   - légende sur toute la largeur du cadre à 12 pt, sous une photo plus étroite à 11 pt ;
-    réduites jusqu'à 10 pt pour tenir sur deux lignes, un même corps par largeur sur la page ;
+    réduites à 10 pt seulement si elles dépassent trois lignes (`LIGNES_LEGENDE`), un même
+    corps par largeur sur la page ;
   - légende commune à 12 pt.
 
 ### Diapositives du modèle

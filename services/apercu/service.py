@@ -17,6 +17,7 @@ que les valeurs d'une diapositive ne changent pas, elle n'est pas
 reconvertie.
 """
 
+import functools
 import hashlib
 import html
 import json
@@ -485,11 +486,38 @@ def substituer(xml, valeurs):
     return re.sub(r'<a:t>(.*?)</a:t>', sur_run, xml, flags=re.S)
 
 
-def remplir(source, cible, valeurs, diapos=None):
+@functools.lru_cache(maxsize=1)
+def _diapos_modele(chemin, date):
+    with zipfile.ZipFile(chemin) as z:
+        return {int(m.group(1)): z.read(n).decode('utf-8') for n in z.namelist()
+                if (m := re.match(r'ppt/slides/slide(\d+)\.xml$', n))}
+
+
+def paliers(pages):
+    """Le retrait de chaque famille de zones, commun a ces pages (`[{diapo, valeurs}]`).
+
+    Les resumes des journees prennent ainsi tous la taille du plus long :
+    l'apercu d'un jour la recoit avec les autres jours, le rapport avec
+    toutes ses pages. Ne remplit que le texte : aucun passage par LibreOffice.
+    """
+    modele = _diapos_modele(str(MODELE), MODELE.stat().st_mtime)
+    communs = {}
+    for page in pages:
+        numero, valeurs = int(page['diapo']), page.get('valeurs') or {}
+        if numero not in modele:
+            continue
+        xml = substituer(blocs.repeter(modele[numero], numero, valeurs), valeurs)
+        for cle, retrait in mise_en_page.besoins(xml).items():
+            communs[cle] = max(communs.get(cle, 0), retrait)
+    return communs
+
+
+def remplir(source, cible, valeurs, diapos=None, imposes=None):
     """Ecrit une copie du PPTX dont les drapeaux portent les valeurs.
 
     `diapos` limite aux diapositives produites la mise a jour des
     classeurs embarques : chacun coute un passage par LibreOffice.
+    `imposes` : les retraits communs au rapport (voir `paliers`).
     """
     with zipfile.ZipFile(source) as z:
         infos = {i.filename: i for i in z.infolist()}
@@ -517,7 +545,8 @@ def remplir(source, cible, valeurs, diapos=None):
     # de page : l'apercu montre ce que PowerPoint ouvrira.
     for nom in list(contenus):
         if re.match(r'ppt/slides/slide\d+\.xml$', nom):
-            contenus[nom] = mise_en_page.ajuster(contenus[nom].decode('utf-8')).encode('utf-8')
+            contenus[nom] = mise_en_page.ajuster(contenus[nom].decode('utf-8'),
+                                                 imposes).encode('utf-8')
 
     # Les tableaux et graphiques des resultats : classeurs embarques,
     # remplis puis redessines (voir `classeurs.py`).
@@ -537,13 +566,13 @@ def remplir(source, cible, valeurs, diapos=None):
 
 # A changer quand le rendu d'une page change sans que ses valeurs changent :
 # les images en cache portant l'ancienne version ne sont plus reprises.
-VERSION_RENDU = 5
+VERSION_RENDU = 6
 
 
-def empreinte(diapo, valeurs):
-    """L'identite d'une image : sa diapositive et les valeurs qui s'y posent."""
-    brut = json.dumps({'d': diapo, 'v': valeurs, 'm': VERSION_RENDU}, sort_keys=True,
-                      ensure_ascii=False)
+def empreinte(diapo, valeurs, imposes=None):
+    """L'identite d'une image : sa diapositive, les valeurs qui s'y posent, ses tailles communes."""
+    brut = json.dumps({'d': diapo, 'v': valeurs, 'm': VERSION_RENDU, 'i': imposes or {}},
+                      sort_keys=True, ensure_ascii=False)
     return hashlib.sha1(brut.encode('utf-8')).hexdigest()[:16]
 
 
@@ -567,17 +596,22 @@ def convertir(pptx, dossier, format_='png'):
     raise RuntimeError(f'conversion {format_} sans resultat')
 
 
-def image_de(diapo, valeurs):
-    """L'image d'une diapositive, depuis le cache ou fraichement produite."""
+def image_de(diapo, valeurs, voisines=None):
+    """L'image d'une diapositive, depuis le cache ou fraichement produite.
+
+    `voisines` (`[{diapo, valeurs}]`) : les pages qui partagent ses
+    tailles de texte, les autres journees pour un jour.
+    """
+    imposes = paliers([{'diapo': diapo, 'valeurs': valeurs}] + list(voisines or []))
     CACHE.mkdir(parents=True, exist_ok=True)
-    cible = CACHE / f'{empreinte(diapo, valeurs)}.png'
+    cible = CACHE / f'{empreinte(diapo, valeurs, imposes)}.png'
     if cible.exists():
         return cible
 
     travail = Path(tempfile.mkdtemp(prefix='cr-apercu-'))
     try:
         rempli = travail / 'rempli.pptx'
-        remplir(MODELE, rempli, valeurs, [diapo])
+        remplir(MODELE, rempli, valeurs, [diapo], imposes)
         seule = travail / 'seule.pptx'
         composer(str(rempli), str(seule), [diapo])
         png = convertir(seule, travail, 'png')
@@ -661,6 +695,7 @@ def rapport(pages, format_='pptx'):
     with zipfile.ZipFile(MODELE) as z:
         contenus = {n: z.read(n) for n in z.namelist()}
 
+    imposes = paliers(pages)
     copies, a_rafraichir = [], []
     for rang, page in enumerate(pages):
         numero, valeurs = int(page['diapo']), page.get('valeurs') or {}
@@ -672,7 +707,7 @@ def rapport(pages, format_='pptx'):
         poses = (valeurs.get('@photos') or {}).get(str(numero))
         if poses:
             poser_photos(contenus, nom, poses)
-        xml = mise_en_page.ajuster(contenus[nom].decode('utf-8'))
+        xml = mise_en_page.ajuster(contenus[nom].decode('utf-8'), imposes)
         contenus[nom] = mise_en_page.numeroter(xml, rang + 1).encode('utf-8')
         a_rafraichir.append((nom, valeurs.get('@classeurs') or {}))
         copies.append(copie)

@@ -37,6 +37,9 @@ REMONTEE_MAX = round(0.75 * EMU_PAR_CM)
 PALIER = 200
 # Le corps de tous les commentaires sous les graphiques des resultats.
 CORPS_COMMENTAIRE = 1200
+# Le retrait de depart d'une famille de zones (voir `famille`) : les
+# resumes des journees, 16/22 au modele, sont a 14/20 sur toutes les pages.
+STANDARDS = {'Espace réservé du contenu 2|2200': PALIER}
 
 RE_FORME = re.compile(r'<p:sp>(?:(?!</p:sp>).)*?</p:sp>', re.S)
 RE_CADRE = re.compile(r'<p:graphicFrame>(?:(?!</p:graphicFrame>).)*?</p:graphicFrame>', re.S)
@@ -197,35 +200,71 @@ def _corps(forme):
     return m
 
 
-def ajuster_zone(forme):
-    """Une zone « ajuster le texte » : corps reduit jusqu'a tenir, bas au-dessus des logos."""
+def _mesures(forme):
+    """Position (bornee a la limite), paragraphes, largeur et hauteur utiles, resserrement."""
     pos = _position(forme)
     corps = _corps(forme)
     if not pos or not corps or not re.search(r'<a:t>[^<]*\S', corps.group(1)):
-        return forme
+        return None
     x, y, cx, cy = pos
     if y >= LIMITE_BAS:
-        return forme
-    if y + cy > LIMITE_BAS:
-        cy = LIMITE_BAS - y
-        forme = _deplacer(forme, x, y, cx, cy)
-    body = re.search(r'<a:bodyPr\b[^>]*', forme).group(0)
-    mh, mv = _marges(body)
+        return None
+    cy = min(cy, LIMITE_BAS - y)
+    mh, mv = _marges(re.search(r'<a:bodyPr\b[^>]*', forme).group(0))
     reduction = _attr(re.search(r'<a:normAutofit\b[^>]*', forme).group(0), 'lnSpcReduction', 0)
-    paras = paragraphes(corps.group(1))
-    place = cy - mv
-    if hauteur_paragraphes(paras, cx - mh, 1.0, reduction) <= place:
-        return forme
-    # Tous les paragraphes descendent ensemble par paliers de `PALIER` :
-    # d'une page a l'autre, une meme zone n'a que quelques tailles
-    # possibles (16/22, 14/20, 12/18...), jamais un corps au plus juste.
+    return (x, y, cx, cy), paragraphes(corps.group(1)), cx - mh, cy - mv, reduction
+
+
+def _echelle(paras, retrait):
     plus_grand = max(p['sz'] for p in paras)
-    retrait, echelle = 0, 1.0
-    while plus_grand - retrait > CORPS_MIN:
+    return max(CORPS_MIN, plus_grand - retrait) / plus_grand
+
+
+def famille(forme):
+    """Les zones qui portent la meme taille dans tout le rapport : meme nom, meme plus grand corps
+    au modele (les resumes des journees, par exemple)."""
+    nom = re.search(r'<p:cNvPr [^>]*name="([^"]*)"', forme)
+    corps = _corps(forme)
+    if not nom or not corps:
+        return None
+    paras = paragraphes(corps.group(1))
+    return f'{nom.group(1)}|{max(p["sz"] for p in paras)}' if paras else None
+
+
+def retrait_requis(forme, minimum=0):
+    """Ce qu'il faut oter au corps de chaque texte, par paliers de `PALIER`, pour tenir.
+
+    Tous les paragraphes descendent ensemble : une zone n'a que quelques
+    tailles possibles (16/22, 14/20, 12/18...), jamais un corps au plus juste.
+    """
+    mesures = _mesures(forme)
+    if not mesures:
+        return 0
+    _, paras, largeur, place, reduction = mesures
+    plus_grand = max(p['sz'] for p in paras)
+    retrait = minimum
+    while (hauteur_paragraphes(paras, largeur, _echelle(paras, retrait), reduction, retrait) > place
+           and plus_grand - retrait > CORPS_MIN):
         retrait += PALIER
-        echelle = max(CORPS_MIN, plus_grand - retrait) / plus_grand
-        if hauteur_paragraphes(paras, cx - mh, echelle, reduction, retrait) <= place:
-            break
+    return retrait
+
+
+def ajuster_zone(forme, minimum=0):
+    """Une zone « ajuster le texte » : corps reduit jusqu'a tenir, bas au-dessus des logos.
+
+    `minimum` est le retrait que la famille de la zone porte dans le
+    rapport (voir `besoins`) : la zone ne prend jamais un corps plus grand.
+    """
+    mesures = _mesures(forme)
+    if not mesures:
+        return forme
+    (x, y, cx, cy), paras, _, _, reduction = mesures
+    if (x, y, cx, cy) != _position(forme):
+        forme = _deplacer(forme, x, y, cx, cy)
+    retrait = retrait_requis(forme, minimum)
+    if not retrait:
+        return forme
+    echelle = _echelle(paras, retrait)
     corps = _corps(forme)
     forme = (forme[:corps.start(1)] + mettre_a_l_echelle(corps.group(1), echelle, retrait)
              + forme[corps.end(1):])
@@ -302,8 +341,37 @@ def retirer_pieds(xml):
     return RE_FORME.sub(lambda m: '' if '<p:ph type="ftr"' in m.group(0) else m.group(0), xml)
 
 
-def ajuster(xml):
-    """La mise en page finale d'une diapositive remplie (voir le module)."""
+def _zones(xml):
+    """Les zones « ajuster le texte » que la mise en page regle (hors legendes et reperes)."""
+    for forme in RE_FORME.findall(xml):
+        if '<a:normAutofit' in forme and not re.search(
+                r'<p:ph type="(?:sldNum|dt|ftr)"|name="Legende', forme):
+            yield forme
+
+
+def besoins(xml):
+    """Le retrait que chaque famille de zones de cette diapositive demande pour tenir.
+
+    Le rapport retient, pour chaque famille, le plus fort retrait de
+    toutes ses pages : les resumes des journees gardent la meme taille
+    d'un jour a l'autre.
+    """
+    sortie = {}
+    for forme in _zones(xml):
+        cle = famille(forme)
+        if cle:
+            besoin = retrait_requis(forme, STANDARDS.get(cle, 0))
+            sortie[cle] = max(sortie.get(cle, 0), besoin)
+    return sortie
+
+
+def ajuster(xml, imposes=None):
+    """La mise en page finale d'une diapositive remplie (voir le module).
+
+    `imposes` donne le retrait de chaque famille de zones, commun a tout
+    le rapport (voir `besoins`).
+    """
+    imposes = imposes or {}
     xml = retirer_pieds(xml)
 
     def sur_forme(m):
@@ -314,7 +382,8 @@ def ajuster(xml):
         if '<a:spAutoFit/>' in forme:
             return ajuster_cadre_auto(forme)
         if '<a:normAutofit' in forme:
-            return ajuster_zone(forme)
+            cle = famille(forme)
+            return ajuster_zone(forme, max(imposes.get(cle, 0), STANDARDS.get(cle, 0)))
         return forme
     xml = RE_FORME.sub(sur_forme, xml)
     return RE_CADRE.sub(lambda m: ajuster_tableau(m.group(0)), xml)

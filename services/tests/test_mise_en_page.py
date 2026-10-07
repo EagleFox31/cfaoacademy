@@ -119,6 +119,27 @@ def test_une_zone_qui_deborde_descend_par_paliers_de_deux_points():
     assert corps == {2200 - retrait, 1600 - retrait}
 
 
+def _jour(lignes):
+    titre = '<a:p><a:r><a:rPr lang="fr-FR" sz="2200" b="1"/><a:t>Thematiques</a:t></a:r></a:p>'
+    forme = _zone(lignes, round(3.33 * CM), round(14.57 * CM), nom='Espace réservé du contenu 2')
+    return '<p:spTree>' + forme.replace('<a:lstStyle/>', '<a:lstStyle/>' + titre) + '</p:spTree>'
+
+
+def test_un_resume_de_jour_court_prend_la_taille_standard_14_20():
+    assert _corps(M.ajuster(_jour(['Lecture du DTC']))) == {2000, 1400}
+
+
+def test_tous_les_jours_prennent_la_taille_du_plus_long():
+    long_ = _jour(['Une thematique abordee pendant la journee, assez longue pour passer a la ligne'] * 14)
+    court = _jour(['Lecture du DTC'])
+    communs = {}
+    for xml in (long_, court):
+        for cle, retrait in M.besoins(xml).items():
+            communs[cle] = max(communs.get(cle, 0), retrait)
+    assert list(communs.values()) == [2 * M.PALIER]
+    assert _corps(M.ajuster(court, communs)) == _corps(M.ajuster(long_, communs)) == {1800, 1200}
+
+
 def test_tous_les_commentaires_prennent_12_points_meme_quand_ils_tiennent():
     origine = _zone(['La moyenne progresse de 6 %.'], round(15.79 * CM), round(1.45 * CM),
                     '<a:spAutoFit/>', sz=1400, nom='Rectangle 21')
