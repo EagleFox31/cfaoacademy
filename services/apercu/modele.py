@@ -50,7 +50,7 @@ def diapos_pour(parties_retenues, nb_jours=0, nb_participants=0,
     `parties_retenues` suit l'ordre de `PARTIES_RAPPORT` cote interface ;
     on le respecte pour que l'apercu corresponde au document final.
     """
-    ordre = ['couverture', 'objectifs', 'participants', 'deroule',
+    ordre = ['couverture', 'participants', 'objectifs', 'deroule',
              'resultats', 'bilan', 'fiches', 'cloture']
     numeros = []
     for partie in ordre:

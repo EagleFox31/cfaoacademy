@@ -13,7 +13,7 @@ import EditeurObjectifs from './EditeurObjectifs'
 import EditeurParticipants from './EditeurParticipants'
 import EditeurJournee, { MAX_PHOTOS_JOUR } from './EditeurJournee'
 import EditeurBilan from './EditeurBilan'
-import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
+import { avecIntercalaires, diapoDe, valeursDrapeaux } from '../../utils/diapositives'
 import { useRefsPhotos, ancrerPhotos } from '../../utils/photosService'
 import { participantPourMoteur, proposerTexte } from '../../utils/redaction'
 import { chiffresSession, satisfactionPresents, constatsParDefaut, donneesSession, formeBilan, paragrapheBilan,
@@ -338,17 +338,20 @@ export default function PhaseVerification({
 
   // Le document final reprend page par page ce que montrent les
   // apercus : meme diapositive, memes valeurs. Les pages repetees
-  // (jours, fiches) y gardent chacune les leurs.
+  // (jours, fiches) y gardent chacune les leurs ; chaque section y est
+  // annoncee par l'intercalaire du modele.
   async function produire() {
     setEtat('production')
     setEchec(false)
     const corps = {
-      pages: pages
+      pages: avecIntercalaires(pages
         .map(p => ({
+          cle: p.cle,
           diapo: diapoDe(p, brouillon),
           valeurs: valeursDrapeaux(brouillon, session, synthese, p, refsPhotos),
         }))
-        .filter(p => p.diapo),
+        .filter(p => p.diapo))
+        .map(({ diapo, valeurs }) => ({ diapo, valeurs })),
     }
     try {
       const url = await rapportProduit(corps)
@@ -1392,6 +1395,18 @@ function composerPages(b, session, s) {
     })
   }
 
+  // L'ordre du modele : la photo de groupe et les stagiaires (section 1)
+  // precedent les objectifs (section 2).
+  if (retenue('participants')) {
+    pages.push({
+      cle: 'participants', titre: 'Stagiaires', type: 'tableau',
+      titrePage: 'LES PARTICIPANTS',
+      rubrique: 'participants',
+      colonnes: ['Nom et prénom', 'Pays', 'Fonction'],
+      lignes: participants.map(p => [`${p.prenom} ${p.nom}`, p.pays, p.fonction]),
+    })
+  }
+
   if (retenue('objectifs')) {
     pages.push({
       cle: 'objectifs', titre: 'Objectifs', type: 'texte',
@@ -1402,16 +1417,6 @@ function composerPages(b, session, s) {
         titre: `À l’issue de la ${quoi.toLowerCase()}`,
         texte: b.textes?.objectifs || '',
       }],
-    })
-  }
-
-  if (retenue('participants')) {
-    pages.push({
-      cle: 'participants', titre: 'Stagiaires', type: 'tableau',
-      titrePage: 'LES PARTICIPANTS',
-      rubrique: 'participants',
-      colonnes: ['Nom et prénom', 'Pays', 'Fonction'],
-      lignes: participants.map(p => [`${p.prenom} ${p.nom}`, p.pays, p.fonction]),
     })
   }
 

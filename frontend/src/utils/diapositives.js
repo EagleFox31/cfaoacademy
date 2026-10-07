@@ -84,6 +84,40 @@ export function diapoDe(page, brouillon) {
 }
 
 /**
+ * Les intercalaires du modele : la page qui annonce chaque section du
+ * rapport. Le modele les numerote de 1 a 5 ; une section ecartee ne
+ * laisse pas de trou, les suivantes prennent le numero libre.
+ *
+ * L'intercalaire des resultats individuels liste les stagiaires : il
+ * reprend le tableau `{stagiaire_nom}` de la premiere fiche.
+ */
+const INTERCALAIRES = [
+  { diapo: 3, numero: '1', ouvre: cle => cle === 'participants' },
+  { diapo: 5, numero: '2', ouvre: cle => cle === 'objectifs' },
+  { diapo: 10, numero: '3', ouvre: cle => cle.startsWith('jour-') },
+  { diapo: 16, numero: '4', ouvre: cle => ['resultats', 'satisfaction', 'bilan'].includes(cle) },
+  { diapo: 25, numero: '5', ouvre: cle => cle.startsWith('fiche-'), tableau: '{stagiaire_nom}' },
+]
+
+/** Les pages du rapport (`[{cle, diapo, valeurs}]`), chaque section precedee de son intercalaire. */
+export function avecIntercalaires(pages) {
+  const poses = new Set()
+  const sortie = []
+  for (const page of pages) {
+    const section = INTERCALAIRES.find(s => s.ouvre(page.cle || ''))
+    if (section && !poses.has(section)) {
+      poses.add(section)
+      const valeurs = { [section.numero]: String(poses.size) }
+      const lignes = section.tableau && page.valeurs?.['@lignes']?.[section.tableau]
+      if (lignes) valeurs['@lignes'] = { [section.tableau]: lignes }
+      sortie.push({ cle: `intercalaire-${section.diapo}`, diapo: section.diapo, valeurs })
+    }
+    sortie.push(page)
+  }
+  return sortie
+}
+
+/**
  * Les phrases que la diapositive 17 pose sous ses deux graphiques.
  *
  * Elles doivent reprendre le run du modele mot pour mot, apostrophe
