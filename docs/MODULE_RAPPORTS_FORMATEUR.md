@@ -78,7 +78,8 @@ porte des drapeaux entre accolades (`{nom_complet}`, `{code_module_1}`, `{pource
 Règles à connaître avant de toucher au modèle ou aux drapeaux :
 
 - **Un drapeau sans valeur reste visible** : une page incomplète doit se voir. Pour un champ vide
-  *à dessein*, la valeur `VIDE` (`∅`, définie des deux côtés) efface le mot du modèle.
+  *à dessein*, la valeur `VIDE` (`∅`, définie des deux côtés) efface le mot du modèle. Un mot nu
+  vide (sous-titre de couverture) retire aussi sa ligne, et le bloc de la couverture est centré.
 - **Clés spéciales** : `@lignes` (lignes répétées, chacune peut porter ses `@couleurs`),
   `@etendre` (le tableau descend dans la place libre avant de resserrer), `@retirer`,
   `@couleurs` (`ok` vert, `ko` rouge, `alerte` : case blanche passée au rouge), `@photos`,

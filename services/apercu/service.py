@@ -442,6 +442,36 @@ def ancrer_objectifs(xml):
     return RE_LIGNE_TABLEAU.sub(sur_ligne, xml)
 
 
+RE_ZONE = re.compile(r'<p:sp>(?:(?!</p:sp>).)*</p:sp>', re.S)
+RE_PARAGRAPHE = re.compile(r'<a:p>(?:(?!</a:p>).)*?</a:p>', re.S)
+
+
+def retirer_mots_vides(xml, mots):
+    """Retire les lignes d'un mot nu laisse vide a dessein, puis recentre.
+
+    Le sous-titre de couverture vide laissait une ligne blanche entre le
+    titre et la periode. Sa ligne disparait, et le bloc, ancre en bas du
+    cadre, passe au centre : le cadre etant centre sur la page, le texte
+    l'est aussi. Une zone qui ne garderait aucune ligne est laissee.
+    """
+    if not mots:
+        return xml
+
+    def texte(p):
+        return ''.join(re.findall(r'<a:t>([^<]*)</a:t>', p)).strip().casefold()
+
+    def sur_zone(m):
+        zone = m.group(0)
+        paragraphes = RE_PARAGRAPHE.findall(zone)
+        vides = [p for p in paragraphes if texte(p) in mots]
+        if not vides or len(vides) == len(paragraphes):
+            return zone
+        for p in vides:
+            zone = zone.replace(p, '', 1)
+        return re.sub(r'(<a:bodyPr\b[^>]*?)\sanchor="b"', r'\1 anchor="ctr"', zone, count=1)
+    return RE_ZONE.sub(sur_zone, xml)
+
+
 def substituer(xml, valeurs):
     """Remplace les drapeaux dans le texte des runs.
 
@@ -474,6 +504,7 @@ def substituer(xml, valeurs):
                if isinstance(v, str) and not c.startswith('@')}
     nus = {c.strip().casefold(): v for c, v in valeurs.items()
            if not c.startswith('{') and (v or v == VIDE)}
+    xml = retirer_mots_vides(xml, {c for c, v in nus.items() if v == VIDE})
 
     def sur_run(m):
         texte = m.group(1)
@@ -569,7 +600,7 @@ def remplir(source, cible, valeurs, diapos=None, imposes=None):
 
 # A changer quand le rendu d'une page change sans que ses valeurs changent :
 # les images en cache portant l'ancienne version ne sont plus reprises.
-VERSION_RENDU = 6
+VERSION_RENDU = 7
 
 
 def empreinte(diapo, valeurs, imposes=None):
