@@ -105,7 +105,38 @@ def test_deux_voisines_de_meme_legende_n_en_portent_qu_une():
     cases, poses = photos.disposer(CADRE, liste)
     assert len(poses) == 1
     (x, y, l, h), _, corps, _ = poses[0]
-    assert (x, l) == (CADRE[0], CADRE[2]) and corps == photos.CORPS_LEGENDE
+    assert (x, l) == (CADRE[0], CADRE[2]) and corps == photos.CORPS_COMMUNE
+
+
+def test_une_zone_qui_deborde_descend_par_paliers_de_deux_points():
+    titre = '<a:p><a:r><a:rPr lang="fr-FR" sz="2200" b="1"/><a:t>Jour 2</a:t></a:r></a:p>'
+    lignes = ['Une thematique abordee pendant la journee, assez longue pour passer a la ligne'] * 14
+    forme = _zone(lignes, round(3.33 * CM), round(14.57 * CM))
+    forme = forme.replace('<a:lstStyle/>', '<a:lstStyle/>' + titre)
+    corps = _corps(M.ajuster_zone(forme))
+    retrait = 2200 - max(corps)
+    assert retrait > 0 and retrait % M.PALIER == 0
+    assert corps == {2200 - retrait, 1600 - retrait}
+
+
+def test_tous_les_commentaires_prennent_12_points_meme_quand_ils_tiennent():
+    origine = _zone(['La moyenne progresse de 6 %.'], round(15.79 * CM), round(1.45 * CM),
+                    '<a:spAutoFit/>', sz=1400, nom='Rectangle 21')
+    forme = M.ajuster_cadre_auto(origine)
+    assert _corps(forme) == {M.CORPS_COMMENTAIRE}
+    assert M._position(forme)[1] == round(15.79 * CM)
+    autre = _zone(['Objectifs'], round(3.52 * CM), round(1.8 * CM), '<a:spAutoFit/>', sz=1800,
+                  nom='ZoneTexte 16')
+    assert M.ajuster_cadre_auto(autre) == autre
+
+
+def test_une_legende_pleine_largeur_prend_12_points_une_demi_11():
+    liste = [{'x': 0, 'y': 0, 'l': 1, 'h': 0.5, 'legende': 'Banc de diagnostic'},
+             {'x': 0, 'y': 0.5, 'l': 0.5, 'h': 0.5, 'legende': 'Lecture du schema'},
+             {'x': 0.5, 'y': 0.5, 'l': 0.5, 'h': 0.5, 'legende': 'Mesure de pression'}]
+    _, poses = photos.disposer(CADRE, liste)
+    corps = {rang: c for _, _, c, rang in poses}
+    assert corps == {0: photos.CORPS_COMMUNE, 1: photos.CORPS_LEGENDE, 2: photos.CORPS_LEGENDE}
 
 
 def test_une_longue_legende_reduit_son_corps_et_agrandit_sa_bande():

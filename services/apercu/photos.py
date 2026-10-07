@@ -249,9 +249,11 @@ def disposer(cadre_, liste):
     Seule une rangee dont une photo au moins a une legende ecrite garde
     une bande : une legende vide ne laisse plus de blanc. Deux photos
     voisines de la meme rangee qui disent la meme chose partagent une
-    seule legende, sur leurs deux largeurs. Toutes les legendes de la
-    page prennent le meme corps, et la bande d'une rangee la hauteur de
-    sa plus longue legende.
+    seule legende, sur leurs deux largeurs. Une legende sur toute la
+    largeur du cadre prend le corps de la legende commune, une autre
+    celui des diapositives 12 a 15 ; les legendes d'une meme largeur
+    partagent le corps de la page, et la bande d'une rangee prend la
+    hauteur de sa plus longue legende.
 
     Quand les rangees se suivent sans se chevaucher (photos cote a cote,
     ou l'une sous l'autre), la hauteur rendue par une rangee sans legende
@@ -285,10 +287,20 @@ def disposer(cadre_, liste):
                 suite.append(([i], texte))
         groupes[r] = [(ids, texte) for ids, texte in suite if texte]
 
+    def depart(ids):
+        # Pleine largeur : le corps de la legende commune.
+        return CORPS_COMMUNE if largeur(ids) >= l0 * 0.95 else CORPS_LEGENDE
+
     ecrites = [(ids, texte) for g in groupes.values() for ids, texte in g]
-    corps = min((mesure_legende(texte, largeur(ids), CORPS_LEGENDE, CORPS_LEGENDE_MIN)[0]
-                 for ids, texte in ecrites), default=CORPS_LEGENDE)
-    bandes = {r: max((mesure_legende(texte, largeur(ids), corps)[1] for ids, texte in g),
+    corps_de = {}
+    for ids, texte in ecrites:
+        mesure = mesure_legende(texte, largeur(ids), depart(ids), CORPS_LEGENDE_MIN)[0]
+        corps_de[depart(ids)] = min(corps_de.get(depart(ids), mesure), mesure)
+
+    def corps(ids):
+        return corps_de[depart(ids)]
+
+    bandes = {r: max((mesure_legende(texte, largeur(ids), corps(ids))[1] for ids, texte in g),
                      default=0) for r, g in groupes.items()}
 
     if all(a[0] + a[1] <= b[0] + 0.001 for a, b in zip(rangs, rangs[1:])):
@@ -308,7 +320,7 @@ def disposer(cadre_, liste):
     for r, g in groupes.items():
         for ids, texte in g:
             c = cases[ids[0]]
-            poses.append(((c[0], c[1] + c[3], largeur(ids), bandes[r]), texte, corps, ids[0]))
+            poses.append(((c[0], c[1] + c[3], largeur(ids), bandes[r]), texte, corps(ids), ids[0]))
     return cases, poses
 
 

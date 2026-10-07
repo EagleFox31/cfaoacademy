@@ -33,6 +33,10 @@ INTERLIGNE = 1.2
 CORPS_MIN = 800
 # Ce qu'un commentaire peut remonter sur le graphique qu'il legende.
 REMONTEE_MAX = round(0.75 * EMU_PAR_CM)
+# Le pas de reduction d'une zone qui deborde : 2 points sur chaque texte.
+PALIER = 200
+# Le corps de tous les commentaires sous les graphiques des resultats.
+CORPS_COMMENTAIRE = 1200
 
 RE_FORME = re.compile(r'<p:sp>(?:(?!</p:sp>).)*?</p:sp>', re.S)
 RE_CADRE = re.compile(r'<p:graphicFrame>(?:(?!</p:graphicFrame>).)*?</p:graphicFrame>', re.S)
@@ -114,15 +118,17 @@ def paragraphes(corps_xml):
     return sortie
 
 
-def hauteur_paragraphes(paras, largeur, echelle=1.0, reduction=0):
+def hauteur_paragraphes(paras, largeur, echelle=1.0, reduction=0, retrait=0):
     """La hauteur qu'occupent ces paragraphes, a `echelle` de leur corps.
 
     `reduction` est le resserrement d'interligne que la zone porte deja
     (`lnSpcReduction`, en millemes de pourcent) : PowerPoint l'applique.
+    `retrait` (centiemes de point) est ote du corps de chaque paragraphe,
+    `echelle` ne reglant alors que les espacements.
     """
     total = 0
     for p in paras:
-        corps = p['sz'] * echelle
+        corps = max(CORPS_MIN, p['sz'] * (1 if retrait else echelle) - retrait)
         n = lignes_texte(p['texte'], largeur - p.get('marL', 0), corps, p['gras']) \
             if p['texte'].strip() else 1
         sorte, val = p.get('lnSpc', ('pct', 100000))
@@ -145,8 +151,12 @@ def arrondi(corps):
     return max(CORPS_MIN, int(corps // 100) * 100)
 
 
-def mettre_a_l_echelle(corps_xml, echelle):
-    """Ecrit en clair le corps de chaque texte, reduit a `echelle`, et ses espacements."""
+def mettre_a_l_echelle(corps_xml, echelle, retrait=0):
+    """Ecrit en clair le corps de chaque texte, reduit a `echelle`, et ses espacements.
+
+    Avec `retrait`, chaque corps perd ce nombre de centiemes de point et
+    `echelle` ne regle que les espacements.
+    """
     tete, _, suite = corps_xml.rpartition('</a:lstStyle>')
     if not _:
         tete, suite = '', corps_xml
@@ -156,7 +166,8 @@ def mettre_a_l_echelle(corps_xml, echelle):
 
     def sur_run(m, defaut):
         balise = m.group(0)
-        corps = arrondi((_attr(balise, 'sz') or defaut) * echelle)
+        sz = _attr(balise, 'sz') or defaut
+        corps = arrondi(sz - retrait if retrait else sz * echelle)
         if _attr(balise, 'sz'):
             return re.sub(r'\bsz="\d+"', f'sz="{corps}"', balise, count=1)
         return balise.replace(m.group(1), f'{m.group(1)} sz="{corps}"', 1)
@@ -205,11 +216,18 @@ def ajuster_zone(forme):
     place = cy - mv
     if hauteur_paragraphes(paras, cx - mh, 1.0, reduction) <= place:
         return forme
-    echelle = 1.0
-    while echelle > 0.5 and hauteur_paragraphes(paras, cx - mh, echelle, reduction) > place:
-        echelle = round(echelle - 0.025, 3)
+    # Tous les paragraphes descendent ensemble par paliers de `PALIER` :
+    # d'une page a l'autre, une meme zone n'a que quelques tailles
+    # possibles (16/22, 14/20, 12/18...), jamais un corps au plus juste.
+    plus_grand = max(p['sz'] for p in paras)
+    retrait, echelle = 0, 1.0
+    while plus_grand - retrait > CORPS_MIN:
+        retrait += PALIER
+        echelle = max(CORPS_MIN, plus_grand - retrait) / plus_grand
+        if hauteur_paragraphes(paras, cx - mh, echelle, reduction, retrait) <= place:
+            break
     corps = _corps(forme)
-    forme = (forme[:corps.start(1)] + mettre_a_l_echelle(corps.group(1), echelle)
+    forme = (forme[:corps.start(1)] + mettre_a_l_echelle(corps.group(1), echelle, retrait)
              + forme[corps.end(1):])
     # Le corps est maintenant ecrit en clair : plus de reduction de police
     # a appliquer par-dessus ; le resserrement d'interligne reste.
@@ -220,10 +238,12 @@ def ajuster_zone(forme):
 def ajuster_cadre_auto(forme):
     """Une zone qui s'agrandit avec son texte (commentaire sous un graphique).
 
-    Rien ne change tant qu'elle tient au-dessus de la limite. Sinon le
-    texte descend point par point jusqu'a 12, puis la zone remonte un
-    peu sur le graphique, enfin le texte diminue encore. Une zone que le
-    modele place deja plus bas (couverture, fiches) est laissee.
+    Un commentaire (« Rectangle » du modele) prend `CORPS_COMMENTAIRE`
+    sur toutes les pages. Une autre zone ne change pas tant qu'elle
+    tient au-dessus de la limite. Sinon le texte descend point par point
+    jusqu'a 12, puis la zone remonte un peu sur le graphique, enfin le
+    texte diminue encore. Une zone que le modele place deja plus bas
+    (couverture, fiches) est laissee.
     """
     pos = _position(forme)
     corps = _corps(forme)
@@ -236,14 +256,17 @@ def ajuster_cadre_auto(forme):
     mh, mv = _marges(body)
     paras = paragraphes(corps.group(1))
     plus_grand = max(p['sz'] for p in paras)
+    depart = plus_grand
+    if re.search(r'<p:cNvPr [^>]*name="Rectangle', forme):
+        depart = min(plus_grand, CORPS_COMMENTAIRE)
 
     def besoin(echelle):
         return round(hauteur_paragraphes(paras, cx - mh, echelle) + mv)
 
-    if y + besoin(1.0) <= LIMITE_BAS:
+    if depart == plus_grand and y + besoin(1.0) <= LIMITE_BAS:
         return forme
-    points = plus_grand // 100
-    essais = [(p, y) for p in range(points, 11, -1)]
+    points = depart // 100
+    essais = [(p, y) for p in range(points, min(points, 12) - 1, -1)]
     essais += [(p, y - REMONTEE_MAX) for p in range(min(points, 12), CORPS_MIN // 100 - 1, -1)]
     for p, plafond in essais:
         echelle = p * 100 / plus_grand

@@ -90,8 +90,11 @@ Règles à connaître avant de toucher au modèle ou aux drapeaux :
   - le pied de page (titre de la formation) est retiré ;
   - les tailles de texte sont **écrites en clair** : PowerPoint ne recalcule pas l'ajustement
     automatique (`normAutofit`, `spAutoFit`) tant que le texte n'est pas retouché ;
-  - une zone qui déborde descend par pas de 2,5 %, arrondie au point entier ;
-  - un commentaire passe à 12 pt puis remonte de 0,75 cm au plus ;
+  - tailles uniformes d'une page à l'autre : une zone garde la taille du modèle, et si elle
+    déborde tous ses textes perdent 2 pt à la fois (`PALIER`) : 16/22 → 14/20 → 12/18…,
+    8 pt au minimum ;
+  - tous les commentaires des résultats (« Rectangle » du modèle) sont à 12 pt
+    (`CORPS_COMMENTAIRE`) ; s'ils débordent, ils remontent de 0,75 cm au plus puis diminuent ;
   - un tableau cède l'excès à sa dernière ligne ;
   - le numéro de page affiché suit le rang dans le rapport.
   - Estimation calibrée sur les corrections faites à la main dans PowerPoint
@@ -99,7 +102,8 @@ Règles à connaître avant de toucher au modèle ou aux drapeaux :
 - **Légendes photos** (`photos.disposer()`) :
   - pas de bande pour une ligne de photos sans légende ;
   - deux voisines de même légende n'en portent qu'une, sur toute leur largeur ;
-  - un seul corps par page, 11 pt, réduit jusqu'à 10 pt pour tenir sur deux lignes ;
+  - légende sur toute la largeur du cadre à 12 pt, sous une photo plus étroite à 11 pt ;
+    réduites jusqu'à 10 pt pour tenir sur deux lignes, un même corps par largeur sur la page ;
   - légende commune à 12 pt.
 
 ### Diapositives du modèle
