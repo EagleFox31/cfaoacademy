@@ -133,6 +133,9 @@ Chaque section est précédée de son intercalaire (3, 5, 10, 16, 25), posé par
 `avecIntercalaires` au moment de produire le rapport ; une section écartée ne laisse pas de trou
 dans la numérotation 1 à 5. L'intercalaire 25 liste les stagiaires (nom complet, pays).
 
+**Aperçu dans l'Explorateur** — le PPTX porte `docProps/thumbnail.jpeg` (256 px), l'image de sa
+première page (`poser_vignette`, `services/apercu/service.py`), comme ceux que PowerPoint enregistre.
+
 **Fiche de certification (26)** — conforme aux rapports G3 de référence : tableau « Filiale »,
 une ligne `G38001: intitulé / 100` par module (note rouge sous 70), `Total/ N`, `Pourcentage(%)`
 et case Validé / Échoué ; bloc e-learning ; appréciation ; bandeau

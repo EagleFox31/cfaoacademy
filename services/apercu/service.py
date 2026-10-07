@@ -20,6 +20,7 @@ reconvertie.
 import functools
 import hashlib
 import html
+import io
 import json
 import os
 import re
@@ -30,6 +31,8 @@ import time
 import uuid
 import zipfile
 from pathlib import Path
+
+from PIL import Image
 
 from composer import composer
 import blocs
@@ -684,6 +687,41 @@ def _copier_diapo(contenus, numero, copie):
         '</p:sldIdLst>', f'<p:sldId id="{ident}" r:id="{rid}"/></p:sldIdLst>').encode('utf-8')
 
 
+TYPE_VIGNETTE = 'http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail'
+LARGEUR_VIGNETTE = 256
+
+
+def poser_vignette(pptx, image):
+    """Pose `image` comme apercu du fichier.
+
+    L'Explorateur Windows montre `docProps/thumbnail.jpeg`, que PowerPoint
+    ecrit a chaque enregistrement : sans elle, le rapport telecharge
+    n'avait que l'icone generique, la ou ceux des formateurs montrent
+    leur couverture.
+    """
+    with Image.open(image) as im:
+        im = im.convert('RGB')
+        im.thumbnail((LARGEUR_VIGNETTE, LARGEUR_VIGNETTE))
+        tampon = io.BytesIO()
+        im.save(tampon, 'JPEG', quality=85)
+    with zipfile.ZipFile(pptx) as z:
+        contenus = {n: z.read(n) for n in z.namelist()}
+    contenus['docProps/thumbnail.jpeg'] = tampon.getvalue()
+    rels = contenus['_rels/.rels'].decode('utf-8')
+    if TYPE_VIGNETTE not in rels:
+        contenus['_rels/.rels'] = rels.replace(
+            '</Relationships>', f'<Relationship Id="rIdVignette" Type="{TYPE_VIGNETTE}" '
+            'Target="docProps/thumbnail.jpeg"/></Relationships>').encode('utf-8')
+    types = contenus['[Content_Types].xml'].decode('utf-8')
+    if not re.search(r'<Default Extension="jpeg"', types, re.I):
+        contenus['[Content_Types].xml'] = types.replace(
+            '</Types>', '<Default Extension="jpeg" ContentType="image/jpeg"/></Types>'
+        ).encode('utf-8')
+    with zipfile.ZipFile(pptx, 'w', zipfile.ZIP_DEFLATED) as out:
+        for nom, donnees in contenus.items():
+            out.writestr(nom, donnees)
+
+
 def rapport(pages, format_='pptx'):
     """Le rapport complet, tel que le formateur l'a vu page par page.
 
@@ -724,6 +762,14 @@ def rapport(pages, format_='pptx'):
         composer(str(rempli), str(sortie), copies)
         if format_ != 'pptx':
             sortie = convertir(sortie, travail, 'pdf')
+        elif pages:
+            # La premiere page telle que le rapport la rend : memes tailles communes.
+            premiere = pages[0]
+            try:
+                poser_vignette(sortie, image_de(int(premiere['diapo']),
+                                                premiere.get('valeurs') or {}, pages[1:]))
+            except Exception:  # noqa: BLE001 - un apercu manquant ne bloque pas le rapport
+                pass
         final = _fichier_rapport(format_ if format_ == 'pdf' else 'pptx')
         shutil.move(str(sortie), final)
         return final

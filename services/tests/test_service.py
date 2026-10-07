@@ -1,5 +1,6 @@
 """Substitution des drapeaux, lignes repetees et code couleur du modele."""
 import re
+import shutil
 import zipfile
 
 import pytest
@@ -117,3 +118,19 @@ def test_rendu_d_une_fiche(tmp_path, monkeypatch):
     monkeypatch.setattr(service, 'CACHE', tmp_path)
     chemin = service.image_de(26, {'{nom_complet}': 'Paul KAMGA', '{filiale}': 'CFAO MOBILITY CAMEROUN'})
     assert service.Path(chemin).stat().st_size > 10000
+
+
+def test_poser_vignette_montre_la_couverture_dans_l_explorateur(tmp_path):
+    from PIL import Image
+    pptx = tmp_path / 'r.pptx'
+    shutil.copy(service.MODELE, pptx)
+    image = tmp_path / 'c.png'
+    Image.new('RGB', (1280, 720), 'navy').save(image)
+    service.poser_vignette(pptx, image)
+    service.poser_vignette(pptx, image)
+    with zipfile.ZipFile(pptx) as z:
+        assert z.read('_rels/.rels').decode().count(service.TYPE_VIGNETTE) == 1
+        assert z.read('[Content_Types].xml').decode().lower().count('extension="jpeg"') == 1
+        assert z.namelist().count('docProps/thumbnail.jpeg') == 1
+        with Image.open(z.open('docProps/thumbnail.jpeg')) as v:
+            assert (v.format, v.size) == ('JPEG', (256, 144))
