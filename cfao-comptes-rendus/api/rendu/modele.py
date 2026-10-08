@@ -32,10 +32,10 @@ VARIANTES = {
 }
 
 # Les parties dont le nombre de pages depend des donnees saisies.
-# Le deroule alterne deux pages jour : texte a gauche (11) les jours
-# impairs, photos a gauche (13) les jours pairs.
+# Toutes les pages jour suivent le meme sens : texte a gauche, photos a
+# droite (11). L'alternance du modele (13 les jours pairs) a ete refusee.
 GABARITS = {
-    'deroule': {'fixe': [10], 'repete': (11, 13)},
+    'deroule': {'fixe': [10], 'repete': (11,)},
     'fiches': {'fixe': [25], 'repete': 27},
 }
 
@@ -50,7 +50,7 @@ def diapos_pour(parties_retenues, nb_jours=0, nb_participants=0,
     `parties_retenues` suit l'ordre de `PARTIES_RAPPORT` cote interface ;
     on le respecte pour que l'apercu corresponde au document final.
     """
-    ordre = ['couverture', 'objectifs', 'participants', 'deroule',
+    ordre = ['couverture', 'participants', 'objectifs', 'deroule',
              'resultats', 'bilan', 'fiches', 'cloture']
     numeros = []
     for partie in ordre:

@@ -173,6 +173,50 @@ export async function lireEvaluation(fichier) {
   return { entete, stagiaires }
 }
 
+/**
+ * Lit un classeur « Résultats » (une feuille : N°, nom, filiale, puis les
+ * notes brutes d'entrée, de sortie théorique et de sortie pratique).
+ * Même forme de retour que `lireEvaluation`, sans les avis : les notes,
+ * ramenées à leur barème, sont celles qu'`appliquerEvaluation` reprend.
+ */
+export async function lireResultats(fichier) {
+  const wb = await chargerClasseur(fichier)
+  const ws = wb.worksheets.find(f => {
+    for (let r = 1; r <= 8; r++) {
+      if (normaliser(valeurDe(f.getCell(r, 3))).startsWith('NOMS')) return true
+    }
+    return false
+  })
+  if (!ws) throw new Error('Tableau « Noms & Prénoms » introuvable')
+  let entete = 1
+  while (!normaliser(valeurDe(ws.getCell(entete, 3))).startsWith('NOMS')) entete++
+  const sur = c => Number(/\/\s*(\d+)/.exec(String(valeurDe(ws.getCell(entete, c)) ?? ''))?.[1]) || null
+  const baremes = { entree: sur(5), sortie: sur(7), pratique: sur(9) }
+  const rapporter = (v, bareme) => {
+    const n = typeof v === 'number' ? v : Number(String(v ?? '').replace(',', '.').trim())
+    return v == null || v === '-' || !Number.isFinite(n) || !bareme ? null : n / bareme
+  }
+  const stagiaires = []
+  for (let r = entete + 1; r < entete + 200; r++) {
+    const nom = valeurDe(ws.getCell(r, 3))
+    if (nom == null || !String(nom).trim()) break
+    // La moyenne fusionne B a D : son libelle se lit aussi en C. Elle
+    // n'a pas de numero, un stagiaire si.
+    if (normaliser(nom).startsWith('SCORE') || !Number.isFinite(Number(valeurDe(ws.getCell(r, 2))))) break
+    stagiaires.push({
+      nom: String(nom).replace(/\s+/g, ' ').trim(),
+      pays: paysDe(valeurDe(ws.getCell(r, 4))),
+      entree: rapporter(valeurDe(ws.getCell(r, 5)), baremes.entree),
+      sortie: rapporter(valeurDe(ws.getCell(r, 7)), baremes.sortie),
+      pratique: rapporter(valeurDe(ws.getCell(r, 9)), baremes.pratique),
+      tps: [],
+      reponses: {},
+    })
+  }
+  if (!stagiaires.length) throw new Error('Aucun stagiaire dans le classeur')
+  return { entete: {}, stagiaires }
+}
+
 /** Le participant du brouillon qui porte ce nom, s'il y en a un. */
 export function reconnaitre(nom, participants, pris) {
   const cible = mots(nom)

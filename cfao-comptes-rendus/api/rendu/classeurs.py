@@ -26,6 +26,7 @@ import hashlib
 import html
 import io
 import re
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -43,6 +44,7 @@ NATURES = {
     'PROGRESSION': 'progression',
     'ACQUISITION DES COMPETENCES': 'acquisition',
     'QUALITÉ DE LA FORMATION': 'satisfaction',
+    "QUALITÉ DE L'ACCUEIL": 'satisfaction',
 }
 
 RE_OLE = re.compile(r'<p:graphicFrame>(?:(?!</p:graphicFrame>).)*?<p:oleObj .*?'
@@ -55,17 +57,30 @@ def _lire(brut):
 
 
 def _ecrire(parts):
+    # Date fixe : a contenu egal, octets egaux, sinon l'empreinte du
+    # cache d'images change a chaque seconde et le cache ne sert jamais.
     tampon = io.BytesIO()
     with zipfile.ZipFile(tampon, 'w', zipfile.ZIP_DEFLATED) as z:
         for n, d in parts.items():
-            z.writestr(n, d)
+            z.writestr(zipfile.ZipInfo(n, (1980, 1, 1, 0, 0, 0)), d, zipfile.ZIP_DEFLATED)
     return tampon.getvalue()
 
 
 def nature(parts):
-    """La nature d'un classeur, d'apres le texte de sa cellule A1."""
+    """La nature d'un classeur, d'apres le texte de sa cellule A1.
+
+    Sans note de formation, le classeur de satisfaction a perdu son A1 :
+    le titre de l'accueil (A11) le fait reconnaitre.
+    """
     feuille = parts.get('xl/worksheets/sheet1.xml', b'').decode('utf-8')
-    m = re.search(r'<c r="A1"([^>]*?)(?:/>|>(.*?)</c>)', feuille, re.S)
+    trouvee = _nature_de(parts, feuille, 'A1')
+    if trouvee is None and _nature_de(parts, feuille, 'A11') == 'satisfaction':
+        return 'satisfaction'
+    return trouvee
+
+
+def _nature_de(parts, feuille, ref):
+    m = re.search(rf'<c r="{ref}"([^>]*?)(?:/>|>(.*?)</c>)', feuille, re.S)
     if not m or not m.group(2):
         return None
     genre = re.search(r'\bt="(\w+)"', m.group(1))
@@ -492,7 +507,8 @@ def _anneau_excel(image, geo, valeurs):
     import math
     import numpy as np
     from PIL import Image, ImageDraw, ImageFont
-    a = np.asarray(image.convert('RGBA')).astype(np.float32)
+    # En octets : seul le carre de l'anneau passe en flottants, plus bas.
+    a = np.asarray(image.convert('RGBA'))
     h, l = a.shape[:2]
     opaque = a[:, :, 3] > 0
 
@@ -546,8 +562,9 @@ def _anneau_excel(image, geo, valeurs):
     sx0 = np.clip(np.floor(sx).astype(int), 0, l - 2)
     sy0 = np.clip(np.floor(sy).astype(int), 0, h - 2)
     fx, fy = (sx - sx0)[..., None], (sy - sy0)[..., None]
-    pris = (a[sy0, sx0] * (1 - fx) * (1 - fy) + a[sy0, sx0 + 1] * fx * (1 - fy)
-            + a[sy0 + 1, sx0] * (1 - fx) * fy + a[sy0 + 1, sx0 + 1] * fx * fy)
+    f = np.float32
+    pris = (a[sy0, sx0].astype(f) * (1 - fx) * (1 - fy) + a[sy0, sx0 + 1].astype(f) * fx * (1 - fy)
+            + a[sy0 + 1, sx0].astype(f) * (1 - fx) * fy + a[sy0 + 1, sx0 + 1].astype(f) * fx * fy)
     # Les secteurs vides sont blancs chez Excel : sous l'anneau, le vide
     # redevient blanc.
     blanc = np.array([255, 255, 255, 255], np.float32)
@@ -555,8 +572,8 @@ def _anneau_excel(image, geo, valeurs):
     pris = np.where(dans[..., None], pris * alpha + blanc * (1 - alpha), pris)
     pris = np.where((r < trou_xl)[..., None], 0, pris)
     b = a.copy()
-    b[y0:y1, x0:x1] = pris
-    image = Image.fromarray(np.clip(b, 0, 255).astype(np.uint8), 'RGBA')
+    b[y0:y1, x0:x1] = np.clip(pris, 0, 255).astype(np.uint8)
+    image = Image.fromarray(b, 'RGBA')
 
     # Echelle : la zone de trace d'Excel inscrit le cercle dans son plus
     # petit cote ; on en deduit la taille d'un point, en pixels.
@@ -593,7 +610,7 @@ def _anneau_excel(image, geo, valeurs):
 
     series = list(zip(geo['series'], valeurs))
     etiquettes = []
-    if series:
+    if series and series[0][1] is not None:
         serie, v = series[0]
         texte = texte_de(serie, v)
         # Le texte tient dans le trou, avec une marge.
@@ -611,7 +628,7 @@ def _anneau_excel(image, geo, valeurs):
         trait = [(cx + dirx * t, cy + diry * t), (cx + dirx * rm, cy + diry * rm)] \
             if t < trou_xl - 0.04 * rayon and v is not None else []
         etiquettes.append((texte, police, lh, cx, cy, trait))
-    if len(series) > 1:
+    if len(series) > 1 and series[1][1] is not None:
         serie, v = series[1]
         texte = texte_de(serie, v)
         police, lw, lh = bloc(texte, max(10, round(serie['pt'] * pt)))
@@ -660,28 +677,48 @@ def _anneau_excel(image, geo, valeurs):
             dessin.text((ex + dx0 - dessin.textlength(ligne, font=police) / 2, y), ligne,
                         font=police, fill=(0, 0, 0, 255))
             y += pas
+    # Ou l'image d'entree a atterri sur la toile agrandie.
+    image.info['decalage'] = (dx0, dy0)
     return image
 
 
-def _rogner(pixmap_png, anneau=None, ratio=None):
-    """L'image rognee a son contenu, le blanc rendu transparent.
-
-    L'EMF du modele n'a pas de fond : pose sur la moitie grise de la
-    page, le tableau prend la couleur de la page. Le blanc du rendu
-    devient donc transparent.
-    """
-    from PIL import Image, ImageChops
-    image = Image.open(io.BytesIO(pixmap_png)).convert('RGB')
+def _sans_blanc(image):
+    """L'image en RGBA, son blanc rendu transparent."""
+    from PIL import ImageChops
+    image = image.convert('RGB')
     blanc = None
     for canal in image.split():
         clair = canal.point(lambda v: 255 if v >= 248 else 0)
         blanc = clair if blanc is None else ImageChops.multiply(blanc, clair)
     image.putalpha(ImageChops.invert(blanc))
-    boite = image.getbbox()
+    return image
+
+
+def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
+    """L'image rognee a son contenu, le blanc rendu transparent.
+
+    L'EMF du modele n'a pas de fond : pose sur la moitie grise de la
+    page, le tableau prend la couleur de la page. Le blanc du rendu
+    devient donc transparent.
+
+    `cadre` impose celui de l'image complete (voir `_cadre_de`) : une
+    note absente laisse sa place vide, le reste garde place et echelle.
+    """
+    from PIL import Image
+    image = _sans_blanc(pixmap_png if isinstance(pixmap_png, Image.Image)
+                        else Image.open(io.BytesIO(pixmap_png)))
+    boite = cadre[:4] if cadre else image.getbbox()
     if boite:
         image = image.crop(boite)
     if anneau:
         image = _anneau_excel(image, *anneau)
+    if cadre:
+        largeur, hauteur, ox, oy = cadre[4:]
+        dx, dy = image.info.get('decalage', (0, 0))
+        toile = Image.new('RGBA', (max(largeur, image.width), max(hauteur, image.height)),
+                          (255, 255, 255, 0))
+        toile.paste(image, (max(0, ox - dx), max(0, oy - dy)))
+        image = toile
     # L'objet etire son image aux proportions de l'EMF d'origine : on les
     # retrouve par un bord transparent, centre sur les deux axes pour ne
     # pas laisser le contenu glisser vers un coin de son cadre.
@@ -693,9 +730,39 @@ def _rogner(pixmap_png, anneau=None, ratio=None):
             cadre = Image.new('RGBA', (cible_l, cible_h), (255, 255, 255, 0))
             cadre.paste(image, ((cible_l - l) // 2, (cible_h - h) // 2))
             image = cadre
+    # optimize=True quadruple le temps pour un fichier a peine plus petit.
     sortie = io.BytesIO()
-    image.save(sortie, 'PNG', optimize=True)
+    image.save(sortie, 'PNG', compress_level=6)
     return sortie.getvalue()
+
+
+# A changer quand le dessin d'un classeur change a classeur identique.
+VERSION_IMAGES = 3
+
+
+def _cadre_de(rendu, reference):
+    """Le cadre de l'image complete : sa boite sur la page rendue, puis la
+    taille de sa toile et la place de la boite sur celle-ci, une fois les
+    etiquettes de l'anneau posees (celle de l'accueil l'elargit)."""
+    image = _sans_blanc(rendu)
+    boite = image.getbbox()
+    if not boite:
+        return None
+    image = image.crop(boite)
+    geo = _geometrie_anneau(_lire(reference))
+    if geo:
+        taux = [NOTES_DE_REFERENCE[ref] for ref in ANNEAUX['satisfaction']]
+        image = _anneau_excel(image, geo, taux)
+    return (*boite, image.width, image.height, *image.info.get('decalage', (0, 0)))
+
+
+def _page_rendue(pdf):
+    """La premiere page d'un PDF de LibreOffice, en image."""
+    import fitz
+    from PIL import Image
+    with fitz.open(pdf) as doc:
+        pixmap = doc[0].get_pixmap(dpi=200)
+    return Image.frombytes('RGB', (pixmap.width, pixmap.height), pixmap.samples)
 
 
 def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
@@ -703,48 +770,203 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
 
     Tous les classeurs a rendre passent dans un seul appel a LibreOffice :
     c'est son lancement qui coute.
+
+    `legendes[cle]` : `(nature, cellules, ratio[, reference])`. La
+    reference est un classeur dont l'image donne le cadre de celle-ci.
     """
-    import fitz
     dossier = Path(cache) / 'classeurs'
     dossier.mkdir(parents=True, exist_ok=True)
-    images, a_faire = {}, {}
+
+    def legende(cle):
+        return (tuple((legendes or {}).get(cle, ())) + (None,) * 4)[:4]
+
+    def signe(brut):
+        return hashlib.sha1(brut).hexdigest()[:16]
+
+    images, a_faire, cadres, references = {}, {}, {}, {}
     for cle, brut in classeurs_bruts.items():
-        empreinte = hashlib.sha1(brut).hexdigest()[:16]
+        # Le meme classeur peut tenir dans deux cadres de proportions
+        # differentes : l'image en depend aussi.
+        _, _, ratio, reference = legende(cle)
+        empreinte = hashlib.sha1(brut + f'|v{VERSION_IMAGES}|{ratio}'.encode()).hexdigest()[:16]
         chemin = dossier / f'{empreinte}.png'
         if chemin.exists():
             images[cle] = chemin.read_bytes()
-        else:
-            a_faire[cle] = (empreinte, brut)
-    if a_faire:
-        travail = Path(tempfile.mkdtemp(prefix='cr-classeurs-'))
-        for empreinte, brut in a_faire.values():
-            copie = _ecrire(_pour_rendu(_lire(brut)))
-            (travail / f'{empreinte}.xlsx').write_bytes(copie)
+            continue
+        a_faire[cle] = (empreinte, signe(brut), brut)
+        if reference:
+            cadre = dossier / f'{signe(reference)}-v{VERSION_IMAGES}.cadre'
+            if cadre.exists():
+                cadres[signe(reference)] = tuple(map(int, cadre.read_text().split()))
+            else:
+                references[signe(reference)] = reference
+    if not a_faire:
+        return images
+    travail = Path(tempfile.mkdtemp(prefix='cr-classeurs-'))
+    try:
+        # Deux classeurs identiques ne passent qu'une fois par LibreOffice.
+        uniques = {source: brut for _, source, brut in a_faire.values()} | references
+        for source, brut in uniques.items():
+            (travail / f'{source}.xlsx').write_bytes(_ecrire(_pour_rendu(_lire(brut))))
         with LIBREOFFICE:
             subprocess.run(
                 [soffice, '--headless', '--norestore', f'-env:UserInstallation={profil}',
                  '--convert-to', 'pdf', '--outdir', str(travail)]
-                + [str(travail / f'{e}.xlsx') for e, _ in a_faire.values()],
+                + [str(travail / f'{s}.xlsx') for s in uniques],
                 capture_output=True, timeout=120)
-        for cle, (empreinte, _) in a_faire.items():
-            pdf = travail / f'{empreinte}.pdf'
-            if not pdf.exists():
+        for source, reference in references.items():
+            pdf = travail / f'{source}.pdf'
+            cadre = _cadre_de(_page_rendue(pdf), reference) if pdf.exists() else None
+            if cadre:
+                cadre = tuple(int(v) for v in cadre)
+                cadres[source] = cadre
+                (dossier / f'{source}-v{VERSION_IMAGES}.cadre').write_text(' '.join(map(str, cadre)))
+        # Une image a la fois, liberee aussitot : chacune pese une
+        # dizaine de Mo une fois decodee, et la machine en a peu.
+        source_vue, rendu = None, None
+        for cle, (empreinte, source, _) in sorted(a_faire.items(), key=lambda t: t[1][1]):
+            if source != source_vue:
+                source_vue, rendu = source, None
+                pdf = travail / f'{source}.pdf'
+                if pdf.exists():
+                    rendu = _page_rendue(pdf)
+            if rendu is None:
                 continue
-            with fitz.open(pdf) as doc:
-                png = doc[0].get_pixmap(dpi=200).tobytes('png')
-            quoi, cellules, ratio = (legendes or {}).get(cle, (None, None, None))
+            quoi, cellules, ratio, reference = legende(cle)
             anneau = None
             taux = [(cellules or {}).get(ref) for ref in ANNEAUX.get(quoi, ())]
+            # La serie d'une note absente a quitte le graphique : les taux
+            # restants suivent les series restantes.
+            if quoi == 'satisfaction' and cellules:
+                absentes = _moities_absentes(cellules)
+                taux = [t for i, t in enumerate(taux) if i not in absentes]
             # Aucun questionnaire rempli : LibreOffice ne trace pas
             # d'anneau, il n'y a rien a reprendre ni a legender.
             if quoi in ANNEAUX and any(v is not None for v in taux):
                 geo = _geometrie_anneau(_lire(classeurs_bruts[cle]))
                 if geo:
                     anneau = (geo, taux)
-            image = _rogner(png, anneau, ratio)
+            cadre = cadres.get(signe(reference)) if reference else None
+            image = _rogner(rendu, anneau, ratio, cadre)
             (dossier / f'{empreinte}.png').write_bytes(image)
             images[cle] = image
+    finally:
+        shutil.rmtree(travail, ignore_errors=True)
     return images
+
+
+# Ce qui n'a de sens qu'avec l'objet de satisfaction : le titre de sa
+# colonne sur la fiche individuelle, la pastille entre ses deux tableaux
+# sur la page de resultats.
+RE_ORPHELINS = (
+    re.compile(r'<p:sp>(?:(?!</p:sp>).)*?<a:t>APPRECIATION DE LA FORMATION ET DE L.ACCUEIL</a:t>'
+               r'(?:(?!</p:sp>).)*?</p:sp>', re.S),
+    re.compile(r'<p:grpSp>(?:(?!</p:grpSp>).)*?name="Groupe 13".*?</p:grpSp>', re.S),
+)
+
+
+# Les deux moities du classeur de satisfaction : les cellules de chacune
+# et les lignes qu'elle occupe (formation en haut, accueil dessous).
+MOITIES_SATISFACTION = (
+    (('B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9', 'C9'), range(1, 10)),
+    (('B12', 'B13', 'B14', 'B15', 'B16', 'B17', 'B18', 'C18'), range(11, 19)),
+)
+
+
+# Deux notes fictives, le temps de mesurer le cadre de l'image complete.
+NOTES_DE_REFERENCE = {c: 0.88 for cellules, _ in MOITIES_SATISFACTION for c in cellules} | {
+    'C9': 0.12, 'C18': 0.12}
+
+
+def _moities_absentes(valeurs):
+    """Les index des moities dont aucune note n'existe."""
+    return [i for i, (cellules, _) in enumerate(MOITIES_SATISFACTION)
+            if all(valeurs.get(c) is None for c in cellules)]
+
+
+def _sans_moitie_absente(parts, valeurs):
+    """Retire du classeur le tableau et l'anneau d'une note absente.
+
+    C'est le classeur embarque qui change, pas seulement son image :
+    ouvert dans PowerPoint, il ne montre plus que la note presente.
+    Cellules (titre compris) et fusion du titre disparaissent, la serie
+    du graphique aussi ; il reste un anneau, celui de l'autre note. Les
+    lignes gardent leur place, le graphique reste ancre ou il est.
+
+    Le retrait est definitif : il s'applique a un classeur tire du modele
+    (`rapport` et `remplir` repartent toujours de lui), jamais a un
+    classeur deja traite.
+    """
+    absentes = _moities_absentes(valeurs)
+    if not absentes:
+        return parts
+    parts = dict(parts)
+    feuille = parts['xl/worksheets/sheet1.xml'].decode('utf-8')
+    for i in absentes:
+        lignes = MOITIES_SATISFACTION[i][1]
+        for n in lignes:
+            feuille = re.sub(
+                rf'<c r="([A-C]){n}"[^>]*?(?:/>|>.*?</c>)',
+                lambda m, n=n: f'<c r="{m.group(1)}{n}"/>', feuille, flags=re.S)
+        feuille = re.sub(rf'<mergeCell ref="A{lignes[0]}:[A-Z]+{lignes[0]}"/>', '', feuille)
+    reste = len(re.findall(r'<mergeCell ', feuille))
+    feuille = (re.sub(r'<mergeCells count="\d+">', f'<mergeCells count="{reste}">', feuille)
+               if reste else re.sub(r'<mergeCells[^>]*>\s*</mergeCells>', '', feuille))
+    parts['xl/worksheets/sheet1.xml'] = feuille.encode('utf-8')
+    # La serie d'une moitie : celle dont une reference tombe sur ses lignes.
+    lignes_absentes = {n for i in absentes for n in MOITIES_SATISFACTION[i][1]}
+
+    def hors_moitie(m):
+        refs = re.findall(r'<c:f>[^<]*?\$?[A-Z]+\$?(\d+)', m.group(0))
+        return '' if any(int(n) in lignes_absentes for n in refs) else m.group(0)
+    for nom in [n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)]:
+        graphique = parts[nom].decode('utf-8')
+        if '<c:doughnutChart>' in graphique:
+            graphique = re.sub(r'<c:ser>.*?</c:ser>', hors_moitie, graphique, flags=re.S)
+            # Seule, une serie donne son nom en titre au graphique : ce
+            # titre automatique n'existe pas dans le modele.
+            graphique = graphique.replace('<c:autoTitleDeleted val="0"/>',
+                                          '<c:autoTitleDeleted val="1"/>')
+            restante = next((i for i in range(len(MOITIES_SATISFACTION)) if i not in absentes), None)
+            if restante is not None:
+                graphique = _etiquette_au_centre(
+                    parts, graphique, valeurs.get(ANNEAUX['satisfaction'][restante]))
+            parts[nom] = graphique.encode('utf-8')
+    return parts
+
+
+def _etiquette_au_centre(parts, graphique, v):
+    """L'etiquette de l'anneau seul, au centre de son trou, comme sur l'image.
+
+    Le decalage du modele (`manualLayout` de l'etiquette) vaut pour deux
+    anneaux. Excel le compte depuis la place par defaut de l'etiquette :
+    le milieu du secteur, a mi-epaisseur de l'anneau. Le decalage qui
+    ramene cette place au centre en est l'oppose, en fraction du graphique.
+    """
+    import math
+    dessin = parts.get('xl/drawings/drawing1.xml', b'').decode('utf-8')
+    zone = re.search(r'<c:plotArea><c:layout>.*?</c:layout>', graphique, re.S)
+    trou = re.search(r'<c:holeSize val="(\d+)"', graphique)
+    if not dessin or not zone:
+        return graphique
+    _, _, largeur, hauteur = _cadre_graphique(parts, dessin)
+    z = {k: float(x) for k, x in re.findall(r'<c:([wh]) val="([^"]+)"', zone.group(0))}
+    if not largeur or not hauteur or set(z) != {'w', 'h'}:
+        return graphique
+    rayon = min(z['w'] * largeur, z['h'] * hauteur) / 2
+    milieu = rayon * (1 + (int(trou.group(1)) / 100 if trou else 0.5)) / 2
+    angle = math.pi * float(v or 0)
+    dx = -milieu * math.sin(angle) / largeur
+    dy = milieu * math.cos(angle) / hauteur
+    return re.sub(
+        r'(<c:dLbl><c:idx val="0"/><c:layout><c:manualLayout>)<c:x val="[^"]+"/><c:y val="[^"]+"/>',
+        lambda m: m.group(1) + f'<c:x val="{dx:.6g}"/><c:y val="{dy:.6g}"/>', graphique, count=1)
+
+
+def _sans_orphelins(xml):
+    for motif in RE_ORPHELINS:
+        xml = motif.sub('', xml)
+    return xml
 
 
 def rafraichir(contenus, slides, valeurs, soffice, profil, cache):
@@ -774,6 +996,7 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
         xml = contenus[slide].decode('utf-8')
         rels = contenus[rels_nom].decode('utf-8')
         cibles = dict(re.findall(r'Id="([^"]+)"[^>]*?Target="([^"]+)"', rels))
+        retirer = []
         for m in RE_OLE.finditer(xml):
             objet = re.search(r'<p:oleObj [^>]*r:id="([^"]+)"', m.group(0))
             images = set(re.findall(r'<a:blip r:embed="([^"]+)"', m.group(0)))
@@ -786,9 +1009,21 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             quoi = nature(parts)
             if quoi not in valeurs:
                 continue
+            # Sans aucune note de qualite, ni tableaux ni anneau : on
+            # retire l'objet plutot que d'afficher des tirets.
+            if (quoi == 'satisfaction' and valeurs[quoi]
+                    and len(_moities_absentes(valeurs[quoi])) == len(MOITIES_SATISFACTION)):
+                retirer.append(m.span())
+                continue
             remplies = remplir_classeur(parts, valeurs[quoi])
             if quoi == 'acquisition':
                 remplies = _ajouter_signes_acquisition(remplies)
+            reference = None
+            if quoi == 'satisfaction' and valeurs[quoi] and _moities_absentes(valeurs[quoi]):
+                remplies = _sans_moitie_absente(remplies, valeurs[quoi])
+                # Le cadre de l'image vient du classeur aux deux notes : le
+                # tableau restant garde sa place et l'anneau son echelle.
+                reference = _ecrire(remplir_classeur(parts, NOTES_DE_REFERENCE))
             brut = _ecrire(remplies)
             contenus[emb] = brut
             a_rendre[emb] = brut
@@ -798,8 +1033,13 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             taille = (re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', m.group(0))
                       or re.search(r'imgW="(\d+)" imgH="(\d+)"', m.group(0)))
             ratio = int(taille.group(1)) / int(taille.group(2)) if taille else None
-            natures[emb] = (quoi, valeurs[quoi], ratio)
+            natures[emb] = (quoi, valeurs[quoi], ratio, reference)
             poses += [(rels_nom, rid, emb) for rid in images]
+        if retirer:
+            for debut, fin in reversed(retirer):
+                xml = xml[:debut] + xml[fin:]
+            xml = _sans_orphelins(xml)
+            contenus[slide] = xml.encode('utf-8')
     if not a_rendre:
         return
     rendus = rendre(a_rendre, soffice, profil, cache, natures)

@@ -1,5 +1,6 @@
 """Substitution des drapeaux, lignes repetees et code couleur du modele."""
 import re
+import shutil
 import zipfile
 
 import pytest
@@ -38,6 +39,20 @@ class TestSubstituer:
 
     def test_vide_efface_le_mot_du_modele(self):
         assert substituer(run('{sous_titre}'), {'{sous_titre}': VIDE}) == run('')
+
+    def test_sous_titre_vide_retire_sa_ligne_et_centre_la_couverture(self):
+        zone = ('<p:sp><p:txBody><a:bodyPr wrap="square" anchor="b"/>'
+                '<a:p>' + run('Titre') + '</a:p><a:p>' + run('Sous titre') + '</a:p>'
+                '<a:p>' + run('lieu') + '</a:p></p:txBody></p:sp>')
+        xml = substituer(zone, {'Titre': 'TS08', 'Sous titre': VIDE, 'lieu': 'Abidjan'})
+        assert xml.count('<a:p>') == 2
+        assert 'anchor="ctr"' in xml and 'anchor="b"' not in xml
+
+    def test_sous_titre_saisi_garde_la_couverture_telle_quelle(self):
+        zone = ('<p:sp><p:txBody><a:bodyPr anchor="b"/>'
+                '<a:p>' + run('Sous titre') + '</a:p><a:p>' + run('lieu') + '</a:p></p:txBody></p:sp>')
+        xml = substituer(zone, {'Sous titre': 'Freinage', 'lieu': 'Abidjan'})
+        assert xml.count('<a:p>') == 2 and 'anchor="b"' in xml
 
     def test_echappe_le_texte_saisi(self):
         assert substituer(run('{x}'), {'{x}': 'A & B'}) == run('A &amp; B')
@@ -117,3 +132,19 @@ def test_rendu_d_une_fiche(tmp_path, monkeypatch):
     monkeypatch.setattr(service, 'CACHE', tmp_path)
     chemin = service.image_de(26, {'{nom_complet}': 'Paul KAMGA', '{filiale}': 'CFAO MOBILITY CAMEROUN'})
     assert service.Path(chemin).stat().st_size > 10000
+
+
+def test_poser_vignette_montre_la_couverture_dans_l_explorateur(tmp_path):
+    from PIL import Image
+    pptx = tmp_path / 'r.pptx'
+    shutil.copy(service.MODELE, pptx)
+    image = tmp_path / 'c.png'
+    Image.new('RGB', (1280, 720), 'navy').save(image)
+    service.poser_vignette(pptx, image)
+    service.poser_vignette(pptx, image)
+    with zipfile.ZipFile(pptx) as z:
+        assert z.read('_rels/.rels').decode().count(service.TYPE_VIGNETTE) == 1
+        assert z.read('[Content_Types].xml').decode().lower().count('extension="jpeg"') == 1
+        assert z.namelist().count('docProps/thumbnail.jpeg') == 1
+        with Image.open(z.open('docProps/thumbnail.jpeg')) as v:
+            assert (v.format, v.size) == ('JPEG', (256, 144))

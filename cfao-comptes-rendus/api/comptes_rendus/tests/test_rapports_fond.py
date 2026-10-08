@@ -24,6 +24,20 @@ def test_lance_suit_puis_sert_le_fichier(tmp_path, monkeypatch, client):
     assert 'filename="rapport.pptx"' in f["Content-Disposition"]
 
 
+def test_le_fichier_garde_le_nom_des_comptes_rendus_des_formateurs(tmp_path, monkeypatch, client):
+    fichier = tmp_path / "r.pptx"
+    fichier.write_bytes(b"PK-rapport")
+    monkeypatch.setattr(views, "rapport", lambda pages, format_: fichier)
+    c = client()
+    ident = c.post("/apercu/rapports", {"pages": [{"diapo": 1}]}, format="json").json()["id"]
+    nom = "Compte rendu formation Diagnostic des systèmes de motorisation des véhicules du 06-10.07.26"
+    f = c.get(f"/apercu/rapports/{ident}/fichier", {"nom": nom})
+    assert "filename*=utf-8''Compte%20rendu%20formation%20Diagnostic%20des%20syst%C3%A8mes" in         f["Content-Disposition"]
+    assert f["Content-Disposition"].endswith("du%2006-10.07.26.pptx")
+    assert views.nom_de_fichier('a/b:c*?"<>|d') == "a-b-c-d"
+    assert views.nom_de_fichier("  ") == "rapport"
+
+
 def test_un_echec_de_production_est_signale(monkeypatch, client):
     def panne(pages, format_):
         raise RuntimeError("conversion pptx sans resultat")

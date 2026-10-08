@@ -78,13 +78,40 @@ porte des drapeaux entre accolades (`{nom_complet}`, `{code_module_1}`, `{pource
 Règles à connaître avant de toucher au modèle ou aux drapeaux :
 
 - **Un drapeau sans valeur reste visible** : une page incomplète doit se voir. Pour un champ vide
-  *à dessein*, la valeur `VIDE` (`∅`, définie des deux côtés) efface le mot du modèle.
+  *à dessein*, la valeur `VIDE` (`∅`, définie des deux côtés) efface le mot du modèle. Un mot nu
+  vide (sous-titre de couverture) retire aussi sa ligne, et le bloc de la couverture est centré.
 - **Clés spéciales** : `@lignes` (lignes répétées, chacune peut porter ses `@couleurs`),
   `@etendre` (le tableau descend dans la place libre avant de resserrer), `@retirer`,
   `@couleurs` (`ok` vert, `ko` rouge, `alerte` : case blanche passée au rouge), `@photos`,
   `@marquage` (numérotation des objectifs).
 - **Hauteur des lignes répétées** : le service estime les retours à la ligne de chaque case
   (`hauteur_utile()`) et resserre police et marges pour que le tableau tienne dans la page.
+- **Mise en page finale** (`mise_en_page.ajuster()`, appliquée au rapport *et* aux aperçus) :
+  - rien ne descend sous **17,65 cm** (`LIMITE_BAS`), les logos du bas commencent à 17,90 cm ;
+  - le pied de page (titre de la formation) est retiré ;
+  - les tailles de texte sont **écrites en clair** : PowerPoint ne recalcule pas l'ajustement
+    automatique (`normAutofit`, `spAutoFit`) tant que le texte n'est pas retouché ;
+  - tailles uniformes d'une page à l'autre : une zone garde la taille du modèle, et si elle
+    déborde tous ses textes perdent 2 pt à la fois (`PALIER`) : 16/22 → 14/20 → 12/18…,
+    8 pt au minimum ;
+  - une même partie garde la même taille sur tout le rapport : les zones d'une même famille
+    (nom de forme + taille du modèle, `famille()`) prennent toutes le retrait de la plus longue
+    (`besoins()` puis `service.paliers()`) ; l'aperçu d'un jour reçoit les autres jours
+    (`voisines`) pour afficher la même taille que le rapport ;
+  - les résumés de jour sont au moins à 14/20 (`STANDARDS`), même courts ;
+  - tous les commentaires des résultats (« Rectangle » du modèle) sont à 12 pt
+    (`CORPS_COMMENTAIRE`) ; s'ils débordent, ils remontent de 0,75 cm au plus puis diminuent ;
+  - un tableau cède l'excès à sa dernière ligne ;
+  - le numéro de page affiché suit le rang dans le rapport.
+  - Estimation calibrée sur les corrections faites à la main dans PowerPoint
+    (`CHASSE`, `INTERLIGNE`).
+- **Légendes photos** (`photos.disposer()`) :
+  - pas de bande pour une ligne de photos sans légende ;
+  - deux voisines de même légende n'en portent qu'une, sur toute leur largeur ;
+  - légende sur toute la largeur du cadre à 12 pt, sous une photo plus étroite à 11 pt ;
+    réduites à 10 pt seulement si elles dépassent trois lignes (`LIGNES_LEGENDE`), un même
+    corps par largeur sur la page ;
+  - légende commune à 12 pt.
 
 ### Diapositives du modèle
 
@@ -93,7 +120,7 @@ Règles à connaître avant de toucher au modèle ou aux drapeaux :
 | Couverture | 1 |
 | Participants | 3, 4 |
 | Objectifs | 5 puis 6 (romain), 7 (puces), 8 (mixte) ou 9 (avec photos) |
-| Déroulé | 10, puis 11 / 13 en alternance par jour |
+| Déroulé | 10, puis 11 pour chaque jour (texte à gauche, photos à droite ; plus d'alternance avec 13) |
 | Résultats, satisfaction | 16 à 19 |
 | Bilan | 20 |
 | Fiches | 25, puis 27 par stagiaire (formation) ou **26** par candidat (certification) |
@@ -101,10 +128,25 @@ Règles à connaître avant de toucher au modèle ou aux drapeaux :
 
 Sources : `DIAPO_PAR_PAGE` (`utils/diapositives.js`) et `DIAPOS` (`services/apercu/modele.py`).
 
+**Ordre et intercalaires** — l'ordre des rapports de référence : couverture, participants
+(photo de groupe), objectifs, déroulé, résultats / satisfaction / bilan, fiches, clôture.
+Chaque section est précédée de son intercalaire (3, 5, 10, 16, 25), posé par
+`avecIntercalaires` au moment de produire le rapport ; une section écartée ne laisse pas de trou
+dans la numérotation 1 à 5. L'intercalaire 25 liste les stagiaires (nom complet, pays).
+
+**Aperçu dans l'Explorateur** — le PPTX porte `docProps/thumbnail.jpeg` (256 px), l'image de sa
+première page (`poser_vignette`, `services/apercu/service.py`), comme ceux que PowerPoint enregistre.
+
 **Fiche de certification (26)** — conforme aux rapports G3 de référence : tableau « Filiale »,
 une ligne `G38001: intitulé / 100` par module (note rouge sous 70), `Total/ N`, `Pourcentage(%)`
 et case Validé / Échoué ; bloc e-learning ; appréciation ; bandeau
 *Résultat pratique + E-learning = Résultat final* en vert / rouge.
+
+**Qualité de la formation et de l'accueil (19 et 27)** — une note absente (aucune réponse des
+présents) retire son tableau et son anneau du classeur Excel embarqué lui-même, pas seulement
+de l'image : cellules, série du graphique, titre automatique ; l'étiquette de l'anneau restant
+passe au centre. Sans aucune des deux notes, l'objet et sa pastille ou son titre de colonne
+sont retirés de la page (`_sans_moitie_absente`, `services/apercu/classeurs.py`).
 
 ---
 
@@ -167,7 +209,7 @@ Le texte proposé reste à relire par le formateur.
 | `GET /apercu/sante` | le service, le modèle et LibreOffice sont-ils prêts |
 | `POST /apercu/page` | PNG d'une diapositive (`{diapo, valeurs}`) |
 | `POST /apercu/rapport` | rapport complet, page par page (`{pages, format}`) |
-| `POST /apercu/rapports`, `GET /apercu/rapports/<id>[/fichier]` | même rapport, préparé en tâche de fond puis téléchargé |
+| `POST /apercu/rapports`, `GET /apercu/rapports/<id>[/fichier]` | même rapport, préparé en tâche de fond puis téléchargé par un simple lien (`?nom=` donne le nom du fichier, sur le modèle des formateurs : « Compte rendu formation <intitulé> du 06-10.07.26 », « Compte rendu Certification pratique G3 PAYS du … » ; voir `nomCompteRendu`) ; les images des classeurs déjà rendus sortent du cache |
 | `POST /apercu/document` | rapport complet à partir des parties |
 | `POST /apercu/photo` | dépôt d'une photo, renvoie son identifiant |
 | `POST /apercu/redaction` | texte proposé par le moteur |
@@ -234,6 +276,7 @@ cd services && pip install -r requirements-dev.txt && pytest -q tests
 | `frontend/src/data/dispositions_photos.test.js` | dispositions, modes de légende, anciens brouillons |
 | `services/tests/test_service.py` | substitution, lignes répétées, couleurs, modèle versionné, rendu LibreOffice |
 | `services/tests/test_brouillons.py` | contrat `/cr-donnees`, cloisonnement par utilisateur |
+| `services/tests/test_mise_en_page.py` | limite des logos, pied de page, tailles en clair, légendes |
 
 Le rendu LibreOffice est sauté en CI (LibreOffice absent du runner) ; il s'exécute en local.
 **Les tests n'écrivent jamais dans `services/apercu/donnees/`** : base temporaire par test.

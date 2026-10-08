@@ -17,8 +17,12 @@ import { useEffect, useRef, useState } from 'react'
  *
  * Si le service ne repond pas, on le dit et on laisse la main au rendu
  * HTML : mieux vaut un apercu approchant que pas d'apercu du tout.
+ *
+ * `voisines` (`[{diapo, valeurs}]`) : les pages qui partagent ses tailles
+ * de texte — les autres journees pour un jour, qui prennent toutes la
+ * taille du plus long resume, comme dans le rapport.
  */
-export default function ApercuReel({ diapo, valeurs, secours }) {
+export default function ApercuReel({ diapo, valeurs, voisines, secours }) {
   const [image, setImage] = useState(null)
   const [etat, setEtat] = useState('attente')
   const dernier = useRef(0)
@@ -41,7 +45,7 @@ export default function ApercuReel({ diapo, valeurs, secours }) {
         const r = await fetch('/apercu/page', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ diapo, valeurs }),
+          body: JSON.stringify({ diapo, valeurs, voisines: voisines || [] }),
         })
         if (!r.ok) throw new Error(String(r.status))
         const blob = await r.blob()
@@ -61,7 +65,7 @@ export default function ApercuReel({ diapo, valeurs, secours }) {
       annule = true
       clearTimeout(minuteur)
     }
-  }, [diapo, valeurs])
+  }, [diapo, valeurs, voisines])
 
   if (etat === 'indisponible') {
     return (

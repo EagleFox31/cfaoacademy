@@ -18,6 +18,7 @@ Memes routes, memes corps JSON et memes codes que le service precedent
 Chaque route qui touche une donnee appelle le PEP Cerbos
 (`enforce_permission`) : aucun role n'est teste dans ce fichier.
 """
+import re
 from pathlib import Path
 
 from django.conf import settings
@@ -208,14 +209,20 @@ class PhotoServie(APIView):
 
 class Page(APIView):
     def post(self, request):
-        """L'image d'une diapositive, pour le mode apercu."""
+        """L'image d'une diapositive, pour le mode apercu.
+
+        `voisines` : les pages qui partagent ses tailles de texte (les autres
+        journees pour un jour), `[{diapo, valeurs}]`.
+        """
         _autoriser(request, RENDU, "service", "render")
         corps = _corps(request)
         diapo = corps.get("diapo")
         if not isinstance(diapo, int):
             return _erreur("diapo attendue (entier)", 400)
+        voisines = [v for v in corps.get("voisines") or []
+                    if isinstance(v, dict) and isinstance(v.get("diapo"), int)]
         try:
-            chemin = image_de(diapo, corps.get("valeurs") or {})
+            chemin = image_de(diapo, corps.get("valeurs") or {}, voisines)
         except Exception as e:  # noqa: BLE001 — l'interface affiche le motif
             return _erreur(str(e), 500)
         return FileResponse(open(chemin, "rb"), content_type="image/png")
@@ -279,6 +286,12 @@ class RapportLancer(APIView):
         return Response({"id": tache.id}, status=status.HTTP_202_ACCEPTED)
 
 
+def nom_de_fichier(brut):
+    """« Compte rendu formation … du 06-10.07.26 », sans caractere interdit."""
+    nom = re.sub(r'[\\/:*?"<>|\x00-\x1f]+', "-", brut or "")
+    return re.sub(r"\s+", " ", nom).strip(" .")[:150].strip() or "rapport"
+
+
 def _tache(request, ident):
     t = TacheRapport.objects.filter(id=ident, owner=request.user.id).first()
     if t:
@@ -300,7 +313,11 @@ class RapportFichier(APIView):
         t = _tache(request, ident)
         if not t or taches.etat(t) != "pret" or not Path(t.chemin).exists():
             return _erreur("rapport indisponible", 404)
-        return _fichier(t.chemin, f"rapport.{t.format}")
+        # Le navigateur telecharge par un simple lien : le nom vient d'ici. Il
+        # garde accents et espaces, comme les comptes rendus des formateurs ;
+        # seuls les caracteres interdits dans un nom de fichier sont retires.
+        nom = nom_de_fichier(request.query_params.get("nom", ""))
+        return _fichier(t.chemin, f"{nom}.{t.format}")
 
 
 # ── Redaction ──────────────────────────────────────────────────────────

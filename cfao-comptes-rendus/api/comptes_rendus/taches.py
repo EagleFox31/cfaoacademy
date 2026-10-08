@@ -5,6 +5,7 @@ parte : des postes formateurs (antivirus, pare-feu, proxy) coupent une
 requete restee aussi longtemps muette. La production se lance, le portail
 suit son etat par des requetes courtes, puis telecharge le fichier.
 """
+import logging
 import threading
 import time
 import uuid
@@ -12,6 +13,8 @@ import uuid
 from django.db import connection
 
 from .models import TacheRapport
+
+journal = logging.getLogger(__name__)
 
 DUREE_TACHE = 3600  # comme les fichiers de rapport, effaces apres une heure
 
@@ -38,6 +41,9 @@ def produire(ident, rapport, pages, format_):
     try:
         resultat = {"etat": "pret", "chemin": str(rapport(pages, format_))}
     except Exception as e:  # noqa: BLE001 — le portail affiche l'echec
+        # La cause reste dans le journal du service : le portail n'en
+        # montre qu'un message generique.
+        journal.exception("rapport %s en echec", ident)
         resultat = {"etat": "echec", "erreur": str(e)}
     TacheRapport.objects.filter(id=ident).update(**resultat)
 

@@ -58,11 +58,10 @@ export function diapoObjectifs(brouillon) {
 }
 
 /**
- * Les pages jour alternent, comme dans le modele : texte a gauche et
- * photos a droite les jours impairs (11), l'inverse les jours pairs (13).
+ * Toutes les pages jour suivent le meme sens : texte a gauche, photos a
+ * droite (11). L'alternance du modele (13 les jours pairs) a ete refusee.
  */
-const DIAPOS_JOUR = [DIAPO_PAR_PAGE.deroule, 13]
-export const diapoJour = n => DIAPOS_JOUR[(Math.max(n, 1) - 1) % DIAPOS_JOUR.length]
+export const diapoJour = () => DIAPO_PAR_PAGE.deroule
 const numeroJour = cle => Number(/^jour-(\d+)$/.exec(cle || '')?.[1]) || null
 
 /** Le numero de diapositive d'une page, ou null si elle n'en a pas.
@@ -82,6 +81,40 @@ export function diapoDe(page, brouillon) {
     return estCertification(brouillon) ? DIAPO_FICHE_CERTIFICATION : DIAPO_PAR_PAGE.fiches
   }
   return DIAPO_PAR_PAGE[cle] ?? null
+}
+
+/**
+ * Les intercalaires du modele : la page qui annonce chaque section du
+ * rapport. Le modele les numerote de 1 a 5 ; une section ecartee ne
+ * laisse pas de trou, les suivantes prennent le numero libre.
+ *
+ * L'intercalaire des resultats individuels liste les stagiaires : il
+ * reprend le tableau `{stagiaire_nom}` de la premiere fiche.
+ */
+const INTERCALAIRES = [
+  { diapo: 3, numero: '1', ouvre: cle => cle === 'participants' },
+  { diapo: 5, numero: '2', ouvre: cle => cle === 'objectifs' },
+  { diapo: 10, numero: '3', ouvre: cle => cle.startsWith('jour-') },
+  { diapo: 16, numero: '4', ouvre: cle => ['resultats', 'satisfaction', 'bilan'].includes(cle) },
+  { diapo: 25, numero: '5', ouvre: cle => cle.startsWith('fiche-'), tableau: '{stagiaire_nom}' },
+]
+
+/** Les pages du rapport (`[{cle, diapo, valeurs}]`), chaque section precedee de son intercalaire. */
+export function avecIntercalaires(pages) {
+  const poses = new Set()
+  const sortie = []
+  for (const page of pages) {
+    const section = INTERCALAIRES.find(s => s.ouvre(page.cle || ''))
+    if (section && !poses.has(section)) {
+      poses.add(section)
+      const valeurs = { [section.numero]: String(poses.size) }
+      const lignes = section.tableau && page.valeurs?.['@lignes']?.[section.tableau]
+      if (lignes) valeurs['@lignes'] = { [section.tableau]: lignes }
+      sortie.push({ cle: `intercalaire-${section.diapo}`, diapo: section.diapo, valeurs })
+    }
+    sortie.push(page)
+  }
+  return sortie
 }
 
 /**
@@ -289,6 +322,7 @@ export function valeursDrapeaux(brouillon, session, synthese, page, refsPhotos) 
       ? String(synthese.progression) : '',
     '{taux_acquis}': synthese?.acquis != null ? String(synthese.acquis) : '',
     ...drapeauxBilan(b),
+    ...formuleCertification(b),
     '{objectifs}': t.objectifs || '',
 
     // Les pages des objectifs (6 a 9) : la session en tete du tableau,
@@ -417,6 +451,20 @@ function dateCourte(iso) {
   if (!iso) return ''
   const [a, m, j] = String(iso).split('-')
   return j && m && a ? `${j}/${m}/${a}` : ''
+}
+
+/**
+ * La formule des comptes rendus de certification, sous le bilan : tests
+ * e-learning + tests pratique = certification. Le service la dessine
+ * sur la page du bilan seulement ; la formation n'en a pas.
+ */
+export function formuleCertification(b) {
+  if (!estCertification(b)) return {}
+  const marque = String(b.marque || '').trim().toUpperCase()
+  return {
+    '@formule_certification': `Nous rappelons que la certification${marque ? ` ${marque}` : ''} `
+      + 'pour chacun des niveaux est obtenue de la façon suivante :',
+  }
 }
 
 /** Les intertitres des rubriques du bilan, tels que le modele les ecrit. */

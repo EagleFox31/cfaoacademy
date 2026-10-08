@@ -323,6 +323,26 @@ export function nomFichier(brouillon, session) {
 }
 
 /**
+ * Le nom du rapport, sans extension (le service ajoute `.pptx` ou `.pdf`),
+ * sur le modele des comptes rendus des formateurs :
+ * « Compte rendu formation Diagnostic des Systèmes de Climatisation du 10-14.08.26 »,
+ * et en certification « Compte rendu Certification pratique G3 GUINEE du 13-17.04.26 ».
+ */
+export function nomCompteRendu(brouillon, session) {
+  const periode = periodeCourte(brouillon.debut, brouillon.fin)
+  let tete
+  if (estCertification(brouillon)) {
+    const pays = String(brouillon.pays || session?.paysHote || '').toUpperCase()
+    tete = ['Compte rendu Certification pratique', niveauDe(brouillon), pays]
+  } else {
+    const intitule = (brouillon.intitule || session?.moduleFormation || '').trim()
+    tete = ['Compte rendu formation', intitule || brouillon.codeFormation || session?.codeFormation || 'session']
+  }
+  return [...tete, periode].filter(Boolean).join(' ')
+    .replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim()
+}
+
+/**
  * Remplit le modele et le propose au telechargement.
  *
  * Seuls les stagiaires presents y figurent, dans l'ordre de la saisie.

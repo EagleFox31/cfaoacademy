@@ -6,16 +6,17 @@ import { periodeLongue, nombreDeJours, titreDeCouverture }
   from '../../utils/compteRendu'
 import { syntheseSatisfaction, satisfactionStagiaire, afficherTaux, detailParCritere,
   CRITERES_FORMATION, CRITERES_ACCUEIL } from '../../utils/satisfactionCfao'
+import { nomCompteRendu } from '../../utils/exportEvaluation'
 import ApercuReel from './ApercuReel'
 import Consigne from './Consigne'
 import EditeurObjectifs from './EditeurObjectifs'
 import EditeurParticipants from './EditeurParticipants'
 import EditeurJournee, { MAX_PHOTOS_JOUR } from './EditeurJournee'
 import EditeurBilan from './EditeurBilan'
-import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
+import { avecIntercalaires, diapoDe, valeursDrapeaux } from '../../utils/diapositives'
 import { useRefsPhotos, ancrerPhotos, relancerPhoto, srcPhoto } from '../../utils/photosService'
 import { participantPourMoteur, proposerTexte } from '../../utils/redaction'
-import { chiffresSession, constatsParDefaut, donneesSession, formeBilan, paragrapheBilan,
+import { chiffresSession, satisfactionPresents, constatsParDefaut, donneesSession, formeBilan, paragrapheBilan,
   redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
 import BoutonsRedaction from './BoutonsRedaction'
@@ -116,6 +117,18 @@ export default function PhaseVerification({
     () => valeursDrapeaux(brouillon, session, synthese, page, refsPhotos),
     [brouillon, session, synthese, page, refsPhotos],
   )
+  // Les autres journees, pour l'apercu d'un jour : tous les resumes
+  // prennent la taille du plus long, comme dans le rapport.
+  const voisines = useMemo(() => {
+    if (!(page?.cle || '').startsWith('jour-')) return null
+    return pages
+      .filter(p => p !== page && (p.cle || '').startsWith('jour-'))
+      .map(p => ({
+        diapo: diapoDe(p, brouillon),
+        valeurs: valeursDrapeaux(brouillon, session, synthese, p, refsPhotos),
+      }))
+      .filter(p => p.diapo)
+  }, [brouillon, session, synthese, pages, page, refsPhotos])
 
   function majTexte(cle, valeur) {
     maj({ textes: { ...(brouillon.textes || {}), [cle]: valeur } })
@@ -270,23 +283,22 @@ export default function PhaseVerification({
     majPhoto(rubrique, id, { cadrage })
   }
 
-  // Le PowerPoint produit, garde pour le telecharger a nouveau.
+  // L'adresse du PowerPoint produit, gardee pour le telecharger a nouveau
+  // (le service le garde une heure).
   const [fichier, setFichier] = useState(null)
   const [echec, setEchec] = useState(false)
 
-  function telecharger(blob) {
-    // Le code de la formation, ou son intitule pour une saisie libre.
-    const nom = (brouillon.codeFormation || session?.codeFormation || brouillon.intitule || 'session')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    const url = URL.createObjectURL(blob)
+  // Un simple lien : le navigateur ecrit le fichier sur le disque au fil
+  // de l'eau. Le lire d'abord en memoire (blob) echouait sur les gros
+  // rapports, pourtant bien produits.
+  function telecharger(url) {
     const a = document.createElement('a')
     a.href = url
-    a.download = `compte-rendu-${nom.replace(/\W+/g, '-').replace(/^-|-$/g, '').toLowerCase()}.pptx`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
+
 
   /**
    * Le PowerPoint, produit en tache de fond par le service.
@@ -321,35 +333,37 @@ export default function PhaseVerification({
       if (etat === 'pret') break
       if (etat === 'echec') throw new Error('echec')
     }
-    const fichier = await fetch(`/apercu/rapports/${id}/fichier`)
-    if (!fichier.ok) throw new Error(String(fichier.status))
-    return fichier.blob()
+    return `/apercu/rapports/${id}/fichier?nom=${encodeURIComponent(nomCompteRendu(brouillon, session))}`
   }
 
   // Le document final reprend page par page ce que montrent les
   // apercus : meme diapositive, memes valeurs. Les pages repetees
-  // (jours, fiches) y gardent chacune les leurs.
+  // (jours, fiches) y gardent chacune les leurs ; chaque section y est
+  // annoncee par l'intercalaire du modele.
   async function produire() {
     setEtat('production')
     setEchec(false)
     const corps = {
-      pages: pages
+      pages: avecIntercalaires(pages
         .map(p => ({
+          cle: p.cle,
           diapo: diapoDe(p, brouillon),
           valeurs: valeursDrapeaux(brouillon, session, synthese, p, refsPhotos),
         }))
-        .filter(p => p.diapo),
+        .filter(p => p.diapo))
+        .map(({ diapo, valeurs }) => ({ diapo, valeurs })),
     }
     try {
-      const blob = await rapportProduit(corps)
-      setFichier(blob)
-      telecharger(blob)
+      const url = await rapportProduit(corps)
+      setFichier(url)
+      telecharger(url)
       // Toutes les pages remplies, le compte rendu est deja a l'archive ;
       // on y date sa sortie. Sinon le PowerPoint n'est qu'une version de
       // travail, et la saisie reste en cours.
       if (resteAFaire === 0) maj({ termineLe: new Date().toISOString() })
       setEtat('fait')
-    } catch {
+    } catch (e) {
+      console.error('Rapport non produit :', e)
       setEchec(true)
       setEtat('revue')
     }
@@ -529,6 +543,7 @@ export default function PhaseVerification({
           <ApercuReel
             diapo={diapoDe(page, brouillon)}
             valeurs={valeurs}
+            voisines={voisines}
             secours={<ApercuPage page={page} textes={brouillon.textes || {}}
               photos={photos} />} />
         )}
@@ -1380,6 +1395,18 @@ function composerPages(b, session, s) {
     })
   }
 
+  // L'ordre du modele : la photo de groupe et les stagiaires (section 1)
+  // precedent les objectifs (section 2).
+  if (retenue('participants')) {
+    pages.push({
+      cle: 'participants', titre: 'Stagiaires', type: 'tableau',
+      titrePage: 'LES PARTICIPANTS',
+      rubrique: 'participants',
+      colonnes: ['Nom et prénom', 'Pays', 'Fonction'],
+      lignes: participants.map(p => [`${p.prenom} ${p.nom}`, p.pays, p.fonction]),
+    })
+  }
+
   if (retenue('objectifs')) {
     pages.push({
       cle: 'objectifs', titre: 'Objectifs', type: 'texte',
@@ -1390,16 +1417,6 @@ function composerPages(b, session, s) {
         titre: `À l’issue de la ${quoi.toLowerCase()}`,
         texte: b.textes?.objectifs || '',
       }],
-    })
-  }
-
-  if (retenue('participants')) {
-    pages.push({
-      cle: 'participants', titre: 'Stagiaires', type: 'tableau',
-      titrePage: 'LES PARTICIPANTS',
-      rubrique: 'participants',
-      colonnes: ['Nom et prénom', 'Pays', 'Fonction'],
-      lignes: participants.map(p => [`${p.prenom} ${p.nom}`, p.pays, p.fonction]),
     })
   }
 
@@ -1419,7 +1436,9 @@ function composerPages(b, session, s) {
     // Le modele consacre deux diapositives distinctes aux resultats :
     // la 17 pour la progression et l'acquisition, la 19 pour les taux
     // de satisfaction. On compose donc deux pages, pas une.
-    const sat = syntheseSatisfaction(b.satisfaction)
+    // Les présents seuls, comme le rapport : un absent n'a rien évalué.
+    const reponsesPresents = satisfactionPresents(b)
+    const sat = syntheseSatisfaction(reponsesPresents)
     // Les deux tableaux de la diapositive 17, lignes comprises : ils
     // se lisent mieux ainsi que sous forme de compteurs isoles.
     const pc = v => (v == null ? '—' : `${Math.round(v)} %`)
@@ -1458,23 +1477,27 @@ function composerPages(b, session, s) {
     const critere = (criteres, titre, total, valeur) => ({
       titre,
       lignes: [
-        ...detailParCritere(b.satisfaction, criteres).map(c => ({
+        ...detailParCritere(reponsesPresents, criteres).map(c => ({
           libelle: c.libelle,
           valeur: c.moyenne == null ? '—' : `${Math.round(c.moyenne)} %`,
         })),
         { libelle: total, valeur: afficherTaux(valeur), total: true },
       ],
     })
-    pages.push({
+    // Sans note sur la formation ni sur l'accueil, la page n'a rien à
+    // montrer : ni tableau, ni anneau. Avec une seule des deux, seul le
+    // tableau (et l'anneau) de celle-ci reste, comme dans le rapport.
+    const tableauxSatisfaction = [
+      sat.formation != null && critere(CRITERES_FORMATION, 'Qualité de la formation',
+        'Qualité de la formation', sat.formation),
+      sat.accueil != null && critere(CRITERES_ACCUEIL, 'Qualité de l’accueil',
+        'Qualité de l’accueil', sat.accueil),
+    ].filter(Boolean)
+    if (tableauxSatisfaction.length) pages.push({
       cle: 'satisfaction', titre: 'Satisfaction', type: 'chiffres',
       titrePage: 'RÉSULTAT GLOBAL DE LA SESSION',
       sansCommentaires: true,
-      tableaux: [
-        critere(CRITERES_FORMATION, 'Qualité de la formation',
-          'Qualité de la formation', sat.formation),
-        critere(CRITERES_ACCUEIL, 'Qualité de l’accueil',
-          'Qualité de l’accueil', sat.accueil),
-      ],
+      tableaux: tableauxSatisfaction,
     })
   }
 
@@ -1519,10 +1542,12 @@ function composerPages(b, session, s) {
           texte: p.appreciation || '',
         }],
         tableaux: [
-          critere(siennes, CRITERES_FORMATION, 'Qualité de la formation',
-            'Qualité de la formation', satPropre.formation),
-          critere(siennes, CRITERES_ACCUEIL, 'Qualité de l’accueil',
-            'Qualité de l’accueil', satPropre.accueil),
+          // Une note absente n'a ni tableau ni anneau dans le rapport :
+          // l'écran non plus.
+          ...(satPropre.formation != null ? [critere(siennes, CRITERES_FORMATION,
+            'Qualité de la formation', 'Qualité de la formation', satPropre.formation)] : []),
+          ...(satPropre.accueil != null ? [critere(siennes, CRITERES_ACCUEIL,
+            'Qualité de l’accueil', 'Qualité de l’accueil', satPropre.accueil)] : []),
           {
             titre: 'Acquisition des compétences',
             lignes: [

@@ -17,8 +17,10 @@ que les valeurs d'une diapositive ne changent pas, elle n'est pas
 reconvertie.
 """
 
+import functools
 import hashlib
 import html
+import io
 import json
 import os
 import re
@@ -30,9 +32,13 @@ import uuid
 import zipfile
 from pathlib import Path
 
+from PIL import Image
+
 from composer import composer
 import blocs
 import classeurs
+import formule
+import mise_en_page
 import photos
 from modele import diapos_pour
 
@@ -436,6 +442,36 @@ def ancrer_objectifs(xml):
     return RE_LIGNE_TABLEAU.sub(sur_ligne, xml)
 
 
+RE_ZONE = re.compile(r'<p:sp>(?:(?!</p:sp>).)*</p:sp>', re.S)
+RE_PARAGRAPHE = re.compile(r'<a:p>(?:(?!</a:p>).)*?</a:p>', re.S)
+
+
+def retirer_mots_vides(xml, mots):
+    """Retire les lignes d'un mot nu laisse vide a dessein, puis recentre.
+
+    Le sous-titre de couverture vide laissait une ligne blanche entre le
+    titre et la periode. Sa ligne disparait, et le bloc, ancre en bas du
+    cadre, passe au centre : le cadre etant centre sur la page, le texte
+    l'est aussi. Une zone qui ne garderait aucune ligne est laissee.
+    """
+    if not mots:
+        return xml
+
+    def texte(p):
+        return ''.join(re.findall(r'<a:t>([^<]*)</a:t>', p)).strip().casefold()
+
+    def sur_zone(m):
+        zone = m.group(0)
+        paragraphes = RE_PARAGRAPHE.findall(zone)
+        vides = [p for p in paragraphes if texte(p) in mots]
+        if not vides or len(vides) == len(paragraphes):
+            return zone
+        for p in vides:
+            zone = zone.replace(p, '', 1)
+        return re.sub(r'(<a:bodyPr\b[^>]*?)\sanchor="b"', r'\1 anchor="ctr"', zone, count=1)
+    return RE_ZONE.sub(sur_zone, xml)
+
+
 def substituer(xml, valeurs):
     """Remplace les drapeaux dans le texte des runs.
 
@@ -457,6 +493,7 @@ def substituer(xml, valeurs):
     """
     xml = retirer_lignes(xml, valeurs.get('@retirer') or [])
     xml = retirer_paragraphes(xml, valeurs.get('@retirer_paragraphes') or [])
+    xml = formule.ajouter_formule(xml, valeurs.get('@formule_certification'))
     xml = marquer(xml, valeurs.get('@marquage'))
     xml = ancrer_objectifs(xml)
     xml = colorer(xml, valeurs.get('@couleurs'))
@@ -467,6 +504,7 @@ def substituer(xml, valeurs):
                if isinstance(v, str) and not c.startswith('@')}
     nus = {c.strip().casefold(): v for c, v in valeurs.items()
            if not c.startswith('{') and (v or v == VIDE)}
+    xml = retirer_mots_vides(xml, {c for c, v in nus.items() if v == VIDE})
 
     def sur_run(m):
         texte = m.group(1)
@@ -482,11 +520,38 @@ def substituer(xml, valeurs):
     return re.sub(r'<a:t>(.*?)</a:t>', sur_run, xml, flags=re.S)
 
 
-def remplir(source, cible, valeurs, diapos=None):
+@functools.lru_cache(maxsize=1)
+def _diapos_modele(chemin, date):
+    with zipfile.ZipFile(chemin) as z:
+        return {int(m.group(1)): z.read(n).decode('utf-8') for n in z.namelist()
+                if (m := re.match(r'ppt/slides/slide(\d+)\.xml$', n))}
+
+
+def paliers(pages):
+    """Le retrait de chaque famille de zones, commun a ces pages (`[{diapo, valeurs}]`).
+
+    Les resumes des journees prennent ainsi tous la taille du plus long :
+    l'apercu d'un jour la recoit avec les autres jours, le rapport avec
+    toutes ses pages. Ne remplit que le texte : aucun passage par LibreOffice.
+    """
+    modele = _diapos_modele(str(MODELE), MODELE.stat().st_mtime)
+    communs = {}
+    for page in pages:
+        numero, valeurs = int(page['diapo']), page.get('valeurs') or {}
+        if numero not in modele:
+            continue
+        xml = substituer(blocs.repeter(modele[numero], numero, valeurs), valeurs)
+        for cle, retrait in mise_en_page.besoins(xml).items():
+            communs[cle] = max(communs.get(cle, 0), retrait)
+    return communs
+
+
+def remplir(source, cible, valeurs, diapos=None, imposes=None):
     """Ecrit une copie du PPTX dont les drapeaux portent les valeurs.
 
     `diapos` limite aux diapositives produites la mise a jour des
     classeurs embarques : chacun coute un passage par LibreOffice.
+    `imposes` : les retraits communs au rapport (voir `paliers`).
     """
     with zipfile.ZipFile(source) as z:
         infos = {i.filename: i for i in z.infolist()}
@@ -510,6 +575,13 @@ def remplir(source, cible, valeurs, diapos=None):
             continue
         poser_photos(contenus, slide, contenu)
 
+    # Tailles de texte ecrites en clair, rien sous les logos, pas de pied
+    # de page : l'apercu montre ce que PowerPoint ouvrira.
+    for nom in list(contenus):
+        if re.match(r'ppt/slides/slide\d+\.xml$', nom):
+            contenus[nom] = mise_en_page.ajuster(contenus[nom].decode('utf-8'),
+                                                 imposes).encode('utf-8')
+
     # Les tableaux et graphiques des resultats : classeurs embarques,
     # remplis puis redessines (voir `classeurs.py`).
     if diapos:
@@ -526,10 +598,15 @@ def remplir(source, cible, valeurs, diapos=None):
             out.writestr(zi, donnees)
 
 
-def empreinte(diapo, valeurs):
-    """L'identite d'une image : sa diapositive et les valeurs qui s'y posent."""
-    brut = json.dumps({'d': diapo, 'v': valeurs}, sort_keys=True,
-                      ensure_ascii=False)
+# A changer quand le rendu d'une page change sans que ses valeurs changent :
+# les images en cache portant l'ancienne version ne sont plus reprises.
+VERSION_RENDU = 8
+
+
+def empreinte(diapo, valeurs, imposes=None):
+    """L'identite d'une image : sa diapositive, les valeurs qui s'y posent, ses tailles communes."""
+    brut = json.dumps({'d': diapo, 'v': valeurs, 'm': VERSION_RENDU, 'i': imposes or {}},
+                      sort_keys=True, ensure_ascii=False)
     return hashlib.sha1(brut.encode('utf-8')).hexdigest()[:16]
 
 
@@ -553,17 +630,22 @@ def convertir(pptx, dossier, format_='png'):
     raise RuntimeError(f'conversion {format_} sans resultat')
 
 
-def image_de(diapo, valeurs):
-    """L'image d'une diapositive, depuis le cache ou fraichement produite."""
+def image_de(diapo, valeurs, voisines=None):
+    """L'image d'une diapositive, depuis le cache ou fraichement produite.
+
+    `voisines` (`[{diapo, valeurs}]`) : les pages qui partagent ses
+    tailles de texte, les autres journees pour un jour.
+    """
+    imposes = paliers([{'diapo': diapo, 'valeurs': valeurs}] + list(voisines or []))
     CACHE.mkdir(parents=True, exist_ok=True)
-    cible = CACHE / f'{empreinte(diapo, valeurs)}.png'
+    cible = CACHE / f'{empreinte(diapo, valeurs, imposes)}.png'
     if cible.exists():
         return cible
 
     travail = Path(tempfile.mkdtemp(prefix='cr-apercu-'))
     try:
         rempli = travail / 'rempli.pptx'
-        remplir(MODELE, rempli, valeurs, [diapo])
+        remplir(MODELE, rempli, valeurs, [diapo], imposes)
         seule = travail / 'seule.pptx'
         composer(str(rempli), str(seule), [diapo])
         png = convertir(seule, travail, 'png')
@@ -636,6 +718,41 @@ def _copier_diapo(contenus, numero, copie):
         '</p:sldIdLst>', f'<p:sldId id="{ident}" r:id="{rid}"/></p:sldIdLst>').encode('utf-8')
 
 
+TYPE_VIGNETTE = 'http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail'
+LARGEUR_VIGNETTE = 256
+
+
+def poser_vignette(pptx, image):
+    """Pose `image` comme apercu du fichier.
+
+    L'Explorateur Windows montre `docProps/thumbnail.jpeg`, que PowerPoint
+    ecrit a chaque enregistrement : sans elle, le rapport telecharge
+    n'avait que l'icone generique, la ou ceux des formateurs montrent
+    leur couverture.
+    """
+    with Image.open(image) as im:
+        im = im.convert('RGB')
+        im.thumbnail((LARGEUR_VIGNETTE, LARGEUR_VIGNETTE))
+        tampon = io.BytesIO()
+        im.save(tampon, 'JPEG', quality=85)
+    with zipfile.ZipFile(pptx) as z:
+        contenus = {n: z.read(n) for n in z.namelist()}
+    contenus['docProps/thumbnail.jpeg'] = tampon.getvalue()
+    rels = contenus['_rels/.rels'].decode('utf-8')
+    if TYPE_VIGNETTE not in rels:
+        contenus['_rels/.rels'] = rels.replace(
+            '</Relationships>', f'<Relationship Id="rIdVignette" Type="{TYPE_VIGNETTE}" '
+            'Target="docProps/thumbnail.jpeg"/></Relationships>').encode('utf-8')
+    types = contenus['[Content_Types].xml'].decode('utf-8')
+    if not re.search(r'<Default Extension="jpeg"', types, re.I):
+        contenus['[Content_Types].xml'] = types.replace(
+            '</Types>', '<Default Extension="jpeg" ContentType="image/jpeg"/></Types>'
+        ).encode('utf-8')
+    with zipfile.ZipFile(pptx, 'w', zipfile.ZIP_DEFLATED) as out:
+        for nom, donnees in contenus.items():
+            out.writestr(nom, donnees)
+
+
 def rapport(pages, format_='pptx'):
     """Le rapport complet, tel que le formateur l'a vu page par page.
 
@@ -647,6 +764,7 @@ def rapport(pages, format_='pptx'):
     with zipfile.ZipFile(MODELE) as z:
         contenus = {n: z.read(n) for n in z.namelist()}
 
+    imposes = paliers(pages)
     copies, a_rafraichir = [], []
     for rang, page in enumerate(pages):
         numero, valeurs = int(page['diapo']), page.get('valeurs') or {}
@@ -658,6 +776,8 @@ def rapport(pages, format_='pptx'):
         poses = (valeurs.get('@photos') or {}).get(str(numero))
         if poses:
             poser_photos(contenus, nom, poses)
+        xml = mise_en_page.ajuster(contenus[nom].decode('utf-8'), imposes)
+        contenus[nom] = mise_en_page.numeroter(xml, rang + 1).encode('utf-8')
         a_rafraichir.append((nom, valeurs.get('@classeurs') or {}))
         copies.append(copie)
     # Les graphiques de toutes les pages, en un seul passage.
@@ -673,6 +793,14 @@ def rapport(pages, format_='pptx'):
         composer(str(rempli), str(sortie), copies)
         if format_ != 'pptx':
             sortie = convertir(sortie, travail, 'pdf')
+        elif pages:
+            # La premiere page telle que le rapport la rend : memes tailles communes.
+            premiere = pages[0]
+            try:
+                poser_vignette(sortie, image_de(int(premiere['diapo']),
+                                                premiere.get('valeurs') or {}, pages[1:]))
+            except Exception:  # noqa: BLE001 - un apercu manquant ne bloque pas le rapport
+                pass
         final = _fichier_rapport(format_ if format_ == 'pdf' else 'pptx')
         shutil.move(str(sortie), final)
         return final
