@@ -64,12 +64,16 @@ export default function EditeurParticipants({
 
   const nommes = liste.filter(f => (f.nom || '').trim()).length
   const portraits = liste.filter(f => f.portrait).length
+  const effectif = (stagiaires || []).length
+  // Le compte est nomme : un « 21 » nu a cote de « Photo posee » se lisait
+  // comme 21 photos.
+  const compte = (n, mot) => (n ? `${n} ${mot}${n > 1 ? 's' : ''}` : '—')
 
   return (
     <div className="cr-blocs cr-blocs--journee cr-part">
       <Bloc titre="Les formateurs"
         resume={portraits ? `${portraits} portrait${portraits > 1 ? 's' : ''}` : 'Nom, fonction, portrait'}
-        valeur={nommes || '—'}
+        valeur={compte(nommes, 'formateur')}
         ton={nommes ? 'ok' : null}
         ouvert={volet === 'formateurs'}
         onOuvrir={() => setVolet('formateurs')}>
@@ -91,9 +95,9 @@ export default function EditeurParticipants({
       </Bloc>
 
       <Bloc titre="Les stagiaires"
-        resume={photoGroupe ? 'Photo posée' : 'Photo de groupe'}
-        valeur={(stagiaires || []).length || '—'}
-        ton={(stagiaires || []).length ? 'ok' : null}
+        resume={photoGroupe ? 'Photo de groupe posée' : 'Photo de groupe'}
+        valeur={compte(effectif, 'stagiaire')}
+        ton={effectif ? 'ok' : null}
         ouvert={volet === 'stagiaires'}
         onOuvrir={() => setVolet('stagiaires')}>
         <div className="cr-part-saisie">
