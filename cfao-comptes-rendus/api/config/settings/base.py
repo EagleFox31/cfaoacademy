@@ -21,10 +21,13 @@ for _dossier in ("redaction", "rendu"):
     if _chemin not in sys.path:
         sys.path.insert(0, _chemin)
 
+# Ne vaut que pour le poste de dev : le mode integre la refuse.
+CLE_DE_DEV = "cle-de-dev-non-secrete"
+
 env = environ.Env(
     DEBUG=(bool, False),
     DEPLOYMENT_MODE=(str, "standalone"),
-    SECRET_KEY=(str, "insecure-secret-key-template"),
+    SECRET_KEY=(str, CLE_DE_DEV),
     CERBOS_HTTP=(str, "http://localhost:3592"),
     PLATFORM_CORE_URL=(str, "http://localhost:8000"),
     OIDC_ISSUER=(str, ""),
@@ -56,10 +59,20 @@ OIDC_JWKS_URL = env("OIDC_JWKS_URL")
 # Ou envoyer le navigateur pour se connecter / se deconnecter (oauth2-proxy).
 OIDC_CONNEXION = env("OIDC_CONNEXION")
 OIDC_DECONNEXION = env("OIDC_DECONNEXION")
+
+# Le mode integre est expose : il refuse de demarrer sans vraie cle ni
+# emetteur OIDC, plutot que de tourner avec une configuration de dev.
+if DEPLOYMENT_MODE == "integrated":
+    _manquants = [nom for nom, valeur in (("SECRET_KEY", SECRET_KEY != CLE_DE_DEV and SECRET_KEY),
+                                          ("OIDC_ISSUER", OIDC_ISSUER),
+                                          ("OIDC_JWKS_URL", OIDC_JWKS_URL)) if not valeur]
+    if _manquants:
+        raise ImproperlyConfigured("Mode integre : a renseigner : " + ", ".join(_manquants) + ".")
 # Profils fictifs du mode autonome (aucun vrai nom dans le depot).
 PROFILS_LOCAUX = env("PROFILS_LOCAUX")
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
+# Les noms sous lesquels le service est appele (passerelle : son nom public).
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",

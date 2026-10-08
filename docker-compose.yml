@@ -189,19 +189,55 @@ services:
           cpus: "${CPU_OPS:-0.50}"
           memory: "${MEM_OPS:-256M}"
 
-  # Story 04-5 : rapports formateur (apercu, production PPTX/PDF, brouillons).
-  # Service technique transitoire, sans authentification propre : il n'est
-  # joignable que par la passerelle. Voir docs/MODULE_RAPPORTS_FORMATEUR.md.
-  rapports:
-    build: ./services
+  # Story 04-5 : service des comptes rendus formateur (cfao-comptes-rendus/),
+  # en mode integre : jeton Keycloak verifie, decisions de son propre Cerbos,
+  # base SQLite et photos sur son volume. Joignable par la passerelle seule.
+  # Voir docs/MODULE_RAPPORTS_FORMATEUR.md.
+  rapports-cerbos:
+    image: ghcr.io/cerbos/cerbos:0.40.0
     restart: unless-stopped
-    volumes: [rapports-donnees:/srv/apercu/donnees]
+    command: ["server", "--config=/config/config.yaml"]
+    environment:
+      CERBOS_NO_TELEMETRY: "1"
+    volumes:
+      - ./cfao-comptes-rendus/cerbos/policies:/policies:ro
+      - ./cfao-comptes-rendus/cerbos/config.yaml:/config/config.yaml:ro
+    healthcheck:
+      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/config.yaml"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_RAPPORTS_CERBOS:-0.25}"
+          memory: "${MEM_RAPPORTS_CERBOS:-128M}"
+
+  rapports:
+    build: ./cfao-comptes-rendus
+    restart: unless-stopped
+    environment:
+      DEPLOYMENT_MODE: integrated
+      SECRET_KEY: ${RAPPORTS_SECRET_KEY:?RAPPORTS_SECRET_KEY est obligatoire}
+      # La passerelle transmet le nom public (Host) ; localhost pour la sonde.
+      ALLOWED_HOSTS: ${RAPPORTS_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      DATABASE_URL: sqlite:////donnees/comptes-rendus.sqlite3
+      CERBOS_HTTP: http://rapports-cerbos:3592
+      PLATFORM_CORE_URL: http://core:8000
+      OIDC_JWKS_URL: http://keycloak:8080/realms/${OIDC_REALM:-cfao}/protocol/openid-connect/certs
+      OIDC_ISSUER: http://keycloak:8080/realms/${OIDC_REALM:-cfao}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-}
+    # Meme volume que l'ancien service : ses photos restent en place
+    # (reprise des brouillons : `make rapports-importer`).
+    volumes: [rapports-donnees:/donnees]
+    depends_on:
+      rapports-cerbos: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:5175/apercu/sante"]
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 20s
+      start_period: 30s
     deploy:
       resources:
         limits:

@@ -1,6 +1,8 @@
 # ADR 0001 — Service de rendu des rapports formateur
 
-- **Statut** : accepté (transitoire)
+- **Statut** : remplacé — le service Flask a cédé la place au service détachable
+  `cfao-comptes-rendus/` (Django, Keycloak, Cerbos ; story 04-5-1). Les chemins `services/`
+  ci-dessous sont ceux de l'époque.
 - **Date** : 2026-09-28
 - **Story** : `04-5` — rédiger un rapport post-formation
 
@@ -20,7 +22,7 @@ Aucun de ces services n'embarque de quoi convertir un PPTX en image.
    PowerPoint versionné et le convertit avec **LibreOffice**. Il est packagé comme les autres
    services (`services/Dockerfile`, service `rapports` du `docker-compose.yml`) et n'est joignable
    que par la passerelle (`/apercu/*`, `/cr-donnees/*`).
-2. Le modèle (`services/apercu/modeles/MODELE-REFERENCES.pptx`) est **versionné** : la production
+2. Le modèle (`cfao-comptes-rendus/api/rendu/modeles/MODELE-REFERENCES.pptx`) est **versionné** : la production
    d'un rapport ne dépend d'aucun dossier extérieur au dépôt.
 3. **Transitoire** : le même service conserve pour l'instant les brouillons (SQLite) et identifie
    l'utilisateur par un en-tête. Ces deux points sortent du service dès que possible (§ Suites).

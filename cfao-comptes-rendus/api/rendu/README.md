@@ -11,7 +11,7 @@ Documentation complète du module (parcours, drapeaux, tests, écarts) :
 ## Démarrer
 
 ```
-python services/apercu/api.py      # écoute sur 127.0.0.1:5175
+python manage.py runserver 127.0.0.1:5175   # depuis cfao-comptes-rendus/api
 ```
 
 Le serveur de développement relaie `/apercu` vers ce port (voir
@@ -21,11 +21,11 @@ sur le rendu HTML et le signale.
 ## Prérequis
 
 - **LibreOffice** — chemin par défaut `C:\Program Files\LibreOffice\program\soffice.exe`
-- **Python** — `pip install -r services/requirements.txt`
+- **Python** — `pip install -r requirements-dev.txt` (dans `cfao-comptes-rendus/api`)
 - **Modèle** — `modeles/MODELE-REFERENCES.pptx`, versionné avec le service
 
-Variables : `CR_MODELE`, `CR_CACHE`, `CR_SOFFICE`, `CR_HOTE`, `CR_PORT`.
-En conteneur : `services/Dockerfile`, service `rapports` du `docker-compose.yml`.
+Variables : `CR_MODELE`, `CR_CACHE`, `CR_SOFFICE`, `CR_DONNEES`.
+En conteneur : `cfao-comptes-rendus/Dockerfile`, service `rapports` du `docker-compose.yml`.
 
 ## Routes
 
