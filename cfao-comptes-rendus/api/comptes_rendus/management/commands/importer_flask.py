@@ -111,7 +111,14 @@ class Command(BaseCommand):
                     if not isinstance(contenu, dict) or not stockage.valide(ident):
                         continue
                     contenu.setdefault("modifieLe", modifie_le)
-                    _, garde = stockage.ecrire(owner, ident, contenu)
+                    # Pas de revision dans l'ancienne base : seule la date
+                    # departage, et une version deja reprise plus recente reste.
+                    actuel = Brouillon.objects.filter(owner=owner, ident=ident).first()
+                    if actuel and actuel.modifie_le > str(contenu["modifieLe"]):
+                        garde = False
+                    else:
+                        contenu["revision"] = stockage.revision_de(actuel.contenu) if actuel else 0
+                        _, garde = stockage.ecrire(owner, ident, contenu)
                     if not garde:
                         bilan["brouillons_plus_anciens"] += 1
                         continue

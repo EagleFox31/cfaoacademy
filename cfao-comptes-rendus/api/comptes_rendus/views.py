@@ -156,6 +156,10 @@ class BrouillonDetail(APIView):
         else:
             _autoriser(request, COMPTE_RENDU, ident, "create", None, *perimetre_du_contenu(request.data))
         garde, ecrit = stockage.ecrire(request.user.id, ident, request.data)
+        if ecrit == stockage.CONFLIT:
+            # Copie perimee : la version gardee part avec le refus, pour
+            # que l'onglet propose de la reprendre.
+            return Response({"ecrit": False, "conflit": True, "brouillon": garde}, status=409)
         return Response({"ecrit": ecrit, "brouillon": garde})
 
     def delete(self, request, ident):

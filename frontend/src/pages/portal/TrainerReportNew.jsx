@@ -6,7 +6,9 @@ import useAuth from '../../hooks/useAuth'
 import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
 import { syntheseGroupe } from '../../utils/baremeCfao'
 import { estCertification, syntheseCertification, typeDepuisCode } from '../../utils/certification'
-import { enregistrer, recuperer, recupererDuServeur } from '../../utils/brouillonsCompteRendu'
+import {
+  adopter, enregistrer, garder, recuperer, recupererDuServeur, surveiller,
+} from '../../utils/brouillonsCompteRendu'
 import { nombreDeJours } from '../../utils/compteRendu'
 import PhaseSession from '../../components/compte-rendu/PhaseSession'
 import PhaseResultats from '../../components/compte-rendu/PhaseResultats'
@@ -121,15 +123,37 @@ export default function TrainerReportNew() {
   // enregistre lui permet de quitter la page sans crainte.
   const [enregistreA, setEnregistreA] = useState(null)
 
+  // Le meme compte rendu modifie ailleurs — autre onglet, autre poste —
+  // depuis que cette page l'a ouvert : la version la plus recente, tant
+  // que le formateur n'a pas choisi. D'ici la, rien ne s'enregistre.
+  const [conflit, setConflit] = useState(null)
+  const enConflit = useRef(null)
+  enConflit.current = conflit
+  const idCourant = brouillon.sessionId || (brouillon.manuel ? 'manuel' : null)
+  useEffect(() => {
+    setConflit(null)
+    return surveiller(idCourant, setConflit)
+  }, [idCourant])
+
   const sauver = useCallback(() => {
-    if (!synchro.current) return
+    if (!synchro.current || enConflit.current) return
     const { brouillon: b, phase: p } = dernier.current
     const id = b.sessionId || (b.manuel ? 'manuel' : null)
-    if (id) {
-      enregistrer(id, { ...b, phase: p })
-      setEnregistreA(new Date())
-    }
+    if (id && enregistrer(id, { ...b, phase: p })) setEnregistreA(new Date())
   }, [])
+
+  function reprendreLaPlusRecente() {
+    const v = adopter(idCourant, conflit)
+    setConflit(null)
+    setBrouillon(v)
+    setPhase(v.phase || 0)
+  }
+
+  function garderCetteVersion() {
+    garder(idCourant, { ...brouillon, phase }, conflit)
+    setConflit(null)
+    setEnregistreA(new Date())
+  }
 
   // Aux moments qui comptent : changement d'etape, et depart de la page
   // (onglet ferme, navigation). Entre les deux, les volets de saisie
@@ -249,7 +273,7 @@ export default function TrainerReportNew() {
             <h1 className="cr-home-title cr-home-title--sm">
               {session?.moduleFormation || 'Nouveau compte rendu'}
             </h1>
-            {enregistreA && (
+            {enregistreA && !conflit && (
               <p className="cr-enregistre" role="status">
                 ✓ Enregistré à {enregistreA.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}
               </p>
@@ -277,6 +301,27 @@ export default function TrainerReportNew() {
 
         <section className="cr-etape">
           <div className="container" style={{ padding: '12px 32px 20px' }}>
+            {conflit && (
+              <div className="cr-alerte" role="alert">
+                <p className="cr-alerte-texte">
+                  <strong>Ce compte rendu a été modifié ailleurs</strong>
+                  {conflit.modifieLe && ` à ${new Date(conflit.modifieLe)
+                    .toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}`}
+                  {' '}— dans un autre onglet ou sur un autre poste. Ce qui est affiché ici est
+                  une copie plus ancienne : rien ne s’enregistre tant que vous n’avez pas choisi.
+                </p>
+                <div className="cr-alerte-actions">
+                  <button type="button" className="cr-btn cr-btn--primary"
+                    onClick={reprendreLaPlusRecente}>
+                    Reprendre la version la plus récente
+                  </button>
+                  <button type="button" className="cr-btn cr-btn--ghost"
+                    onClick={garderCetteVersion}>
+                    Garder celle de cet onglet
+                  </button>
+                </div>
+              </div>
+            )}
             {phase === 0 && (
               <PhaseSession
                 brouillon={brouillon} maj={maj}

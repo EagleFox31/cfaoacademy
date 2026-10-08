@@ -70,6 +70,7 @@ async function serveur(chemin, options = {}) {
       headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     })
     if (r.status === 404) return undefined
+    if (r.status === 409) return { ...(await r.json()), conflit: true }
     if (!r.ok) return null
     return await r.json()
   } catch {
@@ -111,21 +112,68 @@ function aDesNotes(p) {
     || rempli(p.notesModules)
 }
 
-const plusRecent = (a, b) => String(a?.modifieLe || '') > String(b?.modifieLe || '')
+/*
+ * Deux onglets, ou deux postes, ouverts sur le meme compte rendu.
+ *
+ * L'heure d'un poste ne dit pas qui a vu la derniere version : une copie
+ * ancienne, retouchee, etait re-datee et ecrasait le travail fait
+ * ailleurs. Le serveur numerote donc chaque version (`revision`) et cet
+ * onglet retient celle dont sa saisie est partie (`bases`). Un envoi parti
+ * d'une version depassee est refuse ; l'onglet le signale au formateur,
+ * qui reprend la version la plus recente ou garde la sienne en
+ * connaissance de cause. `ECRIVAIN` distingue cet onglet : ses propres
+ * envois s'enchainent sans conflit.
+ */
+const ECRIVAIN = Math.random().toString(36).slice(2, 12)
+const bases = new Map()
+// Ce que cet onglet a lu ou ecrit en dernier, par brouillon : sans
+// changement depuis, il n'a rien a envoyer.
+const vus = new Map()
+const signer = b => JSON.stringify({
+  ...b, _id: undefined, modifieLe: undefined, revision: undefined, ecrivain: undefined,
+})
+const rev = b => Number(b?.revision) || 0
+const base = (id, b) => (bases.has(id) ? bases.get(id) : rev(b))
+
+// Version, puis date : la date ne departage que deux copies d'une meme
+// version — une saisie faite ici hors connexion, par exemple.
+const plusRecent = (a, b) => (rev(a) !== rev(b) ? rev(a) > rev(b)
+  : String(a?.modifieLe || '') > String(b?.modifieLe || ''))
+
+// Les ecrans ouverts sur un brouillon, prevenus d'un conflit.
+const ecoutes = new Map()
+function signaler(id, recent) {
+  (ecoutes.get(id) || new Set()).forEach(f => f(recent))
+}
+
+// Une version ecrite ailleurs, plus avancee que celle de cet onglet.
+const depassePar = (id, b) => b && b.ecrivain !== ECRIVAIN && bases.has(id) && rev(b) > bases.get(id)
 
 // Les envois au serveur, un par brouillon : la saisie en declenche un
 // toutes les secondes et demie, inutile d'en empiler.
 const enAttente = new Map()
 const aEnvoyer = new Map()
-function partir(id) {
+async function partir(id) {
   clearTimeout(enAttente.get(id))
   enAttente.delete(id)
   const brouillon = aEnvoyer.get(id)
   aEnvoyer.delete(id)
-  if (brouillon) {
-    // `keepalive` : l'envoi aboutit meme si l'onglet se ferme.
-    serveur(`/${encodeURIComponent(id)}`,
-      { method: 'PUT', body: JSON.stringify(brouillon), keepalive: true })
+  if (!brouillon) return
+  const corps = { ...brouillon, revision: base(id, brouillon), ecrivain: ECRIVAIN }
+  // `keepalive` : l'envoi aboutit meme si l'onglet se ferme.
+  const r = await serveur(`/${encodeURIComponent(id)}`,
+    { method: 'PUT', body: JSON.stringify(corps), keepalive: true })
+  if (r?.conflit) {
+    signaler(id, r.brouillon)
+  } else if (r?.ecrit && r.brouillon) {
+    const n = rev(r.brouillon)
+    bases.set(id, Math.max(n, bases.get(id) || 0))
+    const tout = lire()
+    // La copie d'ici prolonge cet envoi : elle en prend le numero.
+    if (tout[id]?.ecrivain === ECRIVAIN && rev(tout[id]) < n) {
+      tout[id] = { ...tout[id], revision: n }
+      ecrire(tout)
+    }
   }
 }
 function envoyer(id, brouillon) {
@@ -156,10 +204,25 @@ export function enregistrer(id, brouillon) {
   if (!aDuContenu(brouillon)) return true
   // Rien n'a change : on ne re-date pas, sinon une copie ancienne
   // ouverte sur un autre poste passerait pour la plus recente.
-  const sans = b => JSON.stringify({ ...b, _id: undefined, modifieLe: undefined })
-  if (tout[id] && sans(tout[id]) === sans({ ...brouillon, _id: id })) return true
-  const date = { ...brouillon, _id: id, modifieLe: new Date().toISOString() }
+  // Ni par rapport a la copie de ce navigateur, ni par rapport a ce que
+  // cet onglet a lu ou ecrit en dernier : un onglet reste ouvert, qu'on
+  // ferme, ne renvoie pas sa vieille copie par-dessus celle d'un autre.
+  const signature = signer(brouillon)
+  if (vus.get(id) === signature) return true
+  if (tout[id] && signer(tout[id]) === signature) return true
+  // Un autre onglet de ce navigateur a enregistre une version plus
+  // avancee : la copie de cet onglet est perimee, elle n'ecrase rien.
+  if (!bases.has(id)) bases.set(id, rev(brouillon))
+  if (depassePar(id, tout[id])) {
+    signaler(id, tout[id])
+    return false
+  }
+  const date = {
+    ...brouillon, _id: id, modifieLe: new Date().toISOString(),
+    revision: bases.get(id), ecrivain: ECRIVAIN,
+  }
   tout[id] = date
+  vus.set(id, signature)
   envoyer(id, date)
   return ecrire(tout)
 }
@@ -175,13 +238,73 @@ export function recuperer(id) {
  */
 export async function recupererDuServeur(id) {
   const distant = await serveur(`/${encodeURIComponent(id)}`)
-  if (!distant) return null
   const local = recuperer(id)
-  if (local && !plusRecent(distant, local)) return null
+  if (!distant || (local && !plusRecent(distant, local))) {
+    // La saisie de cet onglet repart de la copie d'ici.
+    if (local) {
+      bases.set(id, rev(local))
+      vus.set(id, signer(local))
+    }
+    return null
+  }
+  return adopter(id, distant)
+}
+
+/** Cet onglet repart d'une version : celle du serveur ou d'un autre onglet. */
+export function adopter(id, version) {
+  bases.set(id, rev(version))
+  vus.set(id, signer(version))
   const tout = lire()
-  tout[id] = distant
+  tout[id] = version
   ecrire(tout)
-  return distant
+  return version
+}
+
+/**
+ * Le formateur garde la saisie de cet onglet face a une version plus
+ * recente : elle repart de cette version, et l'ecrase donc sciemment.
+ */
+export function garder(id, brouillon, recente) {
+  bases.set(id, rev(recente))
+  const date = {
+    ...brouillon, _id: id, modifieLe: new Date().toISOString(),
+    revision: rev(recente), ecrivain: ECRIVAIN,
+  }
+  const tout = lire()
+  tout[id] = date
+  ecrire(tout)
+  vus.set(id, signer(brouillon))
+  envoyer(id, date)
+  return date
+}
+
+/**
+ * Previent `quand(recente)` des que la copie ouverte dans cet onglet
+ * est depassee : envoi refuse par le serveur, enregistrement d'un autre
+ * onglet de ce navigateur, ou version d'un autre poste constatee au
+ * retour sur l'onglet. Renvoie de quoi cesser d'ecouter.
+ */
+export function surveiller(id, quand) {
+  if (!id) return () => {}
+  if (!ecoutes.has(id)) ecoutes.set(id, new Set())
+  ecoutes.get(id).add(quand)
+  const autreOnglet = e => {
+    if (e.key !== cle()) return
+    const b = lire()[id]
+    if (depassePar(id, b)) quand(b)
+  }
+  const retour = async () => {
+    if (document.visibilityState !== 'visible') return
+    const distant = await serveur(`/${encodeURIComponent(id)}`)
+    if (distant && !distant.conflit && depassePar(id, distant)) quand(distant)
+  }
+  window.addEventListener('storage', autreOnglet)
+  document.addEventListener('visibilitychange', retour)
+  return () => {
+    ecoutes.get(id)?.delete(quand)
+    window.removeEventListener('storage', autreOnglet)
+    document.removeEventListener('visibilitychange', retour)
+  }
 }
 
 /** Efface un brouillon, ici et sur le serveur. */
@@ -192,6 +315,8 @@ export function oublier(id) {
   clearTimeout(enAttente.get(id))
   enAttente.delete(id)
   aEnvoyer.delete(id)
+  bases.delete(id)
+  vus.delete(id)
   serveur(`/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 

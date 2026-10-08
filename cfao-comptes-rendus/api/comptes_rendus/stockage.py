@@ -39,16 +39,34 @@ def lire(owner, ident):
     return b.contenu if b else None
 
 
-def ecrire(owner, ident, contenu):
-    """Enregistre le brouillon ; la version la plus recente l'emporte.
+def revision_de(contenu):
+    try:
+        return int((contenu or {}).get("revision") or 0)
+    except (TypeError, ValueError):
+        return 0
 
-    Deux postes ouverts sur le meme compte rendu : une ecriture plus
-    ancienne que celle deja conservee est ignoree, et la version gardee
-    est renvoyee pour que l'appelant se remette a jour.
+
+CONFLIT = "conflit"
+
+
+def ecrire(owner, ident, contenu):
+    """Enregistre le brouillon s'il prolonge la version conservee.
+
+    Chaque ecriture acceptee recoit une revision (1, 2, 3...). L'appelant
+    renvoie celle dont sa saisie est partie : si une autre ecriture est
+    passee entre-temps — autre onglet, autre poste — sa copie est perimee
+    et refusee (`CONFLIT`, avec la version gardee), quelle que soit sa
+    date : l'horloge d'un poste ne dit pas qui a vu la derniere version.
+
+    Un meme onglet (`ecrivain`) peut enchainer ses envois sans attendre
+    la reponse du precedent : sa saisie prolonge sa propre ecriture.
+    Entre deux de ses envois arrives dans le desordre, le plus ancien
+    est ignore.
     """
     contenu = dict(contenu)
     contenu.setdefault("modifieLe", maintenant())
     modifie_le = str(contenu["modifieLe"])
+    base = revision_de(contenu)
     with transaction.atomic():
         # Supprime ailleurs apres cette version : on ne le ressuscite pas.
         supprime = Suppression.objects.select_for_update().filter(owner=owner, ident=ident).first()
@@ -57,8 +75,17 @@ def ecrire(owner, ident, contenu):
         if supprime:
             supprime.delete()
         actuel = Brouillon.objects.select_for_update().filter(owner=owner, ident=ident).first()
-        if actuel and actuel.modifie_le > modifie_le:
-            return actuel.contenu, False
+        if actuel:
+            courante = revision_de(actuel.contenu)
+            meme_ecrivain = bool(contenu.get("ecrivain")) \
+                and actuel.contenu.get("ecrivain") == contenu.get("ecrivain")
+            if base != courante and not meme_ecrivain:
+                return actuel.contenu, CONFLIT
+            if meme_ecrivain and actuel.modifie_le > modifie_le:
+                return actuel.contenu, False
+            contenu["revision"] = courante + 1
+        else:
+            contenu["revision"] = 1
         scope_node, brand = perimetre_du_contenu(contenu)
         Brouillon.objects.update_or_create(
             owner=owner, ident=ident,
