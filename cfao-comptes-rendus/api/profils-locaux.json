@@ -1,0 +1,33 @@
+[
+  {
+    "identifiant": "formateur.demo",
+    "id": "f-demo",
+    "roles": ["trainer"],
+    "firstName": "Formateur",
+    "lastName": "Démo",
+    "email": "formateur.demo@example.invalid",
+    "scopeNodes": ["CMR"],
+    "brands": ["toyota"],
+    "departments": ["motors"]
+  },
+  {
+    "identifiant": "ki.demo",
+    "id": "ki-demo",
+    "roles": ["learner", "ki"],
+    "firstName": "Suppléant",
+    "lastName": "Démo",
+    "scopeNodes": ["CIV"],
+    "brands": ["toyota"],
+    "departments": ["motors"]
+  },
+  {
+    "identifiant": "apprenant.demo",
+    "id": "a-demo",
+    "roles": ["learner"],
+    "firstName": "Apprenant",
+    "lastName": "Démo",
+    "scopeNodes": ["CMR"],
+    "brands": ["toyota"],
+    "departments": ["motors"]
+  }
+]

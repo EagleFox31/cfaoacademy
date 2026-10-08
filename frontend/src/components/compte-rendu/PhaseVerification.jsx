@@ -13,7 +13,7 @@ import EditeurParticipants from './EditeurParticipants'
 import EditeurJournee, { MAX_PHOTOS_JOUR } from './EditeurJournee'
 import EditeurBilan from './EditeurBilan'
 import { diapoDe, valeursDrapeaux } from '../../utils/diapositives'
-import { useRefsPhotos, ancrerPhotos } from '../../utils/photosService'
+import { useRefsPhotos, ancrerPhotos, relancerPhoto, srcPhoto } from '../../utils/photosService'
 import { participantPourMoteur, proposerTexte } from '../../utils/redaction'
 import { chiffresSession, constatsParDefaut, donneesSession, formeBilan, paragrapheBilan,
   redigerRemarque, rubriquesBilan }
@@ -1157,7 +1157,7 @@ function ApercuPage({ page, textes, photos }) {
             ) : (
               photos.slice(0, 6).map(p => (
                 <figure key={p.id} className="cr-page-photo">
-                  <img src={p.apercu} alt={p.legende || p.nom} />
+                  <img src={srcPhoto(p)} alt={p.legende || p.nom} onError={relancerPhoto} />
                   {p.legende && <figcaption>{p.legende}</figcaption>}
                 </figure>
               ))
@@ -1242,7 +1242,7 @@ function PanneauPhotos({
           <div className="cr-vignettes">
             {photos.map((p, i) => (
               <div key={p.id} className="cr-vignette">
-                <img src={p.apercu} alt="" />
+                <img src={srcPhoto(p)} alt="" onError={relancerPhoto} />
                 <input className="cr-photo-legend" value={p.legende}
                   placeholder="Libellé (facultatif)"
                   onChange={e => onLegender(p.id, e.target.value)}

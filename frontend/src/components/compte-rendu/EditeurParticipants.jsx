@@ -18,6 +18,7 @@
 
 import { useState } from 'react'
 import ImageCadree, { BoutonRecadrer } from './ImageCadree'
+import { srcPhoto } from '../../utils/photosService'
 
 /** Le portrait du modele est carre ; la photo de groupe est en 1,38. */
 export const RATIO_PORTRAIT = 1
@@ -150,7 +151,7 @@ function LigneFormateur({ formateur, rang, seul, onChamp, onPortrait, onRetirer 
         }}>
         {formateur.portrait ? (
           <>
-            <ImageCadree src={formateur.portrait.apercu}
+            <ImageCadree src={srcPhoto(formateur.portrait)}
               cadrage={formateur.portrait.cadrage} actif={cadrage}
               onCadrer={c => onChamp('portrait', { ...formateur.portrait, cadrage: c })} />
             <BoutonRecadrer actif={cadrage} rang={rang + 1}
@@ -244,7 +245,7 @@ function CadreGroupe({ photo, onPhoto }) {
         }}>
         {photo ? (
           <>
-            <ImageCadree src={photo.apercu} cadrage={photo.cadrage}
+            <ImageCadree src={srcPhoto(photo)} cadrage={photo.cadrage}
               actif={cadrage}
               onCadrer={c => onPhoto({ ...photo, cadrage: c })} />
             <BoutonRecadrer actif={cadrage} rang="de groupe"
