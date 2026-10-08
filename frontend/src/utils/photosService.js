@@ -47,8 +47,33 @@ export function useRefsPhotos(photosParRubrique) {
   return refs
 }
 
-/** L'adresse d'une photo conservee par le serveur. */
-export const adressePhoto = ref => `/cr-donnees/photos/${ref}.jpg`
+/**
+ * L'adresse d'une photo conservee par le serveur.
+ *
+ * `?v=2` : l'adresse sans version a pu etre gardee un an par le
+ * navigateur alors que le serveur la servait vide ; reparee depuis, la
+ * photo restait blanche. La nouvelle adresse ignore ces copies.
+ */
+export const adressePhoto = ref => `/cr-donnees/photos/${ref}.jpg?v=2`
+
+/**
+ * L'adresse a afficher pour une photo du brouillon : celle du serveur des
+ * qu'elle y est ancree, sinon son adresse locale (`blob:`). Les
+ * brouillons anciens gardent l'adresse sans version dans `apercu`.
+ */
+export const srcPhoto = p => (p?.ref ? adressePhoto(p.ref) : p?.apercu)
+
+/**
+ * `onError` d'une photo du serveur : la redemande une fois en contournant
+ * le cache du navigateur. Une copie abimee gardee par le navigateur ne
+ * laisse plus une case blanche.
+ */
+export function relancerPhoto(e) {
+  const img = e.currentTarget
+  if (img.dataset.relance || !img.src.includes('/cr-donnees/photos/')) return
+  img.dataset.relance = '1'
+  img.src = `${img.src}${img.src.includes('?') ? '&' : '?'}r=${Date.now()}`
+}
 
 /**
  * Inscrit dans le brouillon l'identifiant serveur des photos envoyees.

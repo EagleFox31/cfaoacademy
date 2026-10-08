@@ -22,6 +22,7 @@ import BoutonsRedaction from './BoutonsRedaction'
 import { casesDe, dispositionsClassees, dispositionsPour, grilleDe, MAX_PHOTOS }
   from '../../data/dispositions_photos'
 import { formeBilan, paragrapheBilan } from '../../utils/remarquesSession'
+import { srcPhoto } from '../../utils/photosService'
 
 const FORMES = [
   { id: 'paragraphe', nom: 'Un paragraphe', note: 'Comme dans les comptes rendus de référence' },
@@ -284,7 +285,7 @@ function PlanchePhotos({ photos, disposition, parImage, commune, legende,
               }}
               onDragEnd={() => { setSaisie(null); setSurvol(null) }}>
               <div className="cr-case-image">
-                <ImageCadree src={photo.apercu} cadrage={photo.cadrage}
+                <ImageCadree src={srcPhoto(photo)} cadrage={photo.cadrage}
                   actif={recadre}
                   onCadrer={onCadrer && (c => onCadrer(photo.id, c))} />
                 <span className="cr-case-rang" aria-hidden="true">{i + 1}</span>

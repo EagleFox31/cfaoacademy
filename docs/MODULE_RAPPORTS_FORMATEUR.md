@@ -41,27 +41,32 @@ toutes les pages sont ✓ est **terminé** : il quitte « en cours » et rejoint
 ## 2. Architecture
 
 ```
-Navigateur (SPA React)                     services/  (Python)
+Navigateur (SPA React)                     cfao-comptes-rendus/api (Django)
 ┌──────────────────────────┐   /apercu/*    ┌─────────────────────────────────┐
-│ frontend/src/…compte-rendu│ ─────────────▶ │ apercu/api.py (Flask)            │
-│  - saisie, brouillon      │  /cr-donnees/* │  - service.py : drapeaux → PPTX  │
-│  - valeursDrapeaux()      │ ─────────────▶ │  - composer/alleger : PPTX réduit│
-│  - export/import Excel    │                │  - LibreOffice : PPTX → PNG/PDF  │
-│    (exceljs, dans le      │                │  - stockage.py : brouillons      │
-│     navigateur)           │                │  - photos.py : photos, légendes  │
-└──────────────────────────┘                │ redaction/ : moteur de texte     │
-                                            │ apercu/modeles/MODELE-REFERENCES │
-                                            └─────────────────────────────────┘
+│ frontend/src/…compte-rendu│ ─────────────▶ │ comptes_rendus/views.py (DRF)    │
+│  - saisie, brouillon      │  /cr-donnees/* │  - PEP Cerbos sur chaque route   │
+│  - valeursDrapeaux()      │ ─────────────▶ │  - stockage.py : brouillons      │
+│  - export/import Excel    │                │ core/auth : OIDC ou profils dev  │
+│    (exceljs, dans le      │                │ rendu/service.py : drapeaux→PPTX │
+│     navigateur)           │                │  - LibreOffice : PPTX → PNG/PDF  │
+└──────────────────────────┘                │  - photos.py : photos, légendes  │
+                                            │ redaction/ : moteur de texte     │
+                                            │ rendu/modeles/MODELE-REFERENCES  │
+                                            └───────────────┬─────────────────┘
+                                                            │ CheckResources
+                                            cfao-comptes-rendus/cerbos (default-deny)
 ```
 
 - **Dev** : le serveur Vite relaie `/apercu` et `/cr-donnees` vers `127.0.0.1:5175`
   (`frontend/vite.config.js`).
-- **Docker Compose** : service `rapports` (`services/Dockerfile`), joignable seulement par la
-  passerelle nginx, qui route les mêmes chemins (`gateway/nginx.conf`).
+- **Docker Compose** : service `rapports` (`cfao-comptes-rendus/Dockerfile`) et son Cerbos
+  `rapports-cerbos`, joignables seulement par la passerelle nginx, qui route les mêmes chemins
+  (`gateway/nginx.conf`). Le dossier `cfao-comptes-rendus/` se déploie aussi seul (son propre
+  `docker-compose.yml`, `Makefile`, `.env.example`).
 
-Ce service Flask est un **écart assumé et transitoire** par rapport à l'architecture cible
-(Django / Node, Keycloak, Cerbos, PostgreSQL) : voir
-[ADR 0001](./adr/0001-service-rapports-formateur.md) et les stories de mise en conformité (§ 9).
+L'ancien service Flask (écart transitoire de l'[ADR 0001](./adr/0001-service-rapports-formateur.md))
+est remplacé par ce service détachable (story 04-5-1), sur le modèle du kit `template-service` :
+base propre, identité `standalone` / `integrated`, Cerbos par défaut refusé, OIDC.
 
 ### Le principe : un modèle à drapeaux
 
@@ -126,7 +131,7 @@ Règles à connaître avant de toucher au modèle ou aux drapeaux :
 | Fiches | 25, puis 27 par stagiaire (formation) ou **26** par candidat (certification) |
 | Clôture | 28 |
 
-Sources : `DIAPO_PAR_PAGE` (`utils/diapositives.js`) et `DIAPOS` (`services/apercu/modele.py`).
+Sources : `DIAPO_PAR_PAGE` (`utils/diapositives.js`) et `DIAPOS` (`cfao-comptes-rendus/api/rendu/modele.py`).
 
 **Ordre et intercalaires** — l'ordre des rapports de référence : couverture, participants
 (photo de groupe), objectifs, déroulé, résultats / satisfaction / bilan, fiches, clôture.
@@ -135,7 +140,7 @@ Chaque section est précédée de son intercalaire (3, 5, 10, 16, 25), posé par
 dans la numérotation 1 à 5. L'intercalaire 25 liste les stagiaires (nom complet, pays).
 
 **Aperçu dans l'Explorateur** — le PPTX porte `docProps/thumbnail.jpeg` (256 px), l'image de sa
-première page (`poser_vignette`, `services/apercu/service.py`), comme ceux que PowerPoint enregistre.
+première page (`poser_vignette`, `cfao-comptes-rendus/api/rendu/service.py`), comme ceux que PowerPoint enregistre.
 
 **Fiche de certification (26)** — conforme aux rapports G3 de référence : tableau « Filiale »,
 une ligne `G38001: intitulé / 100` par module (note rouge sous 70), `Total/ N`, `Pourcentage(%)`
@@ -146,7 +151,7 @@ et case Validé / Échoué ; bloc e-learning ; appréciation ; bandeau
 présents) retire son tableau et son anneau du classeur Excel embarqué lui-même, pas seulement
 de l'image : cellules, série du graphique, titre automatique ; l'étiquette de l'anneau restant
 passe au centre. Sans aucune des deux notes, l'objet et sa pastille ou son titre de colonne
-sont retirés de la page (`_sans_moitie_absente`, `services/apercu/classeurs.py`).
+sont retirés de la page (`_sans_moitie_absente`, `cfao-comptes-rendus/api/rendu/classeurs.py`).
 
 ---
 
@@ -164,8 +169,9 @@ Champs principaux : `type` (`formation` | `certification`), `codeFormation`, `in
 (certification), `satisfaction`, `textes` (clé `page.champ`), `photos` (par rubrique),
 `dispositions`, `modesLegende`, `legendes`, `marquageObjectifs`, `termineLe`.
 
-Stockage : SQLite dans `services/apercu/donnees/` (ignoré par Git ; volume `rapports-donnees`
-en conteneur). Photos : `services/apercu/donnees/photos/`.
+Stockage : base propre au service (`DATABASE_URL` : SQLite sur le volume `rapports-donnees` dans la
+plateforme, PostgreSQL dans le compose du service seul). Photos : `$CR_DONNEES/photos/` (`/donnees`
+en conteneur, ignoré par Git en local).
 
 ### Planning de démonstration et données personnelles
 
@@ -196,7 +202,7 @@ Menu « Enregistrer en Excel » / « Reprendre d'un fichier Excel » (`MenuExcel
 
 ### Rédaction
 
-`services/redaction/` propose appréciations, bilans et constats à partir des notes
+`cfao-comptes-rendus/api/redaction/` propose appréciations, bilans et constats à partir des notes
 (`POST /apercu/redaction`). Il n'invente rien : sans donnée, la phrase correspondante disparaît.
 Le texte proposé reste à relire par le formateur.
 
@@ -218,24 +224,24 @@ Le texte proposé reste à relire par le formateur.
 | `GET/PUT/DELETE /cr-donnees/brouillons[/<id>]` | brouillons du compte connecté |
 | `GET /cr-donnees/photos/<id>.jpg` | photo enregistrée |
 
-Hors `sante` et les trois routes de connexion, tout répond 401 sans session.
+Hors `sante` et les trois routes de connexion, tout répond 401 sans identité. Chaque route qui
+touche une donnée interroge le Cerbos du service (`cfao-comptes-rendus/cerbos/`, refus par défaut).
 
-### Comptes des formateurs
+### Identité des formateurs
 
-Chaque formateur se connecte par le formulaire de `/login` ; les profils de démonstration de la
-liste ne comptent aucun formateur. Les comptes (empreinte du mot de passe, profil avec le vrai
-nom) sont dans `services/apercu/donnees/comptes.sqlite`, hors dépôt ; la base ne garde que
-l'empreinte des jetons de session. « Se souvenir de moi » : 30 jours, sinon la session s'arrête
-avec le navigateur (12 h au plus). Cinq échecs bloquent l'identifiant une minute.
+Le service suit `DEPLOYMENT_MODE` :
 
-```bash
-python services/apercu/comptes.py creer <identifiant> <profil.json>   # affiche le mot de passe
-python services/apercu/comptes.py mot-de-passe <identifiant>          # nouveau mot de passe, sessions fermées
-python services/apercu/comptes.py liste
-```
+- `integrated` (plateforme) : jeton Keycloak vérifié par les clés JWKS (`OIDC_ISSUER`,
+  `OIDC_JWKS_URL`, `OIDC_AUDIENCE`) ; `/cr-donnees/connexion` renvoie vers la connexion de la
+  plateforme (`OIDC_CONNEXION`). Le service refuse de démarrer sans `SECRET_KEY` ni émetteur OIDC.
+- `standalone` (poste de dev, `DEBUG=True` obligatoire) : profils fictifs de
+  `cfao-comptes-rendus/api/profils-locaux.json`, choisis par leur identifiant, sans mot de passe ;
+  cookie `cfao_session` signé (« Se souvenir de moi » : 30 jours, sinon 12 h au plus).
 
-L'`id` du profil range les brouillons : le garder quand on recrée un compte. Le planning affiché
-ne retient que les sessions dont le formateur est le compte connecté.
+L'`id` du profil range les brouillons. Reprise des brouillons et photos de l'ancien service Flask :
+`python manage.py importer_flask --source <dossier donnees> [--correspondance ids.json] [--essai]`
+(`make rapports-importer SOURCE=/donnees` dans la plateforme). Le planning affiché ne retient que
+les sessions dont le formateur est le compte connecté.
 
 ---
 
@@ -244,9 +250,11 @@ ne retient que les sessions dont le formateur est le compte connecté.
 Prérequis : Node 20, Python 3.12, **LibreOffice** (Impress).
 
 ```bash
-# Service (port 5175, boucle locale)
-pip install -r services/requirements.txt
-python services/apercu/api.py
+# Service (port 5175, mode autonome)
+cd cfao-comptes-rendus/api
+python -m venv .venv && .venv/Scripts/pip install -r requirements-dev.txt
+.venv/Scripts/python manage.py migrate
+.venv/Scripts/python manage.py runserver 127.0.0.1:5175
 
 # Interface (port 5174)
 cd frontend && npm ci && npm run dev
@@ -254,11 +262,14 @@ cd frontend && npm ci && npm run dev
 ```
 
 Variables : `CR_MODELE` (autre modèle), `CR_CACHE` (cache des images), `CR_SOFFICE` (chemin de
-LibreOffice, par défaut celui de Windows), `CR_HOTE` / `CR_PORT` (écoute).
+LibreOffice, par défaut celui de Windows), `CR_DONNEES` (photos). Configuration Django :
+`cfao-comptes-rendus/.env.example`.
 
-En conteneur : `docker compose up rapports gateway` — l'image embarque LibreOffice et des polices
-métriquement compatibles (Liberation, Carlito). Le rendu Linux peut différer de quelques pixels
-du rendu Windows.
+En conteneur : `docker compose up rapports gateway` (plateforme, mode intégré) ou
+`cd cfao-comptes-rendus && make up` (service seul). L'image (multi-étapes, gunicorn, utilisateur
+sans privilège) embarque LibreOffice et des polices métriquement compatibles (Liberation,
+Carlito) ; un seul processus, car le verrou LibreOffice et les tâches de fond vivent en mémoire.
+Le rendu Linux peut différer de quelques pixels du rendu Windows.
 
 ---
 
@@ -266,7 +277,8 @@ du rendu Windows.
 
 ```bash
 cd frontend && npm test              # Vitest : calculs, drapeaux, légendes
-cd services && pip install -r requirements-dev.txt && pytest -q tests
+cd cfao-comptes-rendus/api && pip install -r requirements-dev.txt && pytest -q
+cd cfao-comptes-rendus && make policy-test   # règles Cerbos du service
 ```
 
 | Fichier | Couvre |
@@ -274,22 +286,22 @@ cd services && pip install -r requirements-dev.txt && pytest -q tests
 | `frontend/src/utils/certification.test.js` | pourcentage, seuil 70 %, résultat final, e-learning |
 | `frontend/src/utils/diapositives.test.js` | drapeaux de la fiche de certification, code couleur |
 | `frontend/src/data/dispositions_photos.test.js` | dispositions, modes de légende, anciens brouillons |
-| `services/tests/test_service.py` | substitution, lignes répétées, couleurs, modèle versionné, rendu LibreOffice |
-| `services/tests/test_brouillons.py` | contrat `/cr-donnees`, cloisonnement par utilisateur |
-| `services/tests/test_mise_en_page.py` | limite des logos, pied de page, tailles en clair, légendes |
+| `cfao-comptes-rendus/api/comptes_rendus/tests/test_service.py` | substitution, lignes répétées, couleurs, modèle versionné, rendu LibreOffice |
+| `cfao-comptes-rendus/api/comptes_rendus/tests/test_brouillons.py` | contrat `/cr-donnees`, cloisonnement par utilisateur |
+| `cfao-comptes-rendus/api/comptes_rendus/tests/test_mise_en_page.py` | limite des logos, pied de page, tailles en clair, légendes |
 
 Le rendu LibreOffice est sauté en CI (LibreOffice absent du runner) ; il s'exécute en local.
-**Les tests n'écrivent jamais dans `services/apercu/donnees/`** : base temporaire par test.
+**Les tests n'écrivent jamais dans un dossier de données réel** : base SQLite en mémoire.
 
 ---
 
 ## 7. Modifier le modèle PowerPoint
 
-1. Ouvrir `services/apercu/modeles/MODELE-REFERENCES.pptx` dans PowerPoint.
+1. Ouvrir `cfao-comptes-rendus/api/rendu/modeles/MODELE-REFERENCES.pptx` dans PowerPoint.
 2. Garder chaque drapeau **seul dans son run** (le retaper d'un bloc si PowerPoint le coupe).
 3. Ne pas renuméroter les diapositives sans mettre à jour `DIAPO_PAR_PAGE` et `modele.py`.
 4. Aucune donnée réelle (nom, photo) dans le modèle : il est anonymisé.
-5. `pytest -q services/tests` vérifie la présence des drapeaux de la fiche de certification.
+5. `pytest -q` (dans `cfao-comptes-rendus/api`) vérifie la présence des drapeaux de la fiche de certification.
 
 ---
 

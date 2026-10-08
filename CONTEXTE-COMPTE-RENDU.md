@@ -14,7 +14,7 @@ pourquoi, et ce qui reste ouvert.
 | Branche courante | **`feature/04-5-rapports-formateur`** (poussée, historique anonymisé) |
 | Branche de travail d'origine | `feature/compte-rendu-synchronisation` (locale) |
 | Branche précédente | `feature/module-formateur-compte-rendu` (close sur `48aa1e6`) |
-| Modèle PPTX | `services/apercu/modeles/MODELE-REFERENCES.pptx` — versionné ; plus aucun dossier externe requis |
+| Modèle PPTX | `cfao-comptes-rendus/api/rendu/modeles/MODELE-REFERENCES.pptx` — versionné ; plus aucun dossier externe requis |
 | Documentation du module | [docs/MODULE_RAPPORTS_FORMATEUR.md](docs/MODULE_RAPPORTS_FORMATEUR.md) |
 
 **Attention :** le `git status` affiché au démarrage d'une session porte
@@ -26,7 +26,7 @@ travail.
 | Service | Port | Démarrage |
 |---|---|---|
 | UI (Vite) | **5174** | `npm run dev` depuis `frontend/` |
-| Aperçu (Flask) | **5175** | `python services/apercu/api.py` |
+| Comptes rendus (Django) | **5175** | `manage.py runserver 127.0.0.1:5175` (cfao-comptes-rendus/api) |
 
 Le port 5173 est occupé par un autre projet : une navigation qui y
 atterrit donne « No routes matched ». La route de l'assistant est
@@ -58,7 +58,7 @@ dépliables** (un seul ouvert à la fois) :
 - **Résultats / Satisfaction** — tableaux, deux commentaires facultatifs
 - **Fiches individuelles** — une par stagiaire (gabarit diapo 27)
 
-Le **moteur de texte** (`services/redaction/`, copié depuis
+Le **moteur de texte** (`cfao-comptes-rendus/api/redaction/`, copié depuis
 `outils/phrases/` du dépôt compagnon) propose les appréciations. Il
 n'invente rien : chaque donnée absente retire le mouvement de phrase qui
 en dépend. Le bouton « Proposer un texte » est donc **désactivé tant que
@@ -85,7 +85,7 @@ de diverger.
 volontairement en place le drapeau d'une donnée absente, pour qu'une
 page incomplète se voie. Un sous-titre vide imprimait donc « SOUS TITRE »
 sur la couverture. D'où le marqueur `VIDE` (`∅`), défini des deux côtés
-(`services/apercu/service.py` et `utils/diapositives.js`) : il dit
+(`cfao-comptes-rendus/api/rendu/service.py` et `utils/diapositives.js`) : il dit
 « vide à dessein », et le mot du modèle disparaît.
 
 **Les fiches individuelles utilisent la diapositive 27** (formation), pas
@@ -176,7 +176,7 @@ automatiquement.** Les tableaux et graphiques des diapositives 17
 (progression, acquisition) et 19 (satisfaction) sont des **classeurs
 Excel embarqués** affichés par une image EMF figée — remplir le
 classeur ne suffit pas, PowerPoint/LibreOffice montrent l'image, pas
-le classeur. `services/apercu/classeurs.py` reconnaît chaque classeur à
+le classeur. `cfao-comptes-rendus/api/rendu/classeurs.py` reconnaît chaque classeur à
 sa cellule A1 (`nature()`), y pose les valeurs (`remplir_classeur`),
 puis **redessine l'image** via LibreOffice + PyMuPDF (fond rendu
 transparent). Le classeur reste éditable au double-clic dans PowerPoint.
@@ -206,7 +206,7 @@ vigilance|suites}`) et le pied de page commun (`{intitulé_formation}`,
 le pré-remplissage de `rubriquesBilan()`.
 
 **Rédaction assistée des remarques de session** (nouveau moteur,
-distinct du moteur individuel des fiches) : `services/redaction/
+distinct du moteur individuel des fiches) : `cfao-comptes-rendus/api/redaction/
 lexique_session.py` (grammaire à choix imbriqués `[a|b|c]` + accords
 `<sing|plur:champ>`) et `moteur_session.py` (`rediger_progression`,
 `rediger_acquisition`, `rediger_bilan`). Point d'entrée unique
@@ -244,7 +244,7 @@ ramène l'image aux proportions de l'EMF est centré sur les deux axes
 image s'efface au profit d'un cadre neutre avec indicateur centré.
 
 **Appréciation des fiches (page 27)** : nouveau moteur
-`services/redaction/moteur_fiche.py` (`rediger_appreciation`), calqué
+`cfao-comptes-rendus/api/redaction/moteur_fiche.py` (`rediger_appreciation`), calqué
 sur les 112 appréciations des fiches réelles : acquisition qualifiée et
 seuil de 70 %, écart théorie/pratique s'il est net, progression lue au
 regard du niveau d'entrée (plafond, recul, nulle, modeste, nette,
@@ -266,8 +266,8 @@ lecture de la liste. Choisir une session puis partir ne crée plus de
 carte « Saisie interrompue ».
 
 **Stockage serveur (solution de démarrage)** : les brouillons sont
-conservés par le service d'aperçu (`services/apercu/stockage.py`, SQLite
-`services/apercu/donnees/comptes-rendus.sqlite`, gitignoré), routes
+conservés par le service d'aperçu (`cfao-comptes-rendus/api/comptes_rendus/stockage.py`, SQLite
+base propre au service, volume `/donnees` en conteneur), routes
 `/cr-donnees/brouillons[/<id>]` (GET/PUT/DELETE, en-tête `X-Utilisateur` =
 id du compte de démo, **pas d'authentification : réseau local seulement**)
 et `/cr-donnees/photos/<ref>.jpg` (photos désormais permanentes dans
@@ -395,7 +395,7 @@ certification demanderait en plus : niveau, modules requis/validés,
   le marquage (romain / puces / les deux).
 - Photos : envoyées une fois au service (`POST /apercu/photo`, réduites
   à 1600 px), posées sur la diapositive 9 selon la disposition
-  (`services/apercu/photos.py`), légendes comprises. Chaque image se
+  (`cfao-comptes-rendus/api/rendu/photos.py`), légendes comprises. Chaque image se
   recadre (bouton ✥ ou Ctrl + glisser) ; le cadrage suit dans la
   diapositive. Page 4 (participants) synchronisée : formateur, une
   ligne par stagiaire (resserrée au-delà de 11), portrait et photo de
@@ -471,5 +471,5 @@ Avant : `0611f42 → f9712cb → ddb85f1 → d0b1856 → 0766bce → 094493d →
 | `frontend/src/utils/redaction.js` | Pont vers le moteur de texte |
 | `frontend/src/data/dispositions_photos.js` | Catalogue des dispositions ; `dispositionsClassees()` |
 | `frontend/src/styles/compte-rendu.css` | Tout le CSS du module |
-| `services/apercu/service.py` | Substitution des drapeaux, cache, conversion LibreOffice |
-| `services/apercu/modele.py` | Quelles diapositives composent quelle partie |
+| `cfao-comptes-rendus/api/rendu/service.py` | Substitution des drapeaux, cache, conversion LibreOffice |
+| `cfao-comptes-rendus/api/rendu/modele.py` | Quelles diapositives composent quelle partie |

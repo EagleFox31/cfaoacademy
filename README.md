@@ -91,7 +91,7 @@ cd cfao-operations && npm ci && npm run typecheck && npm test && npm run build
 cd frontend && npm ci && npm test && npm run build
 
 # services rapports (pytest)
-cd services && pip install -r requirements-dev.txt && pytest -q tests
+cd cfao-comptes-rendus/api && pip install -r requirements-dev.txt && pytest -q
 ```
 
 La CI GitHub Actions exécute ces vérifications sur chaque PR (voir [.github/workflows/ci.yml](./.github/workflows/ci.yml)).

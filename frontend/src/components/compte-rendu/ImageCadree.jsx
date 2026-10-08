@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { relancerPhoto } from '../../utils/photosService'
 
 /**
  * Une image qui remplit son cadre, et qu'on peut decaler dedans.
@@ -70,7 +71,7 @@ export default function ImageCadree({ src, alt = '', cadrage, onCadrer, actif, c
   }
 
   return (
-    <img ref={image} src={src} alt={alt} draggable={false}
+    <img ref={image} src={src} alt={alt} draggable={false} onError={relancerPhoto}
       className={`cr-image-cadree${actif ? ' cr-image-cadree--actif' : ''}`
         + `${enCours ? ' cr-image-cadree--glisse' : ''}${className ? ` ${className}` : ''}`}
       style={{ objectPosition: `${pos.x}% ${pos.y}%` }}

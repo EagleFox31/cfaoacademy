@@ -1,0 +1,54 @@
+"""Mode autonome (developpement) : identite sans Keycloak.
+
+Deux sources, comme le kit `template-service` :
+- l'en-tete `X-User-ID` (tests, curl) ;
+- le cookie `cfao_session`, signe par le service a la connexion
+  (`/cr-donnees/connexion`), pour que le portail fonctionne tel quel.
+
+Aucun mot de passe n'est stocke ni verifie : ce mode n'est autorise
+qu'avec DEBUG (voir `config/settings/base.py`).
+"""
+from django.core import signing
+from rest_framework import authentication
+
+from .identity import get_identity_provider
+from .principal import construire_principal
+
+COOKIE = "cfao_session"
+DUREE_PERSISTANTE = 30 * 24 * 3600
+DUREE_NAVIGATEUR = 12 * 3600
+# Un sel par duree : la duree de vie fait partie de la signature.
+_SELS = {"p": ("cr-session-persistante", DUREE_PERSISTANTE),
+         "n": ("cr-session-navigateur", DUREE_NAVIGATEUR)}
+
+
+def signer_session(user_id: str, persistante: bool) -> tuple[str, int]:
+    """La valeur du cookie de session et sa duree de vie."""
+    genre = "p" if persistante else "n"
+    sel, duree = _SELS[genre]
+    return f"{genre}:{signing.TimestampSigner(salt=sel).sign(user_id)}", duree
+
+
+def lire_session(valeur: str | None) -> str | None:
+    """L'identifiant porte par un cookie de session valide, ou None."""
+    genre, _, signe = (valeur or "").partition(":")
+    if genre not in _SELS or not signe:
+        return None
+    sel, duree = _SELS[genre]
+    try:
+        return signing.TimestampSigner(salt=sel).unsign(signe, max_age=duree)
+    except signing.BadSignature:
+        return None
+
+
+class LocaleAuthentication(authentication.BaseAuthentication):
+    def authenticate(self, request):
+        user_id = request.headers.get("X-User-ID") or lire_session(request.COOKIES.get(COOKIE))
+        if not user_id:
+            return None
+        resolu = get_identity_provider().resolve_user(user_id=user_id)
+        return construire_principal({**resolu, "id": user_id}), None
+
+    def authenticate_header(self, request):
+        # Un en-tete WWW-Authenticate fait renvoyer 401 (et non 403) par DRF.
+        return "Session"

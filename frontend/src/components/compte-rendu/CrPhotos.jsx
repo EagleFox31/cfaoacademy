@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { dispositionsPour } from '../../data/mock_sessions_formateur'
 import { joursDeSession } from '../../utils/compteRendu'
+import { relancerPhoto, srcPhoto } from '../../utils/photosService'
 
 /**
  * Photos et dispositions, rubrique par rubrique.
@@ -132,7 +133,8 @@ export default function CrPhotos({ brouillon, maj, session, parties }) {
           <div className="cr-photos">
             {photos.map((p, i) => (
               <figure key={p.id} className="cr-photo" style={{ margin: 0 }}>
-                <img className="cr-photo-img" src={p.apercu} alt={p.legende || p.nom} />
+                <img className="cr-photo-img" src={srcPhoto(p)} alt={p.legende || p.nom}
+                  onError={relancerPhoto} />
                 <figcaption className="cr-photo-body">
                   <input
                     className="cr-photo-legend"

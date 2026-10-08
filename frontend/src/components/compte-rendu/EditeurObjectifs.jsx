@@ -3,6 +3,7 @@ import ImageCadree, { BoutonRecadrer } from './ImageCadree'
 import ChoixLegende from './ChoixLegende'
 import { MAX_PHOTOS, casesDe, dispositionsClassees, dispositionsPour, grilleDe }
   from '../../data/dispositions_photos'
+import { srcPhoto } from '../../utils/photosService'
 
 /**
  * L'editeur des objectifs de la formation.
@@ -316,7 +317,7 @@ function PlanchePhotos({ photos, disposition, parImage, commune, legende, onLege
             }}
             onDragEnd={() => { setSaisie(null); setSurvol(null) }}>
             <div className="cr-case-image">
-              <ImageCadree src={photo.apercu} cadrage={photo.cadrage}
+              <ImageCadree src={srcPhoto(photo)} cadrage={photo.cadrage}
                 actif={recadre}
                 onCadrer={onCadrer && (c => onCadrer(photo.id, c))} />
               <span className="cr-case-rang" aria-hidden="true">{i + 1}</span>

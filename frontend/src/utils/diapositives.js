@@ -138,7 +138,7 @@ const PHRASE_ACQUISITION =
  * Le service laisse en place le drapeau d'une donnee manquante, pour
  * qu'une page incomplete se voie. Ce marqueur dit l'inverse : le champ
  * est vide parce qu'on l'a voulu, et le mot du modele doit disparaitre.
- * Il double `VIDE` dans `services/apercu/service.py`.
+ * Il double `VIDE` dans `cfao-comptes-rendus/api/rendu/service.py`.
  */
 export const VIDE = '∅'
 
