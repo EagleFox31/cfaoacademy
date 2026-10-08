@@ -78,9 +78,51 @@ def test_un_tableau_cede_l_exces_a_sa_derniere_ligne():
     assert hauteurs[0] == round(2.85 * CM) and sum(hauteurs) == M.LIMITE_BAS - round(3.52 * CM)
 
 
+def test_un_tableau_repartit_l_exces_sur_ses_lignes_sans_toucher_l_en_tete():
+    # Liste des stagiaires (page 3) : une seule ligne amputee de 0,26 cm
+    # descendait sous sa hauteur minimale, et LibreOffice la regrandissait.
+    y, entete, ligne = round(7.14 * CM), round(0.86 * CM), round(0.83 * CM)
+    hauteur = entete + 12 * ligne
+    rangs = f'<a:tr h="{entete}"></a:tr>' + f'<a:tr h="{ligne}"></a:tr>' * 12
+    cadre = (f'<p:graphicFrame><p:xfrm><a:off x="{CM}" y="{y}"/>'
+             f'<a:ext cx="{14 * CM}" cy="{hauteur}"/></p:xfrm><a:graphic><a:graphicData>'
+             f'<a:tbl>{rangs}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>')
+    sortie = M.ajuster_tableau(cadre)
+    hauteurs = [int(h) for h in re.findall(r'<a:tr h="(\d+)"', sortie)]
+    assert _bas(sortie) == M.LIMITE_BAS == y + sum(hauteurs)
+    assert hauteurs[0] == entete
+    assert max(hauteurs[1:]) - min(hauteurs[1:]) <= 1
+    assert min(hauteurs[1:]) >= round(0.80 * CM)
+
+
+def _numero(x, cx, chiffre='3'):
+    return ('<p:sp><p:nvSpPr><p:cNvPr id="4" name="Numero"/><p:cNvSpPr/>'
+            '<p:nvPr><p:ph type="sldNum" sz="quarter" idx="12"/></p:nvPr></p:nvSpPr>'
+            f'<p:spPr><a:xfrm><a:off x="{x}" y="{round(18.18 * CM)}"/>'
+            f'<a:ext cx="{cx}" cy="{round(0.3 * CM)}"/></a:xfrm></p:spPr>'
+            '<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:fld id="{1}" type="slidenum">'
+            f'<a:rPr lang="fr-FR"/><a:t>{chiffre}</a:t></a:fld></a:p></p:txBody></p:sp>')
+
+
 def test_le_numero_de_page_affiche_est_celui_du_rapport():
     xml = ('<a:fld id="{1}" type="slidenum"><a:rPr lang="en-US"/><a:pPr/><a:t>11</a:t></a:fld>')
     assert '<a:t>4</a:t>' in M.numeroter(xml, 4)
+
+
+def test_un_numero_a_deux_chiffres_tient_sur_une_ligne_au_meme_bord_droit():
+    # 0,36 cm : la case que PowerPoint taille pour « 13 », ou LibreOffice casse « 1 » sur « 3 ».
+    x, cx = round(29.02 * CM), round(0.36 * CM)
+    sortie = M.numeroter(_numero(x, cx), 13)
+    nx, _, ncx, _ = M._position(sortie)
+    assert '<a:t>13</a:t>' in sortie
+    assert ncx >= round(0.45 * CM) and nx + ncx == x + cx
+    assert '<a:bodyPr/>' in sortie
+
+
+def test_une_case_de_numero_assez_large_garde_sa_place():
+    x, cx = round(28.68 * CM), round(0.70 * CM)
+    sortie = M.numeroter(_numero(x, cx), 12)
+    assert M._position(sortie)[::2] == (x, cx)
 
 
 CADRE = (round(17.31 * CM), round(3.33 * CM), round(15.91 * CM), round(14.32 * CM))

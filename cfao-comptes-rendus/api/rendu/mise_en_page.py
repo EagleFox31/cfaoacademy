@@ -35,6 +35,9 @@ CORPS_MIN = 800
 REMONTEE_MAX = round(0.75 * EMU_PAR_CM)
 # Le pas de reduction d'une zone qui deborde : 2 points sur chaque texte.
 PALIER = 200
+# La place d'un chiffre du numero de page. Mesure sous LibreOffice : « 13 »
+# casse sur deux lignes dans une case de 0,30 a 0,36 cm, tient des 0,45 cm.
+LARGEUR_CHIFFRE = 0.3 * EMU_PAR_CM
 # Le corps de tous les commentaires sous les graphiques des resultats.
 CORPS_COMMENTAIRE = 1200
 # Le retrait de depart d'une famille de zones (voir `famille`) : les
@@ -319,20 +322,29 @@ def ajuster_cadre_auto(forme):
 
 
 def ajuster_tableau(cadre):
-    """Un tableau qui descend sous la limite cede la difference a sa derniere ligne."""
+    """Un tableau qui descend sous la limite repartit la difference sur ses lignes.
+
+    L'en-tete garde sa hauteur ; chaque autre ligne cede une part egale.
+    Amputee seule, la derniere passerait sous la hauteur de son texte et
+    LibreOffice la regrandirait sous la limite.
+    """
     pos = _position(cadre)
     if not pos or '<a:tbl>' not in cadre:
         return cadre
     x, y, cx, cy = pos
-    lignes = [int(h) for h in re.findall(r'<a:tr h="(\d+)"', cadre)]
+    rangs = list(re.finditer(r'<a:tr h="(\d+)"', cadre))
+    lignes = [int(m.group(1)) for m in rangs]
     if not lignes:
         return cadre
     hauteur = max(cy, sum(lignes))
     exces = y + hauteur - LIMITE_BAS
     if exces <= 0 or exces > lignes[-1] / 2:
         return cadre
-    dernier = list(re.finditer(r'<a:tr h="(\d+)"', cadre))[-1]
-    cadre = (cadre[:dernier.start(1)] + str(lignes[-1] - exces) + cadre[dernier.end(1):])
+    corps = rangs[1:] or rangs
+    part, reste = divmod(exces, len(corps))
+    for i, m in reversed(list(enumerate(corps))):
+        retrait = part + (1 if i >= len(corps) - reste else 0)
+        cadre = cadre[:m.start(1)] + str(int(m.group(1)) - retrait) + cadre[m.end(1):]
     return _deplacer(cadre, x, y, cx, hauteur - exces)
 
 
@@ -389,7 +401,23 @@ def ajuster(xml, imposes=None):
     return RE_CADRE.sub(lambda m: ajuster_tableau(m.group(0)), xml)
 
 
+def _case_du_numero(forme, chiffres):
+    """La case du numero, taillee par PowerPoint pour un chiffre, s'elargit vers la gauche.
+
+    Sans cela LibreOffice ecrit « 10 » sur deux lignes (« 1 » sur « 0 »).
+    """
+    if 'type="slidenum"' not in forme:
+        return forme
+    pos = _position(forme)
+    if not pos:
+        return forme
+    x, y, cx, cy = pos
+    largeur = max(cx, round(chiffres * LARGEUR_CHIFFRE))
+    return _deplacer(forme, x + cx - largeur, y, largeur, cy)
+
+
 def numeroter(xml, numero):
     """Le numero de page affiche tant que PowerPoint ne l'a pas recalcule."""
-    return re.sub(r'(<a:fld\b[^>]*type="slidenum"[^>]*>.*?<a:t>)\d*(</a:t>)',
-                  lambda m: f'{m.group(1)}{numero}{m.group(2)}', xml, flags=re.S)
+    xml = re.sub(r'(<a:fld\b[^>]*type="slidenum"[^>]*>.*?<a:t>)\d*(</a:t>)',
+                 lambda m: f'{m.group(1)}{numero}{m.group(2)}', xml, flags=re.S)
+    return RE_FORME.sub(lambda m: _case_du_numero(m.group(0), len(str(numero))), xml)
