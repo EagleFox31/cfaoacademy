@@ -435,10 +435,10 @@ export default function PhaseVerification({
                       onClick={() => setActive(i)}>
                       <span className="cr-fil-num">{i + 1}</span>
                       <span className="cr-fil-nom">{p.titre}</span>
-                      {p.rubrique && (brouillon.photos?.[p.rubrique]?.length > 0) && (
+                      {nombreDePhotos(p, brouillon) > 0 && (
                         <span className="cr-sommaire-pastille" aria-label="photos ajoutées"
                           title="Photos ajoutées">
-                          {brouillon.photos[p.rubrique].length}
+                          {nombreDePhotos(p, brouillon)}
                         </span>
                       )}
                       {/* L'etat ferme la ligne, toujours a la meme place. */}
@@ -646,6 +646,17 @@ function chiffresSuffisants(calcul) {
  * objectifs, les journees, et les fiches, qui ne s'ecrivent qu'avec des
  * notes. Le reste est pre-rempli et se relit.
  */
+/**
+ * Les photos posees sur une page. Celles de la page des stagiaires ne
+ * sont pas des photos de rubrique : les portraits des formateurs et la
+ * photo de groupe comptent avec elles.
+ */
+export function nombreDePhotos(page, b) {
+  const rubrique = page?.rubrique ? (b.photos?.[page.rubrique] || []).length : 0
+  if (page?.cle !== 'participants') return rubrique
+  return rubrique + (b.formateurs || []).filter(f => f.portrait).length + (b.photoGroupe ? 1 : 0)
+}
+
 /**
  * Ce qui manque a une page pour etre terminee, en mots ; vide si rien.
  *
