@@ -1,17 +1,20 @@
-"""Mode autonome (developpement) : identite sans Keycloak.
+"""Modes autonome (developpement) et local : identite sans Keycloak.
 
 Deux sources, comme le kit `template-service` :
-- l'en-tete `X-User-ID` (tests, curl) ;
+- l'en-tete `X-User-ID` (tests, curl), en mode autonome seulement ;
 - le cookie `cfao_session`, signe par le service a la connexion
   (`/cr-donnees/connexion`), pour que le portail fonctionne tel quel.
 
-Aucun mot de passe n'est stocke ni verifie : ce mode n'est autorise
-qu'avec DEBUG (voir `config/settings/base.py`).
+Le mode autonome ne verifie aucun mot de passe : il n'est autorise
+qu'avec DEBUG (voir `config/settings/base.py`). Le mode local verifie le
+mot de passe a la connexion (`comptes.py`) et ne reconnait que les
+profils de `PROFILS_LOCAUX`.
 """
+from django.conf import settings
 from django.core import signing
 from rest_framework import authentication
 
-from .identity import get_identity_provider
+from .identity import get_identity_provider, profil_par_id
 from .principal import construire_principal
 
 COOKIE = "cfao_session"
@@ -43,8 +46,12 @@ def lire_session(valeur: str | None) -> str | None:
 
 class LocaleAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
-        user_id = request.headers.get("X-User-ID") or lire_session(request.COOKIES.get(COOKIE))
+        autonome = settings.DEPLOYMENT_MODE == "standalone"
+        user_id = (autonome and request.headers.get("X-User-ID")) or lire_session(request.COOKIES.get(COOKIE))
         if not user_id:
+            return None
+        # Un compte retire des profils perd l'acces, meme avec un cookie encore valide.
+        if not autonome and not profil_par_id(user_id):
             return None
         resolu = get_identity_provider().resolve_user(user_id=user_id)
         return construire_principal({**resolu, "id": user_id}), None

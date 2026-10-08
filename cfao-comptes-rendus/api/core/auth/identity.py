@@ -1,7 +1,7 @@
 """Interface d'identite et de perimetre (Pattern Adapter).
 
-Deux modes geres par DEPLOYMENT_MODE :
-- 'standalone' : lit un profil local (fichier `PROFILS_LOCAUX`) pour developper sans dependances.
+Modes geres par DEPLOYMENT_MODE :
+- 'standalone' / 'local' : lit un profil local (fichier `PROFILS_LOCAUX`), sans dependances.
 - 'integrated' : interroge l'API centrale de CFAO Academy (GET /api/v1/core/me) avec cache.
 
 L'identifiant passe a `resolve_user` est toujours celui d'une identite
@@ -39,13 +39,21 @@ def profil_local(identifiant: str) -> Optional[Dict[str, Any]]:
                  if str(p.get("identifiant", "")).lower() == identifiant), None)
 
 
+def profil_par_id(user_id: str) -> Optional[Dict[str, Any]]:
+    """Le profil local de cet id (sans l'identifiant de connexion), ou None."""
+    for profil in _profils_locaux():
+        if profil.get("id") == user_id:
+            return {k: v for k, v in profil.items() if k != "identifiant"}
+    return None
+
+
 class LocalMockIdentityProvider:
-    """Mode autonome pour tests locaux."""
+    """Modes autonome et local : profils du fichier `PROFILS_LOCAUX`."""
 
     def resolve_user(self, user_id: str, raw_token: str = "") -> Dict[str, Any]:
-        for profil in _profils_locaux():
-            if profil.get("id") == user_id:
-                return {k: v for k, v in profil.items() if k != "identifiant"}
+        profil = profil_par_id(user_id)
+        if profil:
+            return profil
         return {
             "id": user_id or "demo-user",
             "roles": ["workshop_manager"],

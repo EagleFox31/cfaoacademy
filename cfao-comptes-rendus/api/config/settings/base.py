@@ -1,7 +1,8 @@
 """Configuration du service des comptes rendus formateur (story 04-5).
 
 Reprend celle du kit `template-service` : base propre au service, mode
-`standalone` (developpement) ou `integrated` (plateforme), PDP Cerbos.
+`standalone` (developpement), `local` (poste unique sur le reseau interne,
+comptes a mot de passe) ou `integrated` (plateforme), PDP Cerbos.
 """
 import os
 import sys
@@ -21,7 +22,7 @@ for _dossier in ("redaction", "rendu"):
     if _chemin not in sys.path:
         sys.path.insert(0, _chemin)
 
-# Ne vaut que pour le poste de dev : le mode integre la refuse.
+# Ne vaut que pour le poste de dev : les modes local et integre la refusent.
 CLE_DE_DEV = "cle-de-dev-non-secrete"
 
 env = environ.Env(
@@ -36,6 +37,7 @@ env = environ.Env(
     OIDC_CONNEXION=(str, "/oauth2/start?rd=/portail"),
     OIDC_DECONNEXION=(str, "/oauth2/sign_out?rd=/"),
     PROFILS_LOCAUX=(str, str(BASE_DIR / "profils-locaux.json")),
+    COMPTES_LOCAUX=(str, ""),
 )
 
 environ.Env.read_env(os.path.join(BASE_DIR.parent, ".env"))
@@ -46,8 +48,8 @@ DEPLOYMENT_MODE = env("DEPLOYMENT_MODE")
 CERBOS_HTTP = env("CERBOS_HTTP")
 PLATFORM_CORE_URL = env("PLATFORM_CORE_URL")
 
-if DEPLOYMENT_MODE not in ("standalone", "integrated"):
-    raise ImproperlyConfigured("DEPLOYMENT_MODE : 'standalone' ou 'integrated'.")
+if DEPLOYMENT_MODE not in ("standalone", "local", "integrated"):
+    raise ImproperlyConfigured("DEPLOYMENT_MODE : 'standalone', 'local' ou 'integrated'.")
 # Le mode autonome identifie sans mot de passe : il ne sert qu'au poste de dev.
 if DEPLOYMENT_MODE == "standalone" and not DEBUG:
     raise ImproperlyConfigured("DEPLOYMENT_MODE=standalone exige DEBUG=True (developpement seulement).")
@@ -70,6 +72,18 @@ if DEPLOYMENT_MODE == "integrated":
         raise ImproperlyConfigured("Mode integre : a renseigner : " + ", ".join(_manquants) + ".")
 # Profils fictifs du mode autonome (aucun vrai nom dans le depot).
 PROFILS_LOCAUX = env("PROFILS_LOCAUX")
+# Mode local : empreintes des mots de passe (base SQLite hors depot).
+COMPTES_LOCAUX = env("COMPTES_LOCAUX")
+
+# Le mode local est expose au reseau interne : vraie cle, mots de passe,
+# et jamais DEBUG (les pages d'erreur detaillees montreraient la configuration).
+if DEPLOYMENT_MODE == "local":
+    _manquants = [nom for nom, valeur in (("SECRET_KEY", SECRET_KEY != CLE_DE_DEV and SECRET_KEY),
+                                          ("COMPTES_LOCAUX", COMPTES_LOCAUX)) if not valeur]
+    if _manquants:
+        raise ImproperlyConfigured("Mode local : a renseigner : " + ", ".join(_manquants) + ".")
+    if DEBUG:
+        raise ImproperlyConfigured("DEPLOYMENT_MODE=local exige DEBUG=False.")
 
 # Les noms sous lesquels le service est appele (passerelle : son nom public).
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
@@ -110,6 +124,7 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
 _AUTHENTIFICATION = {
     "integrated": "core.auth.oidc.KeycloakJWTAuthentication",
     "standalone": "core.auth.locale.LocaleAuthentication",
+    "local": "core.auth.locale.LocaleAuthentication",
 }
 
 REST_FRAMEWORK = {

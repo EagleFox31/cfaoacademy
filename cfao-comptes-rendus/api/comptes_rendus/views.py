@@ -29,7 +29,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 import photos
-from core.auth import locale
+from core.auth import comptes, locale
 from core.auth.identity import profil_local
 from core.authz.cerbos import enforce_permission
 from moteur import rediger
@@ -79,8 +79,9 @@ class Sante(APIView):
 
 # ── Connexion ──────────────────────────────────────────────────────────
 # Mode integre : l'identite vient de Keycloak (oauth2-proxy), le portail
-# est renvoye vers la connexion de la plateforme. Mode autonome : un
-# profil fictif choisi par son identifiant, sans mot de passe.
+# est renvoye vers la connexion de la plateforme. Mode local : le profil
+# de l'identifiant, apres verification du mot de passe. Mode autonome :
+# un profil fictif choisi par son identifiant, sans mot de passe.
 
 class Connexion(APIView):
     authentication_classes = []
@@ -91,7 +92,14 @@ class Connexion(APIView):
             return Response({"erreur": "connexion par la plateforme",
                              "redirection": settings.OIDC_CONNEXION}, status=401)
         corps = _corps(request)
-        profil = profil_local(str(corps.get("identifiant") or ""))
+        identifiant = str(corps.get("identifiant") or "")
+        if settings.DEPLOYMENT_MODE == "local":
+            try:
+                if not comptes.verifier(identifiant, str(corps.get("motDePasse") or "")):
+                    return _erreur("identifiant ou mot de passe incorrect", 401)
+            except comptes.TropDEssais:
+                return _erreur("trop de tentatives, reessayez dans une minute", 429)
+        profil = profil_local(identifiant)
         if not profil:
             return _erreur("identifiant ou mot de passe incorrect", 401)
         persistante = bool(corps.get("seSouvenir"))

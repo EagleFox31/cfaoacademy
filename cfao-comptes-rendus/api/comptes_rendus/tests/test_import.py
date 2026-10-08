@@ -88,3 +88,27 @@ def test_l_ancienne_base_n_est_jamais_modifiee(ancien, tmp_path, db):
 def test_il_faut_choisir_la_traduction_des_identifiants(ancien, db, options):
     with pytest.raises(CommandError):
         call_command("importer_flask", "--source", str(ancien), *options)
+
+
+def test_l_export_rend_les_donnees_a_l_ancien_service(ancien, tmp_path, db):
+    _importer(ancien, tmp_path, "--garder-ids")
+    cible = tmp_path / "retour"
+    sortie = StringIO()
+    call_command("exporter_flask", "--cible", str(cible), stdout=sortie)
+    # bb22, restee vide, n'a jamais ete reprise : elle manque aussi au retour.
+    assert "brouillons : 2, suppressions : 1, photos : 1, photos_absentes : 1" in sortie.getvalue()
+    cx = sqlite3.connect(cible / "comptes-rendus.sqlite")
+    lignes = dict(((u, i), (json.loads(c), m)) for u, i, c, m in cx.execute("SELECT * FROM brouillons"))
+    assert lignes[("ancien-a", "b1")][0]["titre"] == "Session fictive"
+    assert lignes[("ancien-b", "b2")][1] == "2026-01-03T10:00:00.000Z"
+    assert cx.execute("SELECT * FROM supprimes").fetchall() == [
+        ("ancien-a", "b9", "2026-01-01T00:00:00.000Z")]
+    cx.close()
+    assert (cible / "photos" / "aa11.jpg").read_bytes() == b"\xff\xd8photo"
+
+
+def test_l_export_refuse_un_dossier_non_vide(tmp_path, db):
+    (tmp_path / "plein").mkdir()
+    (tmp_path / "plein" / "x").write_text("x")
+    with pytest.raises(CommandError):
+        call_command("exporter_flask", "--cible", str(tmp_path / "plein"))
