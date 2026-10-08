@@ -21,8 +21,11 @@ AUTRE_CLE = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 PERIMETRE = {"id": "u-42", "roles": ["trainer"], "scopeNodes": ["CMR"], "brands": ["TOYOTA"]}
 
 
+AUDIENCE = "cfao-comptes-rendus"
+
+
 def _jeton(cle=CLE, **claims):
-    contenu = {"sub": "u-42", "iss": EMETTEUR, "exp": int(time.time()) + 300, **claims}
+    contenu = {"sub": "u-42", "iss": EMETTEUR, "aud": AUDIENCE, "exp": int(time.time()) + 300, **claims}
     return jwt.encode(contenu, cle, algorithm="RS256", headers={"kid": "k1"})
 
 
@@ -44,7 +47,7 @@ class FauxCoreMe:
 def integre(settings, monkeypatch):
     settings.DEPLOYMENT_MODE = "integrated"
     settings.OIDC_ISSUER = EMETTEUR
-    settings.OIDC_AUDIENCE = ""
+    settings.OIDC_AUDIENCE = AUDIENCE
     settings.OIDC_JWKS_URL = "http://keycloak.invalid/certs"
     monkeypatch.setattr(oidc, "_jwk_client", SimpleNamespace(
         get_signing_key_from_jwt=lambda _t: SimpleNamespace(key=CLE.public_key())))
@@ -80,7 +83,9 @@ def test_un_jeton_valide_ouvre_l_api(integre, db, pdp):
     "pas-un-jeton",
 ], ids=["expire", "mauvais-emetteur", "mauvaise-signature", "illisible"])
 def test_un_jeton_refuse_ne_passe_pas(integre, db, jeton):
-    assert _porteur(jeton).get("/cr-donnees/brouillons").status_code == 401
+    reponse = _porteur(jeton).get("/cr-donnees/brouillons")
+    assert reponse.status_code == 401
+    assert reponse.json() == {"erreur": "Jeton invalide."}
     assert integre.appels == []
 
 
@@ -89,10 +94,13 @@ def test_un_jeton_sans_expiration_est_refuse(integre, db):
     assert _porteur(jeton).get("/cr-donnees/brouillons").status_code == 401
 
 
-def test_l_audience_est_verifiee_quand_elle_est_configuree(integre, db, settings):
-    settings.OIDC_AUDIENCE = "cfao-comptes-rendus"
+def test_l_audience_est_toujours_verifiee(integre, db, settings):
     assert _porteur(_jeton(aud="autre")).get("/cr-donnees/brouillons").status_code == 401
-    assert _porteur(_jeton(aud="cfao-comptes-rendus")).get("/cr-donnees/brouillons").status_code == 200
+    sans = jwt.encode({"sub": "u-42", "iss": EMETTEUR, "exp": int(time.time()) + 300}, CLE,
+                      algorithm="RS256")
+    assert _porteur(sans).get("/cr-donnees/brouillons").status_code == 401
+    settings.OIDC_AUDIENCE = ""
+    assert _porteur(_jeton()).get("/cr-donnees/brouillons").status_code == 401
 
 
 def test_l_en_tete_x_user_id_est_ignore_en_mode_integre(integre, db):

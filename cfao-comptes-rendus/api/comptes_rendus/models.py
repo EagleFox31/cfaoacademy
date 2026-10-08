@@ -31,6 +31,9 @@ class Suppression(models.Model):
     owner = models.CharField(max_length=128)
     ident = models.CharField(max_length=80)
     le = models.CharField(max_length=40)
+    # La derniere revision du brouillon supprime ; inconnue (None) pour
+    # une suppression anterieure aux revisions : seule la date departage.
+    revision = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["owner", "ident"], name="suppression_unique")]

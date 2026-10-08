@@ -603,11 +603,57 @@ def remplir(source, cible, valeurs, diapos=None, imposes=None):
 VERSION_RENDU = 9
 
 
+def etat_des_photos(valeurs):
+    """Chaque photo citee, avec la taille et la date de son fichier.
+
+    Une photo arrivee, remplacee ou disparue apres un premier apercu
+    change ainsi l'identite de l'image, qui est refaite.
+    """
+    ids, pile = set(), [(valeurs or {}).get('@photos')]
+    while pile:
+        x = pile.pop()
+        if isinstance(x, dict):
+            if 'id' in x:
+                ids.add(str(x['id']))
+            pile.extend(x.values())
+        elif isinstance(x, list):
+            pile.extend(x)
+    etat = {}
+    for ident in sorted(ids):
+        chemin = photos._chemin(ident, CACHE)
+        if chemin:
+            infos = chemin.stat()
+            etat[ident] = [infos.st_size, infos.st_mtime_ns]
+    return etat
+
+
 def empreinte(diapo, valeurs, imposes=None):
-    """L'identite d'une image : sa diapositive, les valeurs qui s'y posent, ses tailles communes."""
-    brut = json.dumps({'d': diapo, 'v': valeurs, 'm': VERSION_RENDU, 'i': imposes or {}},
+    """L'identite d'une image : sa diapositive, les valeurs qui s'y posent,
+    ses tailles communes et l'etat des photos qu'elle montre."""
+    brut = json.dumps({'d': diapo, 'v': valeurs, 'm': VERSION_RENDU, 'i': imposes or {},
+                       'p': etat_des_photos(valeurs)},
                       sort_keys=True, ensure_ascii=False)
     return hashlib.sha1(brut.encode('utf-8')).hexdigest()[:16]
+
+
+GARDE_APERCUS = 7 * 24 * 3600
+_dernier_menage = 0.0
+
+
+def menage_des_apercus():
+    """Efface, au plus une fois par heure, les apercus et les images de
+    graphiques inutilises depuis une semaine : chaque saisie en produit
+    de nouveaux."""
+    global _dernier_menage
+    if time.time() - _dernier_menage < 3600:
+        return
+    _dernier_menage = time.time()
+    for ancien in [*CACHE.glob('*.png'), *(CACHE / 'classeurs').glob('*.png')]:
+        try:
+            if time.time() - ancien.stat().st_mtime > GARDE_APERCUS:
+                ancien.unlink()
+        except OSError:
+            pass
 
 
 def convertir(pptx, dossier, format_='png'):
@@ -639,8 +685,12 @@ def image_de(diapo, valeurs, voisines=None):
     imposes = paliers([{'diapo': diapo, 'valeurs': valeurs}] + list(voisines or []))
     CACHE.mkdir(parents=True, exist_ok=True)
     cible = CACHE / f'{empreinte(diapo, valeurs, imposes)}.png'
-    if cible.exists():
+    menage_des_apercus()
+    try:
+        os.utime(cible)  # encore servi : le menage le garde
         return cible
+    except FileNotFoundError:
+        pass  # absent, ou efface par le menage d'un autre fil : on le refait
 
     travail = Path(tempfile.mkdtemp(prefix='cr-apercu-'))
     try:

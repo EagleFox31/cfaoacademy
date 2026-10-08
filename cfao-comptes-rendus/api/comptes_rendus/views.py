@@ -18,6 +18,7 @@ Memes routes, memes corps JSON et memes codes que le service precedent
 Chaque route qui touche une donnee appelle le PEP Cerbos
 (`enforce_permission`) : aucun role n'est teste dans ce fichier.
 """
+import logging
 import re
 from pathlib import Path
 
@@ -42,6 +43,8 @@ from . import stockage, taches
 from .models import Brouillon, Photo, TacheRapport
 from .perimetre import perimetre_du_contenu
 
+journal = logging.getLogger(__name__)
+
 COMPTE_RENDU = "compte_rendu"
 PHOTO = "compte_rendu_photo"
 RENDU = "compte_rendu_rendu"
@@ -49,6 +52,13 @@ RENDU = "compte_rendu_rendu"
 
 def _erreur(message, code):
     return Response({"erreur": message}, status=code)
+
+
+def _echec_du_rendu():
+    """La cause reste dans le journal : le navigateur ne recoit ni chemin
+    ni message interne."""
+    journal.exception("rendu en echec")
+    return _erreur("rendu impossible", 500)
 
 
 def _autoriser(request, kind, ident, action, owner=None, scope_node="", brand=""):
@@ -63,6 +73,45 @@ def _autoriser(request, kind, ident, action, owner=None, scope_node="", brand=""
 
 def _corps(request):
     return request.data if isinstance(request.data, dict) else {}
+
+
+def _ids_cites(x):
+    ids, pile = set(), [x]
+    while pile:
+        x = pile.pop()
+        if isinstance(x, dict):
+            if "id" in x:
+                ids.add(str(x["id"]))
+            pile.extend(x.values())
+        elif isinstance(x, list):
+            pile.extend(x)
+    return ids
+
+
+def _photos_a_soi(request, valeurs):
+    """Les `valeurs` des pages, sans les photos d'un autre formateur.
+
+    Un rendu lit les photos par leur identifiant : sans ce tri, un
+    identifiant connu suffirait a voir la photo d'un autre dans un apercu.
+    Une photo retiree perd son `id` et le rendu l'ignore, comme une photo
+    absente.
+    """
+    valeurs = [v if isinstance(v, dict) else {} for v in valeurs]
+    cites = set().union(*(_ids_cites(v.get("@photos")) for v in valeurs))
+    a_soi = set(Photo.objects.filter(owner=request.user.id, ident__in=cites)
+                .values_list("ident", flat=True)) if cites else set()
+
+    def trier(x):
+        if isinstance(x, dict):
+            x = {k: trier(v) for k, v in x.items()}
+            if "id" in x and str(x["id"]) not in a_soi:
+                x["id"] = None
+            return x
+        if isinstance(x, list):
+            return [trier(v) for v in x]
+        return x
+
+    return [{**v, "@photos": trier(v["@photos"])} if "@photos" in v else v for v in valeurs]
 
 
 class Sante(APIView):
@@ -138,8 +187,9 @@ class Deconnexion(APIView):
 class BrouillonsListe(APIView):
     def get(self, request):
         _autoriser(request, COMPTE_RENDU, "*", "list")
-        brouillons, supprimes = stockage.lister(request.user.id)
-        return Response({"brouillons": brouillons, "supprimes": supprimes})
+        brouillons, supprimes, revisions = stockage.lister(request.user.id)
+        return Response({"brouillons": brouillons, "supprimes": supprimes,
+                         "revisionsSupprimees": revisions})
 
 
 class BrouillonDetail(APIView):
@@ -195,8 +245,9 @@ class PhotoEnvoi(APIView):
         _autoriser(request, PHOTO, "_new", "create")
         try:
             sortie = photos.enregistrer(donnees, CACHE)
-        except Exception as e:  # noqa: BLE001 — fichier illisible
-            return _erreur(str(e), 400)
+        except Exception:  # noqa: BLE001 — fichier illisible
+            journal.info("photo refusee", exc_info=True)
+            return _erreur("image illisible", 400)
         Photo.objects.get_or_create(owner=request.user.id, ident=sortie["id"])
         return Response(sortie)
 
@@ -233,10 +284,13 @@ class Page(APIView):
             return _erreur("diapo attendue (entier)", 400)
         voisines = [v for v in corps.get("voisines") or []
                     if isinstance(v, dict) and isinstance(v.get("diapo"), int)]
+        valeurs, *autres = _photos_a_soi(request, [corps.get("valeurs")]
+                                         + [v.get("valeurs") for v in voisines])
+        voisines = [{**v, "valeurs": a} for v, a in zip(voisines, autres)]
         try:
-            chemin = image_de(diapo, corps.get("valeurs") or {}, voisines)
-        except Exception as e:  # noqa: BLE001 — l'interface affiche le motif
-            return _erreur(str(e), 500)
+            chemin = image_de(diapo, valeurs, voisines)
+        except Exception:  # noqa: BLE001
+            return _echec_du_rendu()
         return FileResponse(open(chemin, "rb"), content_type="image/png")
 
 
@@ -254,16 +308,18 @@ class Document(APIView):
             return _erreur("aucune partie retenue", 400)
         try:
             chemin = document(
-                parties, corps.get("valeurs") or {},
+                parties, _photos_a_soi(request, [corps.get("valeurs")])[0],
                 corps.get("nbJours") or 0, corps.get("nbParticipants") or 0,
                 corps.get("format") or "pptx", corps.get("variantes"))
-        except Exception as e:  # noqa: BLE001
-            return _erreur(str(e), 500)
+        except Exception:  # noqa: BLE001
+            return _echec_du_rendu()
         return _fichier(chemin, f"rapport{Path(chemin).suffix}")
 
 
-def _pages(corps):
-    return [p for p in corps.get("pages") or [] if isinstance(p, dict) and p.get("diapo")]
+def _pages(request, corps):
+    pages = [p for p in corps.get("pages") or [] if isinstance(p, dict) and p.get("diapo")]
+    valeurs = _photos_a_soi(request, [p.get("valeurs") for p in pages])
+    return [{**p, "valeurs": v} for p, v in zip(pages, valeurs)]
 
 
 def _format(corps):
@@ -275,13 +331,13 @@ class RapportComplet(APIView):
         """Le rapport termine : chaque page avec ses propres valeurs."""
         _autoriser(request, RENDU, "service", "render")
         corps = _corps(request)
-        pages = _pages(corps)
+        pages = _pages(request, corps)
         if not pages:
             return _erreur("aucune page", 400)
         try:
             chemin = rapport(pages, _format(corps))
-        except Exception as e:  # noqa: BLE001
-            return _erreur(str(e), 500)
+        except Exception:  # noqa: BLE001
+            return _echec_du_rendu()
         return _fichier(chemin, f"rapport{Path(chemin).suffix}")
 
 
@@ -290,7 +346,7 @@ class RapportLancer(APIView):
         """Lance la production du rapport ; renvoie l'identifiant a suivre."""
         _autoriser(request, RENDU, "service", "render")
         corps = _corps(request)
-        pages = _pages(corps)
+        pages = _pages(request, corps)
         if not pages:
             return _erreur("aucune page", 400)
         tache = taches.creer(request.user.id, _format(corps))
@@ -376,6 +432,7 @@ class Redaction(APIView):
             # une tournure nouvelle a chaque graine.
             sortie = (rediger_appreciation(participant, corps.get("graine")) if quoi == "accueil"
                       else rediger(participant, corps.get("longueur", "standard")))
-        except Exception as erreur:      # le moteur refuse une entree vide
-            return _erreur(str(erreur), 400)
+        except Exception:  # noqa: BLE001 — le moteur refuse une entree incomplete
+            journal.info("redaction refusee", exc_info=True)
+            return _erreur("redaction impossible : donnees du participant incompletes", 400)
         return Response(sortie)

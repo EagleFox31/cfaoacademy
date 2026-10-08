@@ -106,3 +106,67 @@ describe('deux onglets sur le meme compte rendu', () => {
     expect(envois.map(e => e.revision)).toEqual([1, 2])
   })
 })
+
+describe('un brouillon supprime sur un autre poste', () => {
+  function supprimeAilleurs(supprimes, revisionsSupprimees) {
+    const put = globalThis.fetch
+    vi.stubGlobal('fetch', async (url, options = {}) => (options.method === 'PUT'
+      ? put(url, options)
+      : { ok: true, status: 200, json: async () => ({ brouillons: [], supprimes, revisionsSupprimees }) }))
+  }
+
+  it('une copie deja enregistree disparait, meme datee apres la suppression', async () => {
+    const a = await onglet()
+    a.adopter('s1', { ...V1, modifieLe: '2099-01-01T00:00:00.000Z' })
+    supprimeAilleurs({ s1: '2026-01-01T00:00:00.000Z' }, { s1: 1 })
+    expect(await a.synchroniser()).toEqual([])
+    await envoyer()
+    expect(envois).toEqual([])
+  })
+
+  it('un nouveau brouillon jamais enregistre est garde et envoye', async () => {
+    const a = await onglet()
+    stockage.set('cfao.comptes-rendus.f1', JSON.stringify({
+      s1: { sessionId: 's1', textes: { a: 'neuf' }, modifieLe: '2000-01-01T00:00:00.000Z' },
+    }))
+    supprimeAilleurs({ s1: '2026-01-01T00:00:00.000Z' }, { s1: 1 })
+    expect(await a.synchroniser()).toHaveLength(1)
+    await envoyer()
+    expect(envois).toMatchObject([{ textes: { a: 'neuf' }, revision: 0 }])
+  })
+
+  it('sans revision connue, la date departage encore', async () => {
+    const a = await onglet()
+    a.adopter('s1', { ...V1, modifieLe: '2026-02-01T00:00:00.000Z' })
+    supprimeAilleurs({ s1: '2026-01-01T00:00:00.000Z' }, undefined)
+    expect(await a.synchroniser()).toHaveLength(1)
+  })
+})
+
+describe('une saisie en cours sur un brouillon supprime ailleurs', () => {
+  it('n\'est pas perdue : elle repart comme un nouveau brouillon', async () => {
+    const a = await onglet()
+    a.adopter('s1', V1)
+    reponse = corps => (corps.revision > 0
+      ? { status: 200, json: { ecrit: false, brouillon: null } }
+      : { status: 200, json: { ecrit: true, brouillon: { ...corps, revision: 3 } } })
+    a.enregistrer('s1', { ...V1, textes: { a: 'saisie' } })
+    await envoyer()
+    await envoyer()
+    expect(envois.map(e => e.revision)).toEqual([1, 0])
+    expect(local()).toMatchObject({ s1: { textes: { a: 'saisie' }, revision: 3 } })
+  })
+
+  it('la synchronisation garde la saisie qui attend de partir', async () => {
+    const a = await onglet()
+    a.adopter('s1', V1)
+    a.enregistrer('s1', { ...V1, textes: { a: 'saisie' } })
+    const put = globalThis.fetch
+    vi.stubGlobal('fetch', async (url, options = {}) => (options.method === 'PUT'
+      ? put(url, options)
+      : { ok: true, status: 200, json: async () => ({ brouillons: [], supprimes: { s1: '2026-01-01' }, revisionsSupprimees: { s1: 1 } }) }))
+    expect(await a.synchroniser()).toHaveLength(1)
+    await envoyer()
+    expect(envois).toMatchObject([{ textes: { a: 'saisie' }, revision: 0 }])
+  })
+})

@@ -165,6 +165,17 @@ async function partir(id) {
     { method: 'PUT', body: JSON.stringify(corps), keepalive: true })
   if (r?.conflit) {
     signaler(id, r.brouillon)
+  } else if (r && r.ecrit === false && !r.brouillon) {
+    // Supprime sur un autre poste pendant la saisie d'ici : la saisie
+    // n'est pas perdue, elle repart comme un nouveau brouillon (revision 0).
+    if (base(id, brouillon) === 0) return
+    bases.set(id, 0)
+    const tout = lire()
+    if (tout[id]) {
+      tout[id] = { ...tout[id], revision: 0 }
+      ecrire(tout)
+    }
+    envoyer(id, { ...brouillon, revision: 0 })
   } else if (r?.ecrit && r.brouillon) {
     const n = rev(r.brouillon)
     bases.set(id, Math.max(n, bases.get(id) || 0))
@@ -331,20 +342,40 @@ export async function synchroniser() {
   const distants = reponse?.brouillons
   if (!Array.isArray(distants)) return null
   const tout = lire()
-  // Supprime sur un autre poste depuis la derniere modification d'ici.
+  // Supprime sur un autre poste : meme regle que le service. Une copie deja
+  // numerotee descend du brouillon supprime ; une copie jamais enregistree
+  // est un nouveau brouillon. Sans revision connue, la date departage.
+  const revisions = reponse.revisionsSupprimees || {}
   Object.entries(reponse.supprimes || {}).forEach(([id, le]) => {
-    if (tout[id] && String(tout[id].modifieLe || '') <= le) delete tout[id]
+    if (!tout[id]) return
+    const perimee = revisions[id] != null
+      ? base(id, tout[id]) > 0
+      : String(tout[id].modifieLe || '') <= le
+    if (perimee && aEnvoyer.has(id)) {
+      // Une saisie d'ici attend de partir : elle repart comme un nouveau
+      // brouillon, comme dans `partir`.
+      bases.set(id, 0)
+      tout[id] = { ...tout[id], revision: 0 }
+      aEnvoyer.set(id, { ...aEnvoyer.get(id), revision: 0 })
+    } else if (perimee) {
+      delete tout[id]
+      clearTimeout(enAttente.get(id))
+      enAttente.delete(id)
+      aEnvoyer.delete(id)
+      bases.delete(id)
+      vus.delete(id)
+    }
   })
-  const vus = new Set()
+  const presents = new Set()
   distants.forEach(d => {
     const id = d._id || d.sessionId
     if (!id) return
-    vus.add(id)
+    presents.add(id)
     if (!tout[id] || plusRecent(d, tout[id])) tout[id] = d
     else if (plusRecent(tout[id], d)) envoyer(id, tout[id])
   })
   Object.entries(tout).forEach(([id, b]) => {
-    if (!vus.has(id) && aDuContenu(b)) envoyer(id, { ...b, _id: id })
+    if (!presents.has(id) && aDuContenu(b)) envoyer(id, { ...b, _id: id })
   })
   ecrire(tout)
   return brouillonsEnregistres()

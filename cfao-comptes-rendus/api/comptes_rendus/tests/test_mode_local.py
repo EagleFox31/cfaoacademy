@@ -51,6 +51,50 @@ def test_cinq_echecs_font_attendre(local, anonyme):
     assert r.status_code == 429
 
 
+def test_des_essais_simultanes_ne_depassent_pas_la_limite(local, monkeypatch):
+    import threading
+    # Le calcul de l'empreinte attend que tous les essais soient partis.
+    depart = threading.Barrier(comptes.ECHECS_MAX + 1, timeout=5)
+    vrai = comptes.correspond
+
+    def lent(empreinte, mot_de_passe):
+        depart.wait()
+        return vrai(empreinte, mot_de_passe)
+    monkeypatch.setattr(comptes, "correspond", lent)
+    refus = []
+
+    def essayer():
+        try:
+            comptes.verifier("formateur.demo", "faux")
+        except comptes.TropDEssais:
+            refus.append(1)
+    fils = [threading.Thread(target=essayer) for _ in range(comptes.ECHECS_MAX + 3)]
+    for f in fils:
+        f.start()
+    depart.wait()
+    for f in fils:
+        f.join(5)
+    assert len(refus) == 3
+
+
+def test_la_table_des_echecs_oublie_les_identifiants_anciens(local, monkeypatch):
+    comptes.verifier("inconnu.1", "x")
+    horloge = comptes.time.time() + comptes.ATTENTE
+    monkeypatch.setattr(comptes.time, "time", lambda: horloge)
+    comptes.verifier("inconnu.2", "x")
+    assert list(comptes._echecs) == ["inconnu.2"]
+
+
+def test_apres_l_attente_le_bon_mot_de_passe_repasse(local, monkeypatch):
+    for _ in range(comptes.ECHECS_MAX):
+        comptes.verifier("formateur.demo", "faux")
+    with pytest.raises(comptes.TropDEssais):
+        comptes.verifier("formateur.demo", "secret1")
+    horloge = comptes.time.time() + comptes.ATTENTE
+    monkeypatch.setattr(comptes.time, "time", lambda: horloge)
+    assert comptes.verifier("formateur.demo", "secret1")
+
+
 def test_l_en_tete_x_user_id_n_identifie_plus(local, client):
     assert client("f-demo").get("/cr-donnees/session").status_code == 401
     assert client("f-demo").get("/cr-donnees/brouillons").status_code == 401

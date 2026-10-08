@@ -148,3 +148,37 @@ def test_poser_vignette_montre_la_couverture_dans_l_explorateur(tmp_path):
         assert z.namelist().count('docProps/thumbnail.jpeg') == 1
         with Image.open(z.open('docProps/thumbnail.jpeg')) as v:
             assert (v.format, v.size) == ('JPEG', (256, 144))
+
+
+def test_l_apercu_change_quand_sa_photo_arrive_ou_change(tmp_path, monkeypatch):
+    import photos
+    monkeypatch.setattr(photos, 'PERMANENT', tmp_path / 'photos')
+    monkeypatch.setattr(service, 'CACHE', tmp_path / 'cache')
+    valeurs = {'@photos': {'9': [{'id': 'c' * 16}]}}
+    absente = service.empreinte(9, valeurs)
+    fichier = tmp_path / 'photos' / ('c' * 16 + '.jpg')
+    fichier.write_bytes(b'jpeg-1')
+    arrivee = service.empreinte(9, valeurs)
+    fichier.write_bytes(b'jpeg-22')
+    remplacee = service.empreinte(9, valeurs)
+    assert len({absente, arrivee, remplacee}) == 3
+    assert service.empreinte(9, valeurs) == remplacee
+
+
+def test_le_menage_efface_les_apercus_inutilises(tmp_path, monkeypatch):
+    import os
+    import time
+
+    monkeypatch.setattr(service, 'CACHE', tmp_path)
+    monkeypatch.setattr(service, '_dernier_menage', 0.0)
+    (tmp_path / 'classeurs').mkdir()
+    vieux, recent, autre = tmp_path / 'a.png', tmp_path / 'b.png', tmp_path / 'c.pptx'
+    classeur_vieux, classeur_recent = tmp_path / 'classeurs' / 'd.png', tmp_path / 'classeurs' / 'e.png'
+    for f in (vieux, recent, autre, classeur_vieux, classeur_recent):
+        f.write_bytes(b'x')
+    il_y_a_un_mois = time.time() - 30 * 24 * 3600
+    for f in (vieux, autre, classeur_vieux):
+        os.utime(f, (il_y_a_un_mois, il_y_a_un_mois))
+    service.menage_des_apercus()
+    assert not vieux.exists() and recent.exists() and autre.exists()
+    assert not classeur_vieux.exists() and classeur_recent.exists()

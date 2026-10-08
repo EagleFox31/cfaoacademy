@@ -6,9 +6,9 @@ requete restee aussi longtemps muette. La production se lance, le portail
 suit son etat par des requetes courtes, puis telecharge le fichier.
 """
 import logging
-import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 
 from django.db import connection
 
@@ -18,6 +18,10 @@ journal = logging.getLogger(__name__)
 
 DUREE_TACHE = 3600  # comme les fichiers de rapport, effaces apres une heure
 
+# Deux rapports a la fois au plus : chacun occupe LibreOffice et la
+# memoire ; les suivants attendent leur tour, toujours « en cours ».
+_FILS = ThreadPoolExecutor(max_workers=2, thread_name_prefix="rapport")
+
 
 def lancer_en_fond(fonction, *args):
     """Execute `fonction` dans un fil ; sa connexion a la base est refermee a la fin."""
@@ -26,7 +30,7 @@ def lancer_en_fond(fonction, *args):
             fonction(*args)
         finally:
             connection.close()
-    threading.Thread(target=executer, daemon=True).start()
+    _FILS.submit(executer)
 
 
 def creer(owner, format_):
@@ -40,11 +44,11 @@ def produire(ident, rapport, pages, format_):
     """Produit le rapport et note le resultat ; `rapport` vient de `rendu/service.py`."""
     try:
         resultat = {"etat": "pret", "chemin": str(rapport(pages, format_))}
-    except Exception as e:  # noqa: BLE001 — le portail affiche l'echec
+    except Exception:  # noqa: BLE001 — le portail affiche l'echec
         # La cause reste dans le journal du service : le portail n'en
         # montre qu'un message generique.
         journal.exception("rapport %s en echec", ident)
-        resultat = {"etat": "echec", "erreur": str(e)}
+        resultat = {"etat": "echec", "erreur": "production du rapport impossible"}
     TacheRapport.objects.filter(id=ident).update(**resultat)
 
 

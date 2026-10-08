@@ -12,16 +12,16 @@ import pytest
 
 API = Path(__file__).resolve().parents[2]
 INTEGRE = {"DEPLOYMENT_MODE": "integrated", "SECRET_KEY": "une-vraie-cle",
-           "OIDC_ISSUER": "http://keycloak/realms/cfao",
+           "OIDC_ISSUER": "http://keycloak/realms/cfao", "OIDC_AUDIENCE": "cfao-comptes-rendus",
            "OIDC_JWKS_URL": "http://keycloak/realms/cfao/protocol/openid-connect/certs"}
 
 
-def charger(**variables):
+def charger(code="from django.conf import settings; print(settings.ALLOWED_HOSTS)", **variables):
     env = {k: v for k, v in os.environ.items()
-           if k not in ("DEPLOYMENT_MODE", "SECRET_KEY", "OIDC_ISSUER", "OIDC_JWKS_URL",
+           if k not in ("DEPLOYMENT_MODE", "SECRET_KEY", "OIDC_ISSUER", "OIDC_JWKS_URL", "OIDC_AUDIENCE",
                         "DEBUG", "ALLOWED_HOSTS", "COMPTES_LOCAUX")}
     env.update(variables, DJANGO_SETTINGS_MODULE="config.settings.base")
-    return subprocess.run([sys.executable, "-c", "from django.conf import settings; print(settings.ALLOWED_HOSTS)"],
+    return subprocess.run([sys.executable, "-c", code],
                           cwd=API, env=env, capture_output=True, text=True)
 
 
@@ -31,7 +31,7 @@ def test_le_mode_integre_complet_demarre():
     assert r.stdout.strip() == "['localhost', '127.0.0.1']"
 
 
-@pytest.mark.parametrize("manquant", ["SECRET_KEY", "OIDC_ISSUER", "OIDC_JWKS_URL"])
+@pytest.mark.parametrize("manquant", ["SECRET_KEY", "OIDC_ISSUER", "OIDC_AUDIENCE", "OIDC_JWKS_URL"])
 def test_le_mode_integre_exige_cle_et_emetteur(manquant):
     # Vide plutot qu'absente : un `.env` local ne la remplit pas.
     r = charger(**{**INTEGRE, manquant: ""})
@@ -70,3 +70,27 @@ def test_le_mode_local_exige_cle_et_comptes(manquant):
 def test_le_mode_local_refuse_la_cle_de_dev_et_debug():
     assert "SECRET_KEY" in charger(**{**LOCAL, "SECRET_KEY": "cle-de-dev-non-secrete"}).stderr
     assert "DEBUG=False" in charger(**{**LOCAL, "DEBUG": "True"}).stderr
+
+
+VERROU = """
+import sqlite3, django
+django.setup()
+from django.db import connection, transaction
+with transaction.atomic():
+    connection.cursor().execute("select 1")
+    autre = sqlite3.connect(connection.settings_dict["NAME"], timeout=0)
+    try:
+        autre.execute("create table t (x)")
+        print("libre")
+    except sqlite3.OperationalError:
+        print("verrou")
+"""
+
+
+def test_une_transaction_sqlite_prend_le_verrou_d_ecriture_des_le_debut(tmp_path):
+    # select_for_update ne fait rien sous SQLite : sans ce verrou, deux
+    # envois du meme brouillon liraient la meme revision.
+    base = (tmp_path / "db.sqlite3").as_posix()
+    r = charger(VERROU, **LOCAL, DATABASE_URL=f"sqlite:///{base}")
+    assert r.returncode == 0, r.stderr
+    assert r.stdout.strip() == "verrou"

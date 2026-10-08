@@ -7,6 +7,7 @@ import pytest
 from django.core.management import CommandError, call_command
 
 import photos
+from comptes_rendus import stockage
 from comptes_rendus.models import Brouillon, Photo, Suppression
 
 
@@ -70,6 +71,13 @@ def test_une_version_plus_recente_deja_reprise_l_emporte(ancien, tmp_path, db):
                              modifie_le="2026-02-01T00:00:00.000Z")
     _importer(ancien, tmp_path, "--garder-ids")
     assert Brouillon.objects.get(owner="ancien-a", ident="b1").contenu["titre"] == "Plus recent"
+
+
+def test_un_brouillon_supprime_apres_la_reprise_ne_revient_pas_au_reimport(ancien, tmp_path, db):
+    _importer(ancien, tmp_path, "--garder-ids")
+    stockage.supprimer("ancien-a", "b1")
+    _importer(ancien, tmp_path, "--garder-ids")
+    assert not Brouillon.objects.filter(owner="ancien-a", ident="b1").exists()
 
 
 def test_relancer_l_import_ne_double_rien(ancien, tmp_path, db):

@@ -233,7 +233,15 @@ Le service suit `DEPLOYMENT_MODE` :
 
 - `integrated` (plateforme) : jeton Keycloak vérifié par les clés JWKS (`OIDC_ISSUER`,
   `OIDC_JWKS_URL`, `OIDC_AUDIENCE`) ; `/cr-donnees/connexion` renvoie vers la connexion de la
-  plateforme (`OIDC_CONNEXION`). Le service refuse de démarrer sans `SECRET_KEY` ni émetteur OIDC.
+  plateforme (`OIDC_CONNEXION`). Le service refuse de démarrer sans `SECRET_KEY`, émetteur ni
+  audience OIDC (l'audience est toujours vérifiée). Limite : tant que le BFF oauth2-proxy de la
+  passerelle n'est pas activé, le navigateur n'envoie pas de jeton Bearer et le portail ne suit pas
+  ce renvoi (revue 04-5, écart F6, `docs/revues/04-5-comptes-rendus.md`).
+- `local` (poste unique servi sur le réseau interne, `DEBUG=False` obligatoire) : profils de
+  `PROFILS_LOCAUX`, mot de passe vérifié à la connexion (empreintes de `COMPTES_LOCAUX`, format de
+  l'ancien service) ; cinq échecs imposent une minute d'attente ; l'en-tête `X-User-ID` est ignoré.
+  `manage.py mot_de_passe <identifiant>` crée ou remplace un mot de passe ; `manage.py
+  exporter_flask --cible <dossier>` rend brouillons et photos à l'ancien service (retour arrière).
 - `standalone` (poste de dev, `DEBUG=True` obligatoire) : profils fictifs de
   `cfao-comptes-rendus/api/profils-locaux.json`, choisis par leur identifiant, sans mot de passe ;
   cookie `cfao_session` signé (« Se souvenir de moi » : 30 jours, sinon 12 h au plus).
@@ -241,7 +249,9 @@ Le service suit `DEPLOYMENT_MODE` :
 L'`id` du profil range les brouillons. Reprise des brouillons et photos de l'ancien service Flask :
 `python manage.py importer_flask --source <dossier donnees> [--correspondance ids.json] [--essai]`
 (`make rapports-importer SOURCE=/donnees` dans la plateforme). Le planning affiché ne retient que
-les sessions dont le formateur est le compte connecté.
+les sessions dont le formateur est le compte connecté. Un rendu (aperçu, rapport) n'utilise que les
+photos envoyées par le compte connecté ; une suppression retient la révision supprimée, et seule
+une copie jamais enregistrée (révision 0) peut ensuite revenir sous le même id.
 
 ---
 

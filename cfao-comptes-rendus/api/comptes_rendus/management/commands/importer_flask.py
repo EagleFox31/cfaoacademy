@@ -114,7 +114,12 @@ class Command(BaseCommand):
                     # Pas de revision dans l'ancienne base : seule la date
                     # departage, et une version deja reprise plus recente reste.
                     actuel = Brouillon.objects.filter(owner=owner, ident=ident).first()
+                    supprime = Suppression.objects.filter(owner=owner, ident=ident).first()
                     if actuel and actuel.modifie_le > str(contenu["modifieLe"]):
+                        garde = False
+                    elif supprime and supprime.le >= str(contenu["modifieLe"]):
+                        # Supprime depuis, ici ou dans l'ancien service : une
+                        # reprise ne le fait pas revenir.
                         garde = False
                     else:
                         contenu["revision"] = stockage.revision_de(actuel.contenu) if actuel else 0

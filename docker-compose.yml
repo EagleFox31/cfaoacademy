@@ -226,7 +226,8 @@ services:
       PLATFORM_CORE_URL: http://core:8000
       OIDC_JWKS_URL: http://keycloak:8080/realms/${OIDC_REALM:-cfao}/protocol/openid-connect/certs
       OIDC_ISSUER: http://keycloak:8080/realms/${OIDC_REALM:-cfao}
-      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-}
+      # Toujours verifiee par ce service : client Keycloak du portail par defaut.
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-cfao-portal}
     # Meme volume que l'ancien service : ses photos restent en place
     # (reprise des brouillons : `make rapports-importer`).
     volumes: [rapports-donnees:/donnees]

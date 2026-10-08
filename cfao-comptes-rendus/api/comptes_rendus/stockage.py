@@ -1,9 +1,10 @@
 """Conservation des comptes rendus en cours, dans la base du service.
 
-Memes regles que le stockage SQLite du service precedent : un brouillon
-est un document JSON opaque range sous (proprietaire, id), la version la
-plus recente l'emporte et une suppression n'est pas annulee par une copie
-plus ancienne restee sur un poste.
+Un brouillon est un document JSON opaque range sous (proprietaire, id).
+Chaque ecriture recoit une revision ; une suppression retient la derniere,
+pour qu'une copie restee sur un poste ne fasse pas revenir le brouillon.
+Les revisions, et non l'heure des postes, departagent : l'horloge d'un
+poste peut avancer ou retarder de plusieurs minutes.
 """
 import re
 from datetime import datetime, timezone
@@ -27,11 +28,27 @@ def maintenant():
 
 
 def lister(owner):
-    """Les brouillons d'un proprietaire, du plus recent au plus ancien,
-    et les suppressions (id -> date) pour que chaque poste les applique."""
+    """Les brouillons d'un proprietaire, du plus recent au plus ancien, et
+    les suppressions (id -> date, id -> revision supprimee) pour que chaque
+    poste les applique."""
     brouillons = [b.contenu for b in Brouillon.objects.filter(owner=owner).order_by("-modifie_le")]
-    supprimes = dict(Suppression.objects.filter(owner=owner).values_list("ident", "le"))
-    return brouillons, supprimes
+    traces = Suppression.objects.filter(owner=owner)
+    supprimes = {s.ident: s.le for s in traces}
+    revisions = {s.ident: s.revision for s in traces if s.revision is not None}
+    return brouillons, supprimes, revisions
+
+
+def copie_supprimee(supprime, base, modifie_le):
+    """Une copie partie de la revision `base` descend-elle du brouillon supprime ?
+
+    Une copie deja numerotee (`base` > 0) a vu une version que la
+    suppression a retiree. Une copie jamais enregistree (`base` = 0) est un
+    nouveau brouillon, sous le meme id : il est garde. Sans revision connue
+    (suppression ancienne), seule la date departage.
+    """
+    if supprime.revision is None:
+        return supprime.le >= modifie_le
+    return base > 0
 
 
 def lire(owner, ident):
@@ -70,8 +87,12 @@ def ecrire(owner, ident, contenu):
     with transaction.atomic():
         # Supprime ailleurs apres cette version : on ne le ressuscite pas.
         supprime = Suppression.objects.select_for_update().filter(owner=owner, ident=ident).first()
-        if supprime and supprime.le >= modifie_le:
+        if supprime and copie_supprimee(supprime, base, modifie_le):
             return None, False
+        # Un brouillon qui revient repart apres la revision supprimee : les
+        # numeros ne reculent jamais, sinon les copies des postes, plus
+        # avancees, passeraient pour les plus recentes.
+        plancher = (supprime.revision or 0) if supprime else 0
         if supprime:
             supprime.delete()
         actuel = Brouillon.objects.select_for_update().filter(owner=owner, ident=ident).first()
@@ -85,7 +106,7 @@ def ecrire(owner, ident, contenu):
                 return actuel.contenu, False
             contenu["revision"] = courante + 1
         else:
-            contenu["revision"] = 1
+            contenu["revision"] = plancher + 1
         scope_node, brand = perimetre_du_contenu(contenu)
         Brouillon.objects.update_or_create(
             owner=owner, ident=ident,
@@ -96,5 +117,11 @@ def ecrire(owner, ident, contenu):
 
 def supprimer(owner, ident):
     with transaction.atomic():
-        Brouillon.objects.filter(owner=owner, ident=ident).delete()
-        Suppression.objects.update_or_create(owner=owner, ident=ident, defaults={"le": maintenant()})
+        actuel = Brouillon.objects.select_for_update().filter(owner=owner, ident=ident).first()
+        ancienne = Suppression.objects.filter(owner=owner, ident=ident).first()
+        # Jamais enregistre ici : aucune copie numerotee ne peut en descendre.
+        revision = revision_de(actuel.contenu) if actuel else (ancienne.revision if ancienne else 0)
+        if actuel:
+            actuel.delete()
+        Suppression.objects.update_or_create(owner=owner, ident=ident,
+                                             defaults={"le": maintenant(), "revision": revision})

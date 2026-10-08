@@ -67,6 +67,7 @@ OIDC_DECONNEXION = env("OIDC_DECONNEXION")
 if DEPLOYMENT_MODE == "integrated":
     _manquants = [nom for nom, valeur in (("SECRET_KEY", SECRET_KEY != CLE_DE_DEV and SECRET_KEY),
                                           ("OIDC_ISSUER", OIDC_ISSUER),
+                                          ("OIDC_AUDIENCE", OIDC_AUDIENCE),
                                           ("OIDC_JWKS_URL", OIDC_JWKS_URL)) if not valeur]
     if _manquants:
         raise ImproperlyConfigured("Mode integre : a renseigner : " + ", ".join(_manquants) + ".")
@@ -107,6 +108,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": env.db("DATABASE_URL", default="sqlite:///db.sqlite3")
 }
+# SQLite ignore `select_for_update` : chaque transaction prend le verrou
+# d'ecriture des son debut, sinon deux envois du meme brouillon liraient
+# la meme revision. L'attente evite un « database is locked » immediat.
+if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+    DATABASES["default"].setdefault("OPTIONS", {}).update(
+        {"transaction_mode": "IMMEDIATE", "timeout": 20})
 
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 

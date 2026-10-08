@@ -17,6 +17,7 @@ import sqlite3
 import string
 import threading
 import time
+from contextlib import closing
 
 from django.conf import settings
 
@@ -72,18 +73,23 @@ def verifier(identifiant, mot_de_passe):
     identifiant = (identifiant or "").strip().lower()
     maintenant = time.time()
     with _verrou:
-        n, depuis = _echecs.get(identifiant, (0, 0))
-        if n >= ECHECS_MAX and maintenant - depuis < ATTENTE:
+        # Un identifiant sans essai depuis une minute repart de zero : la
+        # table ne grossit pas avec les identifiants essayes.
+        for ancien in [k for k, (_, le) in _echecs.items() if maintenant - le >= ATTENTE]:
+            del _echecs[ancien]
+        n, _ = _echecs.get(identifiant, (0, 0))
+        if n >= ECHECS_MAX:
             raise TropDEssais(identifiant)
-    with _base() as cx:
+        # L'essai compte des maintenant : des envois simultanes ne passent
+        # pas tous sous la limite pendant le calcul de l'empreinte.
+        _echecs[identifiant] = n + 1, maintenant
+    with closing(_base()) as cx:
         ligne = cx.execute("SELECT empreinte FROM comptes WHERE identifiant = ?",
                            (identifiant,)).fetchone()
     bon = correspond(ligne[0] if ligne else _FACTICE, mot_de_passe or "") and ligne is not None
-    with _verrou:
-        if bon:
+    if bon:
+        with _verrou:
             _echecs.pop(identifiant, None)
-        else:
-            _echecs[identifiant] = (0 if n >= ECHECS_MAX else n) + 1, maintenant
     return bon
 
 
@@ -92,7 +98,7 @@ def changer_mot_de_passe(identifiant, mot_de_passe):
     if len(mot_de_passe) < LONGUEUR_MIN:
         raise ValueError(f"mot de passe de {LONGUEUR_MIN} caracteres au moins")
     identifiant = identifiant.strip().lower()
-    with _base() as cx:
+    with closing(_base()) as cx, cx:
         cx.execute("INSERT INTO comptes (identifiant, empreinte, profil) VALUES (?, ?, '{}') "
                    "ON CONFLICT (identifiant) DO UPDATE SET empreinte = excluded.empreinte",
                    (identifiant, empreinter(mot_de_passe)))

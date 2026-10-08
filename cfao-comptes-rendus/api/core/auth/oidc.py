@@ -5,12 +5,16 @@ Le jeton arrive en `Authorization: Bearer`, injecte par la passerelle
 """
 from __future__ import annotations
 
+import logging
+
 import jwt
 from django.conf import settings
 from rest_framework import authentication, exceptions
 
 from .identity import get_identity_provider
 from .principal import construire_principal
+
+journal = logging.getLogger(__name__)
 
 _jwk_client: jwt.PyJWKClient | None = None
 
@@ -26,10 +30,12 @@ def _client() -> jwt.PyJWKClient:
 
 def verifier_jeton(token: str) -> dict:
     """Les claims d'un jeton valide ; leve AuthenticationFailed sinon."""
-    options = {"require": ["exp", "sub"]}
-    audience = settings.OIDC_AUDIENCE or None
-    if audience is None:
-        options["verify_aud"] = False
+    # L'audience est toujours verifiee : sans elle, un jeton emis par le
+    # meme royaume pour une autre application serait accepte.
+    if not settings.OIDC_AUDIENCE:
+        raise exceptions.AuthenticationFailed("OIDC_AUDIENCE non configuree.")
+    options = {"require": ["exp", "sub", "aud"]}
+    audience = settings.OIDC_AUDIENCE
     try:
         signing_key = _client().get_signing_key_from_jwt(token)
         return jwt.decode(
@@ -41,7 +47,8 @@ def verifier_jeton(token: str) -> dict:
             options=options,
         )
     except jwt.PyJWTError as exc:  # signature, expiration, audience, emetteur...
-        raise exceptions.AuthenticationFailed(f"Jeton invalide : {exc}")
+        journal.info("jeton refuse : %s", exc)
+        raise exceptions.AuthenticationFailed("Jeton invalide.") from exc
 
 
 class KeycloakJWTAuthentication(authentication.BaseAuthentication):
