@@ -4,8 +4,13 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import Portal from './pages/portal/Portal.jsx'
 import Assistance from './pages/portal/Assistance.jsx'
 import Delivery from './pages/portal/Delivery.jsx'
+import TrainerHome from './pages/portal/TrainerHome.jsx'
+import TrainerReportNew from './pages/portal/TrainerReportNew.jsx'
+import TrainerReportsEnCours from './pages/portal/TrainerReportsEnCours.jsx'
+import TrainerReportsTermines from './pages/portal/TrainerReportsTermines.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
 import RouteMotion from './components/RouteMotion.jsx'
+import AnnonceMaintenance from './components/AnnonceMaintenance.jsx'
 import Accueil from './pages/Accueil.jsx'
 import Formations from './pages/Formations.jsx'
 import Publics from './pages/Publics.jsx'
@@ -24,6 +29,7 @@ export default function App() {
     <AuthProvider>
     <LocaleProvider>
       <ScrollToTop />
+      <AnnonceMaintenance />
       <RouteMotion>
         <Routes>
           <Route path="/" element={<Accueil />} />
@@ -42,6 +48,11 @@ export default function App() {
           <Route path="/portail" element={<Portal />} />
           <Route path="/portail/assistance" element={<Assistance />} />
           <Route path="/portail/delivery" element={<Delivery />} />
+          <Route path="/portail/formateur" element={<TrainerHome />} />
+          <Route path="/portail/compte-rendu/nouveau" element={<TrainerReportNew />} />
+          <Route path="/portail/compte-rendu/en-cours" element={<TrainerReportsEnCours />} />
+          <Route path="/portail/compte-rendu/a-documenter" element={<TrainerReportsEnCours aDocumenterAussi />} />
+          <Route path="/portail/compte-rendu/mes-rapports" element={<TrainerReportsTermines />} />
         </Routes>
       </RouteMotion>
     </LocaleProvider>

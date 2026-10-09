@@ -441,19 +441,46 @@ export const LMS_BY_USER = {
   },
 
   u9: {
-    // Persona MEDACAP live (an52ng) — mock minimal ; tests compétence via API.
+    // Persona MEDACAP (an52ng) — technicien Poids Lourds, JUNIOR sur ses 4 marques,
+    // cible SENIOR (N+1). En prod les évaluations arrivent de l'API MEDACAP ;
+    // ce mock sert de démo autonome (cartes de tests visibles hors-ligne).
+    // portalVariant : active le parcours PL-MEDACAP (isolé de l'apprenant standard).
+    portalVariant: 'pl-medacap',
     certGoals: [
-      {
-        brand: 'king-long',
-        currentLevel: 'JUNIOR',
-        targetLevel: 'SENIOR',
-        targetDate: '—',
-      },
+      { brand: 'sinotruk',       currentLevel: 'JUNIOR', targetLevel: 'SENIOR', targetDate: '2026' },
+      { brand: 'king-long',      currentLevel: 'JUNIOR', targetLevel: 'SENIOR', targetDate: '2026' },
+      { brand: 'renault-trucks', currentLevel: 'JUNIOR', targetLevel: 'SENIOR', targetDate: '2026' },
+      { brand: 'hino',           currentLevel: 'JUNIOR', targetLevel: 'SENIOR', targetDate: '2026' },
     ],
     alerts: [],
     modules: [],
     discover: [],
-    evaluations: [],
+    evaluations: [
+      {
+        id: 'cm-pl-sinotruk-st', kind: 'competency', competencyTier: 'senior', modality: 'theory',
+        brand: 'sinotruk', certLevel: 'SENIOR', status: 'progress', date: '4 sept. 2026',
+        score: null, passMark: 70, questions: 30, questionsAnswered: 18, attempts: 1,
+        estimatedDuration: '45 min', feedback: 'Palier Réparation validé — à consolider sur l’électronique.',
+      },
+      {
+        id: 'cm-pl-kinglong-st', kind: 'competency', competencyTier: 'senior', modality: 'theory',
+        brand: 'king-long', certLevel: 'SENIOR', status: 'todo', date: 'â€”',
+        score: null, passMark: 70, questions: 30, questionsAnswered: 0, attempts: 0,
+        estimatedDuration: '45 min', feedback: 'Palier Réparation validé.',
+      },
+      {
+        id: 'cm-pl-renault-st', kind: 'competency', competencyTier: 'senior', modality: 'theory',
+        brand: 'renault-trucks', certLevel: 'SENIOR', status: 'done', date: '6 sept. 2026',
+        score: 64, passMark: 70, questions: 35, questionsAnswered: 35, attempts: 1,
+        estimatedDuration: '50 min', feedback: 'Sous le seuil — moteur DXi et freinage EBS à revoir.',
+      },
+      {
+        id: 'cm-pl-hino-st', kind: 'competency', competencyTier: 'senior', modality: 'theory',
+        brand: 'hino', certLevel: 'SENIOR', status: 'done', date: '7 sept. 2026',
+        score: 71, passMark: 70, questions: 28, questionsAnswered: 28, attempts: 1,
+        estimatedDuration: '40 min', feedback: 'Palier Réparation validé de justesse.',
+      },
+    ],
     certifications: [],
     planPathway: [],
     planningStatus: {},

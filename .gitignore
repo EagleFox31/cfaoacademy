@@ -17,3 +17,10 @@ dist/
 
 # Build / divers
 .DS_Store
+
+# Comptes rendus et photos conserves par le service d'apercu
+cfao-comptes-rendus/api/rendu/donnees/
+cfao-comptes-rendus/api/db.sqlite3
+
+# Donnees reelles propres a un poste (noms des stagiaires) : jamais versionnees
+*.local.js

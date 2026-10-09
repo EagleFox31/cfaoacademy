@@ -13,6 +13,7 @@ import PvCard from '../../components/PvCard'
 import LearnerNextActions from '../../components/LearnerNextActions.jsx'
 import LearnerPifSection from '../../components/LearnerPifSection.jsx'
 import LearnerCompetencyResultsSection from '../../components/LearnerCompetencyResultsSection.jsx'
+import LearnerSuggestedTrainingsSection from '../../components/LearnerSuggestedTrainingsSection.jsx'
 import LearnerTestsSection from '../../components/LearnerTestsSection.jsx'
 import { EvalDetail, CertDetail } from '../../components/LearnerEvalCard.jsx'
 import useSiteEffects from '../../hooks/useSiteEffects'
@@ -24,6 +25,8 @@ import { resolveEvalTitle, isFormationTestLocked } from '../../utils/learnerTest
 import { handleEvalOpen, resolvePortalDisplayUser, medacapLearnerSections } from '../../utils/medacapEvaluations.js'
 import useLearnerEvaluations from '../../hooks/useLearnerEvaluations.js'
 import { portalPvCardMedia } from '../../utils/portalCardMedia.js'
+import { isPlMedacapVariant } from '../../utils/portalVariant.js'
+import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
 
 // Mapping marque → section homepage correspondante
 const BRAND_SECTION = {
@@ -68,6 +71,10 @@ export default function LearnerDashboard() {
     [user, medacapProfile],
   )
 
+  // Publie la hauteur de l'entête : la section priorités s'en sert pour occuper
+  // exactement le reste de l'écran (variante PL-MEDACAP uniquement).
+  usePortalHeaderHeight(headerRef, isPlMedacapVariant(lms))
+
   const medacapSections = useMemo(
     () => medacapLearnerSections(lms),
     [lms],
@@ -104,20 +111,9 @@ export default function LearnerDashboard() {
 
         <LearnerNextActions
           user={displayUser}
+          lms={lmsLive}
           actions={nextActions}
           onEval={handleOpenEval}
-        />
-
-        {(!isMedacapLearner || medacapSections.pif) && (
-          <LearnerPifSection user={displayUser} lms={lms} t={t} />
-        )}
-
-        <LearnerCompetencyResultsSection
-          user={displayUser}
-          lms={lmsLive}
-          evaluations={evaluations}
-          t={t}
-          onOpenEval={handleOpenEval}
         />
 
         <LearnerTestsSection
@@ -132,15 +128,31 @@ export default function LearnerDashboard() {
           onOpenEval={handleOpenEval}
         />
 
-        {(!isMedacapLearner || medacapSections.certifications) && (
-        <PortalReveal id="certifs">
-          <div className="container" style={{ padding: '16px 32px' }}>
-            <div className="portal-section-head">
-              <p className="portal-section-eyebrow">{t.eyebrow_manufacturer}</p>
-              <h2 className="portal-section-title">{t.title_my_certifications}</h2>
-            </div>
-            <PortalStaggerGrid>
-              {lms.certifications.map(c => (
+        <LearnerCompetencyResultsSection
+          user={displayUser}
+          lms={lmsLive}
+          evaluations={evaluations}
+          t={t}
+          onOpenEval={handleOpenEval}
+        />
+
+        {(!isMedacapLearner || medacapSections.pif) && (
+          <LearnerPifSection user={displayUser} lms={lms} t={t} />
+        )}
+
+        {isPlMedacapVariant(lms) && (
+          <LearnerSuggestedTrainingsSection user={displayUser} lms={lmsLive} />
+        )}
+
+        {lms.certifications.length > 0 && (
+          <PortalReveal id="certifs">
+            <div className="container" style={{ padding: '16px 32px' }}>
+              <div className="portal-section-head">
+                <p className="portal-section-eyebrow">{t.eyebrow_manufacturer}</p>
+                <h2 className="portal-section-title">{t.title_my_certifications}</h2>
+              </div>
+              <PortalStaggerGrid>
+                {lms.certifications.map(c => (
                 <div key={c.id} id={`portal-card-${c.id}`} className="portal-card-anchor">
                   <PvCard
                     {...portalPvCardMedia({ ...c, kind: 'cert' })}
@@ -154,10 +166,10 @@ export default function LearnerDashboard() {
                     corner
                   />
                 </div>
-              ))}
-            </PortalStaggerGrid>
-          </div>
-        </PortalReveal>
+                ))}
+              </PortalStaggerGrid>
+            </div>
+          </PortalReveal>
         )}
         <PortalAssistanceSection t={t} variant="learner" />
 

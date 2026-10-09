@@ -1,4 +1,9 @@
-/** Barre « Filtrer » + chips — portail et accueil (sessions). */
+/**
+ * Barre « Filtrer » + chips — portail et accueil (sessions).
+ *
+ * Chaque option : `{ id, label, count?, icon? }`. `icon` est un noeud rendu
+ * avant le libellé (logo de marque…), optionnel pour rester rétrocompatible.
+ */
 export default function ChipFilterBar({
   label,
   ariaLabel,
@@ -23,6 +28,9 @@ export default function ChipFilterBar({
             aria-pressed={value === opt.id}
             onClick={() => onChange(opt.id)}
           >
+            {opt.icon && (
+              <span className="chip-icon" aria-hidden="true">{opt.icon}</span>
+            )}
             {opt.label}
             {typeof opt.count === 'number' && (
               <span className="tab-count">{opt.count}</span>

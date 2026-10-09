@@ -11,7 +11,8 @@ export default function PortalDemoBar() {
   const { t } = useLocale('portal')
   const navigate = useNavigate()
   const sortedProfiles = useMemo(() => sortDemoProfiles(profiles), [profiles])
-  if (!user) return null
+  // Un compte personnel ne passe pas d'un profil a l'autre.
+  if (!user || user.compte) return null
 
   function handleChange(e) {
     const id = e.target.value

@@ -180,7 +180,7 @@ export function competencyResultEvaluations(evaluations = []) {
 
 /** Tests restants : formations + compétences non terminées. */
 export function learnerTestEvaluations(evaluations = []) {
-  return evaluations.filter(e => !(e.kind === 'competency' && isEvalDone(e)))
+  return evaluations
 }
 
 /** Tests mesure de compétences (section « Vos tests »). */

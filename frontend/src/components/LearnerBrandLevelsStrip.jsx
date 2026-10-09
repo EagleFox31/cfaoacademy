@@ -11,7 +11,14 @@ export default function LearnerBrandLevelsStrip({ user, certGoals }) {
   return (
     <div className="portal-header-brand-levels" aria-labelledby="portal-header-brand-levels-title">
       <h2 id="portal-header-brand-levels-title" className="portal-header-brand-levels-title">
-        {t.hero_brands_title}
+        {t.hero_brands_title_l1 && t.hero_brands_title_l2 ? (
+          <>
+            <span className="portal-header-brand-levels-title-line">{t.hero_brands_title_l1}</span>
+            <span className="portal-header-brand-levels-title-line">{t.hero_brands_title_l2}</span>
+          </>
+        ) : (
+          t.hero_brands_title
+        )}
       </h2>
       <ul className="portal-header-brand-levels-grid">
         {rows.map(row => (

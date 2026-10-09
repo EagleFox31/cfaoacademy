@@ -9,6 +9,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 ### Added
 - Fichiers de gouvernance dépôt : README, SECURITY, CHANGELOG, CODEOWNERS, templates GitHub, Dependabot.
 - Job CI `frontend` (build Vite) et exécution des tests Vitest `cfao-operations`.
+- Espace formateur (04-5) : assistant de rapport post-formation et de certification pratique — saisie des notes et des avis, import / export Excel, aperçu réel de chaque page, rapport PowerPoint / PDF conforme au modèle CFAO, suivi des rapports en cours et terminés.
+- Service `rapports` (rendu LibreOffice) dans Docker Compose et la passerelle ; tests Vitest du frontend et pytest des services en CI.
 
 ## [0.1.0] - 2026-06-09
 

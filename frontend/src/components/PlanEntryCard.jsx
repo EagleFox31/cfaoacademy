@@ -77,6 +77,8 @@ export default function PlanEntryCard({
   brandLabel,
   muted = false,
   statusChip,
+  onClick,
+  className = '',
 }) {
   const mediaClass = `pv-card-img portal-plan-entry-card-img portal-plan-entry-card-img--${kind}${logo || brandLabel ? ' portal-plan-entry-card-img--brand' : ''}`
 
@@ -84,6 +86,7 @@ export default function PlanEntryCard({
     <PvCard
       className={[
         'portal-plan-entry-card',
+        className,
         muted ? 'portal-plan-entry-card--muted' : '',
       ].filter(Boolean).join(' ')}
       cardMedia={(
@@ -114,6 +117,7 @@ export default function PlanEntryCard({
       cta={cta}
       accentColor={accentColor}
       hoverHint={hoverHint}
+      onClick={onClick}
       corner
     />
   )

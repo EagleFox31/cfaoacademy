@@ -48,6 +48,7 @@ cfaoacademy/
 ├── frontend/           # SPA React 19 + Vite — vitrine + portail (CSR)
 ├── cfao-core/          # Django/DRF — identity, lms, analytics…
 ├── cfao-operations/    # Node/TS — sessions, planning, salles…
+├── services/           # Python — rendu des rapports formateur (04-5), LibreOffice
 ├── cerbos/             # Policies d'autorisation (PDP)
 ├── gateway/            # nginx (+ oauth2-proxy à venir)
 ├── keycloak/           # Realm & config IdP
@@ -71,6 +72,7 @@ cfaoacademy/
 | Rôles & permissions | [PLATFORM_ROLES.md](./PLATFORM_ROLES.md) |
 | Design system front | [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) |
 | Vues apprenant | [APPRENANT_VIEWS.md](./APPRENANT_VIEWS.md) |
+| Rapports formateur (04-5) | [docs/MODULE_RAPPORTS_FORMATEUR.md](./docs/MODULE_RAPPORTS_FORMATEUR.md) |
 | Backlog & planning | [backlog.md](./backlog.md) · [planning.md](./planning.md) |
 | Contribution (commits MOA) | [CONTRIBUTING.md](./CONTRIBUTING.md) |
 | Historique des versions | [CHANGELOG.md](./CHANGELOG.md) |
@@ -89,7 +91,10 @@ cd cfao-core && pip install -r requirements.txt && pytest -q
 cd cfao-operations && npm ci && npm run typecheck && npm test && npm run build
 
 # frontend
-cd frontend && npm ci && npm run build
+cd frontend && npm ci && npm test && npm run build
+
+# services rapports (pytest)
+cd cfao-comptes-rendus/api && pip install -r requirements-dev.txt && pytest -q
 ```
 
 La CI GitHub Actions exécute ces vérifications sur chaque PR (voir [.github/workflows/ci.yml](./.github/workflows/ci.yml)).
