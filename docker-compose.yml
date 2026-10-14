@@ -214,7 +214,7 @@ services:
           memory: "${MEM_RAPPORTS_CERBOS:-128M}"
 
   rapports:
-    build: ./cfao-comptes-rendus
+    build: ./cfao-comptes-rendus/api
     restart: unless-stopped
     environment:
       DEPLOYMENT_MODE: integrated

@@ -38,10 +38,10 @@ policy-test:
 	fi
 
 migrate:
-	docker compose exec comptes-rendus-api python manage.py migrate
+	docker compose exec api python manage.py migrate
 
 shell:
-	docker compose exec comptes-rendus-api python manage.py shell
+	docker compose exec api python manage.py shell
 
 importer:
-	docker compose exec comptes-rendus-api python manage.py importer_flask --source $(SOURCE)
+	docker compose exec api python manage.py importer_flask --source $(SOURCE)

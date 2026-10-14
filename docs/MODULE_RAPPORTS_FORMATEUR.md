@@ -59,7 +59,7 @@ Navigateur (SPA React)                     cfao-comptes-rendus/api (Django)
 
 - **Dev** : le serveur Vite relaie `/apercu` et `/cr-donnees` vers `127.0.0.1:5175`
   (`frontend/vite.config.js`).
-- **Docker Compose** : service `rapports` (`cfao-comptes-rendus/Dockerfile`) et son Cerbos
+- **Docker Compose** : service `rapports` (`cfao-comptes-rendus/api/Dockerfile`) et son Cerbos
   `rapports-cerbos`, joignables seulement par la passerelle nginx, qui route les mêmes chemins
   (`gateway/nginx.conf`). Le dossier `cfao-comptes-rendus/` se déploie aussi seul (son propre
   `docker-compose.yml`, `Makefile`, `.env.example`).

@@ -1,15 +1,15 @@
 # Service des comptes rendus formateur (story 04-5) : apercu des diapositives,
 # production du rapport PPTX/PDF, brouillons et moteur de redaction.
-# Voir docs/MODULE_RAPPORTS_FORMATEUR.md.
+# Contexte de build : ce dossier (`api/`). Voir docs/MODULE_RAPPORTS_FORMATEUR.md.
 
-# ── Dependances Python, construites a part : l'image finale n'a ni pip ni cache.
+# -- Dependances Python, construites a part : l'image finale n'a ni pip ni cache.
 FROM python:3.12-slim AS dependances
 ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 RUN python -m venv /opt/venv
-COPY api/requirements.txt /tmp/requirements.txt
+COPY requirements.txt /tmp/requirements.txt
 RUN /opt/venv/bin/pip install -r /tmp/requirements.txt
 
-# ── Image d'execution.
+# -- Image d'execution.
 FROM python:3.12-slim
 
 # LibreOffice convertit les diapositives ; les polices Liberation et Carlito
@@ -26,7 +26,7 @@ RUN useradd --create-home --uid 1000 service \
 
 COPY --from=dependances /opt/venv /opt/venv
 WORKDIR /app
-COPY --chown=service:service api/ /app/
+COPY --chown=service:service . /app/
 
 ENV PATH=/opt/venv/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1 \

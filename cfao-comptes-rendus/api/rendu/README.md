@@ -25,7 +25,7 @@ sur le rendu HTML et le signale.
 - **Modèle** — `modeles/MODELE-REFERENCES.pptx`, versionné avec le service
 
 Variables : `CR_MODELE`, `CR_CACHE`, `CR_SOFFICE`, `CR_DONNEES`.
-En conteneur : `cfao-comptes-rendus/Dockerfile`, service `rapports` du `docker-compose.yml`.
+En conteneur : `cfao-comptes-rendus/api/Dockerfile`, service `rapports` du `docker-compose.yml`.
 
 ## Routes
 
