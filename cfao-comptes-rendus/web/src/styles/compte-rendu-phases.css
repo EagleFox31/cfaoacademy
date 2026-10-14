@@ -209,7 +209,7 @@
 .cr-sommaire-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cr-sommaire-pastille {
   flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 9.5px;
-  font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--rule); color: var(--muted);
+  font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--rule); color: #5E6275;
 }
 
 .cr-scene { min-width: 0; }

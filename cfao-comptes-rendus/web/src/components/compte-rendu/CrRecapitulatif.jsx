@@ -59,7 +59,7 @@ export default function CrRecapitulatif({
     return (
       <div className="cr-panel">
         <div className="cr-empty">
-          <div style={{ fontSize: 40, color: '#1aab5b' }} aria-hidden="true">✓</div>
+          <div style={{ fontSize: 40, color: '#147a41' }} aria-hidden="true">✓</div>
           <div className="cr-empty-title">Dossier de session produit</div>
           <p className="cr-empty-text">
             Le fichier est dans vos téléchargements. Le rapport PowerPoint sera

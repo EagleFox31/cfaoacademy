@@ -50,7 +50,7 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
 
   return (
     <>
-      <main className="portal-page cr-assistant">
+      <main className="cr-assistant">
         <header className="cr-home-header cr-home-header--slim">
           <div className="container cr-entete-assistant">
             <button type="button" className="cr-retour"

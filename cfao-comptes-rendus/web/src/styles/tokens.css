@@ -1,8 +1,10 @@
 /* CFAO Academy — Comptes rendus
  *
- * Les variables et les règles de base reprises du portail
- * (frontend/src/styles/index.css et portal.css), valeurs identiques :
- * le module garde le design system du portail sans le charger en entier.
+ * COPIE de frontend/src/styles/index.css (variables et règles de base, source
+ * de vérité : DESIGN_SYSTEM.md) et de portal.css, valeurs identiques : le module
+ * garde le design system du portail sans le charger en entier. Toute évolution
+ * des tokens se fait d'abord dans le portail et DESIGN_SYSTEM.md, puis se
+ * reporte ici à la main (pas de paquet commun pour l'instant).
  * Les autres variables (--accent, --ink-2, --line…) sont lues avec leur
  * valeur de repli dans compte-rendu.css.
  */

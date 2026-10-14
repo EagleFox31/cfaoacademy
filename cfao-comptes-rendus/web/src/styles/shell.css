@@ -156,5 +156,5 @@
   text-transform: uppercase; letter-spacing: 0.04em;
 }
 .accueil-pastille.todo     { background: var(--paper-3); color: var(--muted); }
-.accueil-pastille.progress { background: #fff3cc; color: #996600; }
-.accueil-pastille.done     { background: #edfaf4; color: #1aab5b; }
+.accueil-pastille.progress { background: #fff3cc; color: #855a00; }
+.accueil-pastille.done     { background: #edfaf4; color: #147a41; }

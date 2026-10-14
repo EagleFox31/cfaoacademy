@@ -377,7 +377,7 @@ export default function PhaseVerification({
         <div className="cr-empty">
           {resteAFaire === 0 ? (
             <>
-              <div style={{ fontSize: 38, color: '#1aab5b' }} aria-hidden="true">✓</div>
+              <div style={{ fontSize: 38, color: '#147a41' }} aria-hidden="true">✓</div>
               <div className="cr-empty-title">Compte rendu terminé</div>
               <p className="cr-empty-text">
                 Le PowerPoint est dans vos téléchargements. Le compte rendu
