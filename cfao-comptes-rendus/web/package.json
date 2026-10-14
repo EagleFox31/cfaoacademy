@@ -20,5 +20,8 @@
     "@vitejs/plugin-react": "^4.3.1",
     "vite": "^5.4.8",
     "vitest": "^2.1.9"
+  },
+  "overrides": {
+    "rollup": "4.60.4"
   }
 }
