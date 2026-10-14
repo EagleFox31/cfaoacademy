@@ -178,3 +178,35 @@ def test_les_etiquettes_des_deux_anneaux_gardent_leur_place_quelles_que_soient_l
     assert math.dist(places[0], (cx, cy)) < 0.01 * rayon
     assert places[1][0] > cx + rayon * 1.1 and places[1][0] < larg
     assert cy < places[1][1] < haut
+
+
+@pytest.mark.parametrize('v', [0.02, 0.25, 0.4, 0.5, 0.62, 0.8, 0.98, 1.0])
+def test_le_trait_de_rappel_n_a_que_des_segments_droits(v):
+    import math
+    point = (100 + math.sin(v * math.pi) * 80, 100 - math.cos(v * math.pi) * 80)
+    points = classeurs._trait_orthogonal((100, 100), (40, 15), point)
+    assert 2 <= len(points) <= 3 and points[-1] == point
+    assert all(a[0] == b[0] or a[1] == b[1] for a, b in zip(points, points[1:]))
+    # Il part du bord de l'etiquette, jamais de l'interieur.
+    x, y = points[0]
+    assert abs(x - 100) >= 40 or abs(y - 100) >= 15
+
+
+@pytest.mark.parametrize('slide', [PAGE_RESULTATS, FICHE])
+@pytest.mark.parametrize('cellules', [{'B9': 0.98, 'C9': 0.02, 'B18': 0.9, 'C18': 0.1},
+                                      {'B9': 0.7, 'C9': 0.3}])
+def test_le_classeur_embarque_porte_le_trait_en_equerre_de_la_formation(contenus, slide, cellules):
+    rafraichir(contenus, slide, {**CELLULES, 'B2': 0.8, 'B12': 0.8, **cellules})
+    parts = classeur_de_satisfaction(contenus, slide)
+    graphique = parts['xl/charts/chart1.xml'].decode('utf-8')
+    minidom.parseString(graphique)
+    premiere = re.search(r'<c:ser>.*?</c:ser>', graphique, re.S).group(0)
+    assert '<c:showLeaderLines val="0"/>' in premiere
+    assert graphique.endswith('<c:userShapes r:id="rIdTrait"/></c:chartSpace>')
+    assert b'chartUserShapes' in parts['xl/charts/_rels/chart1.xml.rels']
+    assert b'/xl/drawings/drawingTrait.xml' in parts['[Content_Types].xml']
+    formes = parts['xl/drawings/drawingTrait.xml'].decode('utf-8')
+    minidom.parseString(formes)
+    pts = [tuple(map(int, p)) for p in re.findall(r'<a:pt x="(\d+)" y="(\d+)"/>', formes)]
+    assert 2 <= len(pts) <= 3
+    assert all(a[0] == b[0] or a[1] == b[1] for a, b in zip(pts, pts[1:]))

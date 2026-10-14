@@ -697,12 +697,11 @@ def _anneau_excel(image, geo, valeurs):
             police, lw, lh = bloc(texte, corps)
         angle = math.radians(float(v or 0) * 180)
         dirx, diry = math.sin(angle), -math.cos(angle)
-        # Sortie du rayon par le bord de la boite, jusqu'au milieu de l'anneau.
-        t = min(lw / 2 / abs(dirx) if abs(dirx) > 1e-6 else math.inf,
-                lh / 2 / abs(diry) if abs(diry) > 1e-6 else math.inf) + 0.04 * rayon
+        # Du bord de la boite au milieu de l'anneau, en equerre : le meme
+        # trait que celui pose dans le graphique Excel (`_trait_de_rappel`).
         rm = trou_xl + 0.5 * ep_xl
-        trait = [(cx + dirx * t, cy + diry * t), (cx + dirx * rm, cy + diry * rm)] \
-            if t < trou_xl - 0.04 * rayon and v is not None else []
+        trait = _trait_orthogonal((cx, cy), (lw / 2 + 0.03 * rayon, lh / 2 + 0.03 * rayon),
+                                  (cx + dirx * rm, cy + diry * rm))
         etiquettes.append((texte, police, lh, cx, cy, trait))
     if len(series) > 1 and series[1][1] is not None:
         serie, v = series[1]
@@ -813,7 +812,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 4
+VERSION_IMAGES = 5
 
 
 def _cadre_de(rendu, reference):
@@ -1011,6 +1010,121 @@ def _sans_moitie_absente(parts, valeurs):
     return parts
 
 
+def _trait_orthogonal(centre, demi, point):
+    """Le trait de rappel d'une etiquette, de son bord jusqu'a `point`.
+
+    Rien que des segments horizontaux ou verticaux, un ou deux : droit
+    quand le point fait face a l'etiquette, en equerre sinon. `demi` :
+    les demi-cotes de la boite de l'etiquette, marge comprise.
+    """
+    (cx, cy), (dw, dh), (px, py) = centre, demi, point
+    sx, sy = (1 if px >= cx else -1), (1 if py >= cy else -1)
+    if abs(px - cx) <= dw * 0.75:
+        return [(px, cy + sy * dh), (px, py)]
+    if abs(py - cy) <= dh * 0.75:
+        return [(cx + sx * dw, py), (px, py)]
+    if abs(px - cx) > dw:
+        return [(cx + sx * dw, cy), (px, cy), (px, py)]
+    return [(cx, cy + sy * dh), (cx, py), (px, py)]
+
+
+TRAIT_FORMES = 'xl/drawings/drawingTrait.xml'
+NS_A = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
+
+
+def _trait_de_rappel(parts):
+    """Le trait de l'etiquette du centre, dessine dans le graphique Excel.
+
+    Le trait de rappel d'Excel est une ligne droite, penchee le plus
+    souvent ; on l'eteint pour l'anneau du centre et on pose a sa place
+    une forme du graphique (`userShapes`), le meme trait en equerre que
+    sur l'apercu. Rafraichi dans PowerPoint, l'objet le garde.
+    """
+    import math
+    geo = _geometrie_anneau(parts)
+    nom = next((n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)
+                and b'<c:doughnutChart>' in parts[n]), None)
+    if not geo or not nom or not geo['series']:
+        return parts
+    graphique = parts[nom].decode('utf-8')
+    ser = re.search(r'<c:ser>.*?</c:ser>', graphique, re.S).group(0)
+    valeur = re.search(r'<c:val>.*?<c:pt idx="0"><c:v>([^<]+)</c:v>', ser, re.S)
+    try:
+        v = float(valeur.group(1)) if valeur else None
+    except ValueError:
+        v = None
+    if v is None:
+        return parts
+    larg, haut = geo['cadre']
+    z, trou, n = geo['zone'], geo['trou'], len(geo['series'])
+    rayon = min(z['w'] * larg, z['h'] * haut) / 2
+    cx, cy = (z['x'] + z['w'] / 2) * larg, (z['y'] + z['h'] / 2) * haut
+    rm = (trou + 0.5 * (1 - trou) / n) * rayon
+    point = (cx + math.sin(v * math.pi) * rm, cy - math.cos(v * math.pi) * rm)
+    taille = re.search(r'<c:dLbl><c:idx val="0"/>.*?<c15:layout><c:manualLayout>'
+                       r'<c:w val="([^"]+)"/><c:h val="([^"]+)"/>', ser, re.S)
+    if taille:
+        lw, lh = float(taille.group(1)) * larg, float(taille.group(2)) * haut
+    else:
+        info = geo['series'][0]
+        mots = info['nom'].split()
+        lw = _largeur_texte([' '.join(mots[:-1]), f"{mots[-1] if mots else ''} 100%"],
+                            info['pt']) * 12700
+        lh = info['pt'] * 1.22 * 2 * 12700
+    marge = 0.03 * rayon
+    points = _trait_orthogonal((cx, cy), (lw / 2 + marge, lh / 2 + marge), point)
+
+    # Plus de trait d'Excel pour cette serie : le notre le remplace.
+    neuve = ser.replace('<c:showLeaderLines val="1"/>', '<c:showLeaderLines val="0"/>', 1)
+    graphique = graphique.replace(ser, neuve, 1)
+    if '<c:userShapes ' not in graphique:
+        if 'xmlns:r=' not in re.search(r'<c:chartSpace[^>]*>', graphique).group(0):
+            graphique = graphique.replace(
+                '<c:chartSpace ', '<c:chartSpace xmlns:r="http://schemas.openxmlformats.org/'
+                'officeDocument/2006/relationships" ', 1)
+        graphique = graphique.replace('</c:chartSpace>',
+                                      '<c:userShapes r:id="rIdTrait"/></c:chartSpace>')
+        rels = nom.replace('charts/', 'charts/_rels/') + '.rels'
+        lien = ('<Relationship Id="rIdTrait" Type="http://schemas.openxmlformats.org/'
+                'officeDocument/2006/relationships/chartUserShapes" '
+                f'Target="../drawings/{TRAIT_FORMES.rsplit("/", 1)[1]}"/>')
+        if rels in parts:
+            parts[rels] = parts[rels].replace(b'</Relationships>',
+                                              lien.encode('utf-8') + b'</Relationships>')
+        else:
+            parts[rels] = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+                           '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/'
+                           f'relationships">{lien}</Relationships>').encode('utf-8')
+        types = parts['[Content_Types].xml'].decode('utf-8')
+        if f'PartName="/{TRAIT_FORMES}"' not in types:
+            types = types.replace('</Types>', f'<Override PartName="/{TRAIT_FORMES}" ContentType='
+                                  '"application/vnd.openxmlformats-officedocument.drawingml.'
+                                  'chartshapes+xml"/></Types>')
+            parts['[Content_Types].xml'] = types.encode('utf-8')
+    parts[nom] = graphique.encode('utf-8')
+
+    x0, x1 = min(x for x, _ in points), max(x for x, _ in points)
+    y0, y1 = min(y for _, y in points), max(y for _, y in points)
+    w, h = max(1, round(x1 - x0)), max(1, round(y1 - y0))
+    chemin = ''.join(
+        f'<a:{"moveTo" if i == 0 else "lnTo"}><a:pt x="{round(x - x0)}" y="{round(y - y0)}"/>'
+        f'</a:{"moveTo" if i == 0 else "lnTo"}>' for i, (x, y) in enumerate(points))
+    parts[TRAIT_FORMES] = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        f'<c:userShapes xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" {NS_A}>'
+        '<cdr:relSizeAnchor xmlns:cdr="http://schemas.openxmlformats.org/drawingml/2006/chartDrawing">'
+        f'<cdr:from><cdr:x>{x0 / larg:.6f}</cdr:x><cdr:y>{y0 / haut:.6f}</cdr:y></cdr:from>'
+        f'<cdr:to><cdr:x>{(x0 + w) / larg:.6f}</cdr:x><cdr:y>{(y0 + h) / haut:.6f}</cdr:y></cdr:to>'
+        '<cdr:sp macro="" textlink=""><cdr:nvSpPr><cdr:cNvPr id="2" name="Trait de rappel"/>'
+        '<cdr:cNvSpPr/></cdr:nvSpPr><cdr:spPr>'
+        '<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/>'
+        f'<a:pathLst><a:path w="{w}" h="{h}" fill="none">{chemin}</a:path></a:pathLst>'
+        '</a:custGeom><a:noFill/>'
+        '<a:ln w="9525"><a:solidFill><a:srgbClr val="595959"/></a:solidFill></a:ln>'
+        '</cdr:spPr></cdr:sp></cdr:relSizeAnchor></c:userShapes>').encode('utf-8')
+    return parts
+
+
 def _etiquette_au_centre(parts, graphique, v):
     """L'etiquette de l'anneau seul, au centre de son trou, comme sur l'image.
 
@@ -1100,6 +1214,8 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
                 # Le cadre de l'image vient du classeur aux deux notes : le
                 # tableau restant garde sa place et l'anneau son echelle.
                 reference = _ecrire(remplir_classeur(parts, NOTES_DE_REFERENCE))
+            if quoi == 'satisfaction':
+                remplies = _trait_de_rappel(remplies)
             brut = _ecrire(remplies)
             contenus[emb] = brut
             a_rendre[emb] = brut
