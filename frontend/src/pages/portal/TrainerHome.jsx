@@ -64,10 +64,11 @@ function visuelSession(session) {
  *
  * Trois sections, dans l'ordre ou il en a besoin :
  *
- *   1. **Vos sessions a documenter** — les formations terminees dont le
- *      compte rendu manque. C'est ce qu'il vient chercher.
- *   2. **Comptes rendus** — les entrees du module : en ouvrir un,
- *      reprendre un brouillon, relire les precedents.
+ *   1. **Priorites** — une carte par zone du portail avec son compteur
+ *      (sessions a venir, assistance aux techniciens). L'ancre historique
+ *      `a-documenter` reste son identifiant (cible du menu « Priorites »).
+ *   2. **Comptes rendus** — les entrees du module, servi a part : en ouvrir
+ *      un, reprendre un brouillon, relire les precedents.
  *   3. **Vos prochaines sessions** — ce qu'il anime bientot.
  */
 export default function TrainerHome() {

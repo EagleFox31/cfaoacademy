@@ -43,4 +43,37 @@ describe('RedirectionExterne', () => {
       'http://cr.exemple.test/portail/compte-rendu/nouveau?session=ses-1')
     vi.unstubAllEnvs()
   })
+
+  function afficher(aller, origine) {
+    const conteneur = document.createElement('div')
+    racine = createRoot(conteneur)
+    act(() => {
+      racine.render(
+        <MemoryRouter initialEntries={['/portail/compte-rendu/nouveau?session=ses-1']}
+          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <RedirectionExterne aller={aller} origine={origine} />
+        </MemoryRouter>,
+      )
+    })
+    return conteneur
+  }
+
+  it('ne redirige pas quand le module a la même origine que le portail (pas de boucle)', () => {
+    vi.stubEnv('VITE_CR_URL', 'http://portail.exemple.test')
+    const aller = vi.fn()
+    const conteneur = afficher(aller, 'http://portail.exemple.test')
+    expect(aller).not.toHaveBeenCalled()
+    expect(conteneur.querySelector('a').getAttribute('href'))
+      .toBe('http://portail.exemple.test/portail/compte-rendu/nouveau?session=ses-1')
+    vi.unstubAllEnvs()
+  })
+
+  it('redirige quand le module est sous un autre chemin de la même origine', () => {
+    vi.stubEnv('VITE_CR_URL', 'http://portail.exemple.test/comptes-rendus')
+    const aller = vi.fn()
+    afficher(aller, 'http://portail.exemple.test')
+    expect(aller).toHaveBeenCalledWith(
+      'http://portail.exemple.test/comptes-rendus/portail/compte-rendu/nouveau?session=ses-1')
+    vi.unstubAllEnvs()
+  })
 })

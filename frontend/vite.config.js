@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -55,8 +55,28 @@ const unitesEcran = {
   },
 }
 
-export default defineConfig({
-  plugins: [react(), cataloguesFallbackPlugin()],
+/**
+ * Sans VITE_CR_URL, le build de production renvoie les comptes rendus vers
+ * http://localhost:8090 : inutilisable hors du poste de dev. On prévient
+ * sans faire échouer le build (la CI le lance sans variable).
+ */
+function avertirSansUrlComptesRendus(mode) {
+  const env = { ...loadEnv(mode, __dirname, 'VITE_'), ...process.env }
+  return {
+    name: 'avertir-sans-vite-cr-url',
+    apply: 'build',
+    buildStart() {
+      if (mode === 'production' && !env.VITE_CR_URL) {
+        console.warn('[avertissement] VITE_CR_URL n’est pas définie : en production, les liens des '
+          + 'comptes rendus pointent sur http://localhost:8090. Renseignez l’adresse publique du module '
+          + '(voir docs/DEPLOYMENT.md, « Module des comptes rendus »).')
+      }
+    },
+  }
+}
+
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), cataloguesFallbackPlugin(), avertirSansUrlComptesRendus(mode)],
   css: { postcss: { plugins: [unitesEcran] } },
   publicDir: 'public',
   server: {
@@ -76,4 +96,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))
