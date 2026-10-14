@@ -2,7 +2,8 @@
 # se lance seule, sans rien emprunter au reste du depot.
 #   cp .env.example .env && docker compose up --build -d
 # Interface et API : http://localhost:8090 (CR_PORT). Seule la passerelle
-# est publiee ; l'API, la base et Cerbos restent sur le reseau interne.
+# est publiee (127.0.0.1 par defaut, CR_BIND) ; l'API, la base et Cerbos restent
+# sur le reseau interne.
 # Dans la plateforme, le service est declare par le docker-compose.yml racine.
 name: cfao-comptes-rendus
 
@@ -47,6 +48,10 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-comptes_rendus}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-comptes_rendus}
       CERBOS_HTTP: http://cerbos:3592
+      # Le module fixe son propre nom de cookie (meme hote = meme site que le portail).
+      COOKIE_SESSION: ${COOKIE_SESSION:-cfao_cr_session}
+      # Pages autorisees a ecrire : la passerelle, sur son port publie.
+      ORIGINES_AUTORISEES: ${ORIGINES_AUTORISEES:-http://localhost:${CR_PORT:-8090},http://127.0.0.1:${CR_PORT:-8090}}
     volumes:
       # Photos, rapports produits et, en mode local, empreintes des mots de passe.
       - cr-donnees:/donnees
@@ -67,7 +72,8 @@ services:
     restart: unless-stopped
     mem_limit: 128m
     ports:
-      - "127.0.0.1:${CR_PORT:-8090}:80"
+      # CR_BIND : 127.0.0.1 par defaut ; ne l'elargir que derriere un proxy TLS (voir README).
+      - "${CR_BIND:-127.0.0.1}:${CR_PORT:-8090}:80"
     depends_on:
       api: { condition: service_healthy }
 

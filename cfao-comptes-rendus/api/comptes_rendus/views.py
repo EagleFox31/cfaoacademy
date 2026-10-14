@@ -155,7 +155,8 @@ class Connexion(APIView):
         valeur, duree = locale.signer_session(profil["id"], persistante)
         r = Response({k: v for k, v in profil.items() if k != "identifiant"} | {"compte": True})
         r.set_cookie(locale.COOKIE, valeur, max_age=duree if persistante else None,
-                     httponly=True, samesite="Lax", path="/")
+                     httponly=True, samesite="Lax", path="/",
+                     secure=settings.COOKIE_SECURE)
         return r
 
 
@@ -177,7 +178,7 @@ class Deconnexion(APIView):
         if settings.DEPLOYMENT_MODE == "integrated":
             corps["redirection"] = settings.OIDC_DECONNEXION
         r = Response(corps)
-        r.delete_cookie(locale.COOKIE, path="/")
+        r.delete_cookie(locale.COOKIE, path="/", samesite="Lax")
         return r
 
 

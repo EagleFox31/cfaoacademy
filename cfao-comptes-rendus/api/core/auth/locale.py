@@ -2,7 +2,7 @@
 
 Deux sources, comme le kit `template-service` :
 - l'en-tete `X-User-ID` (tests, curl), en mode autonome seulement ;
-- le cookie `cfao_session`, signe par le service a la connexion
+- le cookie de session (`COOKIE_SESSION`, `cfao_session` par defaut), signe par le service a la connexion
   (`/cr-donnees/connexion`), pour que le portail fonctionne tel quel.
 
 Le mode autonome ne verifie aucun mot de passe : il n'est autorise
@@ -17,7 +17,7 @@ from rest_framework import authentication
 from .identity import get_identity_provider, profil_par_id
 from .principal import construire_principal
 
-COOKIE = "cfao_session"
+COOKIE = settings.COOKIE_SESSION   # nom configurable (COOKIE_SESSION)
 DUREE_PERSISTANTE = 30 * 24 * 3600
 DUREE_NAVIGATEUR = 12 * 3600
 # Un sel par duree : la duree de vie fait partie de la signature.
