@@ -23,7 +23,8 @@ import '../styles/compte-rendu.css'
  *
  * Avec `aDocumenterAussi` (carte « Comptes rendus a documenter » de
  * l'accueil), la page liste aussi ce qui reste a commencer : les sessions
- * de formation passees qui n'ont encore aucun compte rendu.
+ * de formation passees qui n'ont encore aucun compte rendu, dans le meme
+ * groupe, sous un seul titre.
  */
 export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
   useEnHautDePage('Comptes rendus en cours')
@@ -38,6 +39,16 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
     return () => { actif = false }
   }, [])
   const { aContinuer: brouillons, aCommencer } = aDocumenter(sessions, tous)
+  // Un seul groupe : les saisies commencees d'abord, puis les sessions de
+  // formation passees sans compte rendu ; le badge de chaque carte les distingue.
+  const total = brouillons.length + (aDocumenterAussi ? aCommencer.length : 0)
+  const indication = aDocumenterAussi
+    ? (total
+      ? 'Les comptes rendus commencés, puis les sessions de formation passées qui attendent encore le leur.'
+      : 'Tous vos comptes rendus sont à jour.')
+    : (total
+      ? 'Les comptes rendus commencés, du plus récent au plus ancien.'
+      : 'Aucun compte rendu en cours.')
   const commencer = s => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)
 
   const reprendre = b => naviguer(`/portail/compte-rendu/nouveau?session=${b.id}`)
@@ -68,49 +79,28 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
         <section className="cr-etape">
           <div className="container" style={{ padding: '12px 32px 20px' }}>
             <div className="cr-panel cr-panel--choix">
-              {/* Les deux groupes defilent ensemble ; l'echappee reste au bas. */}
+              {/* La liste defile ; l'echappee reste au bas. */}
               <div className="cr-groupes">
                 <div className="cr-panel-head">
                   <h2 className="cr-panel-title">
-                    {aDocumenterAussi ? `À continuer (${brouillons.length})` : 'Reprendre une saisie'}
+                    {aDocumenterAussi ? `À documenter (${total})` : 'Reprendre une saisie'}
                   </h2>
-                  <p className="cr-panel-hint">
-                    {brouillons.length
-                      ? 'Les comptes rendus commencés, du plus récent au plus ancien.'
-                      : 'Aucun compte rendu en cours.'}
-                  </p>
+                  <p className="cr-panel-hint">{indication}</p>
                 </div>
 
-                {brouillons.length > 0 && (
+                {total > 0 && (
                   <div className="cr-session-grid">
                     {brouillons.map(b => (
                       <CarteCompteRendu key={b.id} carte={carteDeBrouillon(b)}
                         badge={<BadgeCompteRendu etat="en_cours_redaction" phase={b.phase} />}
                         onClick={() => reprendre(b)} onSupprimer={() => supprimer(b)} />
                     ))}
+                    {aDocumenterAussi && aCommencer.map(s => (
+                      <CarteCompteRendu key={s.id} carte={carteDeSession(s)}
+                        badge={<BadgeCompteRendu etat="a_rediger" />}
+                        onClick={() => commencer(s)} />
+                    ))}
                   </div>
-                )}
-
-                {aDocumenterAussi && (
-                  <>
-                    <div className="cr-panel-head cr-panel-head--suite">
-                      <h2 className="cr-panel-title">À commencer ({aCommencer.length})</h2>
-                      <p className="cr-panel-hint">
-                        {aCommencer.length
-                          ? 'Les sessions de formation passées qui attendent encore leur compte rendu.'
-                          : 'Toutes vos sessions de formation passées ont leur compte rendu.'}
-                      </p>
-                    </div>
-                    {aCommencer.length > 0 && (
-                      <div className="cr-session-grid">
-                        {aCommencer.map(s => (
-                          <CarteCompteRendu key={s.id} carte={carteDeSession(s)}
-                            badge={<BadgeCompteRendu etat="a_rediger" />}
-                            onClick={() => commencer(s)} />
-                        ))}
-                      </div>
-                    )}
-                  </>
                 )}
               </div>
 
