@@ -7,10 +7,19 @@
 # Dans la plateforme, le service est declare par le docker-compose.yml racine.
 name: cfao-comptes-rendus
 
+# Journaux bornes (3 x 10 Mo par conteneur) : sans cela, ils grossissent
+# sans fin sur le disque de Docker.
+x-journaux: &journaux
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *journaux
     mem_limit: 256m
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-comptes_rendus}
@@ -27,6 +36,7 @@ services:
   cerbos:
     image: ghcr.io/cerbos/cerbos:0.40.0
     restart: unless-stopped
+    logging: *journaux
     mem_limit: 256m
     command: ["server", "--config=/config/config.yaml"]
     environment:
@@ -43,6 +53,7 @@ services:
   api:
     build: ./api
     restart: unless-stopped
+    logging: *journaux
     mem_limit: 1g
     env_file: .env
     environment:
@@ -70,6 +81,7 @@ services:
       context: .
       dockerfile: gateway/Dockerfile
     restart: unless-stopped
+    logging: *journaux
     mem_limit: 128m
     ports:
       # CR_BIND : 127.0.0.1 par defaut ; ne l'elargir que derriere un proxy TLS (voir README).

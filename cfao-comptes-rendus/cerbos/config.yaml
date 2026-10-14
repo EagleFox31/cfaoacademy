@@ -19,3 +19,5 @@ audit:
   backend: local
   local:
     storagePath: /tmp/cerbos/audit.log
+    # Une semaine par defaut : trois jours suffisent et bornent le volume.
+    retentionPeriod: 72h
