@@ -542,7 +542,12 @@ def _geometrie_anneau(parts):
         nom = re.search(r'<c:tx>.*?<c:v>([^<]*)</c:v>', ser, re.S)
         dec = re.search(r'<c:dLbl><c:idx val="0"/><c:layout><c:manualLayout>'
                         r'<c:x val="([^"]+)"/><c:y val="([^"]+)"/>', ser)
-        corps = re.search(r'<c:dLbl>.*?sz="(\d+)"', ser, re.S)
+        # Le corps du texte affiche est celui de ses morceaux (`a:rPr`),
+        # pas celui du style par defaut (`a:defRPr`), souvent plus grand.
+        etiquette = re.search(r'<c:dLbl>.*?</c:dLbl>', ser, re.S)
+        etiquette = etiquette.group(0) if etiquette else ''
+        corps = (re.search(r'<a:rPr [^>]*sz="(\d+)"', etiquette)
+                 or re.search(r'sz="(\d+)"', etiquette))
         boite = re.search(r'<c:dLbl><c:idx val="0"/>.*?<c15:layout><c:manualLayout>'
                           r'<c:w val="([^"]+)"/><c:h val="([^"]+)"/>', ser, re.S)
         series.append({
@@ -552,10 +557,22 @@ def _geometrie_anneau(parts):
             'dy': float(dec.group(2)) if dec else 0.0,
             'pt': int(corps.group(1)) / 100 if corps else 16.0,
         })
-    _, _, largeur, hauteur = _cadre_graphique(parts, dessin)
+    x0, y0, largeur, hauteur = _cadre_graphique(parts, dessin)
     if not largeur or not hauteur:
         return None
+    # L'objet OLE ne montre que sa zone `oleSize` : la part du graphique
+    # qui deborde de ses colonnes ou de ses lignes reste cachee.
+    visible = (largeur, hauteur)
+    zone_ole = re.search(r'<oleSize ref="[A-Z]+\d+:([A-Z]+)(\d+)"',
+                         parts.get('xl/workbook.xml', b'').decode('utf-8'))
+    if zone_ole:
+        col = 0
+        for c in zone_ole.group(1):
+            col = col * 26 + ord(c) - 64
+        xd, yb = _point_feuille(parts, col, 0, int(zone_ole.group(2)), 0)
+        visible = (min(largeur, xd - x0), min(hauteur, yb - y0))
     return {
+        'visible': visible,
         'trou': int(trou.group(1)) / 100 if trou else 0.5,
         'zone': {k: float(v) for k, v in zone.items()} or {'x': 0, 'y': 0, 'w': 1, 'h': 1},
         'cadre': (largeur, hauteur),
@@ -816,7 +833,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 9
+VERSION_IMAGES = 10
 
 
 def _cadre_de(rendu, reference):
@@ -1110,7 +1127,8 @@ def _disposition_anneau(geo, valeurs):
             trait = _trait_rayon(centre, (boite[0] / 2, boite[1] / 2), point, rayon)
         else:
             boite = texte
-            centre, trait = _trait_accueil((cx, cy), rayon, point, texte, (larg, haut))
+            centre, trait = _trait_accueil((cx, cy), rayon, point, texte,
+                                           geo.get('visible', (larg, haut)))
         places.append({'defaut': point, 'centre': centre, 'boite': boite, 'trait': trait})
     return places
 

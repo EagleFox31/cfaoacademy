@@ -178,6 +178,10 @@ def test_le_trait_de_l_accueil_part_du_milieu_rempli_et_rejoint_son_texte_sans_b
     (larg, haut), z = geo['cadre'], geo['zone']
     rayon = 1.015 * min(z['w'] * larg, z['h'] * haut) / 2
     cx, cy = (z['x'] + z['w'] / 2) * larg, (z['y'] + z['h'] / 2) * haut
+    vis_l, vis_h = geo['visible']
+    if slide == FICHE:
+        # Sur la fiche, la colonne au-dela de B coupe la droite du graphique.
+        assert vis_l < 0.95 * larg
     longueurs = set()
     for accueil in NOTES:
         formation, place = classeurs._disposition_anneau(geo, [0.8, accueil])
@@ -189,8 +193,8 @@ def test_le_trait_de_l_accueil_part_du_milieu_rempli_et_rejoint_son_texte_sans_b
         fx, fy, marge = *trait[-1], 0.03 * rayon
         assert (abs(fx - (ex - lw / 2 - marge)) < 1 and abs(fy - ey) <= 0.3 * lh) or \
                (abs(abs(fy - ey) - lh / 2 - marge) < 1 and abs(fx - ex) <= lw / 2)
-        # L'etiquette dans le cadre, hors du cercle.
-        assert 0 <= ey - lh / 2 and ey + lh / 2 <= haut and ex + lw / 2 <= larg
+        # L'etiquette dans la part visible de l'objet (`oleSize`), hors du cercle.
+        assert 0 <= ey - lh / 2 and ey + lh / 2 <= vis_h and ex + lw / 2 <= vis_l
         coin_x = min(max(cx, ex - lw / 2), ex + lw / 2)
         coin_y = min(max(cy, ey - lh / 2), ey + lh / 2)
         assert math.hypot(coin_x - cx, coin_y - cy) > rayon
