@@ -224,7 +224,7 @@ services:
       # La passerelle transmet le nom public (Host) ; localhost pour la sonde.
       ALLOWED_HOSTS: ${RAPPORTS_ALLOWED_HOSTS:-localhost,127.0.0.1}
       # Pages autorisees a ecrire (controle d'Origin) : la passerelle de la plateforme.
-      ORIGINES_AUTORISEES: ${RAPPORTS_ORIGINES_AUTORISEES:-http://localhost:8000,http://127.0.0.1:8000}
+      ORIGINES_AUTORISEES: ${RAPPORTS_ORIGINES_AUTORISEES:-http://localhost:8000,http://127.0.0.1:8000,http://localhost:5173,http://127.0.0.1:5173}
       DATABASE_URL: sqlite:////donnees/comptes-rendus.sqlite3
       CERBOS_HTTP: http://rapports-cerbos:3592
       PLATFORM_CORE_URL: http://core:8000

@@ -46,5 +46,6 @@ class ControleOrigine:
         referent = request.headers.get("Referer")
         if referent:
             return _origine(referent) in autorisees
-        return not (settings.COOKIE_SESSION in request.COOKIES
+        from core.auth import locale   # meme nom de cookie que l'authentification
+        return not (locale.COOKIE in request.COOKIES
                     or request.headers.get("Sec-Fetch-Site"))

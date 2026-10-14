@@ -43,6 +43,16 @@ Statuts : `corrigé`, `différé` (raison et emplacement), `rejeté` (raison).
 | M10 | `cfao-comptes-rendus/docker-compose.yml:105` | Valeur insérée brute dans une URL | `.env.example` : éviter ou encoder `@ : / # ? %` dans `POSTGRES_PASSWORD`. | corrigé |
 | M11 | `frontend/src/components/RedirectionExterne.jsx` | Boucle de redirection | Si l'adresse visée a la même origine et le même chemin que la page courante, le lien s'affiche sans redirection. Un module sous un autre chemin de la même origine (reverse proxy) redirige normalement. 2 tests vitest ajoutés. | corrigé |
 
+## Passe 2 (contre-revue)
+
+Écarts de la passe 1 : tous clos. Écarts nouveaux introduits par la correction :
+
+| N° | Fichier:ligne | Classe | Correction | Statut |
+|---|---|---|---|---|
+| P1 | `cfao-comptes-rendus/api/config/settings/base.py:99` | Non-régression : origine d'un appelant existant refusée | Le portail appelle `/cr-donnees/connexion` et `/deconnexion` par son proxy Vite, avec l'`Origin` 5173 (dev) ou 5174 (servi) : ajoutées aux défauts ; défaut du compose racine (`docker-compose.yml:227`) aligné sur 5173. Test `test_le_portail_garde_sa_connexion_par_compte` (échoue sans le correctif). Au déploiement réel, `ORIGINES_AUTORISEES` doit nommer l'adresse publique du portail. | corrigé |
+| P2 | `cfao-comptes-rendus/api/core/middleware.py:49` | Deux sources pour un même nom | Le middleware lit `locale.COOKIE`, comme l'authentification. | corrigé |
+| P3 | `frontend/src/components/RedirectionExterne.jsx` | Garde partielle | Si `VITE_CR_URL` vise une autre route du portail, aucune boucle mais l'utilisateur reste dans le portail : `VITE_CR_URL` doit viser le module (documenté dans `docs/DEPLOYMENT.md`). | rejeté (configuration, pas défaut de code) |
+
 ## Constats hors périmètre
 
 - `frontend/.env.local` est suivi par Git (adresses du réseau interne et clé de pont MEDACAP) : il date d'avant cette branche et n'est pas modifié ici ; à sortir du suivi et à remplacer par un `.env.example` après décision de l'équipe.

@@ -22,6 +22,15 @@ def test_l_origine_du_serveur_de_dev_passe(db):
     assert r.status_code == 200
 
 
+def test_le_portail_garde_sa_connexion_par_compte(db):
+    # Le portail (5173 en dev, 5174 servi) appelle /cr-donnees par son proxy :
+    # l'Origin reste la sienne.
+    for origine in ("http://localhost:5173", "http://127.0.0.1:5174"):
+        c = _navigateur(HTTP_ORIGIN=origine)
+        assert c.post(CONNEXION, CORPS, format="json").status_code == 200
+        assert c.post("/cr-donnees/deconnexion").status_code != 403
+
+
 def test_une_origine_etrangere_est_refusee_meme_sans_cookie(db):
     r = _navigateur(HTTP_ORIGIN=ETRANGERE).post(CONNEXION, CORPS, format="json")
     assert r.status_code == 403
