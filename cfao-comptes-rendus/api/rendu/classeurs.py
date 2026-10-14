@@ -753,9 +753,12 @@ def _anneau_excel(image, geo, valeurs):
     t_ = min([0] + [b[1] for b in boites])
     d = max([image.width] + [b[2] for b in boites])
     f = max([image.height] + [b[3] for b in boites])
-    dx0, dy0 = -int(math.floor(g)), -int(math.floor(t_))
-    if dx0 or dy0 or d > image.width or f > image.height:
-        toile = Image.new('RGBA', (int(math.ceil(d)) + dx0, int(math.ceil(f)) + dy0),
+    # A l'horizontale, la toile grandit autant des deux cotes : l'objet est
+    # centre sous le titre de sa colonne, le contenu rendu doit le rester.
+    marge_h = max(-int(math.floor(g)), int(math.ceil(d)) - image.width)
+    dx0, dy0 = marge_h, -int(math.floor(t_))
+    if dx0 or dy0 or f > image.height:
+        toile = Image.new('RGBA', (image.width + 2 * marge_h, int(math.ceil(f)) + dy0),
                           (255, 255, 255, 0))
         toile.paste(image, (dx0, dy0))
         image = toile
@@ -790,7 +793,7 @@ def _sans_blanc(image):
     return image
 
 
-def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
+def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None, en_haut=False):
     """L'image rognee a son contenu, le blanc rendu transparent.
 
     L'EMF du modele n'a pas de fond : pose sur la moitie grise de la
@@ -824,7 +827,8 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
         cible_l, cible_h = max(l, round(h * ratio)), max(h, round(l / ratio))
         if (cible_l, cible_h) != (l, h):
             cadre = Image.new('RGBA', (cible_l, cible_h), (255, 255, 255, 0))
-            cadre.paste(image, ((cible_l - l) // 2, (cible_h - h) // 2))
+            # `en_haut` : comme Excel, qui part de la ligne 1 de sa zone.
+            cadre.paste(image, ((cible_l - l) // 2, 0 if en_haut else (cible_h - h) // 2))
             image = cadre
     # optimize=True quadruple le temps pour un fichier a peine plus petit.
     sortie = io.BytesIO()
@@ -833,7 +837,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 10
+VERSION_IMAGES = 12
 
 
 def _cadre_de(rendu, reference):
@@ -943,7 +947,7 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                 if geo:
                     anneau = (geo, taux)
             cadre = cadres.get(signe(reference)) if reference else None
-            image = _rogner(rendu, anneau, ratio, cadre)
+            image = _rogner(rendu, anneau, ratio, cadre, en_haut=quoi == 'satisfaction')
             (dossier / f'{empreinte}.png').write_bytes(image)
             images[cle] = image
     finally:
@@ -1262,6 +1266,26 @@ def rafraichir(contenus, slides, valeurs, soffice, profil, cache):
     rafraichir_pages(contenus, [(s, valeurs) for s in slides], soffice, profil, cache)
 
 
+def _cadre_a_la_zone_ole(objet):
+    """L'objet aux proportions de la zone qu'Excel dessine (`imgW`/`imgH`).
+
+    Rouvert, l'objet est redessine par Excel a ces proportions et
+    PowerPoint resserre son cadre en gardant le bord gauche : le contenu
+    glissait a gauche du titre de sa colonne (page 27). Le cadre les prend
+    d'emblee, a hauteur egale et au meme centre, sous le titre.
+    """
+    pos = re.search(r'<a:off x="(\d+)" y="(\d+)"/><a:ext cx="(\d+)" cy="(\d+)"/>', objet)
+    img = re.search(r'imgW="(\d+)" imgH="(\d+)"', objet)
+    if not pos or not img:
+        return objet
+    x, y, cx, cy = map(int, pos.groups())
+    largeur = round(cy * int(img.group(1)) / int(img.group(2)))
+    if abs(largeur - cx) <= 0.02 * cx:
+        return objet
+    return objet.replace(pos.group(0), f'<a:off x="{x + (cx - largeur) // 2}" y="{y}"/>'
+                         f'<a:ext cx="{largeur}" cy="{cy}"/>', 1)
+
+
 def rafraichir_pages(contenus, pages, soffice, profil, cache):
     """Comme `rafraichir`, chaque diapositive avec ses propres valeurs.
 
@@ -1297,7 +1321,7 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             # retire l'objet plutot que d'afficher des tirets.
             if (quoi == 'satisfaction' and valeurs[quoi]
                     and len(_moities_absentes(valeurs[quoi])) == len(MOITIES_SATISFACTION)):
-                retirer.append(m.span())
+                retirer.append((*m.span(), ''))
                 continue
             remplies = remplir_classeur(parts, valeurs[quoi])
             if quoi == 'acquisition':
@@ -1314,18 +1338,25 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             brut = _ecrire(remplies)
             contenus[emb] = brut
             a_rendre.setdefault(emb, brut)
+            if quoi == 'satisfaction':
+                cadre = _cadre_a_la_zone_ole(m.group(0))
+                if cadre != m.group(0):
+                    retirer.append((*m.span(), cadre))
+            else:
+                cadre = m.group(0)
             # L'image s'etire aux proportions du cadre de l'objet, qui ne
             # sont pas toujours celles de l'EMF (page 27) : c'est sur le
             # cadre qu'on les prend, sinon l'anneau devient ovale.
-            taille = (re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', m.group(0))
-                      or re.search(r'imgW="(\d+)" imgH="(\d+)"', m.group(0)))
+            taille = (re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', cadre)
+                      or re.search(r'imgW="(\d+)" imgH="(\d+)"', cadre))
             ratio = int(taille.group(1)) / int(taille.group(2)) if taille else None
             natures[emb] = (quoi, valeurs[quoi], ratio, reference)
             poses += [(rels_nom, rid, emb) for rid in images]
         if retirer:
-            for debut, fin in reversed(retirer):
-                xml = xml[:debut] + xml[fin:]
-            xml = _sans_orphelins(xml)
+            for debut, fin, texte in reversed(retirer):
+                xml = xml[:debut] + texte + xml[fin:]
+            if any(not texte for _, _, texte in retirer):
+                xml = _sans_orphelins(xml)
             contenus[slide] = xml.encode('utf-8')
     if not a_rendre:
         return

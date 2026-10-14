@@ -148,7 +148,7 @@ def test_les_taux_de_l_anneau_suivent_les_series_restantes(tmp_path, monkeypatch
         doc.save(cmd[-1].replace('.xlsx', '.pdf'))
     monkeypatch.setattr(classeurs.subprocess, 'run', convertir)
     vus = []
-    monkeypatch.setattr(classeurs, '_rogner', lambda png, anneau=None, ratio=None, cadre=None: vus.append(anneau) or b'png')
+    monkeypatch.setattr(classeurs, '_rogner', lambda png, anneau=None, ratio=None, cadre=None, en_haut=False: vus.append(anneau) or b'png')
     classeurs.rendre({'a': classeurs._ecrire(parts)}, 'soffice', 'profil', tmp_path,
                      {'a': ('satisfaction', accueil, None)})
     geo, taux = vus[0]
@@ -240,3 +240,22 @@ def test_la_fiche_individuelle_se_rafraichit_avec_ses_signes_d_acquisition(conte
     classeurs.rafraichir_pages(contenus, [(FICHE, {'acquisition': {}, 'satisfaction': CELLULES})],
                                service.SOFFICE, service.PROFIL, service.CACHE)
     assert 'acquisition' in natures(contenus, FICHE)
+
+
+def test_sur_la_fiche_l_objet_prend_les_proportions_d_excel_sous_son_titre(contenus):
+    """Rouvert, l'objet est redessine par Excel aux proportions imgW/imgH :
+    le cadre les prend d'emblee, au meme centre que le titre de sa colonne."""
+    rafraichir(contenus, FICHE, {**CELLULES, 'B2': 0.8, 'B12': 0.8, 'B9': 0.86,
+                                 'C9': 0.14, 'B18': 0.75, 'C18': 0.25})
+    xml = contenus[FICHE].decode('utf-8')
+    titre = re.search(r'<p:sp>(?:(?!</p:sp>).)*?name="ZoneTexte 18"(?:(?!</p:sp>).)*?</p:sp>',
+                      xml, re.S).group(0)
+    tx, _, tcx, _ = map(int, re.search(r'<a:off x="(\d+)" y="(\d+)"/><a:ext cx="(\d+)" cy="(\d+)"/>',
+                                       titre).groups())
+    objet = next(g for g in re.findall(r'<p:graphicFrame>.*?</p:graphicFrame>', xml, re.S)
+                 if 'name="Objet 12"' in g)
+    x, _, cx, cy = map(int, re.search(r'<a:off x="(\d+)" y="(\d+)"/><a:ext cx="(\d+)" cy="(\d+)"/>',
+                                      objet).groups())
+    w, h = map(int, re.search(r'imgW="(\d+)" imgH="(\d+)"', objet).groups())
+    assert abs(cx / cy - w / h) < 0.001
+    assert abs((x + cx / 2) - (tx + tcx / 2)) < 0.005 * tcx

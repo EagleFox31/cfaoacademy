@@ -25,7 +25,7 @@ def test_deux_classeurs_identiques_un_seul_rendu_puis_le_cache(tmp_path, monkeyp
             doc.new_page()
             doc.save(f.replace('.xlsx', '.pdf'))
     monkeypatch.setattr(classeurs.subprocess, 'run', convertir)
-    monkeypatch.setattr(classeurs, '_rogner', lambda image, anneau=None, ratio=None, cadre=None: b'png')
+    monkeypatch.setattr(classeurs, '_rogner', lambda image, anneau=None, ratio=None, cadre=None, en_haut=False: b'png')
 
     images = classeurs.rendre({'a': brut, 'b': brut}, 'soffice', 'profil', tmp_path)
     assert images == {'a': b'png', 'b': b'png'}
