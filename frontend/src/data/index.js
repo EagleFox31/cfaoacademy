@@ -2,7 +2,7 @@
 import { isPlMedacapVariant } from '../utils/portalVariant.js'
 import { isMedacapLearner, medacapLearnerSections } from '../utils/medacapLearner.js'
 import { sessionsDuFormateur } from './mock_sessions_formateur.js'
-import { sessionsAVenir } from '../utils/planningFormateur.js'
+import { sessionsAVenir } from '../utils/sessionsAVenir.js'
 
 /** Masqué temporairement — section #sessions accueil + entrée navbar */
 export const HOME_SESSIONS_SECTION_VISIBLE = false
