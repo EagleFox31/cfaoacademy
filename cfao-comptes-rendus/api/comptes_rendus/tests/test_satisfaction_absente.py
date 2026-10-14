@@ -153,3 +153,28 @@ def test_les_taux_de_l_anneau_suivent_les_series_restantes(tmp_path, monkeypatch
                      {'a': ('satisfaction', accueil, None)})
     geo, taux = vus[0]
     assert len(geo['series']) == 1 and taux == [0.75]
+
+
+@pytest.mark.parametrize('slide', [PAGE_RESULTATS, FICHE])
+@pytest.mark.parametrize('formation, accueil', [(0.98, 0.9), (0.5, 0.25), (1.0, 0.625)])
+def test_les_etiquettes_des_deux_anneaux_gardent_leur_place_quelles_que_soient_les_notes(
+        contenus, slide, formation, accueil):
+    """Rafraichi dans PowerPoint, l'anneau garde les places de l'apercu :
+    la formation au centre du trou, l'accueil dehors, a droite, sans
+    chevaucher l'anneau (le decalage du modele ne valait que pour ses notes)."""
+    import math
+    rafraichir(contenus, slide, {**CELLULES, 'B9': formation, 'C9': 1 - formation,
+                                 'B18': accueil, 'C18': 1 - accueil})
+    parts = classeur_de_satisfaction(contenus, slide)
+    geo = classeurs._geometrie_anneau(parts)
+    (larg, haut), z, trou = geo['cadre'], geo['zone'], geo['trou']
+    rayon = min(z['w'] * larg, z['h'] * haut) / 2
+    cx, cy = (z['x'] + z['w'] / 2) * larg, (z['y'] + z['h'] / 2) * haut
+    places = []
+    for k, (serie, v) in enumerate(zip(geo['series'], (formation, accueil))):
+        rm = (trou + (k + 0.5) * (1 - trou) / 2) * rayon
+        places.append((cx + math.sin(v * math.pi) * rm + serie['dx'] * larg,
+                       cy - math.cos(v * math.pi) * rm + serie['dy'] * haut))
+    assert math.dist(places[0], (cx, cy)) < 0.01 * rayon
+    assert places[1][0] > cx + rayon * 1.1 and places[1][0] < larg
+    assert cy < places[1][1] < haut

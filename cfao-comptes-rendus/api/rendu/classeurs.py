@@ -165,6 +165,70 @@ def remplir_classeur(parts, cellules):
     parts['xl/worksheets/sheet1.xml'] = feuille.encode('utf-8')
     for nom in [n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)]:
         parts[nom] = _cache(parts[nom].decode('utf-8'), cellules).encode('utf-8')
+    return _etiquettes_anneau(parts, cellules)
+
+
+def _largeur_texte(lignes, corps_pt):
+    """La largeur, en points, de la plus longue ligne en Calibri gras."""
+    from PIL import ImageFont
+    for nom in POLICES_ETIQUETTES:
+        try:
+            police = ImageFont.truetype(nom, 100)
+            break
+        except OSError:
+            continue
+    else:
+        return 0.55 * corps_pt * max(len(t) for t in lignes)
+    return max(police.getlength(t) for t in lignes) * corps_pt / 100
+
+
+def _etiquettes_anneau(parts, cellules):
+    """Les etiquettes de l'anneau a la place qu'elles ont dans l'apercu.
+
+    Excel place une etiquette par un decalage (`manualLayout`) depuis sa
+    place par defaut, le milieu de l'arc de la valeur : celle-ci bouge avec
+    la valeur. Le decalage du modele, garde tel quel, envoyait l'etiquette
+    sur l'anneau des que les valeurs changeaient (vu en rafraichissant
+    l'objet dans PowerPoint). Il est recalcule pour une place fixe, celle
+    que dessine `_anneau_excel` : la formation au centre du trou, l'accueil
+    dehors, a droite ; Excel trace alors le trait de rappel de chacune.
+    """
+    import math
+    geo = _geometrie_anneau(parts)
+    nom = next((n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)
+                and b'<c:doughnutChart>' in parts[n]), None)
+    if not geo or not nom:
+        return parts
+    graphique = parts[nom].decode('utf-8')
+    larg, haut = geo['cadre']
+    z, trou = geo['zone'], geo['trou']
+    rayon = min(z['w'] * larg, z['h'] * haut) / 2
+    cx, cy = (z['x'] + z['w'] / 2) * larg, (z['y'] + z['h'] / 2) * haut
+    series = re.findall(r'<c:ser>.*?</c:ser>', graphique, re.S)
+    n = max(1, len(series))
+    for k, (ser, info) in enumerate(zip(series, geo['series'])):
+        ref = re.search(r'<c:val><c:numRef><c:f>([^<]*)</c:f>', ser)
+        premiere = (_plage(ref.group(1)) or [None])[0] if ref else None
+        if premiere not in cellules or cellules[premiere] is None:
+            continue
+        v = float(cellules[premiere])
+        angle = v * math.pi
+        rm = (trou + (k + 0.5) * (1 - trou) / n) * rayon
+        defaut = (cx + math.sin(angle) * rm, cy - math.cos(angle) * rm)
+        if k == 0:
+            cible = (cx, cy)
+        else:
+            mots = info['nom'].split()
+            lignes = [' '.join(mots[:-1]), f"{mots[-1] if mots else ''} {round(v * 100)}%"]
+            demi = _largeur_texte(lignes, info['pt']) * 12700 / 2
+            x = min(cx + rayon * 1.24 + demi, larg * 0.99 - demi)
+            cible = (x, cy + rayon * 0.62)
+        dx, dy = (cible[0] - defaut[0]) / larg, (cible[1] - defaut[1]) / haut
+        neuve = re.sub(
+            r'(<c:dLbl><c:idx val="0"/><c:layout><c:manualLayout>)<c:x val="[^"]+"/><c:y val="[^"]+"/>',
+            lambda m: f'{m.group(1)}<c:x val="{dx:.6g}"/><c:y val="{dy:.6g}"/>', ser, count=1)
+        graphique = graphique.replace(ser, neuve, 1)
+    parts[nom] = graphique.encode('utf-8')
     return parts
 
 
@@ -495,6 +559,14 @@ def _geometrie_anneau(parts):
     }
 
 
+# Polices des etiquettes de l'anneau, dans l'ordre d'essai.
+POLICES_ETIQUETTES = (
+    'calibrib.ttf',
+    'Carlito-Bold.ttf',
+    '/usr/share/fonts/truetype/crosextra/Carlito-Bold.ttf',
+    '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+)
+
 def _anneau_excel(image, geo, valeurs):
     """Redonne a l'anneau rendu par LibreOffice la geometrie d'Excel.
 
@@ -592,10 +664,14 @@ def _anneau_excel(image, geo, valeurs):
     mesure = ImageDraw.Draw(image)
 
     def police_de(corps):
-        try:
-            return ImageFont.truetype('calibrib.ttf', corps)
-        except OSError:
-            return ImageFont.load_default()
+        # Calibri gras sous Windows ; ailleurs Carlito, aux memes chasses.
+        # Jamais la police bitmap de Pillow : minuscule et sans accents.
+        for nom in POLICES_ETIQUETTES:
+            try:
+                return ImageFont.truetype(nom, corps)
+            except OSError:
+                continue
+        return ImageFont.load_default(corps)
 
     def texte_de(serie, v):
         # Un questionnaire non rempli s'affiche d'un tiret, pas de 0 %.
@@ -737,7 +813,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 3
+VERSION_IMAGES = 4
 
 
 def _cadre_de(rendu, reference):
