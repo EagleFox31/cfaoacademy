@@ -25,6 +25,7 @@ puis par cellule : `{'B2': 0.55, 'B3': 0.8}`.
 import hashlib
 import html
 import io
+import math
 import re
 import shutil
 import subprocess
@@ -189,95 +190,47 @@ def _etiquettes_anneau(parts, cellules):
     place par defaut, le milieu de l'arc de la valeur : celle-ci bouge avec
     la valeur. Le decalage du modele, garde tel quel, envoyait l'etiquette
     sur l'anneau des que les valeurs changeaient (vu en rafraichissant
-    l'objet dans PowerPoint). Il est recalcule pour une place fixe, celle
-    que dessine `_anneau_excel` : la formation au centre du trou, l'accueil
-    dehors, a droite ; Excel trace alors le trait de rappel de chacune.
+    l'objet dans PowerPoint). Il est recalcule depuis `_disposition_anneau`,
+    la meme disposition que celle de l'apercu.
     """
-    import math
     geo = _geometrie_anneau(parts)
     nom = next((n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)
                 and b'<c:doughnutChart>' in parts[n]), None)
     if not geo or not nom:
         return parts
     graphique = parts[nom].decode('utf-8')
-    larg, haut = geo['cadre']
-    z, trou = geo['zone'], geo['trou']
-    rayon = min(z['w'] * larg, z['h'] * haut) / 2
-    cx, cy = (z['x'] + z['w'] / 2) * larg, (z['y'] + z['h'] / 2) * haut
     series = re.findall(r'<c:ser>.*?</c:ser>', graphique, re.S)
-    n = max(1, len(series))
-    for k, (ser, info) in enumerate(zip(series, geo['series'])):
+    valeurs = []
+    for ser in series:
         ref = re.search(r'<c:val><c:numRef><c:f>([^<]*)</c:f>', ser)
         premiere = (_plage(ref.group(1)) or [None])[0] if ref else None
-        if premiere not in cellules or cellules[premiere] is None:
+        v = cellules.get(premiere)
+        valeurs.append(None if v is None else float(v))
+    places = _disposition_anneau(geo, valeurs)
+    larg, haut = geo['cadre']
+    for k, (ser, place, info) in enumerate(zip(series, places, geo['series'])):
+        if not place:
             continue
-        v = float(cellules[premiere])
-        angle = v * math.pi
-        rm = (trou + (k + 0.5) * (1 - trou) / n) * rayon
-        defaut = (cx + math.sin(angle) * rm, cy - math.cos(angle) * rm)
-        if k == 0:
-            cible = (cx, cy)
-        else:
-            mots = info['nom'].split()
-            lignes = [' '.join(mots[:-1]), f"{mots[-1] if mots else ''} {round(v * 100)}%"]
-            demi = _largeur_texte(lignes, info['pt']) * 12700 / 2
-            x = min(cx + rayon * 1.24 + demi, larg * 0.99 - demi)
-            cible = (x, cy + rayon * 0.62)
-        dx, dy = (cible[0] - defaut[0]) / larg, (cible[1] - defaut[1]) / haut
+        dx = (place['centre'][0] - place['defaut'][0]) / larg
+        dy = (place['centre'][1] - place['defaut'][1]) / haut
         neuve = re.sub(
             r'(<c:dLbl><c:idx val="0"/><c:layout><c:manualLayout>)<c:x val="[^"]+"/><c:y val="[^"]+"/>',
             lambda m: f'{m.group(1)}<c:x val="{dx:.6g}"/><c:y val="{dy:.6g}"/>', ser, count=1)
+        if k:
+            # La boite du modele tient « l'accueil 88% » ; a 100 %, Excel
+            # l'abregerait (« l'accueil... »). Elargie d'autant, a peine : le
+            # nom entier ne doit pas tenir sur une ligne, coupee comme sur
+            # l'apercu.
+            mots = info['nom'].split()
+            fin = mots[-1] if mots else ''
+            facteur = (_largeur_texte([f'{fin} {round(valeurs[k] * 100)}%'], info['pt'])
+                       / _largeur_texte([f'{fin} 88%'], info['pt']))
+            neuve = re.sub(r'(<c15:layout><c:manualLayout><c:w val=")([^"]+)"',
+                           lambda m: f'{m.group(1)}{float(m.group(2)) * max(1.0, facteur):.6g}"',
+                           neuve, count=1)
         graphique = graphique.replace(ser, neuve, 1)
     parts[nom] = graphique.encode('utf-8')
     return parts
-
-
-# ── Signes + et = du graphique d'acquisition ────────────────────────────
-# Le modele les a perdus (constate sur sa propre diapositive comme sur
-# celle de tous les comptes rendus verifies), mais 98 classeurs du dossier
-# compagnon les portent encore, sous deux formes distinctes :
-#
-#   * le « + », en forme utilisateur du graphique (`c:userShapes`),
-#     positionnee en fraction du graphique lui-meme — elle suit le
-#     graphique quel que soit son cadrage sur la diapositive ;
-#   * le « = », en forme du dessin de la feuille (`xl/drawings/drawing1.xml`,
-#     celui qui porte deja l'ancrage du graphique), positionnee en EMU
-#     absolus sur la feuille.
-#
-# Les fractions ci-dessous viennent de la geometrie exacte d'un classeur
-# source (le « + ») et d'une conversion EMU de son ancrage de cellules
-# (le « = », les largeurs de colonnes different d'un fichier a l'autre) ;
-# les deux ont ete recoupees avec la position en pixels mesuree sur
-# l'image rendue du meme fichier, qui les confirme a moins de 0.1 pres.
-SIGNES_ACQUISITION = {
-    '+': dict(x0=0.33998, x1=0.43425, y0=0.62262, y1=0.77805, id_forme=2,
-             nom='Signe Plus 1', nom_creation='8DE92517-B108-41BF-95A9-B83710DCFBEC'),
-    # Centre sur la hauteur du « + », un peu moins haut que lui : les
-    # deux signes se lisent sur une meme ligne.
-    '=': dict(x0=0.6535, x1=0.7365, y0=0.63814, y1=0.76253, id_forme=3,
-             nom='Est égal à 2', nom_creation='5DD21F7B-8417-4D58-A2B9-C26DBC982262'),
-}
-
-_STYLE_FORME = (
-    '<a:solidFill><a:schemeClr val="bg1"/></a:solidFill>'
-    '<a:ln><a:solidFill><a:srgbClr val="003A70"/></a:solidFill></a:ln>')
-# La reference de style (couleurs du theme) : sans elle, le moteur de
-# rendu de LibreOffice laisse la forme invisible malgre un remplissage
-# et un contour explicites.
-_REF_STYLE = (
-    '<a:lnRef idx="2"><a:schemeClr val="accent1"><a:shade val="50000"/></a:schemeClr></a:lnRef>'
-    '<a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef>'
-    '<a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef>'
-    '<a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef>')
-_LSTSTYLE_FORME = (
-    '<a:lstStyle><a:defPPr><a:defRPr lang="en-US"/></a:defPPr>'
-    + ''.join(
-        f'<a:lvl{n}pPr marL="{(n - 1) * 457200}" algn="l" defTabSz="914400" rtl="0" '
-        'eaLnBrk="1" latinLnBrk="0" hangingPunct="1"><a:defRPr sz="1800" kern="1200">'
-        '<a:solidFill><a:schemeClr val="lt1"/></a:solidFill><a:latin typeface="+mn-lt"/>'
-        f'<a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/></a:defRPr></a:lvl{n}pPr>'
-        for n in range(1, 10))
-    + '</a:lstStyle>')
 
 
 def _ancre_signe(prst, x0, x1, y0, y1, id_forme, nom, nom_creation, off_x, off_y):
@@ -542,7 +495,10 @@ def _geometrie_anneau(parts):
         dec = re.search(r'<c:dLbl><c:idx val="0"/><c:layout><c:manualLayout>'
                         r'<c:x val="([^"]+)"/><c:y val="([^"]+)"/>', ser)
         corps = re.search(r'<c:dLbl>.*?sz="(\d+)"', ser, re.S)
+        boite = re.search(r'<c:dLbl><c:idx val="0"/>.*?<c15:layout><c:manualLayout>'
+                          r'<c:w val="([^"]+)"/><c:h val="([^"]+)"/>', ser, re.S)
         series.append({
+            'boite': tuple(map(float, boite.groups())) if boite else None,
             'nom': html.unescape(nom.group(1)) if nom else '',
             'dx': float(dec.group(1)) if dec else 0.0,
             'dy': float(dec.group(2)) if dec else 0.0,
@@ -697,27 +653,26 @@ def _anneau_excel(image, geo, valeurs):
             police, lw, lh = bloc(texte, corps)
         angle = math.radians(float(v or 0) * 180)
         dirx, diry = math.sin(angle), -math.cos(angle)
-        # Du bord de la boite au milieu de l'anneau, en equerre : le meme
-        # trait que celui pose dans le graphique Excel (`_trait_de_rappel`).
+        # Droit, du bord de la boite au milieu de l'anneau, dans l'axe du rayon.
         rm = trou_xl + 0.5 * ep_xl
-        trait = _trait_orthogonal((cx, cy), (lw / 2 + 0.03 * rayon, lh / 2 + 0.03 * rayon),
-                                  (cx + dirx * rm, cy + diry * rm))
+        trait = _trait_rayon((cx, cy), (lw / 2, lh / 2), (cx + dirx * rm, cy + diry * rm), rayon)
         etiquettes.append((texte, police, lh, cx, cy, trait))
     if len(series) > 1 and series[1][1] is not None:
         serie, v = series[1]
         texte = texte_de(serie, v)
         police, lw, lh = bloc(texte, max(10, round(serie['pt'] * pt)))
-        angle = math.radians(float(v or 0) * 180)
-        dirx, diry = math.sin(angle), -math.cos(angle)
-        rm = trou_xl + (1 + 0.5) * ep_xl if n > 1 else rayon - ep_xl / 2
-        couloir = rayon * 1.16                    # hors du cercle
-        sortie = rayon * 1.08
-        ex = cx + couloir + rayon * 0.08 + lw / 2
-        ey = cy + rayon * 0.62
-        q = (cx + dirx * sortie, cy + diry * sortie)
-        # Sans valeur, pas d'arc a designer : l'etiquette reste seule.
-        trait = [(cx + dirx * rm, cy + diry * rm), q, (cx + couloir, q[1]),
-                 (cx + couloir, ey), (ex - lw / 2 - rayon * 0.03, ey)] if v is not None else []
+        # La place et le trait de l'objet Excel (`_disposition_anneau`),
+        # ramenes de ses EMU aux pixels de l'image.
+        place = _disposition_anneau(geo, list(valeurs))[1]
+        z = geo['zone']
+        cx_e = (z['x'] + z['w'] / 2) * larg_emu
+        cy_e = (z['y'] + z['h'] / 2) * haut_emu
+        echelle = rayon / (1.015 * min(z['w'] * larg_emu, z['h'] * haut_emu) / 2)
+
+        def en_pixels(x, y):
+            return cx + (x - cx_e) * echelle, cy + (y - cy_e) * echelle
+        ex, ey = en_pixels(*place['centre'])
+        trait = [en_pixels(x, y) for x, y in place['trait']]
         etiquettes.append((texte, police, lh, ex, ey, trait))
 
     # La toile s'agrandit si une etiquette deborde de l'image rognee.
@@ -812,7 +767,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 5
+VERSION_IMAGES = 7
 
 
 def _cadre_de(rendu, reference):
@@ -1010,22 +965,116 @@ def _sans_moitie_absente(parts, valeurs):
     return parts
 
 
-def _trait_orthogonal(centre, demi, point):
-    """Le trait de rappel d'une etiquette, de son bord jusqu'a `point`.
+def _trait_rayon(centre, demi, point, rayon):
+    """Le trait de l'etiquette du centre : droit, du bord de sa boite au point.
 
-    Rien que des segments horizontaux ou verticaux, un ou deux : droit
-    quand le point fait face a l'etiquette, en equerre sinon. `demi` :
-    les demi-cotes de la boite de l'etiquette, marge comprise.
+    Il suit le rayon ; rien s'il n'a pas la place de sortir de la boite.
     """
     (cx, cy), (dw, dh), (px, py) = centre, demi, point
-    sx, sy = (1 if px >= cx else -1), (1 if py >= cy else -1)
-    if abs(px - cx) <= dw * 0.75:
-        return [(px, cy + sy * dh), (px, py)]
-    if abs(py - cy) <= dh * 0.75:
-        return [(cx + sx * dw, py), (px, py)]
-    if abs(px - cx) > dw:
-        return [(cx + sx * dw, cy), (px, cy), (px, py)]
-    return [(cx, cy + sy * dh), (cx, py), (px, py)]
+    long = math.hypot(px - cx, py - cy)
+    if long < 1e-9:
+        return []
+    ux, uy = (px - cx) / long, (py - cy) / long
+    t = min(dw / abs(ux) if abs(ux) > 1e-6 else math.inf,
+            dh / abs(uy) if abs(uy) > 1e-6 else math.inf) + 0.04 * rayon
+    return [(cx + ux * t, cy + uy * t), (px, py)] if t < long - 0.05 * rayon else []
+
+
+def _trait_accueil(centre, rayon, point, texte, cadre):
+    """Place de l'etiquette de l'anneau exterieur et son trait de rappel.
+
+    L'etiquette va a droite du cercle, a la hauteur du point (milieu de la
+    partie remplie) quand elle y tient : un seul trait horizontal qui
+    arrive au milieu de son texte. Sinon elle monte ou descend jusqu'a la
+    hauteur libre la plus proche et le trait la rejoint en equerre : a
+    l'horizontale hors du cercle, puis a la verticale jusqu'au haut ou au
+    bas du texte. Jamais de segment penche ni de traversee de l'anneau : le
+    point est sur la moitie droite (milieu de l'arc, entre 0 et 180 degres)
+    et chaque segment s'eloigne du centre ou reste dehors. `texte` : la
+    taille du texte de l'etiquette, sans marge.
+    """
+    (cx, cy), (px, py), (tw, th), (larg, haut) = centre, point, texte, cadre
+    jeu, marge = 0.06 * rayon, 0.03 * rayon
+    lw, lh = tw + 2 * marge, th + 2 * marge
+    bas_min, haut_max = lh / 2 + 0.01 * haut, haut - lh / 2 - 0.01 * haut
+    gauche = max(cx + rayon * 0.3, min(cx + rayon + jeu, larg * 0.99 - lw))
+    # En deca de `ecart` du centre, le cercle deborde sous l'etiquette.
+    ecart = math.sqrt(max(0.0, (rayon + jeu) ** 2 - (gauche - cx) ** 2))
+    milieu_x = gauche + lw / 2
+
+    def libre(y):
+        return bas_min - 1 <= y <= haut_max + 1 and abs(y - cy) >= ecart + lh / 2 - 1
+
+    def borne(y):
+        return min(max(y, bas_min), haut_max)
+
+    # Les hauteurs permises, de la plus proche du point a la plus lointaine.
+    vers_bas = py >= cy
+    hauteurs = sorted({borne(py), borne(cy + ecart + lh / 2), borne(cy - ecart - lh / 2)},
+                      key=lambda y: abs(y - py))
+    hauteurs = [y for y in hauteurs if libre(y)] or [borne(py)]
+    for y in hauteurs:
+        if abs(y - py) <= 0.3 * th:
+            return (milieu_x, y), [(px, py), (gauche, py)]
+        # Assez loin pour un vrai segment vertical, quitte a s'ecarter.
+        sens = 1 if y > py else -1
+        if abs(y - py) < lh / 2 + 0.12 * rayon:
+            y = py + sens * (lh / 2 + 0.12 * rayon)
+            if not libre(y):
+                continue
+        arrivee = y - sens * lh / 2
+        proche = (0.0 if min(py, arrivee) <= cy <= max(py, arrivee)
+                  else min(abs(py - cy), abs(arrivee - cy)))
+        x = max(cx + math.sqrt(max(0.0, (rayon + jeu) ** 2 - proche ** 2)), gauche + lw * 0.2)
+        if x <= gauche + lw * 0.8:
+            return (milieu_x, y), [(px, py), (x, py), (x, arrivee)]
+    # Rien de mieux : a la hauteur du point, au plus pres du cadre.
+    y = borne(py)
+    if abs(y - py) <= th / 2:
+        return (milieu_x, y), [(px, py), (gauche, py)]
+    couloir = (px + gauche) / 2
+    return (milieu_x, y), [(px, py), (couloir, py), (couloir, y), (gauche, y)]
+
+
+def _disposition_anneau(geo, valeurs):
+    """Ou vont les etiquettes de l'anneau et leurs traits, en EMU du graphique.
+
+    Une seule disposition pour l'apercu (`_anneau_excel`) et pour l'objet
+    Excel (decalages des etiquettes, `_trait_de_rappel`) : rafraichi dans
+    PowerPoint, l'objet montre ce que montrait l'apercu. Par serie :
+    `defaut` (place d'Excel sans decalage, le milieu de l'arc), `centre`
+    et `boite` de l'etiquette (son texte, hors du centre), `trait` ; None
+    sans valeur.
+    """
+    larg, haut = geo['cadre']
+    z, n = geo['zone'], max(1, len(geo['series']))
+    # Excel trace l'anneau environ 1,5 % plus grand que sa zone de trace.
+    rayon = 1.015 * min(z['w'] * larg, z['h'] * haut) / 2
+    cx, cy = (z['x'] + z['w'] / 2) * larg, (z['y'] + z['h'] / 2) * haut
+    trou = geo['trou'] * rayon
+    ep = (rayon - trou) / n
+    places = []
+    for k, (serie, v) in enumerate(zip(geo['series'], valeurs)):
+        if v is None:
+            places.append(None)
+            continue
+        angle = float(v) * math.pi
+        rm = trou + (k + 0.5) * ep
+        point = (cx + math.sin(angle) * rm, cy - math.cos(angle) * rm)
+        mots = serie['nom'].split()
+        lignes = [' '.join(mots[:-1]), f"{mots[-1] if mots else ''} {round(float(v) * 100)}%"]
+        texte = (_largeur_texte(lignes, serie['pt']) * 12700 * 1.05,
+                 serie['pt'] * 1.22 * 2 * 12700)
+        if k == 0:
+            boite = ((serie['boite'][0] * larg, serie['boite'][1] * haut)
+                     if serie.get('boite') else texte)
+            centre = (cx, cy)
+            trait = _trait_rayon(centre, (boite[0] / 2, boite[1] / 2), point, rayon)
+        else:
+            boite = texte
+            centre, trait = _trait_accueil((cx, cy), rayon, point, texte, (larg, haut))
+        places.append({'defaut': point, 'centre': centre, 'boite': boite, 'trait': trait})
+    return places
 
 
 TRAIT_FORMES = 'xl/drawings/drawingTrait.xml'
@@ -1033,50 +1082,31 @@ NS_A = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
 
 
 def _trait_de_rappel(parts):
-    """Le trait de l'etiquette du centre, dessine dans le graphique Excel.
+    """Les traits de rappel de l'anneau, dessines dans le graphique Excel.
 
-    Le trait de rappel d'Excel est une ligne droite, penchee le plus
-    souvent ; on l'eteint pour l'anneau du centre et on pose a sa place
-    une forme du graphique (`userShapes`), le meme trait en equerre que
-    sur l'apercu. Rafraichi dans PowerPoint, l'objet le garde.
+    Le trait d'Excel est une ligne droite tiree ou il veut, penchee le plus
+    souvent ; on l'eteint et on pose a sa place des formes du graphique
+    (`userShapes`) : les traits de `_disposition_anneau`, ceux de l'apercu.
+    Rafraichi dans PowerPoint, l'objet les garde.
     """
-    import math
     geo = _geometrie_anneau(parts)
     nom = next((n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)
                 and b'<c:doughnutChart>' in parts[n]), None)
     if not geo or not nom or not geo['series']:
         return parts
     graphique = parts[nom].decode('utf-8')
-    ser = re.search(r'<c:ser>.*?</c:ser>', graphique, re.S).group(0)
-    valeur = re.search(r'<c:val>.*?<c:pt idx="0"><c:v>([^<]+)</c:v>', ser, re.S)
-    try:
-        v = float(valeur.group(1)) if valeur else None
-    except ValueError:
-        v = None
-    if v is None:
+    valeurs = []
+    for ser in re.findall(r'<c:ser>.*?</c:ser>', graphique, re.S):
+        valeur = re.search(r'<c:val>.*?<c:pt idx="0"><c:v>([^<]+)</c:v>', ser, re.S)
+        try:
+            valeurs.append(float(valeur.group(1)) if valeur else None)
+        except ValueError:
+            valeurs.append(None)
+    traits = [p['trait'] for p in _disposition_anneau(geo, valeurs) if p and p['trait']]
+    graphique = graphique.replace('<c:showLeaderLines val="1"/>', '<c:showLeaderLines val="0"/>')
+    if not traits:
+        parts[nom] = graphique.encode('utf-8')
         return parts
-    larg, haut = geo['cadre']
-    z, trou, n = geo['zone'], geo['trou'], len(geo['series'])
-    rayon = min(z['w'] * larg, z['h'] * haut) / 2
-    cx, cy = (z['x'] + z['w'] / 2) * larg, (z['y'] + z['h'] / 2) * haut
-    rm = (trou + 0.5 * (1 - trou) / n) * rayon
-    point = (cx + math.sin(v * math.pi) * rm, cy - math.cos(v * math.pi) * rm)
-    taille = re.search(r'<c:dLbl><c:idx val="0"/>.*?<c15:layout><c:manualLayout>'
-                       r'<c:w val="([^"]+)"/><c:h val="([^"]+)"/>', ser, re.S)
-    if taille:
-        lw, lh = float(taille.group(1)) * larg, float(taille.group(2)) * haut
-    else:
-        info = geo['series'][0]
-        mots = info['nom'].split()
-        lw = _largeur_texte([' '.join(mots[:-1]), f"{mots[-1] if mots else ''} 100%"],
-                            info['pt']) * 12700
-        lh = info['pt'] * 1.22 * 2 * 12700
-    marge = 0.03 * rayon
-    points = _trait_orthogonal((cx, cy), (lw / 2 + marge, lh / 2 + marge), point)
-
-    # Plus de trait d'Excel pour cette serie : le notre le remplace.
-    neuve = ser.replace('<c:showLeaderLines val="1"/>', '<c:showLeaderLines val="0"/>', 1)
-    graphique = graphique.replace(ser, neuve, 1)
     if '<c:userShapes ' not in graphique:
         if 'xmlns:r=' not in re.search(r'<c:chartSpace[^>]*>', graphique).group(0):
             graphique = graphique.replace(
@@ -1103,25 +1133,30 @@ def _trait_de_rappel(parts):
             parts['[Content_Types].xml'] = types.encode('utf-8')
     parts[nom] = graphique.encode('utf-8')
 
-    x0, x1 = min(x for x, _ in points), max(x for x, _ in points)
-    y0, y1 = min(y for _, y in points), max(y for _, y in points)
-    w, h = max(1, round(x1 - x0)), max(1, round(y1 - y0))
-    chemin = ''.join(
-        f'<a:{"moveTo" if i == 0 else "lnTo"}><a:pt x="{round(x - x0)}" y="{round(y - y0)}"/>'
-        f'</a:{"moveTo" if i == 0 else "lnTo"}>' for i, (x, y) in enumerate(points))
+    larg, haut = geo['cadre']
+    formes = []
+    for i, points in enumerate(traits):
+        x0, x1 = min(x for x, _ in points), max(x for x, _ in points)
+        y0, y1 = min(y for _, y in points), max(y for _, y in points)
+        w, h = max(1, round(x1 - x0)), max(1, round(y1 - y0))
+        chemin = ''.join(
+            f'<a:{"moveTo" if j == 0 else "lnTo"}><a:pt x="{round(x - x0)}" y="{round(y - y0)}"/>'
+            f'</a:{"moveTo" if j == 0 else "lnTo"}>' for j, (x, y) in enumerate(points))
+        formes.append(
+            '<cdr:relSizeAnchor xmlns:cdr="http://schemas.openxmlformats.org/drawingml/2006/chartDrawing">'
+            f'<cdr:from><cdr:x>{x0 / larg:.6f}</cdr:x><cdr:y>{y0 / haut:.6f}</cdr:y></cdr:from>'
+            f'<cdr:to><cdr:x>{(x0 + w) / larg:.6f}</cdr:x><cdr:y>{(y0 + h) / haut:.6f}</cdr:y></cdr:to>'
+            f'<cdr:sp macro="" textlink=""><cdr:nvSpPr><cdr:cNvPr id="{i + 2}" name="Trait de rappel {i + 1}"/>'
+            '<cdr:cNvSpPr/></cdr:nvSpPr><cdr:spPr>'
+            '<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/>'
+            f'<a:pathLst><a:path w="{w}" h="{h}" fill="none">{chemin}</a:path></a:pathLst>'
+            '</a:custGeom><a:noFill/>'
+            '<a:ln w="9525"><a:solidFill><a:srgbClr val="595959"/></a:solidFill></a:ln>'
+            '</cdr:spPr></cdr:sp></cdr:relSizeAnchor>')
     parts[TRAIT_FORMES] = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
         f'<c:userShapes xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" {NS_A}>'
-        '<cdr:relSizeAnchor xmlns:cdr="http://schemas.openxmlformats.org/drawingml/2006/chartDrawing">'
-        f'<cdr:from><cdr:x>{x0 / larg:.6f}</cdr:x><cdr:y>{y0 / haut:.6f}</cdr:y></cdr:from>'
-        f'<cdr:to><cdr:x>{(x0 + w) / larg:.6f}</cdr:x><cdr:y>{(y0 + h) / haut:.6f}</cdr:y></cdr:to>'
-        '<cdr:sp macro="" textlink=""><cdr:nvSpPr><cdr:cNvPr id="2" name="Trait de rappel"/>'
-        '<cdr:cNvSpPr/></cdr:nvSpPr><cdr:spPr>'
-        '<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/>'
-        f'<a:pathLst><a:path w="{w}" h="{h}" fill="none">{chemin}</a:path></a:pathLst>'
-        '</a:custGeom><a:noFill/>'
-        '<a:ln w="9525"><a:solidFill><a:srgbClr val="595959"/></a:solidFill></a:ln>'
-        '</cdr:spPr></cdr:sp></cdr:relSizeAnchor></c:userShapes>').encode('utf-8')
+        + ''.join(formes) + '</c:userShapes>').encode('utf-8')
     return parts
 
 

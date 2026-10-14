@@ -155,58 +155,77 @@ def test_les_taux_de_l_anneau_suivent_les_series_restantes(tmp_path, monkeypatch
     assert len(geo['series']) == 1 and taux == [0.75]
 
 
+NOTES = [0.0, 0.02, 0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 0.84, 0.9, 0.98, 1.0]
+
+
+def geometrie(contenus, slide, formation, accueil):
+    rafraichir(contenus, slide, {**CELLULES, 'B2': 0.8, 'B12': 0.8, 'B9': formation,
+                                 'C9': 1 - formation, 'B18': accueil, 'C18': 1 - accueil})
+    return classeur_de_satisfaction(contenus, slide)
+
+
+def droit(points):
+    return all(abs(a[0] - b[0]) < 1e-6 or abs(a[1] - b[1]) < 1e-6
+               for a, b in zip(points, points[1:]))
+
+
 @pytest.mark.parametrize('slide', [PAGE_RESULTATS, FICHE])
-@pytest.mark.parametrize('formation, accueil', [(0.98, 0.9), (0.5, 0.25), (1.0, 0.625)])
-def test_les_etiquettes_des_deux_anneaux_gardent_leur_place_quelles_que_soient_les_notes(
-        contenus, slide, formation, accueil):
-    """Rafraichi dans PowerPoint, l'anneau garde les places de l'apercu :
-    la formation au centre du trou, l'accueil dehors, a droite, sans
-    chevaucher l'anneau (le decalage du modele ne valait que pour ses notes)."""
+def test_le_trait_de_l_accueil_part_du_milieu_rempli_et_rejoint_son_texte_sans_biais(contenus, slide):
+    """Un, deux ou trois segments droits selon le remplissage ; ni l'etiquette
+    ni le trait ne coupent l'anneau ; l'etiquette reste dans le graphique."""
     import math
-    rafraichir(contenus, slide, {**CELLULES, 'B9': formation, 'C9': 1 - formation,
-                                 'B18': accueil, 'C18': 1 - accueil})
-    parts = classeur_de_satisfaction(contenus, slide)
-    geo = classeurs._geometrie_anneau(parts)
-    (larg, haut), z, trou = geo['cadre'], geo['zone'], geo['trou']
-    rayon = min(z['w'] * larg, z['h'] * haut) / 2
+    geo = classeurs._geometrie_anneau(geometrie(contenus, slide, 0.8, 0.5))
+    (larg, haut), z = geo['cadre'], geo['zone']
+    rayon = 1.015 * min(z['w'] * larg, z['h'] * haut) / 2
     cx, cy = (z['x'] + z['w'] / 2) * larg, (z['y'] + z['h'] / 2) * haut
-    places = []
-    for k, (serie, v) in enumerate(zip(geo['series'], (formation, accueil))):
-        rm = (trou + (k + 0.5) * (1 - trou) / 2) * rayon
-        places.append((cx + math.sin(v * math.pi) * rm + serie['dx'] * larg,
-                       cy - math.cos(v * math.pi) * rm + serie['dy'] * haut))
-    assert math.dist(places[0], (cx, cy)) < 0.01 * rayon
-    assert places[1][0] > cx + rayon * 1.1 and places[1][0] < larg
-    assert cy < places[1][1] < haut
-
-
-@pytest.mark.parametrize('v', [0.02, 0.25, 0.4, 0.5, 0.62, 0.8, 0.98, 1.0])
-def test_le_trait_de_rappel_n_a_que_des_segments_droits(v):
-    import math
-    point = (100 + math.sin(v * math.pi) * 80, 100 - math.cos(v * math.pi) * 80)
-    points = classeurs._trait_orthogonal((100, 100), (40, 15), point)
-    assert 2 <= len(points) <= 3 and points[-1] == point
-    assert all(a[0] == b[0] or a[1] == b[1] for a, b in zip(points, points[1:]))
-    # Il part du bord de l'etiquette, jamais de l'interieur.
-    x, y = points[0]
-    assert abs(x - 100) >= 40 or abs(y - 100) >= 15
+    longueurs = set()
+    for accueil in NOTES:
+        formation, place = classeurs._disposition_anneau(geo, [0.8, accueil])
+        trait, (ex, ey), (lw, lh) = place['trait'], place['centre'], place['boite']
+        assert trait[0] == place['defaut'] and 2 <= len(trait) <= 4 and droit(trait)
+        longueurs.add(len(trait) - 1)
+        # L'arrivee s'arrete juste avant le texte : a gauche, a sa hauteur ;
+        # en haut ou en bas, sous sa largeur.
+        fx, fy, marge = *trait[-1], 0.03 * rayon
+        assert (abs(fx - (ex - lw / 2 - marge)) < 1 and abs(fy - ey) <= 0.3 * lh) or \
+               (abs(abs(fy - ey) - lh / 2 - marge) < 1 and abs(fx - ex) <= lw / 2)
+        # L'etiquette dans le cadre, hors du cercle.
+        assert 0 <= ey - lh / 2 and ey + lh / 2 <= haut and ex + lw / 2 <= larg
+        coin_x = min(max(cx, ex - lw / 2), ex + lw / 2)
+        coin_y = min(max(cy, ey - lh / 2), ey + lh / 2)
+        assert math.hypot(coin_x - cx, coin_y - cy) > rayon
+        # Le trait sort de l'anneau sans y revenir.
+        for a, b in zip(trait, trait[1:]):
+            d = [math.hypot(a[0] + (b[0] - a[0]) * t / 20 - cx, a[1] + (b[1] - a[1]) * t / 20 - cy)
+                 for t in range(21)]
+            assert all(d2 >= d1 - 1 or d2 > rayon for d1, d2 in zip(d, d[1:]))
+        # Celui de la formation reste droit, au centre.
+        assert formation['centre'] == (cx, cy)
+    assert longueurs <= {1, 2, 3}
 
 
 @pytest.mark.parametrize('slide', [PAGE_RESULTATS, FICHE])
-@pytest.mark.parametrize('cellules', [{'B9': 0.98, 'C9': 0.02, 'B18': 0.9, 'C18': 0.1},
-                                      {'B9': 0.7, 'C9': 0.3}])
-def test_le_classeur_embarque_porte_le_trait_en_equerre_de_la_formation(contenus, slide, cellules):
-    rafraichir(contenus, slide, {**CELLULES, 'B2': 0.8, 'B12': 0.8, **cellules})
-    parts = classeur_de_satisfaction(contenus, slide)
+@pytest.mark.parametrize('formation, accueil', [(0.98, 0.9), (0.5, 0.25), (1.0, 0.625), (0.86, 0.84)])
+def test_l_objet_excel_reprend_la_disposition_de_l_apercu(contenus, slide, formation, accueil):
+    """Decalages des etiquettes et traits poses dans le graphique Excel :
+    ceux de `_disposition_anneau`, sans trait d'Excel."""
+    parts = geometrie(contenus, slide, formation, accueil)
+    geo = classeurs._geometrie_anneau(parts)
+    (larg, haut) = geo['cadre']
+    places = classeurs._disposition_anneau(geo, [formation, accueil])
+    for serie, place in zip(geo['series'], places):
+        assert abs(place['defaut'][0] + serie['dx'] * larg - place['centre'][0]) < 100
+        assert abs(place['defaut'][1] + serie['dy'] * haut - place['centre'][1]) < 100
     graphique = parts['xl/charts/chart1.xml'].decode('utf-8')
     minidom.parseString(graphique)
-    premiere = re.search(r'<c:ser>.*?</c:ser>', graphique, re.S).group(0)
-    assert '<c:showLeaderLines val="0"/>' in premiere
+    assert '<c:showLeaderLines val="1"/>' not in graphique
     assert graphique.endswith('<c:userShapes r:id="rIdTrait"/></c:chartSpace>')
     assert b'chartUserShapes' in parts['xl/charts/_rels/chart1.xml.rels']
     assert b'/xl/drawings/drawingTrait.xml' in parts['[Content_Types].xml']
     formes = parts['xl/drawings/drawingTrait.xml'].decode('utf-8')
     minidom.parseString(formes)
-    pts = [tuple(map(int, p)) for p in re.findall(r'<a:pt x="(\d+)" y="(\d+)"/>', formes)]
-    assert 2 <= len(pts) <= 3
-    assert all(a[0] == b[0] or a[1] == b[1] for a, b in zip(pts, pts[1:]))
+    chemins = re.findall(r'<a:path [^>]*>(.*?)</a:path>', formes)
+    attendus = [p['trait'] for p in places if p['trait']]
+    assert len(chemins) == len(attendus)
+    accueil_pts = [tuple(map(int, p)) for p in re.findall(r'<a:pt x="(\d+)" y="(\d+)"/>', chemins[-1])]
+    assert len(accueil_pts) == len(attendus[-1]) and droit(accueil_pts)
