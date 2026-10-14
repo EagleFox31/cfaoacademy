@@ -229,3 +229,10 @@ def test_l_objet_excel_reprend_la_disposition_de_l_apercu(contenus, slide, forma
     assert len(chemins) == len(attendus)
     accueil_pts = [tuple(map(int, p)) for p in re.findall(r'<a:pt x="(\d+)" y="(\d+)"/>', chemins[-1])]
     assert len(accueil_pts) == len(attendus[-1]) and droit(accueil_pts)
+
+
+def test_la_fiche_individuelle_se_rafraichit_avec_ses_signes_d_acquisition(contenus):
+    """L'objet d'acquisition de la fiche recoit ses signes « + » et « = »."""
+    classeurs.rafraichir_pages(contenus, [(FICHE, {'acquisition': {}, 'satisfaction': CELLULES})],
+                               service.SOFFICE, service.PROFIL, service.CACHE)
+    assert 'acquisition' in natures(contenus, FICHE)

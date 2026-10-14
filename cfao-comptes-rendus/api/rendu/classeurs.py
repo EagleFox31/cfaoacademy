@@ -233,6 +233,54 @@ def _etiquettes_anneau(parts, cellules):
     return parts
 
 
+# ── Signes + et = du graphique d'acquisition ────────────────────────────
+# Le modele les a perdus (constate sur sa propre diapositive comme sur
+# celle de tous les comptes rendus verifies), mais 98 classeurs du dossier
+# compagnon les portent encore, sous deux formes distinctes :
+#
+#   * le « + », en forme utilisateur du graphique (`c:userShapes`),
+#     positionnee en fraction du graphique lui-meme — elle suit le
+#     graphique quel que soit son cadrage sur la diapositive ;
+#   * le « = », en forme du dessin de la feuille (`xl/drawings/drawing1.xml`,
+#     celui qui porte deja l'ancrage du graphique), positionnee en EMU
+#     absolus sur la feuille.
+#
+# Les fractions ci-dessous viennent de la geometrie exacte d'un classeur
+# source (le « + ») et d'une conversion EMU de son ancrage de cellules
+# (le « = », les largeurs de colonnes different d'un fichier a l'autre) ;
+# les deux ont ete recoupees avec la position en pixels mesuree sur
+# l'image rendue du meme fichier, qui les confirme a moins de 0.1 pres.
+SIGNES_ACQUISITION = {
+    '+': dict(x0=0.33998, x1=0.43425, y0=0.62262, y1=0.77805, id_forme=2,
+             nom='Signe Plus 1', nom_creation='8DE92517-B108-41BF-95A9-B83710DCFBEC'),
+    # Centre sur la hauteur du « + », un peu moins haut que lui : les
+    # deux signes se lisent sur une meme ligne.
+    '=': dict(x0=0.6535, x1=0.7365, y0=0.63814, y1=0.76253, id_forme=3,
+             nom='Est égal à 2', nom_creation='5DD21F7B-8417-4D58-A2B9-C26DBC982262'),
+}
+
+_STYLE_FORME = (
+    '<a:solidFill><a:schemeClr val="bg1"/></a:solidFill>'
+    '<a:ln><a:solidFill><a:srgbClr val="003A70"/></a:solidFill></a:ln>')
+# La reference de style (couleurs du theme) : sans elle, le moteur de
+# rendu de LibreOffice laisse la forme invisible malgre un remplissage
+# et un contour explicites.
+_REF_STYLE = (
+    '<a:lnRef idx="2"><a:schemeClr val="accent1"><a:shade val="50000"/></a:schemeClr></a:lnRef>'
+    '<a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef>'
+    '<a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef>'
+    '<a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef>')
+_LSTSTYLE_FORME = (
+    '<a:lstStyle><a:defPPr><a:defRPr lang="en-US"/></a:defPPr>'
+    + ''.join(
+        f'<a:lvl{n}pPr marL="{(n - 1) * 457200}" algn="l" defTabSz="914400" rtl="0" '
+        'eaLnBrk="1" latinLnBrk="0" hangingPunct="1"><a:defRPr sz="1800" kern="1200">'
+        '<a:solidFill><a:schemeClr val="lt1"/></a:solidFill><a:latin typeface="+mn-lt"/>'
+        f'<a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/></a:defRPr></a:lvl{n}pPr>'
+        for n in range(1, 10))
+    + '</a:lstStyle>')
+
+
 def _ancre_signe(prst, x0, x1, y0, y1, id_forme, nom, nom_creation, off_x, off_y):
     """Une forme du graphique (`cdr:relSizeAnchor`), en fraction de son cadre.
 
