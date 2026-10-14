@@ -43,7 +43,7 @@ toutes les pages sont ✓ est **terminé** : il quitte « en cours » et rejoint
 ```
 Navigateur (SPA React)                     cfao-comptes-rendus/api (Django)
 ┌──────────────────────────┐   /apercu/*    ┌─────────────────────────────────┐
-│ frontend/src/…compte-rendu│ ─────────────▶ │ comptes_rendus/views.py (DRF)    │
+│ web/src/…compte-rendu     │ ─────────────▶ │ comptes_rendus/views.py (DRF)    │
 │  - saisie, brouillon      │  /cr-donnees/* │  - PEP Cerbos sur chaque route   │
 │  - valeursDrapeaux()      │ ─────────────▶ │  - stockage.py : brouillons      │
 │  - export/import Excel    │                │ core/auth : OIDC ou profils dev  │
@@ -58,7 +58,7 @@ Navigateur (SPA React)                     cfao-comptes-rendus/api (Django)
 ```
 
 - **Dev** : le serveur Vite relaie `/apercu` et `/cr-donnees` vers `127.0.0.1:5175`
-  (`frontend/vite.config.js`).
+  (`cfao-comptes-rendus/web/vite.config.js`).
 - **Docker Compose** : service `rapports` (`cfao-comptes-rendus/api/Dockerfile`) et son Cerbos
   `rapports-cerbos`, joignables seulement par la passerelle nginx, qui route les mêmes chemins
   (`gateway/nginx.conf`). Le dossier `cfao-comptes-rendus/` se déploie aussi seul (son propre
@@ -175,11 +175,11 @@ en conteneur, ignoré par Git en local).
 
 ### Planning de démonstration et données personnelles
 
-Les sessions proposées viennent de `frontend/src/data/mock_sessions_formateur.js`, en attendant
+Les sessions proposées viennent de `cfao-comptes-rendus/web/src/data/mock_sessions_formateur.js`, en attendant
 l'API `planning` de `cfao-operations`. **Les noms qui y figurent sont fictifs.**
 
 Un poste qui anime de vraies sessions garde les vrais noms dans
-`frontend/src/data/noms.local.js`, **ignoré par Git** (`*.local.js`) :
+`cfao-comptes-rendus/web/src/data/noms.local.js`, **ignoré par Git** (`*.local.js`) :
 
 ```js
 export const NOMS = {
@@ -266,9 +266,9 @@ python -m venv .venv && .venv/Scripts/pip install -r requirements-dev.txt
 .venv/Scripts/python manage.py migrate
 .venv/Scripts/python manage.py runserver 127.0.0.1:5175
 
-# Interface (port 5174)
-cd frontend && npm ci && npm run dev
-# puis /portail/compte-rendu/nouveau avec un profil formateur
+# Interface (port 5176)
+cd cfao-comptes-rendus/web && npm ci && npm run dev
+# puis http://localhost:5176 avec un profil formateur
 ```
 
 Variables : `CR_MODELE` (autre modèle), `CR_CACHE` (cache des images), `CR_SOFFICE` (chemin de
@@ -276,7 +276,7 @@ LibreOffice, par défaut celui de Windows), `CR_DONNEES` (photos). Configuration
 `cfao-comptes-rendus/.env.example`.
 
 En conteneur : `docker compose up rapports gateway` (plateforme, mode intégré) ou
-`cd cfao-comptes-rendus && make up` (service seul). L'image (multi-étapes, gunicorn, utilisateur
+`cd cfao-comptes-rendus && make up` (module seul, voir son [README](../cfao-comptes-rendus/README.md)). L'image (multi-étapes, gunicorn, utilisateur
 sans privilège) embarque LibreOffice et des polices métriquement compatibles (Liberation,
 Carlito) ; un seul processus, car le verrou LibreOffice et les tâches de fond vivent en mémoire.
 Le rendu Linux peut différer de quelques pixels du rendu Windows.
@@ -286,16 +286,16 @@ Le rendu Linux peut différer de quelques pixels du rendu Windows.
 ## 6. Tests
 
 ```bash
-cd frontend && npm test              # Vitest : calculs, drapeaux, légendes
+cd cfao-comptes-rendus/web && npm test   # Vitest : calculs, drapeaux, légendes
 cd cfao-comptes-rendus/api && pip install -r requirements-dev.txt && pytest -q
 cd cfao-comptes-rendus && make policy-test   # règles Cerbos du service
 ```
 
 | Fichier | Couvre |
 |---|---|
-| `frontend/src/utils/certification.test.js` | pourcentage, seuil 70 %, résultat final, e-learning |
-| `frontend/src/utils/diapositives.test.js` | drapeaux de la fiche de certification, code couleur |
-| `frontend/src/data/dispositions_photos.test.js` | dispositions, modes de légende, anciens brouillons |
+| `cfao-comptes-rendus/web/src/utils/certification.test.js` | pourcentage, seuil 70 %, résultat final, e-learning |
+| `cfao-comptes-rendus/web/src/utils/diapositives.test.js` | drapeaux de la fiche de certification, code couleur |
+| `cfao-comptes-rendus/web/src/data/dispositions_photos.test.js` | dispositions, modes de légende, anciens brouillons |
 | `cfao-comptes-rendus/api/comptes_rendus/tests/test_service.py` | substitution, lignes répétées, couleurs, modèle versionné, rendu LibreOffice |
 | `cfao-comptes-rendus/api/comptes_rendus/tests/test_brouillons.py` | contrat `/cr-donnees`, cloisonnement par utilisateur |
 | `cfao-comptes-rendus/api/comptes_rendus/tests/test_mise_en_page.py` | limite des logos, pied de page, tailles en clair, légendes |

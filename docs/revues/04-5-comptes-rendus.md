@@ -2,13 +2,13 @@
 
 Revue avant la mise en service du mode `local` pour les formateurs. Périmètre : `cfao-comptes-rendus/api`
 (authentification, brouillons, rendus, tâches de fond) et la synchronisation des brouillons du portail
-(`frontend/src/utils/brouillonsCompteRendu.js`).
+(`cfao-comptes-rendus/web/src/utils/brouillonsCompteRendu.js`).
 
 Statuts : `corrigé`, `différé` (raison et emplacement), `rejeté` (raison).
 
 | N° | Emplacement | Classe d'erreur | Correction | Statut |
 |----|-------------|-----------------|------------|--------|
-| F1 | `comptes_rendus/stockage.py:41`, `frontend/src/utils/brouillonsCompteRendu.js:337` | Règle arbitrée par l'horloge d'un poste | Une suppression retient la révision supprimée (`Suppression.revision`, migration 0002). Une copie déjà numérotée ne fait plus revenir le brouillon, quelle que soit sa date ; une copie jamais enregistrée (révision 0) est gardée. Sans révision connue (suppression ancienne), la date départage encore. Même règle côté portail (`revisionsSupprimees`). | corrigé |
+| F1 | `comptes_rendus/stockage.py:41`, `cfao-comptes-rendus/web/src/utils/brouillonsCompteRendu.js:337` | Règle arbitrée par l'horloge d'un poste | Une suppression retient la révision supprimée (`Suppression.revision`, migration 0002). Une copie déjà numérotée ne fait plus revenir le brouillon, quelle que soit sa date ; une copie jamais enregistrée (révision 0) est gardée. Sans révision connue (suppression ancienne), la date départage encore. Même règle côté portail (`revisionsSupprimees`). | corrigé |
 | F2 | `comptes_rendus/views.py:91` | Ressource lue par identifiant sans contrôle du propriétaire | `_photos_a_soi` retire des valeurs d'aperçu, de document et de rapport (pages et voisines) toute photo qui n'appartient pas au compte connecté. Contrôle sur la copie des données : 108 photos citées, toutes à leur auteur. | corrigé |
 | F3 | `core/auth/oidc.py:27`, `config/settings/base.py` | Contrôle de sécurité facultatif | L'audience OIDC est toujours vérifiée ; le mode `integrated` refuse de démarrer sans `OIDC_AUDIENCE`. | corrigé |
 | F4 | `config/settings/base.py:116`, `requirements.txt:1` | Verrou sans effet sur le moteur utilisé | `select_for_update` ne fait rien sous SQLite : transactions `IMMEDIATE` (verrou d'écriture dès le début), avec une attente de 20 s. Rouvert en passe 2 : l'option `transaction_mode` exige Django 5.1, `requirements.txt` est passé à `Django>=5.1,<5.2`. | corrigé |
@@ -26,8 +26,8 @@ Vérification des écarts ci-dessus et du diff de correction. F4, F5 et F9 rouve
 | N° | Emplacement | Classe d'erreur | Correction | Statut |
 |----|-------------|-----------------|------------|--------|
 | N1 | `management/commands/importer_flask.py:120` | Règle de suppression non appliquée par un chemin d'écriture | Un réimport ne fait plus revenir un brouillon supprimé dans le nouveau service après sa dernière modification. | corrigé |
-| N2 | `frontend/src/utils/brouillonsCompteRendu.js:156` | Règle de suppression non appliquée par un chemin d'écriture | Une saisie en cours sur un brouillon supprimé ailleurs repart en révision 0 (nouveau brouillon) au lieu d'être perdue. | corrigé |
-| N3 | `frontend/src/utils/brouillonsCompteRendu.js:348` | Nettoyage partiel de l'état local | Un brouillon effacé par la synchronisation est oublié comme par `oublier` (envois en attente, révisions, vus). | corrigé |
+| N2 | `cfao-comptes-rendus/web/src/utils/brouillonsCompteRendu.js:156` | Règle de suppression non appliquée par un chemin d'écriture | Une saisie en cours sur un brouillon supprimé ailleurs repart en révision 0 (nouveau brouillon) au lieu d'être perdue. | corrigé |
+| N3 | `cfao-comptes-rendus/web/src/utils/brouillonsCompteRendu.js:348` | Nettoyage partiel de l'état local | Un brouillon effacé par la synchronisation est oublié comme par `oublier` (envois en attente, révisions, vus). | corrigé |
 | N4 | `keycloak/config/cfao-realm.yaml` | Mode `integrated` incomplet | Aucun mappeur d'audience `cfao-comptes-rendus` dans le realm. | différé avec F6 : mode `integrated` non utilisé par ce déploiement |
 | N5 | ce registre | Renvoi de ligne | Les emplacements cités ont été revérifiés sur le code final. | corrigé |
 | N6 | `.env.example:19`, `cfao-comptes-rendus/.env.example:22`, `docker-compose.yml` | Documentation contraire au code | L'audience est indiquée obligatoire en mode intégré ; défaut compose `cfao-portal`. | corrigé |

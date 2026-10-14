@@ -15,7 +15,7 @@ python manage.py runserver 127.0.0.1:5175   # depuis cfao-comptes-rendus/api
 ```
 
 Le serveur de développement relaie `/apercu` vers ce port (voir
-`frontend/vite.config.js`). Si le service est arrêté, l'assistant bascule
+`cfao-comptes-rendus/web/vite.config.js`). Si le service est arrêté, l'assistant bascule
 sur le rendu HTML et le signale.
 
 ## Prérequis

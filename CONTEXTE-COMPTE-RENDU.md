@@ -25,7 +25,7 @@ travail.
 
 | Service | Port | Démarrage |
 |---|---|---|
-| UI (Vite) | **5174** | `npm run dev` depuis `frontend/` |
+| UI (Vite) | **5176** | `npm run dev` depuis `cfao-comptes-rendus/web/` (`CR_SERVICE` pour viser une autre API) |
 | Comptes rendus (Django) | **5175** | `manage.py runserver 127.0.0.1:5175` (cfao-comptes-rendus/api) |
 
 Le port 5173 est occupé par un autre projet : une navigation qui y
@@ -318,7 +318,7 @@ sans écraser les champs déjà remplis). Vérifié avec « Evaluation 25 »
 (21 stagiaires, titre et période saisis à la main).
 
 **Export Excel des résultats** (`utils/exportEvaluation.js`, bouton de
-l'en-tête de l'étape 2). Remplit le **modèle** `frontend/public/modeles/evaluation.xlsx`
+l'en-tête de l'étape 2). Remplit le **modèle** `cfao-comptes-rendus/web/public/modeles/evaluation.xlsx`
 — le classeur « Evaluation … Climatisation » anonymisé, mise en forme
 d'origine intacte (exigence : *« tout doit rester pareil »*). Seules les
 colonnes de stagiaires varient : style des colonnes du modèle recopié,
@@ -463,13 +463,13 @@ Avant : `0611f42 → f9712cb → ddb85f1 → d0b1856 → 0766bce → 094493d →
 
 | Fichier | Rôle |
 |---|---|
-| `frontend/src/components/compte-rendu/PhaseVerification.jsx` | Le hub : compose les pages, édition + aperçu, sommaire |
-| `frontend/src/components/compte-rendu/Editeur*.jsx` | Un éditeur par type de page |
-| `frontend/src/utils/compteRendu.js` | `titreDeCouverture()`, `periodeLongue()`, `nombreDeJours()` |
-| `frontend/src/utils/diapositives.js` | Page → diapositive, et drapeaux du modèle ; `VIDE` |
-| `frontend/src/utils/satisfactionCfao.js` | Critères, avec `libelle` (saisie) et `modele` (rendu) |
-| `frontend/src/utils/redaction.js` | Pont vers le moteur de texte |
-| `frontend/src/data/dispositions_photos.js` | Catalogue des dispositions ; `dispositionsClassees()` |
-| `frontend/src/styles/compte-rendu.css` | Tout le CSS du module |
+| `cfao-comptes-rendus/web/src/components/compte-rendu/PhaseVerification.jsx` | Le hub : compose les pages, édition + aperçu, sommaire |
+| `cfao-comptes-rendus/web/src/components/compte-rendu/Editeur*.jsx` | Un éditeur par type de page |
+| `cfao-comptes-rendus/web/src/utils/compteRendu.js` | `titreDeCouverture()`, `periodeLongue()`, `nombreDeJours()` |
+| `cfao-comptes-rendus/web/src/utils/diapositives.js` | Page → diapositive, et drapeaux du modèle ; `VIDE` |
+| `cfao-comptes-rendus/web/src/utils/satisfactionCfao.js` | Critères, avec `libelle` (saisie) et `modele` (rendu) |
+| `cfao-comptes-rendus/web/src/utils/redaction.js` | Pont vers le moteur de texte |
+| `cfao-comptes-rendus/web/src/data/dispositions_photos.js` | Catalogue des dispositions ; `dispositionsClassees()` |
+| `cfao-comptes-rendus/web/src/styles/compte-rendu.css` | Tout le CSS du module |
 | `cfao-comptes-rendus/api/rendu/service.py` | Substitution des drapeaux, cache, conversion LibreOffice |
 | `cfao-comptes-rendus/api/rendu/modele.py` | Quelles diapositives composent quelle partie |
