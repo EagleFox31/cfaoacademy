@@ -747,7 +747,8 @@ def _anneau_excel(image, geo, valeurs):
     gris = (89, 89, 89, 255)
     for texte, police, lh, ex, ey, trait in etiquettes:
         if trait:
-            dessin.line([(x + dx0, y + dy0) for x, y in trait], fill=gris,
+            # Au pixel entier : l'horizontale et la verticale restent nettes.
+            dessin.line([(round(x + dx0), round(y + dy0)) for x, y in trait], fill=gris,
                         width=epaisseur, joint='curve')
         pas = lh / len(texte)
         y = ey + dy0 - lh / 2
@@ -815,7 +816,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 7
+VERSION_IMAGES = 9
 
 
 def _cadre_de(rendu, reference):
@@ -1031,57 +1032,46 @@ def _trait_rayon(centre, demi, point, rayon):
 def _trait_accueil(centre, rayon, point, texte, cadre):
     """Place de l'etiquette de l'anneau exterieur et son trait de rappel.
 
-    L'etiquette va a droite du cercle, a la hauteur du point (milieu de la
-    partie remplie) quand elle y tient : un seul trait horizontal qui
-    arrive au milieu de son texte. Sinon elle monte ou descend jusqu'a la
-    hauteur libre la plus proche et le trait la rejoint en equerre : a
-    l'horizontale hors du cercle, puis a la verticale jusqu'au haut ou au
-    bas du texte. Jamais de segment penche ni de traversee de l'anneau : le
-    point est sur la moitie droite (milieu de l'arc, entre 0 et 180 degres)
-    et chaque segment s'eloigne du centre ou reste dehors. `texte` : la
-    taille du texte de l'etiquette, sans marge.
+    Deux segments perpendiculaires : du point (milieu de la partie remplie)
+    a l'horizontale jusqu'a l'aplomb du centre de l'etiquette, puis a la
+    verticale jusqu'au bord de son texte. L'etiquette se met donc a droite
+    du cercle, au-dessous du point (ou au-dessus, si la place manque), assez
+    loin pour que le segment vertical se voie. Jamais de segment penche ni
+    de traversee de l'anneau : le point est sur la moitie droite (milieu de
+    l'arc, entre 0 et 180 degres) et chaque segment reste hors du cercle.
+    `texte` : la taille du texte de l'etiquette, sans marge.
     """
     (cx, cy), (px, py), (tw, th), (larg, haut) = centre, point, texte, cadre
-    jeu, marge = 0.06 * rayon, 0.03 * rayon
+    jeu, marge, pas = 0.06 * rayon, 0.03 * rayon, 0.14 * rayon
     lw, lh = tw + 2 * marge, th + 2 * marge
     bas_min, haut_max = lh / 2 + 0.01 * haut, haut - lh / 2 - 0.01 * haut
-    gauche = max(cx + rayon * 0.3, min(cx + rayon + jeu, larg * 0.99 - lw))
-    # En deca de `ecart` du centre, le cercle deborde sous l'etiquette.
-    ecart = math.sqrt(max(0.0, (rayon + jeu) ** 2 - (gauche - cx) ** 2))
-    milieu_x = gauche + lw / 2
 
-    def libre(y):
-        return bas_min - 1 <= y <= haut_max + 1 and abs(y - cy) >= ecart + lh / 2 - 1
+    def hors_cercle(y0, y1):
+        # L'abscisse a partir de laquelle la bande [y0, y1] est hors du cercle.
+        d = 0.0 if y0 <= cy <= y1 else min(abs(y0 - cy), abs(y1 - cy))
+        return cx + math.sqrt(max(0.0, (rayon + jeu) ** 2 - d ** 2))
 
-    def borne(y):
-        return min(max(y, bas_min), haut_max)
-
-    # Les hauteurs permises, de la plus proche du point a la plus lointaine.
-    vers_bas = py >= cy
-    hauteurs = sorted({borne(py), borne(cy + ecart + lh / 2), borne(cy - ecart - lh / 2)},
-                      key=lambda y: abs(y - py))
-    hauteurs = [y for y in hauteurs if libre(y)] or [borne(py)]
-    for y in hauteurs:
-        if abs(y - py) <= 0.3 * th:
-            return (milieu_x, y), [(px, py), (gauche, py)]
-        # Assez loin pour un vrai segment vertical, quitte a s'ecarter.
-        sens = 1 if y > py else -1
-        if abs(y - py) < lh / 2 + 0.12 * rayon:
-            y = py + sens * (lh / 2 + 0.12 * rayon)
-            if not libre(y):
-                continue
-        arrivee = y - sens * lh / 2
-        proche = (0.0 if min(py, arrivee) <= cy <= max(py, arrivee)
-                  else min(abs(py - cy), abs(arrivee - cy)))
-        x = max(cx + math.sqrt(max(0.0, (rayon + jeu) ** 2 - proche ** 2)), gauche + lw * 0.2)
-        if x <= gauche + lw * 0.8:
-            return (milieu_x, y), [(px, py), (x, py), (x, arrivee)]
-    # Rien de mieux : a la hauteur du point, au plus pres du cadre.
-    y = borne(py)
-    if abs(y - py) <= th / 2:
-        return (milieu_x, y), [(px, py), (gauche, py)]
-    couloir = (px + gauche) / 2
-    return (milieu_x, y), [(px, py), (couloir, py), (couloir, y), (gauche, y)]
+    # Au plus pres du point d'abord, puis de plus en plus loin : plus bas
+    # (ou plus haut), le cercle se resserre et laisse la place a droite.
+    sens_prefere = 1 if py >= cy else -1
+    for sens in (sens_prefere, -sens_prefere):
+        ecart = pas + lh / 2
+        while True:
+            y = py + sens * ecart
+            if not bas_min <= y <= haut_max:
+                break
+            bord = y - sens * lh / 2  # haut (ou bas) de la boite de l'etiquette
+            gauche = max(hors_cercle(y - lh / 2, y + lh / 2),
+                         hors_cercle(min(py, bord), max(py, bord)) - lw / 2,
+                         px + 0.1 * rayon - lw / 2)
+            if gauche + lw <= larg * 0.99:
+                x = gauche + lw / 2
+                return (x, y), [(px, py), (x, py), (x, bord)]
+            ecart += 0.02 * rayon
+    # Pas de place au-dessus ni au-dessous : a la hauteur du point.
+    gauche = min(max(hors_cercle(py - lh / 2, py + lh / 2), px + jeu), larg * 0.99 - lw)
+    y = min(max(py, bas_min), haut_max)
+    return (gauche + lw / 2, y), [(px, py), (gauche, py)]
 
 
 def _disposition_anneau(geo, valeurs):
@@ -1129,13 +1119,16 @@ TRAIT_FORMES = 'xl/drawings/drawingTrait.xml'
 NS_A = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
 
 
-def _trait_de_rappel(parts):
+def _trait_de_rappel(parts, formes=True):
     """Les traits de rappel de l'anneau, dessines dans le graphique Excel.
 
     Le trait d'Excel est une ligne droite tiree ou il veut, penchee le plus
     souvent ; on l'eteint et on pose a sa place des formes du graphique
     (`userShapes`) : les traits de `_disposition_anneau`, ceux de l'apercu.
-    Rafraichi dans PowerPoint, l'objet les garde.
+    Rafraichi dans PowerPoint, l'objet les garde. Sans `formes`, le trait
+    d'Excel est seulement eteint : c'est le classeur que rend LibreOffice
+    pour l'apercu, ou `_anneau_excel` dessine les traits lui-meme (sinon
+    ils apparaissent en double, un peu decales).
     """
     geo = _geometrie_anneau(parts)
     nom = next((n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)
@@ -1152,7 +1145,7 @@ def _trait_de_rappel(parts):
             valeurs.append(None)
     traits = [p['trait'] for p in _disposition_anneau(geo, valeurs) if p and p['trait']]
     graphique = graphique.replace('<c:showLeaderLines val="1"/>', '<c:showLeaderLines val="0"/>')
-    if not traits:
+    if not traits or not formes:
         parts[nom] = graphique.encode('utf-8')
         return parts
     if '<c:userShapes ' not in graphique:
@@ -1298,10 +1291,11 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
                 # tableau restant garde sa place et l'anneau son echelle.
                 reference = _ecrire(remplir_classeur(parts, NOTES_DE_REFERENCE))
             if quoi == 'satisfaction':
+                a_rendre[emb] = _ecrire(_trait_de_rappel(dict(remplies), formes=False))
                 remplies = _trait_de_rappel(remplies)
             brut = _ecrire(remplies)
             contenus[emb] = brut
-            a_rendre[emb] = brut
+            a_rendre.setdefault(emb, brut)
             # L'image s'etire aux proportions du cadre de l'objet, qui ne
             # sont pas toujours celles de l'EMF (page 27) : c'est sur le
             # cadre qu'on les prend, sinon l'anneau devient ovale.
