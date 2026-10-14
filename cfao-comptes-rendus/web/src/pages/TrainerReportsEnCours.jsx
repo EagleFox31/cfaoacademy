@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Nav from '../../components/Nav'
-import useAuth from '../../hooks/useAuth'
-import useSiteEffects from '../../hooks/useSiteEffects'
-import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
+import { useAuth } from '../lib/auth'
+import useEnHautDePage from '../hooks/useEnHautDePage'
+import { sessionsDuFormateur } from '../data/mock_sessions_formateur'
 import CarteCompteRendu, {
   BadgeCompteRendu, carteDeBrouillon, carteDeSession,
-} from '../../components/compte-rendu/CarteCompteRendu'
-import { brouillonsEnregistres, oublier, synchroniser } from '../../utils/brouillonsCompteRendu'
-import { aDocumenter } from '../../utils/planningFormateur.js'
-import '../../styles/compte-rendu.css'
+} from '../components/compte-rendu/CarteCompteRendu'
+import { brouillonsEnregistres, oublier, synchroniser } from '../utils/brouillonsCompteRendu'
+import { aDocumenter } from '../utils/planningFormateur.js'
+import '../styles/compte-rendu.css'
 
 /**
  * Les comptes rendus commences, avant d'en reprendre un.
@@ -26,7 +25,7 @@ import '../../styles/compte-rendu.css'
  * de formation passees qui n'ont encore aucun compte rendu.
  */
 export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
-  useSiteEffects()
+  useEnHautDePage('Comptes rendus en cours')
   const naviguer = useNavigate()
   const { user } = useAuth()
   const sessions = useMemo(() => sessionsDuFormateur(user), [user])
@@ -51,12 +50,11 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
 
   return (
     <>
-      <Nav />
       <main className="portal-page cr-assistant">
         <header className="cr-home-header cr-home-header--slim">
           <div className="container cr-entete-assistant">
             <button type="button" className="cr-retour"
-              onClick={() => naviguer('/portail/formateur')}>
+              onClick={() => naviguer('/')}>
               ← Mes comptes rendus
             </button>
             <h1 className="cr-home-title cr-home-title--sm">

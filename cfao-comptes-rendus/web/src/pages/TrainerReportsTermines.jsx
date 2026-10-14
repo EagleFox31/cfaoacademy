@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Nav from '../../components/Nav'
-import useSiteEffects from '../../hooks/useSiteEffects'
-import CarteCompteRendu, { BadgeCompteRendu, carteDeBrouillon } from '../../components/compte-rendu/CarteCompteRendu'
-import { brouillonsTermines, synchroniser } from '../../utils/brouillonsCompteRendu'
-import '../../styles/compte-rendu.css'
+import useEnHautDePage from '../hooks/useEnHautDePage'
+import CarteCompteRendu, { BadgeCompteRendu, carteDeBrouillon } from '../components/compte-rendu/CarteCompteRendu'
+import { brouillonsTermines, synchroniser } from '../utils/brouillonsCompteRendu'
+import '../styles/compte-rendu.css'
 
 /**
  * Les comptes rendus termines : l'archive du formateur.
@@ -16,7 +15,7 @@ import '../../styles/compte-rendu.css'
  * renvoie parmi les saisies en cours.
  */
 export default function TrainerReportsTermines() {
-  useSiteEffects()
+  useEnHautDePage('Mes comptes rendus')
   const naviguer = useNavigate()
   const [termines, setTermines] = useState(() => brouillonsTermines())
   useEffect(() => {
@@ -29,13 +28,12 @@ export default function TrainerReportsTermines() {
 
   return (
     <>
-      <Nav />
       <main className="portal-page cr-assistant">
         <header className="cr-home-header cr-home-header--slim">
           <div className="container cr-entete-assistant">
             <button type="button" className="cr-retour"
-              onClick={() => naviguer('/portail/formateur')}>
-              ← Accueil formateur
+              onClick={() => naviguer('/')}>
+              ← Accueil
             </button>
             <h1 className="cr-home-title cr-home-title--sm">Mes comptes rendus</h1>
           </div>

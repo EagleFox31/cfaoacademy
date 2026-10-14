@@ -1,20 +1,19 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import Nav from '../../components/Nav'
-import useSiteEffects from '../../hooks/useSiteEffects'
-import useAuth from '../../hooks/useAuth'
-import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
-import { syntheseGroupe } from '../../utils/baremeCfao'
-import { estCertification, syntheseCertification, typeDepuisCode } from '../../utils/certification'
+import useEnHautDePage from '../hooks/useEnHautDePage'
+import { useAuth } from '../lib/auth'
+import { sessionsDuFormateur } from '../data/mock_sessions_formateur'
+import { syntheseGroupe } from '../utils/baremeCfao'
+import { estCertification, syntheseCertification, typeDepuisCode } from '../utils/certification'
 import {
   adopter, enregistrer, garder, recuperer, recupererDuServeur, surveiller,
-} from '../../utils/brouillonsCompteRendu'
-import { nombreDeJours } from '../../utils/compteRendu'
-import PhaseSession from '../../components/compte-rendu/PhaseSession'
-import PhaseResultats from '../../components/compte-rendu/PhaseResultats'
-import PhaseStructure from '../../components/compte-rendu/PhaseStructure'
-import PhaseVerification from '../../components/compte-rendu/PhaseVerification'
-import '../../styles/compte-rendu.css'
+} from '../utils/brouillonsCompteRendu'
+import { nombreDeJours } from '../utils/compteRendu'
+import PhaseSession from '../components/compte-rendu/PhaseSession'
+import PhaseResultats from '../components/compte-rendu/PhaseResultats'
+import PhaseStructure from '../components/compte-rendu/PhaseStructure'
+import PhaseVerification from '../components/compte-rendu/PhaseVerification'
+import '../styles/compte-rendu.css'
 
 /**
  * Redaction d'un compte rendu, en quatre etapes.
@@ -71,7 +70,7 @@ function brouillonVide() {
 }
 
 export default function TrainerReportNew() {
-  useSiteEffects()
+  useEnHautDePage('Nouveau compte rendu')
   const naviguer = useNavigate()
   const [params] = useSearchParams()
   const sessionDemandee = params.get('session')
@@ -257,17 +256,16 @@ export default function TrainerReportNew() {
   function retourner() {
     if (phase > 0) return aller(phase - 1)
     if (engage) return setBrouillon(brouillonVide())
-    naviguer('/portail/formateur')
+    naviguer('/')
   }
 
   return (
     <>
-      <Nav />
       <main className="portal-page cr-assistant">
         <header className="cr-home-header cr-home-header--slim" ref={haut}>
           <div className="container cr-entete-assistant">
             <button type="button" className="cr-retour"
-              onClick={() => naviguer('/portail/formateur')}>
+              onClick={() => naviguer('/')}>
               ← Mes comptes rendus
             </button>
             <h1 className="cr-home-title cr-home-title--sm">
@@ -355,7 +353,7 @@ export default function TrainerReportNew() {
               <PhaseVerification
                 brouillon={brouillon} maj={maj}
                 session={session} synthese={synthese}
-                onTerminer={() => naviguer('/portail/formateur')}
+                onTerminer={() => naviguer('/')}
               />
             )}
 

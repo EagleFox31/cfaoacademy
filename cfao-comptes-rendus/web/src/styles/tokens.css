@@ -1,0 +1,59 @@
+/* CFAO Academy — Comptes rendus
+ *
+ * Les variables et les règles de base reprises du portail
+ * (frontend/src/styles/index.css et portal.css), valeurs identiques :
+ * le module garde le design system du portail sans le charger en entier.
+ * Les autres variables (--accent, --ink-2, --line…) sont lues avec leur
+ * valeur de repli dans compte-rendu.css.
+ */
+:root {
+  --red: #E3001B;
+  --red-deep: #B40015;
+  --red-soft: #FFE5E8;
+  --navy: #1A1F3C;
+  --navy-2: #2A3157;
+  --ink: #0E1126;
+  --paper: #FFFFFF;
+  --paper-2: #FAFAFA;
+  --paper-3: #F5F5F5;
+  --rule: #E7E7EA;
+  --muted: #6B6F82;
+  --muted-2: #9499AB;
+  /* Hauteur de la barre du haut, retranchée par les écrans de l'assistant. */
+  --portal-nav-h: 77px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+#root {
+  min-height: 100dvh;
+}
+
+body {
+  font-family: 'DM Sans', -apple-system, system-ui, sans-serif;
+  font-feature-settings: 'ss01', 'cv11';
+  color: var(--ink);
+  background-color: var(--paper-3);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.display, h1, h2, h3 {
+  font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+  font-weight: 600;
+}
+
+.mono, .micro {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.container { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
