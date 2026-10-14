@@ -148,7 +148,7 @@ def test_les_taux_de_l_anneau_suivent_les_series_restantes(tmp_path, monkeypatch
         doc.save(cmd[-1].replace('.xlsx', '.pdf'))
     monkeypatch.setattr(classeurs.subprocess, 'run', convertir)
     vus = []
-    monkeypatch.setattr(classeurs, '_rogner', lambda png, anneau=None, ratio=None, cadre=None, en_haut=False: vus.append(anneau) or b'png')
+    monkeypatch.setattr(classeurs, '_rogner', lambda png, anneau=None, ratio=None, cadre=None, centre=False: vus.append(anneau) or b'png')
     classeurs.rendre({'a': classeurs._ecrire(parts)}, 'soffice', 'profil', tmp_path,
                      {'a': ('satisfaction', accueil, None)})
     geo, taux = vus[0]
@@ -259,3 +259,20 @@ def test_sur_la_fiche_l_objet_prend_les_proportions_d_excel_sous_son_titre(conte
     w, h = map(int, re.search(r'imgW="(\d+)" imgH="(\d+)"', objet).groups())
     assert abs(cx / cy - w / h) < 0.001
     assert abs((x + cx / 2) - (tx + tcx / 2)) < 0.005 * tcx
+    # L'image de secours porte le meme cadre, sinon elle s'y etire.
+    assert len(set(re.findall(r'<a:off [^>]*/><a:ext [^>]*/>', objet))) == 1
+
+
+def test_la_page_de_resultats_garde_son_cadre_et_son_equilibre(monkeypatch):
+    """Seul l'objet recadre sous un titre est centre et cale en haut : la
+    page de resultats garde son cadre et son image d'origine."""
+    vues = {}
+    monkeypatch.setattr(classeurs, 'rendre', lambda bruts, s, p, c, legendes: vues.update(legendes) or {})
+    with zipfile.ZipFile(service.MODELE) as z:
+        contenus = {n: z.read(n) for n in z.namelist()}
+    avant = contenus[PAGE_RESULTATS]
+    rafraichir(contenus, PAGE_RESULTATS, {**CELLULES, 'B2': 0.8, 'B12': 0.8, 'B9': 0.86,
+                                          'C9': 0.14, 'B18': 0.75, 'C18': 0.25})
+    assert contenus[PAGE_RESULTATS] == avant
+    (quoi, _, _, _, centre), = [v for v in vues.values() if v[0] == 'satisfaction']
+    assert centre is False

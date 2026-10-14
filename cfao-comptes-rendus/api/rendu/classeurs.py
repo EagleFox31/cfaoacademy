@@ -588,7 +588,7 @@ POLICES_ETIQUETTES = (
     '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
 )
 
-def _anneau_excel(image, geo, valeurs):
+def _anneau_excel(image, geo, valeurs, centre=False):
     """Redonne a l'anneau rendu par LibreOffice la geometrie d'Excel.
 
     LibreOffice trace l'anneau juste (angles, couleurs) mais avec son
@@ -753,12 +753,18 @@ def _anneau_excel(image, geo, valeurs):
     t_ = min([0] + [b[1] for b in boites])
     d = max([image.width] + [b[2] for b in boites])
     f = max([image.height] + [b[3] for b in boites])
-    # A l'horizontale, la toile grandit autant des deux cotes : l'objet est
-    # centre sous le titre de sa colonne, le contenu rendu doit le rester.
-    marge_h = max(-int(math.floor(g)), int(math.ceil(d)) - image.width)
-    dx0, dy0 = marge_h, -int(math.floor(t_))
-    if dx0 or dy0 or f > image.height:
-        toile = Image.new('RGBA', (image.width + 2 * marge_h, int(math.ceil(f)) + dy0),
+    # `centre` : l'objet est centre sous le titre de sa colonne (page 27),
+    # la toile grandit autant des deux cotes pour que le contenu le reste.
+    # Ailleurs, elle ne grandit que du cote des etiquettes.
+    if centre:
+        marge_h = max(-int(math.floor(g)), int(math.ceil(d)) - image.width)
+        dx0, largeur = marge_h, image.width + 2 * marge_h
+    else:
+        dx0 = -int(math.floor(g))
+        largeur = int(math.ceil(d)) + dx0
+    dy0 = -int(math.floor(t_))
+    if largeur != image.width or dy0 or f > image.height:
+        toile = Image.new('RGBA', (largeur, int(math.ceil(f)) + dy0),
                           (255, 255, 255, 0))
         toile.paste(image, (dx0, dy0))
         image = toile
@@ -793,7 +799,7 @@ def _sans_blanc(image):
     return image
 
 
-def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None, en_haut=False):
+def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None, centre=False):
     """L'image rognee a son contenu, le blanc rendu transparent.
 
     L'EMF du modele n'a pas de fond : pose sur la moitie grise de la
@@ -810,7 +816,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None, en_haut=False):
     if boite:
         image = image.crop(boite)
     if anneau:
-        image = _anneau_excel(image, *anneau)
+        image = _anneau_excel(image, *anneau, centre=centre)
     if cadre:
         largeur, hauteur, ox, oy = cadre[4:]
         dx, dy = image.info.get('decalage', (0, 0))
@@ -827,8 +833,8 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None, en_haut=False):
         cible_l, cible_h = max(l, round(h * ratio)), max(h, round(l / ratio))
         if (cible_l, cible_h) != (l, h):
             cadre = Image.new('RGBA', (cible_l, cible_h), (255, 255, 255, 0))
-            # `en_haut` : comme Excel, qui part de la ligne 1 de sa zone.
-            cadre.paste(image, ((cible_l - l) // 2, 0 if en_haut else (cible_h - h) // 2))
+            # `centre` : calee en haut, comme Excel part de la ligne 1 de sa zone.
+            cadre.paste(image, ((cible_l - l) // 2, 0 if centre else (cible_h - h) // 2))
             image = cadre
     # optimize=True quadruple le temps pour un fichier a peine plus petit.
     sortie = io.BytesIO()
@@ -837,10 +843,10 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None, en_haut=False):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 12
+VERSION_IMAGES = 13
 
 
-def _cadre_de(rendu, reference):
+def _cadre_de(rendu, reference, centre=False):
     """Le cadre de l'image complete : sa boite sur la page rendue, puis la
     taille de sa toile et la place de la boite sur celle-ci, une fois les
     etiquettes de l'anneau posees (celle de l'accueil l'elargit)."""
@@ -852,7 +858,7 @@ def _cadre_de(rendu, reference):
     geo = _geometrie_anneau(_lire(reference))
     if geo:
         taux = [NOTES_DE_REFERENCE[ref] for ref in ANNEAUX['satisfaction']]
-        image = _anneau_excel(image, geo, taux)
+        image = _anneau_excel(image, geo, taux, centre=centre)
     return (*boite, image.width, image.height, *image.info.get('decalage', (0, 0)))
 
 
@@ -871,14 +877,15 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
     Tous les classeurs a rendre passent dans un seul appel a LibreOffice :
     c'est son lancement qui coute.
 
-    `legendes[cle]` : `(nature, cellules, ratio[, reference])`. La
-    reference est un classeur dont l'image donne le cadre de celle-ci.
+    `legendes[cle]` : `(nature, cellules, ratio[, reference[, centre]])`. La
+    reference est un classeur dont l'image donne le cadre de celle-ci ;
+    `centre` dit que l'objet est centre sous un titre (voir `_rogner`).
     """
     dossier = Path(cache) / 'classeurs'
     dossier.mkdir(parents=True, exist_ok=True)
 
     def legende(cle):
-        return (tuple((legendes or {}).get(cle, ())) + (None,) * 4)[:4]
+        return (tuple((legendes or {}).get(cle, ())) + (None,) * 5)[:5]
 
     def signe(brut):
         return hashlib.sha1(brut).hexdigest()[:16]
@@ -887,25 +894,28 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
     for cle, brut in classeurs_bruts.items():
         # Le meme classeur peut tenir dans deux cadres de proportions
         # differentes : l'image en depend aussi.
-        _, _, ratio, reference = legende(cle)
-        empreinte = hashlib.sha1(brut + f'|v{VERSION_IMAGES}|{ratio}'.encode()).hexdigest()[:16]
+        _, _, ratio, reference, centre = legende(cle)
+        empreinte = hashlib.sha1(brut + f'|v{VERSION_IMAGES}|{ratio}|{bool(centre)}'
+                                 .encode()).hexdigest()[:16]
         chemin = dossier / f'{empreinte}.png'
         if chemin.exists():
             images[cle] = chemin.read_bytes()
             continue
         a_faire[cle] = (empreinte, signe(brut), brut)
         if reference:
-            cadre = dossier / f'{signe(reference)}-v{VERSION_IMAGES}.cadre'
+            cle_cadre = (signe(reference), bool(centre))
+            cadre = dossier / f'{cle_cadre[0]}-{int(cle_cadre[1])}-v{VERSION_IMAGES}.cadre'
             if cadre.exists():
-                cadres[signe(reference)] = tuple(map(int, cadre.read_text().split()))
+                cadres[cle_cadre] = tuple(map(int, cadre.read_text().split()))
             else:
-                references[signe(reference)] = reference
+                references[cle_cadre] = reference
     if not a_faire:
         return images
     travail = Path(tempfile.mkdtemp(prefix='cr-classeurs-'))
     try:
         # Deux classeurs identiques ne passent qu'une fois par LibreOffice.
-        uniques = {source: brut for _, source, brut in a_faire.values()} | references
+        uniques = ({source: brut for _, source, brut in a_faire.values()}
+                   | {source: brut for (source, _), brut in references.items()})
         for source, brut in uniques.items():
             (travail / f'{source}.xlsx').write_bytes(_ecrire(_pour_rendu(_lire(brut))))
         with LIBREOFFICE:
@@ -914,13 +924,14 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                  '--convert-to', 'pdf', '--outdir', str(travail)]
                 + [str(travail / f'{s}.xlsx') for s in uniques],
                 capture_output=True, timeout=120)
-        for source, reference in references.items():
+        for (source, centre), reference in references.items():
             pdf = travail / f'{source}.pdf'
-            cadre = _cadre_de(_page_rendue(pdf), reference) if pdf.exists() else None
+            cadre = _cadre_de(_page_rendue(pdf), reference, centre) if pdf.exists() else None
             if cadre:
                 cadre = tuple(int(v) for v in cadre)
-                cadres[source] = cadre
-                (dossier / f'{source}-v{VERSION_IMAGES}.cadre').write_text(' '.join(map(str, cadre)))
+                cadres[(source, centre)] = cadre
+                (dossier / f'{source}-{int(centre)}-v{VERSION_IMAGES}.cadre').write_text(
+                    ' '.join(map(str, cadre)))
         # Une image a la fois, liberee aussitot : chacune pese une
         # dizaine de Mo une fois decodee, et la machine en a peu.
         source_vue, rendu = None, None
@@ -932,7 +943,8 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                     rendu = _page_rendue(pdf)
             if rendu is None:
                 continue
-            quoi, cellules, ratio, reference = legende(cle)
+            quoi, cellules, ratio, reference, centre = legende(cle)
+            centre = bool(centre)
             anneau = None
             taux = [(cellules or {}).get(ref) for ref in ANNEAUX.get(quoi, ())]
             # La serie d'une note absente a quitte le graphique : les taux
@@ -946,8 +958,8 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                 geo = _geometrie_anneau(_lire(classeurs_bruts[cle]))
                 if geo:
                     anneau = (geo, taux)
-            cadre = cadres.get(signe(reference)) if reference else None
-            image = _rogner(rendu, anneau, ratio, cadre, en_haut=quoi == 'satisfaction')
+            cadre = cadres.get((signe(reference), centre)) if reference else None
+            image = _rogner(rendu, anneau, ratio, cadre, centre)
             (dossier / f'{empreinte}.png').write_bytes(image)
             images[cle] = image
     finally:
@@ -1282,8 +1294,10 @@ def _cadre_a_la_zone_ole(objet):
     largeur = round(cy * int(img.group(1)) / int(img.group(2)))
     if abs(largeur - cx) <= 0.02 * cx:
         return objet
+    # Le cadre est ecrit deux fois (l'objet et son image de secours) : les
+    # deux changent, sinon l'image s'etire dans l'ancien.
     return objet.replace(pos.group(0), f'<a:off x="{x + (cx - largeur) // 2}" y="{y}"/>'
-                         f'<a:ext cx="{largeur}" cy="{cy}"/>', 1)
+                         f'<a:ext cx="{largeur}" cy="{cy}"/>')
 
 
 def rafraichir_pages(contenus, pages, soffice, profil, cache):
@@ -1338,19 +1352,17 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             brut = _ecrire(remplies)
             contenus[emb] = brut
             a_rendre.setdefault(emb, brut)
-            if quoi == 'satisfaction':
-                cadre = _cadre_a_la_zone_ole(m.group(0))
-                if cadre != m.group(0):
-                    retirer.append((*m.span(), cadre))
-            else:
-                cadre = m.group(0)
+            cadre = _cadre_a_la_zone_ole(m.group(0)) if quoi == 'satisfaction' else m.group(0)
+            centre = cadre != m.group(0)
+            if centre:
+                retirer.append((*m.span(), cadre))
             # L'image s'etire aux proportions du cadre de l'objet, qui ne
             # sont pas toujours celles de l'EMF (page 27) : c'est sur le
             # cadre qu'on les prend, sinon l'anneau devient ovale.
             taille = (re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', cadre)
                       or re.search(r'imgW="(\d+)" imgH="(\d+)"', cadre))
             ratio = int(taille.group(1)) / int(taille.group(2)) if taille else None
-            natures[emb] = (quoi, valeurs[quoi], ratio, reference)
+            natures[emb] = (quoi, valeurs[quoi], ratio, reference, centre)
             poses += [(rels_nom, rid, emb) for rid in images]
         if retirer:
             for debut, fin, texte in reversed(retirer):
