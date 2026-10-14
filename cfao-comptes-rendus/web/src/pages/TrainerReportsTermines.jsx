@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useEnHautDePage from '../hooks/useEnHautDePage'
+import useSiteEffects from '../hooks/useSiteEffects'
 import CarteCompteRendu, { BadgeCompteRendu, carteDeBrouillon } from '../components/compte-rendu/CarteCompteRendu'
 import { brouillonsTermines, synchroniser } from '../utils/brouillonsCompteRendu'
 import '../styles/compte-rendu.css'
@@ -16,6 +17,7 @@ import '../styles/compte-rendu.css'
  */
 export default function TrainerReportsTermines() {
   useEnHautDePage('Mes comptes rendus')
+  useSiteEffects()
   const naviguer = useNavigate()
   const [termines, setTermines] = useState(() => brouillonsTermines())
   useEffect(() => {
@@ -28,12 +30,12 @@ export default function TrainerReportsTermines() {
 
   return (
     <>
-      <main className="cr-assistant">
+      <main className="portal-page cr-assistant">
         <header className="cr-home-header cr-home-header--slim">
           <div className="container cr-entete-assistant">
             <button type="button" className="cr-retour"
               onClick={() => naviguer('/')}>
-              ← Accueil
+              ← Accueil formateur
             </button>
             <h1 className="cr-home-title cr-home-title--sm">Mes comptes rendus</h1>
           </div>

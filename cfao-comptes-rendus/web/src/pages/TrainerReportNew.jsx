@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import useEnHautDePage from '../hooks/useEnHautDePage'
+import useSiteEffects from '../hooks/useSiteEffects'
 import { useAuth } from '../lib/auth'
 import { sessionsDuFormateur } from '../data/mock_sessions_formateur'
 import { syntheseGroupe } from '../utils/baremeCfao'
@@ -71,6 +72,7 @@ function brouillonVide() {
 
 export default function TrainerReportNew() {
   useEnHautDePage('Nouveau compte rendu')
+  useSiteEffects()
   const naviguer = useNavigate()
   const [params] = useSearchParams()
   const sessionDemandee = params.get('session')
@@ -261,7 +263,7 @@ export default function TrainerReportNew() {
 
   return (
     <>
-      <main className="cr-assistant">
+      <main className="portal-page cr-assistant">
         <header className="cr-home-header cr-home-header--slim" ref={haut}>
           <div className="container cr-entete-assistant">
             <button type="button" className="cr-retour"

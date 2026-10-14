@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import useEnHautDePage from '../hooks/useEnHautDePage'
+import useSiteEffects from '../hooks/useSiteEffects'
 import { sessionsDuFormateur } from '../data/mock_sessions_formateur'
 import CarteCompteRendu, {
   BadgeCompteRendu, carteDeBrouillon, carteDeSession,
@@ -26,6 +27,7 @@ import '../styles/compte-rendu.css'
  */
 export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
   useEnHautDePage('Comptes rendus en cours')
+  useSiteEffects()
   const naviguer = useNavigate()
   const { user } = useAuth()
   const sessions = useMemo(() => sessionsDuFormateur(user), [user])
@@ -50,7 +52,7 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
 
   return (
     <>
-      <main className="cr-assistant">
+      <main className="portal-page cr-assistant">
         <header className="cr-home-header cr-home-header--slim">
           <div className="container cr-entete-assistant">
             <button type="button" className="cr-retour"
