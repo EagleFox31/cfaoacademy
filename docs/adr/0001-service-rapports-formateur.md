@@ -40,7 +40,7 @@ Aucun de ces services n'embarque de quoi convertir un PPTX en image.
 |---|---|
 | `04-5.1` | JWT Keycloak validé par le service, policy Cerbos `compte_rendu` + tests négatifs |
 | `04-5.2` | Brouillons dans `cfao-operations` (PostgreSQL) ; le service ne garde que le rendu |
-| `04-5.3` | Textes d'interface dans `frontend/src/i18n/` |
+| `04-5.3` | Textes d'interface dans `frontend/src/i18n/` (aujourd'hui `cfao-comptes-rendus/web/src/i18n/`, à créer) |
 | `04-5.4` | Parcours E2E formateur sur la stack Compose |
 | `04-5.5` | Sessions lues depuis l'API `planning` au lieu du planning de démonstration |
 

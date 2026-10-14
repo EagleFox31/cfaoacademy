@@ -33,6 +33,8 @@ Sources : `frontend/src/styles/`, `frontend/src/components/`, `frontend/src/page
 
 Definis dans `frontend/src/styles/index.css`. A utiliser via `var(--token)`, jamais en valeur brute.
 
+Le module des comptes rendus en garde une copie : `cfao-comptes-rendus/web/src/styles/tokens.css`. Toute evolution des tokens se fait ici puis se reporte a la main dans cette copie.
+
 ```css
 :root {
   /* Rouge CFAO */

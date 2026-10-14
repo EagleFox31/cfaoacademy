@@ -29,7 +29,7 @@ Route d'entrée : `/portail/compte-rendu/nouveau` (profil formateur).
 | 4. Compléter | `PhaseVerification.jsx` | chaque page en **Remplir** (formulaire) ou **Voir la page** (rendu réel), puis production du rapport |
 
 Pages annexes : `TrainerReportsEnCours.jsx` (reprise des brouillons), `TrainerReportsTermines.jsx`
-(`/portail/compte-rendu/mes-rapports`, rapports terminés), carte d'accueil dans `TrainerHome.jsx`.
+(`/portail/compte-rendu/mes-rapports`, rapports terminés), carte d'accueil dans `web/src/pages/Accueil.jsx` (le portail garde sa propre carte, `frontend/src/pages/portal/TrainerHome.jsx`, qui renvoie au module).
 
 **Statut d'une page** (sommaire de l'étape 4) : ✓ quand tous ses champs obligatoires sont remplis,
 ● sinon, avec la liste de ce qui manque. Les pages sans saisie sont ✓ d'office. Un rapport dont
@@ -219,7 +219,7 @@ Le texte proposé reste à relire par le formateur.
 | `POST /apercu/document` | rapport complet à partir des parties |
 | `POST /apercu/photo` | dépôt d'une photo, renvoie son identifiant |
 | `POST /apercu/redaction` | texte proposé par le moteur |
-| `POST /cr-donnees/connexion` | `{identifiant, motDePasse, seSouvenir}` → profil + cookie `cfao_session` (HttpOnly) |
+| `POST /cr-donnees/connexion` | `{identifiant, motDePasse, seSouvenir}` → profil + cookie de session (HttpOnly, `COOKIE_SESSION`) |
 | `GET /cr-donnees/session`, `POST /cr-donnees/deconnexion` | profil connecté (401 sinon), fermeture de la session |
 | `GET/PUT/DELETE /cr-donnees/brouillons[/<id>]` | brouillons du compte connecté |
 | `GET /cr-donnees/photos/<id>.jpg` | photo enregistrée |
@@ -244,7 +244,18 @@ Le service suit `DEPLOYMENT_MODE` :
   exporter_flask --cible <dossier>` rend brouillons et photos à l'ancien service (retour arrière).
 - `standalone` (poste de dev, `DEBUG=True` obligatoire) : profils fictifs de
   `cfao-comptes-rendus/api/profils-locaux.json`, choisis par leur identifiant, sans mot de passe ;
-  cookie `cfao_session` signé (« Se souvenir de moi » : 30 jours, sinon 12 h au plus).
+  cookie de session signé (« Se souvenir de moi » : 30 jours, sinon 12 h au plus).
+
+**Cookie et origine.** Le nom du cookie est `COOKIE_SESSION` (`cfao_session` par défaut,
+`cfao_cr_session` dans le compose et le `.env.example` du module : même hôte et ports différents
+= même site, le cookie du portail ne doit pas être croisé) ; `COOKIE_SECURE=True` derrière HTTPS.
+`SameSite=Lax` ne protège pas d'une page d'un autre port du même hôte : toute requête qui écrit
+(POST/PUT/PATCH/DELETE) doit venir d'une origine de `ORIGINES_AUTORISEES` (`core/middleware.py`).
+`Origin` présent : il doit être autorisé ; sinon `Referer` ; ni l'un ni l'autre : refus (403) si la
+requête porte le cookie de session ou vient d'un navigateur (`Sec-Fetch-Site`). Sans cookie, un
+client non navigateur (curl, tests, en-tête `X-User-ID` en mode autonome) n'envoie aucune
+credential d'office : il passe et l'authentification décide. La passerelle du module vide
+`X-User-ID`. Mise en service sur le réseau interne : [README du module](../cfao-comptes-rendus/README.md#exposer-en-interne).
 
 L'`id` du profil range les brouillons. Reprise des brouillons et photos de l'ancien service Flask :
 `python manage.py importer_flask --source <dossier donnees> [--correspondance ids.json] [--essai]`
@@ -299,9 +310,11 @@ cd cfao-comptes-rendus && make policy-test   # règles Cerbos du service
 | `cfao-comptes-rendus/api/comptes_rendus/tests/test_service.py` | substitution, lignes répétées, couleurs, modèle versionné, rendu LibreOffice |
 | `cfao-comptes-rendus/api/comptes_rendus/tests/test_brouillons.py` | contrat `/cr-donnees`, cloisonnement par utilisateur |
 | `cfao-comptes-rendus/api/comptes_rendus/tests/test_mise_en_page.py` | limite des logos, pied de page, tailles en clair, légendes |
+| `cfao-comptes-rendus/api/comptes_rendus/tests/test_origine.py` | contrôle d'origine : autorisée, étrangère, photo `text/plain`, nom et option `Secure` du cookie |
 
 Le rendu LibreOffice est sauté en CI (LibreOffice absent du runner) ; il s'exécute en local.
 **Les tests n'écrivent jamais dans un dossier de données réel** : base SQLite en mémoire.
+La CI lance aussi les tests et le build de `cfao-comptes-rendus/web` (job `cr-web`, cible `make test-cr-web`).
 
 ---
 
@@ -332,11 +345,20 @@ Le rendu LibreOffice est sauté en CI (LibreOffice absent du runner) ; il s'exé
 
 | Écart | Cible | Story |
 |---|---|---|
-| Comptes et sessions propres au service (SQLite, cookie) | JWT Keycloak validé, policy Cerbos `compte_rendu` avec tests négatifs | `04-5.1` |
-| Brouillons en SQLite dans le service | module `cfao-operations` (PostgreSQL), le service ne fait plus que le rendu | `04-5.2` |
-| Textes d'interface en français dans les composants | `frontend/src/i18n/` (FR, EN, PT) | `04-5.3` |
+| Comptes et sessions propres au service (base du service, cookie) | JWT Keycloak validé, policy Cerbos `compte_rendu` avec tests négatifs | `04-5.1` |
+| Brouillons dans la base du service (PostgreSQL dans le module détaché, SQLite sur le volume dans le compose racine) | module `cfao-operations` (PostgreSQL), le service ne fait plus que le rendu | `04-5.2` |
+| Textes d'interface en français dans les composants | i18n du module (`cfao-comptes-rendus/web/src/i18n/`, à créer ; FR, EN, PT comme le portail) | `04-5.3` |
 | Pas de test de bout en bout | parcours formateur E2E sur la stack Compose | `04-5.4` |
-| Planning de démonstration dans le frontend | API `planning` de `cfao-operations` | `04-5.5` |
+| Planning de démonstration dans l'interface du module (`web/src/data/mock_sessions_formateur.js`) | API `planning` de `cfao-operations` | `04-5.5` |
+
+### Écarts différés du module détachable
+
+| Écart | Raison / suite |
+|---|---|
+| **Mode intégré : API seule pour l'instant, interface non branchée.** Le compose racine ne construit ni ne sert `web/` ; `web/src/lib/auth.jsx` n'envoie pas de jeton Bearer et ne suit pas le renvoi de connexion | Dépend de l'activation du BFF oauth2-proxy de la plateforme (écart F6 de la revue). Hors du déploiement `local` / `standalone` du module, seul en service. Revue `docs/revues/04-5-module-detachable.md`, I4 |
+| **Duplications entre portail et module** : `web/src/data/mock_sessions_formateur.js` est une copie du planning de démonstration du portail ; `frontend/src/utils/dates.js` et `sessionsAVenir.js` dupliquent `web/src/utils/compteRendu.js` et `planningFormateur.js` | Rien à fusionner tant que le module est détachable ; partage via un paquet commun plus tard. Toute évolution se reporte à la main des deux côtés (revue, M4) |
+| **Tokens de design copiés** : `web/src/styles/tokens.css` copie `frontend/src/styles/index.css` | Source : `DESIGN_SYSTEM.md` ; même suite (paquet commun). Revue, M5 |
+| **Texte en `var(--muted-2)` (`#9499AB`, 2,8:1 sur blanc)** dans les feuilles du module | Jeton du design system du portail : l'assombrir touche le portail ; à décider avec `DESIGN_SYSTEM.md`. Revue, M6 |
 
 Tant que `04-5.1` n'est pas livrée, le service ne doit être exposé que derrière la passerelle,
 sur un réseau interne.

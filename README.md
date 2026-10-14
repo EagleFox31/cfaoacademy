@@ -42,15 +42,18 @@ make test
 
 ```
 cfaoacademy/
-├── frontend/           # SPA React 19 + Vite — vitrine + portail (CSR)
+├── frontend/           # SPA React 18 + Vite — vitrine + portail (CSR)
 ├── cfao-core/          # Django/DRF — identity, lms, analytics…
 ├── cfao-operations/    # Node/TS — sessions, planning, salles…
-├── services/           # Python — rendu des rapports formateur (04-5), LibreOffice
+├── cfao-comptes-rendus/ # Module détachable des comptes rendus formateur (04-5)
+│   ├── api/            #   Django/DRF + rendu LibreOffice, brouillons
+│   ├── web/            #   SPA React + Vite (interface du module)
+│   └── gateway/        #   nginx (passerelle du module)
 ├── cerbos/             # Policies d'autorisation (PDP)
 ├── gateway/            # nginx (+ oauth2-proxy à venir)
 ├── keycloak/           # Realm & config IdP
 ├── catalogues/         # Fiches formations (PNG/PDF par marque)
-├── data/               # Données éditoriales (sessions, articles…)
+├── assets/             # Visuels du site (Git LFS)
 ├── scripts/            # Outils repo (ex. new_module.py)
 ├── docs/               # Index documentation
 └── .github/            # CI, templates, CODEOWNERS, Dependabot
@@ -90,7 +93,8 @@ cd cfao-operations && npm ci && npm run typecheck && npm test && npm run build
 # frontend
 cd frontend && npm ci && npm test && npm run build
 
-# services rapports (pytest)
+# comptes rendus : interface du module (Vitest + build) puis service (pytest)
+cd cfao-comptes-rendus/web && npm ci && npm test && npm run build
 cd cfao-comptes-rendus/api && pip install -r requirements-dev.txt && pytest -q
 ```
 
@@ -128,6 +132,6 @@ Versionnement **SemVer** (`vMAJOR.MINOR.PATCH`). Les notes de version sont dans 
 | AuthZ | Cerbos (default-deny, PEP sur chaque endpoint) |
 | Core métier | Django 5 + DRF (`cfao-core`) |
 | Opérations | Node 20 + Express + TypeScript (`cfao-operations`) |
-| Front | React 19 + Vite + React Router (`frontend/`) |
+| Front | React 18 + Vite + React Router (`frontend/`) |
 | Données | PostgreSQL (2 instances : core + ops) |
 | Local | Docker Compose |

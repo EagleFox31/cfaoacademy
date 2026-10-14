@@ -18,7 +18,7 @@ mêlée au portail, et le module n'avait ni point d'entrée ni base propres à s
    (`api/`), les règles Cerbos et une passerelle nginx. Il se lance avec son propre
    `docker-compose.yml` ; le portail n'y renvoie que par `VITE_CR_URL`
    (`http://localhost:8090` par défaut).
-2. **Un port dédié** : la passerelle est seule publiée (`127.0.0.1:${CR_PORT:-8090}`).
+2. **Un port dédié** : la passerelle est seule publiée (`${CR_BIND:-127.0.0.1}:${CR_PORT:-8090}`).
 3. **Base PostgreSQL** pour la pile autonome (le réglage lit `DATABASE_URL`). La plateforme
    garde pour l'instant SQLite sur le volume du service `rapports` ; le code accepte les deux.
 4. **Deux modes détachés** : `local` (prod interne, comptes à mot de passe créés par
@@ -26,6 +26,15 @@ mêlée au portail, et le module n'avait ni point d'entrée ni base propres à s
    **Pas de Keycloak propre au module.**
 5. **Mode `integrated`** : le module s'appuie sur le Keycloak de la plateforme (`OIDC_*`) ;
    on n'y crée jamais un realm dédié.
+
+6. **Exposer en interne** : la liaison reste `127.0.0.1` tant qu'aucun reverse proxy TLS ne
+   précède la passerelle. Pour un usage réel sur le réseau interne : reverse proxy TLS devant
+   la passerelle (ou `CR_BIND` élargi sur un réseau de confiance), `COOKIE_SECURE=True`
+   derrière HTTPS, `ORIGINES_AUTORISEES` (origine publique exacte ; les requêtes qui écrivent
+   et viennent d'une autre origine, ou portent le cookie sans `Origin` ni `Referer`, sont
+   refusées en 403), `ALLOWED_HOSTS` (nom public), mode `local` et `DEBUG=False`. Le cookie de
+   session du module est nommé `cfao_cr_session` (même hôte, ports différents = même site).
+   Détail : [README du module](../../cfao-comptes-rendus/README.md#exposer-en-interne).
 
 ## Écart voulu avec `cfao-needs`
 

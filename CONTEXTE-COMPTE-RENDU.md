@@ -150,7 +150,7 @@ Trois points à trancher, dans cet ordre suggéré :
    `localStorage`, sous sa clé `sessionId` (ou `manuel-<horodatage>`
    pour une saisie manuelle). Le bug signalé — « notes enregistrées,
    introuvables au retour » — venait du bouton **« Reprendre une
-   saisie »** de `TrainerHome.jsx` : il ouvrait
+   saisie »** de l'accueil formateur (`TrainerHome.jsx` à l'époque, aujourd'hui `web/src/pages/Accueil.jsx`) : il ouvrait
    `/portail/compte-rendu/nouveau` sans `?session=<id>`, et
    `TrainerReportNew.jsx` ne relit `recuperer()` que si ce paramètre
    est présent — il retombait donc sur un brouillon vide. Corrigé en
@@ -298,7 +298,7 @@ modification), clic pour reprendre, corbeille avec confirmation
 dépassée.
 
 **Brouillons** : l'accueil formateur affiche une carte « Reprendre »
-par brouillon (`TrainerHome.jsx`) — il n'en montrait qu'une, vers le
+par brouillon (`web/src/pages/Accueil.jsx`) — il n'en montrait qu'une, vers le
 plus récent, rendant les autres inaccessibles.
 
 **Import Excel des résultats** (`utils/importEvaluation.js`, bouton
