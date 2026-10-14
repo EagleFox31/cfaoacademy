@@ -12,12 +12,17 @@ RUN /opt/venv/bin/pip install -r /tmp/requirements.txt
 # -- Image d'execution.
 FROM python:3.12-slim
 
-# LibreOffice convertit les diapositives ; les polices Liberation et Carlito
-# ont les memes metriques qu'Arial et Calibri, utilisees par le modele.
+# LibreOffice convertit les diapositives (Impress) et les classeurs des
+# graphiques (Calc : sans lui, la conversion echoue sans bruit et les
+# graphiques gardent les valeurs du modele). Liberation et Carlito ont les
+# memes metriques qu'Arial et Calibri ; `polices.conf` y renvoie les polices
+# du modele absentes sous Linux.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      libreoffice-impress fonts-liberation fonts-crosextra-carlito curl \
+      libreoffice-impress libreoffice-calc fonts-liberation fonts-crosextra-carlito curl \
  && rm -rf /var/lib/apt/lists/*
+COPY polices.conf /etc/fonts/conf.d/60-cfao-polices.conf
+RUN fc-cache -f
 
 # Utilisateur sans privilege ; LibreOffice a besoin d'un dossier personnel.
 RUN useradd --create-home --uid 1000 service \
