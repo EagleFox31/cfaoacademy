@@ -1,5 +1,4 @@
 import { useMemo, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import PortalHeader from '../../components/PortalHeader'
@@ -19,6 +18,7 @@ import useAjustementEcran from '../../hooks/useAjustementEcran.js'
 import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
 import { sessionsAVenir } from '../../utils/sessionsAVenir.js'
 import { periodeLongue } from '../../utils/dates.js'
+import { adresseComptesRendus } from '../../utils/urlComptesRendus.js'
 import { resolvePortalCardBrand } from '../../utils/portalCardMedia.js'
 
 /** Visuel des cartes de session, par pole — meme table que `SessionCard`.
@@ -74,7 +74,9 @@ export default function TrainerHome() {
   useSiteEffects()
   const { user } = useAuth()
   const { t } = useLocale('portal')
-  const naviguer = useNavigate()
+  // Le module des comptes rendus est une application à part : on y va par
+  // son adresse, pas par une route du portail.
+  const ouvrirModule = chemin => window.location.assign(adresseComptesRendus({ pathname: chemin }))
   const headerRef = useRef(null)
 
   // Le fond hero suit le profil. `Portal` l'applique deja quand on arrive
@@ -144,12 +146,11 @@ export default function TrainerHome() {
                     }
                     title={c.titre}
                     meta={c.nombre ? c.meta : c.metaVide}
-                    cta={c.lien || c.section ? c.cta : undefined}
+                    cta={c.section ? c.cta : undefined}
                     accentColor={c.nombre ? '#E3001B' : undefined}
-                    hoverHint={c.lien || c.section ? c.cta : undefined}
-                    onClick={c.lien ? () => naviguer(c.lien)
-                      : c.section ? () => scrollToPortalSection(c.section) : undefined}
-                    corner={Boolean(c.lien || c.section)}
+                    hoverHint={c.section ? c.cta : undefined}
+                    onClick={c.section ? () => scrollToPortalSection(c.section) : undefined}
+                    corner={Boolean(c.section)}
                   />
                 </div>
               ))}
@@ -180,7 +181,7 @@ export default function TrainerHome() {
                   cta="Commencer"
                   accentColor="#E3001B"
                   hoverHint="Ouvrir un compte rendu"
-                  onClick={() => naviguer('/portail/compte-rendu/nouveau')}
+                  onClick={() => ouvrirModule('/portail/compte-rendu/nouveau')}
                   corner
                 />
               </div>
@@ -197,7 +198,7 @@ export default function TrainerHome() {
                   meta="Reprendre ou supprimer une saisie commencée — elles se retrouvent sur tout poste."
                   cta="Voir les saisies"
                   hoverHint="Choisir un compte rendu à reprendre"
-                  onClick={() => naviguer('/portail/compte-rendu/en-cours')}
+                  onClick={() => ouvrirModule('/portail/compte-rendu/en-cours')}
                   corner
                 />
               </div>
@@ -212,7 +213,7 @@ export default function TrainerHome() {
                   meta="Les comptes rendus terminés s’y rangent."
                   cta="Ouvrir l’archive"
                   hoverHint="Voir les rapports produits"
-                  onClick={() => naviguer('/portail/compte-rendu/mes-rapports')}
+                  onClick={() => ouvrirModule('/portail/compte-rendu/mes-rapports')}
                   corner
                 />
               </div>

@@ -6,6 +6,7 @@ import Assistance from './pages/portal/Assistance.jsx'
 import Delivery from './pages/portal/Delivery.jsx'
 import TrainerHome from './pages/portal/TrainerHome.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
+import RedirectionExterne from './components/RedirectionExterne.jsx'
 import RouteMotion from './components/RouteMotion.jsx'
 import AnnonceMaintenance from './components/AnnonceMaintenance.jsx'
 import Accueil from './pages/Accueil.jsx'
@@ -46,6 +47,8 @@ export default function App() {
           <Route path="/portail/assistance" element={<Assistance />} />
           <Route path="/portail/delivery" element={<Delivery />} />
           <Route path="/portail/formateur" element={<TrainerHome />} />
+          {/* Le module des comptes rendus est servi à part (VITE_CR_URL). */}
+          <Route path="/portail/compte-rendu/*" element={<RedirectionExterne />} />
         </Routes>
       </RouteMotion>
     </LocaleProvider>

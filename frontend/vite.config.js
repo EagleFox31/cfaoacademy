@@ -62,16 +62,9 @@ export default defineConfig({
   server: {
     fs: { allow: ['..'] },
     proxy: {
-      // Le service d'apercu convertit les diapositives du modele en
-      // images. Il tourne a part : LibreOffice n'a pas sa place dans
-      // le serveur de developpement.
-      // CR_SERVICE permet de brancher une copie isolee du service.
-      '/apercu': {
-        target: process.env.CR_SERVICE || 'http://127.0.0.1:5175',
-        changeOrigin: true,
-      },
-      // Les comptes rendus en cours et leurs photos, conserves par le meme
-      // service (a terme : cfao-core).
+      // La session du formateur (connexion par compte), tenue par le service
+      // des comptes rendus. L'interface des comptes rendus, elle, est servie
+      // a part : cfao-comptes-rendus/web.
       '/cr-donnees': {
         target: process.env.CR_SERVICE || 'http://127.0.0.1:5175',
         changeOrigin: true,
