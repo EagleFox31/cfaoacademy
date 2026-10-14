@@ -10,7 +10,7 @@ help:
 	@echo "  make up           - Construit et demarre le service seul (mode autonome)"
 	@echo "  make down         - Arrete les conteneurs"
 	@echo "  make logs         - Journaux en continu"
-	@echo "  make test         - Tests du service (pytest, base SQLite en memoire)"
+	@echo "  make test         - Tests du service (pytest, SQLite en memoire) et de l'interface (Vitest)"
 	@echo "  make policy-test  - Compile et teste les regles Cerbos"
 	@echo "  make migrate      - Applique les migrations dans le conteneur"
 	@echo "  make shell        - Shell Django dans le conteneur"
@@ -27,6 +27,7 @@ logs:
 
 test:
 	cd api && python -m pytest -q
+	cd web && npm test
 
 # Binaire local s'il existe, sinon l'image officielle.
 policy-test:

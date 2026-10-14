@@ -2,7 +2,7 @@
 # Usage : make <cible>   (GNU Make ou compatible)
 COMPOSE = docker compose
 
-.PHONY: help dev-frontend dev-stack test test-cerbos test-core test-ops test-frontend test-rapports \
+.PHONY: help dev-frontend dev-stack test test-cerbos test-core test-ops test-frontend test-rapports test-cr-web \
         up down reset build ps logs seed migrate mm shell dtest dtest-cerbos cerbos-reload restart token \
         rapports-importer medacap-api-test medacap-api-deploy
 
@@ -10,12 +10,13 @@ help:
 	@echo "── CI / build (hôte) ──"
 	@echo "  make dev-frontend   — Vite dev server (frontend/)"
 	@echo "  make dev-stack      — docker compose up --build"
-	@echo "  make test           — Tous les tests (Cerbos + core + ops + frontend + rapports)"
+	@echo "  make test           — Tous les tests (Cerbos + core + ops + frontend + rapports + interface du module)"
 	@echo "  make test-cerbos    — Compile + tests policies Cerbos (plateforme et rapports)"
 	@echo "  make test-core      — pytest cfao-core"
 	@echo "  make test-ops       — typecheck + vitest + build cfao-operations"
 	@echo "  make test-frontend  — build Vite frontend"
 	@echo "  make test-rapports  — pytest cfao-comptes-rendus"
+	@echo "  make test-cr-web    — vitest + build de l'interface cfao-comptes-rendus/web"
 	@echo "── Dev (stack en marche) ──"
 	@echo "  make up | down | reset | build | ps | logs [S=svc]"
 	@echo "  make seed | migrate | mm [M=app] | shell"
@@ -47,7 +48,7 @@ dev-frontend:
 dev-stack:
 	$(COMPOSE) up --build
 
-test: test-cerbos test-core test-ops test-frontend test-rapports
+test: test-cerbos test-core test-ops test-frontend test-rapports test-cr-web
 
 test-cerbos:
 	MSYS_NO_PATHCONV=1 docker run --rm -v "$(CURDIR)/cerbos:/work" \
@@ -66,6 +67,9 @@ test-frontend:
 
 test-rapports:
 	cd cfao-comptes-rendus/api && pip install -r requirements-dev.txt && pytest -q
+
+test-cr-web:
+	cd cfao-comptes-rendus/web && npm ci && npm test && npm run build
 
 # ── Dev (stack en marche, code hot-monté via override) ────────────
 up:

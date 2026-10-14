@@ -6,3 +6,5 @@ web/dist/
 **/*.sqlite3
 **/*.local.js
 .env
+**/.env*
+!**/.env.example
