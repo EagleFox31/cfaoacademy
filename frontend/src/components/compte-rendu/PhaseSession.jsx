@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { periodeLongue } from '../../utils/compteRendu'
 import CarteCompteRendu, { BadgeCompteRendu, carteDeSession } from './CarteCompteRendu'
 import Consigne from './Consigne'
@@ -45,6 +45,13 @@ export default function PhaseSession({
   // formulaire de la saisie libre, stagiaires compris.
   const [edition, setEdition] = useState(false)
   const saisie = mode === 'manuel' || edition
+
+  // Les informations retouchees (dates, lieu, stagiaires) font du compte
+  // rendu une saisie a enregistrer, meme sans note : le planning n'en est
+  // pas modifie, seul ce compte rendu les garde.
+  const majInfos = useCallback(patch => maj(b => ({
+    ...(typeof patch === 'function' ? patch(b) : patch), infosModifiees: true,
+  })), [maj])
 
   // Les comptes rendus deja commences, ici ou sur un autre poste : la
   // liste des formations dit ou en est chacune, pas seulement le
@@ -182,29 +189,29 @@ export default function PhaseSession({
             personnes. */}
         <div className="cr-form-ligne cr-form-ligne--code-intitule">
           <Champ label="Code" valeur={brouillon.codeFormation}
-            surSaisie={v => maj({ codeFormation: v })} exemple="Exemple : TS05-G3" />
+            surSaisie={v => majInfos({ codeFormation: v })} exemple="Exemple : TS05-G3" />
           <Champ label="Intitulé de la formation"
             valeur={brouillon.intitule}
-            surSaisie={v => maj({ intitule: v })}
+            surSaisie={v => majInfos({ intitule: v })}
             exemple="Exemple : Révision et réparation des organes châssis" />
         </div>
 
         <div className="cr-form-ligne cr-form-ligne--trois">
           <Champ label="Marque" valeur={brouillon.marque}
-            surSaisie={v => maj({ marque: v })} exemple="Exemple : TOYOTA" />
+            surSaisie={v => majInfos({ marque: v })} exemple="Exemple : TOYOTA" />
           <Champ label="Début" type="date" valeur={brouillon.debut}
-            surSaisie={v => maj({ debut: v })} />
+            surSaisie={v => majInfos({ debut: v })} />
           <Champ label="Fin" type="date" valeur={brouillon.fin}
-            surSaisie={v => maj({ fin: v })} />
+            surSaisie={v => majInfos({ fin: v })} />
         </div>
 
         <div className="cr-form-ligne cr-form-ligne--trois">
           <Champ label="Lieu" valeur={brouillon.lieu}
-            surSaisie={v => maj({ lieu: v })}
+            surSaisie={v => majInfos({ lieu: v })}
             exemple="Exemple : Centre CFAO Academy, Douala" />
           <Champ label="Pays" valeur={brouillon.pays}
-            surSaisie={v => maj({ pays: v })} exemple="Exemple : Cameroun" />
-          <ChampEffectif brouillon={brouillon} maj={maj} />
+            surSaisie={v => majInfos({ pays: v })} exemple="Exemple : Cameroun" />
+          <ChampEffectif brouillon={brouillon} maj={majInfos} />
         </div>
       </div>
     )
@@ -302,7 +309,7 @@ export default function PhaseSession({
           ton={presents ? 'ok' : null}
           ouvert={volet === 'participants'}
           onOuvrir={() => setVolet('participants')}>
-          <ListeParticipants brouillon={brouillon} maj={maj} modifiable={saisie} />
+          <ListeParticipants brouillon={brouillon} maj={majInfos} modifiable={saisie} />
         </Bloc>
       </div>
     </div>
