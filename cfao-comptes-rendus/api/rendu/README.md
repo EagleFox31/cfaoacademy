@@ -15,7 +15,7 @@ python manage.py runserver 127.0.0.1:5175   # depuis cfao-comptes-rendus/api
 ```
 
 Le serveur de développement relaie `/apercu` vers ce port (voir
-`frontend/vite.config.js`). Si le service est arrêté, l'assistant bascule
+`cfao-comptes-rendus/web/vite.config.js`). Si le service est arrêté, l'assistant bascule
 sur le rendu HTML et le signale.
 
 ## Prérequis
@@ -25,7 +25,7 @@ sur le rendu HTML et le signale.
 - **Modèle** — `modeles/MODELE-REFERENCES.pptx`, versionné avec le service
 
 Variables : `CR_MODELE`, `CR_CACHE`, `CR_SOFFICE`, `CR_DONNEES`.
-En conteneur : `cfao-comptes-rendus/Dockerfile`, service `rapports` du `docker-compose.yml`.
+En conteneur : `cfao-comptes-rendus/api/Dockerfile`, service `rapports` du `docker-compose.yml`.
 
 ## Routes
 

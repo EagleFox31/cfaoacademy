@@ -38,6 +38,8 @@ env = environ.Env(
     OIDC_DECONNEXION=(str, "/oauth2/sign_out?rd=/"),
     PROFILS_LOCAUX=(str, str(BASE_DIR / "profils-locaux.json")),
     COMPTES_LOCAUX=(str, ""),
+    COOKIE_SESSION=(str, "cfao_session"),
+    COOKIE_SECURE=(bool, False),
 )
 
 environ.Env.read_env(os.path.join(BASE_DIR.parent, ".env"))
@@ -86,6 +88,21 @@ if DEPLOYMENT_MODE == "local":
     if DEBUG:
         raise ImproperlyConfigured("DEPLOYMENT_MODE=local exige DEBUG=False.")
 
+# Cookie de session : meme hote, ports differents = meme site, donc un nom
+# propre au module evite de croiser le cookie d'une autre application ;
+# `Secure` s'active derriere HTTPS (COOKIE_SECURE=True).
+COOKIE_SESSION = env("COOKIE_SESSION")
+COOKIE_SECURE = env("COOKIE_SECURE")
+
+# Origines des pages autorisees a ecrire (POST/PUT/PATCH/DELETE) avec le
+# cookie de session : passerelle du module, serveur de dev de l'interface et
+# portail (5173 en dev, 5174 servi), qui appelle encore /cr-donnees par son proxy.
+ORIGINES_AUTORISEES = [o.rstrip("/") for o in env.list("ORIGINES_AUTORISEES", default=[
+    "http://localhost:8090", "http://127.0.0.1:8090",
+    "http://localhost:5176", "http://127.0.0.1:5176",
+    "http://localhost:5173", "http://127.0.0.1:5173",
+    "http://localhost:5174", "http://127.0.0.1:5174"])]
+
 # Les noms sous lesquels le service est appele (passerelle : son nom public).
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
@@ -100,6 +117,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "core.middleware.ControleOrigine",
 ]
 
 ROOT_URLCONF = "config.urls"

@@ -1,10 +1,10 @@
-**/__pycache__/
-**/.pytest_cache/
-**/.venv/
-**/.cache/
-**/.profil-lo/
-**/donnees/
-**/tests/
-**/anciens-tests/
-api/db.sqlite3
+# Contexte de build de la passerelle (gateway/Dockerfile) : le web seulement.
+api/
+cerbos/
+web/node_modules/
+web/dist/
+**/*.sqlite3
+**/*.local.js
 .env
+**/.env*
+!**/.env.example

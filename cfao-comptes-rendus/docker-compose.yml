@@ -1,28 +1,42 @@
-# Service des comptes rendus seul, pour le developper hors plateforme
-# (mode autonome : profils fictifs de `api/profils-locaux.json`).
-# Dans la plateforme, il est declare par le docker-compose.yml racine.
+# Module « comptes rendus formateur » (story 04-5), detachable : cette pile
+# se lance seule, sans rien emprunter au reste du depot.
+#   cp .env.example .env && docker compose up --build -d
+# Interface et API : http://localhost:8090 (CR_PORT). Seule la passerelle
+# est publiee (127.0.0.1 par defaut, CR_BIND) ; l'API, la base et Cerbos restent
+# sur le reseau interne.
+# Dans la plateforme, le service est declare par le docker-compose.yml racine.
 name: cfao-comptes-rendus
 
+# Journaux bornes (3 x 10 Mo par conteneur) : sans cela, ils grossissent
+# sans fin sur le disque de Docker.
+x-journaux: &journaux
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
-  comptes-rendus-db:
+  db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *journaux
     mem_limit: 256m
     environment:
-      POSTGRES_DB: ${DB_NAME:-comptes_rendus}
-      POSTGRES_USER: ${DB_USER:-comptes_rendus}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD est obligatoire}
+      POSTGRES_DB: ${POSTGRES_DB:-comptes_rendus}
+      POSTGRES_USER: ${POSTGRES_USER:-comptes_rendus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD est obligatoire}
     volumes:
-      - comptes-rendus-db:/var/lib/postgresql/data
+      - cr-db:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-comptes_rendus} -d ${DB_NAME:-comptes_rendus}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-comptes_rendus} -d ${POSTGRES_DB:-comptes_rendus}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  comptes-rendus-cerbos:
+  cerbos:
     image: ghcr.io/cerbos/cerbos:0.40.0
     restart: unless-stopped
+    logging: *journaux
     mem_limit: 256m
     command: ["server", "--config=/config/config.yaml"]
     environment:
@@ -30,28 +44,31 @@ services:
     volumes:
       - ./cerbos/policies:/policies:ro
       - ./cerbos/config.yaml:/config/config.yaml:ro
-    # Pas de port publie : seul le service l'interroge.
     healthcheck:
       test: ["CMD", "/cerbos", "healthcheck", "--config=/config/config.yaml"]
       interval: 15s
       timeout: 5s
       retries: 5
 
-  comptes-rendus-api:
-    build: .
+  api:
+    build: ./api
     restart: unless-stopped
+    logging: *journaux
     mem_limit: 1g
     env_file: .env
     environment:
-      DATABASE_URL: postgres://${DB_USER:-comptes_rendus}:${DB_PASSWORD}@comptes-rendus-db:5432/${DB_NAME:-comptes_rendus}
-      CERBOS_HTTP: http://comptes-rendus-cerbos:3592
-    ports:
-      - "127.0.0.1:${API_PORT:-5175}:5175"
+      DATABASE_URL: postgres://${POSTGRES_USER:-comptes_rendus}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-comptes_rendus}
+      CERBOS_HTTP: http://cerbos:3592
+      # Le module fixe son propre nom de cookie (meme hote = meme site que le portail).
+      COOKIE_SESSION: ${COOKIE_SESSION:-cfao_cr_session}
+      # Pages autorisees a ecrire : la passerelle, sur son port publie.
+      ORIGINES_AUTORISEES: ${ORIGINES_AUTORISEES:-http://localhost:${CR_PORT:-8090},http://127.0.0.1:${CR_PORT:-8090}}
     volumes:
-      - comptes-rendus-donnees:/donnees
+      # Photos, rapports produits et, en mode local, empreintes des mots de passe.
+      - cr-donnees:/donnees
     depends_on:
-      comptes-rendus-db: { condition: service_healthy }
-      comptes-rendus-cerbos: { condition: service_healthy }
+      db: { condition: service_healthy }
+      cerbos: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:5175/apercu/sante"]
       interval: 15s
@@ -59,6 +76,19 @@ services:
       retries: 5
       start_period: 30s
 
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    restart: unless-stopped
+    logging: *journaux
+    mem_limit: 128m
+    ports:
+      # CR_BIND : 127.0.0.1 par defaut ; ne l'elargir que derriere un proxy TLS (voir README).
+      - "${CR_BIND:-127.0.0.1}:${CR_PORT:-8090}:80"
+    depends_on:
+      api: { condition: service_healthy }
+
 volumes:
-  comptes-rendus-db:
-  comptes-rendus-donnees:
+  cr-db:
+  cr-donnees:

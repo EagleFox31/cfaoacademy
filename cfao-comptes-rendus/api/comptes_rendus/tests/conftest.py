@@ -55,6 +55,10 @@ def client(db):
     return ouvrir
 
 
+ORIGINE_PORTAIL = "http://localhost:8090"
+
+
 @pytest.fixture
 def anonyme(db):
-    return APIClient()
+    """Un navigateur sans session : il envoie l'origine de la passerelle, comme un vrai."""
+    return APIClient(HTTP_ORIGIN=ORIGINE_PORTAIL)

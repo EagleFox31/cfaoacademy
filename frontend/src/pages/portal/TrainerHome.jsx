@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useMemo, useRef } from 'react'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import PortalHeader from '../../components/PortalHeader'
@@ -17,13 +16,10 @@ import usePortalBackground from '../../hooks/usePortalBackground'
 import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
 import useAjustementEcran from '../../hooks/useAjustementEcran.js'
 import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
-import { aDocumenter, sessionsAVenir } from '../../utils/planningFormateur.js'
-import { periodeLongue } from '../../utils/compteRendu'
-import {
-  brouillonsEnregistres, brouillonsTermines, synchroniser,
-} from '../../utils/brouillonsCompteRendu'
+import { sessionsAVenir } from '../../utils/sessionsAVenir.js'
+import { periodeLongue } from '../../utils/dates.js'
+import { adresseComptesRendus } from '../../utils/urlComptesRendus.js'
 import { resolvePortalCardBrand } from '../../utils/portalCardMedia.js'
-import '../../styles/compte-rendu.css'
 
 /** Visuel des cartes de session, par pole — meme table que `SessionCard`.
  *
@@ -39,7 +35,6 @@ const VISUEL_POLE = {
 
 /** Visuel des cartes de priorite, une par zone du portail. */
 const VISUEL_PRIORITE = {
-  comptesRendus: '/assets/img_cards/test_theorie_senior.jpg',
   sessions: '/assets/img_cards/clients-carte.jpg',
   assistance: '/assets/img_cards/techniciens-carte.jpg',
 }
@@ -49,15 +44,6 @@ const VISUEL_ENTREE = {
   nouveau: '/assets/publics/process-sav.jpg',
   archive: '/assets/img_cards/certification.jpg',
   brouillon: '/assets/publics/process-sav.jpg',
-}
-
-/** « il y a 2 jours », pour situer une reprise sans afficher une date brute. */
-function venuDe(iso) {
-  const jours = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
-  if (jours <= 0) return "aujourd'hui"
-  if (jours === 1) return 'hier'
-  if (jours < 14) return `il y a ${jours} jours`
-  return `il y a ${Math.round(jours / 7)} semaines`
 }
 
 function visuelSession(session) {
@@ -78,17 +64,20 @@ function visuelSession(session) {
  *
  * Trois sections, dans l'ordre ou il en a besoin :
  *
- *   1. **Vos sessions a documenter** — les formations terminees dont le
- *      compte rendu manque. C'est ce qu'il vient chercher.
- *   2. **Comptes rendus** — les entrees du module : en ouvrir un,
- *      reprendre un brouillon, relire les precedents.
+ *   1. **Priorites** — une carte par zone du portail avec son compteur
+ *      (sessions a venir, assistance aux techniciens). L'ancre historique
+ *      `a-documenter` reste son identifiant (cible du menu « Priorites »).
+ *   2. **Comptes rendus** — les entrees du module, servi a part : en ouvrir
+ *      un, reprendre un brouillon, relire les precedents.
  *   3. **Vos prochaines sessions** — ce qu'il anime bientot.
  */
 export default function TrainerHome() {
   useSiteEffects()
   const { user } = useAuth()
   const { t } = useLocale('portal')
-  const naviguer = useNavigate()
+  // Le module des comptes rendus est une application à part : on y va par
+  // son adresse, pas par une route du portail.
+  const ouvrirModule = chemin => window.location.assign(adresseComptesRendus({ pathname: chemin }))
   const headerRef = useRef(null)
 
   // Le fond hero suit le profil. `Portal` l'applique deja quand on arrive
@@ -104,32 +93,12 @@ export default function TrainerHome() {
 
   const sessions = useMemo(() => sessionsDuFormateur(user), [user])
   const aVenir = useMemo(() => sessionsAVenir(sessions), [sessions])
-  // Ceux de ce navigateur tout de suite, puis ceux du serveur — saisis
-  // sur un autre poste — des qu'il repond.
-  const [brouillons, setBrouillons] = useState(() => brouillonsEnregistres())
-  useEffect(() => {
-    let actif = true
-    synchroniser().then(liste => { if (actif && liste) setBrouillons(liste) })
-    return () => { actif = false }
-  }, [])
-  // Les comptes rendus termines vont a l'archive ; a documenter : les
-  // saisies a continuer et les sessions passees encore sans compte rendu.
-  const termines = brouillonsTermines(brouillons)
-  const { aContinuer: enCours, aCommencer } = aDocumenter(sessions, brouillons)
 
   // Assistance aux techniciens : module a venir, rien n'attend encore.
   const assistanceEnAttente = 0
-  const nbADocumenter = aCommencer.length + enCours.length
   // Une carte par zone du portail, au modele des autres : la pastille
   // porte le nombre d'elements qui attendent le formateur, 0 compris.
   const priorites = [
-    {
-      id: 'cr', img: VISUEL_PRIORITE.comptesRendus, nombre: nbADocumenter,
-      enAttente: 'à documenter', titre: 'Comptes rendus à documenter',
-      meta: `${enCours.length} à continuer, ${aCommencer.length} à commencer.`,
-      metaVide: 'Tous vos comptes rendus sont à jour.',
-      lien: '/portail/compte-rendu/a-documenter', cta: 'Voir les comptes rendus à documenter',
-    },
     {
       id: 'sessions', img: VISUEL_PRIORITE.sessions, nombre: aVenir.length,
       enAttente: 'à venir', titre: 'Sessions de formation à venir',
@@ -178,12 +147,11 @@ export default function TrainerHome() {
                     }
                     title={c.titre}
                     meta={c.nombre ? c.meta : c.metaVide}
-                    cta={c.lien || c.section ? c.cta : undefined}
+                    cta={c.section ? c.cta : undefined}
                     accentColor={c.nombre ? '#E3001B' : undefined}
-                    hoverHint={c.lien || c.section ? c.cta : undefined}
-                    onClick={c.lien ? () => naviguer(c.lien)
-                      : c.section ? () => scrollToPortalSection(c.section) : undefined}
-                    corner={Boolean(c.lien || c.section)}
+                    hoverHint={c.section ? c.cta : undefined}
+                    onClick={c.section ? () => scrollToPortalSection(c.section) : undefined}
+                    corner={Boolean(c.section)}
                   />
                 </div>
               ))}
@@ -207,16 +175,14 @@ export default function TrainerHome() {
                 <PvCard
                   img={VISUEL_ENTREE.nouveau}
                   kicker={
-                    <span className={`portal-status-chip ${aCommencer.length ? 'progress' : 'done'}`}>
-                      {`${aCommencer.length} à rédiger`}
-                    </span>
+                    <span className="portal-status-chip progress">À rédiger</span>
                   }
                   title="Nouveau compte rendu"
                   meta="Depuis une session de formation planifiée, ou en saisissant tout manuellement."
                   cta="Commencer"
                   accentColor="#E3001B"
                   hoverHint="Ouvrir un compte rendu"
-                  onClick={() => naviguer('/portail/compte-rendu/nouveau')}
+                  onClick={() => ouvrirModule('/portail/compte-rendu/nouveau')}
                   corner
                 />
               </div>
@@ -227,18 +193,13 @@ export default function TrainerHome() {
                 <PvCard
                   img={VISUEL_ENTREE.brouillon}
                   kicker={
-                    <span className="portal-status-chip todo">
-                      {enCours.length} en cours
-                    </span>
+                    <span className="portal-status-chip todo">En cours</span>
                   }
                   title="Comptes rendus en cours"
-                  meta={enCours.length
-                    ? `Reprendre ou supprimer une saisie commencée — la dernière ${
-                      venuDe(enCours[0].modifieLe)}.`
-                    : 'Les saisies commencées s’y retrouvent, sur tout poste.'}
+                  meta="Reprendre ou supprimer une saisie commencée — elles se retrouvent sur tout poste."
                   cta="Voir les saisies"
                   hoverHint="Choisir un compte rendu à reprendre"
-                  onClick={() => naviguer('/portail/compte-rendu/en-cours')}
+                  onClick={() => ouvrirModule('/portail/compte-rendu/en-cours')}
                   corner
                 />
               </div>
@@ -247,19 +208,13 @@ export default function TrainerHome() {
                 <PvCard
                   img={VISUEL_ENTREE.archive}
                   kicker={
-                    <span className="portal-status-chip done">
-                      {termines.length > 0
-                        ? `${termines.length} rapport${termines.length > 1 ? 's' : ''}`
-                        : 'Archive'}
-                    </span>
+                    <span className="portal-status-chip done">Archive</span>
                   }
                   title="Mes comptes rendus"
-                  meta={termines.length
-                    ? `Les comptes rendus terminés — le dernier ${venuDe(termines[0].termineLe)}.`
-                    : 'Les comptes rendus terminés s’y rangent.'}
+                  meta="Les comptes rendus terminés s’y rangent."
                   cta="Ouvrir l’archive"
                   hoverHint="Voir les rapports produits"
-                  onClick={() => naviguer('/portail/compte-rendu/mes-rapports')}
+                  onClick={() => ouvrirModule('/portail/compte-rendu/mes-rapports')}
                   corner
                 />
               </div>

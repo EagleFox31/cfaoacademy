@@ -53,6 +53,7 @@ Le contexte IDE pour l'app vitrine est dans [`.cursor/rules/cfaoacademy-project.
 - **minuscules** : docs évolutives (`architecture.md`, `backlog.md`).
 - Nouvelle ADR (décision d'architecture) : `docs/adr/NNNN-titre-court.md` (dossier à créer au besoin).
   - [0001 — Service de rendu des rapports formateur](./adr/0001-service-rapports-formateur.md)
+  - [0002 — Module des comptes rendus détachable](./adr/0002-module-comptes-rendus-detachable.md)
 
 ## Gouvernance GitHub (checklist admin)
 

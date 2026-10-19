@@ -10,7 +10,7 @@ help:
 	@echo "  make up           - Construit et demarre le service seul (mode autonome)"
 	@echo "  make down         - Arrete les conteneurs"
 	@echo "  make logs         - Journaux en continu"
-	@echo "  make test         - Tests du service (pytest, base SQLite en memoire)"
+	@echo "  make test         - Tests du service (pytest, SQLite en memoire) et de l'interface (Vitest)"
 	@echo "  make policy-test  - Compile et teste les regles Cerbos"
 	@echo "  make migrate      - Applique les migrations dans le conteneur"
 	@echo "  make shell        - Shell Django dans le conteneur"
@@ -27,6 +27,7 @@ logs:
 
 test:
 	cd api && python -m pytest -q
+	cd web && npm test
 
 # Binaire local s'il existe, sinon l'image officielle.
 policy-test:
@@ -38,10 +39,10 @@ policy-test:
 	fi
 
 migrate:
-	docker compose exec comptes-rendus-api python manage.py migrate
+	docker compose exec api python manage.py migrate
 
 shell:
-	docker compose exec comptes-rendus-api python manage.py shell
+	docker compose exec api python manage.py shell
 
 importer:
-	docker compose exec comptes-rendus-api python manage.py importer_flask --source $(SOURCE)
+	docker compose exec api python manage.py importer_flask --source $(SOURCE)

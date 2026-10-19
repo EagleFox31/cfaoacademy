@@ -171,6 +171,17 @@ merge main + tag v1.3.0 → approbation → CD prod (image :1.3.0)
 - **GitHub** : variables d’environnement / secrets pour noms de ressources Azure (ACR, resource group, noms Container Apps), **pas** les mots de passe applicatifs.
 - Connexion Actions → Azure : **federated credential (OIDC)**, rôle `AcrPush` + droits deploy sur le resource group cible.
 
+### Module des comptes rendus (`VITE_CR_URL`)
+
+Le module `cfao-comptes-rendus/` est servi à part du portail (son propre compose, ADR 0002). Le
+portail y renvoie ses liens et les anciennes adresses `/portail/compte-rendu/*` par la variable
+de build **`VITE_CR_URL`** (adresse publique du module, sans barre finale, par ex.
+`https://comptes-rendus.example`). Sans elle le build de production utilise `http://localhost:8090`
+(inutilisable hors du poste de dev) et affiche un avertissement, sans échouer. Si l'adresse a la
+même origine et le même chemin que le portail, la redirection est suspendue (lien affiché) pour
+éviter une boucle. Côté module : `ORIGINES_AUTORISEES`, `COOKIE_SECURE`, `ALLOWED_HOSTS` (voir
+son README, « Exposer en interne »).
+
 ---
 
 ## 9. Checklist avant premier déploiement Azure

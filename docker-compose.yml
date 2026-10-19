@@ -192,6 +192,8 @@ services:
   # Story 04-5 : service des comptes rendus formateur (cfao-comptes-rendus/),
   # en mode integre : jeton Keycloak verifie, decisions de son propre Cerbos,
   # base SQLite et photos sur son volume. Joignable par la passerelle seule.
+  # Mode integre : API seule pour l'instant, l'interface (cfao-comptes-rendus/web)
+  # n'est ni construite ni servie ici (differe, voir MODULE_RAPPORTS_FORMATEUR.md §9).
   # Voir docs/MODULE_RAPPORTS_FORMATEUR.md.
   rapports-cerbos:
     image: ghcr.io/cerbos/cerbos:0.40.0
@@ -214,13 +216,15 @@ services:
           memory: "${MEM_RAPPORTS_CERBOS:-128M}"
 
   rapports:
-    build: ./cfao-comptes-rendus
+    build: ./cfao-comptes-rendus/api
     restart: unless-stopped
     environment:
       DEPLOYMENT_MODE: integrated
       SECRET_KEY: ${RAPPORTS_SECRET_KEY:?RAPPORTS_SECRET_KEY est obligatoire}
       # La passerelle transmet le nom public (Host) ; localhost pour la sonde.
       ALLOWED_HOSTS: ${RAPPORTS_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      # Pages autorisees a ecrire (controle d'Origin) : la passerelle de la plateforme.
+      ORIGINES_AUTORISEES: ${RAPPORTS_ORIGINES_AUTORISEES:-http://localhost:8000,http://127.0.0.1:8000,http://localhost:5173,http://127.0.0.1:5173}
       DATABASE_URL: sqlite:////donnees/comptes-rendus.sqlite3
       CERBOS_HTTP: http://rapports-cerbos:3592
       PLATFORM_CORE_URL: http://core:8000

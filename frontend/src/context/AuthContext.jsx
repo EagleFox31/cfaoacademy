@@ -3,9 +3,11 @@ import profiles from '../data/mock_profiles.json'
 
 export const AuthContext = createContext(null)
 
-// Le profil connecte, pour les modules qui le lisent hors de React
-// (`brouillonsCompteRendu`). Un compte vient de la session du serveur ;
-// un profil de demonstration, de la liste de la page de connexion.
+// Le profil connecte est retenu dans le sessionStorage du portail, pour les
+// modules du portail qui le lisent hors de React. Le module des comptes rendus
+// est une application a part (autre origine, donc autre sessionStorage, meme
+// si la cle porte le meme nom) : il tient sa propre session. Un compte vient de la session du serveur ; un profil de
+// demonstration, de la liste de la page de connexion.
 const CLE = 'cfao_mock_user'
 const SESSION = '/cr-donnees/session'
 
