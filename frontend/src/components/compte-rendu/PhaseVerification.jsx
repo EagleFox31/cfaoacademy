@@ -20,6 +20,7 @@ import { chiffresSession, satisfactionPresents, constatsParDefaut, donneesSessio
   redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
 import BoutonsRedaction from './BoutonsRedaction'
+import { FONCTION_PAR_DEFAUT, formateurHabituel, reprendreFormateur } from '../../utils/brouillonsCompteRendu'
 import { estCertification, calculerCertification, libelleModule } from '../../utils/certification'
 import { candidatPourMoteur, donneesCertification, statutElearning }
   from '../../utils/remarquesCertification'
@@ -76,7 +77,7 @@ function objectifsInitiaux(b, page) {
  */
 function formateursInitiaux(session) {
   const nom = session?.formateur
-  return [{ nom: nom || '', fonction: nom ? 'Formateur' : '', portrait: null }]
+  return [{ nom: nom || '', fonction: nom ? FONCTION_PAR_DEFAUT : '', portrait: null }]
 }
 
 export default function PhaseVerification({
@@ -113,6 +114,18 @@ export default function PhaseVerification({
   // `maj` change a chaque rendu ; seul l'etat des photos compte ici.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refsPhotos, brouillon])
+
+  // Le formateur se presente d'un rapport a l'autre de la meme facon : a
+  // l'ouverture, son nom, sa fonction et son portrait viennent du dernier
+  // rapport termine, sauf s'il les a deja saisis ici. Un rapport termine
+  // n'est plus retouche.
+  useEffect(() => {
+    if (pagesARemplir(brouillon, session) === 0) return
+    const repris = reprendreFormateur(brouillon, formateursInitiaux(session)[0], formateurHabituel())
+    if (repris) maj(repris)
+  // Une fois a l'ouverture : la reprise ne doit pas lutter avec la saisie.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const valeurs = useMemo(
     () => valeursDrapeaux(brouillon, session, synthese, page, refsPhotos),
     [brouillon, session, synthese, page, refsPhotos],
