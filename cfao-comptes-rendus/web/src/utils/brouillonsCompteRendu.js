@@ -442,3 +442,57 @@ export const brouillonsEnCours = (liste = brouillonsEnregistres()) => liste.filt
 export const brouillonsTermines = (liste = brouillonsEnregistres()) => liste
   .filter(estTermine)
   .sort((a, b) => String(b.termineLe).localeCompare(String(a.termineLe)))
+
+/**
+ * Le formateur tel qu'il s'est presente dans ses comptes rendus termines :
+ * nom complet, fonction et portrait, chacun pris au plus recent qui le
+ * porte. Le portrait n'est repris que s'il est sur le serveur : un apercu
+ * local ne vit que dans l'onglet qui l'a cree.
+ */
+export const FONCTION_PAR_DEFAUT = 'Formateur'
+
+export function formateurHabituel() {
+  const premiers = Object.values(lire())
+    .filter(b => b?.formateurs?.length && pagesARemplir(b, sessionDuBrouillon(b)) === 0)
+    .sort((a, b) => String(b.termineLe || b.modifieLe).localeCompare(String(a.termineLe || a.modifieLe)))
+    // Une valeur restee celle par defaut (le nom du planning, « Formateur »)
+    // n'apprend rien : on cherche plus loin.
+    .map(b => ({ f: b.formateurs[0] || {}, planning: sessionDuBrouillon(b)?.formateur }))
+  const nom = premiers.find(({ f, planning }) => rempli(f.nom) && f.nom !== planning)?.f.nom
+  const fonction = premiers.find(({ f }) => rempli(f.fonction) && f.fonction !== FONCTION_PAR_DEFAUT)?.f.fonction
+  const portrait = premiers.find(({ f }) => f.portrait?.ref)?.f.portrait
+  return { nom, fonction, portrait }
+}
+
+/**
+ * Le premier formateur complete par `habituel`, ou `null` si rien ne change.
+ *
+ * Un champ n'est remplace que s'il garde une valeur par defaut : vide,
+ * celle de la session (`defaut`), ou une reprise precedente — notee dans
+ * `formateurRepris`, elle suit ainsi le dernier rapport termine. Ce que le
+ * formateur a saisi lui-meme ne bouge plus.
+ */
+export function reprendreFormateur(b, defaut, habituel) {
+  const [f = defaut, ...autres] = b.formateurs?.length ? b.formateurs : [defaut]
+  const repris = b.formateurRepris || {}
+  const suite = { ...f }
+  const notes = { ...repris }
+  let change = false
+  for (const champ of ['nom', 'fonction']) {
+    const v = habituel[champ]
+    const libre = !rempli(f[champ]) || f[champ] === defaut[champ] || f[champ] === repris[champ]
+    if (rempli(v) && libre && f[champ] !== v) {
+      suite[champ] = v
+      notes[champ] = v
+      change = true
+    }
+  }
+  const p = habituel.portrait
+  const libre = !f.portrait || (!!repris.portrait && f.portrait.ref === repris.portrait)
+  if (p?.ref && libre && f.portrait?.ref !== p.ref) {
+    suite.portrait = p
+    notes.portrait = p.ref
+    change = true
+  }
+  return change ? { formateurs: [suite, ...autres], formateurRepris: notes } : null
+}
