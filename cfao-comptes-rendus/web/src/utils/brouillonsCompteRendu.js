@@ -101,6 +101,7 @@ export function aDuContenu(b) {
     || rempli(b.satisfaction) || rempli(b.textes) || rempli(b.photos)
     || rempli(b.photoGroupe) || rempli(b.jours) || rempli(b.objectifs)
     || rempli(b.legendes)
+    || b.infosModifiees === true
     // Des notes effacees a dessein : le brouillon doit s'enregistrer
     // quand meme, sinon l'ancienne version reviendrait au chargement.
     || rempli(b.reinitialiseLe)

@@ -170,3 +170,26 @@ describe('une saisie en cours sur un brouillon supprime ailleurs', () => {
     expect(envois).toMatchObject([{ textes: { a: 'saisie' }, revision: 0 }])
   })
 })
+
+describe('une session du planning retouchee sans note', () => {
+  const session = {
+    sessionId: 's2', manuel: false, debut: '2026-10-12', fin: '2026-10-16',
+    participants: [{ id: 'p1', prenom: 'Alain', nom: 'K', present: true }],
+  }
+
+  it('s’enregistre et figure parmi les comptes rendus en cours', async () => {
+    const m = await onglet()
+    expect(m.enregistrer('s2', { ...session, infosModifiees: true })).toBe(true)
+    await envoyer()
+    expect(envois).toHaveLength(1)
+    expect(local().s2.debut).toBe('2026-10-12')
+    expect(m.brouillonsEnregistres().map(b => b.id)).toContain('s2')
+  })
+
+  it('reste non enregistree tant que rien n’est retouche', async () => {
+    const m = await onglet()
+    m.enregistrer('s2', session)
+    await envoyer()
+    expect(envois).toHaveLength(0)
+  })
+})
