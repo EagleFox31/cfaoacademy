@@ -20,7 +20,7 @@ import { chiffresSession, satisfactionPresents, constatsParDefaut, donneesSessio
   redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
 import BoutonsRedaction from './BoutonsRedaction'
-import { choixRetenu, formateurInitial, nouveautes, retenir } from '../../utils/formateurParDefaut'
+import { choixRetenu, formateurInitial, nouveautes, oublierChoix, retenir } from '../../utils/formateurParDefaut'
 import { estCertification, calculerCertification, libelleModule } from '../../utils/certification'
 import { candidatPourMoteur, donneesCertification, statutElearning }
   from '../../utils/remarquesCertification'
@@ -1612,18 +1612,37 @@ function composerPages(b, session, s) {
  */
 function PropositionFormateur({ formateur, session }) {
   // Calcule une fois : la reponse donnee, la proposition ne revient pas.
-  const [diff] = useState(() => {
+  // `choix` : la reponse retenue qui a evite de demander, pour pouvoir l'annuler.
+  const [{ diff, choix }] = useState(() => {
     const d = nouveautes(formateur, session)
-    const choix = choixRetenu()
-    if (!Object.keys(d).length || choix === 'jamais') return null
-    if (choix === 'toujours') {
-      retenir(d)
-      return null
-    }
-    return d
+    const c = choixRetenu()
+    if (!Object.keys(d).length) return {}
+    if (c === 'toujours') retenir(d)
+    return c ? { choix: c } : { diff: d }
   })
   const [souvenir, setSouvenir] = useState(false)
   const [reponse, setReponse] = useState(null)
+
+  if (choix) {
+    return (
+      <p className="cr-proposition-reponse" role="status">
+        {reponse === 'oubli'
+          ? 'C’est noté : on vous redemandera la prochaine fois.'
+          : choix === 'toujours'
+            ? 'Vos nouvelles informations sont reprises pour vos prochains comptes rendus, comme vous l’avez demandé.'
+            : 'Vos prochains comptes rendus gardent les informations habituelles, comme vous l’avez demandé.'}
+        {reponse !== 'oubli' && (
+          <>
+            {' '}
+            <button type="button" className="cr-proposition-lien"
+              onClick={() => { oublierChoix(); setReponse('oubli') }}>
+              Me redemander à l’avenir
+            </button>
+          </>
+        )}
+      </p>
+    )
+  }
   if (!diff) return null
 
   if (reponse) {
