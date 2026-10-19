@@ -59,6 +59,12 @@ export function nouveautes(f, session) {
   return diff
 }
 
+/** Oublie le choix retenu : la proposition reviendra. Le defaut reste. */
+export function oublierChoix() {
+  const { choix, ...reste } = lire()
+  if (choix) ecrire(reste)
+}
+
 /** Retient `diff` pour les prochains comptes rendus, et le choix s'il est donne. */
 export function retenir(diff, choix) {
   const d = lire()

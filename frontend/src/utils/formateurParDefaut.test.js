@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { choixRetenu, formateurInitial, nouveautes, retenir } from './formateurParDefaut'
+import { choixRetenu, formateurInitial, nouveautes, oublierChoix, retenir } from './formateurParDefaut'
 
 const session = { formateur: 'Jean TEST' }
 
@@ -49,5 +49,12 @@ describe('formateurParDefaut', () => {
     retenir({}, 'jamais')
     expect(choixRetenu()).toBe('jamais')
     expect(formateurInitial(session).fonction).toBe('Formateur')
+  })
+
+  it('oublier le choix fait revenir la proposition sans perdre le défaut', () => {
+    retenir({ fonction: 'Expert technique' }, 'toujours')
+    oublierChoix()
+    expect(choixRetenu()).toBe(null)
+    expect(formateurInitial(session).fonction).toBe('Expert technique')
   })
 })
