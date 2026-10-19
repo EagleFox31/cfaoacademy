@@ -11,6 +11,7 @@ import {
   calculerCertification, estCertification, niveauDe,
 } from './certification'
 import { SEUIL } from './baremeCfao'
+import { formateurInitial } from './formateurParDefaut'
 
 /**
  * Le lien entre les pages de l'assistant et les diapositives du modele.
@@ -228,11 +229,12 @@ function drapeauxDeJour(b, page) {
   }
 }
 
-/** Les formateurs saisis, ou a defaut celui de la session. */
+/** Les formateurs saisis, ou a defaut celui retenu ou celui de la session. */
 function formateursDe(b, session) {
   const saisis = (b.formateurs || []).filter(f => f.nom || f.fonction || f.portrait)
   if (saisis.length) return saisis
-  return session?.formateur ? [{ nom: session.formateur, fonction: 'Formateur' }] : []
+  const defaut = formateurInitial(session)
+  return defaut.nom ? [defaut] : []
 }
 
 /**
