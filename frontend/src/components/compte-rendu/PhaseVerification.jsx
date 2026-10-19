@@ -20,7 +20,7 @@ import { chiffresSession, satisfactionPresents, constatsParDefaut, donneesSessio
   redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
 import BoutonsRedaction from './BoutonsRedaction'
-import { FONCTION_PAR_DEFAUT, formateurHabituel, reprendreFormateur } from '../../utils/brouillonsCompteRendu'
+import { choixRetenu, formateurInitial, nouveautes, retenir } from '../../utils/formateurParDefaut'
 import { estCertification, calculerCertification, libelleModule } from '../../utils/certification'
 import { candidatPourMoteur, donneesCertification, statutElearning }
   from '../../utils/remarquesCertification'
@@ -69,15 +69,15 @@ function objectifsInitiaux(b, page) {
     { code: '', intitule: '', texte: '' }]
 }
 
-/** Le formateur de la session, prerempli et modifiable.
+/** Le formateur de la session, prerempli et modifiable — tel qu'il a
+ *  choisi de se presenter, s'il l'a retenu apres un compte rendu.
  *
  *  La session n'en designe qu'un ; une formation peut en compter
  *  plusieurs, que le formateur ajoute lui-meme. On part donc de celui
  *  qui est connu plutot que d'une ligne vide.
  */
 function formateursInitiaux(session) {
-  const nom = session?.formateur
-  return [{ nom: nom || '', fonction: nom ? FONCTION_PAR_DEFAUT : '', portrait: null }]
+  return [formateurInitial(session)]
 }
 
 export default function PhaseVerification({
@@ -114,18 +114,6 @@ export default function PhaseVerification({
   // `maj` change a chaque rendu ; seul l'etat des photos compte ici.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refsPhotos, brouillon])
-
-  // Le formateur se presente d'un rapport a l'autre de la meme facon : a
-  // l'ouverture, son nom, sa fonction et son portrait viennent du dernier
-  // rapport termine, sauf s'il les a deja saisis ici. Un rapport termine
-  // n'est plus retouche.
-  useEffect(() => {
-    if (pagesARemplir(brouillon, session) === 0) return
-    const repris = reprendreFormateur(brouillon, formateursInitiaux(session)[0], formateurHabituel())
-    if (repris) maj(repris)
-  // Une fois a l'ouverture : la reprise ne doit pas lutter avec la saisie.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
   const valeurs = useMemo(
     () => valeursDrapeaux(brouillon, session, synthese, page, refsPhotos),
     [brouillon, session, synthese, page, refsPhotos],
@@ -396,6 +384,8 @@ export default function PhaseVerification({
                 Le PowerPoint est dans vos téléchargements. Le compte rendu
                 est rangé dans « Mes comptes rendus ».
               </p>
+              <PropositionFormateur session={session}
+                formateur={(brouillon.formateurs || formateursInitiaux(session))[0]} />
             </>
           ) : (
             <>
@@ -1613,4 +1603,73 @@ function composerPages(b, session, s) {
   }
 
   return pages
+}
+
+/**
+ * Apres un compte rendu termine : garder, pour les prochains, le nom, la
+ * fonction ou le portrait qui y ont change ? On propose sans decider a la
+ * place du formateur ; il peut retenir sa reponse et ne plus etre sollicite.
+ */
+function PropositionFormateur({ formateur, session }) {
+  // Calcule une fois : la reponse donnee, la proposition ne revient pas.
+  const [diff] = useState(() => {
+    const d = nouveautes(formateur, session)
+    const choix = choixRetenu()
+    if (!Object.keys(d).length || choix === 'jamais') return null
+    if (choix === 'toujours') {
+      retenir(d)
+      return null
+    }
+    return d
+  })
+  const [souvenir, setSouvenir] = useState(false)
+  const [reponse, setReponse] = useState(null)
+  if (!diff) return null
+
+  if (reponse) {
+    return (
+      <p className="cr-proposition-reponse" role="status">
+        {reponse === 'oui'
+          ? 'C’est noté : vos prochains comptes rendus partiront de ces informations.'
+          : 'Vos prochains comptes rendus garderont les informations habituelles.'}
+      </p>
+    )
+  }
+
+  function repondre(oui) {
+    if (oui) retenir(diff, souvenir ? 'toujours' : null)
+    else if (souvenir) retenir({}, 'jamais')
+    setReponse(oui ? 'oui' : 'non')
+  }
+
+  return (
+    <section className="cr-proposition" aria-labelledby="cr-proposition-titre">
+      <h3 id="cr-proposition-titre" className="cr-proposition-titre">
+        Réutiliser ces informations pour vos prochains comptes rendus ?
+      </h3>
+      <ul className="cr-proposition-liste">
+        {diff.portrait && (
+          <li>
+            <img className="cr-proposition-portrait" src={srcPhoto(diff.portrait)} alt=""
+              onError={relancerPhoto} />
+            <span>Votre portrait</span>
+          </li>
+        )}
+        {diff.nom && <li><span className="cr-proposition-libelle">Nom</span><span>{diff.nom}</span></li>}
+        {diff.fonction && <li><span className="cr-proposition-libelle">Fonction</span><span>{diff.fonction}</span></li>}
+      </ul>
+      <label className="cr-proposition-souvenir">
+        <input type="checkbox" checked={souvenir} onChange={e => setSouvenir(e.target.checked)} />
+        Retenir ma réponse et ne plus me demander
+      </label>
+      <div className="cr-actions cr-proposition-actions">
+        <button type="button" className="cr-btn cr-btn--primary" onClick={() => repondre(true)}>
+          Oui, les utiliser
+        </button>
+        <button type="button" className="cr-btn cr-btn--ghost" onClick={() => repondre(false)}>
+          Non merci
+        </button>
+      </div>
+    </section>
+  )
 }
