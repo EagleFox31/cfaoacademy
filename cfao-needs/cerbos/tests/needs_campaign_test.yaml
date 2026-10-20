@@ -1,0 +1,127 @@
+# Tests policy needs_campaign — deux niveaux de pouvoir dans l'équipe Academy.
+#
+# « Relire une fiche » et « ouvrir la campagne » ne sont pas le même pouvoir : le
+# second engage l'exercice entier. Ces tests gardent la séparation.
+name: NeedsCampaignSuite
+description: Lecture ouverte, pilotage de l'exercice réservé
+
+principals:
+  chef_atelier:
+    id: u_manager
+    roles: ["workshop_manager"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+      brands: ["toyota"]
+  assistante_academy:
+    id: u_assistante
+    roles: ["center_assistant"]
+    attr:
+      scopeNodes: ["groupe"]
+      brands: []
+  coordonnateur:
+    id: u_coord
+    roles: ["training_coordinator"]
+    attr:
+      scopeNodes: ["groupe"]
+      brands: []
+  directeur_centre:
+    id: u_dircentre
+    roles: ["center_director"]
+    attr:
+      scopeNodes: ["groupe"]
+      brands: []
+  directeur_filiale:
+    id: u_dirfil
+    roles: ["branch_director"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+      brands: []
+
+resources:
+  campagne_2027:
+    kind: needs_campaign
+    id: c_2027
+    attr:
+      year: 2027
+      status: "OPEN"
+
+tests:
+  - name: tout compte authentifie voit la campagne
+    input:
+      principals: ["chef_atelier", "assistante_academy", "directeur_filiale"]
+      resources: ["campagne_2027"]
+      actions: ["view", "list"]
+    expected:
+      - principal: chef_atelier
+        resource: campagne_2027
+        actions: { view: EFFECT_ALLOW, list: EFFECT_ALLOW }
+      - principal: assistante_academy
+        resource: campagne_2027
+        actions: { view: EFFECT_ALLOW, list: EFFECT_ALLOW }
+      - principal: directeur_filiale
+        resource: campagne_2027
+        actions: { view: EFFECT_ALLOW, list: EFFECT_ALLOW }
+
+  - name: le coordonnateur pilote l exercice
+    input:
+      principals: ["coordonnateur"]
+      resources: ["campagne_2027"]
+      actions: ["open", "close", "import", "arbitrate"]
+    expected:
+      - principal: coordonnateur
+        resource: campagne_2027
+        actions:
+          open: EFFECT_ALLOW
+          close: EFFECT_ALLOW
+          import: EFFECT_ALLOW
+          arbitrate: EFFECT_ALLOW
+
+  - name: le directeur du centre pilote aussi
+    input:
+      principals: ["directeur_centre"]
+      resources: ["campagne_2027"]
+      actions: ["open", "close", "import", "arbitrate"]
+    expected:
+      - principal: directeur_centre
+        resource: campagne_2027
+        actions:
+          open: EFFECT_ALLOW
+          close: EFFECT_ALLOW
+          import: EFFECT_ALLOW
+          arbitrate: EFFECT_ALLOW
+
+  # ── négatifs ───────────────────────────────────────────────────────────────
+  - name: NEGATIF l assistante relit mais ne pilote pas l exercice
+    input:
+      principals: ["assistante_academy"]
+      resources: ["campagne_2027"]
+      actions: ["open", "close", "import", "arbitrate"]
+    expected:
+      - principal: assistante_academy
+        resource: campagne_2027
+        actions:
+          open: EFFECT_DENY
+          close: EFFECT_DENY
+          import: EFFECT_DENY
+          arbitrate: EFFECT_DENY
+
+  - name: NEGATIF aucun role de filiale ne touche a la campagne
+    input:
+      principals: ["directeur_filiale", "chef_atelier"]
+      resources: ["campagne_2027"]
+      actions: ["open", "close", "import", "arbitrate"]
+    expected:
+      - principal: directeur_filiale
+        resource: campagne_2027
+        actions:
+          open: EFFECT_DENY
+          close: EFFECT_DENY
+          import: EFFECT_DENY
+          arbitrate: EFFECT_DENY
+      - principal: chef_atelier
+        resource: campagne_2027
+        actions:
+          open: EFFECT_DENY
+          close: EFFECT_DENY
+          import: EFFECT_DENY
+          arbitrate: EFFECT_DENY
