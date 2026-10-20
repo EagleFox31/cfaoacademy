@@ -1,8 +1,9 @@
 # Module « comptes rendus formateur » en production : images Docker Hub
 # (antifragile237), aucun fichier source sur le serveur.
-#   1. Copier ce fichier et un .env (voir .env.example, bloc « Production ») dans un dossier.
-#   2. docker compose -f docker-compose.prod.yml up -d
-#   3. Creer chaque compte : docker compose -f docker-compose.prod.yml exec api python manage.py mot_de_passe <identifiant>
+#   1. Copier ce fichier, deploy.sh|ps1, reprise.sh|ps1 et env.prod.example dans un dossier.
+#   2. ./deploy.sh (ou .\deploy.ps1) : genere les secrets dans .env, deduit l'adresse LAN, demarre.
+#   3. Une fois : ./reprise.sh <export formateurs> (base, photos et profils).
+#   4. Creer chaque compte : docker compose -f docker-compose.prod.yml exec api python manage.py mot_de_passe <identifiant>
 # Mode local : comptes a mot de passe du module, sans Keycloak. Les vrais
 # profils se deposent dans le volume cr-donnees (/donnees/profils-locaux.json).
 name: cfao-comptes-rendus
