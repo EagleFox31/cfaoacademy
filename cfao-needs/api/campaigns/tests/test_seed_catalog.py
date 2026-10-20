@@ -62,7 +62,7 @@ def test_le_catalogue_reel_se_charge_sans_erreur(seeded):
     attendu = len(source) - len(en_attente)
 
     assert CatalogLine.objects.filter(campaign=seeded).count() == attendu
-    assert attendu == 259, "le fichier 2027 porte 261 lignes, dont 2 Yamaha differees"
+    assert attendu == 255, "le fichier 2027 porte 257 lignes, dont 2 Yamaha differees"
 
 
 def test_la_famille_sans_catalogue_ne_recoit_aucune_ligne(seeded):

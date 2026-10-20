@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import FormAlert, { FormFieldError } from '../components/FormAlert.jsx'
 import PageCloseButton from '../components/PageCloseButton.jsx'
 import LoginDemoDrawer from '../components/LoginDemoDrawer.jsx'
 import LoginParticles from '../components/LoginParticles.jsx'
-import PortalLoader from '../components/PortalLoader.jsx'
 import useSiteEffects from '../hooks/useSiteEffects.js'
 import useAuthForm from '../hooks/useAuthForm.js'
 import useLocale from '../hooks/useLocale.js'
@@ -13,20 +12,6 @@ import useAuth from '../hooks/useAuth.js'
 import { getPrimaryRole } from '../data/index.js'
 
 const LOGIN_BG = '/assets/hero/default.jpg'
-
-const USERNAME_BY_DEMO_ID = {
-  u2: 'brahim.tahir',
-  u3: 'seydou.diallo',
-  u4: 'fatou.mbaye',
-  u5: 'aminata.kone',
-  u6: 'admin.groupe',
-  u7: 'tech.lead',
-  u8: 'moa.pilotage',
-  u9: 'marc.aurele',
-  u10: 'jacques.robin',
-  u11: 'andre.yogba',
-  u12: 'venance.tonga',
-}
 
 function EyeIcon({ open }) {
   if (open) {
@@ -47,74 +32,62 @@ function EyeIcon({ open }) {
   )
 }
 
+function MicrosoftIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="1" y="1" width="10" height="10" fill="#f25022" />
+      <rect x="13" y="1" width="10" height="10" fill="#7fba00" />
+      <rect x="1" y="13" width="10" height="10" fill="#00a4ef" />
+      <rect x="13" y="13" width="10" height="10" fill="#ffb900" />
+    </svg>
+  )
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#EA4335" d="M12 11.2v2.4h4.2c-.2 1-1.4 2.9-4.2 2.9-2.5 0-4.6-2.1-4.6-4.7s2.1-4.7 4.6-4.7c1.4 0 2.4.6 3 1.1l2-1.9C16.5 5.4 14.4 4.5 12 4.5 7.9 4.5 4.5 7.9 4.5 12s3.4 7.5 7.5 7.5c4.3 0 7.2-3 7.2-7.3 0-.5 0-.9-.1-1.2H12z" />
+    </svg>
+  )
+}
+
+const SSO_PROVIDERS = [
+  { id: 'microsoft', icon: MicrosoftIcon, labelKey: 'ssoMicrosoft' },
+  { id: 'google', icon: GoogleIcon, labelKey: 'ssoGoogle' },
+]
+
 export default function Login() {
   useSiteEffects()
   const { locale, t } = useLocale('login')
-  const { user, loginWithPassword, profiles } = useAuth()
+  const { login, connexion, profiles } = useAuth()
   const navigate = useNavigate()
-
-  const [demoOpen, setDemoOpen] = useState(false)
-  const [authenticating, setAuthenticating] = useState(false)
-
-  // Si déjà connecté, redirection vers le portail
-  useEffect(() => {
-    if (user) {
-      navigate('/portail', { replace: true })
-    }
-  }, [user, navigate])
-
-  const handleLoginSubmit = useCallback(async ({ identifier, password }) => {
-    const cleanId = identifier.trim()
-    setAuthenticating(true)
-    try {
-      await loginWithPassword(cleanId, password)
-      navigate('/portail', { replace: true })
-    } catch (err) {
-      setAuthenticating(false)
-      throw err
-    }
-  }, [loginWithPassword, navigate])
-
-  const auth = useAuthForm(locale, handleLoginSubmit)
+  const auth = useAuthForm(locale, async (identifiant, motDePasse, seSouvenir) => {
+    const refus = await connexion(identifiant, motDePasse, seSouvenir)
+    if (!refus) navigate('/portail')
+    return refus
+  })
+  const [demoOpen, setDemoOpen] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(min-width: 961px)').matches
+  })
 
   const formErrorMessage = auth.formError ? auth.getMessage(auth.formError) : null
   const formSuccessMessage = auth.formSuccess ? auth.getMessage(auth.formSuccess) : null
 
-  async function handleDemoLogin(profileId) {
+  function handleDemoLogin(profileId) {
     const profile = profiles.find(p => p.id === profileId)
-    const username = USERNAME_BY_DEMO_ID[profileId] || profile?.email?.split('@')[0] || profileId
+    login(profileId)
     setDemoOpen(false)
-    setAuthenticating(true)
-
-    try {
-      await loginWithPassword(username, 'demo')
-      const role = getPrimaryRole(profile?.roles ?? [])
-      if (role === 'build_team' || role === 'group_admin') {
-        navigate('/portail/delivery', { replace: true })
-      } else {
-        navigate('/portail', { replace: true })
-      }
-    } catch (err) {
-      console.error('[DemoLogin] Authentification échouée :', err)
-      setAuthenticating(false)
-      // En cas d'erreur de mot de passe démo, pré-remplir le formulaire
-      auth.updateLogin('email', username)
-      auth.updateLogin('password', 'demo')
+    const role = getPrimaryRole(profile?.roles ?? [])
+    if (role === 'build_team' || role === 'group_admin') {
+      navigate('/portail/delivery')
+    } else {
+      navigate('/portail')
     }
   }
 
   return (
     <div className="login-page">
-      {authenticating && (
-        <PortalLoader
-          intervalMs={1200}
-          messages={[
-            t.loaderStep1 || 'Connexion sécurisée au compte privé…',
-            t.loaderStep2 || 'Validation des accès et des permissions…',
-            t.loaderStep3 || 'Chargement de votre espace personnalisé…',
-          ]}
-        />
-      )}
       <div className="login-bg" aria-hidden="true">
         <div
           className="login-bg-photo"
@@ -146,6 +119,29 @@ export default function Login() {
                     <div className="login-form-inner">
                       <p className="login-card-lead">{t.loginInstruction}</p>
 
+                      <div className="login-sso" aria-label={t.ssoAria}>
+                        {SSO_PROVIDERS.map((provider) => {
+                          const Icon = provider.icon
+                          return (
+                            <button
+                              key={provider.id}
+                              type="button"
+                              className="login-sso-btn"
+                              disabled
+                              title={t.ssoSoonTitle}
+                              aria-disabled="true"
+                            >
+                              <Icon />
+                              <span className="login-sso-label">{t[provider.labelKey]}</span>
+                              <span className="login-sso-badge">{t.ssoSoon}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      <div className="login-divider">
+                        <span>{t.orDivider}</span>
+                      </div>
 
                       <FormAlert type="error" message={auth.panel === 'login' ? formErrorMessage : null} />
 

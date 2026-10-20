@@ -1,5 +1,8 @@
-import summaryPayload from '../../../../data/dps/cmr-equipment-brand-planning-summary.json'
-import pifTechniciansPayload from '../../../../data/dps/cmr-equipment-planned-by-technician.json'
+// Extractions MEDACAP (noms de techniciens) : hors depot, presentes seulement
+// sur les postes qui les ont generees. Sans elles, les vues restent vides.
+const extractions = import.meta.glob('../../../../data/dps/cmr-equipment-*.json', { eager: true, import: 'default' })
+const summaryPayload = extractions['../../../../data/dps/cmr-equipment-brand-planning-summary.json'] ?? {}
+const pifTechniciansPayload = extractions['../../../../data/dps/cmr-equipment-planned-by-technician.json'] ?? {}
 
 export const CMR_EQUIPMENT_PLANNING_YEAR = String(summaryPayload.meta?.planningYear ?? '2025')
 

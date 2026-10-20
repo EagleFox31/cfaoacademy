@@ -1,4 +1,8 @@
 // Source de vérité unique — catalogue CFAO Academy 2026
+import { isPlMedacapVariant } from '../utils/portalVariant.js'
+import { isMedacapLearner, medacapLearnerSections } from '../utils/medacapLearner.js'
+import { sessionsDuFormateur } from './mock_sessions_formateur.js'
+import { sessionsAVenir } from '../utils/sessionsAVenir.js'
 
 import kiNetworkPayload from './ki-network.json'
 
@@ -139,11 +143,49 @@ export const PORTAL_NAV_SECTIONS = {
     { key: 'logs',        id: 'logs',        labelKey: 'nav_sec_logs' },
     { key: 'profiles',    id: 'profiles',    labelKey: 'nav_sec_profiles' },
   ],
+  trainer: [
+    { key: 'a-documenter',     id: 'a-documenter',     labelKey: 'nav_sec_a_documenter' },
+    { key: 'comptes-rendus',   id: 'comptes-rendus',   labelKey: 'nav_sec_comptes_rendus' },
+    { key: 'sessions-a-venir', id: 'sessions-a-venir', labelKey: 'nav_sec_sessions_animees' },
+  ],
 }
 
 export function getPortalNavSections(roles) {
   const role = getPrimaryRole(roles)
   return PORTAL_NAV_SECTIONS[role] ?? PORTAL_NAV_SECTIONS.learner
+}
+
+/**
+ * Conditions d'affichage des sections apprenant optionnelles.
+ * Une section absente de cette table est toujours visible.
+ * Chaque prédicat reçoit le profil LMS et répond « cette section a-t-elle du
+ * contenu ? » — la navbar reste ainsi alignée sur ce que la page rend vraiment.
+ */
+const LEARNER_SECTION_VISIBILITY = {
+  certifs:   ({ lms }) => Boolean(lms?.certifications?.length),
+  suggested: ({ lms }) => isPlMedacapVariant(lms),
+  // Même condition que la page : un learner MEDACAP ne voit le PIF que si la
+  // section est effectivement rendue (cf. LearnerDashboard).
+  pif: ({ lms, user }) => !isMedacapLearner(user) || medacapLearnerSections(lms).pif,
+}
+
+/**
+ * Sections de navbar réellement affichables pour un utilisateur donné.
+ * `lms` est le profil LMS du portail (peut être absent : on retombe alors sur
+ * les sections du rôle, sans filtrage).
+ */
+export function resolvePortalNavSections(roles, lms, user) {
+  const sections = getPortalNavSections(roles)
+  // Formateur : l'onglet des sessions suit la section, absente sans session a venir.
+  if (getPrimaryRole(roles) === 'trainer') {
+    const aVenir = sessionsAVenir(sessionsDuFormateur(user)).length > 0
+    return aVenir ? sections : sections.filter(s => s.key !== 'sessions-a-venir')
+  }
+  if (getPrimaryRole(roles) !== 'learner' || !lms) return sections
+  return sections.filter(section => {
+    const isVisible = LEARNER_SECTION_VISIBILITY[section.key]
+    return isVisible ? isVisible({ lms, user }) : true
+  })
 }
 
 /** Sections observées au scroll (ordre page) → clé NAV */

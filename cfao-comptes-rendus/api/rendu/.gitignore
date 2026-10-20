@@ -1,0 +1,6 @@
+.cache/
+.profil-lo/
+# Le modele de reference fait partie du depot ; toute autre copie de travail reste locale.
+modeles/*.pptx
+!modeles/MODELE-REFERENCES.pptx
+__pycache__/

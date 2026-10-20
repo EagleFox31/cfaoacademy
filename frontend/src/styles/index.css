@@ -25,6 +25,8 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { scroll-behavior: smooth; }
+/* Décalage d'ancrage standard sous le header fixe — portail apprenant */
+html:has(.portal-page) { scroll-padding-top: 92px; }
 
 #root {
   min-height: 100dvh;

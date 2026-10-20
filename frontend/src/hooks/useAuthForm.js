@@ -17,7 +17,10 @@ const INITIAL_FORGOT = {
   email: '',
 }
 
-export default function useAuthForm(locale = 'fr', onLoginSubmit) {
+/**
+ * @param onLogin  (identifiant, motDePasse, seSouvenir) => Promise<null | code d'erreur>
+ */
+export default function useAuthForm(locale = 'fr', onLogin = null) {
   const [panel, setPanel] = useState('login')
   const [login, setLogin] = useState(INITIAL_LOGIN)
   const [forgot, setForgot] = useState(INITIAL_FORGOT)
@@ -68,32 +71,27 @@ export default function useAuthForm(locale = 'fr', onLoginSubmit) {
   }, [])
 
   const submitLogin = useCallback(async (event) => {
-    if (event?.preventDefault) event.preventDefault()
+    event.preventDefault()
     clearFeedback()
 
     const result = validateLogin(login)
     if (!result.ok) {
       setFieldErrors(result.fieldErrors)
-      return false
+      return
     }
 
     setLoading(true)
     try {
-      if (onLoginSubmit) {
-        await onLoginSubmit({ identifier: login.email, password: login.password, remember: login.remember })
-      }
-      return true
-    } catch (err) {
-      if (err?.code === 'invalid_grant' || err?.message?.toLowerCase().includes('invalid')) {
-        setFormError(AUTH_ERROR_CODES.INVALID_CREDENTIALS)
-      } else {
-        setFormError(AUTH_ERROR_CODES.NETWORK)
-      }
-      return false
+      const refus = onLogin
+        ? await onLogin(login.email, login.password, login.remember)
+        : AUTH_ERROR_CODES.SERVICE_UNAVAILABLE
+      if (refus) setFormError(AUTH_ERROR_CODES[refus] ?? AUTH_ERROR_CODES.GENERIC)
+    } catch {
+      setFormError(AUTH_ERROR_CODES.NETWORK)
     } finally {
       setLoading(false)
     }
-  }, [clearFeedback, login, onLoginSubmit])
+  }, [clearFeedback, login, onLogin])
 
   const submitForgot = useCallback(async (event) => {
     event.preventDefault()

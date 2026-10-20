@@ -10,6 +10,8 @@ export const PORTAL_ORIENT_KEY_BY_ROLE = {
   dps: 'portal_orient_dps',
   dop: 'portal_orient_dps',
   superadmin: 'portal_orient_superadmin',
+  trainer: 'portal_orient_trainer',
+  center_director: 'portal_orient_trainer',
 }
 
 export function resolvePortalOrientKey(primaryRole) {

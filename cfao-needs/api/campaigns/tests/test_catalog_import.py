@@ -306,11 +306,12 @@ def test_les_ecritures_divergentes_du_meme_intitule_se_rapprochent():
     """
     from campaigns.imports.titles_en import english_title, normalize_title
 
-    assert normalize_title("Réparation d’un vitrage feuilleté") == normalize_title(
-        "Reparation d'un vitrage feuillete"
+    assert normalize_title("Avis d’intervention sur véhicules électriques") == normalize_title(
+        "Avis d'intervention sur vehicules electriques"
     )
-    assert english_title("Réparation d’un vitrage feuilleté") == "Laminated glass repair"
-    assert english_title("  RÉPARATION D'UN VITRAGE FEUILLETÉ  ") == "Laminated glass repair"
+    attendu = "Intervention notice on BYD electric vehicle"
+    assert english_title("Avis d’intervention sur véhicules électriques") == attendu
+    assert english_title("  AVIS D'INTERVENTION SUR VÉHICULES ÉLECTRIQUES  ") == attendu
     assert english_title("Formation qui n'existe pas") == ""
 
 

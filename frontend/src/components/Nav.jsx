@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, useRef, useId } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { NAV, getPortalNavSections, getPrimaryRole } from '../data/index.js'
+import { NAV, resolvePortalNavSections, getPrimaryRole } from '../data/index.js'
+import { LMS_BY_USER } from '../data/mock_lms.js'
+import { scrollToPortalSection } from '../utils/portalScroll.js'
 import useNavScrollSpy from '../hooks/useNavScrollSpy.js'
 import useLocale from '../hooks/useLocale.js'
 import LocaleSwitch from './LocaleSwitch.jsx'
@@ -25,6 +27,11 @@ function scrollToSection(hash) {
   if (!hash) {
     window.scrollTo({ top: 0, behavior: 'smooth' })
     return
+  }
+  // Portail : les sections entrent au scroll, il faut les révéler avant de
+  // mesurer (cf. portalScroll.js). Ailleurs, l'ancrage natif suffit.
+  if (document.querySelector('.portal-page')) {
+    if (scrollToPortalSection(hash, { highlight: false })) return
   }
   const el = document.getElementById(hash)
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -245,7 +252,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications 
   const mobileMenuId = `nav-mobile-menu${menuInstanceId}`
 
   const portalSections = useMemo(
-    () => (user ? getPortalNavSections(user.roles) : []),
+    () => (user ? resolvePortalNavSections(user.roles, LMS_BY_USER[user.id], user) : []),
     [user],
   )
 

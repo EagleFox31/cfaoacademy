@@ -1,5 +1,6 @@
 # Secrets / env
 .env
+.env.*
 *.env
 !.env.example
 
@@ -28,3 +29,12 @@ docs/*.csv
 docs/dryrun_participants_2025/*
 !docs/dryrun_participants_2025/README.md
 !docs/dryrun_participants_2025/cfao_needs_referential.json
+# Comptes rendus et photos conserves par le service d'apercu
+cfao-comptes-rendus/api/rendu/donnees/
+cfao-comptes-rendus/api/db.sqlite3
+
+# Donnees reelles propres a un poste (noms des stagiaires) : jamais versionnees
+*.local.js
+
+# Extractions MEDACAP nominatives (techniciens) : jamais versionnees
+/data/dps/

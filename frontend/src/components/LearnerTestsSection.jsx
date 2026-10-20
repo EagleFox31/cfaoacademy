@@ -117,7 +117,9 @@ export default function LearnerTestsSection({
 
   if (!isMedacapLearner && !allCompetencyTests.length && !medacapLive) return null
 
-  if (isMedacapLearner && medacapLoading) {
+  // Des tests déjà connus restent affichés : l'état chargement/erreur ne
+  // remplace la section que si aucune évaluation n'est exploitable.
+  if (isMedacapLearner && !allCompetencyTests.length && medacapLoading) {
     return (
       <PortalReveal id={id}>
         <div className="container" style={{ padding: '16px 32px' }}>
@@ -131,7 +133,7 @@ export default function LearnerTestsSection({
     )
   }
 
-  if (isMedacapLearner && medacapError) {
+  if (isMedacapLearner && !allCompetencyTests.length && medacapError) {
     return (
       <PortalReveal id={id}>
         <div className="container" style={{ padding: '16px 32px' }}>

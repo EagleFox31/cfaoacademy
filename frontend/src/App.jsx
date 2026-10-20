@@ -15,9 +15,12 @@ import SuperAdminBuilderDashboard from './pages/portal/SuperAdminBuilderDashboar
 import MedacapProfilePreview from './pages/portal/MedacapProfilePreview.jsx'
 import HelpCenterPreview from './help/pages/HelpCenterPreview.jsx'
 import PortalHelpShell from './help/PortalHelpShell.jsx'
+import TrainerHome from './pages/portal/TrainerHome.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
 import { SiteBackToTopFab } from './components/BackToTopFab.jsx'
+import RedirectionExterne from './components/RedirectionExterne.jsx'
 import RouteMotion from './components/RouteMotion.jsx'
+import AnnonceMaintenance from './components/AnnonceMaintenance.jsx'
 import Accueil from './pages/Accueil.jsx'
 import Formations from './pages/Formations.jsx'
 import Publics from './pages/Publics.jsx'
@@ -26,7 +29,6 @@ import Actualites from './pages/Actualites.jsx'
 import Article from './pages/Article.jsx'
 import FormationFiche from './pages/FormationFiche.jsx'
 import Login from './pages/Login.jsx'
-import AuthCallback from './pages/AuthCallback.jsx'
 import Contact from './pages/Contact.jsx'
 import MentionsLegales from './pages/MentionsLegales.jsx'
 import Confidentialite from './pages/Confidentialite.jsx'
@@ -39,6 +41,7 @@ export default function App() {
       <PortalHelpShell>
       <ScrollToTop />
       <SiteBackToTopFab />
+      <AnnonceMaintenance />
       {/* Loader + transition morph sur chaque changement de route */}
       <RouteMotion>
         <Routes>
@@ -51,8 +54,6 @@ export default function App() {
           <Route path="/actualites" element={<Actualites />} />
           <Route path="/actualites/:slug" element={<Article />} />
           <Route path="/login" element={<Login />} />
-          {/* Retour Keycloak — sans cette route, OIDC n'aboutit jamais. */}
-          <Route path="/callback" element={<AuthCallback />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/mentions-legales" element={<MentionsLegales />} />
           <Route path="/confidentialite" element={<Confidentialite />} />
@@ -70,6 +71,9 @@ export default function App() {
           <Route path="/portail/admin/builder" element={<SuperAdminBuilderDashboard />} />
           <Route path="/portail/preview/:profileKey" element={<MedacapProfilePreview />} />
           <Route path="/portail/aide" element={<HelpCenterPreview />} />
+          <Route path="/portail/formateur" element={<TrainerHome />} />
+          {/* Le module des comptes rendus est servi à part (VITE_CR_URL). */}
+          <Route path="/portail/compte-rendu/*" element={<RedirectionExterne />} />
           <Route path="/portail" element={<Portal />} />
         </Routes>
       </RouteMotion>

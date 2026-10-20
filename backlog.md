@@ -83,7 +83,12 @@ Implications :
 - `04-2` En tant que formateur, je veux gérer mes contenus pédagogiques.
 - `04-3` En tant que formateur, je veux gérer les feuilles d'émargement.
 - `04-4` En tant que formateur, je veux évaluer les stagiaires.
-- `04-5` En tant que formateur, je veux rédiger un rapport post-formation.
+- `04-5` En tant que formateur, je veux rédiger un rapport post-formation. *(livré en service transitoire — [module](docs/MODULE_RAPPORTS_FORMATEUR.md), [ADR 0001](docs/adr/0001-service-rapports-formateur.md))*
+  - `04-5.1` En tant que plateforme, je veux que les rapports exigent un jeton Keycloak et une décision Cerbos (tests négatifs) afin qu'un formateur n'accède qu'à ses rapports.
+  - `04-5.2` En tant que plateforme, je veux conserver les brouillons de rapport dans `cfao-operations` (PostgreSQL) afin d'avoir une seule source de vérité par donnée.
+  - `04-5.3` En tant que formateur, je veux l'assistant de rapport en français, anglais et portugais.
+  - `04-5.4` En tant qu'équipe, je veux un parcours E2E formateur (saisie → rapport) rejoué en CI.
+  - `04-5.5` En tant que formateur, je veux retrouver mes sessions depuis le planning réel plutôt que depuis la démonstration.
 - `04-6` En tant qu'assistante centre, je veux gérer le planning et les affectations logistiques des formateurs.
 - `04-7` En tant que directeur centre, je veux valider les contenus, affecter les sessions et superviser.
 

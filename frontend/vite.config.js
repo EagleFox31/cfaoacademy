@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -41,8 +41,43 @@ function cataloguesFallbackPlugin() {
   }
 }
 
-export default defineConfig({
-  plugins: [react(), cataloguesFallbackPlugin()],
+/**
+ * Unites d'ecran compensees de la mise a l'echelle (cf. src/utils/echelle.js).
+ * Sous `zoom`, `100vh` ne couvre plus que 80 % de la fenetre : chaque
+ * `vh`/`vw` est divise par `--echelle` pour garder sa taille a l'ecran.
+ */
+const unitesEcran = {
+  postcssPlugin: 'unites-ecran',
+  Declaration(decl) {
+    if (decl.value.includes('--echelle')) return
+    decl.value = decl.value.replace(/(^|[^\w.-])(-?\d*\.?\d+)([dsl]?v(?:h|w|min|max))(?![\w-])/g,
+      '$1calc($2$3 / var(--echelle, 1))')
+  },
+}
+
+/**
+ * Sans VITE_CR_URL, le build de production renvoie les comptes rendus vers
+ * http://localhost:8090 : inutilisable hors du poste de dev. On prévient
+ * sans faire échouer le build (la CI le lance sans variable).
+ */
+function avertirSansUrlComptesRendus(mode) {
+  const env = { ...loadEnv(mode, __dirname, 'VITE_'), ...process.env }
+  return {
+    name: 'avertir-sans-vite-cr-url',
+    apply: 'build',
+    buildStart() {
+      if (mode === 'production' && !env.VITE_CR_URL) {
+        console.warn('[avertissement] VITE_CR_URL n’est pas définie : en production, les liens des '
+          + 'comptes rendus pointent sur http://localhost:8090. Renseignez l’adresse publique du module '
+          + '(voir docs/DEPLOYMENT.md, « Module des comptes rendus »).')
+      }
+    },
+  }
+}
+
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), cataloguesFallbackPlugin(), avertirSansUrlComptesRendus(mode)],
+  css: { postcss: { plugins: [unitesEcran] } },
   publicDir: 'public',
   server: {
     host: '0.0.0.0',
@@ -57,6 +92,13 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      // La session du formateur (connexion par compte), tenue par le service
+      // des comptes rendus. L'interface des comptes rendus, elle, est servie
+      // a part : cfao-comptes-rendus/web.
+      '/cr-donnees': {
+        target: process.env.CR_SERVICE || 'http://127.0.0.1:5175',
+        changeOrigin: true,
+      },
       '/medacap-api': {
         target: 'http://localhost',
         changeOrigin: true,
@@ -64,4 +106,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

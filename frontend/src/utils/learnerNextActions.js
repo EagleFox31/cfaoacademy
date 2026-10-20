@@ -1,9 +1,14 @@
 import { findCatalogTraining } from './assignedTrainings.js'
 import { resolveLearnerPlanningSessions } from './learnerPlanning.js'
-import { isFormationTestUnlocked } from './learnerTests.js'
+import { isFormationTestUnlocked, isEvalDone } from './learnerTests.js'
+import { resolveLearnerPifItems, PIF_SCOPE_PLURI } from './learnerPif.js'
 
 const MAX_ACTIONS = 3
 const URGENT_SESSION_DAYS = 14
+
+/** Ordre d'activité — plus petit = plus prioritaire (remonte en tête). */
+const EVAL_ACTIVITY_ORDER = { progress: 0, todo: 1, upcoming: 2 }
+const SESSION_ACTIVITY_ORDER = { en_cours: 0, inscrit: 1, a_inscrire: 2 }
 
 const MOIS_FR = {
   'janv.': 0, 'févr.': 1, 'mars': 2, 'avr.': 3, 'mai': 4, 'juin': 5,
@@ -135,13 +140,33 @@ function buildSessionCandidate(session) {
   return null
 }
 
-/**
- * Prochaines actions apprenant — dérivées du planning (sessions-2026),
- * du catalogue et des tests LMS. Max 3 items, triés par urgence.
- */
-export function resolveLearnerNextActions(user, lms, year = 2026) {
-  if (!user || !lms) return []
+function dedupeById(items) {
+  const seen = new Set()
+  return items.filter((c) => {
+    if (seen.has(c.id)) return false
+    seen.add(c.id)
+    return true
+  })
+}
 
+/** Tri activité (statut) puis urgence (score décroissant) à statut égal. */
+function sortByActivityThenUrgency(items, orderMap) {
+  return [...items].sort((a, b) => {
+    const oa = orderMap[a.badge] ?? 9
+    const ob = orderMap[b.badge] ?? 9
+    if (oa !== ob) return oa - ob
+    return b.score - a.score
+  })
+}
+
+const EMPTY_ACTIONS = { category: null, items: [], sectionId: null }
+
+/**
+ * Comportement historique du portail (tous profils SAUF variante PL-MEDACAP) :
+ * jusqu'à 3 items mélangés (tests + sessions), triés par urgence.
+ * Retour enveloppé en { category: 'mixed', items } pour une signature unique.
+ */
+function resolveLegacyNextActions(user, lms, year) {
   const targetLevels = (lms.certGoals ?? []).map(g => g.targetLevel).filter(Boolean)
   const candidates = []
 
@@ -158,14 +183,123 @@ export function resolveLearnerNextActions(user, lms, year = 2026) {
     if (c) candidates.push(c)
   }
 
-  const seen = new Set()
-  return candidates
-    .sort((a, b) => b.score - a.score)
-    .filter((c) => {
-      if (seen.has(c.id)) return false
-      seen.add(c.id)
-      return true
-    })
+  const items = dedupeById(candidates.sort((a, b) => b.score - a.score))
     .slice(0, MAX_ACTIONS)
     .map((item, index) => ({ ...item, primary: index === 0 }))
+
+  return { category: items.length ? 'mixed' : null, items, sectionId: null }
+}
+
+/**
+ * Variante PL-MEDACAP uniquement — UNE SEULE catégorie affichée à la fois
+ * (jamais deux types mélangés). Chaîne de priorité pilotée par l'activité,
+ * alignée méthode MEDACAP (Mesurer → Définir → Acquérir) :
+ *
+ *   1. `tests`      — il reste ≥1 test non terminé (progress/todo/upcoming).
+ *   2. `results`    — tous les tests de compétence sont terminés, mais aucun
+ *                     item PIF n'existe encore : on montre les résultats.
+ *   3. `pif`        — tests terminés ET le PIF a des entrées (plan post-test).
+ *   4. `formations` — sinon : sessions du niveau immédiatement supérieur (N+1)
+ *                     à venir — section « Formations suggérées ».
+ */
+function resolvePlMedacapNextActions(user, lms, year) {
+  const targetLevels = (lms.certGoals ?? []).map(g => g.targetLevel).filter(Boolean)
+  const evaluations = lms.evaluations ?? []
+  const competencyEvals = evaluations.filter(e => e.kind === 'competency')
+
+  // ── 1. Tests non terminés ───────────────────────────────────────────
+  const evalCandidates = []
+  for (const e of evaluations) {
+    if (!isFormationTestUnlocked(user, lms, e, year)) continue
+    const c = buildEvalCandidate(e)
+    if (!c) continue
+    if (evalMatchesCertGoal(e, targetLevels)) c.score += 30
+    evalCandidates.push(c)
+  }
+  if (evalCandidates.length) {
+    return {
+      category: 'tests',
+      sectionId: 'tests',
+      items: sortByActivityThenUrgency(dedupeById(evalCandidates), EVAL_ACTIVITY_ORDER)
+        .map((item, index) => ({ ...item, primary: index === 0 })),
+    }
+  }
+
+  // ── 2 & 3. Tests de compétence tous terminés → Résultats puis PIF ────
+  const allCompetencyDone = competencyEvals.length > 0
+    && competencyEvals.every(isEvalDone)
+
+  if (allCompetencyDone) {
+    const hasPif = resolveLearnerPifItems(user, lms, PIF_SCOPE_PLURI).length > 0
+    if (hasPif) return { category: 'pif', sectionId: 'pif', items: [] }
+    return { category: 'results', sectionId: 'resultats', items: [] }
+  }
+
+  // ── 4. Formations suggérées (planning N+1) ──────────────────────────
+  const sessionCandidates = []
+  for (const s of resolveLearnerPlanningSessions(user, lms, year, { targetLevelOnly: true })) {
+    const c = buildSessionCandidate(s)
+    if (c) sessionCandidates.push(c)
+  }
+  if (sessionCandidates.length) {
+    return {
+      category: 'formations',
+      sectionId: 'formations-suggerees',
+      items: sortByActivityThenUrgency(dedupeById(sessionCandidates), SESSION_ACTIVITY_ORDER)
+        .map((item, index) => ({ ...item, primary: index === 0 })),
+    }
+  }
+
+  return EMPTY_ACTIONS
+}
+
+/** Priorités communes : formations suggérées d'abord, tests ensuite. */
+function resolvePriorityActions(user, lms, year) {
+  const sessionCandidates = resolveLearnerPlanningSessions(
+    user,
+    lms,
+    year,
+    { targetLevelOnly: true },
+  )
+    .map(buildSessionCandidate)
+    .filter(Boolean)
+
+  if (sessionCandidates.length) {
+    return {
+      category: 'formations',
+      sectionId: 'formations-suggerees',
+      items: sortByActivityThenUrgency(
+        dedupeById(sessionCandidates),
+        SESSION_ACTIVITY_ORDER,
+      ).map((item, index) => ({ ...item, primary: index === 0 })),
+    }
+  }
+
+  const targetLevels = (lms.certGoals ?? []).map(g => g.targetLevel).filter(Boolean)
+  const evalCandidates = []
+  for (const e of lms.evaluations ?? []) {
+    if (!isFormationTestUnlocked(user, lms, e, year)) continue
+    const candidate = buildEvalCandidate(e)
+    if (!candidate) continue
+    if (evalMatchesCertGoal(e, targetLevels)) candidate.score += 30
+    evalCandidates.push(candidate)
+  }
+
+  return {
+    category: evalCandidates.length ? 'tests' : null,
+    sectionId: 'tests',
+    items: sortByActivityThenUrgency(
+      dedupeById(evalCandidates),
+      EVAL_ACTIVITY_ORDER,
+    ).map((item, index) => ({ ...item, primary: index === 0 })),
+  }
+}
+
+/**
+ * Point d'entrée. Les priorités n'affichent qu'une catégorie à la fois :
+ * formations suggérées, ou tests si aucune formation n'est à venir.
+ */
+export function resolveLearnerNextActions(user, lms, year = 2026) {
+  if (!user || !lms) return EMPTY_ACTIONS
+  return resolvePriorityActions(user, lms, year)
 }

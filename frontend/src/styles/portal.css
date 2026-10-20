@@ -1,10 +1,10 @@
-/* ???????????????????????????????????????????????????
-   PORTAL ? Espace Apprenant (App 02)
-   Suit le design system du site : m?mes tokens,
-   m?me layout Nav + PageHeader + sections + Footer
-   ??????????????????????????????????????????????????? */
+/* ═══════════════════════════════════════════════════
+   PORTAL — Espace Apprenant (App 02)
+   Suit le design system du site : mêmes tokens,
+   même layout Nav + PageHeader + sections + Footer
+   ═══════════════════════════════════════════════════ */
 
-/* Fond portail ? photo fixe + voile blanc (align? pages article) */
+/* Fond portail — photo fixe + voile blanc (aligné pages article) */
 body.portal-bg-active {
   background-color: var(--paper-3);
   background-image:
@@ -14,11 +14,11 @@ body.portal-bg-active {
   background-position: var(--portal-page-bg-position, center);
   background-repeat: no-repeat;
   background-attachment: fixed;
-  /* Rouge sur zebra sombre : AA ?4.5:1 m?me sur navy+photo. */
+  /* Rouge sur zebra sombre : AA ≥4.5:1 même sur navy+photo. */
   --portal-red-on-dark: #ff9aa5;
 }
 
-/* Fiche PIF Define ? photo atelier + voile clair (glass align? navbar) */
+/* Fiche PIF Define — photo atelier + voile clair (glass aligné navbar) */
 body.portal-bg-define-tech {
   --portal-page-bg: url('/assets/hero/cta_hover_pl.jpg');
   --portal-page-bg-position: 74% 5%;
@@ -39,7 +39,7 @@ body.portal-bg-active .nav {
   -webkit-backdrop-filter: saturate(160%) blur(12px);
 }
 
-/* ?? Sticky context bar ??????????????????????????? */
+/* ── Sticky context bar ─────────────────────────── */
 .portal-sticky-bar {
   position: fixed;
   top: 76px;
@@ -236,7 +236,7 @@ body.portal-bg-active .nav {
   .portal-sticky-bar-track { width: 80px; }
 }
 
-/* ?? KPI row ??????????????????????????????????????? */
+/* ── KPI row ─────────────────────────────────────── */
 .portal-kpi-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -278,7 +278,7 @@ section:nth-of-type(even) .portal-kpi-value.accent { color: var(--portal-red-on-
 section:nth-of-type(even) .portal-kpi-value.green  { color: #3dcc78; }
 section:nth-of-type(even) .portal-kpi-label { color: rgba(255,255,255,0.45); }
 
-/* ?? Progress bar ????????????????????????????????? */
+/* ── Progress bar ───────────────────────────────── */
 .portal-progress-block { margin-top: 8px; }
 .portal-progress-head {
   display: flex;
@@ -313,7 +313,7 @@ section:nth-of-type(even) .portal-kpi-label { color: rgba(255,255,255,0.45); }
 section:nth-of-type(even) .portal-progress-lbl { color: rgba(255,255,255,0.85); }
 section:nth-of-type(even) .portal-progress-track { background: rgba(255,255,255,0.12); }
 
-/* ?? Section heading inside dashboard ???????????? */
+/* ── Section heading inside dashboard ──────────── */
 .portal-section-head {
   margin-bottom: 20px;
 }
@@ -609,6 +609,13 @@ section:nth-of-type(even) .portal-activity-cta-hint {
     justify-content: flex-start;
   }
 }
+.portal-section-head--with-action {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
 .portal-section-eyebrow {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -661,7 +668,7 @@ section:nth-of-type(even) .portal-section-method-btn.is-open {
   color: #fff;
 }
 
-/* ?? Module list ?????????????????????????????????? */
+/* ── Module list ────────────────────────────────── */
 .portal-module-list { display: flex; flex-direction: column; gap: 12px; }
 .portal-module-card {
   background: var(--paper);
@@ -723,7 +730,7 @@ section:nth-of-type(even) .portal-section-method-btn.is-open {
 .portal-status-chip.closed,
 .portal-status-chip.cloture  { background: #0e1126; color: #ffffff; }
 
-/* DPS ? paliers comp?tence MEDACAP : junior bleu, senior orange, expert vert ? @see docs/dps-competency-tier-visual.md */
+/* DPS — paliers compétence MEDACAP : junior bleu, senior orange, expert vert — @see docs/dps-competency-tier-visual.md */
 .portal-status-chip.portal-tier-junior {
   background: #fff;
   color: #1a56db;
@@ -759,7 +766,7 @@ section:nth-of-type(even) .portal-module-title { color: #fff; }
 section:nth-of-type(even) .portal-module-sub   { color: rgba(255,255,255,0.45); }
 section:nth-of-type(even) .portal-module-pct   { color: rgba(255,255,255,0.35); }
 
-/* ?? Brand chip ??????????????????????????????????? */
+/* ── Brand chip ─────────────────────────────────── */
 .portal-brand-chip {
   display: inline-block;
   font-size: 10px;
@@ -780,7 +787,7 @@ section:nth-of-type(even) .portal-brand-chip.renault  { background: rgba(255,210
 section:nth-of-type(even) .portal-brand-chip.nissan   { background: rgba(130,150,255,0.12); color: #8296ff; }
 section:nth-of-type(even) .portal-brand-chip.mercedes { background: rgba(200,200,200,0.1);  color: rgba(255,255,255,0.6); }
 
-/* ?? Session ? venir ?????????????????????????????? */
+/* ── Session à venir ────────────────────────────── */
 .portal-session-card {
   background: var(--paper);
   border: 1px solid rgba(227,0,27,0.2);
@@ -839,7 +846,7 @@ section:nth-of-type(even) .portal-session-card {
 section:nth-of-type(even) .portal-session-title { color: #fff; }
 section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); }
 
-/* ?? Evaluations ?????????????????????????????????? */
+/* ── Evaluations ────────────────────────────────── */
 .portal-eval-list { display: flex; flex-direction: column; gap: 10px; }
 .portal-eval-card {
   background: var(--paper);
@@ -867,7 +874,7 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
 .portal-eval-score.score-high { color: #1aab5b; }
 .portal-eval-score.fail { color: var(--red); }
 
-/* Mes tests ? note en exergue sur PvCard */
+/* Mes tests — note en exergue sur PvCard */
 #tests .pv-card .kicker {
   color: inherit;
 }
@@ -890,13 +897,38 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
   display: none;
 }
 
+#resultats .pv-card-cta .pv-cta-link:has(.portal-eval-result-row) {
+  display: block;
+  width: 100%;
+}
+
+#resultats .pv-card-cta .pv-cta-link:has(.portal-eval-result-row) .arrow {
+  display: none;
+}
+
+#resultats .pv-card--eval-result .pv-card-cta {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+}
+
+#resultats .pv-card--eval-result .portal-eval-result-row {
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+#resultats .pv-card--eval-result .portal-eval-result-val {
+  margin-left: auto;
+}
+
 .portal-eval-card-img,
 .portal-session-card-img,
 .portal-plan-entry-card-img {
   position: relative;
 }
 
-/* Pastilles statut sur fiche session ou logo marque PIF ? couleurs opaques. */
+/* Pastilles statut sur fiche session ou logo marque PIF — couleurs opaques. */
 .portal-session-card-img .portal-session-status-tag,
 .portal-plan-entry-card-img .portal-session-status-tag {
   font-family: 'JetBrains Mono', monospace;
@@ -1081,6 +1113,11 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
   color: var(--muted);
 }
 
+.portal-eval-meta-row--progress .portal-eval-meta-val {
+  color: #c05600;
+  font-weight: 700;
+}
+
 .portal-eval-meta-lbl,
 .portal-eval-result-lbl {
   font-size: 11px;
@@ -1127,6 +1164,70 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
   white-space: nowrap;
 }
 
+/* ── Carte test : grille de faits + action ───────────────────────── */
+.portal-eval-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 12px;
+  margin-top: 2px;
+}
+.portal-eval-fact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ink);
+}
+.portal-eval-fact-ico {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.portal-eval-fact-txt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.portal-eval-action {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #0e1126;
+}
+.portal-eval-action-label { white-space: nowrap; }
+.portal-eval-action.is-resume .portal-eval-action-label { color: #c05600; }
+.portal-eval-action.is-locked { color: var(--muted); font-weight: 600; }
+
+.portal-eval-action-progress {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #c05600;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+#tests .pv-card--eval .pv-card-brand-row,
+#resultats .pv-card--eval .pv-card-brand-row {
+  min-height: 32px;
+}
+
+#tests .pv-card--eval .pv-card-brand-logo,
+#resultats .pv-card--eval .pv-card-brand-logo {
+  width: 112px;
+  height: 28px;
+  max-width: 112px;
+  max-height: 28px;
+  object-fit: contain;
+  object-position: left center;
+}
+
 #tests .pv-card--eval .pv-card-img img {
   object-fit: cover;
   object-position: center;
@@ -1138,16 +1239,18 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
   font-weight: 700;
 }
 
-/* Wordmark Renault Trucks ? PNG avec marges, plus lisible sur les cartes */
+/* Wordmark Renault Trucks — PNG avec marges, plus lisible sur les cartes */
 #tests .pv-card--brand-renault-trucks .pv-card-brand-row,
 :is(#resultats,#toyota-resultats,#mesurer) .pv-card--brand-renault-trucks .pv-card-brand-row {
-  min-height: 44px;
+  min-height: 32px;
 }
 
 #tests .pv-card--brand-renault-trucks .pv-card-brand-logo,
 :is(#resultats,#toyota-resultats,#mesurer) .pv-card--brand-renault-trucks .pv-card-brand-logo {
-  max-height: 44px;
-  max-width: 168px;
+  width: 112px;
+  height: 28px;
+  max-height: 28px;
+  max-width: 112px;
 }
 
 .portal-results-subsection--renault-trucks .portal-brand-logo--subsection {
@@ -1242,7 +1345,21 @@ section:nth-of-type(even) .portal-eval-card {
 section:nth-of-type(even) .portal-eval-title { color: #fff; }
 section:nth-of-type(even) .portal-eval-meta  { color: rgba(255,255,255,0.4); }
 
-/* ?? Certifications ??????????????????????????????? */
+/* ── Certifications ─────────────────────────────── */
+.portal-certifications-empty {
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+}
+
 .portal-cert-list { display: flex; flex-direction: column; gap: 10px; }
 .portal-cert-card {
   background: #f0faf5;
@@ -1282,7 +1399,7 @@ section:nth-of-type(even) .portal-cert-card {
 section:nth-of-type(even) .portal-cert-title { color: #fff; }
 section:nth-of-type(even) .portal-cert-meta  { color: rgba(255,255,255,0.4); }
 
-/* ?? KI banner ???????????????????????????????????? */
+/* ── KI banner ──────────────────────────────────── */
 .ki-instructor-banner {
   background: linear-gradient(120deg, rgba(227,0,27,0.08) 0%, rgba(26,31,60,0.04) 100%);
   border: 1px solid rgba(227,0,27,0.2);
@@ -1331,7 +1448,7 @@ section:nth-of-type(even) .ki-instructor-banner {
 section:nth-of-type(even) .ki-banner-text h3 { color: #fff; }
 section:nth-of-type(even) .ki-banner-text p  { color: rgba(255,255,255,0.5); }
 
-/* ?? Formations ? dispenser ??????????????????????? */
+/* ── Formations à dispenser ─────────────────────── */
 .portal-fad-list  { display: flex; flex-direction: column; gap: 12px; }
 .portal-fad-card {
   background: var(--paper);
@@ -1375,7 +1492,7 @@ section:nth-of-type(even) .portal-fad-card {
 section:nth-of-type(even) .portal-fad-title { color: #fff; }
 section:nth-of-type(even) .portal-fad-meta  { color: rgba(255,255,255,0.4); }
 
-/* ?? KI apprenants list ??????????????????????????? */
+/* ── KI apprenants list ─────────────────────────── */
 .portal-ki-apprenants { display: flex; flex-direction: column; gap: 10px; }
 .portal-ki-apprenant {
   background: var(--paper);
@@ -1428,7 +1545,7 @@ section:nth-of-type(even) .portal-ki-apprenant-meta { color: rgba(255,255,255,0.
 section:nth-of-type(even) .portal-inline-track { background: rgba(255,255,255,0.12); }
 section:nth-of-type(even) .portal-inline-pct   { color: rgba(255,255,255,0.4); }
 
-/* ?? Team manager table ??????????????????????????? */
+/* ── Team manager table ─────────────────────────── */
 .portal-table-wrap {
   background: var(--paper);
   border: 1px solid var(--rule);
@@ -1491,7 +1608,7 @@ section:nth-of-type(even) .portal-table tr:hover td {
   background: rgba(255,255,255,0.04);
 }
 
-/* ?? HR search ???????????????????????????????????? */
+/* ── HR search ──────────────────────────────────── */
 .portal-hr-toolbar {
   display: flex; align-items: center; gap: 12px;
   margin-bottom: 18px;
@@ -1537,7 +1654,7 @@ section:nth-of-type(even) .portal-hr-export-btn {
   box-shadow: none;
 }
 
-/* ?? Cert stats row ??????????????????????????????? */
+/* ── Cert stats row ─────────────────────────────── */
 .portal-cert-stats { display: flex; gap: 16px; flex-wrap: wrap; }
 .portal-cert-stat-card {
   flex: 1; min-width: 140px;
@@ -1569,7 +1686,7 @@ section:nth-of-type(even) .portal-cert-stat-card {
 section:nth-of-type(even) .portal-cert-stat-numbers { color: #fff; }
 section:nth-of-type(even) .portal-cert-stat-lbl { color: rgba(255,255,255,0.4); }
 
-/* ?? Admin global log ????????????????????????????? */
+/* ── Admin global log ───────────────────────────── */
 .portal-log-list { display: flex; flex-direction: column; gap: 8px; }
 .portal-log-item {
   display: flex; align-items: flex-start; gap: 14px;
@@ -1598,7 +1715,7 @@ section:nth-of-type(even) .portal-log-time { color: rgba(255,255,255,0.25); }
 section:nth-of-type(even) .portal-log-text { color: rgba(255,255,255,0.65); }
 section:nth-of-type(even) .portal-log-text strong { color: rgba(255,255,255,0.9); }
 
-/* ?? Workshop section label ??????????????????????? */
+/* ── Workshop section label ─────────────────────── */
 .portal-team-block { margin-bottom: 32px; }
 .portal-team-label {
   font-family: 'JetBrains Mono', monospace;
@@ -1609,7 +1726,7 @@ section:nth-of-type(even) .portal-log-text strong { color: rgba(255,255,255,0.9)
 }
 section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
 
-/* ?? PortalHeader ????????????????????????????????? */
+/* ── PortalHeader ───────────────────────────────── */
 .portal-page-header.page-header {
   background: linear-gradient(
     90deg,
@@ -1626,7 +1743,7 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
   overflow: hidden;
 }
 
-/* ?? Hero portail : couche parallax d?corative ????? */
+/* ── Hero portail : couche parallax décorative ───── */
 .portal-hero-fx {
   position: absolute;
   inset: 0;
@@ -1666,7 +1783,7 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
   z-index: 1;
 }
 
-/* ?? Hero portail : cascade de mots (fade + blur) ?? */
+/* ── Hero portail : cascade de mots (fade + blur) ── */
 .portal-header-greeting.portal-greeting-cascade {
   animation: none;
 }
@@ -1680,7 +1797,7 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
   animation-delay: calc(var(--wi, 0) * 90ms + 120ms);
 }
 
-/* La pastille filiale ne doit pas h?riter du blur typographique */
+/* La pastille filiale ne doit pas hériter du blur typographique */
 .portal-greeting-cascade .portal-header-greeting-org.portal-word {
   display: inline-flex;
   filter: none;
@@ -1706,7 +1823,7 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
   }
 }
 
-/* ?? Loader d'entr?e portail ??????????????????????? */
+/* ── Loader d'entrée portail ─────────────────────── */
 .portal-loader {
   position: fixed;
   inset: 0;
@@ -1734,7 +1851,7 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(14, 17, 38, 0.6); /* L?ger overlay sombre */
+  background: rgba(14, 17, 38, 0.6); /* Léger overlay sombre */
 }
 
 @keyframes portal-loader-bg-zoom {
@@ -1758,7 +1875,7 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
   align-items: center;
   gap: 26px;
   padding: 0 24px;
-  margin-top: 6vh; /* D?cale tr?s l?g?rement vers le bas pour l'?quilibre visuel */
+  margin-top: 6vh; /* Décale très légèrement vers le bas pour l'équilibre visuel */
 }
 
 .portal-loader-brand {
@@ -1802,7 +1919,7 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
   font-weight: 500;
   color: rgba(255, 255, 255, 0.5);
   letter-spacing: 0.04em;
-  min-height: 18px; /* ?vite les sauts de layout lors de l'animation */
+  min-height: 18px; /* Évite les sauts de layout lors de l'animation */
 }
 
 .portal-loader-text span {
@@ -2037,7 +2154,7 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
   box-shadow: 0 2px 8px rgba(14, 17, 38, 0.06);
 }
 
-/* Hero instructeur KI/PIC ? logo marque plus visible sous la salutation */
+/* Hero instructeur KI/PIC — logo marque plus visible sous la salutation */
 .portal-header-geo-row--instructor .portal-header-brand-logo-wrap--geo {
   width: 128px;
   height: 76px;
@@ -2075,7 +2192,7 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
   padding: 3px 8px;
 }
 
-/* ?? Modal ???????????????????????????????????????? */
+/* ── Modal ──────────────────────────────────────── */
 .portal-modal-overlay {
   position: fixed;
   inset: 0;
@@ -2210,7 +2327,7 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
 }
 
 .portal-modal-chapters li::before {
-  content: '?';
+  content: '▸';
   color: var(--red);
   font-size: 10px;
 }
@@ -2255,7 +2372,7 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
 .portal-modal-module-dot.done { background: #1aab5b; }
 .portal-modal-module-dot.todo { background: var(--rule); }
 
-/* ?? Clickable cards ??????????????????????????????? */
+/* ── Clickable cards ─────────────────────────────── */
 .portal-card-clickable {
   cursor: pointer;
   transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
@@ -2273,7 +2390,7 @@ section:nth-of-type(even) .portal-card-clickable:hover {
   border-color: rgba(255,255,255,0.15);
 }
 
-/* ?? Plan de formation cards ??????????????????????? */
+/* ── Plan de formation cards ─────────────────────── */
 .portal-plan-list {
   display: flex;
   flex-direction: column;
@@ -2324,7 +2441,7 @@ section:nth-of-type(even) .portal-plan-meta { color: rgba(255,255,255,0.5); }
   white-space: nowrap;
 }
 
-/* ?? Sessions annuelles ???????????????????????????? */
+/* ── Sessions annuelles ──────────────────────────── */
 .portal-sessions-list {
   display: flex;
   flex-direction: column;
@@ -2350,7 +2467,7 @@ section:nth-of-type(even) .portal-plan-meta { color: rgba(255,255,255,0.5); }
   color: var(--red);
 }
 
-/* ?? Plan pluri annuel ? portes d'entr?e (PIF + planning) ? */
+/* ── Plan pluri annuel — portes d'entrée (PIF + planning) ─ */
 .portal-plan-entries.cols-2 {
   max-width: 920px;
   grid-template-columns: repeat(2, 1fr);
@@ -2358,6 +2475,22 @@ section:nth-of-type(even) .portal-plan-meta { color: rgba(255,255,255,0.5); }
 
 .portal-plan-entry-card .pv-card-body h3 {
   font-size: 20px;
+}
+
+#pif .portal-pif-overview-card .portal-plan-entry-card-img {
+  background: linear-gradient(160deg, rgba(227, 0, 27, 0.18) 0%, rgba(227, 0, 27, 0.04) 100%);
+}
+
+#pif .portal-pif-overview-card .pv-card-body h3 {
+  color: var(--red);
+}
+
+#pif .portal-pif-overview-card .portal-pif-card-status p:first-child {
+  font-weight: 700;
+}
+
+#pif .portal-pif-overview-card .pv-cta-link {
+  color: var(--red);
 }
 
 :is(#pif,#toyota-pif) .portal-pif-eyebrow {
@@ -3088,7 +3221,7 @@ button.pv-card {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* ?? KI portail ??????????????????????????????????? */
+/* ── KI portail ─────────────────────────────────── */
 .portal-ki-next-actions {
   margin-bottom: 28px;
 }
@@ -3158,7 +3291,7 @@ button.pv-card {
   font-weight: 600;
 }
 
-/* Pastilles Gx lisibles sur zebra sombre (m?mes tokens TEAM-GP / PIF). */
+/* Pastilles Gx lisibles sur zebra sombre (mêmes tokens TEAM-GP / PIF). */
 section:nth-of-type(even) .portal-ki-path-lead .portal-teamgp-level-chip--g4 {
   background: rgba(130, 170, 255, 0.22);
   color: #9eb6ff;
@@ -3199,7 +3332,7 @@ section:nth-of-type(even) .portal-ki-path-lead .portal-teamgp-level-chip--next {
   }
 }
 
-/* ?? Plan pluri annuel ? sous-sections par modalit? ? */
+/* ── Plan pluri annuel — sous-sections par modalité ─ */
 .portal-plan-subsections {
   display: flex;
   flex-direction: column;
@@ -3431,7 +3564,7 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
   background: rgba(255, 255, 255, 0.35);
 }
 
-/* ?? Section assistance (hotline atelier) ????????? */
+/* ── Section assistance (hotline atelier) ───────── */
 .portal-assistance-section {
   background: transparent !important;
   padding: 8px 0 14px !important;
@@ -3600,7 +3733,7 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
   }
 }
 
-/* Page tickets ? app 06 */
+/* Page tickets — app 06 */
 .portal-assistance-back {
   display: inline-block;
   margin-bottom: 20px;
@@ -3748,7 +3881,7 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
   color: var(--muted) !important;
 }
 
-/* Mise en avant carte support apr?s ? Poser une question ? (menu Aide) */
+/* Mise en avant carte support après « Poser une question » (menu Aide) */
 @keyframes portal-support-card-pulse {
   0% {
     box-shadow: 0 0 0 0 rgba(26, 86, 219, 0);
@@ -4175,7 +4308,7 @@ section:nth-of-type(even) .portal-dps-collab-empty {
   }
 }
 
-/* ?? Section ? d?couvrir ?????????????????????????? */
+/* ── Section À découvrir ────────────────────────── */
 .portal-discover-section {
   background: var(--navy) !important;
   padding: 14px 0 !important;
@@ -4235,7 +4368,7 @@ section:nth-of-type(even) .portal-dps-collab-empty {
   }
 }
 
-/* Retour en haut (portail) ? ? droite, toujours contrast? ; au-dessus de la barre d?mo si pr?sente */
+/* Retour en haut (portail) — à droite, toujours contrasté ; au-dessus de la barre démo si présente */
 .back-to-top-fab--portal {
   right: clamp(16px, 2.5vw, 28px);
   left: auto;
@@ -4474,7 +4607,7 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* ?? Hero ? layout + carte objectif certification ?? */
+/* ── Hero — layout + carte objectif certification ── */
 .portal-header-container {
   position: relative;
   z-index: 1;
@@ -5363,7 +5496,7 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
 }
 
 /* Etat vide : la carte se dimensionne sur son contenu au lieu d'etre etiree sur
-   toute la hauteur du titre ? sinon une phrase et un bouton occupent un pave.
+   toute la hauteur du titre — sinon une phrase et un bouton occupent un pave.
    Elle garde son grid-row: 1 / -1 : la restreindre a la rangee 1 l'enfermerait
    dans celle du badge, qui s'etirerait alors a la hauteur de la carte. */
 .portal-page-header--with-cert .portal-header-ki-card--empty {
@@ -5403,7 +5536,7 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
   box-shadow: 0 8px 32px rgba(14, 17, 38, 0.08);
 }
 
-/* Widget hero KI ? ? Prochaine session ? */
+/* Widget hero KI — « Prochaine session — */
 .portal-header-ki-card--up-next {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.85);
@@ -6268,15 +6401,105 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
   }
 }
 
+/* Décalage d'ancrage standard pour les sections du portail.
+   On annule ici la marge supplémentaire ajoutée récemment. */
+:root {
+  --portal-anchor-offset: 92px;
+}
+
 .portal-card-anchor {
-  scroll-margin-top: 96px;
+  scroll-margin-top: var(--portal-anchor-offset);
 }
 
-.portal-page > section[id] {
-  scroll-margin-top: 96px;
+.portal-page > section[id],
+.portal-page section[id] {
+  scroll-margin-top: var(--portal-anchor-offset);
 }
 
-/* ?? Entr?e au scroll ? section par section ??????? */
+/* Le scroll d'ancrage conserve l'espace de mise en page standard pour garder
+   visible l'entête et la section précédente lors d'un déplacement vers une
+   section du portail. */
+
+/* ── "À faire maintenant" : lien "Voir tout (N)" à droite du titre ─── */
+.portal-next-actions-more {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: gap 0.16s ease, opacity 0.16s ease;
+}
+
+.portal-next-actions-more:hover {
+  opacity: 0.75;
+  gap: 9px;
+}
+
+.portal-next-actions-more-arrow {
+  transition: transform 0.16s ease;
+}
+
+.portal-next-actions-more:hover .portal-next-actions-more-arrow {
+  transform: translateX(2px);
+}
+
+/* Variante encart (catégorie "results", pas de cartes) */
+.portal-next-actions-redirect {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.portal-next-actions-redirect .portal-next-actions-more {
+  padding: 9px 18px;
+  border: 1px solid var(--border, #d5d8e0);
+  border-radius: 999px;
+  background: #fff;
+  color: #0e1126;
+  font-weight: 600;
+}
+
+.portal-next-actions-redirect .portal-next-actions-more:hover {
+  background: #0e1126;
+  border-color: #0e1126;
+  color: #fff;
+  opacity: 1;
+}
+
+.portal-next-actions-redirect p {
+  margin: 0;
+  color: var(--muted, #64748b);
+  font-size: 14px;
+}
+
+/* Halo bref à l'arrivée du défilement doux (snap subtil) */
+.portal-section-snap-hl {
+  animation: portalSectionSnap 1.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Halo d'arrivée : `inset` pour qu'il ne déborde PAS au-dessus du haut de la
+   section — un box-shadow sortant venait se dessiner dans l'espace sous
+   l'appbar et se lisait comme un liseré résiduel. */
+@keyframes portalSectionSnap {
+  0%   { box-shadow: inset 0 0 0 0 rgba(26, 100, 220, 0); }
+  18%  { box-shadow: inset 0 3px 0 0 rgba(26, 100, 220, 0.22); }
+  100% { box-shadow: inset 0 0 0 0 rgba(26, 100, 220, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-section-snap-hl { animation: none; }
+  .portal-next-actions-more:hover { transform: none; }
+}
+
+/* ── Entrée au scroll — section par section ─────── */
 .portal-page .portal-reveal.reveal {
   transform: translateY(28px);
   transition:
@@ -6318,11 +6541,20 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
 .portal-page .pv-grid--stretch .pv-card h3 {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
+  min-height: 2.3em;
   overflow: hidden;
 }
 
-/* ?? Plan expandable ? modalit?s ?????????????????? */
+.portal-page .pv-card--session h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-height: 2.3em;
+  overflow: hidden;
+}
+
+/* ── Plan expandable — modalités ────────────────── */
 .portal-plan-card {
   background: var(--paper);
   border: 1px solid var(--rule);
@@ -6476,7 +6708,7 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
   border: 1px solid rgba(26, 86, 219, 0.28);
 }
 
-/* Tests ? sous-sections par type */
+/* Tests — sous-sections par type */
 .portal-test-subsection .portal-plan-subsection-title {
   flex: 1;
 }
@@ -6499,6 +6731,26 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
 
 :is(#resultats,#toyota-resultats) .portal-results-subsections {
   gap: 14px;
+}
+
+/* ── Chips de filtre : icône optionnelle (logo de marque) ────────── */
+.chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.chip-icon-logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 :is(#pif,#toyota-pif) .portal-plan-status-filter {
@@ -6592,7 +6844,7 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
   font-size: clamp(22px, 2.4vw, 28px);
 }
 
-/* Logo marque (Toyota?) plus lisible dans la zone MARQUES des cards PIF */
+/* Logo marque (Toyota…) plus lisible dans la zone MARQUES des cards PIF */
 :is(#pif,#toyota-pif) .portal-pif-tech-card .portal-dps-collab-brand-row .portal-header-brand-logo-wrap {
   width: 88px;
   height: 52px;
@@ -6667,6 +6919,7 @@ section:nth-of-type(even) .portal-dps-tier-section-title {
 #equipes .portal-plan-status-filter,
 section[id^="equipe-"] .portal-plan-status-filter,
 #tests .portal-plan-status-filter,
+#resultats .portal-plan-status-filter,
 #plan .portal-plan-status-filter,
 #pif .portal-plan-status-filter,
 #plans .portal-plan-status-filter,
@@ -6735,13 +6988,15 @@ section[id^="equipe-"] .portal-plan-status-filter,
   margin-bottom: 0;
 }
 
-#tests .sessions-brand-chips .chip {
+#tests .sessions-brand-chips .chip,
+#resultats .sessions-brand-chips .chip {
   display: inline-flex;
   align-items: center;
   gap: 10px;
 }
 
-#tests .sessions-brand-chips .chip .tab-count {
+#tests .sessions-brand-chips .chip .tab-count,
+#resultats .sessions-brand-chips .chip .tab-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6757,7 +7012,8 @@ section[id^="equipe-"] .portal-plan-status-filter,
   color: var(--red);
 }
 
-#tests .sessions-brand-chips .chip.active .tab-count {
+#tests .sessions-brand-chips .chip.active .tab-count,
+#resultats .sessions-brand-chips .chip.active .tab-count {
   background: #fff;
   color: var(--red);
 }
@@ -6816,7 +7072,7 @@ section[id^="equipe-"] .portal-plan-status-filter,
   color: var(--red);
 }
 
-/* Plan pluri annuel ? puces filtre (comme sessions accueil) */
+/* Plan pluri annuel — puces filtre (comme sessions accueil) */
 
 #plan .sessions-brand-chips .chip .tab-count {
   display: inline-flex;
@@ -6900,6 +7156,54 @@ section[id^="equipe-"] .portal-plan-status-filter,
   color: var(--red);
 }
 
+.portal-status-chip.annual_souhait_transmis {
+  background: rgba(5, 150, 105, 0.12);
+  color: #047857;
+}
+
+.portal-session-card-img .portal-session-status-tag.annual_souhait_transmis,
+.portal-plan-entry-card-img .portal-session-status-tag.annual_souhait_transmis {
+  background: rgba(5, 150, 105, 0.92);
+  color: #fff;
+}
+
+/* Bouton d'intérêt « Je souhaite y participer » — à droite du logo constructeur */
+.portal-interest-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid var(--border, #d5d8e0);
+  border-radius: 999px;
+  background: #fff;
+  color: #0e1126;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.portal-interest-btn:hover {
+  background: #0e1126;
+  border-color: #0e1126;
+  color: #fff;
+}
+
+.portal-interest-btn.is-requested {
+  background: rgba(5, 150, 105, 0.1);
+  border-color: rgba(5, 150, 105, 0.35);
+  color: #047857;
+  cursor: default;
+}
+
+.portal-interest-btn.is-requested:hover {
+  background: rgba(5, 150, 105, 0.16);
+}
+
 .portal-plan-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -6912,7 +7216,7 @@ section[id^="equipe-"] .portal-plan-status-filter,
   margin-top: 2px;
 }
 
-/* ?? Chef d'?quipe ? portail ?? */
+/* ── Chef d'équipe — portail ── */
 .portal-header-team-urgency {
   display: flex;
   flex-wrap: wrap;
@@ -6942,7 +7246,7 @@ section[id^="equipe-"] .portal-plan-status-filter,
   font-size: 17px;
 }
 
-/* Titre carte ? initiales + nom (relief) */
+/* Titre carte — initiales + nom (relief) */
 .pv-card-body h3:has(.portal-card-member-title) {
   line-height: 1.2;
 }
@@ -6999,7 +7303,7 @@ section[id^="equipe-"] .portal-plan-status-filter,
   background: linear-gradient(165deg, #c00016 0%, #8b0010 100%);
 }
 
-/* Paliers MEDACAP ? @see docs/dps-competency-tier-visual.md */
+/* Paliers MEDACAP — @see docs/dps-competency-tier-visual.md */
 .portal-card-member-title--tier-junior .portal-card-member-avatar {
   background: #fff;
   color: #1a56db;
@@ -7023,7 +7327,7 @@ section[id^="equipe-"] .portal-plan-status-filter,
   line-height: 1.15;
 }
 
-/* Logo marque ? cartes ?quipe */
+/* Logo marque — cartes équipe */
 .portal-brand-logo {
   display: inline-flex;
   align-items: center;
@@ -7368,7 +7672,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   margin-top: 16px;
 }
 
-/* ?? App 15 ? Pilotage projet ? extensions PvCard / PreviewSection ?? */
+/* ── App 15 · Pilotage projet — extensions PvCard / PreviewSection ── */
 
 .portal-delivery-page .portal-delivery-header {
   background: rgba(255, 255, 255, 0.92);
@@ -7499,7 +7803,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   }
 }
 
-/* ?? Visite guid?e portail (onboarding) ??????????? */
+/* ── Visite guidée portail (onboarding) ─────────── */
 .portal-onboarding {
   position: fixed;
   inset: 0;
@@ -7860,7 +8164,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   }
 }
 
-/* ?? DPS ? d?tail marque (morph slide-in, jumeau portail) ?? */
+/* ── DPS — détail marque (morph slide-in, jumeau portail) ── */
 .portal-morph-overlay {
   position: fixed;
   inset: 0;
@@ -8049,7 +8353,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   }
 }
 
-/* DPS ? matrice comp?tences technicien (lignes paliers ? colonnes modalit?s) */
+/* DPS — matrice compétences technicien (lignes paliers — colonnes modalités) */
 .portal-dps-tech-matrix {
   display: flex;
   flex-direction: column;
@@ -8233,7 +8537,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   margin-top: 2px;
 }
 
-/* DPS ? poste (texte) + tableaux techniciens par palier */
+/* DPS — poste (texte) + tableaux techniciens par palier */
 .portal-dps-tier-table-role-label {
   font-family: 'Space Grotesk', sans-serif;
   font-size: clamp(13px, 1.1vw, 15px);
@@ -8250,7 +8554,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
-/* Bandes palier ? tableaux fiche marque + cartes techniciens DPS (voir dpsCompetencyTierTheme.js) */
+/* Bandes palier — tableaux fiche marque + cartes techniciens DPS (voir dpsCompetencyTierTheme.js) */
 :root {
   --dps-tier-band-junior: #93c5fd;
   --dps-tier-band-junior-strong: #60a5fa;
@@ -8470,7 +8774,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   text-align: right;
 }
 
-/* Neutralise section:nth-of-type(even) portail ? alignement identique sur les 3 paliers */
+/* Neutralise section:nth-of-type(even) portail — alignement identique sur les 3 paliers */
 .portal-dps-brand-sheet section.portal-dps-tier-block:nth-of-type(even) .portal-dps-tier-table-wrap .portal-table th,
 .portal-dps-brand-sheet section.portal-dps-tier-block:nth-of-type(even) .portal-dps-tier-table-wrap .portal-table td {
   text-align: left;
@@ -8572,7 +8876,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   color: var(--red);
 }
 
-/* DPS d?tail marque ? format article-sheet */
+/* DPS détail marque — format article-sheet */
 .portal-brand-detail-page {
   padding-bottom: 48px;
   background: transparent;
@@ -8587,7 +8891,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   overflow: visible;
 }
 
-/* Pas de zebra portail ? l'int?rieur de la fiche article */
+/* Pas de zebra portail — l'intérieur de la fiche article */
 .portal-dps-brand-sheet section.portal-dps-tier-block,
 .article-sheet.portal-dps-brand-sheet section.portal-dps-tier-block:nth-of-type(even) {
   background: transparent;
@@ -8667,7 +8971,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   max-width: min(280px, 48vw);
 }
 
-/* TEAM-GP detail ? Mobility + Toyota plus lisibles ? c?t? du logo central */
+/* TEAM-GP detail — Mobility + Toyota plus lisibles — côté du logo central */
 .portal-teamgp-detail-sheet .portal-dps-brand-header .article-header-logo--cfao {
   height: clamp(52px, 8vw, 72px);
   max-width: 220px;
@@ -8685,7 +8989,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   text-align: center;
 }
 
-/* Wordmark Renault Trucks ? PNG avec marges, plus lisible en en-t?te fiche marque */
+/* Wordmark Renault Trucks — PNG avec marges, plus lisible en en-tête fiche marque */
 .portal-dps-brand-header .article-header-logo--brand.article-header-logo--renault-trucks {
   height: clamp(80px, 11vw, 112px);
   max-width: min(320px, 58vw);
@@ -8734,8 +9038,8 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   margin: 24px 0 8px;
 }
 
-/* ?? Etat vide de section portail ?????????????????????
-   Formalisme carte (DESIGN_SYSTEM.md ?7) : var(--paper), 1px var(--rule),
+/* ── Etat vide de section portail ─────────────────────
+   Formalisme carte (DESIGN_SYSTEM.md §7) : var(--paper), 1px var(--rule),
    accent border-left 4px, rayon/ombre alignes sur .portal-fad-card que ce
    bloc remplace. Surface opaque : le fond de section est une photo, un texte
    pose dessus passe sous le seuil AA. */
@@ -8984,7 +9288,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   }
 }
 
-/* ?? DPS ? fiche PIF technicien (r?plique Define, style portail) ?? */
+/* ── DPS — fiche PIF technicien (réplique Define, style portail) ── */
 .portal-dps-pif-detail-header {
   align-items: stretch;
 }
@@ -9207,7 +9511,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   }
 }
 
-/* ?? Define technicien ? skin MEDACAP embed (collaboratorDashboard) ?? */
+/* ── Define technicien — skin MEDACAP embed (collaboratorDashboard) ── */
 .portal-define-tech-page {
   padding: 16px 0 48px;
   background: transparent;
@@ -9880,7 +10184,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   color: #aeaeb2;
 }
 
-/* ?? Define ? graphique bulles (dashboard technicien MEDACAP) ?? */
+/* ── Define — graphique bulles (dashboard technicien MEDACAP) ── */
 
 .define-tech-bubble-chart-head {
   display: flex;
@@ -10218,7 +10522,7 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   }
 }
 
-/* -- TEAM-GP d?tail filiale (KI) -- */
+/* -- TEAM-GP détail filiale (KI) -- */
 .portal-teamgp-table-wrap {
   overflow-x: auto;
   margin-top: 0.5rem;
@@ -11791,3 +12095,167 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
 
 
 
+/* ═══════════════════════════════════════════════════
+   ENTÊTE COMPACTE — variante PL-MEDACAP
+   Même contenu, densité plus forte : l'entête cède de
+   la hauteur pour que la première section (« Vos
+   priorités ») tienne dans l'écran sans défilement.
+   Portée limitée à `--compact` : les autres profils
+   gardent l'entête d'origine.
+   ═══════════════════════════════════════════════════ */
+
+.portal-page-header--compact {
+  /* Respiration sous le bandeau des marques, avant la section suivante.
+     Les +26px de marge entre les trois lignes sont PRIS ICI (60 → 34) :
+     la hauteur totale de l'entête reste la même, seule sa répartition change. */
+  padding: 18px 0 34px;
+}
+
+/* Écart entre les éléments empilés de l'entête (badge, salutation, marques).
+   La carte de certification étant désactivée (SHOW_LEARNER_CERT_CARD), le
+   rendu passe par `.portal-header-main` en flux normal et NON par la grille
+   `--with-cert` : `row-gap` n'y produirait aucun effet, il faut des marges. */
+.portal-page-header--compact .portal-header-container {
+  row-gap: 12px;
+}
+
+/* Badge « APPRENANT : TECHNICIEN PL » → salutation. */
+.portal-page-header--compact .portal-header-role-line,
+.portal-page-header--compact .portal-header-eyebrow {
+  margin-bottom: 30px;
+}
+
+/* Bloc salutation → bandeau des marques. */
+.portal-page-header--compact .portal-header-greeting-block {
+  margin-bottom: 34px;
+}
+
+/* Titre : on garde la hiérarchie, on plafonne la casse XXL. */
+.portal-page-header--compact .portal-header-greeting {
+  font-size: clamp(24px, 2.4vw, 34px);
+  margin-bottom: 0;
+  /* La pastille filiale vit DANS le h1 : sans interligne propre, elle se colle
+     au « ! » quand la ligne passe à la ligne suivante. */
+  line-height: 1.35;
+}
+
+/* Pastille filiale (CFAO EQUIPMENT · Cameroun) : détachée de la salutation. */
+.portal-page-header--compact .portal-header-greeting-org {
+  margin-left: 0.75em;
+}
+
+/* Le sous-titre d'orientation devient une ligne de service, pas un paragraphe. */
+.portal-page-header--compact .portal-header-orient {
+  margin-top: 6px;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+/* Bandeau marques : titre sur la même ligne que les cartes plutôt qu'au-dessus,
+   c'est le gain de hauteur le plus net de l'entête. */
+.portal-page-header--compact .portal-header-brand-levels {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  /* Titre calé sur le BAS des cartes : sa dernière ligne s'aligne avec le pied
+     de la rangée, ce qui pose visuellement les deux blocs sur la même assise. */
+  align-items: end;
+  column-gap: 26px;
+  margin-top: 18px;
+}
+
+.portal-page-header--compact .portal-header-brand-levels-title {
+  margin: 0;
+  /* Deux lignes explicites (i18n), pas de coupure automatique : la césure
+     reste correcte quelle que soit la langue. */
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 12px;
+  font-size: clamp(19px, 1.6vw, 23px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  text-transform: none;
+  color: var(--navy);
+  max-width: none;
+  line-height: 1.28;
+  white-space: nowrap;
+}
+
+.portal-page-header--compact .portal-header-brand-levels-title-line {
+  display: block;
+}
+
+/* Les cartes de marque ne sont PAS compactées : elles gardent la forme et la
+   taille d'origine (logo au-dessus, niveau en dessous). Le gain de hauteur
+   vient du titre mis en ligne et des paddings de l'entête, pas des cartes. */
+
+/* Sous 900px la mise en ligne du titre n'a plus la place : on repasse en pile. */
+@media (max-width: 900px) {
+  .portal-page-header--compact .portal-header-brand-levels {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    row-gap: 8px;
+  }
+
+  .portal-page-header--compact .portal-header-brand-levels-title {
+    padding-bottom: 0;
+    white-space: normal;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   ENTÊTE + « VOS PRIORITÉS » — un seul écran
+   Les deux blocs se partagent exactement la hauteur
+   utile. L'entête est mesurée à l'exécution et
+   publiée dans `--portal-header-h` (cf. usePortalHeaderHeight) :
+   la section priorités prend le reste, sans vide.
+   ═══════════════════════════════════════════════════ */
+
+/* Hauteur laissée à la section une fois la Nav et l'entête déduites.
+   En HAUT de page l'appbar visible est la Nav seule (la sticky-bar n'apparaît
+   qu'après) : c'est donc `--portal-nav-h` qu'il faut retrancher ici, et non
+   l'offset d'ancrage (Nav + sticky-bar) qui vaut 44px de plus. */
+.portal-page {
+  --portal-nav-h: 77px;
+  --portal-priorities-h: calc(
+    100dvh - var(--portal-nav-h) - var(--portal-header-h, 0px)
+  );
+}
+
+.portal-page .portal-next-actions-viewport {
+  /* La section couvre au moins le reste de l'écran, sans vide sous l'entête.
+     Ses cartes gardent la taille de celles des autres sections : quand elles
+     ne tiennent pas, tout le contenu est réduit d'un même facteur
+     (cf. hooks/useAjustementEcran.js), borné pour que le texte reste
+     lisible ; au-delà, la section s'allonge et la page défile. */
+  min-height: var(--portal-priorities-h);
+  margin-bottom: 0;
+  /* Marges fluides : pleines (48 px) sur un écran de 1080 px de haut,
+     resserrées sur un portable, jamais sous 12 px. Les cartes et le texte
+     gardent leur taille ; seul l'air autour se réduit. */
+  padding-top: clamp(12px, calc(9vh - 49px), 48px);
+  padding-bottom: clamp(12px, calc(9vh - 49px), 48px);
+}
+
+.portal-page .portal-next-actions-viewport > .container {
+  /* Léger espace au-dessus du titre, pour ne pas coller à l'entête. */
+  padding-top: clamp(6px, calc(3vh - 14px), 18px) !important;
+}
+
+/* L'entête qui partage l'écran avec « Vos priorités » : mêmes marges
+   fluides (56 / 48 px à 1080 px de haut). */
+.portal-page .portal-page-header.page-header {
+  padding-top: clamp(16px, calc(10vh - 52px), 56px);
+  padding-bottom: clamp(12px, calc(9vh - 49px), 48px);
+}
+
+/* Respiration entre l'entête de section et la grille. */
+.portal-page .portal-next-actions-viewport .portal-section-head {
+  margin-bottom: 14px;
+}
+
+/* Écrans courts (portables 13", fenêtre réduite) : la section ne réserve
+   pas tout l'écran. Hauteur effective : l'attribut remplace `max-height`,
+   qui verrait la hauteur avant mise a l'echelle (cf. utils/echelle.js). */
+:root[data-bas~="720"] .portal-page .portal-next-actions-viewport {
+  min-height: 0;
+}

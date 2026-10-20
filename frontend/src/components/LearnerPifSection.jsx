@@ -21,6 +21,8 @@ import {
   resolveDpsFilialePifAccentColor,
   resolveDpsFilialePifCardState,
 } from '../utils/learnerPif.js'
+import { summarizeAnnualStatuses } from '../utils/learnerPlanning.js'
+import { isPlMedacapVariant } from '../utils/portalVariant.js'
 import {
   isDpsPifAnnualScope,
   resolveMedacapDefinePifLaunchUrl,
@@ -137,6 +139,19 @@ export default function LearnerPifSection({
     [user?.brands],
   )
 
+  // Carte « vue d'ensemble » : variante PL-MEDACAP uniquement — le PIF des
+  // autres profils garde sa grille de marques historique, sans carte de tête.
+  const showOverview = isPlMedacapVariant(lms)
+
+  const overview = useMemo(() => {
+    if (!showOverview) return null
+    const items = resolveLearnerPifItems(user, lms, PIF_SCOPE_PLURI)
+    return {
+      ...summarizeAnnualStatuses(items.map(item => item.annualStatus).filter(Boolean)),
+      total: items.length,
+    }
+  }, [user, lms, showOverview])
+
   const filterOptions = useMemo(() => {
     if (filterScopeMode === 'none' || fixedScope) return []
     if (filterScopeMode === 'years') {
@@ -196,6 +211,24 @@ export default function LearnerPifSection({
         )}
 
         <PortalStaggerGrid className="cols-4 pv-grid--stretch portal-pif-cards">
+          {overview && (
+            <PlanEntryCard
+              kind="pif"
+              className="portal-pif-overview-card"
+              title={t.pif_overview_title}
+              desc={t.pif_overview_desc}
+              meta={(
+                <div className="portal-pif-card-meta">
+                  <div className="portal-pif-card-status">
+                    <p>{formatPifFormationCount(overview.done)}/{formatPifFormationCount(overview.total)} {t.pif_overview_progress}</p>
+                    <p>{t.pif_overview_brands.replace('{count}', String(brandItems.length))}</p>
+                  </div>
+                </div>
+              )}
+              hoverHint={false}
+              accentColor="var(--red)"
+            />
+          )}
           {brandItems.map(brand => {
             const cardState = isFiliale
               ? resolveDpsFilialePifCardState(lms, brand.id, user, scope, t)

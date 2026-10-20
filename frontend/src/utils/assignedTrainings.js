@@ -163,10 +163,15 @@ function resolvePathwayPresentiel(user, lms, year) {
 /**
  * Plan pluri annuel : présentiel = parcours planPathway ou sessions planning annuel,
  * autres modalités = affectations explicites dans le LMS (e-learning, distanciel…).
+ *
+ * `fallbackToPlanning` (défaut true) : à défaut de planPathway, dériver le
+ * présentiel du planning annuel brut. Le PIF (logique MEDACAP : plan construit
+ * APRÈS diagnostic) passe `false` — sans planPathway ni statut d'inscription
+ * explicite, le PIF reste vide.
  */
-export function resolveLearnerAssignedTrainings(user, lms, year = 2026) {
+export function resolveLearnerAssignedTrainings(user, lms, year = 2026, { fallbackToPlanning = true } = {}) {
   const presentielFromPlanning = resolvePathwayPresentiel(user, lms, year)
-    ?? (user
+    ?? (fallbackToPlanning && user
       ? resolveLearnerPlanningSessions(user, lms, year).map(s => planningSessionToAssigned(s, lms, year))
       : [])
 

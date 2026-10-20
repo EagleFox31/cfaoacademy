@@ -11,6 +11,7 @@ import SuperAdminBuBrandsStrip from './SuperAdminBuBrandsStrip.jsx'
 import PortalHeroShell from './PortalHeroShell.jsx'
 import { resolveCertGoalPrerequisites } from '../utils/certGoalProgress.js'
 import { formatCertLevelLabel } from '../utils/portalCertLevel.js'
+import { isPlMedacapVariant } from '../utils/portalVariant.js'
 import { computePortalGreetingKey } from '../utils/portalGreeting.js'
 
 const ROLE_LABELS = {
@@ -184,6 +185,10 @@ export default function PortalHeader({
 
   const showGeoBrands = !showBrandLevels && !showDpsBrandsStrip && !showSuperAdminBrands && userBrands.length > 0
   const showBrandsBand = showBrandLevels || showDpsBrandsStrip || showSuperAdminBrands
+  // Entête compacte (variante PL-MEDACAP) : mêmes informations, densité plus
+  // forte, pour que la première section tienne dans l'écran sans défilement.
+  const heroClassName = [showBrandsBand && 'portal-page-header--with-brands', isPlMedacapVariant(lms) && 'portal-page-header--compact']
+    .filter(Boolean).join(' ')
   const dpsHero = (showDpsBrandsStrip && !isManager)
     ? {
         technicianCount: lms?.technicians?.length || lms?.kpis?.totalTechnicians,
@@ -329,7 +334,7 @@ export default function PortalHeader({
         : <TeamManagerHeroCard lms={lms} workshop={showWorkshopCard} />)
 
     return (
-      <PortalHeroShell aside={aside} className={showBrandsBand ? 'portal-page-header--with-brands' : ''}>
+      <PortalHeroShell aside={aside} className={heroClassName}>
         <div className="portal-header-role-line">{roleBadge}</div>
         {greetingBlock}
         {brandsBand}
@@ -338,7 +343,7 @@ export default function PortalHeader({
   }
 
   return (
-    <PortalHeroShell className={showBrandsBand ? 'portal-page-header--with-brands' : ''}>
+    <PortalHeroShell className={heroClassName}>
       <div className="portal-header-main">
         <div className="page-header-eyebrow portal-header-eyebrow">{roleBadge}</div>
         {greetingBlock}

@@ -83,6 +83,7 @@ export default function PlanEntryCard({
   href,
   to,
   onOpen,
+  onClick,
   corner = true,
   className = '',
   cardMedia,
@@ -143,9 +144,9 @@ export default function PlanEntryCard({
 
   return (
     <PvCard
-      href={onOpen ? undefined : href}
-      to={onOpen ? undefined : to}
-      onClick={onOpen}
+      href={onOpen || onClick ? undefined : href}
+      to={onOpen || onClick ? undefined : to}
+      onClick={onOpen || onClick}
       className={[
         'portal-plan-entry-card',
         muted ? 'portal-plan-entry-card--muted' : '',

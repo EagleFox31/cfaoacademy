@@ -1,0 +1,132 @@
+# Tests de la politique « compte_rendu_rendu » (cerbos compile --tests).
+# Tests negatifs obligatoires : un role hors formation, un autre formateur
+# et une action inconnue sont refuses.
+name: RenduSuite
+description: Acces a la ressource compte_rendu_rendu
+
+principals:
+  formateur:
+    id: f-a
+    roles: ["trainer"]
+    attr: { scopeNode: "", scopeNodes: [], brands: ["TOYOTA"] }
+  suppleant_ki:
+    id: k-1
+    roles: ["learner", "ki"]
+    attr: { scopeNode: "CMR", scopeNodes: ["CMR"], brands: ["TOYOTA"] }
+  suppleant_pic:
+    id: p-1
+    roles: ["pic"]
+    attr: { scopeNode: "CIV", scopeNodes: ["CIV"], brands: ["SUZUKI"] }
+  autre_formateur:
+    id: f-b
+    roles: ["trainer"]
+    attr: { scopeNode: "", scopeNodes: [], brands: ["TOYOTA"] }
+  apprenant:
+    id: a-1
+    roles: ["learner"]
+    attr: { scopeNode: "CMR", scopeNodes: ["CMR"], brands: ["TOYOTA"] }
+  chef_atelier:
+    id: c-1
+    roles: ["workshop_manager"]
+    attr: { scopeNode: "CMR", scopeNodes: ["CMR"], brands: ["TOYOTA"] }
+  anonyme:
+    id: anonymous
+    roles: ["_anon"]
+    attr: { scopeNode: "" }
+  superadmin:
+    id: s-1
+    roles: ["superadmin"]
+    attr: { scopeNode: "" }
+
+resources:
+  a_lui:
+    kind: compte_rendu_rendu
+    id: r-1
+    attr: { ownerId: "f-a", scopeNode: "", brand: "toyota" }
+  au_ki:
+    kind: compte_rendu_rendu
+    id: r-2
+    attr: { ownerId: "k-1", scopeNode: "CMR", brand: "toyota" }
+  au_pic:
+    kind: compte_rendu_rendu
+    id: r-3
+    attr: { ownerId: "p-1", scopeNode: "CIV", brand: "suzuki" }
+
+tests:
+  - name: chaque formateur agit sur ses propres ressources
+    input:
+      principals: ["formateur"]
+      resources: ["a_lui"]
+      actions: ["render", "read"]
+    expected:
+      - principal: formateur
+        resource: a_lui
+        actions: { render: EFFECT_ALLOW, read: EFFECT_ALLOW }
+
+  - name: le KI et le PIC, formateurs suppleants, aussi
+    input:
+      principals: ["suppleant_ki", "suppleant_pic"]
+      resources: ["au_ki", "au_pic"]
+      actions: ["read"]
+    expected:
+      - principal: suppleant_ki
+        resource: au_ki
+        actions: { read: EFFECT_ALLOW }
+      - principal: suppleant_ki
+        resource: au_pic
+        actions: { read: EFFECT_DENY }
+      - principal: suppleant_pic
+        resource: au_ki
+        actions: { read: EFFECT_DENY }
+      - principal: suppleant_pic
+        resource: au_pic
+        actions: { read: EFFECT_ALLOW }
+
+  - name: NEGATIF un autre formateur ne touche pas aux ressources d'un collegue
+    input:
+      principals: ["autre_formateur"]
+      resources: ["a_lui", "au_ki"]
+      actions: ["read"]
+    expected:
+      - principal: autre_formateur
+        resource: a_lui
+        actions: { read: EFFECT_DENY }
+      - principal: autre_formateur
+        resource: au_ki
+        actions: { read: EFFECT_DENY }
+
+  - name: NEGATIF un role hors formation et un anonyme sont refuses
+    input:
+      principals: ["apprenant", "chef_atelier", "anonyme"]
+      resources: ["a_lui"]
+      actions: ["render", "read"]
+    expected:
+      - principal: apprenant
+        resource: a_lui
+        actions: { render: EFFECT_DENY, read: EFFECT_DENY }
+      - principal: chef_atelier
+        resource: a_lui
+        actions: { render: EFFECT_DENY, read: EFFECT_DENY }
+      - principal: anonyme
+        resource: a_lui
+        actions: { render: EFFECT_DENY, read: EFFECT_DENY }
+
+  - name: NEGATIF une action inconnue est refusee (default-deny)
+    input:
+      principals: ["formateur"]
+      resources: ["a_lui"]
+      actions: ["export", "share"]
+    expected:
+      - principal: formateur
+        resource: a_lui
+        actions: { export: EFFECT_DENY, share: EFFECT_DENY }
+
+  - name: le superadmin a tous les droits
+    input:
+      principals: ["superadmin"]
+      resources: ["a_lui"]
+      actions: ["render", "read", "export"]
+    expected:
+      - principal: superadmin
+        resource: a_lui
+        actions: { render: EFFECT_ALLOW, read: EFFECT_ALLOW, export: EFFECT_ALLOW }

@@ -14,7 +14,8 @@ export default function PortalDemoBar() {
   const navigate = useNavigate()
   const [minimized, setMinimized] = useState(false)
 
-  if (!user) return null
+  // Un compte personnel ne passe pas d'un profil a l'autre.
+  if (!user || user.compte) return null
 
   const nom = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username
   const primaryRole = getPrimaryRole(user.roles)
