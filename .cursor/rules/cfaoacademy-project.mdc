@@ -161,3 +161,11 @@ Alias noms affichage → catalogue : `Mercedes-Benz` → `MERCEDES`, `Omoda & Ja
 - **Theme** : `utils/dpsCompetencyTierTheme.js` — `dpsCompetencyTierAccent`, classes CSS `portal-tier-*` / `tier-*`.
 - **Composants** : `DpsCompetencyTierChip`, `DpsCompetencyTierMemberTitle` — ne pas recoder les couleurs ailleurs.
 - **Hors norme** : scores tests (`evalScoreTier`), statuts PIF/session, `TeamMemberCard`.
+
+## Règle de communication : Zéro LaTeX
+- **Interdiction formelle du LaTeX** dans les réponses (`$`, `$$`, `\frac`, `\text`, etc.). L'interface utilisateur ne l'interprète pas et affiche le code brut illisible. Tout calcul doit être formulé en texte clair standard (ex: `(A + B + C) / 3`).
+
+## Portail DPS & Manager : Moyenne des équipes par marque
+- **Décision Direction ("le boss")** : Le score d'une marque est **la moyenne arithmétique simple ("normale")** des paliers évalués (Maintenance, Réparation, Diagnostic), et **NON la moyenne pondérée par l'effectif**.
+- Formule : `(Junior + Senior + Expert) / 3` (ou divisé par le nombre de paliers avec une note).
+

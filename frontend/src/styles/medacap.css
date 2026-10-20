@@ -1,0 +1,293 @@
+/* ==========================================================================
+   MEDACAP framework — deltas uniquement (le reste reprend portal.css / academy.css)
+   Les composants utilisent PvCard/PlanEntryCard/PortalStaggerGrid partout.
+   ========================================================================== */
+
+/* ─── Toolbar (barre recherche + CTA au-dessus d'une grille) ─── */
+.portal-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 12px 0 20px;
+}
+.portal-toolbar-search {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  border: 1px solid var(--muted-2, #e2e8f0);
+  border-radius: 999px;
+  font-size: 14px;
+  background: var(--panel, #fff);
+  color: var(--fg, #0f172a);
+}
+.portal-toolbar-search:focus {
+  outline: 2px solid var(--accent, #1a56db);
+  outline-offset: 1px;
+}
+
+/* ─── Sous-titre de section (2ème sous-bloc dans une même PortalReveal) ─── */
+.portal-section-subhead {
+  margin: 32px 0 12px;
+}
+
+/* ─── Pills période (perf comparatif) ─── */
+.portal-period-pills {
+  display: inline-flex;
+  gap: 6px;
+  background: var(--panel-2, #f1f5f9);
+  padding: 4px;
+  border-radius: 999px;
+  margin: 8px 0 20px;
+}
+.portal-period-pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--muted, #64748b);
+  cursor: pointer;
+  transition: all 120ms;
+}
+.portal-period-pill.is-active {
+  background: var(--panel, #fff);
+  color: var(--fg, #0f172a);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+/* ─── Barre d'action PIF (Valider/Refuser année) ─── */
+.pif-action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 16px 0 24px;
+  padding: 14px 18px;
+  background: color-mix(in oklab, var(--accent, #1a56db) 6%, transparent);
+  border-radius: 14px;
+  border-left: 3px solid var(--accent, #1a56db);
+  font-size: 13px;
+}
+.pif-action-bar-info { color: var(--fg, #0f172a); }
+.pif-action-bar-btns { display: flex; gap: 8px; }
+
+/* ─── État vide (grille sans entrée) ─── */
+.portal-empty-panel {
+  padding: 32px;
+  text-align: center;
+  color: var(--muted, #64748b);
+  font-size: 14px;
+  background: var(--panel-2, #f8fafc);
+  border-radius: 14px;
+  margin: 16px 0;
+}
+
+/* ─── Directory card wrap (permet le menu absolute) ─── */
+.portal-directory-card-wrap { position: relative; }
+
+/* ─── Actions list dans un PortalModal ─── */
+.portal-actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.portal-actions-item {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--muted-2, #e2e8f0);
+  background: var(--panel, #fff);
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--fg, #0f172a);
+  transition: all 120ms;
+}
+.portal-actions-item:hover {
+  background: var(--panel-2, #f8fafc);
+  border-color: var(--fg, #0f172a);
+}
+.portal-actions-item.is-danger { color: #b91c1c; }
+.portal-actions-item.is-danger:hover { background: #fef2f2; border-color: #ef4444; }
+
+/* ─── Boutons standardisés ─── */
+.portal-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 120ms;
+  font-family: inherit;
+}
+.portal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.portal-btn-primary {
+  background: var(--accent, #1a56db);
+  color: white;
+  border-color: var(--accent, #1a56db);
+}
+.portal-btn-primary:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--accent, #1a56db) 88%, black);
+}
+.portal-btn-ghost {
+  background: transparent;
+  color: var(--fg, #0f172a);
+  border-color: var(--muted-2, #e2e8f0);
+}
+.portal-btn-ghost:hover:not(:disabled) { border-color: var(--fg, #0f172a); }
+
+/* ─── Funnel progress (onboarding + campagnes) ─── */
+.portal-funnel-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.portal-funnel-step {
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  white-space: nowrap;
+}
+.portal-funnel-progress-track {
+  flex: 1;
+  height: 4px;
+  background: var(--panel-2, #f1f5f9);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.portal-funnel-progress-fill {
+  height: 100%;
+  background: var(--accent, #1a56db);
+  transition: width 240ms ease;
+}
+.portal-funnel-body { min-height: 220px; }
+
+/* ─── Formulaires dans modals ─── */
+.portal-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.portal-form-grid label {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 13px; color: var(--muted, #64748b);
+}
+.portal-form-grid input,
+.portal-form-grid select,
+.portal-form-grid textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--muted-2, #e2e8f0);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--fg, #0f172a);
+  background: var(--panel, #fff);
+  font-family: inherit;
+}
+.portal-form-grid fieldset {
+  border: 1px solid var(--muted-2, #e2e8f0);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.portal-form-grid fieldset legend {
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  padding: 0 4px;
+}
+.portal-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--fg, #0f172a);
+}
+.portal-form-recap {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  font-size: 13px;
+}
+.portal-form-recap dt { color: var(--muted, #64748b); }
+.portal-form-recap dd { margin: 0; color: var(--fg, #0f172a); font-weight: 500; }
+
+/* ─── Modal helpers ─── */
+.portal-modal-label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted, #64748b);
+  margin: 12px 0 4px;
+}
+.portal-modal-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  border: 1px solid var(--muted-2, #e2e8f0);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+.portal-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--muted-2, #e2e8f0);
+}
+
+/* ─── Chip muted (utilisé partout) ─── */
+.portal-status-chip.muted {
+  background: var(--panel-2, #f1f5f9);
+  color: var(--muted, #64748b);
+}
+
+/* ─── Super Admin Builder — stripe MEDACAP + preview banner ─── */
+.builder-stage-stripe {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.builder-stage-dot {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--panel-2, #f1f5f9);
+  color: var(--muted-2, #cbd5e1);
+  font-size: 11px; font-weight: 700;
+  border: 1px solid transparent;
+}
+.builder-stage-dot.is-covered {
+  background: color-mix(in oklab, var(--accent, #1a56db) 12%, transparent);
+  color: var(--accent, #1a56db);
+  border-color: color-mix(in oklab, var(--accent, #1a56db) 25%, transparent);
+}
+
+.medacap-preview-topbar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 24px;
+  background: #fef3c7;
+  border-bottom: 1px solid #fcd34d;
+  font-size: 13px;
+  color: #78350f;
+}
+.medacap-preview-banner {
+  padding: 6px 32px;
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+  font-size: 12px;
+  color: #78350f;
+  display: flex; align-items: center; gap: 8px;
+}
+.medacap-preview-note { color: #92400e; }
+
+/* ─── Responsive (petits ajustements) ─── */
+@media (max-width: 720px) {
+  .portal-toolbar { flex-direction: column; align-items: stretch; }
+  .portal-toolbar-search { width: 100%; }
+  .pif-action-bar { flex-direction: column; align-items: stretch; }
+  .pif-action-bar-btns { justify-content: flex-end; }
+}

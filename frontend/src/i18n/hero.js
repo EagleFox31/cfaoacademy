@@ -1,6 +1,8 @@
 export const HERO_COPY = {
   fr: {
     veilScrubberAria: "Ajuster le voile sur l'image du hero",
+    prevSlideAria: 'Diapositive précédente',
+    nextSlideAria: 'Diapositive suivante',
     defaultTitleBefore: 'Développez vos Compétences ',
     defaultTitleEm: 'en mécanique automobile',
     defaultTitleAfter: ' avec ',
@@ -8,6 +10,7 @@ export const HERO_COPY = {
     headlineTemplateBefore: 'Développez vos compétences ',
     lead:
       'Formations et certifications constructeurs — pour les Equipes de CFAO comme pour les partenaires.',
+    cardScrollHint: 'Découvrir les offres de formation',
     personasNavAria: 'Choisir votre profil',
     whoAreYou: 'Qui êtes-vous ?',
     formationOffer: 'Offre de formation',
@@ -82,6 +85,8 @@ export const HERO_COPY = {
   },
   en: {
     veilScrubberAria: 'Adjust the overlay on the hero image',
+    prevSlideAria: 'Previous slide',
+    nextSlideAria: 'Next slide',
     defaultTitleBefore: 'Build your ',
     defaultTitleEm: 'technical',
     defaultTitleAfter: ' skills with ',
@@ -89,6 +94,7 @@ export const HERO_COPY = {
     headlineTemplateBefore: 'Build your skills in ',
     lead:
       'Manufacturer training and certifications — for CFAO teams and partners alike.',
+    cardScrollHint: 'Explore training offers',
     personasNavAria: 'Choose your profile',
     whoAreYou: 'Who are you?',
     formationOffer: 'Training offer',
@@ -163,6 +169,8 @@ export const HERO_COPY = {
   },
   pt: {
     veilScrubberAria: 'Ajustar o véu sobre a imagem do hero',
+    prevSlideAria: 'Diapositivo anterior',
+    nextSlideAria: 'Diapositivo seguinte',
     defaultTitleBefore: 'Desenvolva as suas competências ',
     defaultTitleEm: 'em mecânica automóvel',
     defaultTitleAfter: ' com a ',
@@ -170,6 +178,7 @@ export const HERO_COPY = {
     headlineTemplateBefore: 'Desenvolva as suas competências ',
     lead:
       'Formações e certificações de construtor — para as equipas CFAO e parceiros.',
+    cardScrollHint: 'Descobrir as ofertas de formação',
     personasNavAria: 'Escolher o seu perfil',
     whoAreYou: 'Quem é?',
     formationOffer: 'Oferta de formação',

@@ -4,43 +4,36 @@ import usePortalBackground from '../../hooks/usePortalBackground'
 import usePortalHashScroll from '../../hooks/usePortalHashScroll'
 import LearnerDashboard from './LearnerDashboard'
 import KIDashboard from './KIDashboard'
-import TeamManagerDashboard from './TeamManagerDashboard'
+import ManagerDashboard from './ManagerDashboard'
 import BranchHRDashboard from './BranchHRDashboard'
 import SuperAdminDashboard from './SuperAdminDashboard'
 import DpsDashboard from './DpsDashboard'
 
-const ROLE_PRIORITY = [
-  'superadmin', 'build_team', 'group_admin', 'dps', 'dop', 'branch_hr', 'branch_admin',
-  'workshop_manager', 'team_manager',
-  'ki', 'pic',
-  'trainer', 'center_director',
-]
+import { getPrimaryRole, resolveProfile } from './portalProfiles.js'
 
-export function getPrimaryRole(roles) {
-  for (const r of ROLE_PRIORITY) {
-    if (roles.includes(r)) return r
-  }
-  return 'learner'
-}
+export { getPrimaryRole }
 
 function resolveView(roles) {
-  const primary = getPrimaryRole(roles)
-  if (primary === 'build_team') return <Navigate to="/portail/delivery" replace />
-  if (primary === 'group_admin') return <Navigate to="/portail/delivery" replace />
-  if (primary === 'superadmin') return <SuperAdminDashboard />
-  if (primary === 'dps' || primary === 'dop') return <DpsDashboard />
-  if (primary === 'branch_hr' || primary === 'branch_admin') return <BranchHRDashboard />
-  if (primary === 'workshop_manager') return <TeamManagerDashboard mode="workshop" />
-  if (primary === 'team_manager') return <TeamManagerDashboard mode="team" />
-  if (primary === 'ki' || primary === 'pic') return <KIDashboard />
+  const profile = resolveProfile(roles)
+  if (profile.redirectTo) return <Navigate to={profile.redirectTo} replace />
+  if (profile.key === 'superadmin') return <SuperAdminDashboard />
+  if (profile.key === 'dps') return <DpsDashboard />
+  if (profile.key === 'branch_hr') return <BranchHRDashboard />
+  if (profile.key === 'workshop_manager') return <ManagerDashboard />
+  if (profile.key === 'team_manager') return <ManagerDashboard />
+  if (profile.key === 'ki') return <KIDashboard />
   return <LearnerDashboard />
 }
 
 export default function Portal() {
-  const { user } = useAuth()
+  const { user, status } = useAuth()
   usePortalBackground(user)
   usePortalHashScroll(true)
 
+  // Ne pas rediriger tant que la résolution /me est en cours : sinon un F5
+  // envoie vers /login le temps que le back réponde, puis le portail réapparaît
+  // au refresh suivant quand la session est déjà en cache.
+  if (status === 'loading') return null
   if (!user) return <Navigate to="/login" replace />
 
   return resolveView(user.roles)

@@ -54,14 +54,68 @@ const NAME_TO_CODE = {
   malawi: 'mw',
 }
 
+const LOCAL_COUNTRY_FLAGS = {
+  cameroun: '/assets/flags/cameroon.svg',
+  cameroon: '/assets/flags/cameroon.svg',
+  "cote d'ivoire": '/assets/flags/ivory-coast.svg',
+  rci: '/assets/flags/ivory-coast.svg',
+  'ivory coast': '/assets/flags/ivory-coast.svg',
+  senegal: '/assets/flags/senegal.svg',
+  maroc: '/assets/flags/morocco.svg',
+  morocco: '/assets/flags/morocco.svg',
+  rdc: '/assets/flags/democratic-republic-of-congo.svg',
+  'congo kinshasa': '/assets/flags/democratic-republic-of-congo.svg',
+  'dr congo': '/assets/flags/democratic-republic-of-congo.svg',
+  ghana: '/assets/flags/ghana.svg',
+  madagascar: '/assets/flags/madagascar.svg',
+  gabon: '/assets/flags/gabon.svg',
+  nigeria: '/assets/flags/nigeria.svg',
+  'burkina faso': '/assets/flags/burkina-faso.svg',
+  burkina: '/assets/flags/burkina-faso.svg',
+  togo: '/assets/flags/togo.svg',
+  benin: '/assets/flags/benin.svg',
+  tchad: '/assets/flags/chad.svg',
+  chad: '/assets/flags/chad.svg',
+  congo: '/assets/flags/congo.svg',
+  'congo brazzaville': '/assets/flags/congo.svg',
+  mali: '/assets/flags/mali.svg',
+  guinee: '/assets/flags/guinea.svg',
+  'guinee-conakry': '/assets/flags/guinea.svg',
+  mauritanie: '/assets/flags/mauritania.svg',
+  mauritania: '/assets/flags/mauritania.svg',
+  rca: '/assets/flags/central-african-republic.svg',
+  centrafrique: '/assets/flags/central-african-republic.svg',
+  'republique centrafricaine': '/assets/flags/central-african-republic.svg',
+  'guinee equatoriale': '/assets/flags/equatorial-guinea.svg',
+  rge: '/assets/flags/equatorial-guinea.svg',
+  niger: '/assets/flags/niger.svg',
+  kenya: '/assets/flags/kenya.svg',
+  tanzanie: '/assets/flags/tanzania.svg',
+  angola: '/assets/flags/angola.svg',
+  france: '/assets/flags/france.svg',
+  all: '/assets/flags/africa-cfao-network.jpg',
+  groupe: '/assets/flags/africa-cfao-network.jpg',
+  'toutes filiales': '/assets/flags/africa-cfao-network.jpg',
+  'toutes les filiales': '/assets/flags/africa-cfao-network.jpg',
+}
+
 /** @returns {string | null} */
 export function countryCodeFromName(name) {
   if (!name) return null
   return NAME_TO_CODE[norm(name)] ?? null
 }
 
+export function localFlagUrlForCountry(name) {
+  if (!name) return null
+  return LOCAL_COUNTRY_FLAGS[norm(name)] ?? null
+}
+
 export function flagCdnUrlForCountry(name, width = 40) {
   const code = countryCodeFromName(name)
   if (!code) return null
   return `https://flagcdn.com/w${width}/${code}.png`
+}
+
+export function flagUrlForCountry(name, width = 64) {
+  return localFlagUrlForCountry(name) || flagCdnUrlForCountry(name, width)
 }

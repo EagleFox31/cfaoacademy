@@ -6,6 +6,8 @@ import {
   evalAccentColor,
   evalScoreTier,
   evalScoreTierClass,
+  formatEvalDate,
+  isEvalTestLocked,
   isFormationTestLocked,
   resolveEvalCardMedia,
   resolveEvalFormationMeta,
@@ -17,15 +19,30 @@ function EvalCardScore({ e }) {
   if (e.score == null) return null
   const tier = evalScoreTier(e.score)
   return (
-    <span className={`portal-eval-score portal-eval-score--card${evalScoreTierClass(tier)}`}>
+    <span className={`portal-eval-score portal-eval-score--card${evalScoreTierClass(tier)}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
       <span className="portal-eval-score-value">{e.score}</span>
-      <span className="portal-eval-score-denom">/100</span>
+      <span className="portal-eval-score-denom">%</span>
+      {e.minReason && (
+        <span
+          className="portal-info-tooltip-badge"
+          tabIndex="0"
+          role="button"
+          aria-label={e.minReason}
+          style={{ cursor: 'help' }}
+          onClick={(ev) => ev.stopPropagation()}
+        >
+          i
+          <span className="portal-badge-tooltip" role="tooltip">
+            {e.minReason}
+          </span>
+        </span>
+      )}
     </span>
   )
 }
 
 export function evalCardStatusLabel(e, t, locked = false) {
-  if (locked) return t.status_coming_soon
+  if (locked) return t.status_locked ?? t.status_coming_soon ?? 'Verrouillé'
   if (e.status === 'done') return t.status_done
   if (e.status === 'progress') return t.status_progress
   if (e.status === 'upcoming') return t.status_upcoming
@@ -33,7 +50,7 @@ export function evalCardStatusLabel(e, t, locked = false) {
 }
 
 export function evalCardStatusClass(e, locked = false) {
-  if (locked) return 'coming-soon'
+  if (locked) return 'locked'
   if (e.status === 'upcoming') return 'todo'
   return e.status ?? 'todo'
 }
@@ -47,8 +64,13 @@ function EvalCardMeta({ e, t }) {
       : null
 
   let dateHint = null
-  if (e.status === 'done' && e.date) dateHint = `${t.eval_passed_on} ${e.date}`
-  else if (e.status === 'upcoming' && e.date !== '—') dateHint = `${t.eval_upcoming_on} ${e.date}`
+  if (e.status === 'done' && e.date) {
+    dateHint = e.date.startsWith('Passé') || e.date.startsWith('Transposé')
+      ? e.date
+      : `${t.eval_passed_on} ${formatEvalDate(e.date)}`
+  } else if (e.status === 'upcoming' && e.date !== '—') {
+    dateHint = `${t.eval_upcoming_on} ${formatEvalDate(e.date)}`
+  }
 
   const formationMeta = resolveEvalFormationMeta(e, t)
 
@@ -57,6 +79,11 @@ function EvalCardMeta({ e, t }) {
       {formationMeta && (
         <div className="portal-eval-meta-row portal-eval-meta-row--sub">
           <span className="portal-eval-meta-val">{formationMeta}</span>
+        </div>
+      )}
+      {e.subDetail && (
+        <div className="portal-eval-meta-row portal-eval-meta-row--sub" style={{ fontWeight: 600, color: 'var(--ink, #0e1126)' }}>
+          <span className="portal-eval-meta-val">{e.subDetail}</span>
         </div>
       )}
       {showQuestions && questionsVal != null && (
@@ -74,19 +101,44 @@ function EvalCardMeta({ e, t }) {
   )
 }
 
-function EvalCardResult({ e, t, locked = false }) {
+const BRAND_LOGOS = {
+  toyota:          '/assets/logos/toyota.png',
+  mercedes:        '/assets/logos/mercedes.png',
+  'mercedes-benz': '/assets/logos/mercedes.png',
+  suzuki:          '/assets/logos/suzuki.png',
+  mitsubishi:      '/assets/logos/mitsubishi.png',
+  fuso:            '/assets/logos/fuso.png',
+  hino:            '/assets/logos/hino.png',
+  byd:             '/assets/logos/byd.png',
+  citroen:         '/assets/logos/citroen.png',
+  yamaha:          '/assets/logos/yamaha.png',
+  'renault-trucks':'/assets/logos/renault-trucks.png',
+  sinotruk:        '/assets/logos/sinotruk.png',
+  shacman:         '/assets/logos/shacman.png',
+  'king-long':     '/assets/logos/kinglong.png',
+  kinglong:        '/assets/logos/kinglong.png',
+  bt:              '/assets/logos/bt.png',
+  jcb:             '/assets/logos/jcb.png',
+  lovol:           '/assets/logos/lovol.png',
+}
+
+function EvalCardResult({ e, t, locked = false, statusOnly = false }) {
   const inProgress = e.status === 'progress'
 
   return (
     <div className="portal-eval-result-row">
-      <span className="portal-eval-result-lbl">{t.eval_label_result}</span>
+      <span className="portal-eval-result-lbl">{statusOnly ? (t.eval_label_status ?? 'Statut') : t.eval_label_result}</span>
       <div className="portal-eval-result-val">
         {locked ? (
-          <span className="portal-eval-result-pending portal-status-chip coming-soon">
-            {t.status_coming_soon}
+          <span className="portal-eval-result-pending portal-status-chip locked">
+            {t.status_locked ?? t.status_coming_soon ?? 'Verrouillé'}
           </span>
         ) : inProgress ? (
           <span className="portal-eval-finish-cta">{t.eval_finish_test}</span>
+        ) : statusOnly ? (
+          <span className={`portal-status-chip ${evalCardStatusClass(e, locked)}`}>
+            {evalCardStatusLabel(e, t, locked)}
+          </span>
         ) : e.score != null ? (
           <EvalCardScore e={e} />
         ) : (
@@ -99,34 +151,60 @@ function EvalCardResult({ e, t, locked = false }) {
   )
 }
 
-export function EvalKicker({ e, t, user }) {
-  const kindClass = e.kind === 'competency' ? 'kind-competency' : 'kind-formation'
-  const tierLabel = e.kind === 'competency' && e.competencyTier
+export function EvalKicker({ e, t, user, showBrandLogo = false }) {
+  const isCompetency = e.kind === 'competency'
+  const modalityLabel = e.modality === 'practical' ? t.test_modality_practical : t.test_modality_theory
+  const modalityClass = e.modality === 'practical' ? 'kind-practical' : 'kind-theory'
+  const tierLabel = isCompetency && e.competencyTier
     ? resolveCompetencyTierLabel(e.competencyTier, t, user)
     : e.kind === 'formation' && e.code
       ? e.code
       : e.certLevel
 
+  const brand = e.brand
+  const brandLogo = brand ? (BRAND_LOGOS[brand] ?? `/assets/logos/${brand}.png`) : null
+
   return (
     <span className="pv-card-kicker-row portal-eval-kicker">
-      <span className={`portal-status-chip ${kindClass}`}>
-        {e.kind === 'competency' ? t.test_kind_competency : t.test_kind_formation}
-      </span>
+      {showBrandLogo && brandLogo && (
+        <span className="portal-kicker-brand-logo-wrap" title={brand}>
+          <img src={brandLogo} alt={brand} className="portal-kicker-brand-logo" />
+        </span>
+      )}
+      {e.modality && (
+        <span className={`portal-status-chip ${modalityClass}`}>
+          {modalityLabel}
+        </span>
+      )}
       {tierLabel && (
-        <span className="portal-status-chip tier">{tierLabel}</span>
+        <span className={`portal-status-chip tier tier--${(e.competencyTier ?? '').toLowerCase()}`}>
+          {tierLabel}
+        </span>
+      )}
+      {!isCompetency && e.certLevel && e.certLevel !== tierLabel && (
+        <span className="portal-status-chip level-cert">{e.certLevel}</span>
       )}
     </span>
   )
 }
 
 export function EvalDetail({ e, t, user }) {
+  const isCompetency = e.kind === 'competency'
   return (
     <>
-      {e.kind && (
+      <div className="portal-modal-row">
+        <span className="portal-modal-label">{t.test_modal_kind}</span>
+        <span className="portal-modal-value">
+          {isCompetency
+            ? (t.test_kind_competency_multibrand ?? 'Mesure de compétences (Multimarque)')
+            : (t.test_kind_formation ?? 'Formation')}
+        </span>
+      </div>
+      {e.competencyTier && (
         <div className="portal-modal-row">
-          <span className="portal-modal-label">{t.test_modal_kind}</span>
+          <span className="portal-modal-label">{t.test_modal_tier}</span>
           <span className="portal-modal-value">
-            {e.kind === 'competency' ? t.test_kind_competency : t.test_kind_formation}
+            {resolveCompetencyTierLabel(e.competencyTier, t, user)}
           </span>
         </div>
       )}
@@ -138,15 +216,7 @@ export function EvalDetail({ e, t, user }) {
           </span>
         </div>
       )}
-      {e.competencyTier && (
-        <div className="portal-modal-row">
-          <span className="portal-modal-label">{t.test_modal_tier}</span>
-          <span className="portal-modal-value">
-            {resolveCompetencyTierLabel(e.competencyTier, t, user)}
-          </span>
-        </div>
-      )}
-      {e.kind === 'formation' && e.code && (() => {
+      {!isCompetency && e.kind === 'formation' && e.code && (() => {
         const catalog = findCatalogTraining(e.brand, e.code)
         return (
           <div className="portal-modal-row">
@@ -158,9 +228,15 @@ export function EvalDetail({ e, t, user }) {
           </div>
         )
       })()}
+      {!isCompetency && e.brand && (
+        <div className="portal-modal-row">
+          <span className="portal-modal-label">{t.modal_brand}</span>
+          <span className={`portal-brand-chip ${e.brand}`}>{e.brand}</span>
+        </div>
+      )}
       <div className="portal-modal-row">
         <span className="portal-modal-label">{t.modal_date}</span>
-        <span className="portal-modal-value">{e.date}</span>
+        <span className="portal-modal-value">{formatEvalDate(e.date)}</span>
       </div>
       {e.status === 'progress' && e.questions != null && (
         <div className="portal-modal-row">
@@ -181,7 +257,7 @@ export function EvalDetail({ e, t, user }) {
       {e.status !== 'progress' && (
         <div className="portal-modal-row">
           <span className="portal-modal-label">{t.modal_pass_mark}</span>
-          <span className="portal-modal-value">{e.passMark}/100</span>
+          <span className="portal-modal-value">{e.passMark}%</span>
         </div>
       )}
       <div className="portal-modal-row">
@@ -190,7 +266,7 @@ export function EvalDetail({ e, t, user }) {
           <span className="portal-modal-value portal-eval-finish-cta">{t.eval_finish_test}</span>
         ) : e.score != null ? (
           <span className={`portal-eval-score${evalScoreTierClass(evalScoreTier(e.score))}`} style={{ fontSize: 18 }}>
-            {e.score}/100
+            {e.score}%
           </span>
         ) : (
           <span className="portal-status-chip todo">
@@ -234,63 +310,76 @@ export function CertDetail({ c, t }) {
   )
 }
 
-export default function LearnerEvalCard({ e, user, lms, t, onOpen }) {
-  const locked = isFormationTestLocked(user, lms, e)
+export default function LearnerEvalCard({
+  e,
+  user,
+  lms,
+  t,
+  onOpen,
+  statusOnly = false,
+  showBrandLogo = false,
+  titleOverride = null,
+}) {
+  const isCompetency = e.kind === 'competency'
+  const locked = isEvalTestLocked(user, lms, e)
   const fallbackMedia = portalPvCardMedia({
-    brand: e.brand,
+    brand: isCompetency ? undefined : e.brand,
     modality: e.modality,
-    kind: 'eval',
+    kind: isCompetency ? 'eval' : 'formation',
   })
   const evalMedia = resolveEvalCardMedia(e, user)
-  const cardImg = evalMedia?.img ?? fallbackMedia.img
-  const cardImgFallback = evalMedia?.imgFallback ?? fallbackMedia.imgFallback
+  const cardImg = e.img ?? evalMedia?.img ?? fallbackMedia.img
+  const cardImgFallback = e.imgFallback ?? evalMedia?.imgFallback ?? fallbackMedia.imgFallback
   const modalityLabel = e.modality === 'practical'
     ? t.test_modality_practical
     : t.test_modality_theory
 
   let hoverHint = t.card_view_detail
-  if (locked) hoverHint = t.status_coming_soon
+  if (locked) hoverHint = `🔒 ${t.status_locked ?? t.status_coming_soon ?? 'Verrouillé'}`
   else if (e.status === 'progress') hoverHint = e.medacap?.launchUrl ? t.test_launch : t.eval_finish_test
   else if (e.status !== 'done' && e.medacap?.launchUrl) hoverHint = t.test_launch
+  if (statusOnly && !locked && e.status !== 'done') hoverHint = t.tests_hover_launch ?? hoverHint
+
+  const tierClass = isCompetency && e.competencyTier ? ` pv-card--tier-${e.competencyTier.toLowerCase()}` : ''
+  const brandClass = !isCompetency && e.brand ? ` pv-card--brand-${e.brand}` : ''
 
   return (
     <div id={`portal-card-${e.id}`} className="portal-card-anchor">
       <PvCard
-        className={`pv-card--eval${locked ? ' pv-card--eval-locked' : ''}${e.brand ? ` pv-card--brand-${e.brand}` : ''}`}
+        className={`pv-card--eval${locked ? ' pv-card--eval-locked' : ''}${brandClass}${tierClass}${isCompetency ? ' pv-card--competency' : ''}`}
         cardMedia={e.modality ? (
           <EvalCardMedia
             img={cardImg}
             imgFallback={cardImgFallback}
             modality={e.modality}
-            label={modalityLabel}
-            statusLabel={e.kind ? evalCardStatusLabel(e, t, locked) : undefined}
-            statusClass={e.kind ? evalCardStatusClass(e, locked) : undefined}
+            statusLabel={!statusOnly && e.kind ? evalCardStatusLabel(e, t, locked) : undefined}
+            statusClass={!statusOnly && e.kind ? evalCardStatusClass(e, locked) : undefined}
             locked={locked}
           />
         ) : undefined}
         img={e.modality ? undefined : cardImg}
         imgFallback={cardImgFallback}
         variant={evalMedia ? undefined : fallbackMedia.variant}
-        logo={fallbackMedia.logo}
-        brandLabel={fallbackMedia.brandLabel}
-        kicker={e.kind ? <EvalKicker e={e} t={t} user={user} /> : (
+        logo={isCompetency ? undefined : fallbackMedia.logo}
+        brandLabel={isCompetency ? undefined : fallbackMedia.brandLabel}
+        kicker={statusOnly ? undefined : (e.kind ? <EvalKicker e={e} t={t} user={user} showBrandLogo={showBrandLogo} /> : (
           e.status === 'upcoming'
             ? <span className="portal-status-chip todo">{t.status_upcoming}</span>
             : <span className="portal-status-chip done">{t.status_done}</span>
-        )}
-        title={resolveEvalTitle(e, t, user)}
+        ))}
+        title={titleOverride ?? resolveEvalTitle(e, t, user)}
         meta={e.kind ? <EvalCardMeta e={e} t={t} /> : (
           e.status === 'upcoming' && e.date !== '—'
-            ? `${t.eval_upcoming_on} ${e.date}`
+            ? `${t.eval_upcoming_on} ${formatEvalDate(e.date)}`
             : e.status === 'done'
-              ? `${t.eval_passed_on} ${e.date}`
+              ? `${t.eval_passed_on} ${formatEvalDate(e.date)}`
               : t.status_todo
         )}
-        cta={e.kind ? <EvalCardResult e={e} t={t} locked={locked} /> : undefined}
-        accentColor={locked ? 'var(--muted)' : evalAccentColor(e)}
+        cta={e.kind ? <EvalCardResult e={e} t={t} locked={locked} statusOnly={statusOnly} /> : undefined}
+        accentColor={locked ? 'var(--muted)' : isCompetency ? (e.competencyTier === 'expert' ? '#047857' : e.competencyTier === 'senior' ? '#d97706' : '#0284c7') : evalAccentColor(e)}
         onClick={locked ? undefined : () => onOpen(e)}
         hoverHint={hoverHint}
-        corner
+        corner={locked ? false : true}
       />
     </div>
   )

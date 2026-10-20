@@ -22,7 +22,7 @@ export function sortDemoProfiles(profiles = []) {
     const rankDiff = demoProfileSortRank(a) - demoProfileSortRank(b)
     if (rankDiff !== 0) return rankDiff
     if (a.demoSortGroup === 'cameroun' && b.demoSortGroup === 'cameroun') {
-      const order = { u9: 0, u10: 1, u11: 2 }
+      const order = { u12: 0, u10: 1, u9: 2, u11: 3 }
       const aOrder = order[a.id] ?? 99
       const bOrder = order[b.id] ?? 99
       if (aOrder !== bOrder) return aOrder - bOrder

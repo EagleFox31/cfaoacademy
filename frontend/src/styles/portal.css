@@ -8,7 +8,7 @@
 body.portal-bg-active {
   background-color: var(--paper-3);
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.52)),
+    linear-gradient(rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.32)),
     var(--portal-page-bg);
   background-size: cover;
   background-position: var(--portal-page-bg-position, center);
@@ -106,12 +106,33 @@ body.portal-bg-active .nav {
   flex-shrink: 0;
 }
 
+.portal-sticky-bar-brand-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  min-width: 32px;
+  padding: 2px 6px;
+  background: #ffffff;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.portal-sticky-bar-brand-tile .portal-sticky-bar-brand-logo {
+  height: 18px;
+  width: auto;
+  max-width: 50px;
+  object-fit: contain;
+  filter: none;
+  opacity: 1;
+}
+
 .portal-sticky-bar-brand-logo {
   height: 20px;
   width: auto;
   object-fit: contain;
-  filter: brightness(0) invert(1);
-  opacity: 0.8;
+  filter: none;
+  opacity: 0.95;
 }
 
 .portal-sticky-bar-certs {
@@ -597,6 +618,15 @@ section:nth-of-type(even) .portal-activity-cta-hint {
   color: var(--red);
   margin-bottom: 6px;
 }
+.portal-reveal,
+#tests,
+#resultats,
+#pifs,
+#formations,
+#certifications {
+  scroll-margin-top: 88px;
+}
+
 .portal-section-title {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 22px;
@@ -690,6 +720,8 @@ section:nth-of-type(even) .portal-section-method-btn.is-open {
 .portal-status-chip.open     { background: #eef3ff; color: #1a56db; }
 .portal-status-chip.progress { background: #fff3cc; color: #996600; }
 .portal-status-chip.done     { background: #edfaf4; color: #1aab5b; }
+.portal-status-chip.closed,
+.portal-status-chip.cloture  { background: #0e1126; color: #ffffff; }
 
 /* DPS ? paliers comp?tence MEDACAP : junior bleu, senior orange, expert vert ? @see docs/dps-competency-tier-visual.md */
 .portal-status-chip.portal-tier-junior {
@@ -920,23 +952,57 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
 
 .portal-eval-card-img.is-locked img {
   filter: grayscale(1);
-  opacity: 0.48;
+  opacity: 0.42;
 }
 
 .portal-eval-status-tag.coming-soon,
-.portal-status-chip.coming-soon {
+.portal-status-chip.coming-soon,
+.portal-eval-status-tag.locked,
+.portal-status-chip.locked {
   background: var(--paper-3);
   color: var(--muted);
   border: 1px solid var(--rule);
 }
 
 .pv-card--eval-locked {
-  cursor: default;
+  cursor: not-allowed !important;
+  opacity: 0.58;
+  filter: grayscale(0.9);
+  user-select: none;
+  border-color: var(--rule) !important;
 }
 
+.pv-card--eval-locked * {
+  cursor: not-allowed !important;
+}
+
+.pv-card--eval-locked:hover,
+.pv-card--eval-locked .pv-card-inner,
 .pv-card--eval-locked .pv-card-inner:hover {
-  transform: none;
-  box-shadow: var(--card-shadow);
+  transform: none !important;
+  box-shadow: var(--card-shadow) !important;
+  border-color: var(--rule) !important;
+}
+
+.pv-card--eval-locked .pv-card-title {
+  color: var(--muted) !important;
+}
+
+.pv-card--eval-locked .portal-eval-result-lbl {
+  color: var(--muted) !important;
+}
+
+.pv-card--eval-locked .corner,
+.pv-card--eval-locked .arrow {
+  display: none !important;
+}
+
+.pv-card--eval-locked .pv-card-hover-hint {
+  background: #334155 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
 }
 
 .portal-eval-img-tags {
@@ -965,12 +1031,36 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
 }
 
 .portal-eval-modality-tag {
-  background: #dbeafe;
-  color: #1a56db;
+  background: #f3e8ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
+
+.portal-eval-modality-tag.portal-eval-modality-tag--theory {
+  background: #f3e8ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
+
+.portal-eval-modality-tag.portal-eval-modality-tag--practical {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }
 
 .portal-eval-status-tag {
   box-shadow: 0 1px 6px rgba(14, 17, 38, 0.12);
+}
+
+.portal-eval-status-tag.done,
+.portal-eval-kicker .portal-status-chip.done,
+.portal-eval-img-tags .portal-status-chip.done,
+.pv-card--eval .portal-status-chip.done {
+  background: #1e3a8a !important;
+  color: #ffffff !important;
+  border: 1px solid #1e3a8a !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25) !important;
 }
 
 .portal-eval-card-meta {
@@ -1042,14 +1132,20 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
   object-position: center;
 }
 
+#tests .pv-card--competency .pv-card-body h3 {
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
 /* Wordmark Renault Trucks ? PNG avec marges, plus lisible sur les cartes */
 #tests .pv-card--brand-renault-trucks .pv-card-brand-row,
-:is(#resultats,#toyota-resultats) .pv-card--brand-renault-trucks .pv-card-brand-row {
+:is(#resultats,#toyota-resultats,#mesurer) .pv-card--brand-renault-trucks .pv-card-brand-row {
   min-height: 44px;
 }
 
 #tests .pv-card--brand-renault-trucks .pv-card-brand-logo,
-:is(#resultats,#toyota-resultats) .pv-card--brand-renault-trucks .pv-card-brand-logo {
+:is(#resultats,#toyota-resultats,#mesurer) .pv-card--brand-renault-trucks .pv-card-brand-logo {
   max-height: 44px;
   max-width: 168px;
 }
@@ -1108,10 +1204,10 @@ section:nth-of-type(even) .portal-session-meta  { color: rgba(255,255,255,0.5); 
 }
 
 .portal-eval-score--card .portal-eval-score-denom {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--muted);
-  opacity: 0.85;
+  font-size: 16px;
+  font-weight: 700;
+  color: inherit;
+  opacity: 0.9;
 }
 
 .portal-eval-score--card.score-low .portal-eval-score-denom {
@@ -1515,7 +1611,12 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
 
 /* ?? PortalHeader ????????????????????????????????? */
 .portal-page-header.page-header {
-  background: rgba(255, 255, 255, 0.58);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.48) 0%,
+    rgba(255, 255, 255, 0.28) 45%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -1948,6 +2049,11 @@ section:nth-of-type(even) .portal-team-label { color: rgba(255,255,255,0.3); }
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.portal-header-brand-logo-wrap--geo img[src*="toyota" i],
+.portal-header-brand-logo-wrap--geo img[alt*="toyota" i] {
+  transform: scale(1.28);
 }
 
 .portal-header-brand-chip {
@@ -2449,6 +2555,537 @@ section:nth-of-type(even) .portal-plan-meta { color: rgba(255,255,255,0.5); }
   color: var(--ink);
   text-align: center;
   line-height: 1.1;
+}
+
+/* ── Drapeau national filiale & en-tête carte (remplace l'icône générique) ── */
+.portal-plan-entry-card .portal-plan-entry-card-img--flag {
+  position: relative;
+  overflow: hidden;
+  height: 120px;
+  background: #0b1329;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portal-plan-entry-flag-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.portal-plan-entry-flag-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.portal-plan-entry-card:hover .portal-plan-entry-flag-img {
+  transform: scale(1.06) !important;
+}
+
+/* Voile subtil haut/bas pour garantir la lisibilité des badges et boutons */
+.portal-plan-entry-card-img--flag::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.45) 0%, rgba(15, 23, 42, 0.04) 45%, rgba(15, 23, 42, 0.42) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── Pastilles de statut & pourcentage (ultra lisibles sur tous drapeaux) ── */
+.portal-plan-entry-card .portal-eval-img-tags {
+  position: absolute;
+  top: 10px !important;
+  left: 10px !important;
+  z-index: 4 !important;
+}
+
+.portal-plan-entry-card .portal-eval-img-tags .portal-status-chip,
+.portal-eval-img-tags .portal-status-chip {
+  background: rgba(15, 23, 42, 0.92) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  padding: 4px 10px !important;
+  border-radius: 9999px !important;
+  font-family: 'JetBrains Mono', 'Space Grotesk', monospace !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  line-height: 1.2 !important;
+}
+
+/* ── Système de Statut UX épuré (Bleu = 100% Complet, Gris = En cours) ── */
+.portal-plan-entry-card .portal-eval-img-tags .portal-status-chip,
+.portal-eval-img-tags .portal-status-chip {
+  background: rgba(30, 41, 59, 0.9) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  padding: 4px 10px !important;
+  border-radius: 9999px !important;
+  font-family: 'JetBrains Mono', 'Space Grotesk', monospace !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  line-height: 1.2 !important;
+}
+
+/* Statut COMPLET (100%) : Bleu CFAO éclatant et valorisé */
+.portal-plan-entry-card .portal-eval-img-tags .portal-status-chip.status--complete,
+.portal-plan-entry-card .portal-eval-img-tags .portal-status-chip.done,
+.portal-eval-img-tags .portal-status-chip.status--complete,
+.portal-eval-img-tags .portal-status-chip.done {
+  background: #1a56db !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 4px 14px rgba(26, 86, 219, 0.45) !important;
+}
+
+/* Statut EN COURS (< 100%) : Gris neutre sobre et apaisant */
+.portal-plan-entry-card .portal-eval-img-tags .portal-status-chip.status--inprogress,
+.portal-plan-entry-card .portal-eval-img-tags .portal-status-chip.progress,
+.portal-plan-entry-card .portal-eval-img-tags .portal-status-chip.accent,
+.portal-eval-img-tags .portal-status-chip.status--inprogress,
+.portal-eval-img-tags .portal-status-chip.progress,
+.portal-eval-img-tags .portal-status-chip.accent {
+  background: rgba(30, 41, 59, 0.88) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28) !important;
+}
+
+/* ── Lignes multi-années & typographie des cards filiales ── */
+.portal-plan-multiyear {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  opacity: 1 !important;
+}
+
+.portal-multiyear-headline {
+  font-size: 13.5px;
+  color: #0f172a;
+  line-height: 1.35;
+  margin-bottom: 2px;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.portal-multiyear-headline strong {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.portal-techs-tested-lbl {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+  text-transform: none !important;
+}
+
+.portal-multiyear-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #334155;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.portal-multiyear-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.portal-multiyear-text strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.portal-multiyear-progress-block {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.portal-multiyear-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.portal-multiyear-progress-lbl {
+  color: #64748b;
+}
+
+.portal-year-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.portal-year-pill.y2025 {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.portal-year-pill.y2026 {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.portal-year-pill.y-medacap {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+/* Pastille info (i) interactive avec bulle tooltip */
+.portal-info-tooltip-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'Space Grotesk', serif;
+  font-style: italic;
+  border: 1px solid #cbd5e1;
+  cursor: help;
+  transition: all 0.2s ease;
+  position: relative;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.portal-info-tooltip-badge:hover,
+.portal-info-tooltip-badge:focus {
+  background: #1e3a8a;
+  color: #ffffff;
+  border-color: #1e3a8a;
+  transform: scale(1.18);
+}
+
+.portal-info-tooltip-badge .portal-badge-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #0e1126;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  font-style: normal;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s;
+  z-index: 100;
+}
+
+.portal-info-tooltip-badge .portal-badge-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #0e1126;
+}
+
+.portal-info-tooltip-badge:hover .portal-badge-tooltip,
+.portal-info-tooltip-badge:focus .portal-badge-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.portal-card-sites-line {
+  font-size: 11px;
+  color: #64748b;
+  margin: 4px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+}
+
+/* Ligne d'explication de l'enrôlement MEDACAP (raison d'inachèvement / confirmation) */
+.portal-enrollement-reason {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.portal-enrollement-reason.is-waiting {
+  background: rgba(241, 245, 249, 0.9);
+  color: #475569;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+}
+
+.portal-enrollement-reason.is-complete {
+  background: rgba(239, 246, 255, 0.9);
+  color: #1a56db;
+  border: 1px solid rgba(191, 219, 254, 0.85);
+  font-weight: 600;
+}
+
+.portal-enrollement-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.portal-enrollement-reason.is-waiting .portal-enrollement-dot {
+  background: #94a3b8;
+}
+
+.portal-enrollement-reason.is-complete .portal-enrollement-dot {
+  background: #1a56db;
+  box-shadow: 0 0 6px rgba(26, 86, 219, 0.45);
+}
+
+.portal-enrollement-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Highlight spécial pour la première carte "Toutes les filiales" */
+.portal-card--global-overview {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08) !important;
+  opacity: 1 !important;
+  isolation: isolate;
+}
+
+.portal-card--global-overview:hover {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 8px 24px rgba(30, 58, 138, 0.14) !important;
+}
+
+/* Sécurité anti-transparence sur les cards, bodies et boutons de cartes */
+.portal-card--global-overview .pv-card-body,
+.portal-plan-entry-card .pv-card-body,
+.pv-card .pv-card-body,
+button.pv-card {
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* ── Cartes avec interaction "Bientôt disponible" ── */
+.portal-card--coming-soon,
+.portal-card--coming-soon *,
+.portal-card--coming-soon button,
+.portal-card--coming-soon a {
+  cursor: not-allowed !important;
+}
+
+.portal-card--coming-soon:hover {
+  transform: none !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05) !important;
+  border-color: #cbd5e1 !important;
+}
+
+.portal-card--coming-soon:active {
+  transform: scale(0.995) !important;
+}
+
+.portal-corner-slash {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.portal-card--coming-soon:hover .portal-corner-slash {
+  color: #e11d48;
+  transform: scale(1.15);
+}
+
+.portal-cta-coming-soon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  transition: color 0.2s ease;
+}
+
+.portal-cta-coming-soon svg {
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.portal-card--coming-soon:hover .portal-cta-coming-soon {
+  color: #e11d48;
+}
+
+.portal-card--coming-soon:hover .portal-cta-coming-soon svg {
+  color: #e11d48;
+  transform: rotate(90deg);
+}
+
+/* ── Toast de notification "Bientôt disponible" ── */
+.portal-coming-soon-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  border-left: 4px solid #f59e0b;
+  max-width: 440px;
+  animation: portalToastIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes portalToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.portal-coming-soon-toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.18);
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.portal-coming-soon-toast-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.portal-coming-soon-toast-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+}
+
+.portal-coming-soon-toast-desc {
+  font-size: 12px;
+  color: #cbd5e1;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.portal-coming-soon-toast-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.portal-coming-soon-toast-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* ?? KI portail ??????????????????????????????????? */
@@ -3329,7 +3966,7 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
   display: none;
 }
 
-:is(#resultats,#toyota-resultats) .portal-plan-entry-meta {
+:is(#resultats,#toyota-resultats,#mesurer) .portal-plan-entry-meta {
   margin-top: 0;
   font-family: inherit;
   font-size: inherit;
@@ -3344,6 +3981,53 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
   flex-direction: column;
   gap: 10px;
   margin-top: 0;
+}
+
+.portal-dps-brand-tech-badge-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.portal-dps-brand-tech-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 92px;
+  height: 66px;
+  padding: 6px 10px;
+  background: rgba(14, 17, 38, 0.035);
+  border: 1px solid rgba(14, 17, 38, 0.09);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(14, 17, 38, 0.04);
+  transition: all 0.2s ease;
+}
+
+.portal-plan-entry-card:hover .portal-dps-brand-tech-badge {
+  background: rgba(14, 17, 38, 0.06);
+  border-color: rgba(14, 17, 38, 0.16);
+  transform: translateY(-1px);
+}
+
+.portal-dps-brand-tech-badge-count {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--navy, #0e1126);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.portal-dps-brand-tech-badge-label {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted-2, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+  margin-top: 4px;
 }
 
 .portal-dps-brand-result-tiers {
@@ -3437,16 +4121,16 @@ section:nth-of-type(even) .portal-plan-subsection-empty-dot {
   color: var(--muted-2);
 }
 
-:is(#resultats,#toyota-resultats) .portal-plan-entry-card--renault-trucks .portal-plan-entry-brand-logo {
+:is(#resultats,#toyota-resultats,#mesurer) .portal-plan-entry-card--renault-trucks .portal-plan-entry-brand-logo {
   max-height: clamp(96px, 11vw, 120px);
   max-width: min(280px, 98%);
 }
 
-:is(#resultats,#toyota-resultats) .portal-plan-entry-card--renault-trucks .portal-plan-entry-card-img--brand {
+:is(#resultats,#toyota-resultats,#mesurer) .portal-plan-entry-card--renault-trucks .portal-plan-entry-card-img--brand {
   padding-inline: 6px;
 }
 
-:is(#resultats,#toyota-resultats) .portal-plan-entry-card--renault-trucks .portal-plan-entry-card-img--brand img {
+:is(#resultats,#toyota-resultats,#mesurer) .portal-plan-entry-card--renault-trucks .portal-plan-entry-card-img--brand img {
   max-height: clamp(96px, 11vw, 120px);
   max-width: min(280px, 98%);
 }
@@ -3970,6 +4654,18 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
   max-width: 42ch;
 }
 
+.portal-header-brand-levels-stat {
+  display: inline;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.15em;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  color: var(--red);
+  font-variant-numeric: tabular-nums;
+  margin: 0 0.12em;
+}
+
 .portal-header-dps-stat {
   font-family: 'Space Grotesk', sans-serif;
   font-size: clamp(32px, 5vw, 44px);
@@ -3995,12 +4691,20 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 10px;
-  padding: 14px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.48);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow: 0 4px 16px rgba(14, 17, 38, 0.05);
+  gap: 12px;
+  padding: 16px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 4px 18px rgba(14, 17, 38, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.portal-header-brand-level-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(14, 17, 38, 0.1);
 }
 
 .portal-header-brand-level-card-logo {
@@ -4008,19 +4712,45 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 36px;
+  min-height: 48px;
 }
 
 .portal-header-brand-level-card-img {
-  max-height: 32px;
-  max-width: 96px;
+  max-height: 44px;
+  max-width: 110px;
   width: auto;
   object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+/* Toyota spécifique dans le hero — Agrandissement très net */
+.portal-header-brand-level-card--toyota {
+  padding: 18px 22px;
+  border-color: rgba(235, 10, 30, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.75) 100%);
+  box-shadow: 0 8px 24px rgba(235, 10, 30, 0.08), 0 2px 8px rgba(14, 17, 38, 0.04);
+}
+
+.portal-header-brand-level-card--toyota .portal-header-brand-level-card-logo {
+  min-height: 64px;
+  padding: 4px 0;
+}
+
+.portal-header-brand-level-card--toyota .portal-header-brand-level-card-img {
+  max-height: 62px;
+  max-width: 140px;
+  width: auto;
+  transform: scale(1.3);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
+}
+
+.portal-header-brand-level-card--toyota:hover .portal-header-brand-level-card-img {
+  transform: scale(1.38);
 }
 
 .portal-header-brand-level-card--renault-trucks .portal-header-brand-level-card-img {
-  max-height: 40px;
-  max-width: 132px;
+  max-height: 48px;
+  max-width: 140px;
 }
 
 .portal-header-brand-level-card-fallback {
@@ -4032,11 +4762,19 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
 
 .portal-header-brand-level-card-level {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
   color: var(--red);
   letter-spacing: 0.02em;
   line-height: 1.2;
+}
+
+.portal-header-brand-level-card--toyota .portal-header-brand-level-card-level {
+  font-size: 15px;
+  background: rgba(235, 10, 30, 0.08);
+  padding: 3px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(235, 10, 30, 0.2);
 }
 
 .portal-header-brand-level-card-meta {
@@ -4071,30 +4809,549 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
 }
 
 .portal-header-brand-levels--dps .portal-header-brand-levels-grid {
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(var(--brand-columns, 8), minmax(0, 1fr));
+  gap: 8px;
 }
 
 .portal-header-brand-levels--dps .portal-header-brand-level-card {
-  padding: 20px 16px;
+  padding: 14px 10px;
+  min-width: 0;
 }
 
 .portal-header-brand-levels--dps .portal-header-brand-level-card-logo {
-  min-height: 56px;
+  min-height: 48px;
+  width: 100%;
 }
 
 .portal-header-brand-levels--dps .portal-header-brand-level-card-img {
-  max-height: 52px;
-  max-width: 128px;
+  max-height: 44px;
+  max-width: 100%;
+  width: auto;
+  object-fit: contain;
 }
 
 .portal-header-brand-levels--dps .portal-header-brand-level-card--renault-trucks .portal-header-brand-level-card-img {
-  max-height: 58px;
-  max-width: 156px;
+  max-height: 48px;
+  max-width: 100%;
+}
+
+@media (max-width: 860px) {
+  .portal-header-brand-levels--dps .portal-header-brand-levels-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .portal-header-brand-levels--dps .portal-header-brand-levels-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
 }
 
 .portal-header-geo-row--below-brands {
   margin-top: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Super Admin — Sélecteur de BU (Equipment / Motors) & Bandeau Marques
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.portal-header-role-row {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.portal-header-bu-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(220, 226, 235, 0.9);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.portal-header-bu-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  font-family: inherit;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  user-select: none;
+  line-height: 1.25;
+}
+
+.portal-header-bu-badge:hover {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+}
+
+.portal-header-bu-badge.is-active.is-all {
+  background: linear-gradient(135deg, #1a56db 0%, #0d3899 100%);
+  color: #ffffff;
+  border-color: #0d3899;
+  box-shadow: 0 4px 14px rgba(26, 86, 219, 0.35);
+}
+
+.portal-header-bu-badge.is-active.is-equipment {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff;
+  border-color: #b45309;
+  box-shadow: 0 4px 14px rgba(180, 83, 9, 0.35);
+}
+
+.portal-header-bu-badge.is-active.is-motors {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #ffffff;
+  border-color: #0f172a;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.35);
+}
+
+.portal-header-bu-badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+
+.portal-header-bu-badge-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.portal-header-bu-badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+}
+
+.portal-header-bu-badge.is-active .portal-header-bu-badge-count {
+  background: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+
+/* Bandeau des marques Super Admin — Léger, sans fond blanc opaque */
+.portal-superadmin-brands-band {
+  margin-top: 14px;
+  width: 100%;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.portal-superadmin-brands-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+
+.portal-superadmin-brand-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 90px;
+  height: 50px;
+  padding: 5px 10px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: default;
+  opacity: 0;
+  animation: superadminBrandFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes superadminBrandFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.portal-superadmin-brand-chip:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+  border-color: rgba(26, 86, 219, 0.3);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+}
+
+.portal-superadmin-brand-chip-img {
+  max-height: 36px;
+  max-width: 74px;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.04));
+}
+
+.portal-superadmin-brand-chip:hover .portal-superadmin-brand-chip-img {
+  transform: scale(1.08);
+}
+
+/* ── Déclencheurs interactifs dans la phrase d'accueil : texte pur et naturel sans encadrement ── */
+.portal-hero-interactive-trigger {
+  display: inline !important;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  font: inherit !important;
+  color: inherit !important;
+  cursor: pointer;
+  vertical-align: baseline;
+  text-decoration: none !important;
+}
+
+.portal-hero-interactive-trigger:hover,
+.portal-hero-interactive-trigger:focus,
+.portal-hero-interactive-trigger:active {
+  background: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+}
+
+.portal-hero-interactive-trigger .portal-header-dps-stat {
+  margin-right: 0.28em;
+  transition: opacity 0.18s ease;
+}
+
+.portal-hero-interactive-trigger:hover .portal-header-dps-stat {
+  opacity: 0.8;
+}
+
+/* ── Rangée & Cartes des filiales avec drapeau + techniciens ── */
+.portal-superadmin-filiales-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+
+.portal-superadmin-filiale-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 50px;
+  padding: 6px 14px 6px 10px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  opacity: 0;
+  animation: superadminBrandFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.portal-superadmin-filiale-chip:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+  border-color: rgba(227, 0, 27, 0.35);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+}
+
+.portal-superadmin-filiale-flag-box {
+  width: 30px;
+  height: 20px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: #f8fafc;
+}
+
+.portal-superadmin-filiale-flag-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.portal-superadmin-filiale-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  text-align: left;
+}
+
+.portal-superadmin-filiale-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+  white-space: nowrap;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.portal-superadmin-filiale-count {
+  font-size: 10.5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: #e3001b;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.portal-superadmin-filiale-count strong {
+  font-weight: 800;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Super Admin — Cards Métriques Applications & Plateforme Globale
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.portal-superadmin-card-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  font-family: inherit;
+}
+
+.portal-superadmin-metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink, #1e293b);
+}
+
+.portal-superadmin-metric-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  color: var(--navy, #14213d);
+}
+
+.portal-superadmin-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(226, 232, 240, 0.7);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.portal-superadmin-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.portal-superadmin-metric-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.portal-superadmin-badge-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: rgba(241, 245, 249, 0.85);
+  color: #334155;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  white-space: nowrap;
+}
+
+.portal-superadmin-badge-stat svg {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.portal-superadmin-badge-stat.has-draft {
+  background: rgba(254, 243, 199, 0.6);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #92400e;
+}
+
+.portal-superadmin-badge-stat.has-draft svg {
+  color: #d97706;
+}
+
+.portal-superadmin-badge-stat.all-ok {
+  background: rgba(236, 253, 245, 0.7);
+  border-color: rgba(167, 243, 208, 0.5);
+  color: #065f46;
+}
+
+.portal-superadmin-badge-stat.all-ok svg {
+  color: #10b981;
+}
+
+.portal-superadmin-badge-stat.live-badge {
+  background: rgba(238, 242, 255, 0.9);
+  border-color: rgba(199, 210, 254, 0.8);
+  color: #3730a3;
+}
+
+.portal-superadmin-badge-stat.live-badge svg {
+  color: #4f46e5;
+}
+
+/* Style consolidé dans la section cards (ligne 2850) */
+
+.portal-superadmin-metric-sub {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.4;
+  margin: 4px 0 0;
+}
+
+/* Modal détail application */
+.portal-app-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.portal-app-modal-header-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.85);
+  border: 1px solid var(--rule, #e2e8f0);
+}
+
+.portal-app-modal-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.portal-app-modal-stat-box {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+.portal-app-modal-stat-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--navy, #14213d);
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.portal-app-modal-stat-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+
+.portal-app-modal-section-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--navy, #14213d);
+  margin: 0 0 8px;
+}
+
+.portal-app-modal-profiles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.portal-app-modal-profile-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  font-size: 13px;
+}
+
+.portal-app-modal-profile-name {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.portal-app-modal-tests-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.portal-app-modal-test-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.portal-app-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
 }
 
 .portal-page-header--with-cert .portal-header-cert-card,
@@ -4723,9 +5980,145 @@ body:has(.portal-demo-bar) .back-to-top-fab--portal {
   color: var(--red);
 }
 
+.portal-eval-kicker .portal-status-chip.kind-theory {
+  background: #f3e8ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+  font-weight: 700;
+}
+
+.portal-eval-kicker .portal-status-chip.kind-practical {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  font-weight: 700;
+}
+
+.portal-eval-kicker .portal-status-chip.level-cert {
+  background: rgba(99, 102, 241, 0.12);
+  color: #4f46e5;
+  font-weight: 700;
+}
+
 .portal-eval-kicker .portal-status-chip.tier {
-  background: rgba(26, 171, 91, 0.12);
-  color: #0d7a42;
+  font-weight: 700;
+}
+
+/* Groupement des tests par niveau sous chaque marque */
+.portal-test-tier-group {
+  margin-top: 24px;
+  margin-bottom: 28px;
+}
+
+.portal-test-tier-group:first-child {
+  margin-top: 8px;
+}
+
+.portal-test-tier-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.portal-test-tier-group--junior .portal-test-tier-header {
+  border-left: 3px solid #0284c7;
+  background: linear-gradient(90deg, rgba(2, 132, 199, 0.06) 0%, rgba(2, 132, 199, 0.01) 100%);
+}
+
+.portal-test-tier-group--senior .portal-test-tier-header {
+  border-left: 3px solid #7c3aed;
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.06) 0%, rgba(124, 58, 237, 0.01) 100%);
+}
+
+.portal-test-tier-group--expert .portal-test-tier-header {
+  border-left: 3px solid #d97706;
+  background: linear-gradient(90deg, rgba(217, 119, 6, 0.06) 0%, rgba(217, 119, 6, 0.01) 100%);
+}
+
+.portal-test-tier-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.portal-eval-kicker .portal-status-chip.tier.tier--maintenance,
+.portal-eval-kicker .portal-status-chip.tier.tier--junior,
+.portal-status-chip.tier--maintenance,
+.portal-status-chip.tier--junior {
+  background: #e0f2fe !important;
+  color: #0284c7 !important;
+  border: 1px solid #bae6fd !important;
+  font-weight: 700 !important;
+}
+
+.portal-eval-kicker .portal-status-chip.tier.tier--reparation,
+.portal-eval-kicker .portal-status-chip.tier.tier--senior,
+.portal-status-chip.tier--reparation,
+.portal-status-chip.tier--senior {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+  font-weight: 700 !important;
+}
+
+.portal-eval-kicker .portal-status-chip.tier.tier--diagnostic,
+.portal-eval-kicker .portal-status-chip.tier.tier--expert,
+.portal-status-chip.tier--diagnostic,
+.portal-status-chip.tier--expert {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+  font-weight: 700 !important;
+}
+
+.portal-test-tier-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(14, 165, 233, 0.12);
+  color: #0284c7;
+  border: 1px solid rgba(14, 165, 233, 0.22);
+}
+
+.portal-test-tier-desc {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color, #1e293b);
+  letter-spacing: -0.01em;
+}
+
+.portal-test-tier-count {
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.pv-card--competency {
+  border-top: 2px solid rgba(0, 0, 0, 0.06);
+}
+
+.pv-card--competency.pv-card--tier-junior {
+  border-top-color: #0284c7;
+}
+
+.pv-card--competency.pv-card--tier-senior {
+  border-top-color: #7c3aed;
+}
+
+.pv-card--competency.pv-card--tier-expert {
+  border-top-color: #d97706;
 }
 
 .portal-header-cert-card-list {
@@ -5227,13 +6620,13 @@ section:nth-of-type(even) .portal-dps-tier-section-title {
   color: #ffffff;
 }
 
-:is(#pif,#toyota-pif) .sessions-brand-chips .chip {
+:is(#pif, #toyota-pif, #plans, .portal-pif-filiale-section, #certifications, .portal-manager-certifications-section) .sessions-brand-chips .chip {
   display: inline-flex;
   align-items: center;
   gap: 10px;
 }
 
-:is(#pif,#toyota-pif) .sessions-brand-chips .chip .tab-count {
+:is(#pif, #toyota-pif, #plans, .portal-pif-filiale-section, #certifications, .portal-manager-certifications-section) .sessions-brand-chips .chip .tab-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5249,12 +6642,12 @@ section:nth-of-type(even) .portal-dps-tier-section-title {
   color: var(--red);
 }
 
-:is(#pif,#toyota-pif) .sessions-brand-chips .chip.active .tab-count {
+:is(#pif, #toyota-pif, #plans, .portal-pif-filiale-section, #certifications, .portal-manager-certifications-section) .sessions-brand-chips .chip.active .tab-count {
   background: #fff;
   color: var(--red);
 }
 
-/* Portail ? barres filtre chips (?quipe, tests, plan) */
+/* Portail : barres filtre chips */
 .portal-page .sessions-brand-filter {
   gap: 12px 18px;
 }
@@ -5269,12 +6662,18 @@ section:nth-of-type(even) .portal-dps-tier-section-title {
   flex: 0 0 auto;
 }
 
-/* Filtre d?coll? des cartes */
+/* Filtre décollé des cartes */
 #equipe .portal-plan-status-filter,
 #equipes .portal-plan-status-filter,
 section[id^="equipe-"] .portal-plan-status-filter,
 #tests .portal-plan-status-filter,
 #plan .portal-plan-status-filter,
+#pif .portal-plan-status-filter,
+#plans .portal-plan-status-filter,
+#toyota-pif .portal-plan-status-filter,
+.portal-pif-filiale-section .portal-plan-status-filter,
+#certifications .portal-plan-status-filter,
+.portal-manager-certifications-section .portal-plan-status-filter,
 #assistance .portal-plan-status-filter,
 #collaborateurs .portal-plan-status-filter {
   margin-bottom: 32px;
@@ -9036,18 +10435,132 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   font-weight: 650;
 }
 
-/* Securiser le dark overlay de la section Plans de formation (#pif / #toyota-pif) */
-:is(#pif, #toyota-pif, .portal-pif-filiale-section) {
+/* Securiser le dark overlay de la section Plans de formation (#pif / #toyota-pif / #plans) */
+:is(#pif, #toyota-pif, #plans, .portal-pif-filiale-section) {
   background: rgba(26, 31, 60, 0.72) !important;
+}
+
+/* Chiffre X formations planifiées bien gros et coloré selon le niveau */
+:is(#pif, #toyota-pif, #plans, .portal-pif-filiale-section) .portal-pif-card-count-value {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: clamp(24px, 2.8vw, 30px) !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.04em !important;
+}
+
+/* Section 1 : Mesure des compétences (#mesurer) - fond clair transparent */
+#mesurer.portal-dps-tier-section,
+#mesurer {
+  background: transparent !important;
+  padding-top: 16px;
+  padding-bottom: 24px;
+}
+#mesurer .portal-section-title {
+  color: var(--navy) !important;
+}
+#mesurer .portal-section-eyebrow {
+  color: var(--red) !important;
+}
+
+/* Section 2 : Maîtrise des métiers par marque (#marques) - overlay gris clair plus foncé que #mesurer mais plus clair que #pif */
+#marques.portal-brand-matrix-section,
+#marques {
+  background: rgba(26, 31, 60, 0.10) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-top: 1px solid rgba(26, 31, 60, 0.08);
+  border-bottom: 1px solid rgba(26, 31, 60, 0.08);
+  padding-top: 24px;
+  padding-bottom: 36px;
+}
+#marques .portal-section-title {
+  color: var(--navy) !important;
+}
+#marques .portal-section-eyebrow {
+  color: var(--red) !important;
+}
+
+/* Section 3 : Plans de formation (#pif) - overlay sombre soutenu */
+.portal-page #pif,
+#pif.portal-pif-filiale-section,
+.portal-pif-filiale-section {
+  background: rgba(26, 31, 60, 0.72) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 28px;
+  padding-bottom: 40px;
+}
+.portal-page #pif .portal-section-title,
+#pif.portal-pif-filiale-section .portal-section-title,
+.portal-pif-filiale-section .portal-section-title {
+  color: #ffffff !important;
+}
+.portal-page #pif .portal-section-eyebrow,
+#pif.portal-pif-filiale-section .portal-section-eyebrow,
+.portal-pif-filiale-section .portal-section-eyebrow {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+.portal-page #pif .portal-section-freshness,
+#pif.portal-pif-filiale-section .portal-section-freshness,
+.portal-pif-filiale-section .portal-section-freshness {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Section 4 : Formations effectuées par l'équipe (#formations) - overlay gris clair brume */
+#formations.portal-manager-formations-section,
+#formations {
+  background: rgba(240, 244, 248, 0.78) !important;
+  backdrop-filter: blur(12px) saturate(130%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+  border-top: 1px solid rgba(255, 255, 255, 0.65);
+  border-bottom: 1px solid rgba(26, 31, 60, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  padding-top: 28px;
+  padding-bottom: 40px;
+}
+#formations .portal-section-title {
+  color: var(--navy) !important;
+  font-weight: 700;
+}
+#formations .portal-section-eyebrow {
+  color: var(--red) !important;
+  font-weight: 700;
+}
+#formations .portal-section-lead {
+  color: #334155 !important;
+  font-weight: 450;
+}
+
+/* Section 5 : Certifications constructeur de l'équipe (#certifications) - overlay gris clair */
+#certifications.portal-manager-certifications-section,
+#certifications {
+  background: rgba(26, 31, 60, 0.08) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-top: 1px solid rgba(26, 31, 60, 0.08);
+  border-bottom: 1px solid rgba(26, 31, 60, 0.08);
+  padding-top: 24px;
+  padding-bottom: 40px;
+}
+#certifications .portal-section-title {
+  color: var(--navy) !important;
+}
+#certifications .portal-section-eyebrow {
+  color: var(--red) !important;
 }
 
 /* Securiser l'assistance en fond transparent */
 #assistance {
   background: transparent !important;
+  padding-top: 24px;
+  padding-bottom: 36px;
+}
+#assistance .portal-section-title {
+  color: var(--navy) !important;
 }
 
-/* Nouvelle section: Compétences des techniciens par niveau (#niveaux) */
-/* Overlay plus clair que Plans de formation (0.72) mais plus sombre que Compétences de l'équipe (transparent) */
+/* Nouvelle section DPS: Compétences des techniciens par niveau (#niveaux) */
 #niveaux.portal-dps-tier-section {
   background: rgba(26, 31, 60, 0.38);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -9130,6 +10643,8 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
 }
 
 .portal-dps-tier-evaluated-badge {
@@ -9688,6 +11203,590 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
 .portal-dps-matrix-table-wrap.portal-dps-tier-table-wrap--expert thead th.portal-dps-matrix-col-last,
 .portal-dps-matrix-table-wrap.portal-dps-tier-table-wrap--expert thead th.portal-dps-matrix-col-first {
   background: var(--dps-tier-band-expert, #fde047) !important;
+}
+/* ═══════════════════════════════════════════════════════════════════════════
+   Google-Style Donut Chart (Material / Analytics) — Plan Pluriannuel
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Ligne collaborateurs formés épurée */
+.portal-collaborateurs-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #334155;
+  margin-bottom: 8px;
+  padding: 2px 0;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.portal-collaborateurs-text {
+  flex: 1;
+  min-width: 0;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.portal-collaborateurs-text strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  font-family: 'Space Grotesk', sans-serif;
+  margin-right: 3px;
+}
+
+/* Conteneur principal du Donut */
+.portal-google-donut-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0 6px 0;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  outline: none;
+}
+
+.portal-google-donut-container:hover,
+.portal-google-donut-container:focus-visible {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 14px rgba(26, 115, 232, 0.1), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Enveloppe SVG et Tooltip */
+.portal-google-donut-svg-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portal-google-donut-svg {
+  display: block;
+  overflow: visible;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.portal-google-donut-container:hover .portal-google-donut-svg {
+  transform: scale(1.04);
+}
+
+.portal-google-donut-track {
+  stroke: #eaedf2;
+  transition: stroke-width 0.2s ease, stroke 0.2s ease;
+}
+
+.portal-google-donut-track:hover {
+  stroke: #dfe3e8;
+}
+
+.portal-google-donut-fill {
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke-width 0.2s ease, filter 0.2s ease;
+  filter: drop-shadow(0 2px 4px rgba(26, 115, 232, 0.2));
+}
+
+.portal-google-donut-fill:hover {
+  filter: drop-shadow(0 3px 6px rgba(26, 115, 232, 0.35));
+}
+
+.portal-google-donut-check {
+  animation: portalDonutCheckPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes portalDonutCheckPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Infobulle interactive façon Google */
+.portal-google-donut-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #202124;
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 30;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: portalTooltipFadeIn 0.15s ease-out;
+}
+
+.portal-google-donut-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: #202124 transparent transparent transparent;
+}
+
+@keyframes portalTooltipFadeIn {
+  from { opacity: 0; transform: translate(-50%, 4px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.portal-google-donut-tooltip .tooltip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.portal-google-donut-tooltip .tooltip-dot.done {
+  background: #1a73e8;
+  box-shadow: 0 0 4px #1a73e8;
+}
+
+.portal-google-donut-tooltip .tooltip-dot.todo {
+  background: #9aa0a6;
+}
+
+.portal-google-donut-tooltip .tooltip-sub {
+  color: #bdc1c6;
+  font-size: 10.5px;
+  font-weight: 400;
+}
+
+/* Bloc Taux en pourcentage écrit EN DESSOUS */
+.portal-google-donut-under {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.portal-google-donut-pct-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.portal-google-donut-big-pct {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a73e8;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.portal-google-donut-badge-done {
+  background: #e8f0fe;
+  color: #1a73e8;
+  border: 1px solid #d2e3fc;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.portal-google-donut-label-text {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #5f6368;
+  margin-top: 3px;
+  line-height: 1.3;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.portal-google-donut-container:hover .portal-google-donut-label-text {
+  color: #202124;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Activités filiales en format Cartes & Profils Opérationnels
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Métadonnées carte activité */
+.portal-activity-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.portal-activity-datetime {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #1e293b;
+  font-weight: 500;
+  padding: 6px 10px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  border-left: 3px solid #1a56db;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.portal-activity-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+  animation: portalActivityPulse 2s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes portalActivityPulse {
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.portal-activity-highlight {
+  font-size: 12.5px;
+  color: #0f172a;
+  line-height: 1.45;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.portal-activity-highlight strong {
+  color: #1a56db;
+  font-weight: 700;
+}
+
+.portal-activity-subtext {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.4;
+  margin: 0;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+/* Profils opérationnels en cartes */
+.portal-profile-media-img {
+  height: 170px !important;
+  background: #f8fafc;
+  position: relative;
+  overflow: hidden;
+}
+
+.portal-profile-media-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.pv-card:hover .portal-profile-media-img img {
+  transform: scale(1.05);
+}
+
+.portal-profile-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.portal-profile-meta-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.portal-profile-meta-val {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* ── Brand Logo in Kicker Row ── */
+.portal-kicker-brand-logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  min-width: 52px;
+  padding: 3px 8px;
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.portal-kicker-brand-logo {
+  height: 24px;
+  width: auto;
+  max-width: 70px;
+  object-fit: contain;
+  display: block;
+}
+
+/* ── Brand logos in PvCard cards (Mes Formations, Mes Certifications, etc.) ── */
+.pv-card-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  margin-bottom: 6px;
+}
+
+.pv-card-brand-logo {
+  max-height: 42px !important;
+  max-width: 140px !important;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.pv-card--training-report .pv-card-brand-row,
+.pv-card--cert .pv-card-brand-row {
+  min-height: 48px;
+  padding: 2px 0;
+}
+
+.pv-card--training-report .pv-card-brand-logo {
+  max-height: 48px !important;
+  max-width: 155px !important;
+}
+
+.pv-card--cert .pv-card-brand-logo {
+  max-height: 46px !important;
+  max-width: 150px !important;
+}
+
+/* ── High-visibility button "Ouvrir le bulletin" ── */
+.portal-btn-open-bulletin {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 9px 18px !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22), 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.portal-btn-open-bulletin:hover {
+  background: #e11d48 !important;
+  color: #ffffff !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 18px rgba(225, 29, 72, 0.35) !important;
+}
+
+.portal-btn-open-bulletin .portal-btn-arrow {
+  display: inline-block;
+  font-size: 15px;
+  font-weight: 700;
+  transition: transform 0.2s ease;
+}
+
+.portal-btn-open-bulletin:hover .portal-btn-arrow {
+  transform: translateX(3px);
+}
+
+/* ── Formateur Row (Photo en cercle bien visible) ── */
+.portal-training-trainer-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.portal-training-trainer-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50% !important;
+  object-fit: cover;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+  flex-shrink: 0;
+  background: #f1f5f9;
+}
+
+.portal-training-trainer-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.portal-training-trainer-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.portal-training-trainer-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #0e1126);
+}
+
+.portal-training-trainer-role {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* ── Grille 4 cartes par ligne ── */
+.portal-grid-4,
+.portal-stagger-grid.cols-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 20px;
+}
+
+@media (max-width: 1100px) {
+  .portal-grid-4,
+  .portal-stagger-grid.cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .portal-grid-4,
+  .portal-stagger-grid.cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Badge scope PIF */
+.portal-pif-scope-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(14, 17, 38, 0.06);
+  color: var(--ink, #0e1126);
+}
+
+/* Progress bar animée PIF */
+.portal-pif-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.portal-pif-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.portal-pif-progress-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted, #64748b);
+}
+
+.portal-pif-progress-pct {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.portal-pif-progress-track {
+  width: 100%;
+  height: 10px;
+  background: rgba(14, 17, 38, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.portal-pif-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  width: var(--target-width, 0%);
+  animation: pifProgressGrow 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes pifProgressGrow {
+  from {
+    width: 0%;
+  }
+  to {
+    width: var(--target-width, 100%);
+  }
+}
+
+.portal-pif-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: pifProgressShimmer 2.2s infinite ease-in-out;
+}
+
+@keyframes pifProgressShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 

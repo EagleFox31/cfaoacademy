@@ -11,6 +11,8 @@ import KiTeamgpDetail from './pages/portal/KiTeamgpDetail.jsx'
 import Delivery from './pages/portal/Delivery.jsx'
 import MedacapLaunch from './pages/portal/MedacapLaunch.jsx'
 import KIGeminiDashboard from './pages/portal/KI-Gemini/KIGeminiDashboard.jsx'
+import SuperAdminBuilderDashboard from './pages/portal/SuperAdminBuilderDashboard.jsx'
+import MedacapProfilePreview from './pages/portal/MedacapProfilePreview.jsx'
 import HelpCenterPreview from './help/pages/HelpCenterPreview.jsx'
 import PortalHelpShell from './help/PortalHelpShell.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
@@ -65,6 +67,8 @@ export default function App() {
           <Route path="/portail/delivery" element={<Delivery />} />
           <Route path="/portail/medacap-launch" element={<MedacapLaunch />} />
           <Route path="/portail/ki-gemini" element={<KIGeminiDashboard />} />
+          <Route path="/portail/admin/builder" element={<SuperAdminBuilderDashboard />} />
+          <Route path="/portail/preview/:profileKey" element={<MedacapProfilePreview />} />
           <Route path="/portail/aide" element={<HelpCenterPreview />} />
           <Route path="/portail" element={<Portal />} />
         </Routes>

@@ -7,6 +7,7 @@ import LearnerBrandLevelsStrip from './LearnerBrandLevelsStrip.jsx'
 import PortalGreetingBlock from './PortalGreetingBlock.jsx'
 import TeamManagerHeroCard from './TeamManagerHeroCard.jsx'
 import DpsFilialeBrandsStrip from './DpsFilialeBrandsStrip.jsx'
+import SuperAdminBuBrandsStrip from './SuperAdminBuBrandsStrip.jsx'
 import PortalHeroShell from './PortalHeroShell.jsx'
 import { resolveCertGoalPrerequisites } from '../utils/certGoalProgress.js'
 import { formatCertLevelLabel } from '../utils/portalCertLevel.js'
@@ -144,7 +145,17 @@ function CertGoalCard({ goals, user, lms, t }) {
 
 /* ─── Main component ────────────────────────────────────────────── */
 
-export default function PortalHeader({ user, certGoals, certGoal, lms, workshop = false, filialeBrands }) {
+export default function PortalHeader({
+  user,
+  certGoals,
+  certGoal,
+  lms,
+  workshop = false,
+  filialeBrands,
+  activeBu: controlledActiveBu,
+  onBuChange,
+  managerHeroCard,
+}) {
   const { t } = useLocale('portal')
   const { t: heroT } = useLocale('hero')
   const { t: publicsT } = useLocale('publics')
@@ -155,22 +166,119 @@ export default function PortalHeader({ user, certGoals, certGoal, lms, workshop 
   const roleLabel = primaryRole === 'learner'
     ? formatLearnerRoleBadge(baseRoleLabel, user, heroT, publicsT)
     : baseRoleLabel
+  const [internalActiveBu, setInternalActiveBu] = useState('all')
+  const activeBu = controlledActiveBu !== undefined ? controlledActiveBu : internalActiveBu
+  const setActiveBu = onBuChange || setInternalActiveBu
+  const isSuperAdmin = primaryRole === 'superadmin'
   const resolvedGoals = normalizeCertGoals({ certGoals, certGoal, user })
   const showCertCard = SHOW_LEARNER_CERT_CARD && primaryRole === 'learner' && resolvedGoals.length > 0
   const showBrandLevels = primaryRole === 'learner' && userBrands.length > 0
-  const showDpsBrandsStrip = (primaryRole === 'dps' || primaryRole === 'dop') && (filialeBrands?.length > 0)
-  const showTeamCard = primaryRole === 'team_manager' && lms
-  const showWorkshopCard = primaryRole === 'workshop_manager' && lms
+  const isManager = primaryRole === 'team_manager' || primaryRole === 'workshop_manager'
+  const showDpsBrandsStrip = (primaryRole === 'dps' || primaryRole === 'dop' || isManager) && (filialeBrands?.length > 0)
+  const showSuperAdminBrands = isSuperAdmin
+  // Card aside retirée : les managers ont désormais le strip marques sous le hero (norme DPS).
+  const showTeamCard = false
+  const showWorkshopCard = false
   const showSidePanel = showCertCard || showTeamCard || showWorkshopCard
-  const showGeoBrands = !showBrandLevels && !showDpsBrandsStrip && userBrands.length > 0
-  const showBrandsBand = showBrandLevels || showDpsBrandsStrip
-  const dpsHero = showDpsBrandsStrip
+  const [superadminStripMode, setSuperadminStripMode] = useState('marques')
+
+  const showGeoBrands = !showBrandLevels && !showDpsBrandsStrip && !showSuperAdminBrands && userBrands.length > 0
+  const showBrandsBand = showBrandLevels || showDpsBrandsStrip || showSuperAdminBrands
+  const dpsHero = (showDpsBrandsStrip && !isManager)
     ? {
-        technicianCount: lms?.kpis?.totalTechnicians,
+        technicianCount: lms?.technicians?.length || lms?.kpis?.totalTechnicians,
         brandCount: filialeBrands?.length ?? 0,
       }
     : null
-  const roleBadge = (
+  // Toutes les valeurs viennent de l'API bu-scoped (via useSuperadminGroupStats).
+  // Le hook re-fetch automatiquement quand `activeBu` change côté SuperAdminDashboard,
+  // ce qui hydrate `lms.globalKpis` avec les compteurs du bon périmètre.
+  const superadminHero = isSuperAdmin && lms?.globalKpis
+    ? {
+        learnerCount:  lms.globalKpis.totalApprenants,
+        branchCount:   lms.globalKpis.filialesActives,
+        brandCount:    lms.globalKpis.brandsCount,
+        trainingCount: lms.globalKpis.sessionsActives,
+        trainingYear:  lms.globalKpis.trainingYear,
+        stripMode:     superadminStripMode,
+        onToggleStripMode: setSuperadminStripMode,
+      }
+    : null
+  // Hero phrase chef d'équipe : nourri par lms.managerScope (hook useManagerScope).
+  const managerHero = isManager && lms?.managerScope
+    ? {
+        technicianCount: lms.managerScope.technicianCount,
+        brandCount:      lms.managerScope.brandCount,
+        loading:         lms.managerScope.loading ?? false,
+      }
+    : null
+
+  const roleBadge = isSuperAdmin ? (
+    <div className="portal-header-role-row">
+      <PortalRoleBadge role={primaryRole} label={roleLabel} />
+      <div className="portal-header-bu-switcher" role="tablist" aria-label="Business Units">
+        <button
+          type="button"
+          role="tab"
+          id="bu-tab-all"
+          aria-selected={activeBu === 'all'}
+          className={`portal-header-bu-badge ${activeBu === 'all' ? 'is-active is-all' : ''}`}
+          onClick={() => setActiveBu('all')}
+          title="Toutes les Business Units (Equipment & Motors - 20 marques)"
+        >
+          <span className="portal-header-bu-badge-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+          </span>
+          <span>Toutes BU</span>
+          <span className="portal-header-bu-badge-count">20</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="bu-tab-equipment"
+          aria-selected={activeBu === 'equipment'}
+          className={`portal-header-bu-badge ${activeBu === 'equipment' ? 'is-active is-equipment' : ''}`}
+          onClick={() => setActiveBu(activeBu === 'equipment' ? 'all' : 'equipment')}
+          title="Pôle Equipment (BTP, Poids Lourds, Manutention - 11 marques)"
+        >
+          <span className="portal-header-bu-badge-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 3h15v13H1z" />
+              <path d="M16 8h4l3 3v5h-7V8z" />
+              <circle cx="5.5" cy="18.5" r="2.5" />
+              <circle cx="18.5" cy="18.5" r="2.5" />
+            </svg>
+          </span>
+          <span>Equipment</span>
+          <span className="portal-header-bu-badge-count">11</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="bu-tab-motors"
+          aria-selected={activeBu === 'motors'}
+          className={`portal-header-bu-badge ${activeBu === 'motors' ? 'is-active is-motors' : ''}`}
+          onClick={() => setActiveBu(activeBu === 'motors' ? 'all' : 'motors')}
+          title="Pôle Motors (Véhicules particuliers & utilitaires - 9 marques)"
+        >
+          <span className="portal-header-bu-badge-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.2 1 12 1 13v3c0 .6.4 1 1 1h2" />
+              <circle cx="7" cy="17" r="2" />
+              <path d="M9 17h6" />
+              <circle cx="17" cy="17" r="2" />
+            </svg>
+          </span>
+          <span>Motors</span>
+          <span className="portal-header-bu-badge-count">9</span>
+        </button>
+      </div>
+    </div>
+  ) : (
     <PortalRoleBadge role={primaryRole} label={roleLabel} />
   )
 
@@ -180,8 +288,10 @@ export default function PortalHeader({ user, certGoals, certGoal, lms, workshop 
       firstName={user.firstName}
       user={user}
       primaryRole={primaryRole}
-      hideOrient={showBrandsBand}
+      hideOrient={showBrandLevels || showDpsBrandsStrip || isSuperAdmin || isManager}
       dpsHero={dpsHero}
+      superadminHero={superadminHero}
+      managerHero={managerHero}
     />
   )
 
@@ -192,6 +302,13 @@ export default function PortalHeader({ user, certGoals, certGoal, lms, workshop 
       )}
       {showDpsBrandsStrip && (
         <DpsFilialeBrandsStrip brandStats={filialeBrands} />
+      )}
+      {showSuperAdminBrands && (
+        <SuperAdminBuBrandsStrip
+          activeBu={activeBu}
+          mode={superadminStripMode}
+          filiales={lms?.filialesLearners}
+        />
       )}
       {showGeoBrands && (
         <div className={`portal-header-geo-row${showBrandsBand ? ' portal-header-geo-row--grid portal-header-geo-row--below-brands' : ''}`}>
@@ -205,10 +322,11 @@ export default function PortalHeader({ user, certGoals, certGoal, lms, workshop 
     </>
   )
 
-  if (showSidePanel) {
-    const aside = showCertCard
-      ? <CertGoalCard goals={resolvedGoals} user={user} lms={lms} t={t} />
-      : <TeamManagerHeroCard lms={lms} workshop={showWorkshopCard} />
+  if (managerHeroCard || showSidePanel) {
+    const aside = managerHeroCard
+      || (showCertCard
+        ? <CertGoalCard goals={resolvedGoals} user={user} lms={lms} t={t} />
+        : <TeamManagerHeroCard lms={lms} workshop={showWorkshopCard} />)
 
     return (
       <PortalHeroShell aside={aside} className={showBrandsBand ? 'portal-page-header--with-brands' : ''}>
@@ -222,7 +340,7 @@ export default function PortalHeader({ user, certGoals, certGoal, lms, workshop 
   return (
     <PortalHeroShell className={showBrandsBand ? 'portal-page-header--with-brands' : ''}>
       <div className="portal-header-main">
-        <p className="page-header-eyebrow portal-header-eyebrow">{roleBadge}</p>
+        <div className="page-header-eyebrow portal-header-eyebrow">{roleBadge}</div>
         {greetingBlock}
         {brandsBand}
       </div>

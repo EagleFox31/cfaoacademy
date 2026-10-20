@@ -15,7 +15,7 @@ import PortalSectionEyebrow from '../../components/PortalSectionEyebrow.jsx'
 const FALLBACK_TICKETS = [
   {
     id: 'tk-1042',
-    userId: 'u1',
+    userId: 'u9',
     ord: 'OR #CI-2847',
     subject: 'Diagnostic hybridation — voyant prêt bloqué',
     status: 'open',
@@ -24,7 +24,7 @@ const FALLBACK_TICKETS = [
   },
   {
     id: 'tk-0987',
-    userId: 'u1',
+    userId: 'u9',
     ord: 'OR #CI-2901',
     subject: 'Validation couple de serrage culasse',
     status: 'resolved',
@@ -47,7 +47,7 @@ function ticketStatusClass(status) {
 
 export default function Assistance() {
   useSiteEffects()
-  const { user } = useAuth()
+  const { user, status } = useAuth()
   usePortalBackground(user)
   const { t } = useLocale('portal')
   const lms = LMS_BY_USER[user?.demoKey]
@@ -57,6 +57,7 @@ export default function Assistance() {
     return resolveLearnerAssistanceTickets({ myTickets: FALLBACK_TICKETS }, user)
   }, [lms, user])
 
+  if (status === "loading") return null
   if (!user) return <Navigate to="/login" replace />
 
   return (

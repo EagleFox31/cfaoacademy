@@ -120,8 +120,16 @@ function pifCardMeta(brandId, cardState, scope, t, isFiliale = false) {
 export default function LearnerPifSection({
   user, lms, t, variant = 'learner',
   updatedAt, scopeLoading = false, insightsLoading = false,
+  id = 'pif',
+  titleOverride,
+  eyebrowOverride,
+  fixedScope,
+  initialScope,
+  filterScopeMode = 'all',
 }) {
-  const [scope, setScope] = useState(DEFAULT_PIF_SCOPE)
+  const [scopeState, setScopeState] = useState(fixedScope ?? initialScope ?? DEFAULT_PIF_SCOPE)
+  const scope = fixedScope ?? scopeState
+  const setScope = fixedScope ? () => {} : setScopeState
   const isFiliale = variant === 'filiale'
 
   const brandItems = useMemo(
@@ -129,44 +137,63 @@ export default function LearnerPifSection({
     [user?.brands],
   )
 
-  const filterOptions = useMemo(() => [
-    { id: PIF_SCOPE_PLURI, label: t.pif_filter_pluri },
-    ...PIF_YEARS.map(year => ({
-      id: String(year),
-      label: String(year),
-    })),
-  ], [t.pif_filter_pluri])
+  const filterOptions = useMemo(() => {
+    if (filterScopeMode === 'none' || fixedScope) return []
+    if (filterScopeMode === 'years') {
+      return PIF_YEARS.map(year => ({
+        id: String(year),
+        label: String(year),
+      }))
+    }
+    return [
+      { id: PIF_SCOPE_PLURI, label: t.pif_filter_pluri },
+      ...PIF_YEARS.map(year => ({
+        id: String(year),
+        label: String(year),
+      })),
+    ]
+  }, [filterScopeMode, fixedScope, t.pif_filter_pluri])
 
   if (!brandItems.length) return null
 
+  const effectiveTitle = titleOverride ?? (isFiliale ? t.dps_title_filiale_plans : t.title_pif)
+  const defaultEyebrow = isFiliale ? (
+    <PortalSectionEyebrow icon="milestone" label={t.dps_eyebrow_filiale_plans} />
+  ) : (
+    <PortalSectionEyebrow icon="milestone" className="portal-pif-eyebrow">
+      <span className="portal-pif-eyebrow-kicker">{t.eyebrow_pif}</span>
+      {' '}
+      <span className="portal-pif-eyebrow-expansion">{t.eyebrow_pif_expansion}</span>
+    </PortalSectionEyebrow>
+  )
+  const effectiveEyebrow = eyebrowOverride ? (
+    typeof eyebrowOverride === 'string'
+      ? <PortalSectionEyebrow icon="milestone" label={eyebrowOverride} />
+      : eyebrowOverride
+  ) : defaultEyebrow
+
   return (
-    <PortalReveal id="pif" className={isFiliale ? 'portal-pif-filiale-section' : ''}>
+    <PortalReveal id={id} className={isFiliale ? 'portal-pif-filiale-section' : ''}>
       <div className="container portal-pif-section-inner" style={{ padding: '16px 32px' }}>
         <PortalSectionHead
-          eyebrow={isFiliale ? (
-            <PortalSectionEyebrow icon="milestone" label={t.dps_eyebrow_filiale_plans} />
-          ) : (
-            <PortalSectionEyebrow icon="milestone" className="portal-pif-eyebrow">
-              <span className="portal-pif-eyebrow-kicker">{t.eyebrow_pif}</span>
-              {' '}
-              <span className="portal-pif-eyebrow-expansion">{t.eyebrow_pif_expansion}</span>
-            </PortalSectionEyebrow>
-          )}
-          title={isFiliale ? t.dps_title_filiale_plans : t.title_pif}
+          eyebrow={effectiveEyebrow}
+          title={effectiveTitle}
           updatedAt={isFiliale ? updatedAt : undefined}
           updating={isFiliale ? (scopeLoading || insightsLoading) : false}
           methodText={isFiliale ? t.dps_method_pif : undefined}
           t={t}
         />
 
-        <ChipFilterBar
-          portal
-          label={t.pif_filter_lbl}
-          ariaLabel={t.pif_filter_aria}
-          value={scope}
-          onChange={setScope}
-          options={filterOptions}
-        />
+        {filterOptions.length > 1 && (
+          <ChipFilterBar
+            portal
+            label={t.pif_filter_lbl}
+            ariaLabel={t.pif_filter_aria}
+            value={scope}
+            onChange={setScope}
+            options={filterOptions}
+          />
+        )}
 
         <PortalStaggerGrid className="cols-4 pv-grid--stretch portal-pif-cards">
           {brandItems.map(brand => {

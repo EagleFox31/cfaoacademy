@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom'
 import PvCard from './PvCard.jsx'
 import ArticleCardMedia from './ArticleCardMedia.jsx'
 import { catSlug } from '../data/articles/index.js'
@@ -6,6 +7,7 @@ import useLocale from '../hooks/useLocale.js'
 import { localizedArticleCardBadge, localizedArticleFields } from '../utils/localizeCard.js'
 
 export default function ArticleCard({ article, cta }) {
+  const location = useLocation()
   const { locale, t: cardsT } = useLocale('cards')
   const { logo, label } = localizedArticleCardBadge(article, locale)
   const { cardPreview } = resolveArticleMedia(article)
@@ -14,10 +16,18 @@ export default function ArticleCard({ article, cta }) {
     <span className={`news-tag news-tag--${catSlug(article.category)}`}>{copy.categoryLabel}</span>
   )
 
+  const returnTarget =
+    location.pathname === '/' || location.pathname === ''
+      ? { pathname: '/', hash: 'actualites' }
+      : { pathname: location.pathname, search: location.search, hash: location.hash }
+
   return (
     <PvCard
       className="pv-card--article"
-      to={`/actualites/${article.slug}`}
+      to={{
+        pathname: `/actualites/${article.slug}`,
+        state: { from: location.state?.from || returnTarget },
+      }}
       cardMedia={<ArticleCardMedia preview={cardPreview} />}
       logo={logo}
       brandLabel={label}

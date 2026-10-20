@@ -61,26 +61,6 @@ export default function PreviewSection({
             <div className="pv-ix">{ix}</div>
             <h2>{title}</h2>
           </div>
-          {voir && (
-            voir.href ? (
-              <a
-                className={`pv-voir${voir.filled ? ' pv-voir--filled' : ''}`}
-                href={voir.href}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {voir.label} <span className="arrow">↗</span>
-              </a>
-            ) : voir.to ? (
-              <Link className="pv-voir" to={voir.to}>
-                {voir.label} <span className="arrow">→</span>
-              </Link>
-            ) : (
-              <button type="button" className="pv-voir" onClick={voir.onClick}>
-                {voir.label} <span className="arrow">{voir.expanded ? '↑' : '→'}</span>
-              </button>
-            )
-          )}
         </div>
 
         {tabs?.length > 0 && (
@@ -110,6 +90,29 @@ export default function PreviewSection({
         )}
 
         {typeof children === 'function' ? children(active) : children}
+
+        {voir && (
+          <div className="pv-foot">
+            {voir.href ? (
+              <a
+                className={`pv-voir${voir.filled ? ' pv-voir--filled' : ''}`}
+                href={voir.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {voir.label} <span className="arrow">↗</span>
+              </a>
+            ) : voir.to ? (
+              <Link className="pv-voir" to={voir.to}>
+                {voir.label} <span className="arrow">→</span>
+              </Link>
+            ) : (
+              <button type="button" className="pv-voir" onClick={voir.onClick}>
+                {voir.label} <span className="arrow">{voir.expanded ? '↑' : '→'}</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   )

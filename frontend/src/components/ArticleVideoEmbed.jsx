@@ -1,6 +1,7 @@
-import { forwardRef, useRef } from 'react'
+import { forwardRef } from 'react'
 import { isVideoFile, toEmbedVideoUrl } from '../utils/videoEmbed.js'
 import { useVideoFramePoster, VIDEO_FRAME_POSTER_SEC } from '../utils/videoFramePoster.js'
+import CustomVideoPlayer from './CustomVideoPlayer.jsx'
 
 const ArticleVideoEmbed = forwardRef(function ArticleVideoEmbed(
   {
@@ -9,6 +10,8 @@ const ArticleVideoEmbed = forwardRef(function ArticleVideoEmbed(
     poster,
     framePosterSec = VIDEO_FRAME_POSTER_SEC,
     autoPlay = false,
+    isFloating = false,
+    onExpand,
   },
   ref,
 ) {
@@ -21,15 +24,14 @@ const ArticleVideoEmbed = forwardRef(function ArticleVideoEmbed(
 
   if (isVideoFile(url)) {
     return (
-      <video
+      <CustomVideoPlayer
         ref={ref}
         src={url}
-        controls
-        playsInline
-        autoPlay={autoPlay}
-        preload={autoPlay ? 'auto' : 'metadata'}
         poster={effectivePoster}
         title={title}
+        autoPlay={autoPlay}
+        isFloating={isFloating}
+        onExpand={onExpand}
       />
     )
   }

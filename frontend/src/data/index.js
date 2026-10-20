@@ -29,6 +29,7 @@ const NAV_ITEMS = [
   { label: 'Nos Offres',  to: '/#offres',     hash: 'offres',     key: 'offres' },
   { label: 'Sessions',    to: '/#sessions',   hash: 'sessions',   key: 'sessions' },
   { label: "L'Academy",   to: '/#expertise',  hash: 'expertise',  key: 'academy' },
+  { label: 'Assistance technique', to: '/#assistance', hash: 'assistance', key: 'assistance' },
 ]
 export const NAV = HOME_SESSIONS_SECTION_VISIBLE
   ? NAV_ITEMS
@@ -52,12 +53,11 @@ export function getPrimaryRole(roles = []) {
 /** Sections du portail par rôle — affichées dans la navbar */
 export const PORTAL_NAV_SECTIONS = {
   learner: [
-    { key: 'priorities', id: 'next-actions', labelKey: 'nav_sec_priorities' },
-    { key: 'pif',        id: 'pif',        labelKey: 'nav_sec_pif' },
-    { key: 'resultats',  id: 'resultats',  labelKey: 'nav_sec_competency_results' },
-    { key: 'tests',      id: 'tests',      labelKey: 'nav_sec_tests' },
-    { key: 'certifs',    id: 'certifs',    labelKey: 'nav_sec_certifs' },
-    { key: 'assistance', id: 'assistance', labelKey: 'nav_sec_assistance' },
+    { key: 'tests',          id: 'tests',          labelKey: 'nav_sec_tests',     iconKey: 'clipboard' },
+    { key: 'resultats',      id: 'resultats',      labelKey: 'nav_sec_resultats', iconKey: 'sliders' },
+    { key: 'pifs',           id: 'pifs',           labelKey: 'nav_sec_pif',       iconKey: 'milestone' },
+    { key: 'formations',     id: 'formations',     labelKey: 'nav_sec_formations',iconKey: 'graduationcap' },
+    { key: 'certifications', id: 'certifications', labelKey: 'nav_sec_certifs',   iconKey: 'award' },
   ],
   ki: [
     { key: 'fad',              id: 'fad',              labelKey: 'nav_sec_fad' },
@@ -71,30 +71,32 @@ export const PORTAL_NAV_SECTIONS = {
     { key: 'apprenants', id: 'apprenants', labelKey: 'nav_sec_apprenants' },
   ],
   team_manager: [
-    { key: 'equipe',     id: 'equipe',     labelKey: 'nav_sec_equipe' },
-    { key: 'resultats',  id: 'resultats',  labelKey: 'nav_sec_resultats' },
-    { key: 'plans',      id: 'plans',      labelKey: 'nav_sec_tm_plans' },
-    { key: 'assistance', id: 'assistance', labelKey: 'nav_sec_assistance' },
+    { key: 'mesurer',        id: 'mesurer',        labelKey: 'nav_sec_manager_mesurer', iconKey: 'sliders' },
+    { key: 'pif',            id: 'pif',            labelKey: 'nav_sec_tm_plans',        iconKey: 'milestone' },
+    { key: 'formations',     id: 'formations',     labelKey: 'nav_sec_formations',      iconKey: 'graduationcap' },
+    { key: 'certifications', id: 'certifications', labelKey: 'nav_sec_certifs',         iconKey: 'award' },
+    { key: 'assistance',     id: 'assistance',     labelKey: 'nav_sec_assistance',      iconKey: 'lifebuoy' },
   ],
   workshop_manager: [
-    { key: 'equipes',    id: 'equipes',    labelKey: 'nav_sec_equipes' },
-    { key: 'resultats',  id: 'resultats',  labelKey: 'nav_sec_resultats' },
-    { key: 'plans',      id: 'plans',      labelKey: 'nav_sec_tm_plans' },
-    { key: 'assistance', id: 'assistance', labelKey: 'nav_sec_assistance' },
+    { key: 'mesurer',        id: 'mesurer',        labelKey: 'nav_sec_manager_mesurer', iconKey: 'sliders' },
+    { key: 'pif',            id: 'pif',            labelKey: 'nav_sec_tm_plans',        iconKey: 'milestone' },
+    { key: 'formations',     id: 'formations',     labelKey: 'nav_sec_formations',      iconKey: 'graduationcap' },
+    { key: 'certifications', id: 'certifications', labelKey: 'nav_sec_certifs',         iconKey: 'award' },
+    { key: 'assistance',     id: 'assistance',     labelKey: 'nav_sec_assistance',      iconKey: 'lifebuoy' },
   ],
   dps: [
-    { key: 'resultats',  id: 'resultats',  labelKey: 'nav_sec_dps_results' },
-    { key: 'niveaux',    id: 'niveaux',    labelKey: 'nav_sec_dps_tier_results' },
-    { key: 'pif',        id: 'pif',        labelKey: 'nav_sec_dps_plans' },
-    // { key: 'collaborateurs', id: 'collaborateurs', labelKey: 'nav_sec_dps_collaborators' },
-    { key: 'assistance', id: 'assistance', labelKey: 'nav_sec_dps_assistance' },
+    { key: 'resultats',        id: 'resultats',        labelKey: 'nav_sec_dps_results',      iconKey: 'award' },
+    { key: 'niveaux',          id: 'niveaux',          labelKey: 'nav_sec_dps_tier_results', iconKey: 'sliders' },
+    { key: 'pif',              id: 'pif',              labelKey: 'nav_sec_dps_plans',        iconKey: 'milestone' },
+    { key: 'besoins-formation', id: 'besoins-formation', labelKey: 'nav_sec_dps_needs',      iconKey: 'clipboard' },
+    { key: 'assistance',       id: 'assistance',       labelKey: 'nav_sec_dps_assistance',   iconKey: 'lifebuoy' },
   ],
   dop: [
-    { key: 'resultats',  id: 'resultats',  labelKey: 'nav_sec_dps_results' },
-    { key: 'niveaux',    id: 'niveaux',    labelKey: 'nav_sec_dps_tier_results' },
-    { key: 'pif',        id: 'pif',        labelKey: 'nav_sec_dps_plans' },
-    // { key: 'collaborateurs', id: 'collaborateurs', labelKey: 'nav_sec_dps_collaborators' },
-    { key: 'assistance', id: 'assistance', labelKey: 'nav_sec_dps_assistance' },
+    { key: 'resultats',        id: 'resultats',        labelKey: 'nav_sec_dps_results',      iconKey: 'award' },
+    { key: 'niveaux',          id: 'niveaux',          labelKey: 'nav_sec_dps_tier_results', iconKey: 'sliders' },
+    { key: 'pif',              id: 'pif',              labelKey: 'nav_sec_dps_plans',        iconKey: 'milestone' },
+    { key: 'besoins-formation', id: 'besoins-formation', labelKey: 'nav_sec_dps_needs',      iconKey: 'clipboard' },
+    { key: 'assistance',       id: 'assistance',       labelKey: 'nav_sec_dps_assistance',   iconKey: 'lifebuoy' },
   ],
   branch_director: [
     { key: 'bilan',   id: 'bilan',   labelKey: 'nav_sec_bilan' },
@@ -110,21 +112,32 @@ export const PORTAL_NAV_SECTIONS = {
     { key: 'directory', id: 'directory', labelKey: 'nav_sec_directory' },
   ],
   group_hr: [
-    { key: 'bilan',     id: 'bilan',     labelKey: 'nav_sec_bilan' },
-    { key: 'branches',  id: 'branches',  labelKey: 'nav_sec_branches' },
-    { key: 'directory', id: 'directory', labelKey: 'nav_sec_directory' },
+    { key: 'bilan',       id: 'bilan',       labelKey: 'nav_sec_bilan' },
+    { key: 'branches',    id: 'branches',    labelKey: 'nav_sec_branches' },
+    { key: 'competences', id: 'competences', labelKey: 'nav_sec_competences' },
+    { key: 'logs',        id: 'logs',        labelKey: 'nav_sec_logs' },
+    { key: 'profiles',    id: 'profiles',    labelKey: 'nav_sec_profiles' },
   ],
   group_admin: [
-    { key: 'bilan',     id: 'bilan',     labelKey: 'nav_sec_bilan' },
-    { key: 'branches',  id: 'branches',  labelKey: 'nav_sec_branches' },
-    { key: 'directory', id: 'directory', labelKey: 'nav_sec_directory' },
-    { key: 'logs',      id: 'logs',      labelKey: 'nav_sec_logs' },
+    { key: 'bilan',       id: 'bilan',       labelKey: 'nav_sec_bilan' },
+    { key: 'branches',    id: 'branches',    labelKey: 'nav_sec_branches' },
+    { key: 'competences', id: 'competences', labelKey: 'nav_sec_competences' },
+    { key: 'logs',        id: 'logs',        labelKey: 'nav_sec_logs' },
+    { key: 'profiles',    id: 'profiles',    labelKey: 'nav_sec_profiles' },
   ],
   superadmin: [
-    { key: 'bilan',     id: 'bilan',     labelKey: 'nav_sec_bilan' },
-    { key: 'branches',  id: 'branches',  labelKey: 'nav_sec_branches' },
-    { key: 'directory', id: 'directory', labelKey: 'nav_sec_directory' },
-    { key: 'logs',      id: 'logs',      labelKey: 'nav_sec_logs' },
+    { key: 'bilan',       id: 'bilan',       labelKey: 'nav_sec_bilan' },
+    { key: 'branches',    id: 'branches',    labelKey: 'nav_sec_branches' },
+    { key: 'competences', id: 'competences', labelKey: 'nav_sec_competences' },
+    { key: 'logs',        id: 'logs',        labelKey: 'nav_sec_logs' },
+    { key: 'profiles',    id: 'profiles',    labelKey: 'nav_sec_profiles' },
+  ],
+  build_team: [
+    { key: 'bilan',       id: 'bilan',       labelKey: 'nav_sec_bilan' },
+    { key: 'branches',    id: 'branches',    labelKey: 'nav_sec_branches' },
+    { key: 'competences', id: 'competences', labelKey: 'nav_sec_competences' },
+    { key: 'logs',        id: 'logs',        labelKey: 'nav_sec_logs' },
+    { key: 'profiles',    id: 'profiles',    labelKey: 'nav_sec_profiles' },
   ],
 }
 
@@ -144,6 +157,7 @@ const NAV_SPY_ITEMS = [
   { key: 'offres', id: 'formations-sav-equipment' },
   { key: 'sessions', id: 'sessions' },
   { key: 'academy', id: 'expertise' },
+  { key: 'assistance', id: 'assistance' },
 ]
 export const NAV_SPY_SECTIONS = HOME_SESSIONS_SECTION_VISIBLE
   ? NAV_SPY_ITEMS
@@ -161,7 +175,7 @@ export const BU = [
 
 export const PUBLICS = [
   {
-    name: 'Techniciens Voitures',
+    name: 'Techniciens Véhicules Légers',
     kicker: 'Atelier · VL',
     niv: 'Junior → Expert',
     img: '/assets/hero/cta_hover_vl.jpg',
@@ -179,10 +193,10 @@ export const PUBLICS = [
     color: '#ea580c',
   },
   { name: 'Carrossiers',          kicker: 'Atelier · N1-N5', niv: 'Junior → Expert', img: '/assets/hero/cta_hover_carrosserie.png',        meta: 'Redressage acier, préparation de surface, remplacement de vitrages et raccords multicouches — du débourrage N1 à la maîtrise des teintes N5.',         famille: 'Atelier',       color: '#f97316' },
-  { name: 'Manager et conseillers services administratifs, financiers', kicker: 'Services', niv: 'Manager · Conseillers', img: '/assets/hero/cta_hover_sav.jpg', meta: 'Managers et conseillers des services administratifs et financiers — pilotage, conformité et performance des fonctions support du réseau.', famille: 'Process & SAV', color: '#059669' },
+  { name: 'Conseillers Services', kicker: 'Services',        niv: 'Conseillers',     img: '/assets/hero/cta_hover_sav.jpg', meta: 'Conseillers des services administratifs et financiers — accueil, conformité et performance des fonctions support du réseau.', famille: 'Process & SAV', color: '#059669' },
   { name: 'Technico-commerciaux', kicker: 'Vente',           niv: 'Produit · Vente', img: '/assets/publics/technico-commerciaux.jpg',   meta: 'Maîtrise produit et argumentation technique de vente — pour les vendeurs qui allient connaissance véhicule et performance commerciale.',                    famille: 'Vente',         color: '#1a56db' },
   { name: 'Commerciaux',          kicker: 'Vente',           niv: 'Réception · SAV', img: '/assets/publics/commerciaux.jpg',   meta: 'Accueil, prise en charge et accompagnement client au SAV — du réceptionnaire au conseiller service confirmé.',               famille: 'Vente',         color: '#1a56db' },
-  { name: 'Manager et responsables organisation SAV', kicker: 'Organisation SAV', niv: 'Manager · Back-office', img: '/assets/hero/cta_hover_sav.jpg', meta: 'Managers et responsables back-office SAV — standards constructeurs, pilotage des indicateurs et conformité réseau KI/PIC.', famille: 'Process & SAV', color: '#059669' },
+  { name: 'Managers',             kicker: 'Management SAV',  niv: 'Manager · Organisation', img: '/assets/hero/cta_hover_sav.jpg', meta: 'Managers et responsables SAV — standards constructeurs, pilotage des indicateurs et conformité réseau KI/PIC.', famille: 'Process & SAV', color: '#059669' },
   { name: 'Clients',              kicker: 'Client B2B',      niv: 'Partenaires B2B',       img: '/assets/hero/cta_hover_b2b.jpg',       meta: 'Techniciens, carrossiers et gestionnaires pièces des entreprises clientes — les mêmes formations, dispensées aux partenaires et flottes de CFAO Mobility et Equipment.',                famille: 'Clients',       color: '#7c3aed' },
 ]
 
@@ -233,10 +247,10 @@ export const NEWS = [
   { cat:'Formation',    date:'2026-04-12', readtime:'2 min', views:0, tone:'t3', brand:'BYD',           h:'BYD : premier cursus haute tension en Afrique francophone, 8 techniciens formés',                             p:'Huit techniciens désormais habilités à intervenir sur les batteries haute-tension des véhicules BYD.' },
   { cat:'Formation',    date:'2026-04-27',                          views:0, tone:'t1', brand:'MITSUBISHI',    h:'Mitsubishi Step 2 — cycle complet moteur et transmission, Nigeria',       p:'Quinze techniciens ont validé les modules 4N14 et boîte de transfert lors de cette session de cinq jours au Nigeria.' },
   { cat:'Formation',    date:'2026-01-22', readtime:'2 min', views:0, tone:'t2', brand:'SINOTRUK',      h:'SINOTRUK WD615 · Maîtrise du diagnostic moteur en conditions terrain, Togo',        p:'Session déployée directement sur site avec accès aux véhicules en service actif. Retour positif des ateliers partenaires au Togo.' },
-  { cat:'Certification',date:'2026-02-20',                          views:0, tone:'t1', brand:'TOYOTA',        h:'9 techniciens Toyota G3 certifiés à Douala — promotion janvier 2026',       p:'Neuf techniciens ont validé les modules châssis, électrique et diagnostic avancé pour décrocher leur certification G3.' },
+  { cat:'Certification',date:'2026-02-20',                          views:0, tone:'t1', brand:'TOYOTA',        h:'Toyota · Réparation de composants : 9 techniciens certifiés à Douala',       p:'Neuf techniciens ont validé les modules moteurs, châssis et électricité pour décrocher leur certification en Réparation de composants.' },
   { cat:'Certification',date:'2026-03-30', readtime:'3 min', views:0, tone:'t2', brand:'SUZUKI',        h:'Suzuki Z12E · 6 experts en démontage / remontage moteur diplômés',       p:'Six techniciens maîtrisent le démontage complet du Z12E dans les temps impartis par le standard Suzuki.' },
   { cat:'Certification',date:'2026-04-18',                          views:0, tone:'t2', brand:'MERCEDES-BENZ', h:'Mercedes-Benz BASIC → CERTIFIED : 4 techniciens agréés, Côte d\'Ivoire', p:'Après validation du diagnostic SDS et des procédures moteur OM651, quatre techniciens franchissent le palier CERTIFIED.' },
-  { cat:'Evènements',  date:'2026-03-05', readtime:'4 min', views:0, tone:'t4', brand:null,          h:'L\'Academy présente son catalogue 2026 au Salon de l\'Auto d\'Abidjan', p:'L\'Academy était présente pour la première fois au salon avec son catalogue 2026 et ses nouvelles offres Equipment.' },
+  { cat:'Evènements',  date:'2026-03-05', readtime:'4 min', views:0, tone:'t4', brand:null,          h:'L\'Academy présente son catalogue au Salon de l\'Auto d\'Abidjan', p:'L\'Academy était présente pour la première fois au salon avec son catalogue 2026 et ses nouvelles offres Equipment.' },
   { cat:'Evènements',  date:'2026-05-10', readtime:'3 min', views:0, tone:'t2', brand:'LOVOL',       h:'Lancement du pôle Equipment : LOVOL et JCB désormais au programme',       p:'Onze techniciens certifiés sur les niveleuses et chargeuses LOVOL — une première dans le réseau Equipment de CFAO.' },
   { cat:'Evènements',  date:'2026-04-30', readtime:'4 min', views:0, tone:'t4', brand:null,          h:'Atelier carrosserie Côte d\'Ivoire — session inaugurale N1, 12 stagiaires',    p:'Douze stagiaires ont suivi la première session carrosserie N1 organisée en RCI, avec résultats au-delà des attentes.' },
 ]
@@ -249,7 +263,6 @@ export const TEAM = [
   { name:'Eugène EBENE',          role:'Formateur Toyota',              lieu:'Cameroun',     pole:'Toyota',           photo:'/assets/team/eugene-ebene.png' },
   { name:'Alassane DIALLO',       role:'Formateur Toyota',              lieu:'Sénégal',      pole:'Toyota',           photo:'/assets/team/alassane-diallo.png' },
   { name:'Jacques MAVILA',        role:'Formateur Toyota & Suzuki',     lieu:'RDC',          pole:'Toyota',           photo:'/assets/team/jacques-mavila.png' },
-  { name:'Brice NECHI',           role:'Formateur Stellantis & Toyota', lieu:'Cameroun',     pole:'Toyota',           photo:'/assets/team/brice-nechi.png' },
   { name:'Cédric PAKO',           role:'Suzuki, BYD & Omoda',           lieu:'Cameroun',     pole:'Autres marques',   photo:'/assets/team/cedric-pako.png' },
   { name:'Hatem BEN ABID',        role:'Mercedes-Benz',                 lieu:"Côte d'Ivoire",pole:'Autres marques',   photo:'/assets/team/hatem-ben-abid.png' },
   { name:'Mohammed COLY',         role:'Suzuki',                        lieu:'Sénégal',      pole:'Autres marques',   photo:'/assets/team/mohammed-coly.png' },
@@ -265,7 +278,6 @@ export const TEAM = [
   { name:'Lucien GAGNE',          role:'RT · Hino · Fuso',              lieu:'Cameroun',     pole:'Équipement',       photo:'/assets/team/lucien-gagne.png' },
   { name:'Idris NKOA',            role:'BT · King Long · Sinotruk',     lieu:'Cameroun',     pole:'Équipement',       photo:'/assets/team/idris-nkoa.png' },
   { name:'Roland NENDA',          role:'Formateur opérateur',           lieu:'Cameroun',     pole:'Équipement',       photo:'/assets/team/roland-nenda.png' },
-  { name:'Johann GAUDIN',         role:'Technicien Lovol',              lieu:'Cameroun',     pole:'Équipement',       photo:'/assets/team/johann-gaudin.png' },
   { name:'Thierry TAMO YOUDOM',   role:'Carrosserie',                   lieu:'Cameroun',     pole:'Autres activités', photo:'/assets/team/thierry-tamo-youdom.png' },
   { name:'Gérold SADIO',          role:'Process',                       lieu:'Cameroun',     pole:'Autres activités', photo:'/assets/team/gerold-sadio.png' },
   { name:'Gauthier OUEDRAOGO',    role:'Yamaha Moto & Bateaux',         lieu:'Burkina Faso', pole:'Autres activités', photo:'/assets/team/gauthier-ouedraogo.png' },

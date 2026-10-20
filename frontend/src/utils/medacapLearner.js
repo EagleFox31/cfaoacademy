@@ -18,11 +18,16 @@ export function resolveMedacapLearnerUser(user, medacapProfile) {
     ? Object.fromEntries(brands.map(b => [b, certKey]))
     : user.certLevels
 
+  const rawFiliale = medacapProfile.subsidiary ?? user.filiale
+  const filiale = /^CAMEROON\s+MOTORS(?:\s+INDUSTRIES)?$/i.test(String(rawFiliale ?? '').trim())
+    ? 'CFAO MOBILITY CAMEROUN'
+    : rawFiliale
+
   return {
     ...user,
     firstName: medacapProfile.firstName ?? user.firstName,
     lastName: medacapProfile.lastName ?? user.lastName,
-    filiale: medacapProfile.subsidiary ?? user.filiale,
+    filiale,
     orgLabel: medacapProfile.agency ?? user.orgLabel,
     pays: medacapProfile.country ?? user.pays,
     brands,

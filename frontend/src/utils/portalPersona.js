@@ -3,17 +3,23 @@ import { HERO_PERSONA_IDS } from '../i18n/hero.js'
 
 /** Clé `name` dans PUBLICS → id persona hero (accueil) */
 const LEGACY_PUBLIC_NAMES = {
-  Parts: 'Manager et conseillers services administratifs, financiers',
-  'Process Parts': 'Manager et conseillers services administratifs, financiers',
-  'Process SAV': 'Manager et responsables organisation SAV',
-  'Process SAV & Parts': 'Manager et responsables organisation SAV',
+  Parts: 'Conseillers Services',
+  'Process Parts': 'Conseillers Services',
+  'Process SAV': 'Managers',
+  'Process SAV & Parts': 'Managers',
+  'Manager et conseillers services administratifs, financiers': 'Conseillers Services',
+  'Manager et responsables organisation SAV': 'Managers',
+  'Techniciens Voitures': 'Techniciens Véhicules Légers',
 }
 
 const PUBLIC_NAME_TO_PERSONA = {
+  'Techniciens Véhicules Légers': 'vl',
   'Techniciens Voitures': 'vl',
   'Techniciens Poids lourds, Engins, Chariots & Bus': 'pl',
   Carrossiers: 'carrossier',
+  'Conseillers Services': 'savParts',
   'Manager et conseillers services administratifs, financiers': 'savParts',
+  Managers: 'savParts',
   'Manager et responsables organisation SAV': 'savParts',
   'Process Parts': 'savParts',
   Parts: 'savParts',

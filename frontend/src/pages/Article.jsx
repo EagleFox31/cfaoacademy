@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useLocation } from 'react-router-dom'
 import SitePageLayout from '../components/SitePageLayout.jsx'
 import useLocale from '../hooks/useLocale.js'
 import PageHeaderClose from '../components/PageHeaderClose.jsx'
@@ -45,6 +45,8 @@ function useArticleViews(slug) {
 
 export default function Article() {
   const { slug } = useParams()
+  const location = useLocation()
+  const returnTo = location.state?.from || { pathname: '/', hash: 'actualites' }
   const { locale, t: pageT } = useLocale('articlePage')
   const { t: nfT } = useLocale('notFound')
   const { t: sessionsT } = useLocale('sessions')
@@ -78,7 +80,7 @@ export default function Article() {
       <SitePageLayout navActive="actualites">
         <main className="article-page">
           <div className="container article-shell">
-            <PageHeaderClose to="/" ariaLabel={pageT.closeHome} />
+            <PageHeaderClose to={returnTo} ariaLabel={pageT.closeHome} />
             <ContentNotFound
               eyebrow={nfT.eyebrow}
               title={pageT.notFoundTitle}
@@ -101,7 +103,7 @@ export default function Article() {
       <main className="article-page">
         <div className="container article-shell">
           {!media?.heroVideo && (
-            <PageHeaderClose to="/" ariaLabel={pageT.closeArticle} />
+            <PageHeaderClose to={returnTo} ariaLabel={pageT.closeArticle} />
           )}
 
           <div className="article-main">
@@ -126,7 +128,7 @@ export default function Article() {
                     title={copy.title}
                     poster={media.videoPoster}
                     framePosterSec={media.framePosterSec}
-                    closeTo="/"
+                    closeTo={returnTo}
                     closeAriaLabel={pageT.closeArticle}
                   />
                 )}

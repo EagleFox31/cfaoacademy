@@ -7,7 +7,7 @@
    containing block des éléments `position: fixed` enfants (ex. .home-backdrop),
    qui seraient alors dimensionnés sur la page entière au lieu de l'écran. */
 .route-motion {
-  animation: routeIn 0.30s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: routeIn 0.30s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .route-motion--pending {
   visibility: hidden;
@@ -15,7 +15,7 @@
 }
 /* Après PortalLoader : pas de fade depuis opacity 0 (évite flash body --ink sur l’accueil) */
 .route-motion--ready {
-  animation: routeInReady 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: routeInReady 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes routeIn {
   from { opacity: 0; transform: translateY(8px) scale(0.994); filter: blur(3px); }

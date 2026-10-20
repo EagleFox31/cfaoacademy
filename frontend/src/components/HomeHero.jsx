@@ -20,6 +20,15 @@ const HERO_AUTO_STEP_MS = 10000
 const HERO_WELCOME_MS = 5500
 const HERO_NEWS_MS = 5000
 
+const HERO_VISUAL_TO_OFFERS_SECTION = {
+  vl: 'offres',
+  pl: 'formations-equipment',
+  carrossier: 'formations-carrosserie',
+  savParts: 'formations-sav-motors',
+  b2b: 'offres',
+  default: 'offres',
+}
+
 const PERSONA_ICONS = {
   vl: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -262,6 +271,37 @@ export default function HomeHero({ onVisualChange }) {
     onVisualChange?.(activeVisual)
   }, [activeVisual, onVisualChange])
 
+  const [autoCycleTick, setAutoCycleTick] = useState(0)
+
+  const goToSlide = useCallback((direction) => {
+    const currentIndex = HERO_AUTO_CYCLE.indexOf(activeVisual)
+    const baseIndex = currentIndex >= 0 ? currentIndex : cycleIndexRef.current
+    const nextIndex = (baseIndex + direction + HERO_AUTO_CYCLE.length) % HERO_AUTO_CYCLE.length
+    cycleIndexRef.current = nextIndex
+    setActiveVisual(HERO_AUTO_CYCLE[nextIndex])
+    setAutoCycleTick((t) => t + 1)
+  }, [activeVisual])
+
+  const handlePrev = useCallback(() => goToSlide(-1), [goToSlide])
+  const handleNext = useCallback(() => goToSlide(1), [goToSlide])
+
+  const handleCardClick = useCallback(() => {
+    if (user) return
+    const targetId = HERO_VISUAL_TO_OFFERS_SECTION[activeVisual] || 'offres'
+    const el = document.getElementById(targetId)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [user, activeVisual])
+
+  const handleCardKeyDown = useCallback((e) => {
+    if (user) return
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleCardClick()
+    }
+  }, [user, handleCardClick])
+
   useEffect(() => {
     if (isManual) return undefined
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
@@ -272,7 +312,7 @@ export default function HomeHero({ onVisualChange }) {
     }, HERO_AUTO_STEP_MS)
 
     return () => window.clearInterval(timer)
-  }, [isManual])
+  }, [isManual, autoCycleTick])
 
   const glassRef = useRef(null)
 
@@ -353,6 +393,31 @@ export default function HomeHero({ onVisualChange }) {
         />
         )}
 
+        {!user && (
+          <>
+            <button
+              type="button"
+              className="hero-home-nav-arrow hero-home-nav-arrow--prev"
+              onClick={handlePrev}
+              aria-label={t.prevSlideAria || 'Diapositive précédente'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="hero-home-nav-arrow hero-home-nav-arrow--next"
+              onClick={handleNext}
+              aria-label={t.nextSlideAria || 'Diapositive suivante'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </>
+        )}
+
         <div className="container">
           {showNewsCarousel ? (
             <HeroNewsCarousel
@@ -367,10 +432,15 @@ export default function HomeHero({ onVisualChange }) {
           ) : (
             <div
               key={activeVisual}
-              className="hero-home-copy hero-home-glass"
+              className={`hero-home-copy hero-home-glass${!user ? ' hero-home-glass--clickable' : ''}`}
               ref={glassRef}
               onMouseMove={handleTilt}
               onMouseLeave={handleTiltReset}
+              onClick={!user ? handleCardClick : undefined}
+              onKeyDown={!user ? handleCardKeyDown : undefined}
+              role={!user ? 'button' : undefined}
+              tabIndex={!user ? 0 : undefined}
+              aria-label={!user ? (t.cardScrollHint || 'Découvrir les offres de formation') : undefined}
             >
               <div className="hero-indicator" aria-hidden="true" />
 

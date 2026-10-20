@@ -15,7 +15,6 @@ import { getPrimaryRole } from '../data/index.js'
 const LOGIN_BG = '/assets/hero/default.jpg'
 
 const USERNAME_BY_DEMO_ID = {
-  u1: 'kouame.assi',
   u2: 'brahim.tahir',
   u3: 'seydou.diallo',
   u4: 'fatou.mbaye',
@@ -23,9 +22,10 @@ const USERNAME_BY_DEMO_ID = {
   u6: 'admin.groupe',
   u7: 'tech.lead',
   u8: 'moa.pilotage',
-  u9: 'loic.traore',
+  u9: 'marc.aurele',
   u10: 'jacques.robin',
   u11: 'andre.yogba',
+  u12: 'venance.tonga',
 }
 
 function EyeIcon({ open }) {

@@ -42,6 +42,85 @@ function DpsHeroStatsLine({ t, technicianCount, brandCount, startWi }) {
   )
 }
 
+function SuperAdminHeroStatsLine({
+  t,
+  learnerCount,
+  branchCount,
+  brandCount,
+  trainingCount,
+  trainingYear,
+  stripMode = 'marques',
+  onToggleStripMode,
+  startWi,
+}) {
+  const learners  = Number.isFinite(learnerCount)  && learnerCount  > 0 ? learnerCount  : null
+  const branches  = Number.isFinite(branchCount)   && branchCount   > 0 ? branchCount   : null
+  const brands    = Number.isFinite(brandCount)    && brandCount    > 0 ? brandCount    : null
+  // trainings : on affiche même si 0 — c'est un signal métier (« rien programmé encore »).
+  const trainings = Number.isFinite(trainingCount) ? trainingCount : null
+  const year      = Number.isFinite(trainingYear) ? trainingYear : new Date().getFullYear()
+
+  const learnerLabel  = learners  === 1 ? t.superadmin_hero_greeting_learner_one  : t.superadmin_hero_greeting_learners
+  const branchLabel   = branches  === 1 ? t.superadmin_hero_greeting_branch_one   : t.superadmin_hero_greeting_branches
+  const brandLabel    = brands    === 1 ? t.superadmin_hero_greeting_brand_one    : t.superadmin_hero_greeting_brands
+  const trainingLabelRaw = trainings === 1 ? t.superadmin_hero_greeting_training_one : t.superadmin_hero_greeting_trainings
+  const trainingLabel = String(trainingLabelRaw ?? '').replace('{year}', String(year))
+
+  let wi = startWi
+  return (
+    <p className="portal-header-dps-stats portal-greeting-cascade">
+      <span className="portal-word" style={{ '--wi': wi++ }}>{t.superadmin_hero_greeting_before}</span>{' '}
+      <span className="portal-word portal-header-dps-stat" style={{ '--wi': wi++ }}>
+        {learners != null ? <AnimatedCount value={learners} /> : '—'}
+      </span>{' '}
+      <span className="portal-word" style={{ '--wi': wi++ }}>{learnerLabel}</span>{' '}
+      <span className="portal-word" style={{ '--wi': wi++ }}>{t.superadmin_hero_greeting_in}</span>{' '}
+      <button
+        type="button"
+        className="portal-hero-interactive-trigger"
+        onClick={() => onToggleStripMode?.('filiales')}
+        title="Afficher les filiales et leurs techniciens apprenants"
+      >
+        <span className="portal-word portal-header-dps-stat" style={{ '--wi': wi++ }}>
+          {branches != null ? <AnimatedCount value={branches} /> : '—'}
+        </span>{' '}
+        <span className="portal-word" style={{ '--wi': wi++ }}>{branchLabel}</span>
+      </button>
+      {brands != null && (
+        <>
+          {' '}
+          <span className="portal-word" style={{ '--wi': wi++ }}>{t.superadmin_hero_greeting_on}</span>{' '}
+          <button
+            type="button"
+            className="portal-hero-interactive-trigger"
+            onClick={() => onToggleStripMode?.('marques')}
+            title="Afficher les marques partenaires"
+          >
+            <span className="portal-word portal-header-dps-stat" style={{ '--wi': wi++ }}>
+              <AnimatedCount value={brands} />
+            </span>{' '}
+            <span className="portal-word" style={{ '--wi': wi++ }}>{brandLabel}</span>
+          </button>
+        </>
+      )}
+      {trainings != null && (
+        <>
+          <span className="portal-word" style={{ '--wi': wi++ }}>,</span>{' '}
+          <span className="portal-word" style={{ '--wi': wi++ }}>{t.superadmin_hero_greeting_with}</span>{' '}
+          <span className="portal-word portal-header-dps-stat" style={{ '--wi': wi++ }}>
+            <AnimatedCount value={trainings} />
+          </span>{' '}
+          {splitWords(trainingLabel).map((w, idx) => (
+            <Fragment key={`tl-${idx}`}>
+              <span className="portal-word" style={{ '--wi': wi++ }}>{w}</span>{' '}
+            </Fragment>
+          ))}
+        </>
+      )}
+    </p>
+  )
+}
+
 function KiHeroStatsLine({ t, technicianCount, startWi, loading = false }) {
   const techs = Number.isFinite(technicianCount) && technicianCount > 0 ? technicianCount : null
   let wi = startWi
@@ -89,6 +168,48 @@ function KiHeroStatsLine({ t, technicianCount, startWi, loading = false }) {
   )
 }
 
+function ManagerHeroStatsLine({ t, technicianCount, brandCount, startWi, loading = false }) {
+  const techs   = Number.isFinite(technicianCount) && technicianCount > 0 ? technicianCount : null
+  const brands  = Number.isFinite(brandCount)      && brandCount      > 0 ? brandCount      : null
+  let wi = startWi
+
+  if (loading) {
+    return (
+      <p className="portal-header-dps-stats portal-greeting-cascade">
+        <span className="portal-word" style={{ '--wi': wi++ }}>{t.manager_hero_greeting_before}</span>{' '}
+        <span
+          className="portal-word portal-header-dps-stat-skeleton"
+          style={{ '--wi': wi++ }}
+          role="status"
+          aria-label={t.data_skeleton_aria}
+        />
+      </p>
+    )
+  }
+
+  const techLabel  = techs  === 1 ? t.manager_hero_greeting_technician_one : t.manager_hero_greeting_technicians
+  const brandLabel = brands === 1 ? t.manager_hero_greeting_brand_one      : t.manager_hero_greeting_brands
+
+  return (
+    <p className="portal-header-dps-stats portal-greeting-cascade">
+      <span className="portal-word" style={{ '--wi': wi++ }}>{t.manager_hero_greeting_before}</span>{' '}
+      <span className="portal-word portal-header-dps-stat" style={{ '--wi': wi++ }}>
+        {techs != null ? <AnimatedCount value={techs} /> : '—'}
+      </span>{' '}
+      <span className="portal-word" style={{ '--wi': wi++ }}>{techLabel}</span>{' '}
+      {brands != null && (
+        <>
+          <span className="portal-word" style={{ '--wi': wi++ }}>{t.manager_hero_greeting_on}</span>{' '}
+          <span className="portal-word portal-header-dps-stat" style={{ '--wi': wi++ }}>
+            <AnimatedCount value={brands} />
+          </span>{' '}
+          <span className="portal-word" style={{ '--wi': wi++ }}>{brandLabel}</span>
+        </>
+      )}
+    </p>
+  )
+}
+
 /** Salutation + phrase d'orientation du portail (selon le rôle actif). */
 export default function PortalGreetingBlock({
   greetingKey,
@@ -98,6 +219,8 @@ export default function PortalGreetingBlock({
   hideOrient = false,
   dpsHero,
   kiHero,
+  superadminHero,
+  managerHero,
 }) {
   const { t, locale } = useLocale('portal')
   const orientKey = resolvePortalOrientKey(primaryRole)
@@ -106,7 +229,7 @@ export default function PortalGreetingBlock({
 
   const greetingWords = splitWords(greetingKey)
   let wi = 0
-  const showPill = Boolean(filialeLabel && user && !dpsHero && !kiHero)
+  const showPill = Boolean(filialeLabel && user && !dpsHero && !kiHero && !superadminHero && !managerHero)
 
   const pays = user ? resolveProfilePays(user) : null
   const countryLabel = pays
@@ -139,7 +262,7 @@ export default function PortalGreetingBlock({
           const node = (
             <Fragment key={`g-${idx}`}>
               <span className="portal-word" style={{ '--wi': wi }}>
-                {isLast && !dpsHero && !kiHero ? `${w},` : w}
+                {isLast && !dpsHero && !kiHero && !managerHero ? `${w},` : w}
               </span>{' '}
             </Fragment>
           )
@@ -149,7 +272,7 @@ export default function PortalGreetingBlock({
         <span className="portal-word portal-header-firstname" style={{ '--wi': wi++ }}>
           {firstName}
         </span>
-        {dpsHero || kiHero ? (
+        {dpsHero || kiHero || managerHero ? (
           <>
             <span className="portal-word" style={{ '--wi': wi++ }}>,</span>{' '}
             {filialeSuffixWords.map((w, idx) => (
@@ -158,6 +281,8 @@ export default function PortalGreetingBlock({
               </Fragment>
             ))}
           </>
+        ) : superadminHero ? (
+          <span className="portal-word" style={{ '--wi': wi++ }}>.</span>
         ) : (
           <>
             <span className="portal-word" style={{ '--wi': wi++ }}>!</span>
@@ -219,6 +344,61 @@ export default function PortalGreetingBlock({
             loading={kiHero.loading}
             startWi={wi}
           />
+        </div>
+      )}
+      {superadminHero && (
+        <div className="portal-header-dps-stats-row">
+          <SuperAdminHeroStatsLine
+            t={t}
+            learnerCount={superadminHero.learnerCount}
+            branchCount={superadminHero.branchCount}
+            brandCount={superadminHero.brandCount}
+            trainingCount={superadminHero.trainingCount}
+            trainingYear={superadminHero.trainingYear}
+            stripMode={superadminHero.stripMode}
+            onToggleStripMode={superadminHero.onToggleStripMode}
+            startWi={wi}
+          />
+        </div>
+      )}
+      {managerHero && (
+        <div className="portal-header-dps-stats-row">
+          <ManagerHeroStatsLine
+            t={t}
+            technicianCount={managerHero.technicianCount}
+            brandCount={managerHero.brandCount}
+            loading={managerHero.loading}
+            startWi={wi}
+          />
+          <div className="portal-header-dps-actions">
+            <button
+              type="button"
+              className="btn portal-header-dps-refresh"
+              onClick={() => setRefreshSoonVisible(true)}
+            >
+              <svg
+                className="portal-header-dps-refresh-icon"
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                <polyline points="21 3 21 9 15 9" />
+              </svg>
+              {t.dps_hero_refresh_btn}
+            </button>
+          </div>
+          {refreshSoonVisible && (
+            <p className="portal-header-dps-soon-note" role="status">
+              {t.dps_hero_refresh_soon}
+            </p>
+          )}
         </div>
       )}
       {orientText && (

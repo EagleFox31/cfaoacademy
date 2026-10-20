@@ -4,7 +4,7 @@ export const ACADEMY_UI_COPY = {
     polesKicker: 'Pôles',
     polesNavAria: "Pôles de l'équipe",
     paysNavAria: 'Régions',
-    panelIxEquipe: 'équipe centrale · 28 experts',
+    panelIxEquipe: 'équipe centrale · 26 experts',
     panelIxPays: 'cartographie · 35 pays',
   },
   en: {
@@ -12,7 +12,7 @@ export const ACADEMY_UI_COPY = {
     polesKicker: 'Hubs',
     polesNavAria: 'Team hubs',
     paysNavAria: 'Regions',
-    panelIxEquipe: 'core team · 28 experts',
+    panelIxEquipe: 'core team · 26 experts',
     panelIxPays: 'map · 35 countries',
   },
   pt: {
@@ -20,7 +20,7 @@ export const ACADEMY_UI_COPY = {
     polesKicker: 'Pólos',
     polesNavAria: 'Pólos da equipa',
     paysNavAria: 'Regiões',
-    panelIxEquipe: 'equipa central · 28 especialistas',
+    panelIxEquipe: 'equipa central · 26 especialistas',
     panelIxPays: 'cartografia · 35 países',
   },
 }
@@ -76,8 +76,8 @@ export const ACADEMY_PANELS_COPY = {
     },
     equipe: {
       panelTitle: 'The team',
-      panelIx: 'core team · 28 experts',
-      lead: 'Twenty-eight experts across five hubs cover all brands distributed by CFAO Mobility.',
+      panelIx: 'core team · 26 experts',
+      lead: 'Twenty-six experts across five hubs cover all brands distributed by CFAO Mobility.',
     },
   },
   pt: {
@@ -128,8 +128,8 @@ export const ACADEMY_PANELS_COPY = {
     },
     equipe: {
       panelTitle: 'A equipa',
-      panelIx: 'equipa central · 28 especialistas',
-      lead: 'Vinte e oito especialistas em cinco pólos cobrem todas as marcas distribuídas pela CFAO Mobility.',
+      panelIx: 'equipa central · 26 especialistas',
+      lead: 'Vinte e seis especialistas em cinco pólos cobrem todas as marcas distribuídas pela CFAO Mobility.',
     },
   },
 }
@@ -138,16 +138,16 @@ export const EQUIPE_POLES_COPY = {
   fr: {},
   en: {
     supports: { shortLabel: 'Support', label: 'Support hub · 4' },
-    toyota: { shortLabel: 'Toyota', label: 'Toyota hub · 4' },
+    toyota: { shortLabel: 'Toyota', label: 'Toyota hub · 3' },
     'autres-marques': { shortLabel: 'Other brands', label: 'Other brands hub · 12' },
-    equipement: { shortLabel: 'Equipment', label: 'Equipment hub · 5' },
+    equipement: { shortLabel: 'Equipment', label: 'Equipment hub · 4' },
     'autres-act': { shortLabel: 'Other activities', label: 'Other activities hub · 3' },
   },
   pt: {
     supports: { shortLabel: 'Apoio', label: 'Pólo apoio · 4' },
-    toyota: { shortLabel: 'Toyota', label: 'Pólo Toyota · 4' },
+    toyota: { shortLabel: 'Toyota', label: 'Pólo Toyota · 3' },
     'autres-marques': { shortLabel: 'Outras marcas', label: 'Pólo outras marcas · 12' },
-    equipement: { shortLabel: 'Equipment', label: 'Pólo Equipment · 5' },
+    equipement: { shortLabel: 'Equipment', label: 'Pólo Equipment · 4' },
     'autres-act': { shortLabel: 'Outras atividades', label: 'Pólo outras atividades · 3' },
   },
 }
@@ -162,7 +162,6 @@ export const EQUIPE_MEMBERS_COPY = {
     'Eugène EBENE': { role: 'Toyota trainer', lieu: 'Cameroon' },
     'Alassane DIALLO': { role: 'Toyota trainer', lieu: 'Senegal' },
     'Jacques MAVILA': { role: 'Toyota & Suzuki trainer', lieu: 'DRC' },
-    'Brice NECHI': { role: 'Stellantis & Toyota trainer', note: 'Until May 2026', lieu: 'Cameroon' },
     'Cédric PAKO': { role: 'Trainer · Suzuki, BYD & Omoda', lieu: 'Cameroon' },
     'Hatem BEN ABID': { role: 'Trainer · Mercedes-Benz', lieu: 'Ivory Coast' },
     'Mohammed COLY': { role: 'Trainer · Suzuki', lieu: 'Senegal' },
@@ -178,7 +177,6 @@ export const EQUIPE_MEMBERS_COPY = {
     'Lucien GAGNE': { role: 'Trainer · RT · Hino · Fuso', lieu: 'Cameroon' },
     'Idris NKOA': { role: 'Trainer · BT · KL · Sinotruk', lieu: 'Cameroon' },
     'Roland NENDA': { role: 'Operator trainer', lieu: 'Cameroon' },
-    'Johann GAUDIN': { role: 'Trainer · Lovol', lieu: 'Cameroon' },
     'Thierry TAMO YOUDOM': { role: 'Trainer · Body shop', lieu: 'Cameroon' },
     'Gérold SADIO': { role: 'Trainer · Process', lieu: 'Cameroon' },
     'Gauthier OUEDRAOGO': { role: 'Trainer · Yamaha Motor & Marine', lieu: 'Burkina Faso' },
@@ -191,7 +189,6 @@ export const EQUIPE_MEMBERS_COPY = {
     'Eugène EBENE': { role: 'Formador Toyota', lieu: 'Camarões' },
     'Alassane DIALLO': { role: 'Formador Toyota', lieu: 'Senegal' },
     'Jacques MAVILA': { role: 'Formador Toyota e Suzuki', lieu: 'RDC' },
-    'Brice NECHI': { role: 'Formador Stellantis e Toyota', note: 'Até maio de 2026', lieu: 'Camarões' },
     'Cédric PAKO': { role: 'Formador · Suzuki, BYD e Omoda', lieu: 'Camarões' },
     'Hatem BEN ABID': { role: 'Formador · Mercedes-Benz', lieu: 'Costa do Marfim' },
     'Mohammed COLY': { role: 'Formador · Suzuki', lieu: 'Senegal' },
@@ -207,7 +204,6 @@ export const EQUIPE_MEMBERS_COPY = {
     'Lucien GAGNE': { role: 'Formador · RT · Hino · Fuso', lieu: 'Camarões' },
     'Idris NKOA': { role: 'Formador · BT · KL · Sinotruk', lieu: 'Camarões' },
     'Roland NENDA': { role: 'Formador de operadores', lieu: 'Camarões' },
-    'Johann GAUDIN': { role: 'Formador · Lovol', lieu: 'Camarões' },
     'Thierry TAMO YOUDOM': { role: 'Formador · Carroçaria', lieu: 'Camarões' },
     'Gérold SADIO': { role: 'Formador · Processos', lieu: 'Camarões' },
     'Gauthier OUEDRAOGO': { role: 'Formador · Yamaha Motor e Marine', lieu: 'Burkina Faso' },

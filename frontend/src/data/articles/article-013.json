@@ -1,0 +1,74 @@
+{
+  "id":       "suzuki-sat-formation-formateurs-douala-2026",
+  "cat":      "Formation",
+  "date":     "2026-07-16",
+  "brand":    "SUZUKI",
+  "tone":     "t1",
+  "titre":    "Formation formateur Suzuki SAT · Bomba Coulibaly formé par Cédric Pako à Douala",
+  "resume":   "Au centre CFAO Academy de Douala, Cédric PAKO forme Bomba COULIBALY au standard Suzuki SAT pour démultiplier l'expertise technique dans le réseau.",
+  "readtime": "5 min",
+  "views":    0,
+  "contenu":  "Préparer les formateurs qui transmettront demain aux quatre coins de l'Afrique : c'est la mission centrale de CFAO Academy à Douala. Cette session « Train the Trainer » Suzuki SAT en est une démonstration directe, intense et personnalisée.\n\n## Les acteurs de la transmission\n\nFace à face, deux techniciens d'élite. D'un côté, Cédric PAKO, formateur référent Suzuki au centre de Douala. De l'autre, Bomba COULIBALY, formateur stagiaire venu se qualifier sur le standard constructeur Suzuki SAT (Suzuki Aftersales Training). L'objectif est limpide : acquérir non seulement l'expertise technique des derniers modèles Suzuki, mais surtout la posture et les clés de transmission pour former à son tour.\n\n## Du savoir au savoir-faire\n\n« Transmettre le standard Suzuki, ce n'est pas seulement expliquer une procédure, c'est apprendre à faire exécuter le geste juste avec rigueur. »\n\nC'est en ces termes que Cédric PAKO guide son confrère dans la vidéo. Méthodologie d'animation, conception de cas pratiques d'atelier, évaluation des compétences : chaque module alterne débriefs didactiques et simulations en situation réelle.\n\n## En atelier\n\nSur les motorisations et les circuits électroniques Suzuki, Bomba COULIBALY passe tour à tour du rôle d'apprenant à celui d'instructeur. Cédric PAKO observe, corrige la posture, ajuste le rythme et pousse l'exigence au niveau requis par Suzuki Motor Corporation. Laurent GONIN, Directeur du Centre, suit de près cette formation de formateur qui garantit l'homogénéité du niveau technique dans toutes les filiales.\n\n## Une expertise démultipliée\n\nÀ l'issue de cette session intensive, Bomba COULIBALY reçoit sa validation de formateur Suzuki SAT. Demain, en filiale, il animera les cursus auprès des techniciens locaux. Plus qu'une certification individuelle, c'est le modèle de diffusion des compétences CFAO qui se consolide à travers l'Afrique subsaharienne.",
+  "highlights": [
+    {
+      "label": "Lieu",
+      "value": "Douala, Cameroun",
+      "icon": "flag",
+      "flag": "/assets/flags/cameroon.svg"
+    },
+    {
+      "label": "Marque",
+      "value": "Suzuki",
+      "icon": "logo",
+      "logo": "/assets/logos/suzuki.png"
+    },
+    {
+      "label": "Format",
+      "value": "Train the Trainer (SAT)"
+    },
+    {
+      "label": "Master Trainer",
+      "value": "Cédric PAKO",
+      "icon": "avatar",
+      "avatar": "/assets/team/cedric-pako.png"
+    }
+  ],
+  "castTitle": "Les acteurs de la formation",
+  "cast": [
+    {
+      "name": "Cédric PAKO",
+      "role": "Formateur Référent Suzuki · Master Trainer",
+      "lieu": "Cameroun",
+      "photo": "/assets/team/cedric-pako.png"
+    },
+    {
+      "name": "Bomba COULIBALY",
+      "role": "Formateur stagiaire Suzuki SAT",
+      "lieu": "Côte d'Ivoire",
+      "photo": "/assets/team/bomba-coulibaly.png"
+    },
+    {
+      "name": "Laurent GONIN",
+      "role": "Directeur du Centre de Formation",
+      "lieu": "France",
+      "photo": "/assets/images_articles/laurent_gonin.jpg"
+    }
+  ],
+  "cover":    "/assets/images_articles/cert_suzuki.jpg",
+  "photos":   {
+    "count": 3,
+    "urls": [
+      "/assets/images_articles/cert_suzuki.jpg"
+    ],
+    "captures": [
+      { "at": 15 },
+      { "at": 32 }
+    ]
+  },
+  "videos":   {
+    "count": 1,
+    "urls": [
+      "/assets/videos_articles/FORMATION%20DE%20FORMATEURS%20SUZUKI%20SAT%20EN.mp4"
+    ]
+  }
+}

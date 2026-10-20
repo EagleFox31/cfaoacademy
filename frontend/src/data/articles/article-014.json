@@ -1,0 +1,68 @@
+{
+  "id":       "suzuki-certification-bronze-douala-2026",
+  "cat":      "Certification",
+  "date":     "2026-07-24",
+  "brand":    "SUZUKI",
+  "tone":     "t1",
+  "titre":    "Certification Suzuki Bronze · La promotion certifiée avec brio à Douala",
+  "resume":   "Sous la supervision de Cédric PAKO, les techniciens du réseau CFAO décrochent leur certification officielle Suzuki Bronze au Centre de Douala.",
+  "readtime": "4 min",
+  "views":    0,
+  "contenu":  "Le standard mondial Suzuki ne tolère aucun compromis. Au Centre de Formation CFAO Academy de Douala, la promotion Suzuki Bronze 2026 vient de franchir une étape déterminante pour les ateliers du réseau panafricain.\n\n## La promotion Suzuki Bronze\n\nIls ont été sélectionnés parmi les techniciens les plus assidus des concessions CFAO. Leur objectif commun : valider le niveau Suzuki Bronze, le passeport indispensable certifié par Suzuki Motor Corporation qui atteste de la parfaite maîtrise de l'entretien périodique, du diagnostic de base et des normes de sécurité atelier.\n\n## Théorie et gestuelle constructeur\n\n« La certification Bronze pose le socle : respect absolu des temps barémés, des couples de serrage et de la méthodologie officielle Suzuki. »\n\nC'est ainsi que Cédric PAKO, formateur référent Suzuki, pose le cadre des épreuves dans la vidéo. Après les contrôles de connaissances théoriques sur tablette, le plateau technique devient le théâtre d'une évaluation continue sans concession.\n\n## Épreuves sur le plateau technique\n\nSous le chronomètre, les candidats interviennent sur les moteurs essence, les liaisons au sol et les systèmes de freinage. Cédric PAKO examine chaque manœuvre : utilisation des outils spéciaux Suzuki (SST), vérification des points de contrôle, soin apporté aux véhicules clients. Laurent GONIN, Directeur du Centre, veille au respect strict des protocoles d'homologation.\n\n## Remise des diplômes officiels\n\nLa cérémonie de clôture scelle le succès de la promotion : l'ensemble des candidats valide son niveau Bronze sous les applaudissements de l'équipe académique. Pour le réseau CFAO, chaque nouvelle promotion Bronze garantit aux clients Suzuki un entretien aux plus hauts standards internationaux dès l'entrée en concession.",
+  "highlights": [
+    {
+      "label": "Lieu",
+      "value": "Douala, Cameroun",
+      "icon": "flag",
+      "flag": "/assets/flags/cameroon.svg"
+    },
+    {
+      "label": "Marque",
+      "value": "Suzuki",
+      "icon": "logo",
+      "logo": "/assets/logos/suzuki.png"
+    },
+    {
+      "label": "Format",
+      "value": "Certification Constructeur"
+    },
+    {
+      "label": "Superviseur",
+      "value": "Cédric PAKO",
+      "icon": "avatar",
+      "avatar": "/assets/team/cedric-pako.png"
+    }
+  ],
+  "castTitle": "Les acteurs de la certification",
+  "cast": [
+    {
+      "name": "Cédric PAKO",
+      "role": "Formateur Référent Suzuki · Évaluateur",
+      "lieu": "Cameroun",
+      "photo": "/assets/team/cedric-pako.png"
+    },
+    {
+      "name": "Laurent GONIN",
+      "role": "Directeur du Centre de Formation",
+      "lieu": "France",
+      "photo": "/assets/images_articles/laurent_gonin.jpg"
+    }
+  ],
+  "cover":    "/assets/images_articles/cert_suzuki2.jpg",
+  "photos":   {
+    "count": 3,
+    "urls": [
+      "/assets/images_articles/cert_suzuki2.jpg"
+    ],
+    "captures": [
+      { "at": 16 },
+      { "at": 35 }
+    ]
+  },
+  "videos":   {
+    "count": 1,
+    "urls": [
+      "/assets/videos_articles/FORMATION%20et%20CERTIFICATION%20SUZUKI%20Bronze%2026.mp4"
+    ]
+  }
+}

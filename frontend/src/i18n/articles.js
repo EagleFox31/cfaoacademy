@@ -3,8 +3,8 @@ export const ARTICLES_COPY = {
   fr: {},
   en: {
     'toyota-g3-diagnostic-douala-2026': {
-      title: 'Toyota G3 · Chassis and braking diagnostics — 5-day session in Douala',
-      summary: 'Twelve technicians completed the full G3 cycle on ABS braking systems and fault code reading via TIS.',
+      title: 'Toyota G3 · Chassis and braking repair — 5-day session in Douala',
+      summary: 'Twelve technicians completed the full G3 cycle on ABS braking and running gear overhaul and repair.',
     },
     'byd-haute-tension-afrique-2026': {
       title: 'BYD: first high-voltage course in French-speaking Africa, 8 technicians trained',
@@ -19,8 +19,8 @@ export const ARTICLES_COPY = {
       summary: 'Session delivered on site with access to vehicles in active service. Positive feedback from partner workshops in Togo.',
     },
     'toyota-g3-certification-douala-2026': {
-      title: '9 Toyota G3 technicians certified in Douala — January 2026 cohort',
-      summary: 'Nine technicians validated chassis, electrical and advanced diagnostics modules to earn G3 certification.',
+      title: 'Toyota · Component repair: 9 technicians certified in Douala',
+      summary: 'Nine technicians validated engine, chassis, and electrical modules to earn their Component Repair certification.',
     },
     'suzuki-z12e-demontage-certification-2026': {
       title: 'Suzuki Z12E · 6 experts certified in engine strip and rebuild',
@@ -59,11 +59,87 @@ export const ARTICLES_COPY = {
         { role: 'Director of the Training Centre', lieu: 'France' },
       ],
     },
+    'toyota-g3-douala-pratique-2026': {
+      title: 'Toyota G3 Training · Component repair in Douala',
+      summary: 'Under Eugène EBENE\'s leadership, network technicians validate Toyota Level G3 in component repair between test benches and intensive workshop practice in Douala.',
+      castTitle: 'People in this training',
+      highlights: [
+        { label: 'Location', value: 'Douala, Cameroon' },
+        { label: 'Brand', value: 'Toyota' },
+        { label: 'Format', value: 'In person & Workshop' },
+        { label: 'Lead trainer', value: 'Eugène EBENE' },
+      ],
+      cast: [
+        { role: 'Toyota Lead Trainer', lieu: 'Cameroon' },
+        { role: 'Director of the Training Centre', lieu: 'France' },
+      ],
+    },
+    'suzuki-sat-formation-formateurs-douala-2026': {
+      title: 'Suzuki SAT Trainer Course · Bomba Coulibaly trained by Cédric Pako in Douala',
+      summary: 'At the CFAO Academy centre in Douala, Cédric PAKO trains Bomba COULIBALY to Suzuki SAT standards to expand technical excellence across the network.',
+      castTitle: 'People in this training',
+      highlights: [
+        { label: 'Location', value: 'Douala, Cameroon' },
+        { label: 'Brand', value: 'Suzuki' },
+        { label: 'Format', value: 'Train the Trainer (SAT)' },
+        { label: 'Master Trainer', value: 'Cédric PAKO' },
+      ],
+      cast: [
+        { role: 'Suzuki Lead Trainer · Master Trainer', lieu: 'Cameroon' },
+        { role: 'Suzuki SAT Trainee Trainer', lieu: 'Côte d\'Ivoire' },
+        { role: 'Director of the Training Centre', lieu: 'France' },
+      ],
+    },
+    'suzuki-certification-bronze-douala-2026': {
+      title: 'Suzuki Bronze Certification · The 2026 cohort passes with flying colours in Douala',
+      summary: 'Under Cédric PAKO\'s supervision, CFAO network technicians earn official Suzuki Bronze certification at the Douala Centre.',
+      castTitle: 'People in this certification',
+      highlights: [
+        { label: 'Location', value: 'Douala, Cameroon' },
+        { label: 'Brand', value: 'Suzuki' },
+        { label: 'Format', value: 'Manufacturer Certification' },
+        { label: 'Supervisor', value: 'Cédric PAKO' },
+      ],
+      cast: [
+        { role: 'Suzuki Lead Trainer · Assessor', lieu: 'Cameroon' },
+        { role: 'Director of the Training Centre', lieu: 'France' },
+      ],
+    },
+    'yamaha-moto-technique-douala-2026': {
+      title: 'Yamaha Motorcycle Technical Training · Two-wheeler & fuel injection immersion in Douala',
+      summary: 'At the Douala Training Centre, Gauthier OUEDRAOGO trains CFAO network two-wheeler specialists on Yamaha injection and engine technologies.',
+      castTitle: 'People in this training',
+      highlights: [
+        { label: 'Location', value: 'Douala, Cameroon' },
+        { label: 'Brand', value: 'Yamaha' },
+        { label: 'Format', value: 'In person & Workshop' },
+        { label: 'Lead trainer', value: 'Gauthier OUEDRAOGO' },
+      ],
+      cast: [
+        { role: 'Yamaha Motorcycle Lead Trainer', lieu: 'Burkina Faso' },
+        { role: 'Director of the Training Centre', lieu: 'France' },
+      ],
+    },
+    'yamaha-marine-hors-bord-douala-2026': {
+      title: 'Yamaha Marine Training · Advanced outboard engine maintenance in Douala',
+      summary: 'Gauthier OUEDRAOGO leads a high-level technical session at the Douala Centre on Yamaha Marine outboard engines and marine systems.',
+      castTitle: 'People in this training',
+      highlights: [
+        { label: 'Location', value: 'Douala, Cameroon' },
+        { label: 'Brand', value: 'Yamaha' },
+        { label: 'Format', value: 'Marine Practical Workshop' },
+        { label: 'Lead trainer', value: 'Gauthier OUEDRAOGO' },
+      ],
+      cast: [
+        { role: 'Yamaha Marine Lead Trainer', lieu: 'Burkina Faso' },
+        { role: 'Director of the Training Centre', lieu: 'France' },
+      ],
+    },
   },
   pt: {
     'toyota-g3-diagnostic-douala-2026': {
-      title: 'Toyota G3 · Diagnóstico de chassis e travagem — sessão de 5 dias em Douala',
-      summary: 'Doze técnicos concluíram o ciclo G3 completo sobre sistemas ABS e leitura de códigos de avaria via TIS.',
+      title: 'Toyota G3 · Reparação de chassis e travagem — sessão de 5 dias em Douala',
+      summary: 'Doze técnicos concluíram o ciclo G3 completo sobre revisão e reparação de sistemas de travagem ABS e chassis.',
     },
     'byd-haute-tension-afrique-2026': {
       title: 'BYD: primeira formação alta tensão na África francófona, 8 técnicos formados',
@@ -78,8 +154,8 @@ export const ARTICLES_COPY = {
       summary: 'Sessão realizada no local com acesso a veículos em serviço ativo. Feedback positivo das oficinas parceiras no Togo.',
     },
     'toyota-g3-certification-douala-2026': {
-      title: '9 técnicos Toyota G3 certificados em Douala — cohorte janeiro 2026',
-      summary: 'Nove técnicos validaram módulos de chassis, elétrico e diagnóstico avançado para obter a certificação G3.',
+      title: '9 técnicos Toyota certificados em Reparação de componentes em Douala',
+      summary: 'Nove técnicos validaram os módulos motores, chassis e eletricidade para obter a certificação de nível G3.',
     },
     'suzuki-z12e-demontage-certification-2026': {
       title: 'Suzuki Z12E · 6 especialistas certificados em desmontagem e remontagem de motor',
@@ -115,6 +191,82 @@ export const ARTICLES_COPY = {
         { role: 'Formador Toyota · Supervisor', lieu: 'Camarões' },
         { role: 'Futuro formador Toyota', lieu: 'RDC' },
         { role: 'Futuro formador Toyota', lieu: 'Senegal' },
+        { role: 'Diretor do Centro de Formação', lieu: 'França' },
+      ],
+    },
+    'toyota-g3-douala-pratique-2026': {
+      title: 'Formação Toyota Nível G3 · Reparação de componentes em Douala',
+      summary: 'Sob a orientação de Eugène EBENE, os técnicos da rede validam o nível Toyota G3 em reparação de componentes entre bancadas de ensaio e prática intensiva de oficina em Douala.',
+      castTitle: 'Os intervenientes da formação',
+      highlights: [
+        { label: 'Local', value: 'Douala, Camarões' },
+        { label: 'Marca', value: 'Toyota' },
+        { label: 'Formato', value: 'Presencial e Oficina' },
+        { label: 'Formador de referência', value: 'Eugène EBENE' },
+      ],
+      cast: [
+        { role: 'Formador de Referência Toyota', lieu: 'Camarões' },
+        { role: 'Diretor do Centro de Formação', lieu: 'França' },
+      ],
+    },
+    'suzuki-sat-formation-formateurs-douala-2026': {
+      title: 'Formação de Formador Suzuki SAT · Bomba Coulibaly preparado por Cédric Pako em Douala',
+      summary: 'No centro CFAO Academy de Douala, Cédric PAKO forma Bomba COULIBALY no padrão Suzuki SAT para multiplicar a experiência técnica na rede.',
+      castTitle: 'Os intervenientes da formação',
+      highlights: [
+        { label: 'Local', value: 'Douala, Camarões' },
+        { label: 'Marca', value: 'Suzuki' },
+        { label: 'Formato', value: 'Formação de Formadores (SAT)' },
+        { label: 'Master Trainer', value: 'Cédric PAKO' },
+      ],
+      cast: [
+        { role: 'Formador de Referência Suzuki · Master Trainer', lieu: 'Camarões' },
+        { role: 'Formador Estagiário Suzuki SAT', lieu: 'Costa do Marfim' },
+        { role: 'Diretor do Centro de Formação', lieu: 'França' },
+      ],
+    },
+    'suzuki-certification-bronze-douala-2026': {
+      title: 'Certificação Suzuki Bronze · A promoção 2026 certificada com distinção em Douala',
+      summary: 'Sob a supervisão de Cédric PAKO, os técnicos da rede CFAO obtêm a certificação oficial Suzuki Bronze no Centro de Douala.',
+      castTitle: 'Os intervenientes da certificação',
+      highlights: [
+        { label: 'Local', value: 'Douala, Camarões' },
+        { label: 'Marca', value: 'Suzuki' },
+        { label: 'Formato', value: 'Certificação de Construtor' },
+        { label: 'Supervisão', value: 'Cédric PAKO' },
+      ],
+      cast: [
+        { role: 'Formador de Referência Suzuki · Avaliador', lieu: 'Camarões' },
+        { role: 'Diretor do Centro de Formação', lieu: 'França' },
+      ],
+    },
+    'yamaha-moto-technique-douala-2026': {
+      title: 'Formação Técnica Yamaha Moto · Imersão em duas rodas e injeção eletrónica em Douala',
+      summary: 'No Centro de Formação de Douala, Gauthier OUEDRAOGO forma especialistas em duas rodas da rede CFAO nas tecnologias de injeção e motorização Yamaha.',
+      castTitle: 'Os intervenientes da formação',
+      highlights: [
+        { label: 'Local', value: 'Douala, Camarões' },
+        { label: 'Marca', value: 'Yamaha' },
+        { label: 'Formato', value: 'Presencial e Oficina' },
+        { label: 'Formador de referência', value: 'Gauthier OUEDRAOGO' },
+      ],
+      cast: [
+        { role: 'Formador de Referência Yamaha Moto', lieu: 'Burquina Faso' },
+        { role: 'Diretor do Centro de Formação', lieu: 'França' },
+      ],
+    },
+    'yamaha-marine-hors-bord-douala-2026': {
+      title: 'Formação Yamaha Marine · Manutenção de ponta de motores fora de bordo em Douala',
+      summary: 'Gauthier OUEDRAOGO conduz no Centro de Douala uma sessão técnica de alto nível sobre motores fora de bordo Yamaha Marine e circuitos náuticos.',
+      castTitle: 'Os intervenientes da formação',
+      highlights: [
+        { label: 'Local', value: 'Douala, Camarões' },
+        { label: 'Marca', value: 'Yamaha' },
+        { label: 'Formato', value: 'Oficina Prática Marítima' },
+        { label: 'Formador de referência', value: 'Gauthier OUEDRAOGO' },
+      ],
+      cast: [
+        { role: 'Formador de Referência Yamaha Marine', lieu: 'Burquina Faso' },
         { role: 'Diretor do Centro de Formação', lieu: 'França' },
       ],
     },

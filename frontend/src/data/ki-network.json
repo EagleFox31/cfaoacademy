@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "total": 18,
+    "listed": 17,
+    "brand": "toyota",
+    "source": "_archive/data/ki.json"
+  },
+  "ki": [
+    { "id": 1, "name": "André YOGBA", "role": "Key Instructor", "lieu": "Douala, Cameroun", "countryCode": "cm", "slug": "andre-yogba" },
+    { "id": 2, "name": "Marcia MAVOUALA", "role": "Key Instructor", "lieu": "Congo", "countryCode": "cg", "slug": "marcia-mavouala" },
+    { "id": 3, "name": "Jacques MAVILA", "role": "Key Instructor", "lieu": "RDC", "countryCode": "cd", "slug": "jacques-mavila" },
+    { "id": 4, "name": "Moïse ABLEFONLIN", "role": "Key Instructor", "lieu": "Bénin", "countryCode": "bj", "slug": "moise-ablefonlin" },
+    { "id": 5, "name": "Cheikh NDIAYE", "role": "Key Instructor", "lieu": "Sénégal, Guinée-Bissau & Gambie", "countryCode": "sn", "slug": "cheikh-ndiaye" },
+    { "id": 6, "name": "Joël RAMIARANTSOA", "role": "Key Instructor", "lieu": "Madagascar", "countryCode": "mg", "slug": "joel-ramiarantsoa" },
+    { "id": 7, "name": "Stanislas IDO", "role": "Key Instructor", "lieu": "Burkina Faso", "countryCode": "bf", "slug": "stanislas-ido" },
+    { "id": 8, "name": "MAHAMAT ELHADJ", "role": "Key Instructor", "lieu": "Tchad", "countryCode": "td", "slug": "mahamat-elhadj" },
+    { "id": 9, "name": "Fall ABDELLAHI", "role": "Key Instructor", "lieu": "Mauritanie", "countryCode": "mr", "slug": "fall-abdellahi" },
+    { "id": 10, "name": "David NDONG", "role": "Key Instructor", "lieu": "Guinée-Équatoriale", "countryCode": "gq", "slug": "david-ndong" },
+    { "id": 11, "name": "Kossi AFATSAWO", "role": "Key Instructor", "lieu": "Togo", "countryCode": "tg", "slug": "kossi-afatsawo" },
+    { "id": 12, "name": "Ibrahim ALTINE", "role": "Key Instructor", "lieu": "Niger", "countryCode": "ne", "slug": "ibrahim-altine" },
+    { "id": 13, "name": "Roland BAMBA", "role": "Key Instructor", "lieu": "Côte d'Ivoire", "countryCode": "ci", "slug": "roland-bamba" },
+    { "id": 14, "name": "Sow OUSMANE", "role": "Key Instructor", "lieu": "Guinée-Conakry", "countryCode": "gn", "slug": "sow-ousmane" },
+    { "id": 15, "name": "Josaphat BONDRAVODE", "role": "Key Instructor", "lieu": "RCA", "countryCode": "cf", "slug": "josaphat-bondravode" },
+    { "id": 16, "name": "Mamadou KEITA", "role": "Key Instructor", "lieu": "Mali", "countryCode": "ml", "slug": "mamadou-keita" },
+    { "id": 17, "name": "Valentin RAMBENA", "role": "Key Instructor", "lieu": "Guinée-Équatoriale", "countryCode": "gq", "slug": "valentin-rambena" }
+  ]
+}

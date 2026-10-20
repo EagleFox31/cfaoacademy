@@ -38,10 +38,19 @@ export function resolveProfileBuShortLabel(user, locale = 'fr') {
   return labels[dept] ?? dept ?? (locale === 'fr' ? 'filiale' : 'branch')
 }
 
+export function normalizeFilialeName(name) {
+  if (!name) return name
+  const trimmed = name.trim()
+  if (/^CAMEROON\s+MOTORS(?:\s+INDUSTRIES)?$/i.test(trimmed)) {
+    return 'CFAO MOBILITY CAMEROUN'
+  }
+  return trimmed
+}
+
 /** Pays affiché / drapeau — explicite ou déduit du nom de filiale. */
 export function resolveProfilePays(user) {
   if (user?.pays) return user.pays
-  const filiale = user?.filiale ?? ''
+  const filiale = normalizeFilialeName(user?.filiale ?? '')
   if (/^CFAO\s+(?:MOTORS|EQUIPMENT|MOBILITY)\s+/i.test(filiale)) {
     return filiale.replace(/^CFAO\s+(?:MOTORS|EQUIPMENT|MOBILITY)\s+/i, '').trim()
   }
@@ -49,15 +58,16 @@ export function resolveProfilePays(user) {
   return filiale || null
 }
 
-/** Libellé filiale CFAO (CFAO MOTORS Cameroun…). */
+/** Libellé filiale CFAO (CFAO MOBILITY CAMEROUN…). */
 export function resolveProfileFilialeLabel(user) {
-  if (user?.filiale?.startsWith('CFAO ')) return user.filiale
+  const filiale = normalizeFilialeName(user?.filiale)
+  if (filiale?.startsWith('CFAO ')) return filiale
   const pays = resolveProfilePays(user)
-  if (!pays || pays === 'Groupe') return user?.filiale ?? null
+  if (!pays || pays === 'Groupe') return filiale ?? null
   const dept = user?.departments?.[0]
   const prefix = BU_FILIALE_PREFIX[dept]
   if (prefix) return `${prefix} ${pays}`
-  return user?.filiale ?? pays
+  return filiale ?? pays
 }
 
 /**

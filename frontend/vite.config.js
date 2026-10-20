@@ -45,8 +45,18 @@ export default defineConfig({
   plugins: [react(), cataloguesFallbackPlugin()],
   publicDir: 'public',
   server: {
+    host: '0.0.0.0',
+    port: 5173,
     fs: { allow: ['..'] },
     proxy: {
+      '/api/v1': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/realms': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
       '/medacap-api': {
         target: 'http://localhost',
         changeOrigin: true,

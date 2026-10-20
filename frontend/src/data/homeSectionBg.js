@@ -39,6 +39,7 @@ export const HOME_SECTION_VEIL = {
   'formations-sav-equipment': HOME_LANDING_VEIL,
   sessions: HOME_LANDING_VEIL,
   expertise: HOME_LANDING_VEIL,
+  assistance: 'dark',
   temoignages: HOME_LANDING_VEIL,
   'cta-contact': HOME_LANDING_VEIL,
 }
@@ -54,6 +55,7 @@ const HOME_BACKDROP_ITEMS = [
   { id: 'formations-sav-equipment', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
   { id: 'sessions', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
   { id: 'expertise', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
+  { id: 'assistance', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: 'dark' },
   { id: 'temoignages', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
   { id: 'cta-contact', image: HOME_LANDING_BG, position: HOME_LANDING_BG_POSITION, veil: HOME_LANDING_VEIL },
 ]

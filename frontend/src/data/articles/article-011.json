@@ -1,0 +1,80 @@
+{
+  "id":       "toyota-formateur-certification-douala-2026",
+  "cat":      "Formation",
+  "date":     "2026-06-29",
+  "brand":    "TOYOTA",
+  "tone":     "t1",
+  "titre":    "Formation formateur Toyota · Jacques Mavila & Allassane Diallo à Douala",
+  "resume":   "Sous la supervision d'Eugène EBENE, deux futurs formateurs Toyota — RDC et Sénégal — se préparent à former et évaluer les techniciens du réseau.",
+  "readtime": "5 min",
+  "views":    0,
+  "contenu":  "Au centre CFAO Academy de Douala, la montée en compétences ne s'arrête pas au technicien confirmé : elle prépare ceux qui transmettront demain. Cette session formateur Toyota en est la vitrine — rythmée, exigeante, portée par une équipe pleinement mobilisée.\n\n## Les futurs formateurs\n\nIls sont deux. Jacques Mavila, venu de RDC, et Allassane Diallo, du Sénégal. Une même ambition : devenir formateurs Toyota — d'abord dans leur filiale, puis partout où le réseau aura besoin de leur expertise. Pour les y préparer, Eugène EBENE, formateur Toyota au Cameroun, les a guidés pas à pas dans le processus de certification et dans l'art d'accompagner, à leur tour, d'autres techniciens.\n\n## Théorie et pratique\n\n« La formation combine théorie et pratique — l'e-learning pour la connaissance, l'atelier pour le geste. »\n\nC'est ainsi que Laurent GONIN, Directeur du Centre de Formation, résume la méthode dans la vidéo. D'un côté, des modules e-learning qui ancrent les fondamentaux techniques Toyota. De l'autre, le plateau : des techniciens en activité démontent, remontent, ajustent. Jacques, Allassane et leurs pairs observent, accompagnent, notent — et veillent à ce que chaque geste reste fidèle aux exigences du constructeur.\n\n## En atelier\n\nRien n'est laissé au hasard, car l'enjeu est de taille. Demain, ces formateurs en devenir formeront et évalueront à leur tour d'autres techniciens, toujours sous l'œil de leur référent. La vidéo capte ce tempo unique — salle, atelier, débriefs — celui d'un centre de formation qui ne relâche jamais l'exigence.\n\n## Certifications remises\n\nLa session se referme sur un moment fort : la remise des certifications. Plus qu'un symbole, c'est l'entrée dans un rôle clé au sein du réseau CFAO. Et une confirmation de plus : Douala s'impose comme le hub régional de la montée en compétences Toyota en Afrique.",
+  "highlights": [
+    {
+      "label": "Lieu",
+      "value": "Douala, Cameroun",
+      "icon": "flag",
+      "flag": "/assets/flags/cameroon.svg"
+    },
+    {
+      "label": "Marque",
+      "value": "Toyota",
+      "icon": "logo",
+      "logo": "/assets/logos/toyota.png"
+    },
+    {
+      "label": "Format",
+      "value": "Présentiel"
+    },
+    {
+      "label": "Supervision",
+      "value": "Eugène EBENE",
+      "icon": "avatar",
+      "avatar": "/assets/images_articles/eugene_ebene.jpg"
+    }
+  ],
+  "castTitle": "Les acteurs de la formation",
+  "cast": [
+    {
+      "name": "Eugène EBENE",
+      "role": "Formateur Toyota · Superviseur",
+      "lieu": "Cameroun",
+      "photo": "/assets/images_articles/eugene_ebene.jpg"
+    },
+    {
+      "name": "Jacques Mavila",
+      "role": "Futur formateur Toyota",
+      "lieu": "RDC",
+      "photo": "/assets/images_articles/jacques_mavila.jpg"
+    },
+    {
+      "name": "Allassane Diallo",
+      "role": "Futur formateur Toyota",
+      "lieu": "Sénégal",
+      "photo": "/assets/images_articles/allassane_diallo.jpg"
+    },
+    {
+      "name": "Laurent GONIN",
+      "role": "Directeur du Centre de Formation",
+      "lieu": "France",
+      "photo": "/assets/images_articles/laurent_gonin.jpg"
+    }
+  ],
+  "cover":    "/assets/images_articles/formation_formateur_toyota.jpg",
+  "photos":   {
+    "count": 3,
+    "urls": [
+      "/assets/images_articles/formation_formateur_toyota.jpg"
+    ],
+    "captures": [
+      { "at": 11 },
+      { "at": 15 }
+    ]
+  },
+  "videos":   {
+    "count": 1,
+    "urls": [
+      "/assets/videos_articles/FORMATION%20DES%20FORMATEUR%20FINAL-converted.mp4"
+    ]
+  }
+}

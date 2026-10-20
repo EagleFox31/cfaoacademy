@@ -84,7 +84,7 @@ function TestDots({ story, editable, onTestChange, t }) {
 
 export default function Delivery() {
   useSiteEffects()
-  const { user } = useAuth()
+  const { user, status } = useAuth()
   usePortalBackground(user)
   const { t, locale, setLocale } = useLocale('delivery')
   const { t: commonT } = useLocale('common')
@@ -152,6 +152,7 @@ export default function Delivery() {
     })
   }, [stories, epicFilter, statusFilter, phaseFilter, search, locale])
 
+  if (status === "loading") return null
   if (!user) return <Navigate to="/login" replace />
   if (!canAccessDelivery(user.roles)) return <Navigate to="/portail" replace />
 

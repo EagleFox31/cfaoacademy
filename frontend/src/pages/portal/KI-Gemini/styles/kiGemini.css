@@ -1,0 +1,808 @@
+/* ════════════════════════════════════════════════════════════════════
+   KI-GEMINI — Styles Spécifiques au Portail Key Instructor
+   Harmonisé avec le Design System CFAO Academy & les LEGOs du DPS
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ─── Smart Context Switcher Strip ────────────────────────────── */
+.portal-ki-context-switcher-strip {
+  background: var(--navy);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 12px 0;
+  margin-bottom: 24px;
+}
+
+.portal-ki-context-switcher-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.portal-ki-context-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.portal-ki-brand-chip-active {
+  background: var(--red);
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.portal-ki-mode-toggles {
+  display: flex;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  gap: 4px;
+}
+
+.portal-ki-mode-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.portal-ki-mode-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.portal-ki-mode-btn.active {
+  background: var(--paper-1, #ffffff);
+  color: var(--navy);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.portal-ki-mode-btn .badge-count {
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+/* ─── FAD Cards (Sessions à animer) ──────────────────────────── */
+.portal-ki-fad-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.portal-ki-fad-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-left: 4px solid var(--ki-accent, var(--red));
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.portal-ki-fad-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.portal-ki-fad-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.portal-ki-fad-code-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--navy);
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+.portal-ki-fad-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.portal-ki-fad-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.portal-ki-fad-card-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.portal-ki-fad-learners-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.portal-ki-learner-tag {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #334155;
+}
+
+/* ─── Skill Heatmap ─────────────────────────────────────────── */
+.portal-ki-heatmap-wrapper {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.portal-ki-heatmap-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.portal-ki-heatmap-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.portal-ki-heatmap-filter-lbl {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.portal-ki-heatmap-pill-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.portal-ki-heatmap-pill {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.portal-ki-heatmap-pill:hover {
+  background: #e2e8f0;
+  color: var(--navy);
+}
+
+.portal-ki-heatmap-pill.active {
+  background: var(--navy);
+  color: #ffffff;
+  border-color: var(--navy);
+}
+
+.portal-ki-search-input {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--navy);
+  outline: none;
+  min-width: 240px;
+  transition: border-color 0.2s ease;
+}
+
+.portal-ki-search-input:focus {
+  border-color: var(--red);
+  background: #fff;
+}
+
+.portal-ki-table-responsive {
+  overflow-x: auto;
+}
+
+.portal-ki-heatmap-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.portal-ki-heatmap-table th {
+  background: #f8fafc;
+  padding: 12px 14px;
+  font-weight: 700;
+  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.portal-ki-heatmap-table td {
+  padding: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.portal-ki-tech-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.portal-ki-tech-avatar-mini {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy);
+  flex-shrink: 0;
+}
+
+.portal-ki-tech-name {
+  font-weight: 700;
+  color: var(--navy);
+  font-size: 14px;
+}
+
+.portal-ki-tech-agency {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.portal-ki-score-cell {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.portal-ki-score-cell.score-green {
+  background: #e6f9f0;
+  color: #1aab5b;
+}
+
+.portal-ki-score-cell.score-amber {
+  background: #fff4e5;
+  color: #e67e00;
+}
+
+.portal-ki-score-cell.score-red {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.portal-ki-score-cell.score-muted {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.portal-ki-action-btn-mini {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: var(--navy);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.portal-ki-action-btn-mini.ojt {
+  background: #fef2f2;
+  color: var(--red);
+  border-color: #fee2e2;
+}
+
+.portal-ki-action-btn-mini.ojt:hover {
+  background: var(--red);
+  color: #ffffff;
+  border-color: var(--red);
+}
+
+.portal-ki-heatmap-footer {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.portal-ki-heatmap-legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.portal-ki-heatmap-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.portal-ki-heatmap-legend .legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.portal-ki-heatmap-legend .legend-dot.green { background: #1aab5b; }
+.portal-ki-heatmap-legend .legend-dot.amber { background: #e67e00; }
+.portal-ki-heatmap-legend .legend-dot.red { background: #ef4444; }
+.portal-ki-heatmap-legend .legend-dot.muted { background: #cbd5e1; }
+
+/* ─── TSB Flash Card ────────────────────────────────────────── */
+.portal-ki-tsb-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-top: 4px solid var(--red);
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.portal-ki-tsb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.portal-ki-tsb-tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.portal-ki-tsb-pill {
+  background: #fee2e2;
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.portal-ki-tsb-ref {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.portal-ki-tsb-severity {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.portal-ki-tsb-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0 0 16px 0;
+  line-height: 1.35;
+}
+
+.portal-ki-tsb-points {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.portal-ki-tsb-points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.portal-ki-tsb-points .bullet {
+  color: var(--red);
+  flex-shrink: 0;
+}
+
+.portal-ki-tsb-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.portal-ki-tsb-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.portal-ki-tsb-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.portal-ki-tsb-bar {
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.portal-ki-tsb-fill {
+  height: 100%;
+  background: var(--red);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.portal-ki-tsb-btn {
+  background: var(--navy);
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.portal-ki-tsb-btn:hover:not(:disabled) {
+  background: #1e293b;
+}
+
+.portal-ki-tsb-btn.done {
+  background: #1aab5b;
+  cursor: default;
+}
+
+/* ─── Dojo OJT Modal ────────────────────────────────────────── */
+.portal-ki-ojt-modal-body {
+  padding: 10px 0;
+}
+
+.portal-ki-ojt-header-strip {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.portal-ki-ojt-tech-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.portal-ki-badge-brand {
+  background: var(--red);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.portal-ki-ojt-sub {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.portal-ki-ojt-timer-box {
+  text-align: right;
+}
+
+.portal-ki-timer-label {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.portal-ki-timer-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.portal-ki-timer-toggle-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.portal-ki-ojt-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+
+.portal-ki-ojt-counter {
+  font-size: 13px;
+  color: #1aab5b;
+}
+
+.portal-ki-ojt-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.portal-ki-ojt-step-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.portal-ki-ojt-step-card:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.portal-ki-ojt-step-card.completed {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.portal-ki-ojt-step-card.critical {
+  border-left: 4px solid #ef4444;
+}
+
+.portal-ki-step-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.portal-ki-critical-tag {
+  display: inline-block;
+  font-size: 11px;
+  color: #dc2626;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.portal-ki-ojt-signature-zone {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.portal-ki-sign-block label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.portal-ki-sign-pad {
+  height: 60px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.portal-ki-sign-pad.signed {
+  background: #e6f9f0;
+  border-style: solid;
+  border-color: #86efac;
+}
+
+.portal-ki-signature-ink {
+  color: #15803d;
+  font-weight: 700;
+  font-family: 'Space Grotesk', cursive, sans-serif;
+}
+
+.portal-ki-ojt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.portal-ki-ojt-actions .btn-cancel {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.portal-ki-ojt-actions .btn-validate {
+  background: #1aab5b;
+  color: #fff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.portal-ki-ojt-actions .btn-validate:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* ─── Escalation Form ───────────────────────────────────────── */
+.portal-ki-escalation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.portal-ki-form-notice {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #1e40af;
+  line-height: 1.45;
+}
+
+.portal-ki-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.portal-ki-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.portal-ki-form-field--full {
+  grid-column: 1 / -1;
+}
+
+.portal-ki-form-field label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.portal-ki-form-field input,
+.portal-ki-form-field textarea {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--navy);
+  outline: none;
+  font-family: inherit;
+}
+
+.portal-ki-form-field input:focus,
+.portal-ki-form-field textarea:focus {
+  border-color: var(--red);
+  background: #fff;
+}
+
+.portal-ki-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.portal-ki-form-actions .btn-cancel {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.portal-ki-form-actions .btn-submit {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}

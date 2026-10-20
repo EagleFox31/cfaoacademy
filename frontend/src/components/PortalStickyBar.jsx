@@ -4,15 +4,24 @@ import { TEAM_BRAND_DEFS } from '../utils/teamBrands.js'
 import useLocale from '../hooks/useLocale.js'
 
 const BRAND_LOGOS = {
-  toyota:     '/assets/logos/toyota.png',
-  mercedes:   '/assets/logos/mercedes.png',
-  suzuki:     '/assets/logos/suzuki.png',
-  mitsubishi: '/assets/logos/mitsubishi.png',
-  fuso:       '/assets/logos/fuso.png',
-  hino:       '/assets/logos/hino.png',
-  byd:        '/assets/logos/byd.png',
-  citroen:    '/assets/logos/citroen.png',
-  yamaha:     '/assets/logos/yamaha.png',
+  toyota:          '/assets/logos/toyota.png',
+  mercedes:        '/assets/logos/mercedes.png',
+  'mercedes-benz': '/assets/logos/mercedes.png',
+  suzuki:          '/assets/logos/suzuki.png',
+  mitsubishi:      '/assets/logos/mitsubishi.png',
+  fuso:            '/assets/logos/fuso.png',
+  hino:            '/assets/logos/hino.png',
+  byd:             '/assets/logos/byd.png',
+  citroen:         '/assets/logos/citroen.png',
+  yamaha:          '/assets/logos/yamaha.png',
+  'renault-trucks':'/assets/logos/renault-trucks.png',
+  sinotruk:        '/assets/logos/sinotruk.png',
+  shacman:         '/assets/logos/shacman.png',
+  'king-long':     '/assets/logos/kinglong.png',
+  kinglong:        '/assets/logos/kinglong.png',
+  bt:              '/assets/logos/bt.png',
+  jcb:             '/assets/logos/jcb.png',
+  lovol:           '/assets/logos/lovol.png',
 }
 
 function resolveBrandLogo(brand) {
@@ -67,7 +76,9 @@ export default function PortalStickyBar({ user, lms, headerRef, variant, filiale
               const src = resolveBrandLogo(brand)
               const label = TEAM_BRAND_DEFS[brand]?.label ?? brand
               return src ? (
-                <img key={brand} src={src} alt={label} className="portal-sticky-bar-brand-logo" />
+                <span key={brand} className="portal-sticky-bar-brand-tile" title={label}>
+                  <img src={src} alt={label} className="portal-sticky-bar-brand-logo" />
+                </span>
               ) : (
                 <span key={brand} className={`portal-brand-chip ${brand} portal-sticky-bar-brand-chip`}>
                   {label}

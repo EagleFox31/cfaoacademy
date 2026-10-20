@@ -68,6 +68,12 @@ export const HOME_COPY = {
     academyTitleEm: 'Actions',
     academyTitleAfter: '.',
 
+    assistanceIx: 'Support Expert',
+    assistanceTitleBefore: 'Assistance ',
+    assistanceTitleEm: 'Technique',
+    assistanceTitleAfter: '.',
+    assistanceCta: 'Parler à un expert',
+
     testimonialsIx: 'Ils en parlent',
     testimonialsTitleBefore: "Ce qu'ils en ",
     testimonialsTitleEm: 'disent',
@@ -142,6 +148,12 @@ export const HOME_COPY = {
     academyTitleEm: 'actions',
     academyTitleAfter: '.',
 
+    assistanceIx: 'Expert Support',
+    assistanceTitleBefore: 'Technical ',
+    assistanceTitleEm: 'Assistance',
+    assistanceTitleAfter: '.',
+    assistanceCta: 'Talk to an expert',
+
     testimonialsIx: 'Testimonials',
     testimonialsTitleBefore: 'What they ',
     testimonialsTitleEm: 'say',
@@ -207,6 +219,13 @@ export const HOME_COPY = {
     academyTitleBefore: 'O âmbito das nossas ',
     academyTitleEm: 'Ações',
     academyTitleAfter: '.',
+
+    assistanceIx: 'Suporte Especialista',
+    assistanceTitleBefore: 'Assistência ',
+    assistanceTitleEm: 'Técnica',
+    assistanceTitleAfter: '.',
+    assistanceCta: 'Falar com um especialista',
+
     testimonialsIx: 'Eles falam',
     testimonialsTitleBefore: 'O que ',
     testimonialsTitleEm: 'dizem',

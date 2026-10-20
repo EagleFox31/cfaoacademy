@@ -1,21 +1,12 @@
 import { useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
-import Nav from '../../components/Nav'
-import Footer from '../../components/Footer'
-import PortalHeader from '../../components/PortalHeader'
-import PortalStickyBar from '../../components/PortalStickyBar'
-import PortalDemoBar from '../../components/PortalDemoBar'
+import PortalLayout from '../../components/PortalLayout.jsx'
 import PortalModal from '../../components/PortalModal'
-import PortalReveal from '../../components/PortalReveal.jsx'
-import PortalStaggerGrid from '../../components/PortalStaggerGrid.jsx'
-import DpsAssistanceSection from '../../components/DpsAssistanceSection.jsx'
-import PvCard from '../../components/PvCard'
-import LearnerNextActions from '../../components/LearnerNextActions.jsx'
-import LearnerPifSection from '../../components/LearnerPifSection.jsx'
 import LearnerCompetencyResultsSection from '../../components/LearnerCompetencyResultsSection.jsx'
 import LearnerTestsSection from '../../components/LearnerTestsSection.jsx'
+import LearnerPifsSection from '../../components/LearnerPifsSection.jsx'
+import LearnerFormationsSection from '../../components/LearnerFormationsSection.jsx'
+import LearnerCertificationsSection from '../../components/LearnerCertificationsSection.jsx'
 import { EvalDetail, CertDetail } from '../../components/LearnerEvalCard.jsx'
-import useSiteEffects from '../../hooks/useSiteEffects'
 import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
 import { LMS_BY_USER } from '../../data/mock_lms'
@@ -25,39 +16,13 @@ import { handleEvalOpen, resolvePortalDisplayUser, medacapLearnerSections } from
 import { resolveMedacapLearnerCertGoals } from '../../utils/medacapLearner.js'
 import useLearnerEvaluations from '../../hooks/useLearnerEvaluations.js'
 import useLearnerPif from '../../hooks/useLearnerPif.js'
-import { resolveLearnerAssistanceTickets } from '../../utils/assistanceTickets.js'
-import { portalPvCardMedia } from '../../utils/portalCardMedia.js'
-import PortalSectionEyebrow from '../../components/PortalSectionEyebrow.jsx'
-
-// Mapping marque → section homepage correspondante
-const BRAND_SECTION = {
-  toyota: 'offres', mercedes: 'offres', suzuki: 'offres',
-  byd: 'offres', mitsubishi: 'offres', citroen: 'offres',
-  yamaha: 'offres', stellantis: 'offres', omoda: 'offres',
-  hino: 'formations-equipment', fuso: 'formations-equipment',
-  sinotruk: 'formations-equipment', shacman: 'formations-equipment',
-  bt: 'formations-equipment', jcb: 'formations-equipment',
-  lovol: 'formations-equipment', kinglong: 'formations-equipment',
-  'king-long': 'formations-equipment', 'renault-trucks': 'formations-equipment',
-}
-
-function getDiscoverTarget(brands = []) {
-  for (const b of brands) {
-    const section = BRAND_SECTION[b.toLowerCase()]
-    if (section) return { section, brand: b }
-  }
-  return { section: 'offres', brand: null }
-}
-
-/* ── Dashboard ─────────────────────────────────────────────────── */
 
 export default function LearnerDashboard() {
-  useSiteEffects()
   const { user } = useAuth()
   const { t } = useLocale('portal')
   const [modal, setModal] = useState(null)
   const headerRef = useRef(null)
-  const lms = LMS_BY_USER[user.demoKey]
+  const lms = LMS_BY_USER[user.demoKey] || LMS_BY_USER.u9
   const {
     evaluations,
     usingMedacapCompetency,
@@ -71,11 +36,6 @@ export default function LearnerDashboard() {
   const displayUser = useMemo(
     () => resolvePortalDisplayUser(user, medacapProfile),
     [user, medacapProfile],
-  )
-
-  const medacapSections = useMemo(
-    () => medacapLearnerSections(lms),
-    [lms],
   )
 
   const certGoals = useMemo(() => {
@@ -100,16 +60,6 @@ export default function LearnerDashboard() {
     }
   }, [lms, evaluations, certGoals, medacapPif])
 
-  const nextActions = useMemo(
-    () => resolveLearnerNextActions(displayUser, lmsLive),
-    [displayUser, lmsLive],
-  )
-
-  const myAssistanceTickets = useMemo(
-    () => resolveLearnerAssistanceTickets(lmsLive, displayUser),
-    [lmsLive, displayUser],
-  )
-
   function handleOpenEval(e) {
     handleEvalOpen(
       e,
@@ -118,105 +68,197 @@ export default function LearnerDashboard() {
     )
   }
 
-  if (!lms) return null
+  if (!lms && !user) return null
 
-  return (
+  const modalNode = modal ? (
     <>
-      <Nav />
-      <PortalStickyBar user={displayUser} lms={lmsLive} headerRef={headerRef} />
-      <main className="portal-page">
-        <div ref={headerRef}>
-          <PortalHeader user={displayUser} certGoals={certGoals} lms={lmsLive} />
-        </div>
-
-        <LearnerNextActions
-          user={displayUser}
-          actions={nextActions}
-          onEval={handleOpenEval}
-        />
-
-        {(!isMedacapLearner || medacapSections.pif) && (
-          <LearnerPifSection user={displayUser} lms={lmsLive} t={t} />
-        )}
-
-        <LearnerCompetencyResultsSection
-          user={displayUser}
-          lms={lmsLive}
-          evaluations={evaluations}
-          t={t}
-        />
-
-        <LearnerTestsSection
-          user={displayUser}
-          lms={lmsLive}
-          evaluations={evaluations}
-          medacapLive={usingMedacapCompetency}
-          isMedacapLearner={isMedacapLearner}
-          medacapLoading={medacapLoading}
-          medacapError={medacapError}
-          t={t}
-          onOpenEval={handleOpenEval}
-        />
-
-        {(!isMedacapLearner || medacapSections.certifications) && (
-        <PortalReveal id="certifs">
-          <div className="container" style={{ padding: '16px 32px' }}>
-            <div className="portal-section-head">
-              <PortalSectionEyebrow icon="award" label={t.eyebrow_manufacturer} />
-              <h2 className="portal-section-title">{t.title_my_certifications}</h2>
-            </div>
-            <PortalStaggerGrid>
-              {lms.certifications.map(c => (
-                <div key={c.id} id={`portal-card-${c.id}`} className="portal-card-anchor">
-                  <PvCard
-                    {...portalPvCardMedia({ ...c, kind: 'cert' })}
-                    kicker={<span className={`portal-brand-chip ${c.brand}`}>{c.brand}</span>}
-                    title={c.title}
-                    meta={`${t.obtained_on} ${c.date}`}
-                    cta={t.attestation}
-                    accentColor="#1aab5b"
-                    onClick={() => setModal({ type: 'cert', data: c })}
-                    hoverHint={t.card_view_detail}
-                    corner
-                  />
+      {modal.type === 'eval' && (
+        <PortalModal
+          title={resolveEvalTitle(modal.data, t, user)}
+          onClose={() => setModal(null)}
+        >
+          <EvalDetail e={modal.data} t={t} user={user} />
+        </PortalModal>
+      )}
+      {modal.type === 'cert' && (
+        <PortalModal
+          title={modal.data.title}
+          onClose={() => setModal(null)}
+        >
+          <CertDetail c={modal.data} t={t} />
+        </PortalModal>
+      )}
+      {modal.type === 'pif' && (
+        <PortalModal
+          title={modal.data.title}
+          onClose={() => setModal(null)}
+        >
+          <div className="portal-modal-pif-body" style={{ padding: '8px 0' }}>
+            <p style={{ margin: '0 0 16px 0', fontSize: 13, color: 'var(--muted, #64748b)' }}>
+              {modal.data.details?.subtitle} · <strong>{modal.data.details?.brand}</strong>
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {modal.data.details?.modules?.map((m, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    background: 'var(--card-bg, #f8fafc)',
+                    borderRadius: 8,
+                    border: '1px solid var(--rule, #e2e8f0)',
+                  }}
+                >
+                  <div>
+                    <strong style={{ display: 'block', fontSize: 13, color: 'var(--ink, #0e1126)' }}>{m.name}</strong>
+                    <span style={{ fontSize: 11.5, color: 'var(--muted, #64748b)' }}>Prévu : {m.date}</span>
+                  </div>
+                  <span className={`portal-status-chip ${m.status === 'Validé' || m.status === 'Fait' ? 'done' : m.status === 'En cours' ? 'progress' : 'todo'}`}>
+                    {m.status}
+                  </span>
                 </div>
               ))}
-            </PortalStaggerGrid>
+            </div>
+            <a
+              href="#"
+              className="portal-cert-dl"
+              style={{ marginTop: 20, display: 'inline-block' }}
+              onClick={ev => ev.preventDefault()}
+            >
+              Télécharger le document de synthèse PIF (PDF)
+            </a>
           </div>
-        </PortalReveal>
-        )}
-        <DpsAssistanceSection t={t} variant="learner" tickets={myAssistanceTickets} />
-
-        {(!isMedacapLearner || medacapSections.discover) && (() => {
-          const { section, brand } = getDiscoverTarget(displayUser.brands || [])
-          const brandLabel = brand ? brand.charAt(0).toUpperCase() + brand.slice(1) : 'CFAO'
-          return (
-            <PortalReveal className="portal-discover-section">
-              <div className="container" style={{ padding: '0 32px' }}>
-                <div className="portal-discover-block">
-                  <div className="portal-discover-text">
-                    <PortalSectionEyebrow icon="sparkles" label={t.eyebrow_discover} style={{ color: 'rgba(255,255,255,0.5)' }} />
-                    <h2 className="portal-discover-title">{t.title_discover}</h2>
-                    <p className="portal-discover-desc">{t.discover_desc}</p>
-                  </div>
-                  <Link
-                    to={`/#${section}`}
-                    className="portal-discover-cta"
-                  >
-                    {t.discover_cta} {brandLabel} →
-                  </Link>
-                </div>
+        </PortalModal>
+      )}
+      {modal.type === 'report' && (
+        <PortalModal
+          title={modal.data.title}
+          onClose={() => setModal(null)}
+        >
+          <div className="portal-modal-report-body" style={{ padding: '8px 0' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                marginBottom: 18,
+                paddingBottom: 14,
+                borderBottom: '1px solid #e2e8f0',
+              }}
+            >
+              <img
+                src={modal.data.trainerPhoto}
+                alt={modal.data.trainerName}
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '2px solid #fff',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                }}
+              />
+              <div>
+                <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', fontWeight: 600 }}>Formateur certifié</span>
+                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--ink, #0e1126)' }}>{modal.data.trainerName}</h4>
+                <span style={{ fontSize: 12, color: 'var(--muted, #64748b)' }}>{modal.data.trainerRole}</span>
               </div>
-            </PortalReveal>
-          )
-        })()}
-      </main>
-
-      <Footer />
-      <PortalDemoBar />
-
-      {modal?.type === 'eval' && <PortalModal title={resolveEvalTitle(modal.data, t, user)} onClose={() => setModal(null)}><EvalDetail e={modal.data} t={t} user={user} /></PortalModal>}
-      {modal?.type === 'cert' && <PortalModal title={modal.data.title} onClose={() => setModal(null)}><CertDetail c={modal.data} t={t} /></PortalModal>}
+            </div>
+            <div className="portal-modal-row">
+              <span className="portal-modal-label">Thématique</span>
+              <span className="portal-modal-value">{modal.data.details?.theme}</span>
+            </div>
+            <div className="portal-modal-row">
+              <span className="portal-modal-label">Lieu & Durée</span>
+              <span className="portal-modal-value">{modal.data.details?.location} · {modal.data.details?.duration}</span>
+            </div>
+            <div className="portal-modal-row">
+              <span className="portal-modal-label">Évaluation pratique</span>
+              <span className="portal-modal-value" style={{ fontWeight: 700, color: '#1aab5b' }}>{modal.data.details?.practicalScore}</span>
+            </div>
+            {modal.data.details?.evaluation && (
+              <div className="portal-modal-feedback" style={{ marginTop: 14 }}>
+                <strong style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>Appréciation du formateur</strong>
+                {modal.data.details?.evaluation}
+              </div>
+            )}
+            <a
+              href="#"
+              className="portal-cert-dl"
+              style={{ marginTop: 20, display: 'inline-block' }}
+              onClick={ev => ev.preventDefault()}
+            >
+              Télécharger le rapport officiel de formation (PDF)
+            </a>
+          </div>
+        </PortalModal>
+      )}
     </>
+  ) : null
+
+  return (
+    <PortalLayout
+      user={displayUser}
+      lms={lmsLive}
+      headerRef={headerRef}
+      headerProps={{ certGoals }}
+      modal={modalNode}
+    >
+      {/* 1. Mes Tests (affichage uniquement de l'état/statut sur la carte, plus de score) */}
+      <LearnerTestsSection
+        id="tests"
+        titleOverride="Mes Tests"
+        eyebrowOverride="Mesure des compétences"
+        user={displayUser}
+        lms={lmsLive}
+        evaluations={evaluations}
+        medacapLive={usingMedacapCompetency}
+        isMedacapLearner={isMedacapLearner}
+        medacapLoading={medacapLoading}
+        medacapError={medacapError}
+        t={t}
+        onOpenEval={handleOpenEval}
+      />
+
+      {/* 2. Mes Résultats (anciennement Évaluer mes compétences, plus de sous-groupes, cartes par marque et niveau avec logo avant les pastilles) */}
+      <LearnerCompetencyResultsSection
+        id="resultats"
+        titleOverride="Mes Résultats"
+        eyebrowOverride="Bilan des compétences"
+        user={displayUser}
+        lms={lmsLive}
+        evaluations={evaluations}
+        t={t}
+      />
+
+      {/* 3. Mes PIFs (PIF Pluriannuel, PIF 2026, PIF 2025 · 4 cartes par ligne) */}
+      <LearnerPifsSection
+        id="pifs"
+        user={displayUser}
+        lms={lmsLive}
+        t={t}
+        onOpenPif={p => setModal({ type: 'pif', data: p })}
+      />
+
+      {/* 4. Mes Formations (Rapports de formation avec auteur/formateur et sa photo en cercle · 4 cartes par ligne) */}
+      <LearnerFormationsSection
+        id="formations"
+        user={displayUser}
+        lms={lmsLive}
+        t={t}
+        onOpenReport={r => setModal({ type: 'report', data: r })}
+      />
+
+      {/* 5. Mes Certifications (Certifications de niveau passé avec visuel certif, logo de la marque et nom · 4 cartes par ligne) */}
+      <LearnerCertificationsSection
+        id="certifications"
+        user={displayUser}
+        lms={lmsLive}
+        t={t}
+        onOpenCert={c => setModal({ type: 'cert', data: c })}
+      />
+    </PortalLayout>
   )
 }

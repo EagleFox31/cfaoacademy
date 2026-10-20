@@ -16,10 +16,9 @@ import PreviewSection from '../components/PreviewSection.jsx'
 import PublicCard from '../components/PublicCard.jsx'
 import BrandOfferGrid from '../components/BrandOfferGrid.jsx'
 import ProcessSavHomeGrid from '../components/ProcessSavHomeGrid.jsx'
-import PvCardGrid from '../components/PvCardGrid.jsx'
+import CardRail from '../components/CardRail.jsx'
 import CatalogTrainingCard from '../components/CatalogTrainingCard.jsx'
 import SessionCard from '../components/SessionCard.jsx'
-import SessionsExpandedView from '../components/SessionsExpandedView.jsx'
 import CtaBanner from '../components/CtaBanner.jsx'
 import FlagMarquee from '../components/FlagMarquee.jsx'
 import {
@@ -30,6 +29,7 @@ import {
 import TestimonialShowcase from '../components/TestimonialShowcase.jsx'
 import { TESTIMONIALS } from '../data/testimonials.js'
 import AcademyHomeSection from '../components/AcademyHomeSection.jsx'
+import AssistanceHomeSection from '../components/AssistanceHomeSection.jsx'
 import { ARTICLES } from '../data/articles/index.js'
 import ArticleCard from '../components/ArticleCard.jsx'
 import {
@@ -63,12 +63,6 @@ function bootstrapSessionsRestore(location, searchParams) {
 }
 
 // Grille accueil : tout afficher jusqu’à 12 cartes ; au-delà, 8 visibles + « Voir tout »
-const HOME_GRID_SHOW_ALL_UP_TO = 12
-const HOME_GRID_PREVIEW_LIMIT = 8
-
-function homeGridPreviewLimit(count) {
-  return count > HOME_GRID_SHOW_ALL_UP_TO ? HOME_GRID_PREVIEW_LIMIT : null
-}
 const MOTORS_BRANDS = BRANDS.filter(b => b.bu === 'motors' && b.name !== 'Citroën')
 const EQUIPMENT_BRANDS = BRANDS.filter(b => b.bu === 'equipment')
 
@@ -146,24 +140,15 @@ export default function Accueil() {
   const initialRestore = restoreBoot.current === false ? null : restoreBoot.current
 
   const [newsTab, setNewsTab] = useState('all')
-  const [newsExpanded, setNewsExpanded] = useState(false)
   const [sessionTab, setSessionTab] = useState(
     () => initialRestore?.tab ?? BU[0].short,
-  )
-  const [sessionsExpanded, setSessionsExpanded] = useState(
-    () => Boolean(initialRestore?.expanded),
   )
   const [sessionBrand, setSessionBrand] = useState(
     () => initialRestore?.brand ?? 'all',
   )
 
-  useEffect(() => {
-    setNewsExpanded(false)
-  }, [newsTab])
-
   const handleSessionTabChange = (tabId) => {
     setSessionTab(tabId)
-    setSessionsExpanded(false)
     setSessionBrand('all')
   }
 
@@ -179,7 +164,6 @@ export default function Accueil() {
 
     if (merged.tab && isValidSessionTab(merged.tab)) {
       setSessionTab(merged.tab)
-      setSessionsExpanded(Boolean(merged.expanded))
       setSessionBrand(merged.brand ?? 'all')
     }
 
@@ -204,37 +188,24 @@ export default function Accueil() {
     }
   }, [location.key, location.pathname, location.search, location.state, searchParams])
 
-  const newsItemsForTab = newsTab === 'all'
-    ? ARTICLES
-    : ARTICLES.filter((a) => a.category === newsTab)
-  const newsVoir = newsItemsForTab.length > HOME_GRID_SHOW_ALL_UP_TO
-    ? {
-        label: newsExpanded ? commonT.seeLess : commonT.seeMore,
-        expanded: newsExpanded,
-        onClick: () => setNewsExpanded((v) => !v),
-      }
-    : undefined
-
   const sessionsForTab = (active) =>
     UPCOMING.filter((s) => s.bu === BU.find((b) => b.short === active)?.id)
-
-  const sessionsVoir = (active) => {
-    const count = sessionsForTab(active).length
-    return count > HOME_GRID_SHOW_ALL_UP_TO
-      ? {
-          label: sessionsExpanded ? commonT.seeLess : commonT.seeMore,
-          expanded: sessionsExpanded,
-          onClick: () => setSessionsExpanded((v) => !v),
-        }
-      : undefined
-  }
 
   useEffect(() => {
     if (!hash) return
     const id = hash.replace('#', '')
-    requestAnimationFrame(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
+    const scrollToTarget = () => {
+      const el = document.getElementById(id)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }
+    const rafId = requestAnimationFrame(scrollToTarget)
+    const timerId = setTimeout(scrollToTarget, 160)
+    return () => {
+      cancelAnimationFrame(rafId)
+      clearTimeout(timerId)
+    }
   }, [hash])
 
   const { heroVisible } = useHomeSectionFocus(HOME_BACKDROP_SECTION_IDS)
@@ -270,27 +241,21 @@ export default function Accueil() {
         onTabChange={setNewsTab}
         tabs={newsTabs}
         bgWord="news"
-        bgWordSide="left"        voir={newsVoir}
+        bgWordSide="left"
       >
         {(active) => {
           const items = active === 'all' ? ARTICLES : ARTICLES.filter((a) => a.category === active)
-
-          if (newsExpanded) {
-            return (
-              <div className="article-grid news-grid-expanded">
-                {items.map((article) => (
-                  <ArticleCard key={article.slug} article={article} />
-                ))}
-              </div>
-            )
-          }
-
           return (
-            <PvCardGrid limit={homeGridPreviewLimit(items.length)} className="pv-card-grid--news">
+            <CardRail
+              className="card-rail--news"
+              ariaLabel={homeT.newsIx ? `${homeT.newsIx}` : 'Actualités'}
+              arrowLabelPrev={commonT.prev ?? 'Précédent'}
+              arrowLabelNext={commonT.next ?? 'Suivant'}
+            >
               {items.map((article) => (
                 <ArticleCard key={article.slug} article={article} />
               ))}
-            </PvCardGrid>
+            </CardRail>
           )
         }}
       </PreviewSection>
@@ -302,11 +267,15 @@ export default function Accueil() {
         title={sectionTitle(homeT.publicsTitleBefore, homeT.publicsTitleEm, homeT.publicsTitleAfter)}
         headClass="pv-head--compact-line"
       >
-        <PvCardGrid>
+        <CardRail
+          ariaLabel={homeT.publicsIx ?? 'Publics'}
+          arrowLabelPrev={commonT.prev ?? 'Précédent'}
+          arrowLabelNext={commonT.next ?? 'Suivant'}
+        >
           {PUBLICS.map((p, i) => (
             <PublicCard key={p.name + i} public={p} />
           ))}
-        </PvCardGrid>
+        </CardRail>
       </PreviewSection>
 
       {/* ── 04 · FORMATIONS MOTORS ── */}
@@ -351,11 +320,15 @@ export default function Accueil() {
         {(active) => {
           const group = CATALOG.CARROSSERIE.find((g) => g.level === active)
           return (
-            <PvCardGrid>
+            <CardRail
+              ariaLabel={homeT.carrosserieIx ?? 'Formations carrosserie'}
+              arrowLabelPrev={commonT.prev ?? 'Précédent'}
+              arrowLabelNext={commonT.next ?? 'Suivant'}
+            >
               {group?.trainings.map((f) => (
                 <CatalogTrainingCard key={f.code} folder="carrosserie" training={f} />
               ))}
-            </PvCardGrid>
+            </CardRail>
           )
         }}
       </PreviewSection>
@@ -419,13 +392,13 @@ export default function Accueil() {
         onTabChange={handleSessionTabChange}
         tabs={sessionTabs}
         bgWord="2026"
-        bgWordSide="right"        voir={sessionsVoir(sessionTab)}
+        bgWordSide="right"
       >
         {(active) => {
           const filtered = sessionsForTab(active)
           const sessionsReturn = {
             tab: active,
-            expanded: sessionsExpanded,
+            expanded: false,
             brand: sessionBrand,
             sectionId: 'sessions',
           }
@@ -437,24 +410,17 @@ export default function Accueil() {
             )
           }
 
-          if (sessionsExpanded) {
-            return (
-              <SessionsExpandedView
-                sessions={filtered}
-                filterKey={active}
-                brand={sessionBrand}
-                onBrandChange={setSessionBrand}
-                sessionsReturn={sessionsReturn}
-              />
-            )
-          }
-
           return (
-            <PvCardGrid limit={homeGridPreviewLimit(filtered.length)} className="pv-card-grid--sessions">
+            <CardRail
+              className="card-rail--sessions"
+              ariaLabel={homeT.sessionsIx ?? 'Sessions 2026'}
+              arrowLabelPrev={commonT.prev ?? 'Précédent'}
+              arrowLabelNext={commonT.next ?? 'Suivant'}
+            >
               {filtered.map((s) => (
                 <SessionCard key={s.uid} session={s} sessionsReturn={sessionsReturn} />
               ))}
-            </PvCardGrid>
+            </CardRail>
           )
         }}
       </PreviewSection>
@@ -464,7 +430,8 @@ export default function Accueil() {
       {/* ── 07 · L'ACADEMY ── */}
       <AcademyHomeSection />
 
-      <FlagMarquee />
+      {/* ── ASSISTANCE TECHNIQUE ── */}
+      <AssistanceHomeSection />
 
       {/* ── 08 · TÉMOIGNAGES ── */}
       <PreviewSection
@@ -476,6 +443,8 @@ export default function Accueil() {
         bgWordSide="left"      >
         <TestimonialShowcase items={TESTIMONIALS} />
       </PreviewSection>
+
+      <FlagMarquee />
 
       <CtaBanner id="cta-contact" />
       <LogoMarquee />
