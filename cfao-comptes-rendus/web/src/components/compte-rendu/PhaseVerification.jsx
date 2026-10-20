@@ -20,6 +20,7 @@ import { chiffresSession, satisfactionPresents, constatsParDefaut, donneesSessio
   redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
 import BoutonsRedaction from './BoutonsRedaction'
+import { formateurInitial, nouveautes, retenir } from '../../utils/formateurParDefaut'
 import { estCertification, calculerCertification, libelleModule } from '../../utils/certification'
 import { candidatPourMoteur, donneesCertification, statutElearning }
   from '../../utils/remarquesCertification'
@@ -68,15 +69,15 @@ function objectifsInitiaux(b, page) {
     { code: '', intitule: '', texte: '' }]
 }
 
-/** Le formateur de la session, prerempli et modifiable.
+/** Le formateur de la session, prerempli et modifiable — tel qu'il a
+ *  choisi de se presenter, s'il l'a retenu apres un compte rendu.
  *
  *  La session n'en designe qu'un ; une formation peut en compter
  *  plusieurs, que le formateur ajoute lui-meme. On part donc de celui
  *  qui est connu plutot que d'une ligne vide.
  */
 function formateursInitiaux(session) {
-  const nom = session?.formateur
-  return [{ nom: nom || '', fonction: nom ? 'Formateur' : '', portrait: null }]
+  return [formateurInitial(session)]
 }
 
 export default function PhaseVerification({
@@ -383,6 +384,8 @@ export default function PhaseVerification({
                 Le PowerPoint est dans vos téléchargements. Le compte rendu
                 est rangé dans « Mes comptes rendus ».
               </p>
+              <PropositionFormateur session={session}
+                formateur={(brouillon.formateurs || formateursInitiaux(session))[0]} />
             </>
           ) : (
             <>
@@ -1600,4 +1603,67 @@ function composerPages(b, session, s) {
   }
 
   return pages
+}
+
+/**
+ * Apres un compte rendu termine : garder, pour les prochains, le nom, la
+ * fonction ou le portrait qui y ont change ? On propose sans decider a la
+ * place du formateur ; il peut retenir sa reponse et ne plus etre sollicite.
+ */
+function PropositionFormateur({ formateur, session }) {
+  // Calcule une fois : une fois enregistre, la proposition ne revient pas.
+  const [diff] = useState(() => nouveautes(formateur, session))
+  const [coches, setCoches] = useState({})
+  const [fait, setFait] = useState(false)
+
+  const champs = [
+    diff.nom && { cle: 'nom', libelle: `Nom : ${diff.nom}` },
+    diff.fonction && { cle: 'fonction', libelle: `Fonction : ${diff.fonction}` },
+    diff.portrait && { cle: 'portrait', libelle: 'Portrait' },
+  ].filter(Boolean)
+  if (!champs.length) return null
+
+  if (fait) {
+    return (
+      <p className="cr-proposition-reponse" role="status">
+        Enregistré. Vos prochains comptes rendus seront préremplis.
+      </p>
+    )
+  }
+
+  const choisis = champs.filter(c => coches[c.cle])
+  function enregistrer() {
+    retenir(Object.fromEntries(choisis.map(c => [c.cle, diff[c.cle]])))
+    setFait(true)
+  }
+
+  return (
+    <section className="cr-proposition" aria-labelledby="cr-proposition-titre">
+      <h3 id="cr-proposition-titre" className="cr-proposition-titre">
+        Préremplir vos prochains comptes rendus
+      </h3>
+      <p className="cr-proposition-aide">Cochez ce que vous voulez retrouver, puis enregistrez.</p>
+      <ul className="cr-proposition-liste">
+        {champs.map(c => (
+          <li key={c.cle}>
+            <label className="cr-proposition-choix">
+              <input type="checkbox" checked={!!coches[c.cle]}
+                onChange={e => setCoches(v => ({ ...v, [c.cle]: e.target.checked }))} />
+              {c.cle === 'portrait' && (
+                <img className="cr-proposition-portrait" src={srcPhoto(diff.portrait)} alt=""
+                  onError={relancerPhoto} />
+              )}
+              <span>{c.libelle}</span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <div className="cr-actions cr-proposition-actions">
+        <button type="button" className="cr-btn cr-btn--primary" disabled={!choisis.length}
+          onClick={enregistrer}>
+          Enregistrer
+        </button>
+      </div>
+    </section>
+  )
 }
