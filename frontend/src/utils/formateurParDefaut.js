@@ -3,9 +3,7 @@
  *
  * Le nom du planning et « Formateur » ne disent pas comment le formateur
  * se presente. Quand un compte rendu termine les remplace, on lui propose
- * de les garder pour la suite ; c'est lui qui decide, et il peut retenir
- * son choix (`toujours` : on garde sans demander, `jamais` : on ne
- * demande plus).
+ * de cocher ceux qu'il veut retrouver ; rien n'est garde sans sa validation.
  *
  * Le portrait n'est retenu que s'il est sur le serveur : un apercu local
  * ne vit que dans l'onglet qui l'a cree.
@@ -43,9 +41,6 @@ export function formateurInitial(session) {
   return { nom, fonction: d.fonction || (nom ? 'Formateur' : ''), portrait: d.portrait || null }
 }
 
-/** Le choix retenu : `toujours`, `jamais`, ou rien (on demande). */
-export const choixRetenu = () => lire().choix || null
-
 /**
  * Ce que le formateur `f` d'un compte rendu termine change au defaut
  * actuel, champ par champ ; `{}` si rien.
@@ -59,17 +54,10 @@ export function nouveautes(f, session) {
   return diff
 }
 
-/** Oublie le choix retenu : la proposition reviendra. Le defaut reste. */
-export function oublierChoix() {
-  const { choix, ...reste } = lire()
-  if (choix) ecrire(reste)
-}
-
-/** Retient `diff` pour les prochains comptes rendus, et le choix s'il est donne. */
-export function retenir(diff, choix) {
-  const d = lire()
-  const suite = { ...d }
+/** Retient les champs de `diff` pour les prochains comptes rendus. */
+export function retenir(diff) {
+  const suite = lire()
+  delete suite.choix // ancien « toujours / jamais », abandonne
   CHAMPS.forEach(c => { if (diff?.[c]) suite[c] = diff[c] })
-  if (choix) suite.choix = choix
   ecrire(suite)
 }

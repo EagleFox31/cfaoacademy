@@ -20,7 +20,7 @@ import { chiffresSession, satisfactionPresents, constatsParDefaut, donneesSessio
   redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
 import BoutonsRedaction from './BoutonsRedaction'
-import { choixRetenu, formateurInitial, nouveautes, oublierChoix, retenir } from '../../utils/formateurParDefaut'
+import { formateurInitial, nouveautes, retenir } from '../../utils/formateurParDefaut'
 import { estCertification, calculerCertification, libelleModule } from '../../utils/certification'
 import { candidatPourMoteur, donneesCertification, statutElearning }
   from '../../utils/remarquesCertification'
@@ -1611,82 +1611,57 @@ function composerPages(b, session, s) {
  * place du formateur ; il peut retenir sa reponse et ne plus etre sollicite.
  */
 function PropositionFormateur({ formateur, session }) {
-  // Calcule une fois : la reponse donnee, la proposition ne revient pas.
-  // `choix` : la reponse retenue qui a evite de demander, pour pouvoir l'annuler.
-  const [{ diff, choix }] = useState(() => {
-    const d = nouveautes(formateur, session)
-    const c = choixRetenu()
-    if (!Object.keys(d).length) return {}
-    if (c === 'toujours') retenir(d)
-    return c ? { choix: c } : { diff: d }
-  })
-  const [souvenir, setSouvenir] = useState(false)
-  const [reponse, setReponse] = useState(null)
+  // Calcule une fois : une fois enregistre, la proposition ne revient pas.
+  const [diff] = useState(() => nouveautes(formateur, session))
+  const [coches, setCoches] = useState({})
+  const [fait, setFait] = useState(false)
 
-  if (choix) {
+  const champs = [
+    diff.nom && { cle: 'nom', libelle: `Nom : ${diff.nom}` },
+    diff.fonction && { cle: 'fonction', libelle: `Fonction : ${diff.fonction}` },
+    diff.portrait && { cle: 'portrait', libelle: 'Portrait' },
+  ].filter(Boolean)
+  if (!champs.length) return null
+
+  if (fait) {
     return (
       <p className="cr-proposition-reponse" role="status">
-        {reponse === 'oubli'
-          ? 'C’est noté : on vous redemandera la prochaine fois.'
-          : choix === 'toujours'
-            ? 'Vos nouvelles informations sont reprises pour vos prochains comptes rendus, comme vous l’avez demandé.'
-            : 'Vos prochains comptes rendus gardent les informations habituelles, comme vous l’avez demandé.'}
-        {reponse !== 'oubli' && (
-          <>
-            {' '}
-            <button type="button" className="cr-proposition-lien"
-              onClick={() => { oublierChoix(); setReponse('oubli') }}>
-              Me redemander à l’avenir
-            </button>
-          </>
-        )}
-      </p>
-    )
-  }
-  if (!diff) return null
-
-  if (reponse) {
-    return (
-      <p className="cr-proposition-reponse" role="status">
-        {reponse === 'oui'
-          ? 'C’est noté : vos prochains comptes rendus partiront de ces informations.'
-          : 'Vos prochains comptes rendus garderont les informations habituelles.'}
+        Enregistré. Vos prochains comptes rendus seront préremplis.
       </p>
     )
   }
 
-  function repondre(oui) {
-    if (oui) retenir(diff, souvenir ? 'toujours' : null)
-    else if (souvenir) retenir({}, 'jamais')
-    setReponse(oui ? 'oui' : 'non')
+  const choisis = champs.filter(c => coches[c.cle])
+  function enregistrer() {
+    retenir(Object.fromEntries(choisis.map(c => [c.cle, diff[c.cle]])))
+    setFait(true)
   }
 
   return (
     <section className="cr-proposition" aria-labelledby="cr-proposition-titre">
       <h3 id="cr-proposition-titre" className="cr-proposition-titre">
-        Réutiliser ces informations pour vos prochains comptes rendus ?
+        Préremplir vos prochains comptes rendus
       </h3>
+      <p className="cr-proposition-aide">Cochez ce que vous voulez retrouver, puis enregistrez.</p>
       <ul className="cr-proposition-liste">
-        {diff.portrait && (
-          <li>
-            <img className="cr-proposition-portrait" src={srcPhoto(diff.portrait)} alt=""
-              onError={relancerPhoto} />
-            <span>Votre portrait</span>
+        {champs.map(c => (
+          <li key={c.cle}>
+            <label className="cr-proposition-choix">
+              <input type="checkbox" checked={!!coches[c.cle]}
+                onChange={e => setCoches(v => ({ ...v, [c.cle]: e.target.checked }))} />
+              {c.cle === 'portrait' && (
+                <img className="cr-proposition-portrait" src={srcPhoto(diff.portrait)} alt=""
+                  onError={relancerPhoto} />
+              )}
+              <span>{c.libelle}</span>
+            </label>
           </li>
-        )}
-        {diff.nom && <li><span className="cr-proposition-libelle">Nom</span><span>{diff.nom}</span></li>}
-        {diff.fonction && <li><span className="cr-proposition-libelle">Fonction</span><span>{diff.fonction}</span></li>}
+        ))}
       </ul>
-      <label className="cr-proposition-souvenir">
-        <input type="checkbox" checked={souvenir} onChange={e => setSouvenir(e.target.checked)} />
-        Retenir ma réponse et ne plus me demander
-      </label>
       <div className="cr-actions cr-proposition-actions">
-        <button type="button" className="cr-btn cr-btn--primary" onClick={() => repondre(true)}>
-          Oui, les utiliser
-        </button>
-        <button type="button" className="cr-btn cr-btn--ghost" onClick={() => repondre(false)}>
-          Non merci
+        <button type="button" className="cr-btn cr-btn--primary" disabled={!choisis.length}
+          onClick={enregistrer}>
+          Enregistrer
         </button>
       </div>
     </section>
