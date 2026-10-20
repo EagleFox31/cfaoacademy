@@ -1,0 +1,54 @@
+# Tests policy system_role — catalogue global réservé aux admins de haut niveau (+ négatifs).
+name: SystemRoleSuite
+description: Lecture du catalogue des rôles système
+
+principals:
+  superadmin:
+    id: s_1
+    roles: ["superadmin"]
+    attr: { scopeNodes: ["groupe"] }
+  group_admin:
+    id: g_1
+    roles: ["group_admin"]
+    attr: { scopeNodes: ["groupe"] }
+  branch_admin:
+    id: a_1
+    roles: ["branch_admin"]
+    attr: { scopeNodes: ["groupe.cmr"] }
+  learner:
+    id: l_1
+    roles: ["learner"]
+    attr: { scopeNodes: ["groupe.cmr.douala"] }
+
+resources:
+  catalog:
+    kind: system_role
+    id: "*"
+    attr: {}
+
+tests:
+  - name: superadmin et admin groupe lisent le catalogue
+    input:
+      principals: ["superadmin", "group_admin"]
+      resources: ["catalog"]
+      actions: ["list", "view"]
+    expected:
+      - principal: superadmin
+        resource: catalog
+        actions: { "list": EFFECT_ALLOW, "view": EFFECT_ALLOW }
+      - principal: group_admin
+        resource: catalog
+        actions: { "list": EFFECT_ALLOW, "view": EFFECT_ALLOW }
+
+  - name: admin filiale et learner NE lisent PAS le catalogue (négatif)
+    input:
+      principals: ["branch_admin", "learner"]
+      resources: ["catalog"]
+      actions: ["list"]
+    expected:
+      - principal: branch_admin
+        resource: catalog
+        actions: { "list": EFFECT_DENY }
+      - principal: learner
+        resource: catalog
+        actions: { "list": EFFECT_DENY }

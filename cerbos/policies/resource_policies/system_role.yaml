@@ -1,0 +1,12 @@
+# Ressource « system_role » — catalogue des rôles (global, pas de périmètre). 12-3.
+# Réservé aux administrateurs de haut niveau.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: system_role
+  rules:
+    - actions: ["view", "list"]
+      effect: EFFECT_ALLOW
+      roles:
+        - superadmin
+        - group_admin

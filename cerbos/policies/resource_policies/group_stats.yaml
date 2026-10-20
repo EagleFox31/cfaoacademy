@@ -1,0 +1,14 @@
+# Ressource « group_stats » — KPIs consolidés du groupe (lecture seule).
+# Ressource globale, pas de périmètre org. Réservée aux rôles groupe.
+# Exposée par /api/v1/core/analytics/group-stats — nourrit le hero du portail Super Admin.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: group_stats
+  rules:
+    - actions: ["read"]
+      effect: EFFECT_ALLOW
+      roles:
+        - superadmin
+        - group_admin
+        - group_hr

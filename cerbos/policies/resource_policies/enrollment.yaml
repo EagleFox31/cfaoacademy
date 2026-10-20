@@ -1,0 +1,22 @@
+# Ressource « enrollment » (LMS) — inscription d'un apprenant à un cours.
+# Deux voies : (1) self — l'apprenant gère les SIENNES ; (2) encadrement dans le périmètre.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: enrollment
+  importDerivedRoles:
+    - common_scope
+  rules:
+    # (1) Self : l'apprenant voit / s'inscrit / met à jour ses propres inscriptions.
+    - actions: ["view", "list", "create", "update"]
+      effect: EFFECT_ALLOW
+      roles: ["*"]
+      condition:
+        match:
+          expr: request.principal.id == request.resource.attr.learnerSub
+
+    # (2) Encadrement (manager/RH/direction/admin) dans son périmètre.
+    - actions: ["view", "list", "create", "update", "delete"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - team_within_scope
