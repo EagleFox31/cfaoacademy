@@ -38,3 +38,25 @@ cfao-comptes-rendus/api/db.sqlite3
 
 # Extractions MEDACAP nominatives (techniciens) : jamais versionnees
 /data/dps/
+
+# Exports metier et donnees de production poses a la racine (DCP) : jamais versionnes
+/*.xlsx
+/*.xlsm
+/*.xlsb
+/*.docx
+/*.pdf
+/*.lnk
+*.dump
+infra/mongo-dump/
+/data/normalized/
+cfao-comptes-rendus/donnees-formateurs-*/
+
+# Notes de session et brouillons locaux
+/PASSATION.md
+/MEMORY.md
+/scratch/
+/scratch_*
+debug.log
+/debug-*.json
+/deepseek_html_*.html
+vite.config.js.timestamp-*.mjs

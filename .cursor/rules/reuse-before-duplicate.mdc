@@ -1,0 +1,38 @@
+---
+description: Extraire composant/hook/util dès duplication dans 2+ fichiers
+alwaysApply: true
+---
+
+# Réutiliser avant de dupliquer
+
+## Règle
+
+**Dès que 2 fichiers ou plus** reproduisent la même chose — UI, effet, timing, helper, structure JSX — **extraire** au lieu de copier-coller. Même pour un bloc « tout petit » (3 lignes de `useEffect`, même classe CSS inline, même séquence loading → leaving → done).
+
+## Où mettre l’extrait
+
+| Nature | Emplacement type |
+|--------|------------------|
+| UI réutilisable | `frontend/src/components/` (ex. `PortalLoader.jsx`) |
+| Logique React | `frontend/src/hooks/` (ex. `usePortalReveal.js`) |
+| Pur calcul / format | `frontend/src/utils/` (ex. `routeLoaderTiming`) |
+| Transversal App (routes, layout) | wrapper existant dans `App.jsx` (ex. `RouteMotion`) |
+| Backend Django | module partagé du service concerné |
+
+## Comment décider
+
+1. **Chercher** d’abord si un composant/hook existant couvre déjà le besoin.
+2. **Centraliser au plus haut niveau pertinent** — ex. loader de navigation → `RouteMotion` dans `App`, pas dans chaque page.
+3. **Paramétrer** via props/options plutôt que forker une variante quasi identique.
+4. **Ne pas sur-abstraire** : une seule occurrence, ou similarité superficielle sans vrai contrat commun → laisser local.
+
+## Exemples projet
+
+- ❌ `PortalLoader` + phases `loading/leaving/done` recopiés dans `Login.jsx`, `Portal.jsx`, etc.
+- ✅ timing + affichage dans `RouteMotion` ; pages sans loader local.
+- ❌ Même grille KPI / badge tier recodée dans plusieurs dashboards portail.
+- ✅ `KiKpiCard`, `DpsCompetencyTierChip`, thème `dpsCompetencyTierTheme.js`.
+
+## Lors d’une PR / refactor
+
+Si tu ajoutes du code déjà vu ailleurs : **factoriser dans la même passe** ou ouvrir un ticket explicite — ne pas laisser une 3ᵉ copie traîner.
