@@ -60,3 +60,8 @@ debug.log
 /debug-*.json
 /deepseek_html_*.html
 vite.config.js.timestamp-*.mjs
+
+# Extraits bruts et scripts de debug nominatifs (DCP)
+docs/etude-si-suivi-techniciens-*/as_is_*.json
+scripts/inspect-ngasseu-*.php
+scripts/compare-pif-pluriannuel.php
