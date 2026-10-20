@@ -13,4 +13,5 @@ urlpatterns = [
     path("api/v1/needs/", include("referential.urls")),
     path("api/v1/needs/", include("campaigns.urls")),
     path("api/v1/needs/", include("outbound.urls")),
+    path("api/v1/needs/", include("analytics.urls")),
 ]

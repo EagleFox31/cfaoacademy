@@ -132,11 +132,22 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      MEDACAP_MONGO_URI: ${MEDACAP_MONGO_URI:-mongodb://mongodb:27017/academy}
+      MEDACAP_MONGO_DB: ${MEDACAP_MONGO_DB:-academy}
+      # cfao-needs — appel HTTP service-to-service via le réseau externe
+      # `cfao-needs_default` (voir bas de fichier). Le service `needs-api`
+      # y est résolu par DNS docker.
+      NEEDS_API_URL: ${NEEDS_API_URL:-http://needs-api:8000}
+      NEEDS_ANALYTICS_KEY: ${NEEDS_ANALYTICS_KEY:-dev-analytics-shared-secret}
     command: >
       sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    networks:
+      - default
+      - cfao-needs
     depends_on:
       core-db: { condition: service_healthy }
       cerbos: { condition: service_healthy }
+      mongodb: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/core/healthz"]
       interval: 15s
@@ -245,4 +256,16 @@ volumes:
   core-db-data:
   ops-db-data:
   mongodb-data:
+
+networks:
+  # Réseau par défaut du projet cfaoacademy (implicite auparavant, explicité pour la clarté).
+  default:
+    name: cfaoacademy_default
+  # Réseau externe géré par le projet cfao-needs (service détachable, docker-compose distinct).
+  # cfao-core s'y attache pour lire `needs-db` (formations programmées cette année).
+  # Créé automatiquement par `docker compose up` de cfao-needs — si absent, le boot de
+  # cfao-core échoue avec un message explicite (démarrer cfao-needs d'abord).
+  cfao-needs:
+    external: true
+    name: cfao-needs_default
 

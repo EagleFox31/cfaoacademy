@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "referential",
     "campaigns",
     "outbound",
+    "analytics",
 ]
 
 MIDDLEWARE = [
@@ -127,6 +128,12 @@ REVIEW_SLA_HOURS = env.int("NEEDS_REVIEW_SLA_HOURS", default=48)
 
 # Lien profond vers une fiche, utilisé dans les emails internes.
 PUBLIC_BASE_URL = env("NEEDS_PUBLIC_BASE_URL", default="http://localhost:8080")
+
+# ── Analytics inbound (service-to-service) ─────────────────────────────────────
+# Shared key attendue en header `X-Analytics-Key` sur /api/v1/needs/analytics/*.
+# Utilisée par cfao-core pour agréger les KPIs du dashboard super admin.
+# Absente = tous les endpoints analytics renvoient 401 (fail-close).
+ANALYTICS_INBOUND_KEY = env("NEEDS_ANALYTICS_INBOUND_KEY", default="")
 
 # ── Worker asynchrone : broker = Postgres, pas de Redis (architecture.md §7) ──
 Q_CLUSTER = {

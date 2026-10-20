@@ -137,6 +137,9 @@ services:
       NEEDS_TEAM_RECIPIENTS: ${NEEDS_TEAM_RECIPIENTS:-}
       NEEDS_EMAIL_BACKEND: ${NEEDS_EMAIL_BACKEND:-console}
       NEEDS_SMTP_HOST: ${NEEDS_SMTP_HOST:-}
+      # Shared key attendue par /api/v1/needs/analytics/* (appels service-to-service
+      # depuis cfao-core). Absente = 401 sur tous ces endpoints.
+      NEEDS_ANALYTICS_INBOUND_KEY: ${NEEDS_ANALYTICS_INBOUND_KEY:-dev-analytics-shared-secret}
     depends_on:
       needs-db:
         condition: service_healthy

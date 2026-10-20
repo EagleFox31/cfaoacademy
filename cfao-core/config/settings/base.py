@@ -19,6 +19,8 @@ INSTALLED_APPS = [
     "identity",
     "audit",
     "lms",
+    "analytics",
+    "manager",
     # <generated-apps>  (ne pas retirer : ancre du générateur scripts/new_module.py)
 ]
 
@@ -65,3 +67,17 @@ OIDC_AUDIENCE = env("OIDC_AUDIENCE", default="")
 
 # ── Cerbos (PDP) ──
 CERBOS_HTTP = env("CERBOS_HTTP", default="http://localhost:3592")
+
+# ── MEDACAP MongoDB (source de vérité mesure des compétences) ──
+# Consommé en lecture seule par le module `analytics` (KPI groupe, agrégations
+# distinct brand/tech/filiale). La mesure des compétences ne se réécrit pas côté
+# core — voir docs/medacap-competency-model.md.
+MEDACAP_MONGO_URI = env("MEDACAP_MONGO_URI", default="mongodb://mongodb:27017/academy")
+MEDACAP_MONGO_DB = env("MEDACAP_MONGO_DB", default="academy")
+
+# ── cfao-needs (planification des formations, service détachable) ─────────────
+# Appel service-to-service via HTTP (frontière de service respectée). L'endpoint
+# `/api/v1/needs/analytics/*` attend un header `X-Analytics-Key` — pas de JWT
+# utilisateur, pas de Cerbos : c'est un flux backend↔backend.
+NEEDS_API_URL       = env("NEEDS_API_URL", default="http://needs-api:8000")
+NEEDS_ANALYTICS_KEY = env("NEEDS_ANALYTICS_KEY", default="")
