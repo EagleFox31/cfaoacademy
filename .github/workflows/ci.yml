@@ -160,6 +160,9 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: cfao-comptes-rendus/api/requirements*.txt
+      # Carlito, comme l'image (Dockerfile) : les etiquettes de l'anneau sont
+      # mesurees aux metriques de Calibri ; Liberation, plus large, les deplace.
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-crosextra-carlito
       - run: pip install -r requirements-dev.txt
       # Le rendu LibreOffice est saute sans LibreOffice ; le reste s'execute.
       - run: pytest -q
