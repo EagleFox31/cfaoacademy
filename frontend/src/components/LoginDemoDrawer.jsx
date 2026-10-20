@@ -16,6 +16,7 @@ const USERNAME_BY_DEMO_KEY = {
   u10: 'jacques.robin',
   u11: 'andre.yogba',
   u12: 'venance.tonga',
+  u13: 'clarisse.mbarga',
 }
 
 export default function LoginDemoDrawer({

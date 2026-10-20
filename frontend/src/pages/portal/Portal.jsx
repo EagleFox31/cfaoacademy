@@ -11,6 +11,7 @@ import BranchHRDashboard from './BranchHRDashboard'
 import SuperAdminDashboard from './SuperAdminDashboard'
 import DpsDashboard from './DpsDashboard'
 import TrainerHome from './TrainerHome'
+import RHHome from './RHHome'
 
 import { getPrimaryRole, resolveProfile } from './portalProfiles.js'
 
@@ -20,6 +21,7 @@ function resolveView(roles = []) {
   const profile = resolveProfile(roles)
   if (profile.redirectTo) return <Navigate to={profile.redirectTo} replace />
   if (profile.key === 'superadmin') return <SuperAdminDashboard />
+  if (profile.key === 'group_hr') return <RHHome />
   if (profile.key === 'dps') return <DpsDashboard />
   if (profile.key === 'branch_hr') return <BranchHRDashboard />
   if (profile.key === 'workshop_manager') return <TeamManagerDashboard mode="workshop" />

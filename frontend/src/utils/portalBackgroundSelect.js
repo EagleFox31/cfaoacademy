@@ -34,7 +34,7 @@ export const PORTAL_BACKGROUND_POSITIONS = {
   motorsDefault: '70% 8%',
 }
 
-const ADMIN_ROLES = new Set(['superadmin', 'branch_hr', 'branch_admin'])
+const ADMIN_ROLES = new Set(['superadmin', 'group_hr', 'branch_hr', 'branch_admin'])
 const MANAGER_ROLES = new Set(['dps', 'dop'])
 const TRAINER_ROLES = new Set(['trainer', 'ki', 'pic', 'center_director'])
 

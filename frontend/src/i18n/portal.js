@@ -711,6 +711,7 @@ export const PORTAL_COPY = {
     portal_orient_workshop_manager: 'Vous pilotez plusieurs équipes et suivez leurs tests, leurs résultats et leurs plans de formation.',
     portal_orient_branch_hr:      'Vue filiale : annuaire collaborateurs et inscriptions.',
     portal_orient_dps:            'Consultez les plans de formation, les résultats aux tests et l\'aide atelier de vos équipes.',
+    portal_orient_group_hr: 'Vue groupe : campagnes de recrutement, mesure des compétences, PIF, techniciens et candidats de toutes les filiales.',
     portal_orient_superadmin:     'Administration groupe : vue globale et logs.',
 
     onboarding_nav_help:          'Guide',
@@ -882,6 +883,10 @@ export const PORTAL_COPY = {
     nav_sec_a_documenter:     'Priorités',
     nav_sec_comptes_rendus:   'Vos comptes rendus',
     nav_sec_sessions_animees: 'Vos sessions de formation',
+    nav_sec_rh_recrutement: 'Recrutement',
+    nav_sec_rh_competences: 'Compétences',
+    nav_sec_rh_pif: 'PIF',
+    nav_sec_rh_personnes: 'Techniciens & candidats',
 
     // Section assistance OR — app 06 (hotline formateur atelier)
     eyebrow_assistance:         'Hotline technique · atelier',
@@ -1948,6 +1953,7 @@ export const PORTAL_COPY = {
     portal_orient_workshop_manager: 'You oversee several teams and keep track of their tests, results and training plans.',
     portal_orient_branch_hr:        'Branch view: employee directory and enrollments.',
     portal_orient_dps:              'Review training plans, test results and workshop help for your teams.',
+    portal_orient_group_hr: 'Group view: recruitment campaigns, skills assessment, IDPs, technicians and candidates across all branches.',
     portal_orient_superadmin:       'Group admin: global view and logs.',
 
     onboarding_nav_help:            'Guide',
@@ -2119,6 +2125,10 @@ export const PORTAL_COPY = {
     nav_sec_a_documenter:     'Priorities',
     nav_sec_comptes_rendus:   'Your reports',
     nav_sec_sessions_animees: 'Your training sessions',
+    nav_sec_rh_recrutement: 'Recruitment',
+    nav_sec_rh_competences: 'Skills',
+    nav_sec_rh_pif: 'IDP',
+    nav_sec_rh_personnes: 'Technicians & candidates',
 
     // Assistance section (tickets app)
     eyebrow_assistance:         'Technical hotline · workshop',
@@ -3061,6 +3071,7 @@ export const PORTAL_COPY = {
     portal_orient_workshop_manager: 'Vous pilotez plusieurs équipes e suivez leurs tests, leurs résultats e leurs plans de formation.',
     portal_orient_branch_hr: 'Vue filiale : annuaire collaborateurs e inscriptions.',
     portal_orient_dps: 'Consulte os planos de formação, resultados dos testes e ajuda oficina das suas equipas.',
+    portal_orient_group_hr: 'Visão grupo: campanhas de recrutamento, medição de competências, PIF, técnicos e candidatos de todas as filiais.',
     portal_orient_superadmin: 'Administration groupe : vue globale e logs.',
 
     onboarding_nav_help: 'Guia',
@@ -3220,6 +3231,10 @@ export const PORTAL_COPY = {
     nav_sec_a_documenter: 'Prioridades',
     nav_sec_comptes_rendus: 'Vos comptes rendus',
     nav_sec_sessions_animees: 'Sessões de formação',
+    nav_sec_rh_recrutement: 'Recrutamento',
+    nav_sec_rh_competences: 'Competências',
+    nav_sec_rh_pif: 'PIF',
+    nav_sec_rh_personnes: 'Técnicos e candidatos',
     eyebrow_assistance: 'Hotline técnica · oficina',
     title_assistance: 'Bloqueado numa intervenção?',
     assistance_desc: 'Um formador certificado na sua marca ajuda a desbloquear a ordem de reparação em curso — enquanto trabalha no veículo.',

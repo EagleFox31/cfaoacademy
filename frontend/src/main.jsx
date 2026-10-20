@@ -13,6 +13,8 @@ import './styles/medacap.css'
 
 suivreEchelle()
 
+suivreEchelle()
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>

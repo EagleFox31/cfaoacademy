@@ -8,6 +8,7 @@ export const ROLE_PRIORITY = [
   'superadmin',
   'build_team',
   'group_admin',
+  'group_hr',
   'dps',
   'dop',
   'branch_hr',
@@ -53,6 +54,12 @@ export const PORTAL_PROFILES = {
     description: 'Pilotage RH filiale, taux de certification, alertes et annuaire collaborateurs.',
     roles: ['branch_hr', 'branch_admin'],
   },
+  group_hr: {
+    key: 'group_hr',
+    label: 'RH Groupe',
+    description: 'Vue groupe en consultation : recrutement, mesure des compétences, PIF, techniciens et candidats.',
+    roles: ['group_hr'],
+  },
   ki: {
     key: 'ki',
     label: 'Key Instructor / PIC',
@@ -96,6 +103,9 @@ export function resolveProfile(roles = []) {
   }
   if (primary === 'superadmin') {
     return PORTAL_PROFILES.superadmin
+  }
+  if (primary === 'group_hr') {
+    return PORTAL_PROFILES.group_hr
   }
   if (primary === 'dps' || primary === 'dop') {
     return PORTAL_PROFILES.dps

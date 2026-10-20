@@ -115,12 +115,12 @@ export const PORTAL_NAV_SECTIONS = {
     { key: 'bilan',     id: 'bilan',     labelKey: 'nav_sec_bilan' },
     { key: 'directory', id: 'directory', labelKey: 'nav_sec_directory' },
   ],
+  // Une entree par espace, dans l'ordre du cycle RH.
   group_hr: [
-    { key: 'bilan',       id: 'bilan',       labelKey: 'nav_sec_bilan' },
-    { key: 'branches',    id: 'branches',    labelKey: 'nav_sec_branches' },
-    { key: 'competences', id: 'competences', labelKey: 'nav_sec_competences' },
-    { key: 'logs',        id: 'logs',        labelKey: 'nav_sec_logs' },
-    { key: 'profiles',    id: 'profiles',    labelKey: 'nav_sec_profiles' },
+    { key: 'recrutement', id: 'recrutement', labelKey: 'nav_sec_rh_recrutement' },
+    { key: 'competences', id: 'competences', labelKey: 'nav_sec_rh_competences' },
+    { key: 'pif',         id: 'pif',         labelKey: 'nav_sec_rh_pif' },
+    { key: 'personnes',   id: 'personnes',   labelKey: 'nav_sec_rh_personnes' },
   ],
   group_admin: [
     { key: 'bilan',       id: 'bilan',       labelKey: 'nav_sec_bilan' },
