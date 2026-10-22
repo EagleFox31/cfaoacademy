@@ -14,20 +14,34 @@ import { useNavigate } from 'react-router-dom'
 import useAuth from '../hooks/useAuth'
 import useLocale from '../hooks/useLocale'
 import PortalLoader from '../components/PortalLoader'
-import { consumeAuthReturnPath, handleCallback, login } from '../lib/auth'
+import { consumeAuthReturnPath, handleCallback } from '../lib/auth'
+
+// Le code d'autorisation ne s'échange qu'une fois : le double montage de
+// StrictMode doit reprendre le même échange, pas en relancer un second.
+let echangeEnCours = null
+let codeEchange = null
+
+function echanger() {
+  const code = new URL(window.location.href).searchParams.get('code')
+  if (!echangeEnCours || code !== codeEchange) {
+    codeEchange = code
+    echangeEnCours = handleCallback()
+  }
+  return echangeEnCours
+}
 
 export default function AuthCallback() {
   const navigate = useNavigate()
-  const { adoptSession } = useAuth()
+  const { adoptSession, connexionSso } = useAuth()
   const { t } = useLocale('login')
   const [erreur, setErreur] = useState(null)
 
   useEffect(() => {
     let vivant = true
-    handleCallback()
-      .then((session) => {
+    echanger()
+      .then((session) => adoptSession(session))
+      .then(() => {
         if (!vivant) return
-        adoptSession(session)
         const returnPath = consumeAuthReturnPath()
         const target = (!returnPath || returnPath === '/' || returnPath.startsWith('/callback'))
           ? '/portail'
@@ -61,7 +75,7 @@ export default function AuthCallback() {
             <p style={{ color: 'var(--muted, #6b7280)', marginBottom: 24, lineHeight: 1.5, fontSize: 14 }}>
               Le lien de retour n’était plus valide ou la session a expiré. Veuillez relancer la connexion d’entreprise.
             </p>
-            <button type="button" className="btn btn-primary" onClick={() => login()} style={{ width: '100%', height: 44 }}>
+            <button type="button" className="btn btn-primary" onClick={connexionSso} style={{ width: '100%', height: 44 }}>
               {t.authRetry || 'Réessayer la connexion'}
             </button>
           </div>

@@ -20,14 +20,16 @@
  * l'échéance ; un mutex garantit une seule requête réseau même si plusieurs
  * composants ou appels API réclament un rafraîchissement simultanément.
  */
+/**
+ * Keycloak n'est actif que si `VITE_OIDC_ISSUER` est définie. Sans elle, le
+ * portail garde son modèle : profils de démonstration et comptes formateurs
+ * servis par `/cr-donnees`. Aucun appel ne part alors vers Keycloak.
+ */
+export const OIDC_ACTIF = Boolean((import.meta.env.VITE_OIDC_ISSUER || '').trim())
+
 function resolveIssuer() {
-  const envIssuer = import.meta.env.VITE_OIDC_ISSUER || ''
-  if (!envIssuer) {
-    if (typeof window !== 'undefined') {
-      return `${window.location.protocol}//${window.location.hostname}:8080/realms/cfao`
-    }
-    return 'http://localhost:8080/realms/cfao'
-  }
+  const envIssuer = (import.meta.env.VITE_OIDC_ISSUER || '').trim()
+  if (!envIssuer) return ''
   if (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     return envIssuer
       .replace('//localhost:', `//${window.location.hostname}:`)
@@ -426,6 +428,10 @@ document.addEventListener('visibilitychange', _handleVisibilityChange)
  * Un seul redirect même si plusieurs appels API échouent en parallèle.
  */
 export function reauthenticate(returnTo) {
+  if (!OIDC_ACTIF) {
+    clearLocalSession()
+    return
+  }
   if (reauthInFlight) return
   reauthInFlight = true
 

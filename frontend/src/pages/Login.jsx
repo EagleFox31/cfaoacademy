@@ -32,6 +32,15 @@ function EyeIcon({ open }) {
   )
 }
 
+function KeyIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="7.5" cy="15.5" r="4.5" />
+      <path d="M10.7 12.3 21 2m-4 4 3 3m-6 0 2 2" />
+    </svg>
+  )
+}
+
 function MicrosoftIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -59,7 +68,7 @@ const SSO_PROVIDERS = [
 export default function Login() {
   useSiteEffects()
   const { locale, t } = useLocale('login')
-  const { login, connexion, profiles } = useAuth()
+  const { login, connexion, connexionSso, oidc, profiles } = useAuth()
   const navigate = useNavigate()
   const auth = useAuthForm(locale, async (identifiant, motDePasse, seSouvenir) => {
     const refus = await connexion(identifiant, motDePasse, seSouvenir)
@@ -120,6 +129,13 @@ export default function Login() {
                       <p className="login-card-lead">{t.loginInstruction}</p>
 
                       <div className="login-sso" aria-label={t.ssoAria}>
+                        {/* Keycloak, seulement si VITE_OIDC_ISSUER est définie. */}
+                        {oidc && (
+                          <button type="button" className="login-sso-btn" onClick={connexionSso}>
+                            <KeyIcon />
+                            <span className="login-sso-label">{t.ssoCfao}</span>
+                          </button>
+                        )}
                         {SSO_PROVIDERS.map((provider) => {
                           const Icon = provider.icon
                           return (

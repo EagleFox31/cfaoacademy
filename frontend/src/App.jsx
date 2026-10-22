@@ -29,6 +29,8 @@ import Actualites from './pages/Actualites.jsx'
 import Article from './pages/Article.jsx'
 import FormationFiche from './pages/FormationFiche.jsx'
 import Login from './pages/Login.jsx'
+import AuthCallback from './pages/AuthCallback.jsx'
+import { OIDC_ACTIF } from './lib/auth.js'
 import Contact from './pages/Contact.jsx'
 import MentionsLegales from './pages/MentionsLegales.jsx'
 import Confidentialite from './pages/Confidentialite.jsx'
@@ -54,6 +56,8 @@ export default function App() {
           <Route path="/actualites" element={<Actualites />} />
           <Route path="/actualites/:slug" element={<Article />} />
           <Route path="/login" element={<Login />} />
+          {/* Retour de Keycloak, seulement si VITE_OIDC_ISSUER est définie. */}
+          {OIDC_ACTIF && <Route path="/callback" element={<AuthCallback />} />}
           <Route path="/contact" element={<Contact />} />
           <Route path="/mentions-legales" element={<MentionsLegales />} />
           <Route path="/confidentialite" element={<Confidentialite />} />
