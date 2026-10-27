@@ -270,6 +270,9 @@ services:
     restart: unless-stopped
     ports: ["8000:80"]
     volumes: [./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro]
+    networks:
+      - default
+      - cfao-academy-mail
     depends_on:
       core: { condition: service_healthy }
       operations: { condition: service_healthy }
@@ -332,4 +335,8 @@ networks:
   cfao-needs:
     external: true
     name: cfao-needs_default
+  # Créé par `docker compose up` dans cfao-academy-mail. Sans ce réseau, le gateway ne démarre pas.
+  cfao-academy-mail:
+    external: true
+    name: cfao-academy-mail_default
 
