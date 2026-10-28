@@ -1,11 +1,12 @@
-# ==============================================================================
+﻿# ==============================================================================
 # CFAO Academy Mail - Déploiement (Windows)
 # Idempotent : relancer donne le même résultat, .env n'est jamais réécrit.
 # URL publique : variable d'environnement > .env > http://<IP LAN>:<MAIL_PUBLIC_PORT>
 # ==============================================================================
 param (
     [string]$ComposeFile = "docker-compose.yml",
-    [string]$EnvFile = ".env"
+    [string]$EnvFile = ".env",
+    [switch]$DryRun  # affiche l'URL calculée sans lancer les conteneurs
 )
 
 $ErrorActionPreference = "Stop"
@@ -37,7 +38,10 @@ if (-not $env:MAIL_PUBLIC_BASE_URL) {
         }
         $port = $env:MAIL_PUBLIC_PORT
         if (-not $port) { $port = Get-EnvValue "MAIL_PUBLIC_PORT" }
-        if (-not $port) { $port = "80" }
+        # Pas de port supposé : il dépend de l'hébergement attribué.
+        if ($port -notmatch '^\d+$') {
+            throw "Renseigner MAIL_PUBLIC_PORT (port d'accès à la plateforme) ou MAIL_PUBLIC_BASE_URL dans $EnvFile."
+        }
         $suffix = if ($port -eq "80") { "" } else { ":$port" }
         $env:MAIL_PUBLIC_BASE_URL = "http://$($env:MAIL_LAN_HOST)$suffix"
     }
@@ -48,6 +52,7 @@ Write-Host " CFAO Academy Mail - Déploiement" -ForegroundColor Green
 Write-Host " Fichier Compose : $ComposeFile"
 Write-Host " URL publique    : $env:MAIL_PUBLIC_BASE_URL (hôte autorisé dans les liens)" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Green
+if ($DryRun) { exit 0 }
 
 docker compose -f $ComposeFile --env-file $EnvFile up -d --build
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
