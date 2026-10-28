@@ -2,7 +2,7 @@
 # Usage : make <cible>   (GNU Make ou compatible)
 COMPOSE = docker compose
 
-.PHONY: help dev-frontend dev-stack test test-cerbos test-core test-ops test-frontend test-rapports test-cr-web \
+.PHONY: help dev-frontend dev-stack test test-cerbos test-core test-ops test-frontend test-rapports test-cr-web test-mail \
         up down reset build ps logs seed migrate mm shell dtest dtest-cerbos cerbos-reload restart token \
         rapports-importer medacap-api-test medacap-api-deploy
 
@@ -17,6 +17,7 @@ help:
 	@echo "  make test-frontend  — build Vite frontend"
 	@echo "  make test-rapports  — pytest cfao-comptes-rendus"
 	@echo "  make test-cr-web    — vitest + build de l'interface cfao-comptes-rendus/web"
+	@echo "  make test-mail      — pytest cfao-academy-mail"
 	@echo "── Dev (stack en marche) ──"
 	@echo "  make up | down | reset | build | ps | logs [S=svc]"
 	@echo "  make seed | migrate | mm [M=app] | shell"
@@ -48,7 +49,7 @@ dev-frontend:
 dev-stack:
 	$(COMPOSE) up --build
 
-test: test-cerbos test-core test-ops test-frontend test-rapports test-cr-web
+test: test-cerbos test-core test-ops test-frontend test-rapports test-cr-web test-mail
 
 test-cerbos:
 	MSYS_NO_PATHCONV=1 docker run --rm -v "$(CURDIR)/cerbos:/work" \
@@ -70,6 +71,11 @@ test-rapports:
 
 test-cr-web:
 	cd cfao-comptes-rendus/web && npm ci && npm test && npm run build
+
+test-mail:
+	cd cfao-academy-mail/api && (test -x .venv/Scripts/python.exe || python -m venv .venv)
+	cd cfao-academy-mail/api && .venv/Scripts/python.exe -m pip install -q -r requirements-dev.txt
+	cd cfao-academy-mail/api && .venv/Scripts/python.exe -m pytest -q
 
 # ── Dev (stack en marche, code hot-monté via override) ────────────
 up:

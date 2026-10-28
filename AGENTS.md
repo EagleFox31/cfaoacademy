@@ -71,4 +71,11 @@
 >   - Si seuls 2 paliers sont évalués : `(Moyenne Palier 1 + Moyenne Palier 2) / 2`
 >   - Les paliers sans évaluation sont ignorés du dénominateur.
 
+---
 
+## 6. STANDARD D'INGÉNIERIE RAIDER ET MÉMOIRE DES ERREURS
+
+- Toute évolution non triviale suit [RAIDER.md](RAIDER.md) : Reusable, Agnostic, Idempotent, Durable, Engineering-grade, Retroactive. Elle se valide avec sa Definition of Done.
+- **Avant** : lire la synthèse de [docs/engineering/lessons-learned.md](docs/engineering/lessons-learned.md), puis faire la recherche reuse-first (Adopt / Adapt / Learn / Build).
+- **Après** toute erreur ou near miss : y ajouter une entrée avec cause racine, prévention vérifiable et leçon généralisée. En cas de récidive, renforcer le contrôle.
+- Toute exception à RAIDER est justifiée dans le walkthrough ou la PR.

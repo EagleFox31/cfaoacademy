@@ -23,6 +23,7 @@ Convention de chaque fiche :
 | [12-audit-12-4.md](12-audit-12-4.md) | Gouvernance · journal d'**audit** (12-4) | ✅ 46/46 + Cerbos 33/33 + live |
 | [13-noeud-D-increment1-catalogue.md](13-noeud-D-increment1-catalogue.md) | D (LMS) · incrément 1 : **catalogue** (TDD + live) | ✅ 53/53 + Cerbos 54/54 + live |
 | [14-noeud-D-increment2-enrollment.md](14-noeud-D-increment2-enrollment.md) | D (LMS) · incrément 2 : **inscription + progression** (TDD + live) | ✅ 59/59 + Cerbos 62/62 + live |
+| [15-cfao-academy-mail-amorcage.md](15-cfao-academy-mail-amorcage.md) | Hub **cfao-academy-mail** (relecture 27 oct. 2026) | pytest **27 passed** · worker healthy · enqueue console **SENT** · job `mail` run/skip observé (#21/#22) · pas Pact/Playwright/Cerbos |
 
 Environnement de test : Python 3.13 (venv `cfao-core/.venv`), Node 24, Docker 29 + Compose v5.
 Normes appliquées : voir mémoire DevSecOps + `planning.md §6` (séquence TU → TI → contrat → E2E).
