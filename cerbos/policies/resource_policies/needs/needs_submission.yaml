@@ -36,12 +36,5 @@ resourcePolicy:
     # Un DENY l'emporte sur tout ALLOW — c'est ce qui rend la règle non contournable.
     - actions: ["validate", "reopen"]
       effect: EFFECT_DENY
-      roles:
-        - team_manager
-        - workshop_manager
-        - dps
-        - dop
-        - branch_director
-        - branch_admin
-        - branch_hr
-        - regional_director
+      derivedRoles:
+        - outside_academy

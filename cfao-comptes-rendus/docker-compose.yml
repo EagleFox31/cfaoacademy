@@ -42,8 +42,9 @@ services:
     environment:
       CERBOS_NO_TELEMETRY: "1"
     volumes:
-      - ./cerbos/policies:/policies:ro
-      - ./cerbos/config.yaml:/config/config.yaml:ro
+      # Bundle commun de la plateforme.
+      - ../cerbos/policies:/policies:ro
+      - ../cerbos/config.yaml:/config/config.yaml:ro
     healthcheck:
       test: ["CMD", "/cerbos", "healthcheck", "--config=/config/config.yaml"]
       interval: 15s

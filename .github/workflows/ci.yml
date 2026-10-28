@@ -41,20 +41,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
-      - name: cerbos compile --tests (plateforme)
+      # Bundle unique (socle, needs, comptes rendus) : un PDP, une compilation.
+      # Un set de derived roles en double ou un schema introuvable y echoue.
+      - name: cerbos compile --tests (bundle plateforme)
         run: |
           docker run --rm -v "${{ github.workspace }}/cerbos:/work" \
             ghcr.io/cerbos/cerbos:0.40.0 compile --tests=/work/tests /work/policies
-      # Le module detachable a ses propres policies : sans cette etape, une
-      # regression sur needs_submission / needs_outbound passerait en vert.
-      - name: cerbos compile --tests (app 16 · recueil des besoins)
+      # Un seul bundle : aucun module ne doit recreer son propre dossier de policies.
+      # Exception : le gabarit garde un exemple autonome, jamais deploye.
+      - name: aucun bundle Cerbos de module
         run: |
-          docker run --rm -v "${{ github.workspace }}/cfao-needs/cerbos:/work" \
-            ghcr.io/cerbos/cerbos:0.40.0 compile --tests=/work/tests /work/policies
-      - name: cerbos compile --tests (comptes rendus)
-        run: |
-          docker run --rm -v "${{ github.workspace }}/cfao-comptes-rendus/cerbos:/work" \
-            ghcr.io/cerbos/cerbos:0.40.0 compile --tests=/work/tests /work/policies
+          ecarts=$(find . \( -path ./cerbos -o -path ./template-service \) -prune -o -path '*/cerbos/policies' -type d -print)
+          if [ -n "$ecarts" ]; then
+            echo "$ecarts"
+            echo "Les policies vivent dans cerbos/ a la racine." >&2
+            exit 1
+          fi
 
   core:
     name: cfao-core (Django · pytest)

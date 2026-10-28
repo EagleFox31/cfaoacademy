@@ -6,9 +6,9 @@ resourcePolicy:
   resource: compte_rendu
   schemas:
     principalSchema:
-      ref: cerbos:///principal.json
+      ref: cerbos:///comptes_rendus/principal.json
     resourceSchema:
-      ref: cerbos:///ressource.json
+      ref: cerbos:///comptes_rendus/ressource.json
   rules:
     # Formateurs certifies et suppleants (KI, PIC).
     - actions: ["list", "create"]

@@ -1,4 +1,6 @@
 # Cerbos PDP — configuration (architecture.md §4.4).
+# Un seul bundle pour toute la plateforme : socle, needs, comptes rendus, planning.
+# Default-deny : toute action absente des politiques est refusee.
 server:
   httpListenAddr: ":3592"
   grpcListenAddr: ":3593"
@@ -9,8 +11,14 @@ storage:
     directory: /policies
     watchForChanges: true
 
+# Seules les politiques qui declarent `schemas:` sont concernees (comptes rendus) :
+# un attribut manquant ou mal type fait rejeter la demande.
+schema:
+  enforcement: reject
+
 audit:
   enabled: true
   backend: local
   local:
     storagePath: /tmp/cerbos/audit.log
+    retentionPeriod: 168h

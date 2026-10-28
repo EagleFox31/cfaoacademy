@@ -138,7 +138,7 @@ class MonEntite(models.Model):
 
 ### Étape 3 — Déclarer la policy Cerbos
 
-Dans `cerbos/policies/mon_domaine_resource.yaml`, calquez-vous sur [`sample_resource.yaml`](cerbos/policies/resource_policies/sample_resource.yaml). La règle « *la ressource est dans mon périmètre* » s'écrit toujours de la même manière :
+La plateforme n'a qu'un PDP : la policy d'un module déployé vit dans le bundle commun, `../cerbos/policies/resource_policies/<module>/`, ses tests dans `../cerbos/tests/<module>/` (le dossier `cerbos/` du gabarit n'est qu'un exemple autonome). Calquez-vous sur [`sample_resource.yaml`](cerbos/policies/resource_policies/sample_resource.yaml). La règle « *la ressource est dans mon périmètre* » s'écrit toujours de la même manière :
 
 ```yaml
 condition:
@@ -216,7 +216,7 @@ Ce qui signifie : *« le nœud organisationnel de la ressource figure dans la li
 
 Les listes `scopeNodes` et `brands` du principal sont construites côté Identity Provider — en mode `standalone`, elles sont figées en dur dans `LocalMockIdentityProvider`. En mode `integrated`, elles proviennent de l'API centrale `GET /api/v1/core/me`.
 
-Pour aller plus loin sur les cas complexes (rôles cumulés, scope flottant, marques partielles), consulter les policies de référence déjà en production dans [`../cfao-needs/cerbos/policies/`](../cfao-needs/cerbos/policies/) et le document [`../architecture.md`](../architecture.md) §6.
+Pour aller plus loin sur les cas complexes (rôles cumulés, scope flottant, marques partielles), consulter les policies de référence déjà en production dans [`../cerbos/policies/resource_policies/needs/`](../cerbos/policies/resource_policies/needs/) et le document [`../architecture.md`](../architecture.md) §6.
 
 ---
 
@@ -262,7 +262,7 @@ make seed
 ## 10. Références utiles
 
 - **Architecture globale de la plateforme** : [`../architecture.md`](../architecture.md) — principes directeurs, modèle de scope, flux PEP → PDP
-- **Policies Cerbos de référence** : [`../cfao-needs/cerbos/policies/`](../cfao-needs/cerbos/policies/) — exemples réels en production, avec tests complets
+- **Policies Cerbos de référence** : [`../cerbos/policies/resource_policies/needs/`](../cerbos/policies/resource_policies/needs/) — exemples réels en production, avec tests complets
 - **Spécification du module Recueil des besoins** : [`../docs/SPEC_RECUEIL_BESOINS_2027.md`](../docs/SPEC_RECUEIL_BESOINS_2027.md) — cas d'étude d'un service détachable réel
 - **Patron de module sécurisé** : skill projet `module-securise` dans `.claude/skills/`
 - **Normes DevSecOps** : skill projet `cerbos-policy` dans `.claude/skills/`

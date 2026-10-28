@@ -1,17 +1,17 @@
-# Ressource « compte_rendu_rendu » — apercu, rapport PowerPoint et aide a la redaction.
+# Ressource « compte_rendu_photo » — photo jointe a un compte rendu.
 # Default-deny : toute action non listee est refusee.
 apiVersion: api.cerbos.dev/v1
 resourcePolicy:
   version: default
-  resource: compte_rendu_rendu
+  resource: compte_rendu_photo
   schemas:
     principalSchema:
-      ref: cerbos:///principal.json
+      ref: cerbos:///comptes_rendus/principal.json
     resourceSchema:
-      ref: cerbos:///ressource.json
+      ref: cerbos:///comptes_rendus/ressource.json
   rules:
     # Formateurs certifies et suppleants (KI, PIC).
-    - actions: ["render", "redact"]
+    - actions: ["create"]
       effect: EFFECT_ALLOW
       roles: ["trainer", "ki", "pic"]
 

@@ -37,3 +37,26 @@ derivedRoles:
       condition:
         match:
           expr: "true"
+
+    # Verrou des rôles de filiale — cible des DENY `validate` / `reopen` / envoi.
+    # Un DENY par `roles` frappe aussi un compte qui cumule un rôle de filiale et
+    # un rôle Academy (realm commun) : le directeur du centre, s'il est aussi
+    # directeur de filiale, perdrait la validation. La condition exclut donc tout
+    # porteur d'un rôle `academy_reviewer` ; la liste doit rester alignée.
+    - name: outside_academy
+      parentRoles:
+        - team_manager
+        - workshop_manager
+        - dps
+        - dop
+        - branch_director
+        - branch_admin
+        - branch_hr
+        - regional_director
+        - learner
+        - trainer
+      condition:
+        match:
+          expr: >-
+            !request.principal.roles.exists(r,
+              r in ["center_assistant", "training_coordinator", "center_director", "superadmin"])

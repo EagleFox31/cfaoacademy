@@ -11,7 +11,7 @@ help:
 	@echo "  make dev-frontend   — Vite dev server (frontend/)"
 	@echo "  make dev-stack      — docker compose up --build"
 	@echo "  make test           — Tous les tests (Cerbos + core + ops + frontend + rapports + interface du module)"
-	@echo "  make test-cerbos    — Compile + tests policies Cerbos (plateforme et rapports)"
+	@echo "  make test-cerbos    — Compile + tests du bundle Cerbos unique (socle, needs, rapports)"
 	@echo "  make test-core      — pytest cfao-core"
 	@echo "  make test-ops       — typecheck + vitest + build cfao-operations"
 	@echo "  make test-frontend  — build Vite frontend"
@@ -53,8 +53,6 @@ test: test-cerbos test-core test-ops test-frontend test-rapports test-cr-web tes
 
 test-cerbos:
 	MSYS_NO_PATHCONV=1 docker run --rm -v "$(CURDIR)/cerbos:/work" \
-		ghcr.io/cerbos/cerbos:0.40.0 compile --tests=/work/tests /work/policies
-	MSYS_NO_PATHCONV=1 docker run --rm -v "$(CURDIR)/cfao-comptes-rendus/cerbos:/work" \
 		ghcr.io/cerbos/cerbos:0.40.0 compile --tests=/work/tests /work/policies
 
 test-core:
@@ -115,7 +113,7 @@ dtest-cerbos:
 	MSYS_NO_PATHCONV=1 $(COMPOSE) exec -T cerbos /cerbos compile --tests=/tests /policies
 
 cerbos-reload:
-	$(COMPOSE) restart cerbos rapports-cerbos
+	$(COMPOSE) restart cerbos
 
 rapports-importer:
 	$(COMPOSE) exec -T rapports python manage.py importer_flask --source $(SOURCE)

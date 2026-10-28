@@ -17,13 +17,5 @@ resourcePolicy:
 
     - actions: ["view", "list", "approve", "reject", "send"]
       effect: EFFECT_DENY
-      roles:
-        - team_manager
-        - workshop_manager
-        - dps
-        - dop
-        - branch_director
-        - branch_admin
-        - branch_hr
-        - learner
-        - trainer
+      derivedRoles:
+        - outside_academy

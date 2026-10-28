@@ -83,6 +83,8 @@ services:
     image: ghcr.io/cerbos/cerbos:0.40.0
     command: ["server", "--config=/config/config.yaml"]
     restart: unless-stopped
+    environment:
+      CERBOS_NO_TELEMETRY: "1"
     ports: ["3592:3592", "3593:3593"]
     volumes:
       - ./cerbos/config.yaml:/config/config.yaml:ro
@@ -204,31 +206,11 @@ services:
           memory: "${MEM_OPS:-256M}"
 
   # Story 04-5 : service des comptes rendus formateur (cfao-comptes-rendus/),
-  # en mode integre : jeton Keycloak verifie, decisions de son propre Cerbos,
+  # en mode integre : jeton Keycloak verifie, decisions du Cerbos commun,
   # base SQLite et photos sur son volume. Joignable par la passerelle seule.
   # Mode integre : API seule pour l'instant, l'interface (cfao-comptes-rendus/web)
   # n'est ni construite ni servie ici (differe, voir MODULE_RAPPORTS_FORMATEUR.md §9).
   # Voir docs/MODULE_RAPPORTS_FORMATEUR.md.
-  rapports-cerbos:
-    image: ghcr.io/cerbos/cerbos:0.40.0
-    restart: unless-stopped
-    command: ["server", "--config=/config/config.yaml"]
-    environment:
-      CERBOS_NO_TELEMETRY: "1"
-    volumes:
-      - ./cfao-comptes-rendus/cerbos/policies:/policies:ro
-      - ./cfao-comptes-rendus/cerbos/config.yaml:/config/config.yaml:ro
-    healthcheck:
-      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/config.yaml"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: "${CPU_RAPPORTS_CERBOS:-0.25}"
-          memory: "${MEM_RAPPORTS_CERBOS:-128M}"
-
   rapports:
     build: ./cfao-comptes-rendus/api
     restart: unless-stopped
@@ -240,7 +222,7 @@ services:
       # Pages autorisees a ecrire (controle d'Origin) : la passerelle de la plateforme.
       ORIGINES_AUTORISEES: ${RAPPORTS_ORIGINES_AUTORISEES:-http://localhost:8000,http://127.0.0.1:8000,http://localhost:5173,http://127.0.0.1:5173}
       DATABASE_URL: sqlite:////donnees/comptes-rendus.sqlite3
-      CERBOS_HTTP: http://rapports-cerbos:3592
+      CERBOS_HTTP: http://cerbos:3592
       PLATFORM_CORE_URL: http://core:8000
       OIDC_JWKS_URL: http://keycloak:8080/realms/${OIDC_REALM:-cfao}/protocol/openid-connect/certs
       OIDC_ISSUER: http://keycloak:8080/realms/${OIDC_REALM:-cfao}
@@ -250,7 +232,7 @@ services:
     # (reprise des brouillons : `make rapports-importer`).
     volumes: [rapports-donnees:/donnees]
     depends_on:
-      rapports-cerbos: { condition: service_healthy }
+      cerbos: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:5175/apercu/sante"]
       interval: 15s

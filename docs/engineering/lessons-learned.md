@@ -18,10 +18,33 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Un service écrit dans Compose n'est prouvé que par une exécution observée | D | sortie collée dans le walkthrough (échec compris) |
 | La commande documentée doit exister sur la machine qui produit la preuve | A | `make` présent dans le PATH, sinon le trou est écrit |
 | Une action CI qui appelle l'API GitHub reçoit le droit explicite dont elle a besoin | E (moindre privilège) | test du workflow (`pull-requests: read` sur `changes`) + run observé |
+| Une policy se relit pour le realm où elle tourne : ni `roles: ["*"]` en lecture large, ni DENY par rôle sans test de rôles cumulés | E (moindre privilège) | tests Cerbos « comptes externes » et « rôles cumulés », prouvés par mutation |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-28 — Les policies needs supposaient un realm réservé au module (fédération Cerbos)
+- **Contexte / symptôme** : fusion des policies needs et comptes rendus dans le bundle commun `cerbos/`. La lecture des campagnes était ouverte par `roles: ["*"]`, et les verrous `validate` / `reopen` / envoi étaient des DENY par liste de rôles.
+- **Impact** : near miss, vu avant la bascule. Dans le realm commun `cfao`, apprenants, candidats et partenaires B2B auraient lu les campagnes. Un directeur du centre aussi directeur de filiale aurait perdu la validation (le DENY l'emporte).
+- **Détection** : étude d'architecture de la fédération, avant toute migration.
+- **Cause racine** : une policy écrite pour un realm où seuls les collaborateurs ont un compte, sans hypothèse écrite ni test hors de ce périmètre.
+- **Correctif** : derived role `internal_staff` (liste explicite, `derived_roles/staff.yaml`) ; DENY porté par `outside_academy`, qui exclut les porteurs d'un rôle Academy (`derived_roles/needs_review.yaml`).
+- **Prévention** : tests « comptes externes » et « rôles cumulés » dans `cerbos/tests/needs/`. Sur les anciennes policies, ils échouent (10 échecs, mutation rejouée) ; garde CI « aucun bundle Cerbos de module ».
+- **Leçon généralisée** : une règle d'autorisation dépend de la population des comptes. Quand la population change (fusion de realms), chaque joker et chaque DENY par rôle est relu et testé avec des comptes externes et des rôles cumulés.
+- **Catégorie** : Sécurité / autorisation
+- **Récidive** : non
+
+### 2026-10-28 — Le comparateur du dry-run clé fusionnait deux lignes de pied (cfao-planning)
+- **Contexte / symptôme** : comparaison calcul / classeur des pieds des feuilles pays. Les libellés étaient tronqués à 14 caractères : « FRAIS D'ACCOMO… » techniciens et formateurs devenaient une seule clé.
+- **Impact** : l'hébergement formateurs écrasait l'hébergement techniciens. Un faux écart était affiché, et un vrai écart pouvait être masqué. Near miss : vu avant toute conclusion métier.
+- **Détection** : un écart incohérent (hébergement techniciens égal à l'hébergement formateurs) sur plusieurs pays.
+- **Cause racine** : une clé de dictionnaire dérivée d'un libellé tronqué, donc non unique.
+- **Correctif** : libellés complets comme clés (script scratch `dry_seats.py`).
+- **Prévention** : l'importeur ne dépend pas des libellés de pied : il ne lit que la ligne « TOTAL », couverte par `test_import_seat_sheets.py` (`TOTAL_MISMATCH`).
+- **Leçon généralisée** : un outil de vérification est du code, et il peut mentir. Une clé construite par troncature doit être prouvée unique, sinon il faut garder la valeur entière.
+- **Catégorie** : Données / vérification
+- **Récidive** : non
 
 ### 2026-10-28 — Le filtre de chemins échouait sur GitHub faute de droit de lecture des PR (cfao-academy-mail)
 - **Contexte / symptôme** : premières PR (#21 hub mail, #22 contrôle `frontend/` seul). Le job `Chemins touchés` échoue sur les deux avec `Resource not accessible by integration`. Le job `mail` est alors `skipping` partout, y compris quand le hub change.

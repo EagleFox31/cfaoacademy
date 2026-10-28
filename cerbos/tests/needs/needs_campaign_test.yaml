@@ -36,6 +36,25 @@ principals:
     attr:
       scopeNodes: ["groupe.cmr"]
       brands: []
+  # Comptes externes du realm commun : aucune lecture des campagnes.
+  apprenant:
+    id: u_learner
+    roles: ["learner"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+      brands: []
+  candidat:
+    id: u_candidate
+    roles: ["candidate"]
+    attr:
+      scopeNodes: []
+      brands: []
+  partenaire_b2b:
+    id: u_b2b
+    roles: ["b2b_partner"]
+    attr:
+      scopeNodes: []
+      brands: []
 
 resources:
   campagne_2027:
@@ -46,7 +65,7 @@ resources:
       status: "OPEN"
 
 tests:
-  - name: tout compte authentifie voit la campagne
+  - name: tout collaborateur CFAO voit la campagne
     input:
       principals: ["chef_atelier", "assistante_academy", "directeur_filiale"]
       resources: ["campagne_2027"]
@@ -125,3 +144,19 @@ tests:
           close: EFFECT_DENY
           import: EFFECT_DENY
           arbitrate: EFFECT_DENY
+
+  - name: NEGATIF aucun compte externe ne voit la campagne
+    input:
+      principals: ["apprenant", "candidat", "partenaire_b2b"]
+      resources: ["campagne_2027"]
+      actions: ["view", "list"]
+    expected:
+      - principal: apprenant
+        resource: campagne_2027
+        actions: { view: EFFECT_DENY, list: EFFECT_DENY }
+      - principal: candidat
+        resource: campagne_2027
+        actions: { view: EFFECT_DENY, list: EFFECT_DENY }
+      - principal: partenaire_b2b
+        resource: campagne_2027
+        actions: { view: EFFECT_DENY, list: EFFECT_DENY }

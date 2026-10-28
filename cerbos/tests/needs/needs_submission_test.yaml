@@ -40,6 +40,19 @@ principals:
     attr:
       scopeNodes: ["groupe"]
       brands: []
+  # Realm commun : un compte peut cumuler un rôle Academy et un rôle de filiale.
+  directeur_centre_et_filiale:
+    id: u_cumul
+    roles: ["center_director", "branch_director"]
+    attr:
+      scopeNodes: ["groupe"]
+      brands: []
+  directeur_filiale_et_formateur:
+    id: u_cumul_fil
+    roles: ["branch_director", "trainer"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+      brands: []
 
 resources:
   fiche_douala:
@@ -124,7 +137,30 @@ tests:
         actions:
           view: EFFECT_ALLOW
 
+  - name: un role Academy cumule avec un role de filiale garde la validation
+    input:
+      principals: ["directeur_centre_et_filiale"]
+      resources: ["fiche_douala", "fiche_abidjan"]
+      actions: ["validate", "reopen"]
+    expected:
+      - principal: directeur_centre_et_filiale
+        resource: fiche_douala
+        actions: { validate: EFFECT_ALLOW, reopen: EFFECT_ALLOW }
+      - principal: directeur_centre_et_filiale
+        resource: fiche_abidjan
+        actions: { validate: EFFECT_ALLOW, reopen: EFFECT_ALLOW }
+
   # ── négatifs — le cœur de la règle ─────────────────────────────────────────
+  - name: NEGATIF deux roles hors Academy cumules ne valident pas
+    input:
+      principals: ["directeur_filiale_et_formateur"]
+      resources: ["fiche_douala"]
+      actions: ["validate", "reopen"]
+    expected:
+      - principal: directeur_filiale_et_formateur
+        resource: fiche_douala
+        actions: { validate: EFFECT_DENY, reopen: EFFECT_DENY }
+
   - name: NEGATIF le directeur de filiale ne valide PAS sa propre filiale
     input:
       principals: ["directeur_filiale_cmr"]

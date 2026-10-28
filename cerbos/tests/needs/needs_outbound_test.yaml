@@ -45,6 +45,17 @@ principals:
     roles: ["group_admin"]
     attr:
       scopeNodes: ["groupe"]
+  # Realm commun : rôles cumulés.
+  assistante_et_formatrice:
+    id: u_cumul
+    roles: ["center_assistant", "trainer"]
+    attr:
+      scopeNodes: ["groupe"]
+  directeur_filiale_et_apprenant:
+    id: u_cumul_fil
+    roles: ["branch_director", "learner"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
 
 resources:
   confirmation_en_attente:
@@ -125,6 +136,26 @@ tests:
           view: EFFECT_DENY
           approve: EFFECT_DENY
           send: EFFECT_DENY
+
+  - name: un role Academy cumule avec formateur garde l envoi
+    input:
+      principals: ["assistante_et_formatrice"]
+      resources: ["confirmation_en_attente"]
+      actions: ["approve", "send"]
+    expected:
+      - principal: assistante_et_formatrice
+        resource: confirmation_en_attente
+        actions: { approve: EFFECT_ALLOW, send: EFFECT_ALLOW }
+
+  - name: NEGATIF deux roles hors Academy cumules n envoient pas
+    input:
+      principals: ["directeur_filiale_et_apprenant"]
+      resources: ["confirmation_en_attente"]
+      actions: ["view", "approve", "send"]
+    expected:
+      - principal: directeur_filiale_et_apprenant
+        resource: confirmation_en_attente
+        actions: { view: EFFECT_DENY, approve: EFFECT_DENY, send: EFFECT_DENY }
 
   - name: NEGATIF meme l admin groupe ne fait pas partir un email de campagne
     input:

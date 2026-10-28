@@ -76,18 +76,19 @@ services:
     mem_limit: 256m
     restart: unless-stopped
     image: ghcr.io/cerbos/cerbos:0.40.0
-    command: ["server", "--config=/config/cerbos.yaml"]
+    command: ["server", "--config=/config/config.yaml"]
     environment:
       # Cerbos remonte une telemetrie anonyme par defaut. Un PDP qui emet vers
       # l'exterieur n'a pas sa place sur un reseau d'entreprise.
       CERBOS_NO_TELEMETRY: "1"
     volumes:
-      - ./cerbos/policies:/policies:ro
-      - ./cerbos/cerbos.yaml:/config/cerbos.yaml:ro
+      # Bundle commun de la plateforme.
+      - ../cerbos/policies:/policies:ro
+      - ../cerbos/config.yaml:/config/config.yaml:ro
       # Le journal d'audit du PDP survit au redemarrage du conteneur.
-      - needs-cerbos-audit:/audit
+      - needs-cerbos-audit:/tmp/cerbos
     healthcheck:
-      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/cerbos.yaml"]
+      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/config.yaml"]
       # 10 s -> 30 s : pics mesures jusqu'a 50 % de CPU pour une sonde.
       interval: 30s
       timeout: 5s
