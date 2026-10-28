@@ -27,6 +27,8 @@ services:
       MAIL_DB_NAME: ${DB_NAME:-cfao_mail}
       MAIL_DB_USER: ${DB_USER:-cfao_mail}
       MAIL_DB_PASSWORD: ${DB_PASSWORD}
+      # Valeur du shell (deploy.ps1) prioritaire sur .env.
+      MAIL_PUBLIC_BASE_URL: ${MAIL_PUBLIC_BASE_URL:-}
     ports:
       - "127.0.0.1:${API_PORT:-5180}:5180"
     depends_on:
@@ -49,6 +51,7 @@ services:
       MAIL_DB_NAME: ${DB_NAME:-cfao_mail}
       MAIL_DB_USER: ${DB_USER:-cfao_mail}
       MAIL_DB_PASSWORD: ${DB_PASSWORD}
+      MAIL_PUBLIC_BASE_URL: ${MAIL_PUBLIC_BASE_URL:-}
     command: ["python", "manage.py", "qcluster"]
     depends_on:
       mail-db: { condition: service_healthy }
