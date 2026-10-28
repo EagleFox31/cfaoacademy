@@ -128,11 +128,20 @@ un lien `https://academy.example/...` → 201 puis `SENT` ; le même envoi vers 
 
 Le healthcheck du worker reste `os.kill(1, 0)`. La preuve de consommation est le passage à `SENT` et la ligne `[mail]` ci-dessus, pas le healthcheck.
 
-## Point 9 — filtre CI, non observé sur GitHub
+## Point 9 — filtre CI observé sur GitHub (28/10)
 
-Aucune PR n'a été poussée. On n'a donc pas vu un job `mail` skipped sur un diff `frontend/`
-ni un job `mail` lancé sur un diff `cfao-academy-mail/`.
-Le seul contrôle exécuté est `test_mail_ci_job_is_path_filtered`, qui lit `.github/workflows/ci.yml`.
+Premier passage : le job `Chemins touchés` échouait sur les deux PR (`Resource not accessible by integration`).
+`paths-filter` lit les fichiers de la PR via l'API, et le workflow n'accordait que `contents: read`.
+Correctif : `pull-requests: read` sur le job `changes` (commit `43ada54`).
+
+Après correctif :
+
+| PR | Diff | `Chemins touchés` | `cfao-academy-mail (Django · pytest)` |
+|----|------|-------------------|----------------------------------------|
+| [#21](https://github.com/EagleFox31/cfaoacademy/pull/21) | `cfao-academy-mail/`, `ci.yml`, … | pass | **pass** (run `40648152084`) |
+| [#22](https://github.com/EagleFox31/cfaoacademy/pull/22) | `frontend/README.md` seul | pass | **skipping** (run `40648175262`) |
+
+Les 11 jobs de #21 sont verts. #22 est une PR de contrôle, fermée sans fusion.
 
 ## Périmètre couvert au 27 octobre 2026
 
@@ -147,10 +156,9 @@ Le seul contrôle exécuté est `test_mail_ci_job_is_path_filtered`, qui lit `.g
 ## NON couvert
 
 1. `make test-mail` en tant que commande (binaire absent).
-2. Skip et run GitHub du job `mail` sur deux PR.
-3. Réponse HTTP live du gateway (403 sur `messages/`, healthz et contrat proxifiés).
-4. Clients HTTP needs, rapports, core, operations. Pas de Pact. Pas de Playwright. Pas de Cerbos sur cet enqueue (clé service, pas une policy).
-5. Deux inserts concurrents réels : le test simule la course (lecture préalable aveugle, puis `IntegrityError` → 200), il ne lance pas deux processus.
+2. Réponse HTTP live du gateway (403 sur `messages/`, healthz et contrat proxifiés).
+3. Clients HTTP needs, rapports, core, operations. Pas de Pact. Pas de Playwright. Pas de Cerbos sur cet enqueue (clé service, pas une policy).
+4. Deux inserts concurrents réels : le test simule la course (lecture préalable aveugle, puis `IntegrityError` → 200), il ne lance pas deux processus.
 
 ## Definition of Done RAIDER
 
@@ -159,8 +167,8 @@ Le seul contrôle exécuté est `test_mail_ci_job_is_path_filtered`, qui lit `.g
 - [x] **Idempotent** — contrainte partielle + `IntegrityError` → ligne existante. Non prouvé avec deux workers Docker.
 - [x] **Durable** — 27 tests passés le 27/10, ancienne suite comprise (enqueue, layout, clé, compte rendu incomplet, contrat généré).
 - [x] **Failure memory** — entrées du 27/10 dans `docs/engineering/lessons-learned.md`. Échecs de commandes dans `docs/error_logs.md`. L'entrée du 22/10 n'a pas été réécrite.
-- [ ] **Engineering-grade** — tests, durcissement et smoke Docker (`APPROVED` puis `SENT`, backend console) sont observés. Le filtre CI sur GitHub ne l'est pas.
-- [ ] **Scoped execution** — le `if` du job `mail` est dans le workflow et relu par un test de fichier. Les deux résultats GitHub demandés par le brief ne sont pas collés.
+- [x] **Engineering-grade** — tests, durcissement, smoke Docker (`APPROVED` puis `SENT`, backend console) et filtre CI sur GitHub sont observés.
+- [x] **Scoped execution** — job `mail` lancé sur #21, sauté sur #22 (voir point 9).
 - [x] **Reuse-first** — file django-q2 et modèle outbound repris de needs. Filtre CI : `dorny/paths-filter` (Adopt). Pas de script de filtre maison.
 - [x] **Retroactive** — module ajouté à côté des apps existantes, sans reset. Exception : le compose racine exige le réseau externe `cfao-academy-mail_default`.
 - [x] Exceptions écrites dans « NON couvert » et dans les cases ouvertes ci-dessus.

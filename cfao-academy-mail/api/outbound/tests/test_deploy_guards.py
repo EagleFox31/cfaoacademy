@@ -21,3 +21,6 @@ def test_mail_ci_job_is_path_filtered():
     assert "needs.changes.outputs.mail" in text
     assert "workflow_dispatch" in text
     assert "workflow_call" in text
+    # paths-filter lit les fichiers de la PR via l'API : sans ce droit, le job échoue sur GitHub.
+    changes_job = text.split("\n  changes:\n", 1)[1].split("\n  cerbos:\n", 1)[0]
+    assert "pull-requests: read" in changes_job
