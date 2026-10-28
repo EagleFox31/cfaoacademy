@@ -1,0 +1,36 @@
+# Smoke du realm commun : Keycloak éphémère (base H2 en mémoire) + keycloak-config-cli,
+# mêmes images que le compose racine. Utilisé en local et par le job CI `realm`.
+#   docker compose -f keycloak/tests/docker-compose.smoke.yml up -d keycloak
+#   docker compose -f keycloak/tests/docker-compose.smoke.yml run --rm config
+#   KC_URL=http://localhost:18080 pytest -q keycloak/tests/smoke_realm.py
+name: cfao-realm-smoke
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.5
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+      # Émetteur fixe : celui que voit le test depuis l'hôte.
+      KC_HOSTNAME: http://localhost:18080
+    ports: ["127.0.0.1:18080:8080"]
+    volumes:
+      - ../themes:/opt/keycloak/themes:ro
+
+  config:
+    image: adorsys/keycloak-config-cli:6.5.1-26.5.5
+    depends_on: [keycloak]
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_AVAILABILITYCHECK_ENABLED: "true"
+      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 180s
+      IMPORT_FILES_LOCATIONS: /config/*.yaml
+      IMPORT_VARSUBSTITUTION_ENABLED: "true"
+      CFAO_PORTAL_SECRET: ${CFAO_PORTAL_SECRET:-dev-portal-secret}
+      CFAO_SPA_ENABLED: ${CFAO_SPA_ENABLED:-true}
+    volumes:
+      - ../config:/config:ro

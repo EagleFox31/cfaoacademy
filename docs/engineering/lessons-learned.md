@@ -20,10 +20,22 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Une action CI qui appelle l'API GitHub reçoit le droit explicite dont elle a besoin | E (moindre privilège) | test du workflow (`pull-requests: read` sur `changes`) + run observé |
 | Une policy se relit pour le realm où elle tourne : ni `roles: ["*"]` en lecture large, ni DENY par rôle sans test de rôles cumulés | E (moindre privilège) | tests Cerbos « comptes externes » et « rôles cumulés », prouvés par mutation |
 | Un émetteur de jeton se compare à l'identique, contre une liste déclarée ; un hôte différent est une entrée de plus, jamais un suffixe ni une réécriture | E, R | `test_jwt_verifier.py` (même realm sur un autre hôte refusé), copies identiques vérifiées en CI |
+| Une audience vérifiée par une API est produite par un mapper du realm, et un secret de client n'a qu'une source | E, D | `keycloak/tests` (cohérence statique) + smoke sur Keycloak 26 (jetons réels, config dev et prod) |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-28 — Audience exigée qu'aucun mapper ne produisait, secret BFF en double (fédération L3)
+- **Contexte / symptôme** : le service des comptes rendus exigeait `aud = cfao-portal` dans le compose racine, mais le realm `cfao` n'avait aucun mapper d'audience : Keycloak met le client demandeur dans `azp`, pas dans `aud`. Le secret du client `cfao-portal` était écrit en dur dans le realm (`dev-portal-secret`) et, en parallèle, dans `.env` pour oauth2-proxy (`OAUTH2_PROXY_CLIENT_SECRET`), avec des valeurs différentes.
+- **Impact** : near miss. En mode intégré, les comptes rendus auraient refusé tous les jetons du portail, et le BFF n'aurait pas pu échanger son code dès que `.env` diffère du littéral. Rien ne le montrait avant un vrai login.
+- **Détection** : lot L3, en écrivant le smoke qui obtient de vrais jetons et les vérifie avec la lib commune.
+- **Cause racine** : realm et consommateurs (APIs, BFF) configurés à deux endroits sans test commun ; le realm n'était jamais appliqué ni interrogé en test.
+- **Correctif** : un client `cfao-<module>-api` bearer-only et un scope `aud-cfao-<module>-api` par API, portés par les clients qui l'appellent ; audiences explicites dans le compose (core, comptes rendus, operations). Secret du BFF et activation de `cfao-spa` injectés par substitution (`$(env:…)`), une seule source (`OAUTH2_PROXY_CLIENT_SECRET`).
+- **Prévention** : `keycloak/tests/test_realm_config.py` (rôles = catalogue core et ⊇ policies Cerbos, audiences, session 8 h, aucun secret littéral ; 4 mutations détectées) ; `smoke_realm.py` sur Keycloak 26 éphémère, en config dev puis prod (`CFAO_SPA_ENABLED=false`, secret injecté) ; job CI `realm`.
+- **Leçon généralisée** : un contrôle côté consommateur (audience, secret) n'existe que si le fournisseur le produit ; on le prouve par un échange réel, pas par la lecture des deux configurations.
+- **Catégorie** : Sécurité / authentification
+- **Récidive** : non
 
 ### 2026-10-28 — Trois vérifications de jeton divergentes, dont une acceptait tout hôte (fédération identité)
 - **Contexte / symptôme** : les modules core, needs, planning et comptes rendus vérifiaient chacun le JWT à leur façon. needs et planning acceptaient tout émetteur finissant par `/realms/<module>`. core réécrivait `keycloak:8080` en `localhost:8080`, et n'avait aucun contrôle d'émetteur sans `OIDC_ISSUER`. needs affichait en `print` l'émetteur et l'erreur de chaque refus.

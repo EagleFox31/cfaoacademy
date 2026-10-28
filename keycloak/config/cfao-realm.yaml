@@ -1,7 +1,9 @@
-# Realm CFAO Academy — config-as-code (story 00-6).
+# Realm CFAO Academy v2 — config-as-code (story 00-6, fédération L3).
+# Realm commun à tous les modules (core, needs, comptes rendus, planning).
 # Appliqué par keycloak-config-cli (idempotent, sans redémarrage, détection de dérive).
-# DEV : valeurs littérales non sensibles ci-dessous (secret BFF de dev, IdP placeholders).
-# PROD : remplacer ces littéraux par l'injection de secrets de l'environnement (Azure Key Vault).
+# Substitution activée : $(env:NOM:-défaut). Le défaut est la valeur de dev ;
+# en prod, l'environnement fournit les secrets (Key Vault) et CFAO_SPA_ENABLED=false.
+# Contrôlé par keycloak/tests (cohérence statique + smoke sur un vrai Keycloak).
 realm: cfao
 enabled: true
 displayName: CFAO Academy
@@ -10,19 +12,17 @@ registrationAllowed: false
 loginWithEmailAllowed: true
 duplicateEmailsAllowed: false
 resetPasswordAllowed: true
-# ── Durées de session (Phase 3 — Auth & Sessions) ──
+bruteForceProtected: true
+# ── Durées de session (décision fédération : session de 8 h) ──
 # JWT court : 15 minutes. La continuité est assurée par le Silent Refresh côté SPA.
 accessTokenLifespan: 900
-# SSO Session standard (journée de travail) :
+# Une journée de travail, ni plus ni moins : pas de « se souvenir de moi »
+# (postes partagés en atelier).
 ssoSessionIdleTimeout: 28800          # 8 heures
-ssoSessionMaxLifespan: 86400          # 24 heures
-# "Se souvenir de moi" natif Keycloak (postes personnels, pas les ateliers) :
-rememberMe: true
-ssoSessionIdleTimeoutRememberMe: 604800   # 7 jours
-ssoSessionMaxLifespanRememberMe: 604800   # 7 jours
-# Client session alignée sur la session SSO :
+ssoSessionMaxLifespan: 28800          # 8 heures
+rememberMe: false
 clientSessionIdleTimeout: 28800
-clientSessionMaxLifespan: 86400
+clientSessionMaxLifespan: 28800
 loginTheme: cfao-academy
 internationalizationEnabled: true
 supportedLocales:
@@ -57,6 +57,7 @@ roles:
     - { name: group_director,    description: Directeur Groupe }
     - { name: trainer,           description: Formateur certifié constructeur }
     - { name: center_assistant,  description: Assistante du centre }
+    - { name: training_coordinator, description: Coordinateur formation }
     - { name: center_director,   description: Directeur du centre de formation }
     - { name: content_editor,    description: Éditeur de contenu (Wagtail) }
     - { name: branch_admin,      description: Admin Filiale }
@@ -123,7 +124,58 @@ clientScopes:
           access.token.claim: "true"
           userinfo.token.claim: "true"
 
+  # ── Audiences : un scope par API. Le client qui appelle une API le porte en
+  # scope par défaut ; l'API n'accepte que les jetons dont `aud` la nomme.
+  - name: aud-cfao-core-api
+    description: Audience de l'API cfao-core
+    protocol: openid-connect
+    attributes: { include.in.token.scope: "false", display.on.consent.screen: "false" }
+    protocolMappers:
+      - name: aud-cfao-core-api
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config: { included.client.audience: cfao-core-api, access.token.claim: "true", id.token.claim: "false", introspection.token.claim: "true" }
+  - name: aud-cfao-needs-api
+    description: Audience de l'API cfao-needs
+    protocol: openid-connect
+    attributes: { include.in.token.scope: "false", display.on.consent.screen: "false" }
+    protocolMappers:
+      - name: aud-cfao-needs-api
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config: { included.client.audience: cfao-needs-api, access.token.claim: "true", id.token.claim: "false", introspection.token.claim: "true" }
+  - name: aud-cfao-cr-api
+    description: Audience de l'API des comptes rendus
+    protocol: openid-connect
+    attributes: { include.in.token.scope: "false", display.on.consent.screen: "false" }
+    protocolMappers:
+      - name: aud-cfao-cr-api
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config: { included.client.audience: cfao-cr-api, access.token.claim: "true", id.token.claim: "false", introspection.token.claim: "true" }
+  - name: aud-cfao-planning-api
+    description: Audience de l'API cfao-planning
+    protocol: openid-connect
+    attributes: { include.in.token.scope: "false", display.on.consent.screen: "false" }
+    protocolMappers:
+      - name: aud-cfao-planning-api
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config: { included.client.audience: cfao-planning-api, access.token.claim: "true", id.token.claim: "false", introspection.token.claim: "true" }
+  - name: aud-cfao-operations-api
+    description: Audience de l'API cfao-operations (Node)
+    protocol: openid-connect
+    attributes: { include.in.token.scope: "false", display.on.consent.screen: "false" }
+    protocolMappers:
+      - name: aud-cfao-operations-api
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config: { included.client.audience: cfao-operations-api, access.token.claim: "true", id.token.claim: "false", introspection.token.claim: "true" }
+
 # ── Clients OAuth ──
+# Convention : cfao-<module>-web (interface qui obtient le jeton) et
+# cfao-<module>-api (API qui le vérifie : bearer-only, aucun flux, sert de cible d'audience).
+# Le portail (BFF) et la SPA de dev servent core, comptes rendus, planning et operations.
 clients:
   # BFF (oauth2-proxy) — confidentiel. La SPA passe par lui ; elle ne voit jamais le JWT.
   - clientId: cfao-portal
@@ -134,7 +186,7 @@ clients:
     standardFlowEnabled: true
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
-    secret: "dev-portal-secret"  # DEV uniquement — prod via Key Vault
+    secret: "$(env:CFAO_PORTAL_SECRET:-dev-portal-secret)"  # défaut = dev ; prod via Key Vault
     redirectUris:
       - "http://localhost:8000/oauth2/callback"
     webOrigins:
@@ -146,11 +198,16 @@ clients:
       - roles
       - email
       - cfao-scope
+      - aud-cfao-core-api
+      - aud-cfao-cr-api
+      - aud-cfao-planning-api
+      - aud-cfao-operations-api
 
   # SPA dev (PKCE public) — pour obtenir un token côté dev et tester /me sans le BFF complet.
+  # Désactivée en prod (CFAO_SPA_ENABLED=false) : grant password et redirections larges.
   - clientId: cfao-spa
     name: CFAO Academy — SPA (dev, PKCE)
-    enabled: true
+    enabled: $(env:CFAO_SPA_ENABLED:-true)
     protocol: openid-connect
     publicClient: true
     standardFlowEnabled: true
@@ -173,6 +230,88 @@ clients:
       - roles
       - email
       - cfao-scope
+      - aud-cfao-core-api
+      - aud-cfao-cr-api
+      - aud-cfao-planning-api
+      - aud-cfao-operations-api
+
+  # SPA needs (PKCE public), successeur de `needs-web` du realm cfao-needs.
+  - clientId: cfao-needs-web
+    name: CFAO Needs — SPA (PKCE)
+    enabled: true
+    protocol: openid-connect
+    publicClient: true
+    standardFlowEnabled: true
+    directAccessGrantsEnabled: false
+    redirectUris:
+      - "http://localhost:8082/*"
+      - "http://localhost:5174/*"
+      - "http://127.0.0.1:8082/*"
+    webOrigins:
+      - "+"
+    attributes:
+      pkce.code.challenge.method: S256
+      post.logout.redirect.uris: "+"
+    defaultClientScopes:
+      - basic
+      - web-origins
+      - profile
+      - roles
+      - email
+      - cfao-scope
+      - aud-cfao-needs-api
+
+  # APIs : bearer-only. Aucun flux, aucun secret : elles ne demandent jamais de jeton.
+  - clientId: cfao-core-api
+    name: CFAO Academy — API core
+    enabled: true
+    protocol: openid-connect
+    bearerOnly: true
+    publicClient: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+  - clientId: cfao-needs-api
+    name: CFAO Needs — API
+    enabled: true
+    protocol: openid-connect
+    bearerOnly: true
+    publicClient: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+  - clientId: cfao-cr-api
+    name: CFAO Comptes rendus — API
+    enabled: true
+    protocol: openid-connect
+    bearerOnly: true
+    publicClient: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+  - clientId: cfao-planning-api
+    name: CFAO Planning — API
+    enabled: true
+    protocol: openid-connect
+    bearerOnly: true
+    publicClient: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+  - clientId: cfao-operations-api
+    name: CFAO Operations — API
+    enabled: true
+    protocol: openid-connect
+    bearerOnly: true
+    publicClient: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
 
 # ── Identity providers upstream (MS / Google) — désactivés tant que les secrets ne sont pas fournis ──
 identityProviders:

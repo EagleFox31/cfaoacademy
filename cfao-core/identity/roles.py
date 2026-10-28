@@ -15,6 +15,7 @@ ROLE_CATALOG = [
     {"code": "group_director", "description": "Directeur Groupe"},
     {"code": "trainer", "description": "Formateur certifié constructeur"},
     {"code": "center_assistant", "description": "Assistante du centre"},
+    {"code": "training_coordinator", "description": "Coordinateur formation"},
     {"code": "center_director", "description": "Directeur du centre de formation"},
     {"code": "content_editor", "description": "Éditeur de contenu (Wagtail)"},
     {"code": "branch_admin", "description": "Admin Filiale"},

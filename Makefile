@@ -2,7 +2,7 @@
 # Usage : make <cible>   (GNU Make ou compatible)
 COMPOSE = docker compose
 
-.PHONY: help dev-frontend dev-stack test test-cerbos test-core test-ops test-frontend test-rapports test-cr-web test-mail \
+.PHONY: help dev-frontend dev-stack test test-cerbos test-core test-ops test-frontend test-rapports test-cr-web test-mail test-realm smoke-realm \
         up down reset build ps logs seed migrate mm shell dtest dtest-cerbos cerbos-reload restart token \
         rapports-importer medacap-api-test medacap-api-deploy
 
@@ -49,11 +49,25 @@ dev-frontend:
 dev-stack:
 	$(COMPOSE) up --build
 
-test: test-cerbos test-core test-ops test-frontend test-rapports test-cr-web test-mail
+test: test-cerbos test-realm test-core test-ops test-frontend test-rapports test-cr-web test-mail
 
 test-cerbos:
 	MSYS_NO_PATHCONV=1 docker run --rm -v "$(CURDIR)/cerbos:/work" \
 		ghcr.io/cerbos/cerbos:0.40.0 compile --tests=/work/tests /work/policies
+
+# Realm commun : cohérence statique (rôles, audiences, session), sans Keycloak.
+test-realm:
+	cd keycloak && (test -x .venv/Scripts/python.exe || python -m venv .venv)
+	cd keycloak && .venv/Scripts/python.exe -m pip install -q -r tests/requirements.txt
+	cd keycloak && .venv/Scripts/python.exe -m pytest -q tests
+
+# Realm commun sur un vrai Keycloak 26 éphémère (port 18080), puis arrêt.
+SMOKE_REALM = docker compose -f keycloak/tests/docker-compose.smoke.yml
+smoke-realm: test-realm
+	$(SMOKE_REALM) up -d keycloak
+	$(SMOKE_REALM) run --rm config
+	KC_URL=http://localhost:18080 keycloak/.venv/Scripts/python.exe -m pytest -q keycloak/tests/smoke_realm.py
+	$(SMOKE_REALM) down
 
 test-core:
 	cd cfao-core && pip install -r requirements.txt && pytest -q
