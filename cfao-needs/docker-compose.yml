@@ -130,7 +130,7 @@ services:
       NEEDS_DB_PASSWORD: ${NEEDS_DB_PASSWORD:?}
       CERBOS_HTTP: http://needs-cerbos:3592
       OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://needs-keycloak:8080/realms/cfao-needs/protocol/openid-connect/certs}
-      OIDC_ISSUER: ${OIDC_ISSUER:-${NEEDS_PUBLIC_BASE_URL:-http://localhost:8080}/realms/cfao-needs}
+      OIDC_ISSUER: ${OIDC_ISSUER:-${NEEDS_PUBLIC_BASE_URL:-http://localhost:${NEEDS_PORT:-8080}}/realms/cfao-needs}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-needs-web}
       NEEDS_CORS_ORIGINS: ${NEEDS_CORS_ORIGINS:-http://localhost:8080}
       NEEDS_PUBLIC_BASE_URL: ${NEEDS_PUBLIC_BASE_URL:-http://localhost:8080}

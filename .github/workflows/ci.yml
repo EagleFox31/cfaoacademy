@@ -58,6 +58,23 @@ jobs:
             exit 1
           fi
 
+  auth-commune:
+    name: Vérification JWT commune (copies identiques)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Reference : cfao-core/core/auth/jwt_verifier.py et son test. Chaque module
+      # en garde une copie (modules detachables) : une copie divergente echoue ici.
+      - name: copies identiques a la reference
+        run: |
+          ecart=0
+          for ref in cfao-core/core/auth/jwt_verifier.py cfao-core/core/tests/test_jwt_verifier.py; do
+            for copie in $(find . -name "$(basename "$ref")" -not -path "./$ref" -not -path '*/node_modules/*'); do
+              cmp -s "$ref" "$copie" && echo "ok $copie" || { echo "::error file=$copie::differe de $ref"; ecart=1; }
+            done
+          done
+          exit $ecart
+
   core:
     name: cfao-core (Django · pytest)
     runs-on: ubuntu-latest

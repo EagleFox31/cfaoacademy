@@ -19,10 +19,22 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | La commande documentée doit exister sur la machine qui produit la preuve | A | `make` présent dans le PATH, sinon le trou est écrit |
 | Une action CI qui appelle l'API GitHub reçoit le droit explicite dont elle a besoin | E (moindre privilège) | test du workflow (`pull-requests: read` sur `changes`) + run observé |
 | Une policy se relit pour le realm où elle tourne : ni `roles: ["*"]` en lecture large, ni DENY par rôle sans test de rôles cumulés | E (moindre privilège) | tests Cerbos « comptes externes » et « rôles cumulés », prouvés par mutation |
+| Un émetteur de jeton se compare à l'identique, contre une liste déclarée ; un hôte différent est une entrée de plus, jamais un suffixe ni une réécriture | E, R | `test_jwt_verifier.py` (même realm sur un autre hôte refusé), copies identiques vérifiées en CI |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-28 — Trois vérifications de jeton divergentes, dont une acceptait tout hôte (fédération identité)
+- **Contexte / symptôme** : les modules core, needs, planning et comptes rendus vérifiaient chacun le JWT à leur façon. needs et planning acceptaient tout émetteur finissant par `/realms/<module>`. core réécrivait `keycloak:8080` en `localhost:8080`, et n'avait aucun contrôle d'émetteur sans `OIDC_ISSUER`. needs affichait en `print` l'émetteur et l'erreur de chaque refus.
+- **Impact** : near miss. Un émetteur sur n'importe quel hôte passait le contrôle d'émetteur ; seule la signature JWKS protégeait encore. Dans le realm commun, le suffixe aurait perdu tout sens.
+- **Détection** : lot L4 de la fédération, en relisant les quatre `oidc.py` côte à côte.
+- **Cause racine** : l'émetteur vu du navigateur diffère de celui vu du réseau Docker. Chaque module a contourné l'écart localement, faute d'un moyen de déclarer plusieurs émetteurs exacts. Dans needs, le défaut d'`OIDC_ISSUER` ignorait aussi `NEEDS_PORT`, que Keycloak utilise.
+- **Correctif** : `core/auth/jwt_verifier.py`, une seule implémentation copiée à l'identique dans chaque module. Elle compare l'émetteur exactement à la table `OIDC_TRUSTED_ISSUERS` (émetteur vers JWKS), plus le couple historique ; elle accepte une liste d'audiences, RS256 seul ; un refus produit un journal `info`, jamais de `print`. Le défaut d'`OIDC_ISSUER` de needs suit désormais `NEEDS_PORT`.
+- **Prévention** : `test_jwt_verifier.py` (21 cas, dont émetteur voisin, même realm sur un autre hôte, alg none, HS256, audience, expiration). La mutation « suffixe » et la mutation « audience non vérifiée » échouent. Le job CI `auth-commune` refuse toute copie divergente.
+- **Leçon généralisée** : un écart d'environnement (hôte, port) se déclare dans la configuration ; il ne s'absorbe pas en élargissant un contrôle de sécurité.
+- **Catégorie** : Sécurité / authentification
+- **Récidive** : non
 
 ### 2026-10-28 — Les policies needs supposaient un realm réservé au module (fédération Cerbos)
 - **Contexte / symptôme** : fusion des policies needs et comptes rendus dans le bundle commun `cerbos/`. La lecture des campagnes était ouverte par `roles: ["*"]`, et les verrous `validate` / `reopen` / envoi étaient des DENY par liste de rôles.

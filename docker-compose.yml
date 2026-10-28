@@ -130,6 +130,8 @@ services:
       OIDC_REALM: ${OIDC_REALM:-cfao}
       OIDC_JWKS_URL: http://keycloak:8080/realms/${OIDC_REALM:-cfao}/protocol/openid-connect/certs
       OIDC_ISSUER: http://keycloak:8080/realms/${OIDC_REALM:-cfao}
+      # Sans KC_HOSTNAME, l'émetteur suit l'hôte appelé : le navigateur voit localhost.
+      OIDC_TRUSTED_ISSUERS: ${OIDC_TRUSTED_ISSUERS:-http://localhost:8080/realms/${OIDC_REALM:-cfao}=http://keycloak:8080/realms/${OIDC_REALM:-cfao}/protocol/openid-connect/certs}
       # Dev uniquement : permet au seed de récupérer les vrais `sub` via l'API admin Keycloak.
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
@@ -226,6 +228,7 @@ services:
       PLATFORM_CORE_URL: http://core:8000
       OIDC_JWKS_URL: http://keycloak:8080/realms/${OIDC_REALM:-cfao}/protocol/openid-connect/certs
       OIDC_ISSUER: http://keycloak:8080/realms/${OIDC_REALM:-cfao}
+      OIDC_TRUSTED_ISSUERS: ${OIDC_TRUSTED_ISSUERS:-http://localhost:8080/realms/${OIDC_REALM:-cfao}=http://keycloak:8080/realms/${OIDC_REALM:-cfao}/protocol/openid-connect/certs}
       # Toujours verifiee par ce service : client Keycloak du portail par defaut.
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-cfao-portal}
     # Meme volume que l'ancien service : ses photos restent en place
