@@ -124,7 +124,8 @@ def test_spa_needs_vise_needs_seulement(jeton_needs):
 
 
 def test_session_bornee_a_huit_heures(jeton_portail):
-    assert 0 < jeton_portail["refresh_expires_in"] <= 8 * 3600
+    # Le refresh token suit l'inactivité (30 min), la session reste bornée à 8 h.
+    assert 0 < jeton_portail["refresh_expires_in"] <= 30 * 60
     assert jeton_portail["expires_in"] <= 900
 
 

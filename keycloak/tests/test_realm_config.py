@@ -18,6 +18,7 @@ CATALOGUE = RACINE / "cfao-core" / "identity" / "roles.py"
 
 API = ("core", "needs", "cr", "planning", "operations")
 SESSION_MAX = 8 * 3600
+INACTIVITE_MAX = 30 * 60  # ASVS niveau 2, 3.3.2
 # Scopes fournis par Keycloak lui-même (non déclarés dans le fichier).
 SCOPES_NATIFS = {"basic", "web-origins", "profile", "roles", "email", "acr", "address", "phone",
                  "offline_access", "microprofile-jwt", "organization"}
@@ -79,11 +80,13 @@ def test_tout_role_des_policies_existe_dans_le_realm(realm):
     assert not manquants, f"rôles attendus par Cerbos, absents du realm : {sorted(manquants)}"
 
 
-def test_session_de_huit_heures(realm):
+def test_session_huit_heures_et_inactivite_trente_minutes(realm):
     for cle in ("ssoSessionIdleTimeout", "ssoSessionMaxLifespan",
                 "clientSessionIdleTimeout", "clientSessionMaxLifespan"):
         assert realm[cle] <= SESSION_MAX, cle
     assert realm["ssoSessionMaxLifespan"] == SESSION_MAX
+    assert realm["ssoSessionIdleTimeout"] <= INACTIVITE_MAX
+    assert realm["clientSessionIdleTimeout"] <= INACTIVITE_MAX
     assert realm["rememberMe"] is False
     assert realm["bruteForceProtected"] is True
 

@@ -16,12 +16,13 @@ bruteForceProtected: true
 # ── Durées de session (décision fédération : session de 8 h) ──
 # JWT court : 15 minutes. La continuité est assurée par le Silent Refresh côté SPA.
 accessTokenLifespan: 900
-# Une journée de travail, ni plus ni moins : pas de « se souvenir de moi »
-# (postes partagés en atelier).
-ssoSessionIdleTimeout: 28800          # 8 heures
+# OWASP ASVS niveau 2 (3.3.2) : 8 h au plus, coupée après 30 min d'inactivité ;
+# le silent refresh garde la session tant que l'utilisateur travaille.
+# Pas de « se souvenir de moi » (postes partagés en atelier).
+ssoSessionIdleTimeout: 1800           # 30 minutes
 ssoSessionMaxLifespan: 28800          # 8 heures
 rememberMe: false
-clientSessionIdleTimeout: 28800
+clientSessionIdleTimeout: 1800
 clientSessionMaxLifespan: 28800
 loginTheme: cfao-academy
 internationalizationEnabled: true
