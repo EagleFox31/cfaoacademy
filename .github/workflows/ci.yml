@@ -18,6 +18,10 @@ jobs:
   changes:
     name: Chemins touchés
     runs-on: ubuntu-latest
+    # paths-filter lit la liste des fichiers de la PR via l'API.
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       mail: ${{ steps.filter.outputs.mail }}
     steps:
