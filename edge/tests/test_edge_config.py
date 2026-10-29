@@ -1,5 +1,6 @@
 """Cohérence statique de cfao-edge (sans docker) : routes, journaux, variables."""
 import re
+import subprocess
 from pathlib import Path
 
 import yaml
@@ -99,6 +100,14 @@ def test_variables_declarees_partout():
         assert compose[v].endswith(":-}"), v
     # Vide dans le modèle : une écoute LAN exige d'abord de libérer le port.
     assert re.search(r"^EDGE_LAN=$", exemple, re.M)
+
+
+def test_modeles_d_environnement_suivis_par_git():
+    # Le CI lit ces modèles : ignorés par `.env.*`, ils manqueraient au clone.
+    for modele in ("edge/.env.prod.example", "keycloak/.env.prod.example"):
+        suivi = subprocess.run(["git", "ls-files", "--error-unmatch", modele],
+                               cwd=RACINE, capture_output=True)
+        assert suivi.returncode == 0, f"{modele} absent du dépôt"
 
 
 def test_compose_durci():

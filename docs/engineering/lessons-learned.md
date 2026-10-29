@@ -24,10 +24,21 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Une donnée de dev (comptes, mots de passe) vit dans un emplacement que la prod n'importe pas, jamais derrière un simple commentaire | E, D | `test_realm_de_prod_sans_aucun_compte` + smoke prod sur Keycloak neuf (`DEMO_ATTENDUE=absente`) |
 | Une image publiée contient les octets testés ; les fins de ligne sont fixées par le dépôt, pas par le poste | D, A | `.gitattributes` `eol=lf` + `diff -r` export/testé avant push |
 | Un serveur qui calcule ses URL depuis la requête est servi sous le même chemin que son URL publique ; un proxy ne retire jamais son préfixe | E, R | `edge/tests/smoke_edge.py` : `token_endpoint` de la découverte commence par `<passerelle>/auth/`, même avec un Host falsifié |
+| Un fichier dont le CI dépend est prouvé présent dans le dépôt ; une exception se règle dans `.gitignore`, jamais par `git add -f` | D, A | `test_modeles_d_environnement_suivis_par_git` |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-29 — Modèle `.env.prod.example` de la passerelle ignoré par git, lu par le CI
+- **Contexte / symptôme** : `edge/.env.prod.example` existait sur le poste, mais `.gitignore` (`.env.*`) l'excluait. Le commit `8f688dd` ne le contenait pas. Le job CI `edge` le lit (`nginx -t --env-file`, tests statiques).
+- **Impact** : aucun, relevé avant push. Le CI aurait échoué sur un fichier introuvable, et la procédure de prod pointait vers un modèle absent du dépôt.
+- **Détection** : `git status` vide sur le fichier modifié, au commit suivant.
+- **Cause racine** : le modèle de Keycloak avait été ajouté de force (`git add -f`), sans règle durable. Le cas suivant est retombé sous la règle générale.
+- **Correctif** : exception `!.env.prod.example` dans `.gitignore`, fichier ajouté.
+- **Prévention** : `test_modeles_d_environnement_suivis_par_git` (`git ls-files --error-unmatch`), vu échouer avant l'ajout.
+- **Leçon généralisée** : un fichier dont le CI dépend est prouvé présent dans le dépôt, pas sur le poste. Une exception se règle dans `.gitignore`, jamais par `git add -f`.
+- **Catégorie** : dépôt / CI
 
 ### 2026-10-29 — Keycloak derrière un préfixe retiré par le proxy aurait annoncé de mauvaises URL (passerelle commune)
 - **Contexte / symptôme** : première idée pour publier le Keycloak commun sous `/auth` : le proxy retire `/auth` avant de relayer. Avec le backchannel dynamique, Keycloak calcule `token_endpoint`, `jwks_uri` et les redirections depuis le chemin reçu. La découverte aurait annoncé `https://<hôte>/realms/cfao/...`, chemin qui part vers l'ancien Keycloak de needs.
