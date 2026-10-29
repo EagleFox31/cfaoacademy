@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import PortalHeader from '../../components/PortalHeader'
@@ -16,7 +17,8 @@ export default function SuperAdminDashboard() {
   const { t } = useLocale('portal')
   const { t: td } = useLocale('delivery')
   const lms = LMS_BY_USER[user.id]
-  if (!lms) return null
+  // Compte technique du mode local (sans donnees de demo) : le journal d'erreurs.
+  if (!lms) return <Navigate to="/portail/journal-erreurs" replace />
 
   const { globalKpis, filialesStats, recentLogs } = lms
 
