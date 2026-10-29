@@ -37,6 +37,7 @@ const VISUEL_POLE = {
 const VISUEL_PRIORITE = {
   sessions: '/assets/img_cards/clients-carte.jpg',
   assistance: '/assets/img_cards/techniciens-carte.jpg',
+  journal: '/assets/img_cards/process_sav_equipment.png',
 }
 
 /** Visuel des cartes d'entree du module. */
@@ -93,6 +94,9 @@ export default function TrainerHome() {
 
   const sessions = useMemo(() => sessionsDuFormateur(user), [user])
   const aVenir = useMemo(() => sessionsAVenir(sessions), [sessions])
+  // Equipe technique : le journal des erreurs vit dans le module des
+  // comptes rendus, qui decide seul qui le lit (Cerbos).
+  const superadmin = (user?.roles ?? []).includes('superadmin')
 
   // Assistance aux techniciens : module a venir, rien n'attend encore.
   const assistanceEnAttente = 0
@@ -113,6 +117,12 @@ export default function TrainerHome() {
       metaVide: 'Aucune demande d’assistance en attente.',
       section: null, cta: 'Voir les demandes',
     },
+    ...(superadmin ? [{
+      id: 'journal', img: VISUEL_PRIORITE.journal, nombre: null,
+      enAttente: 'équipe technique', titre: 'Journal des erreurs',
+      meta: 'Les erreurs du service des comptes rendus.',
+      lien: '/portail/journal-erreurs', cta: 'Ouvrir le journal des erreurs',
+    }] : []),
   ]
 
   if (!user) return null
@@ -142,16 +152,17 @@ export default function TrainerHome() {
                     img={c.img}
                     kicker={
                       <span className={`portal-status-chip ${c.nombre ? 'progress' : 'done'}`}>
-                        {`${c.nombre} ${c.enAttente}`}
+                        {c.nombre === null ? c.enAttente : `${c.nombre} ${c.enAttente}`}
                       </span>
                     }
                     title={c.titre}
-                    meta={c.nombre ? c.meta : c.metaVide}
-                    cta={c.section ? c.cta : undefined}
+                    meta={c.nombre !== 0 ? c.meta : c.metaVide}
+                    cta={c.section || c.lien ? c.cta : undefined}
                     accentColor={c.nombre ? '#E3001B' : undefined}
-                    hoverHint={c.section ? c.cta : undefined}
-                    onClick={c.section ? () => scrollToPortalSection(c.section) : undefined}
-                    corner={Boolean(c.section)}
+                    hoverHint={c.section || c.lien ? c.cta : undefined}
+                    onClick={c.lien ? () => ouvrirModule(c.lien)
+                      : c.section ? () => scrollToPortalSection(c.section) : undefined}
+                    corner={Boolean(c.section || c.lien)}
                   />
                 </div>
               ))}

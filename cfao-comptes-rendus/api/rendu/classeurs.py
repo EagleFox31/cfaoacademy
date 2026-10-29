@@ -25,7 +25,6 @@ puis par cellule : `{'B2': 0.55, 'B3': 0.8}`.
 import hashlib
 import html
 import io
-import math
 import re
 import shutil
 import subprocess
@@ -166,70 +165,6 @@ def remplir_classeur(parts, cellules):
     parts['xl/worksheets/sheet1.xml'] = feuille.encode('utf-8')
     for nom in [n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)]:
         parts[nom] = _cache(parts[nom].decode('utf-8'), cellules).encode('utf-8')
-    return _etiquettes_anneau(parts, cellules)
-
-
-def _largeur_texte(lignes, corps_pt):
-    """La largeur, en points, de la plus longue ligne en Calibri gras."""
-    from PIL import ImageFont
-    for nom in POLICES_ETIQUETTES:
-        try:
-            police = ImageFont.truetype(nom, 100)
-            break
-        except OSError:
-            continue
-    else:
-        return 0.55 * corps_pt * max(len(t) for t in lignes)
-    return max(police.getlength(t) for t in lignes) * corps_pt / 100
-
-
-def _etiquettes_anneau(parts, cellules):
-    """Les etiquettes de l'anneau a la place qu'elles ont dans l'apercu.
-
-    Excel place une etiquette par un decalage (`manualLayout`) depuis sa
-    place par defaut, le milieu de l'arc de la valeur : celle-ci bouge avec
-    la valeur. Le decalage du modele, garde tel quel, envoyait l'etiquette
-    sur l'anneau des que les valeurs changeaient (vu en rafraichissant
-    l'objet dans PowerPoint). Il est recalcule depuis `_disposition_anneau`,
-    la meme disposition que celle de l'apercu.
-    """
-    geo = _geometrie_anneau(parts)
-    nom = next((n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)
-                and b'<c:doughnutChart>' in parts[n]), None)
-    if not geo or not nom:
-        return parts
-    graphique = parts[nom].decode('utf-8')
-    series = re.findall(r'<c:ser>.*?</c:ser>', graphique, re.S)
-    valeurs = []
-    for ser in series:
-        ref = re.search(r'<c:val><c:numRef><c:f>([^<]*)</c:f>', ser)
-        premiere = (_plage(ref.group(1)) or [None])[0] if ref else None
-        v = cellules.get(premiere)
-        valeurs.append(None if v is None else float(v))
-    places = _disposition_anneau(geo, valeurs)
-    larg, haut = geo['cadre']
-    for k, (ser, place, info) in enumerate(zip(series, places, geo['series'])):
-        if not place:
-            continue
-        dx = (place['centre'][0] - place['defaut'][0]) / larg
-        dy = (place['centre'][1] - place['defaut'][1]) / haut
-        neuve = re.sub(
-            r'(<c:dLbl><c:idx val="0"/><c:layout><c:manualLayout>)<c:x val="[^"]+"/><c:y val="[^"]+"/>',
-            lambda m: f'{m.group(1)}<c:x val="{dx:.6g}"/><c:y val="{dy:.6g}"/>', ser, count=1)
-        if k:
-            # La boite du modele tient « l'accueil 88% » ; a 100 %, Excel
-            # l'abregerait (« l'accueil... »). Elargie d'autant, a peine : le
-            # nom entier ne doit pas tenir sur une ligne, coupee comme sur
-            # l'apercu.
-            mots = info['nom'].split()
-            fin = mots[-1] if mots else ''
-            facteur = (_largeur_texte([f'{fin} {round(valeurs[k] * 100)}%'], info['pt'])
-                       / _largeur_texte([f'{fin} 88%'], info['pt']))
-            neuve = re.sub(r'(<c15:layout><c:manualLayout><c:w val=")([^"]+)"',
-                           lambda m: f'{m.group(1)}{float(m.group(2)) * max(1.0, facteur):.6g}"',
-                           neuve, count=1)
-        graphique = graphique.replace(ser, neuve, 1)
-    parts[nom] = graphique.encode('utf-8')
     return parts
 
 
@@ -542,37 +477,17 @@ def _geometrie_anneau(parts):
         nom = re.search(r'<c:tx>.*?<c:v>([^<]*)</c:v>', ser, re.S)
         dec = re.search(r'<c:dLbl><c:idx val="0"/><c:layout><c:manualLayout>'
                         r'<c:x val="([^"]+)"/><c:y val="([^"]+)"/>', ser)
-        # Le corps du texte affiche est celui de ses morceaux (`a:rPr`),
-        # pas celui du style par defaut (`a:defRPr`), souvent plus grand.
-        etiquette = re.search(r'<c:dLbl>.*?</c:dLbl>', ser, re.S)
-        etiquette = etiquette.group(0) if etiquette else ''
-        corps = (re.search(r'<a:rPr [^>]*sz="(\d+)"', etiquette)
-                 or re.search(r'sz="(\d+)"', etiquette))
-        boite = re.search(r'<c:dLbl><c:idx val="0"/>.*?<c15:layout><c:manualLayout>'
-                          r'<c:w val="([^"]+)"/><c:h val="([^"]+)"/>', ser, re.S)
+        corps = re.search(r'<c:dLbl>.*?sz="(\d+)"', ser, re.S)
         series.append({
-            'boite': tuple(map(float, boite.groups())) if boite else None,
             'nom': html.unescape(nom.group(1)) if nom else '',
             'dx': float(dec.group(1)) if dec else 0.0,
             'dy': float(dec.group(2)) if dec else 0.0,
             'pt': int(corps.group(1)) / 100 if corps else 16.0,
         })
-    x0, y0, largeur, hauteur = _cadre_graphique(parts, dessin)
+    _, _, largeur, hauteur = _cadre_graphique(parts, dessin)
     if not largeur or not hauteur:
         return None
-    # L'objet OLE ne montre que sa zone `oleSize` : la part du graphique
-    # qui deborde de ses colonnes ou de ses lignes reste cachee.
-    visible = (largeur, hauteur)
-    zone_ole = re.search(r'<oleSize ref="[A-Z]+\d+:([A-Z]+)(\d+)"',
-                         parts.get('xl/workbook.xml', b'').decode('utf-8'))
-    if zone_ole:
-        col = 0
-        for c in zone_ole.group(1):
-            col = col * 26 + ord(c) - 64
-        xd, yb = _point_feuille(parts, col, 0, int(zone_ole.group(2)), 0)
-        visible = (min(largeur, xd - x0), min(hauteur, yb - y0))
     return {
-        'visible': visible,
         'trou': int(trou.group(1)) / 100 if trou else 0.5,
         'zone': {k: float(v) for k, v in zone.items()} or {'x': 0, 'y': 0, 'w': 1, 'h': 1},
         'cadre': (largeur, hauteur),
@@ -580,15 +495,7 @@ def _geometrie_anneau(parts):
     }
 
 
-# Polices des etiquettes de l'anneau, dans l'ordre d'essai.
-POLICES_ETIQUETTES = (
-    'calibrib.ttf',
-    'Carlito-Bold.ttf',
-    '/usr/share/fonts/truetype/crosextra/Carlito-Bold.ttf',
-    '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
-)
-
-def _anneau_excel(image, geo, valeurs, centre=False):
+def _anneau_excel(image, geo, valeurs):
     """Redonne a l'anneau rendu par LibreOffice la geometrie d'Excel.
 
     LibreOffice trace l'anneau juste (angles, couleurs) mais avec son
@@ -685,13 +592,13 @@ def _anneau_excel(image, geo, valeurs, centre=False):
     mesure = ImageDraw.Draw(image)
 
     def police_de(corps):
-        # Calibri gras sous Windows ; ailleurs Carlito, aux memes chasses.
-        # Jamais la police bitmap de Pillow : minuscule et sans accents.
-        for nom in POLICES_ETIQUETTES:
+        # Calibri gras sous Windows, Carlito gras (meme metrique) sous Linux :
+        # la police par defaut de Pillow ignore le corps et rend un texte minuscule.
+        for nom in ('calibrib.ttf', 'Carlito-Bold.ttf'):
             try:
                 return ImageFont.truetype(nom, corps)
             except OSError:
-                continue
+                pass
         return ImageFont.load_default(corps)
 
     def texte_de(serie, v):
@@ -718,27 +625,47 @@ def _anneau_excel(image, geo, valeurs, centre=False):
             police, lw, lh = bloc(texte, corps)
         angle = math.radians(float(v or 0) * 180)
         dirx, diry = math.sin(angle), -math.cos(angle)
-        # Droit, du bord de la boite au milieu de l'anneau, dans l'axe du rayon.
+        # Sortie du rayon par le bord de la boite, jusqu'au milieu de l'anneau.
+        t = min(lw / 2 / abs(dirx) if abs(dirx) > 1e-6 else math.inf,
+                lh / 2 / abs(diry) if abs(diry) > 1e-6 else math.inf) + 0.04 * rayon
         rm = trou_xl + 0.5 * ep_xl
-        trait = _trait_rayon((cx, cy), (lw / 2, lh / 2), (cx + dirx * rm, cy + diry * rm), rayon)
+        trait = [(cx + dirx * t, cy + diry * t), (cx + dirx * rm, cy + diry * rm)] \
+            if t < trou_xl - 0.04 * rayon and v is not None else []
         etiquettes.append((texte, police, lh, cx, cy, trait))
     if len(series) > 1 and series[1][1] is not None:
         serie, v = series[1]
         texte = texte_de(serie, v)
         police, lw, lh = bloc(texte, max(10, round(serie['pt'] * pt)))
-        # La place et le trait de l'objet Excel (`_disposition_anneau`),
-        # ramenes de ses EMU aux pixels de l'image.
-        place = _disposition_anneau(geo, list(valeurs))[1]
-        z = geo['zone']
-        cx_e = (z['x'] + z['w'] / 2) * larg_emu
-        cy_e = (z['y'] + z['h'] / 2) * haut_emu
-        echelle = rayon / (1.015 * min(z['w'] * larg_emu, z['h'] * haut_emu) / 2)
-
-        def en_pixels(x, y):
-            return cx + (x - cx_e) * echelle, cy + (y - cy_e) * echelle
-        ex, ey = en_pixels(*place['centre'])
-        trait = [en_pixels(x, y) for x, y in place['trait']]
+        angle = math.radians(float(v or 0) * 180)
+        dirx, diry = math.sin(angle), -math.cos(angle)
+        rm = trou_xl + (1 + 0.5) * ep_xl if n > 1 else rayon - ep_xl / 2
+        couloir = rayon * 1.16                    # hors du cercle
+        ex = cx + couloir + rayon * 0.08 + lw / 2
+        ey = cy + rayon * 0.62
+        # Trois traits au plus : le trait sort de l'anneau dans l'axe du rayon
+        # (centre -> bout de l'arc), file a l'horizontale jusqu'a l'aplomb de
+        # l'etiquette, puis descend (ou monte) sur son milieu. A hauteur de
+        # l'etiquette, il la rejoint directement par la gauche.
+        # Sans valeur, pas d'arc a designer : l'etiquette reste seule.
+        sortie = rayon * 1.08
+        marge = rayon * 0.03
+        q = (cx + dirx * sortie, cy + diry * sortie)
+        if q[1] < ey - lh / 2 - marge:
+            fin = [(ex, q[1]), (ex, ey - lh / 2 - marge)]
+        elif q[1] > ey + lh / 2 + marge:
+            fin = [(ex, q[1]), (ex, ey + lh / 2 + marge)]
+        else:
+            # Etiquette legerement decalee : le trait arrive au milieu de sa gauche.
+            ey = q[1]
+            fin = [(ex - lw / 2 - marge, q[1])]
+        trait = [(cx + dirx * rm, cy + diry * rm), q] + fin if v is not None else []
         etiquettes.append((texte, police, lh, ex, ey, trait))
+
+    # Sur la fiche, l'anneau est sous le tableau (rien au-dessus de lui) ;
+    # en page 19 il est a cote.
+    haut_anneau = max(0, int(cy - rayon * 1.1))
+    sous_tableau = opaque[:haut_anneau, max(0, int(cx - rayon / 2)):int(cx + rayon / 2)].any()
+    largeur_tableau = image.width
 
     # La toile s'agrandit si une etiquette deborde de l'image rognee.
     def boite(e):
@@ -753,28 +680,19 @@ def _anneau_excel(image, geo, valeurs, centre=False):
     t_ = min([0] + [b[1] for b in boites])
     d = max([image.width] + [b[2] for b in boites])
     f = max([image.height] + [b[3] for b in boites])
-    # `centre` : l'objet est centre sous le titre de sa colonne (page 27),
-    # la toile grandit autant des deux cotes pour que le contenu le reste.
-    # Ailleurs, elle ne grandit que du cote des etiquettes.
-    if centre:
-        marge_h = max(-int(math.floor(g)), int(math.ceil(d)) - image.width)
-        dx0, largeur = marge_h, image.width + 2 * marge_h
-    else:
-        dx0 = -int(math.floor(g))
-        largeur = int(math.ceil(d)) + dx0
-    dy0 = -int(math.floor(t_))
-    if largeur != image.width or dy0 or f > image.height:
-        toile = Image.new('RGBA', (largeur, int(math.ceil(f)) + dy0),
+    dx0, dy0 = -int(math.floor(g)), -int(math.floor(t_))
+    if dx0 or dy0 or d > image.width or f > image.height:
+        toile = Image.new('RGBA', (int(math.ceil(d)) + dx0, int(math.ceil(f)) + dy0),
                           (255, 255, 255, 0))
         toile.paste(image, (dx0, dy0))
         image = toile
     dessin = ImageDraw.Draw(image)
-    epaisseur = max(1, round(rayon / 180))
+    # Sur la fiche, le graphique est reduit ensuite : trait plus epais.
+    epaisseur = max(2, round(rayon / 90)) if sous_tableau else max(1, round(rayon / 180))
     gris = (89, 89, 89, 255)
     for texte, police, lh, ex, ey, trait in etiquettes:
         if trait:
-            # Au pixel entier : l'horizontale et la verticale restent nettes.
-            dessin.line([(round(x + dx0), round(y + dy0)) for x, y in trait], fill=gris,
+            dessin.line([(x + dx0, y + dy0) for x, y in trait], fill=gris,
                         width=epaisseur, joint='curve')
         pas = lh / len(texte)
         y = ey + dy0 - lh / 2
@@ -782,6 +700,21 @@ def _anneau_excel(image, geo, valeurs, centre=False):
             dessin.text((ex + dx0 - dessin.textlength(ligne, font=police) / 2, y), ligne,
                         font=police, fill=(0, 0, 0, 255))
             y += pas
+    if sous_tableau and image.width > largeur_tableau:
+        # Le graphique et ses etiquettes, dessines comme dans Excel, sont
+        # reduits ensemble a la largeur du tableau et centres dessous :
+        # elargir l'image reduirait et decalerait le tableau sur la page.
+        coupe = haut_anneau + dy0
+        bas_ = image.crop((0, coupe, image.width, image.height))
+        g_, _, d_, _ = bas_.getbbox() or (0, 0, bas_.width, 0)
+        graphique = bas_.crop((g_, 0, d_, bas_.height))
+        f_ = min(1, largeur_tableau / graphique.width)
+        graphique = graphique.resize((max(1, round(graphique.width * f_)),
+                                      max(1, round(graphique.height * f_))), Image.LANCZOS)
+        toile = Image.new('RGBA', (largeur_tableau, coupe + graphique.height), (255, 255, 255, 0))
+        toile.paste(image.crop((dx0, 0, dx0 + largeur_tableau, coupe)), (0, 0))
+        toile.alpha_composite(graphique, ((largeur_tableau - graphique.width) // 2, coupe))
+        image, dx0 = toile, 0
     # Ou l'image d'entree a atterri sur la toile agrandie.
     image.info['decalage'] = (dx0, dy0)
     return image
@@ -799,7 +732,7 @@ def _sans_blanc(image):
     return image
 
 
-def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None, centre=False):
+def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
     """L'image rognee a son contenu, le blanc rendu transparent.
 
     L'EMF du modele n'a pas de fond : pose sur la moitie grise de la
@@ -816,7 +749,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None, centre=False):
     if boite:
         image = image.crop(boite)
     if anneau:
-        image = _anneau_excel(image, *anneau, centre=centre)
+        image = _anneau_excel(image, *anneau)
     if cadre:
         largeur, hauteur, ox, oy = cadre[4:]
         dx, dy = image.info.get('decalage', (0, 0))
@@ -833,8 +766,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None, centre=False):
         cible_l, cible_h = max(l, round(h * ratio)), max(h, round(l / ratio))
         if (cible_l, cible_h) != (l, h):
             cadre = Image.new('RGBA', (cible_l, cible_h), (255, 255, 255, 0))
-            # `centre` : calee en haut, comme Excel part de la ligne 1 de sa zone.
-            cadre.paste(image, ((cible_l - l) // 2, 0 if centre else (cible_h - h) // 2))
+            cadre.paste(image, ((cible_l - l) // 2, (cible_h - h) // 2))
             image = cadre
     # optimize=True quadruple le temps pour un fichier a peine plus petit.
     sortie = io.BytesIO()
@@ -843,10 +775,10 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None, centre=False):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 13
+VERSION_IMAGES = 10
 
 
-def _cadre_de(rendu, reference, centre=False):
+def _cadre_de(rendu, reference):
     """Le cadre de l'image complete : sa boite sur la page rendue, puis la
     taille de sa toile et la place de la boite sur celle-ci, une fois les
     etiquettes de l'anneau posees (celle de l'accueil l'elargit)."""
@@ -858,7 +790,7 @@ def _cadre_de(rendu, reference, centre=False):
     geo = _geometrie_anneau(_lire(reference))
     if geo:
         taux = [NOTES_DE_REFERENCE[ref] for ref in ANNEAUX['satisfaction']]
-        image = _anneau_excel(image, geo, taux, centre=centre)
+        image = _anneau_excel(image, geo, taux)
     return (*boite, image.width, image.height, *image.info.get('decalage', (0, 0)))
 
 
@@ -877,15 +809,14 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
     Tous les classeurs a rendre passent dans un seul appel a LibreOffice :
     c'est son lancement qui coute.
 
-    `legendes[cle]` : `(nature, cellules, ratio[, reference[, centre]])`. La
-    reference est un classeur dont l'image donne le cadre de celle-ci ;
-    `centre` dit que l'objet est centre sous un titre (voir `_rogner`).
+    `legendes[cle]` : `(nature, cellules, ratio[, reference])`. La
+    reference est un classeur dont l'image donne le cadre de celle-ci.
     """
     dossier = Path(cache) / 'classeurs'
     dossier.mkdir(parents=True, exist_ok=True)
 
     def legende(cle):
-        return (tuple((legendes or {}).get(cle, ())) + (None,) * 5)[:5]
+        return (tuple((legendes or {}).get(cle, ())) + (None,) * 4)[:4]
 
     def signe(brut):
         return hashlib.sha1(brut).hexdigest()[:16]
@@ -894,28 +825,25 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
     for cle, brut in classeurs_bruts.items():
         # Le meme classeur peut tenir dans deux cadres de proportions
         # differentes : l'image en depend aussi.
-        _, _, ratio, reference, centre = legende(cle)
-        empreinte = hashlib.sha1(brut + f'|v{VERSION_IMAGES}|{ratio}|{bool(centre)}'
-                                 .encode()).hexdigest()[:16]
+        _, _, ratio, reference = legende(cle)
+        empreinte = hashlib.sha1(brut + f'|v{VERSION_IMAGES}|{ratio}'.encode()).hexdigest()[:16]
         chemin = dossier / f'{empreinte}.png'
         if chemin.exists():
             images[cle] = chemin.read_bytes()
             continue
         a_faire[cle] = (empreinte, signe(brut), brut)
         if reference:
-            cle_cadre = (signe(reference), bool(centre))
-            cadre = dossier / f'{cle_cadre[0]}-{int(cle_cadre[1])}-v{VERSION_IMAGES}.cadre'
+            cadre = dossier / f'{signe(reference)}-v{VERSION_IMAGES}.cadre'
             if cadre.exists():
-                cadres[cle_cadre] = tuple(map(int, cadre.read_text().split()))
+                cadres[signe(reference)] = tuple(map(int, cadre.read_text().split()))
             else:
-                references[cle_cadre] = reference
+                references[signe(reference)] = reference
     if not a_faire:
         return images
     travail = Path(tempfile.mkdtemp(prefix='cr-classeurs-'))
     try:
         # Deux classeurs identiques ne passent qu'une fois par LibreOffice.
-        uniques = ({source: brut for _, source, brut in a_faire.values()}
-                   | {source: brut for (source, _), brut in references.items()})
+        uniques = {source: brut for _, source, brut in a_faire.values()} | references
         for source, brut in uniques.items():
             (travail / f'{source}.xlsx').write_bytes(_ecrire(_pour_rendu(_lire(brut))))
         with LIBREOFFICE:
@@ -924,14 +852,13 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                  '--convert-to', 'pdf', '--outdir', str(travail)]
                 + [str(travail / f'{s}.xlsx') for s in uniques],
                 capture_output=True, timeout=120)
-        for (source, centre), reference in references.items():
+        for source, reference in references.items():
             pdf = travail / f'{source}.pdf'
-            cadre = _cadre_de(_page_rendue(pdf), reference, centre) if pdf.exists() else None
+            cadre = _cadre_de(_page_rendue(pdf), reference) if pdf.exists() else None
             if cadre:
                 cadre = tuple(int(v) for v in cadre)
-                cadres[(source, centre)] = cadre
-                (dossier / f'{source}-{int(centre)}-v{VERSION_IMAGES}.cadre').write_text(
-                    ' '.join(map(str, cadre)))
+                cadres[source] = cadre
+                (dossier / f'{source}-v{VERSION_IMAGES}.cadre').write_text(' '.join(map(str, cadre)))
         # Une image a la fois, liberee aussitot : chacune pese une
         # dizaine de Mo une fois decodee, et la machine en a peu.
         source_vue, rendu = None, None
@@ -943,8 +870,7 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                     rendu = _page_rendue(pdf)
             if rendu is None:
                 continue
-            quoi, cellules, ratio, reference, centre = legende(cle)
-            centre = bool(centre)
+            quoi, cellules, ratio, reference = legende(cle)
             anneau = None
             taux = [(cellules or {}).get(ref) for ref in ANNEAUX.get(quoi, ())]
             # La serie d'une note absente a quitte le graphique : les taux
@@ -958,8 +884,8 @@ def rendre(classeurs_bruts, soffice, profil, cache, legendes=None):
                 geo = _geometrie_anneau(_lire(classeurs_bruts[cle]))
                 if geo:
                     anneau = (geo, taux)
-            cadre = cadres.get((signe(reference), centre)) if reference else None
-            image = _rogner(rendu, anneau, ratio, cadre, centre)
+            cadre = cadres.get(signe(reference)) if reference else None
+            image = _rogner(rendu, anneau, ratio, cadre)
             (dossier / f'{empreinte}.png').write_bytes(image)
             images[cle] = image
     finally:
@@ -1047,194 +973,6 @@ def _sans_moitie_absente(parts, valeurs):
     return parts
 
 
-def _trait_rayon(centre, demi, point, rayon):
-    """Le trait de l'etiquette du centre : droit, du bord de sa boite au point.
-
-    Il suit le rayon ; rien s'il n'a pas la place de sortir de la boite.
-    """
-    (cx, cy), (dw, dh), (px, py) = centre, demi, point
-    long = math.hypot(px - cx, py - cy)
-    if long < 1e-9:
-        return []
-    ux, uy = (px - cx) / long, (py - cy) / long
-    t = min(dw / abs(ux) if abs(ux) > 1e-6 else math.inf,
-            dh / abs(uy) if abs(uy) > 1e-6 else math.inf) + 0.04 * rayon
-    return [(cx + ux * t, cy + uy * t), (px, py)] if t < long - 0.05 * rayon else []
-
-
-def _trait_accueil(centre, rayon, point, texte, cadre):
-    """Place de l'etiquette de l'anneau exterieur et son trait de rappel.
-
-    Deux segments perpendiculaires : du point (milieu de la partie remplie)
-    a l'horizontale jusqu'a l'aplomb du centre de l'etiquette, puis a la
-    verticale jusqu'au bord de son texte. L'etiquette se met donc a droite
-    du cercle, au-dessous du point (ou au-dessus, si la place manque), assez
-    loin pour que le segment vertical se voie. Jamais de segment penche ni
-    de traversee de l'anneau : le point est sur la moitie droite (milieu de
-    l'arc, entre 0 et 180 degres) et chaque segment reste hors du cercle.
-    `texte` : la taille du texte de l'etiquette, sans marge.
-    """
-    (cx, cy), (px, py), (tw, th), (larg, haut) = centre, point, texte, cadre
-    jeu, marge, pas = 0.06 * rayon, 0.03 * rayon, 0.14 * rayon
-    lw, lh = tw + 2 * marge, th + 2 * marge
-    bas_min, haut_max = lh / 2 + 0.01 * haut, haut - lh / 2 - 0.01 * haut
-
-    def hors_cercle(y0, y1):
-        # L'abscisse a partir de laquelle la bande [y0, y1] est hors du cercle.
-        d = 0.0 if y0 <= cy <= y1 else min(abs(y0 - cy), abs(y1 - cy))
-        return cx + math.sqrt(max(0.0, (rayon + jeu) ** 2 - d ** 2))
-
-    # Au plus pres du point d'abord, puis de plus en plus loin : plus bas
-    # (ou plus haut), le cercle se resserre et laisse la place a droite.
-    sens_prefere = 1 if py >= cy else -1
-    for sens in (sens_prefere, -sens_prefere):
-        ecart = pas + lh / 2
-        while True:
-            y = py + sens * ecart
-            if not bas_min <= y <= haut_max:
-                break
-            bord = y - sens * lh / 2  # haut (ou bas) de la boite de l'etiquette
-            gauche = max(hors_cercle(y - lh / 2, y + lh / 2),
-                         hors_cercle(min(py, bord), max(py, bord)) - lw / 2,
-                         px + 0.1 * rayon - lw / 2)
-            if gauche + lw <= larg * 0.99:
-                x = gauche + lw / 2
-                return (x, y), [(px, py), (x, py), (x, bord)]
-            ecart += 0.02 * rayon
-    # Pas de place au-dessus ni au-dessous : a la hauteur du point.
-    gauche = min(max(hors_cercle(py - lh / 2, py + lh / 2), px + jeu), larg * 0.99 - lw)
-    y = min(max(py, bas_min), haut_max)
-    return (gauche + lw / 2, y), [(px, py), (gauche, py)]
-
-
-def _disposition_anneau(geo, valeurs):
-    """Ou vont les etiquettes de l'anneau et leurs traits, en EMU du graphique.
-
-    Une seule disposition pour l'apercu (`_anneau_excel`) et pour l'objet
-    Excel (decalages des etiquettes, `_trait_de_rappel`) : rafraichi dans
-    PowerPoint, l'objet montre ce que montrait l'apercu. Par serie :
-    `defaut` (place d'Excel sans decalage, le milieu de l'arc), `centre`
-    et `boite` de l'etiquette (son texte, hors du centre), `trait` ; None
-    sans valeur.
-    """
-    larg, haut = geo['cadre']
-    z, n = geo['zone'], max(1, len(geo['series']))
-    # Excel trace l'anneau environ 1,5 % plus grand que sa zone de trace.
-    rayon = 1.015 * min(z['w'] * larg, z['h'] * haut) / 2
-    cx, cy = (z['x'] + z['w'] / 2) * larg, (z['y'] + z['h'] / 2) * haut
-    trou = geo['trou'] * rayon
-    ep = (rayon - trou) / n
-    places = []
-    for k, (serie, v) in enumerate(zip(geo['series'], valeurs)):
-        if v is None:
-            places.append(None)
-            continue
-        angle = float(v) * math.pi
-        rm = trou + (k + 0.5) * ep
-        point = (cx + math.sin(angle) * rm, cy - math.cos(angle) * rm)
-        mots = serie['nom'].split()
-        lignes = [' '.join(mots[:-1]), f"{mots[-1] if mots else ''} {round(float(v) * 100)}%"]
-        texte = (_largeur_texte(lignes, serie['pt']) * 12700 * 1.05,
-                 serie['pt'] * 1.22 * 2 * 12700)
-        if k == 0:
-            boite = ((serie['boite'][0] * larg, serie['boite'][1] * haut)
-                     if serie.get('boite') else texte)
-            centre = (cx, cy)
-            trait = _trait_rayon(centre, (boite[0] / 2, boite[1] / 2), point, rayon)
-        else:
-            boite = texte
-            centre, trait = _trait_accueil((cx, cy), rayon, point, texte,
-                                           geo.get('visible', (larg, haut)))
-        places.append({'defaut': point, 'centre': centre, 'boite': boite, 'trait': trait})
-    return places
-
-
-TRAIT_FORMES = 'xl/drawings/drawingTrait.xml'
-NS_A = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
-
-
-def _trait_de_rappel(parts, formes=True):
-    """Les traits de rappel de l'anneau, dessines dans le graphique Excel.
-
-    Le trait d'Excel est une ligne droite tiree ou il veut, penchee le plus
-    souvent ; on l'eteint et on pose a sa place des formes du graphique
-    (`userShapes`) : les traits de `_disposition_anneau`, ceux de l'apercu.
-    Rafraichi dans PowerPoint, l'objet les garde. Sans `formes`, le trait
-    d'Excel est seulement eteint : c'est le classeur que rend LibreOffice
-    pour l'apercu, ou `_anneau_excel` dessine les traits lui-meme (sinon
-    ils apparaissent en double, un peu decales).
-    """
-    geo = _geometrie_anneau(parts)
-    nom = next((n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)
-                and b'<c:doughnutChart>' in parts[n]), None)
-    if not geo or not nom or not geo['series']:
-        return parts
-    graphique = parts[nom].decode('utf-8')
-    valeurs = []
-    for ser in re.findall(r'<c:ser>.*?</c:ser>', graphique, re.S):
-        valeur = re.search(r'<c:val>.*?<c:pt idx="0"><c:v>([^<]+)</c:v>', ser, re.S)
-        try:
-            valeurs.append(float(valeur.group(1)) if valeur else None)
-        except ValueError:
-            valeurs.append(None)
-    traits = [p['trait'] for p in _disposition_anneau(geo, valeurs) if p and p['trait']]
-    graphique = graphique.replace('<c:showLeaderLines val="1"/>', '<c:showLeaderLines val="0"/>')
-    if not traits or not formes:
-        parts[nom] = graphique.encode('utf-8')
-        return parts
-    if '<c:userShapes ' not in graphique:
-        if 'xmlns:r=' not in re.search(r'<c:chartSpace[^>]*>', graphique).group(0):
-            graphique = graphique.replace(
-                '<c:chartSpace ', '<c:chartSpace xmlns:r="http://schemas.openxmlformats.org/'
-                'officeDocument/2006/relationships" ', 1)
-        graphique = graphique.replace('</c:chartSpace>',
-                                      '<c:userShapes r:id="rIdTrait"/></c:chartSpace>')
-        rels = nom.replace('charts/', 'charts/_rels/') + '.rels'
-        lien = ('<Relationship Id="rIdTrait" Type="http://schemas.openxmlformats.org/'
-                'officeDocument/2006/relationships/chartUserShapes" '
-                f'Target="../drawings/{TRAIT_FORMES.rsplit("/", 1)[1]}"/>')
-        if rels in parts:
-            parts[rels] = parts[rels].replace(b'</Relationships>',
-                                              lien.encode('utf-8') + b'</Relationships>')
-        else:
-            parts[rels] = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
-                           '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/'
-                           f'relationships">{lien}</Relationships>').encode('utf-8')
-        types = parts['[Content_Types].xml'].decode('utf-8')
-        if f'PartName="/{TRAIT_FORMES}"' not in types:
-            types = types.replace('</Types>', f'<Override PartName="/{TRAIT_FORMES}" ContentType='
-                                  '"application/vnd.openxmlformats-officedocument.drawingml.'
-                                  'chartshapes+xml"/></Types>')
-            parts['[Content_Types].xml'] = types.encode('utf-8')
-    parts[nom] = graphique.encode('utf-8')
-
-    larg, haut = geo['cadre']
-    formes = []
-    for i, points in enumerate(traits):
-        x0, x1 = min(x for x, _ in points), max(x for x, _ in points)
-        y0, y1 = min(y for _, y in points), max(y for _, y in points)
-        w, h = max(1, round(x1 - x0)), max(1, round(y1 - y0))
-        chemin = ''.join(
-            f'<a:{"moveTo" if j == 0 else "lnTo"}><a:pt x="{round(x - x0)}" y="{round(y - y0)}"/>'
-            f'</a:{"moveTo" if j == 0 else "lnTo"}>' for j, (x, y) in enumerate(points))
-        formes.append(
-            '<cdr:relSizeAnchor xmlns:cdr="http://schemas.openxmlformats.org/drawingml/2006/chartDrawing">'
-            f'<cdr:from><cdr:x>{x0 / larg:.6f}</cdr:x><cdr:y>{y0 / haut:.6f}</cdr:y></cdr:from>'
-            f'<cdr:to><cdr:x>{(x0 + w) / larg:.6f}</cdr:x><cdr:y>{(y0 + h) / haut:.6f}</cdr:y></cdr:to>'
-            f'<cdr:sp macro="" textlink=""><cdr:nvSpPr><cdr:cNvPr id="{i + 2}" name="Trait de rappel {i + 1}"/>'
-            '<cdr:cNvSpPr/></cdr:nvSpPr><cdr:spPr>'
-            '<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/>'
-            f'<a:pathLst><a:path w="{w}" h="{h}" fill="none">{chemin}</a:path></a:pathLst>'
-            '</a:custGeom><a:noFill/>'
-            '<a:ln w="9525"><a:solidFill><a:srgbClr val="595959"/></a:solidFill></a:ln>'
-            '</cdr:spPr></cdr:sp></cdr:relSizeAnchor>')
-    parts[TRAIT_FORMES] = (
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
-        f'<c:userShapes xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" {NS_A}>'
-        + ''.join(formes) + '</c:userShapes>').encode('utf-8')
-    return parts
-
-
 def _etiquette_au_centre(parts, graphique, v):
     """L'etiquette de l'anneau seul, au centre de son trou, comme sur l'image.
 
@@ -1278,28 +1016,6 @@ def rafraichir(contenus, slides, valeurs, soffice, profil, cache):
     rafraichir_pages(contenus, [(s, valeurs) for s in slides], soffice, profil, cache)
 
 
-def _cadre_a_la_zone_ole(objet):
-    """L'objet aux proportions de la zone qu'Excel dessine (`imgW`/`imgH`).
-
-    Rouvert, l'objet est redessine par Excel a ces proportions et
-    PowerPoint resserre son cadre en gardant le bord gauche : le contenu
-    glissait a gauche du titre de sa colonne (page 27). Le cadre les prend
-    d'emblee, a hauteur egale et au meme centre, sous le titre.
-    """
-    pos = re.search(r'<a:off x="(\d+)" y="(\d+)"/><a:ext cx="(\d+)" cy="(\d+)"/>', objet)
-    img = re.search(r'imgW="(\d+)" imgH="(\d+)"', objet)
-    if not pos or not img:
-        return objet
-    x, y, cx, cy = map(int, pos.groups())
-    largeur = round(cy * int(img.group(1)) / int(img.group(2)))
-    if abs(largeur - cx) <= 0.02 * cx:
-        return objet
-    # Le cadre est ecrit deux fois (l'objet et son image de secours) : les
-    # deux changent, sinon l'image s'etire dans l'ancien.
-    return objet.replace(pos.group(0), f'<a:off x="{x + (cx - largeur) // 2}" y="{y}"/>'
-                         f'<a:ext cx="{largeur}" cy="{cy}"/>')
-
-
 def rafraichir_pages(contenus, pages, soffice, profil, cache):
     """Comme `rafraichir`, chaque diapositive avec ses propres valeurs.
 
@@ -1335,7 +1051,7 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             # retire l'objet plutot que d'afficher des tirets.
             if (quoi == 'satisfaction' and valeurs[quoi]
                     and len(_moities_absentes(valeurs[quoi])) == len(MOITIES_SATISFACTION)):
-                retirer.append((*m.span(), ''))
+                retirer.append(m.span())
                 continue
             remplies = remplir_classeur(parts, valeurs[quoi])
             if quoi == 'acquisition':
@@ -1346,29 +1062,21 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
                 # Le cadre de l'image vient du classeur aux deux notes : le
                 # tableau restant garde sa place et l'anneau son echelle.
                 reference = _ecrire(remplir_classeur(parts, NOTES_DE_REFERENCE))
-            if quoi == 'satisfaction':
-                a_rendre[emb] = _ecrire(_trait_de_rappel(dict(remplies), formes=False))
-                remplies = _trait_de_rappel(remplies)
             brut = _ecrire(remplies)
             contenus[emb] = brut
-            a_rendre.setdefault(emb, brut)
-            cadre = _cadre_a_la_zone_ole(m.group(0)) if quoi == 'satisfaction' else m.group(0)
-            centre = cadre != m.group(0)
-            if centre:
-                retirer.append((*m.span(), cadre))
+            a_rendre[emb] = brut
             # L'image s'etire aux proportions du cadre de l'objet, qui ne
             # sont pas toujours celles de l'EMF (page 27) : c'est sur le
             # cadre qu'on les prend, sinon l'anneau devient ovale.
-            taille = (re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', cadre)
-                      or re.search(r'imgW="(\d+)" imgH="(\d+)"', cadre))
+            taille = (re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', m.group(0))
+                      or re.search(r'imgW="(\d+)" imgH="(\d+)"', m.group(0)))
             ratio = int(taille.group(1)) / int(taille.group(2)) if taille else None
-            natures[emb] = (quoi, valeurs[quoi], ratio, reference, centre)
+            natures[emb] = (quoi, valeurs[quoi], ratio, reference)
             poses += [(rels_nom, rid, emb) for rid in images]
         if retirer:
-            for debut, fin, texte in reversed(retirer):
-                xml = xml[:debut] + texte + xml[fin:]
-            if any(not texte for _, _, texte in retirer):
-                xml = _sans_orphelins(xml)
+            for debut, fin in reversed(retirer):
+                xml = xml[:debut] + xml[fin:]
+            xml = _sans_orphelins(xml)
             contenus[slide] = xml.encode('utf-8')
     if not a_rendre:
         return

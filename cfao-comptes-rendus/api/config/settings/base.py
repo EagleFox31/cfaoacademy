@@ -118,6 +118,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
     "core.middleware.ControleOrigine",
+    "comptes_rendus.erreurs.Intercepteur",
 ]
 
 ROOT_URLCONF = "config.urls"

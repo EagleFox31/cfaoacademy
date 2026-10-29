@@ -89,3 +89,20 @@
   cursor: pointer;
 }
 .maj-fermer:hover { filter: brightness(0.92); }
+
+/* Liste des nouveautes, filtree selon le role de la personne. */
+.maj-carte .maj-nouveautes-titre {
+  margin-top: 16px;
+  font-weight: 600;
+  color: var(--ink, #0f172a);
+}
+.maj-nouveautes {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  text-align: left;
+  color: var(--muted, #64748b);
+  line-height: 1.5;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+.maj-nouveautes li + li { margin-top: 4px; }

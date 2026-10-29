@@ -1,0 +1,70 @@
+# Tests de la politique « compte_rendu_journal » (cerbos compile --tests).
+# Tests negatifs obligatoires : seul l'equipe technique lit le journal ;
+# un role hors formation et un anonyme ne peuvent rien y ecrire.
+name: JournalSuite
+description: Acces a la ressource compte_rendu_journal
+
+principals:
+  formateur:
+    id: f-a
+    roles: ["trainer"]
+    attr: { scopeNode: "", scopeNodes: [], brands: ["TOYOTA"] }
+  suppleant_ki:
+    id: k-1
+    roles: ["learner", "ki"]
+    attr: { scopeNode: "CMR", scopeNodes: ["CMR"], brands: ["TOYOTA"] }
+  apprenant:
+    id: a-1
+    roles: ["learner"]
+    attr: { scopeNode: "CMR", scopeNodes: ["CMR"], brands: ["TOYOTA"] }
+  anonyme:
+    id: anonymous
+    roles: ["_anon"]
+    attr: { scopeNode: "" }
+  superadmin:
+    id: s-1
+    roles: ["superadmin"]
+    attr: { scopeNode: "" }
+
+resources:
+  journal:
+    kind: compte_rendu_journal
+    id: "*"
+    attr: { ownerId: "f-a", scopeNode: "", brand: "" }
+
+tests:
+  - name: un formateur signale une erreur mais ne lit pas le journal
+    input:
+      principals: ["formateur", "suppleant_ki"]
+      resources: ["journal"]
+      actions: ["create", "read", "delete"]
+    expected:
+      - principal: formateur
+        resource: journal
+        actions: { create: EFFECT_ALLOW, read: EFFECT_DENY, delete: EFFECT_DENY }
+      - principal: suppleant_ki
+        resource: journal
+        actions: { create: EFFECT_ALLOW, read: EFFECT_DENY, delete: EFFECT_DENY }
+
+  - name: hors formation et anonyme ne font rien
+    input:
+      principals: ["apprenant", "anonyme"]
+      resources: ["journal"]
+      actions: ["create", "read", "delete"]
+    expected:
+      - principal: apprenant
+        resource: journal
+        actions: { create: EFFECT_DENY, read: EFFECT_DENY, delete: EFFECT_DENY }
+      - principal: anonyme
+        resource: journal
+        actions: { create: EFFECT_DENY, read: EFFECT_DENY, delete: EFFECT_DENY }
+
+  - name: l'equipe technique lit et nettoie le journal
+    input:
+      principals: ["superadmin"]
+      resources: ["journal"]
+      actions: ["read", "create", "delete"]
+    expected:
+      - principal: superadmin
+        resource: journal
+        actions: { read: EFFECT_ALLOW, create: EFFECT_ALLOW, delete: EFFECT_ALLOW }
