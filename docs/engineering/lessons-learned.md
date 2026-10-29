@@ -19,10 +19,22 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | La commande documentée doit exister sur la machine qui produit la preuve | A | `make` présent dans le PATH, sinon le trou est écrit |
 | Une action CI qui appelle l'API GitHub reçoit le droit explicite dont elle a besoin | E (moindre privilège) | test du workflow (`pull-requests: read` sur `changes`) + run observé |
 | Toute frontière inter-modules est déclarée dans `contracts/registry.json`, avec test fournisseur et test consommateur | D, E (contrats explicites) | job CI `contracts` + tests consommateur de chaque module |
+| Un fichier dérivé d'une source (labels, spec publiée) est réconcilié par un outil qui n'écrit que son bloc et seulement s'il dérive | I, R | `contracts/sync.py --check` en CI + test de second passage sans écriture |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-29 — Labels de contrat posés à la main dans les Dockerfiles (contracts)
+- **Contexte / symptôme** : première version du registre. Les labels `org.cfao.*` ont été ajoutés aux trois Dockerfiles par un script d'édition qui a écrit des `\n` littéraux au lieu de sauts de ligne. Le contrôle de `check.py` les a acceptés, car son parseur lisait l'instruction `LABEL` sur une seule ligne. Ensuite, un format de spec inconnu dans le registre faisait planter le calcul des labels au lieu d'être signalé.
+- **Impact** : aucun (near miss, corrigé avant commit pour les `\n`, avant push pour le format). Un Dockerfile mal formé aurait cassé le build de l'image.
+- **Détection** : relecture des octets des Dockerfiles ; test `test_unknown_format_is_refused` (rouge, `KeyError`).
+- **Cause racine** : les labels étaient écrits à la main et vérifiés par un parseur plus tolérant que Docker. Aucune source unique ne les produisait, et le calcul des labels supposait un registre valide.
+- **Correctif** : `contracts/sync.py` génère un bloc délimité, après le dernier `FROM`, et ne réécrit que ce bloc s'il dérive. Un label de l'espace de noms hors du bloc est un conflit signalé, jamais modifié. `kit.expected_labels` ignore les entrées invalides, que `check.py` signale.
+- **Prévention** : `sync.py --check` en CI ; tests de convergence (second passage sans écriture), de conflit, de CRLF, de format inconnu ; images vérifiées par `docker image inspect` après build.
+- **Leçon généralisée** : ce qui se déduit d'une source se génère, ne se recopie pas. Un contrôle qui parse plus largement que l'outil réel laisse passer des fichiers que l'outil refusera.
+- **Catégorie** : contrat inter-modules
+- **Récidive** : non
 
 ### 2026-10-29 — Les agrégats needs lus par core interrogent des tables inexistantes (cfao-needs, cfao-core)
 - **Contexte / symptôme** : premier test fournisseur du contrat `needs-analytics`. Les trois routes `/api/v1/needs/analytics/*` lèvent `no such table` dès que la clé est valide.

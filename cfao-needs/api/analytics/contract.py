@@ -151,8 +151,15 @@ def render() -> str:
     return json.dumps(openapi_document(), indent=2, ensure_ascii=False, sort_keys=True) + "\n"
 
 
+def publish(path: Path = CONTRACT_PATH) -> bool:
+    """Écrit la copie publiée seulement si elle diffère de la source. True si écrit."""
+    content = render().encode("utf-8")
+    if path.is_file() and path.read_bytes() == content:
+        return False
+    path.parent.mkdir(exist_ok=True)
+    path.write_bytes(content)
+    return True
+
+
 if __name__ == "__main__":
-    CONTRACT_PATH.parent.mkdir(exist_ok=True)
-    with CONTRACT_PATH.open("w", encoding="utf-8", newline="\n") as handle:
-        handle.write(render())
-    print(f"{CONTRACT_PATH.name} {CONTRACT_VERSION}")
+    print(f"{CONTRACT_PATH.name} {CONTRACT_VERSION} : {'écrit' if publish() else 'inchangé'}")

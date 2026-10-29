@@ -1,16 +1,22 @@
 """Puis-je déployer cette image sans casser les modules en service ?
 
-    python contracts/can_i_deploy.py IMAGE[:TAG] [--ssh cfao-serveur] [--allow-missing]
+    python contracts/can_i_deploy.py IMAGE[:TAG] [--ssh HÔTE] [--allow-missing]
 
-Lit les labels `org.cfao.*` de l'image candidate (`docker image inspect`, en
-local) et ceux des conteneurs en service (`docker inspect`, en local ou par
-SSH, lecture seule). Vérifie les deux sens :
+Lit les labels de l'image candidate (`docker image inspect`, en local) et
+l'image et les labels des conteneurs en service (`docker inspect`, en local ou
+par SSH, lecture seule). Vérifie les deux sens :
 - chaque contrat consommé par l'image est fourni, en version compatible, par
   un module en service ;
 - chaque module en service qui consomme un contrat fourni par l'image accepte
   sa version.
-Les conteneurs du même module que l'image sont ignorés : ils seront remplacés.
-Code de sortie 0 si compatible, 1 sinon.
+
+Un conteneur est rattaché à un module par son label, sinon par le dépôt de son
+image déclaré dans `registry.json` (images antérieures au registre). Un module
+rattaché sans labels de contrat a une version inconnue : s'il est concerné, le
+verdict est « inconnu ». Les conteneurs étrangers au registre et ceux du même
+module que l'image sont ignorés.
+
+Code de sortie : 0 déployable, 1 incompatible, 2 inconnu.
 """
 
 from __future__ import annotations
@@ -30,52 +36,73 @@ def _docker(args: list[str], ssh: str | None) -> str:
     return subprocess.run(command, capture_output=True, text=True, encoding="utf-8", check=True).stdout
 
 
+def _json(args: list[str], ssh: str | None):
+    return json.loads(_docker(args, ssh).strip().strip("'"))
+
+
 def image_labels(image: str) -> dict[str, str]:
-    return json.loads(_docker(["image", "inspect", "--format", "'{{json .Config.Labels}}'", image], None).strip().strip("'")) or {}
+    return _json(["image", "inspect", "--format", "'{{json .Config.Labels}}'", image], None) or {}
 
 
-def running_labels(ssh: str | None) -> dict[str, dict[str, str]]:
-    """Labels par conteneur en service."""
-    names = _docker(["ps", "--format", "'{{.Names}}'"], ssh).split()
-    labels: dict[str, dict[str, str]] = {}
-    for name in (n.strip("'") for n in names):
-        raw = _docker(["inspect", "--format", "'{{json .Config.Labels}}'", name], ssh).strip().strip("'")
-        labels[name] = json.loads(raw) or {}
-    return labels
+def running_containers(ssh: str | None) -> dict[str, dict]:
+    """{conteneur: {"image": référence, "labels": labels}} des conteneurs en service."""
+    names = [name.strip("'") for name in _docker(["ps", "--format", "'{{.Names}}'"], ssh).split()]
+    containers: dict[str, dict] = {}
+    for name in names:
+        config = _json(["inspect", "--format", "'{{json .Config}}'", name], ssh)
+        containers[name] = {"image": config.get("Image", ""), "labels": config.get("Labels") or {}}
+    return containers
 
 
-def evaluate(candidate: dict[str, str], running: dict[str, dict[str, str]], allow_missing: bool = False) -> tuple[list[str], list[str]]:
-    """Retourne (erreurs, notes). Fonction pure, testée sans Docker."""
+def evaluate(image: str, labels: dict[str, str], running: dict[str, dict], registry: dict | None = None,
+             allow_missing: bool = False) -> tuple[list[str], list[str], list[str]]:
+    """Retourne (erreurs, inconnus, notes). Fonction pure, testée sans Docker."""
+    registry = registry or kit.load_registry()
+    module_key, provides_key, consumes_key = kit.label_keys(registry)
     errors: list[str] = []
+    unknown: list[str] = []
     notes: list[str] = []
-    module = candidate.get(kit.LABEL_MODULE)
-    if not module:
-        return [f"image sans label {kit.LABEL_MODULE} : compatibilité inconnue"], notes
 
-    others = {name: labels for name, labels in running.items() if labels.get(kit.LABEL_MODULE) and labels[kit.LABEL_MODULE] != module}
-    for name, labels in running.items():
-        if not labels.get(kit.LABEL_MODULE) and labels.get("org.opencontainers.image.title", "").startswith("CFAO"):
-            notes.append(f"{name} : image CFAO sans labels de contrat, non vérifiée")
+    module = kit.module_of(image, labels, registry)
+    if module is None:
+        return errors, [f"{image} : module inconnu (ni label {module_key}, ni dépôt déclaré)"], notes
+    if not labels.get(module_key):
+        return errors, [f"{image} : image de {module} sans labels de contrat"], notes
 
-    provided = {}
-    for name, labels in others.items():
-        for cid, version in kit.parse_label(labels.get(kit.LABEL_PROVIDES)).items():
-            provided.setdefault(cid, []).append((name, version))
+    # Modules en service : déclarés (labels) ou version inconnue (image antérieure au registre).
+    labelled: dict[str, dict[str, str]] = {}
+    legacy: dict[str, str] = {}
+    for name, container in running.items():
+        other = kit.module_of(container["image"], container["labels"], registry)
+        if other is None or other == module:
+            continue
+        if container["labels"].get(module_key):
+            labelled[name] = container["labels"]
+        else:
+            legacy[name] = other
+    contracts = {entry["id"]: entry for entry in registry["contracts"]}
 
-    for cid, version_range in kit.parse_label(candidate.get(kit.LABEL_CONSUMES)).items():
-        offers = provided.get(cid, [])
-        if not offers:
-            (notes if allow_missing else errors).append(f"{module} consomme {cid}@{version_range} : aucun fournisseur en service")
+    for cid, version_range in kit.parse_label(labels.get(consumes_key)).items():
+        offers = [(name, kit.parse_label(other.get(provides_key))[cid])
+                  for name, other in labelled.items() if cid in kit.parse_label(other.get(provides_key))]
+        provider = contracts.get(cid, {}).get("provider")
+        blind = [name for name, other in legacy.items() if other == provider]
         for name, version in offers:
             if not kit.satisfies(version, version_range):
                 errors.append(f"{module} consomme {cid}@{version_range} mais {name} fournit {version}")
+        unknown += [f"{module} consomme {cid}@{version_range} : version servie par {name} inconnue (sans labels)" for name in blind]
+        if not offers and not blind:
+            (notes if allow_missing else errors).append(f"{module} consomme {cid}@{version_range} : aucun fournisseur en service")
 
-    for cid, version in kit.parse_label(candidate.get(kit.LABEL_PROVIDES)).items():
-        for name, labels in others.items():
-            version_range = kit.parse_label(labels.get(kit.LABEL_CONSUMES)).get(cid)
+    for cid, version in kit.parse_label(labels.get(provides_key)).items():
+        for name, other in labelled.items():
+            version_range = kit.parse_label(other.get(consumes_key)).get(cid)
             if version_range and not kit.satisfies(version, version_range):
                 errors.append(f"{module} fournirait {cid}@{version} mais {name} attend {version_range}")
-    return errors, notes
+        consumers = {consumer["module"] for consumer in contracts.get(cid, {}).get("consumers", [])}
+        unknown += [f"{module} fournirait {cid}@{version} : plage attendue par {name} inconnue (sans labels)"
+                    for name, other in legacy.items() if other in consumers]
+    return errors, unknown, notes
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -84,13 +111,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--ssh", help="hôte SSH où lire les conteneurs en service")
     parser.add_argument("--allow-missing", action="store_true", help="fournisseur absent = note, pas erreur")
     args = parser.parse_args(argv)
-    errors, notes = evaluate(image_labels(args.image), running_labels(args.ssh), args.allow_missing)
+    errors, unknown, notes = evaluate(args.image, image_labels(args.image), running_containers(args.ssh),
+                                      allow_missing=args.allow_missing)
     for note in notes:
         print(f"note : {note}")
+    for item in unknown:
+        print(f"inconnu : {item}")
     for error in errors:
         print(f"refus : {error}")
-    print(f"{args.image} : {'déployable' if not errors else 'NON déployable'}")
-    return 1 if errors else 0
+    verdict = "NON déployable" if errors else "compatibilité inconnue" if unknown else "déployable"
+    print(f"{args.image} : {verdict}")
+    return 1 if errors else 2 if unknown else 0
 
 
 if __name__ == "__main__":

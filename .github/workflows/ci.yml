@@ -45,7 +45,8 @@ jobs:
               - '.github/workflows/ci.yml'
 
   # Registre des contrats inter-modules (contracts/registry.json) : cohérence,
-  # labels d'image, semver et ruptures (oasdiff) par rapport à main.
+  # labels d'image (sync.py), semver et ruptures (oasdiff) par rapport à la
+  # branche de base découverte (GITHUB_BASE_REF, sinon origin/HEAD).
   contracts:
     name: Contrats inter-modules
     needs: changes
@@ -69,7 +70,8 @@ jobs:
       - run: go install github.com/oasdiff/oasdiff@v1.33.0
       - run: pip install pytest==8.2.2
       - run: pytest -q contracts/tests
-      - run: python contracts/check.py --base origin/main --require-oasdiff
+      - run: python contracts/sync.py --check
+      - run: python contracts/check.py --require-oasdiff
 
   cerbos:
     name: Policies Cerbos (compile + tests)

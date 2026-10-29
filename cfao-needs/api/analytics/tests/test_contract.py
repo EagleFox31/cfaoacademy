@@ -10,7 +10,7 @@ import pytest
 from jsonschema import Draft202012Validator
 from rest_framework.test import APIClient
 
-from analytics.contract import CONTRACT_PATH, CONTRACT_VERSION, openapi_document, render
+from analytics.contract import CONTRACT_PATH, CONTRACT_VERSION, openapi_document, publish, render
 
 KEY = "contract-test-key"
 
@@ -26,6 +26,17 @@ def test_published_contract_is_generated():
     assert CONTRACT_PATH.read_bytes().decode("utf-8") == render()
     assert render() == render()
     assert openapi_document()["info"]["version"] == CONTRACT_VERSION
+
+
+def test_publish_writes_only_on_drift(tmp_path):
+    target = tmp_path / "contract" / "spec.json"
+    assert publish(target) is True
+    written = target.stat().st_mtime_ns
+    assert publish(target) is False
+    assert target.stat().st_mtime_ns == written
+    target.write_text("{}", encoding="utf-8")
+    assert publish(target) is True
+    assert target.read_bytes().decode("utf-8") == render()
 
 
 def test_contract_endpoint_serves_the_file():

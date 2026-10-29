@@ -1,8 +1,9 @@
 """Outils communs du registre de contrats inter-modules.
 
-Bibliothèque standard seulement, sauf `response_validator` (jsonschema),
-importé à la demande pour que `check.py` et `can_i_deploy.py` tournent sans
-dépendance.
+Bibliothèque standard seulement, sauf les validateurs (jsonschema), importés à
+la demande pour que `check.py`, `sync.py` et `can_i_deploy.py` tournent sans
+dépendance. Tout ce qui varie d'un projet à l'autre (espace de noms des labels,
+modules, images, formats) vient de `registry.json`.
 """
 
 from __future__ import annotations
@@ -14,16 +15,27 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 REGISTRY_PATH = ROOT / "contracts" / "registry.json"
 
-LABEL_MODULE = "org.cfao.module"
-LABEL_PROVIDES = "org.cfao.contracts.provides"
-LABEL_CONSUMES = "org.cfao.contracts.consumes"
-
 _SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 _RANGE = re.compile(r"^\^(\d+)(?:\.(\d+))?(?:\.(\d+))?$")
+
+# Version d'un document selon son format. Un format absent ici est refusé par check.py.
+FORMATS = {
+    "openapi": lambda spec: spec["info"]["version"],
+    "asyncapi": lambda spec: spec["info"]["version"],
+    "jsonschema": lambda spec: spec["x-version"],
+}
 
 
 def load_registry() -> dict:
     return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+
+
+def label_keys(registry: dict | None = None) -> tuple[str, str, str]:
+    namespace = (registry or load_registry())["label_namespace"]
+    return f"{namespace}.module", f"{namespace}.contracts.provides", f"{namespace}.contracts.consumes"
+
+
+LABEL_MODULE, LABEL_PROVIDES, LABEL_CONSUMES = label_keys()
 
 
 def contract(contract_id: str) -> dict:
@@ -35,6 +47,10 @@ def contract(contract_id: str) -> dict:
 
 def load_spec(contract_id: str) -> dict:
     return json.loads((ROOT / contract(contract_id)["spec"]).read_text(encoding="utf-8"))
+
+
+def spec_version(entry: dict, spec: dict) -> str:
+    return FORMATS[entry.get("format", "openapi")](spec)
 
 
 def parse_version(text: str) -> tuple[int, int, int]:
@@ -71,33 +87,52 @@ def format_label(pairs: dict[str, str]) -> str:
 
 
 def expected_labels(registry: dict | None = None) -> dict[str, dict[str, str]]:
-    """Labels que chaque module déclaré doit porter, déduits du registre et des specs."""
+    """Labels non vides que chaque module déclaré doit porter, déduits du registre et des specs.
+
+    Les entrées invalides (format inconnu, spec absente, module non déclaré) sont
+    ignorées ici : `check.py` les signale.
+    """
     registry = registry or load_registry()
-    labels = {
-        module: {LABEL_MODULE: module, LABEL_PROVIDES: {}, LABEL_CONSUMES: {}}
-        for module in registry["modules"]
-    }
+    module_key, provides_key, consumes_key = label_keys(registry)
+    provides: dict[str, dict[str, str]] = {module: {} for module in registry["modules"]}
+    consumes: dict[str, dict[str, str]] = {module: {} for module in registry["modules"]}
     for entry in registry["contracts"]:
-        spec = json.loads((ROOT / entry["spec"]).read_text(encoding="utf-8"))
-        labels[entry["provider"]][LABEL_PROVIDES][entry["id"]] = spec["info"]["version"]
-        for consumer in entry["consumers"]:
-            labels[consumer["module"]][LABEL_CONSUMES][entry["id"]] = consumer["range"]
-    return {
-        module: {key: value if isinstance(value, str) else format_label(value) for key, value in values.items()}
-        for module, values in labels.items()
-    }
-
-
-def dockerfile_labels(path: Path) -> dict[str, str]:
-    """Labels `org.cfao.*` d'un Dockerfile (instructions LABEL, continuations comprises)."""
-    text = re.sub(r"\\\r?\n", " ", path.read_text(encoding="utf-8"))
-    labels: dict[str, str] = {}
-    for line in text.splitlines():
-        if not line.strip().upper().startswith("LABEL "):
+        spec_path = ROOT / entry["spec"]
+        if entry.get("format", "openapi") not in FORMATS or not spec_path.is_file():
             continue
-        for key, value in re.findall(r'(org\.cfao\.[\w.-]+)="([^"]*)"', line):
-            labels[key] = value
+        if entry["provider"] in provides:
+            provides[entry["provider"]][entry["id"]] = spec_version(entry, json.loads(spec_path.read_text(encoding="utf-8")))
+        for consumer in entry["consumers"]:
+            if consumer["module"] in consumes:
+                consumes[consumer["module"]][entry["id"]] = consumer["range"]
+    labels: dict[str, dict[str, str]] = {}
+    for module in registry["modules"]:
+        labels[module] = {module_key: module}
+        if provides[module]:
+            labels[module][provides_key] = format_label(provides[module])
+        if consumes[module]:
+            labels[module][consumes_key] = format_label(consumes[module])
     return labels
+
+
+def image_repository(image: str) -> str:
+    """`registre:5000/org/app:v1@sha256:...` -> `registre:5000/org/app`."""
+    image = image.split("@", 1)[0]
+    head, _, tail = image.rpartition("/")
+    return f"{head}/{tail.split(':', 1)[0]}" if head else tail.split(":", 1)[0]
+
+
+def module_of(image: str, labels: dict[str, str], registry: dict | None = None) -> str | None:
+    """Module d'une image : son label, sinon (image antérieure au registre) son dépôt déclaré."""
+    registry = registry or load_registry()
+    module_key = label_keys(registry)[0]
+    if labels.get(module_key):
+        return labels[module_key]
+    repository = image_repository(image)
+    for module, declared in registry["modules"].items():
+        if repository in declared.get("images", []):
+            return module
+    return None
 
 
 def operation(spec: dict, path: str, method: str = "get") -> dict:

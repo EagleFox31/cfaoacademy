@@ -1,8 +1,8 @@
 FROM python:3.12-slim
-
-# Contrats inter-modules : contracts/registry.json (vérifié par contracts/check.py).
-LABEL org.cfao.module="cfao-core" \
-      org.cfao.contracts.consumes="needs-analytics@^1"
+# contracts:begin - bloc géré par contracts/sync.py, ne pas éditer
+LABEL org.cfao.contracts.consumes="needs-analytics@^1" \
+      org.cfao.module="cfao-core"
+# contracts:end
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1

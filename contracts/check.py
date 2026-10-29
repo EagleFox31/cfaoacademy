@@ -1,20 +1,23 @@
 """Contrôle du registre de contrats inter-modules (CI et poste local).
 
-    python contracts/check.py [--base REF] [--require-oasdiff]
+    python contracts/check.py [--base REF|auto|none] [--require-oasdiff]
 
 Pour chaque contrat de `registry.json` :
-1. la spec existe, sa version est semver, les plages des consommateurs l'acceptent ;
-2. les Dockerfiles des modules portent les labels `org.cfao.*` attendus ;
-3. si la spec a changé depuis le merge-base avec REF (défaut origin/main) :
-   version haussée, et MAJOR haussée si oasdiff détecte une rupture.
+1. la spec existe, son format est connu, sa version est semver, les plages des
+   consommateurs l'acceptent ;
+2. les Dockerfiles portent les labels attendus (`sync.py --check`) ;
+3. si la spec a changé depuis le merge-base avec la branche de base : version
+   haussée, et MAJOR haussée si l'outil du format détecte une rupture.
 
-Code de sortie 0 si tout est conforme, 1 sinon. Aucun accès réseau.
+La branche de base est découverte (`GITHUB_BASE_REF`, puis `origin/HEAD`) ;
+introuvable, l'étape 3 est sautée avec un avertissement. Code 0 si conforme.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -22,10 +25,19 @@ import tempfile
 from pathlib import Path
 
 import kit
+import sync
 
 
 def _git(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["git", *args], cwd=kit.ROOT, capture_output=True, text=True, encoding="utf-8")
+
+
+def discover_base(environ: dict | None = None) -> str | None:
+    environ = os.environ if environ is None else environ
+    if environ.get("GITHUB_BASE_REF"):
+        return f"origin/{environ['GITHUB_BASE_REF']}"
+    head = _git("symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD")
+    return head.stdout.strip() if head.returncode == 0 and head.stdout.strip() else None
 
 
 def _base_spec(base: str, spec_path: str) -> dict | None:
@@ -36,7 +48,7 @@ def _base_spec(base: str, spec_path: str) -> dict | None:
     return json.loads(shown.stdout) if shown.returncode == 0 else None
 
 
-def _breaking(base_spec: dict, head_path: Path) -> list[str] | None:
+def _oasdiff(base_spec: dict, head_path: Path) -> list[str] | None:
     """Ruptures selon oasdiff, ou None si oasdiff est absent."""
     binary = shutil.which("oasdiff")
     if not binary:
@@ -53,7 +65,11 @@ def _breaking(base_spec: dict, head_path: Path) -> list[str] | None:
     return [line for line in result.stdout.splitlines() if line.strip()] or [result.stderr.strip()]
 
 
-def evolution_errors(cid: str, previous: dict | None, spec: dict, breaking, require_oasdiff: bool) -> list[str]:
+# Détecteur de ruptures par format. Format sans détecteur : traité comme oasdiff absent.
+BREAKING = {"openapi": _oasdiff}
+
+
+def evolution_errors(cid: str, previous: dict | None, spec: dict, version_of, breaking, require_tool: bool) -> list[str]:
     """Règle semver entre la spec du merge-base et celle de HEAD.
 
     `breaking()` renvoie la liste des ruptures, ou None si l'outil est absent.
@@ -61,7 +77,7 @@ def evolution_errors(cid: str, previous: dict | None, spec: dict, breaking, requ
     """
     if previous is None or previous == spec:
         return []
-    old, new = previous["info"]["version"], spec["info"]["version"]
+    old, new = version_of(previous), version_of(spec)
     try:
         before, head = kit.parse_version(old), kit.parse_version(new)
     except ValueError as exc:
@@ -70,8 +86,8 @@ def evolution_errors(cid: str, previous: dict | None, spec: dict, breaking, requ
         return [f"{cid} : spec modifiée sans hausse de version ({old} -> {new})"]
     found = breaking()
     if found is None:
-        message = f"{cid} : oasdiff absent, ruptures non vérifiées"
-        if require_oasdiff:
+        message = f"{cid} : outil de détection des ruptures absent, ruptures non vérifiées"
+        if require_tool:
             return [message]
         print(f"avertissement {message}", file=sys.stderr)
         return []
@@ -80,12 +96,16 @@ def evolution_errors(cid: str, previous: dict | None, spec: dict, breaking, requ
     return []
 
 
-def check(base: str | None, require_oasdiff: bool) -> list[str]:
+def check(base: str | None, require_tool: bool) -> list[str]:
     registry = kit.load_registry()
     errors: list[str] = []
 
     for entry in registry["contracts"]:
         cid = entry["id"]
+        spec_format = entry.get("format", "openapi")
+        if spec_format not in kit.FORMATS:
+            errors.append(f"{cid} : format inconnu {spec_format!r}")
+            continue
         spec_path = kit.ROOT / entry["spec"]
         if not spec_path.is_file():
             errors.append(f"{cid} : spec introuvable {entry['spec']}")
@@ -93,9 +113,9 @@ def check(base: str | None, require_oasdiff: bool) -> list[str]:
         if entry["provider"] not in registry["modules"]:
             errors.append(f"{cid} : fournisseur {entry['provider']} absent de modules")
         spec = json.loads(spec_path.read_text(encoding="utf-8"))
-        version = spec["info"]["version"]
+        version = kit.spec_version(entry, spec)
         try:
-            head = kit.parse_version(version)
+            kit.parse_version(version)
         except ValueError as exc:
             errors.append(f"{cid} : {exc}")
             continue
@@ -110,23 +130,29 @@ def check(base: str | None, require_oasdiff: bool) -> list[str]:
 
         if base is not None:
             previous = _base_spec(base, entry["spec"])
-            errors.extend(evolution_errors(cid, previous, spec, lambda: _breaking(previous, spec_path), require_oasdiff))
+            detector = BREAKING.get(spec_format, lambda *_: None)
+            errors.extend(evolution_errors(
+                cid, previous, spec,
+                lambda document: kit.FORMATS[spec_format](document),
+                lambda: detector(previous, spec_path),
+                require_tool,
+            ))
 
-    for module, labels in kit.expected_labels(registry).items():
-        dockerfile = kit.ROOT / registry["modules"][module]["dockerfile"]
-        found = kit.dockerfile_labels(dockerfile)
-        for key, value in labels.items():
-            if found.get(key, "") != value:
-                errors.append(f"{module} : {dockerfile.relative_to(kit.ROOT).as_posix()} doit porter {key}=\"{value}\"")
+    drifted, conflicts = sync.sync(write=False)
+    errors += [f"conflit : {item}" for item in conflicts]
+    errors += [f"labels en dérive : {path.relative_to(kit.ROOT).as_posix()} (lancer contracts/sync.py)" for path in drifted]
     return errors
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--base", default="origin/main", help="référence de comparaison ; « none » pour l'ignorer")
-    parser.add_argument("--require-oasdiff", action="store_true")
+    parser.add_argument("--base", default="auto", help="référence de comparaison ; auto (défaut) ou none")
+    parser.add_argument("--require-oasdiff", action="store_true", help="échec si l'outil de rupture manque")
     args = parser.parse_args(argv)
-    errors = check(None if args.base == "none" else args.base, args.require_oasdiff)
+    base = {"auto": discover_base(), "none": None}.get(args.base, args.base)
+    if base is None and args.base == "auto":
+        print("avertissement : branche de base introuvable, évolution non vérifiée", file=sys.stderr)
+    errors = check(base, args.require_oasdiff)
     for error in errors:
         print(error)
     print("contrats : conformes" if not errors else f"contrats : {len(errors)} écart(s)")

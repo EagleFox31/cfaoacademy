@@ -1,11 +1,13 @@
 FROM python:3.12-slim
+# contracts:begin - bloc géré par contracts/sync.py, ne pas éditer
+LABEL org.cfao.contracts.provides="needs-analytics@1.0.0" \
+      org.cfao.module="cfao-needs"
+# contracts:end
 
 LABEL org.opencontainers.image.title="CFAO Needs API" \
       org.opencontainers.image.description="API backend Django pour CFAO Needs" \
       org.opencontainers.image.vendor="CFAO Mobility" \
-      org.opencontainers.image.version="0.1.0" \
-      org.cfao.module="cfao-needs" \
-      org.cfao.contracts.provides="needs-analytics@1.0.0"
+      org.opencontainers.image.version="0.1.0"
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1

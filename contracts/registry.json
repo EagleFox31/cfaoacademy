@@ -1,21 +1,31 @@
 {
+  "label_namespace": "org.cfao",
   "modules": {
-    "cfao-academy-mail": {"dockerfile": "cfao-academy-mail/Dockerfile"},
-    "cfao-core": {"dockerfile": "cfao-core/Dockerfile"},
-    "cfao-needs": {"dockerfile": "cfao-needs/api/Dockerfile"}
+    "cfao-academy-mail": {
+      "dockerfile": "cfao-academy-mail/Dockerfile",
+      "images": []
+    },
+    "cfao-core": {
+      "dockerfile": "cfao-core/Dockerfile",
+      "images": []
+    },
+    "cfao-needs": {
+      "dockerfile": "cfao-needs/api/Dockerfile",
+      "images": ["antifragile237/cfao-needs-api"]
+    }
   },
   "contracts": [
     {
       "id": "mail-outbound",
       "provider": "cfao-academy-mail",
-      "kind": "http",
+      "format": "openapi",
       "spec": "cfao-academy-mail/api/outbound/contract/mail.openapi.json",
       "consumers": []
     },
     {
       "id": "needs-analytics",
       "provider": "cfao-needs",
-      "kind": "http",
+      "format": "openapi",
       "spec": "cfao-needs/api/analytics/contract/needs-analytics.openapi.json",
       "consumers": [
         {
