@@ -236,7 +236,7 @@ export default function Accueil() {
                         : 'Archive'}
                     </span>
                   }
-                  title="Mes comptes rendus terminés"
+                  title="Comptes rendus terminés"
                   meta={termines.length
                     ? `Les comptes rendus terminés — le dernier ${venuDe(termines[0].termineLe)}.`
                     : 'Les comptes rendus terminés s’y rangent.'}
