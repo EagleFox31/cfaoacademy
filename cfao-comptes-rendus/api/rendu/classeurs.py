@@ -655,6 +655,8 @@ def _anneau_excel(image, geo, valeurs):
         elif q[1] > ey + lh / 2 + marge:
             fin = [(ex, q[1]), (ex, ey + lh / 2 + marge)]
         else:
+            # Etiquette legerement decalee : le trait arrive au milieu de sa gauche.
+            ey = q[1]
             fin = [(ex - lw / 2 - marge, q[1])]
         trait = [(cx + dirx * rm, cy + diry * rm), q] + fin if v is not None else []
         etiquettes.append((texte, police, lh, ex, ey, trait))
@@ -773,7 +775,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 9
+VERSION_IMAGES = 10
 
 
 def _cadre_de(rendu, reference):
