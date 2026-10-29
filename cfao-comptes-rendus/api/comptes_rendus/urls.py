@@ -16,6 +16,7 @@ urlpatterns = [
     path("cr-donnees/connexion", views.Connexion.as_view()),
     path("cr-donnees/session", views.Session.as_view()),
     path("cr-donnees/deconnexion", views.Deconnexion.as_view()),
+    path("cr-donnees/erreurs", views.Erreurs.as_view()),
     path("cr-donnees/brouillons", views.BrouillonsListe.as_view()),
     path("cr-donnees/brouillons/<str:ident>", views.BrouillonDetail.as_view()),
     re_path(r"^cr-donnees/photos/(?P<ident>[0-9a-f]{1,32})\.jpg$", views.PhotoServie.as_view()),

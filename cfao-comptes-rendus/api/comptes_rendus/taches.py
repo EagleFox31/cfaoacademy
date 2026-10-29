@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from django.db import connection
 
+from . import erreurs
 from .models import TacheRapport
 
 journal = logging.getLogger(__name__)
@@ -48,6 +49,11 @@ def produire(ident, rapport, pages, format_):
         # La cause reste dans le journal du service : le portail n'en
         # montre qu'un message generique.
         journal.exception("rapport %s en echec", ident)
+        tache = TacheRapport.objects.filter(id=ident).first()
+        erreurs.noter("service", "rapport en tache de fond", "production du rapport impossible",
+                      owner=tache.owner if tache else "",
+                      contexte={"tache": ident, "format": format_,
+                                "diapos": [p.get("diapo") for p in pages]})
         resultat = {"etat": "echec", "erreur": "production du rapport impossible"}
     TacheRapport.objects.filter(id=ident).update(**resultat)
 

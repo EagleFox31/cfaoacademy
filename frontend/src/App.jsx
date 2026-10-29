@@ -8,6 +8,7 @@ import TrainerHome from './pages/portal/TrainerHome.jsx'
 import TrainerReportNew from './pages/portal/TrainerReportNew.jsx'
 import TrainerReportsEnCours from './pages/portal/TrainerReportsEnCours.jsx'
 import TrainerReportsTermines from './pages/portal/TrainerReportsTermines.jsx'
+import JournalErreurs from './pages/portal/JournalErreurs.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
 import RouteMotion from './components/RouteMotion.jsx'
 import AnnonceMaintenance from './components/AnnonceMaintenance.jsx'
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="/portail/compte-rendu/en-cours" element={<TrainerReportsEnCours />} />
           <Route path="/portail/compte-rendu/a-documenter" element={<TrainerReportsEnCours aDocumenterAussi />} />
           <Route path="/portail/compte-rendu/mes-rapports" element={<TrainerReportsTermines />} />
+          <Route path="/portail/journal-erreurs" element={<JournalErreurs />} />
         </Routes>
       </RouteMotion>
     </LocaleProvider>

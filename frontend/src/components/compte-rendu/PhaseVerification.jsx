@@ -8,6 +8,7 @@ import { syntheseSatisfaction, satisfactionStagiaire, afficherTaux, detailParCri
   CRITERES_FORMATION, CRITERES_ACCUEIL } from '../../utils/satisfactionCfao'
 import { nomCompteRendu } from '../../utils/exportEvaluation'
 import ApercuReel from './ApercuReel'
+import { signalerErreur } from '../../utils/journalErreurs'
 import Consigne from './Consigne'
 import EditeurObjectifs from './EditeurObjectifs'
 import EditeurParticipants from './EditeurParticipants'
@@ -365,6 +366,7 @@ export default function PhaseVerification({
       setEtat('fait')
     } catch (e) {
       console.error('Rapport non produit :', e)
+      signalerErreur('rapport complet', e, { diapos: corps.pages.map(p => p.diapo) })
       setEchec(true)
       setEtat('revue')
     }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { signalerErreur } from '../../utils/journalErreurs'
 
 /**
  * L'image reelle de la diapositive, convertie depuis le modele.
@@ -56,8 +57,10 @@ export default function ApercuReel({ diapo, valeurs, voisines, secours }) {
           return url
         })
         setEtat('pret')
-      } catch {
-        if (!annule) setEtat('indisponible')
+      } catch (e) {
+        if (annule) return
+        setEtat('indisponible')
+        signalerErreur("apercu d'une page", e, { diapo })
       }
     }, 400)
 
