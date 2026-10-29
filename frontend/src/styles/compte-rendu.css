@@ -950,31 +950,40 @@
    l'écran et l'aperçu tombait à 450 px de large — il fallait dézoomer.
    Leurs marges et le titre suivent donc la hauteur de l'écran, sans
    réglage de la part du formateur. */
-.cr-entete-assistant {
-  padding: clamp(8px, 2vh, 16px) 32px clamp(8px, 1.6vh, 12px);
+.container.cr-entete-assistant {
+  padding: clamp(10px, 2vh, 16px) 32px;
 }
 .cr-assistant .cr-home-title--sm {
   font-size: clamp(20px, min(2.2vw, 3.6vh), 30px);
   margin-bottom: clamp(8px, 2vh, 18px);
 }
-.cr-assistant .cr-retour { margin-bottom: clamp(4px, 1.4vh, 12px); }
-
-/* Écran court : le retour passe à gauche du titre, les phases perdent
-   leur sous-titre, la barre d'actions se resserre.
-   Hauteur effective : l'attribut remplace `max-height`, qui verrait la
-   hauteur avant mise a l'echelle (cf. utils/echelle.js). */
-:root[data-bas~="820"] .cr-entete-assistant {
+/* Fil d'Ariane : le retour à gauche du titre, sur une ligne ; les phases
+   passent dessous, sur toute la largeur. Sans marge basse, la ligne reste
+   centrée entre la barre de navigation et le contenu. */
+.cr-entete-assistant {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  align-items: baseline;
+  align-items: center;
   column-gap: 18px;
 }
-:root[data-bas~="820"] .cr-entete-assistant .cr-phases { grid-column: 1 / -1; }
-:root[data-bas~="820"] .cr-entete-assistant .cr-home-title--sm {
+.cr-entete-assistant .cr-retour { margin-bottom: 0; }
+.cr-entete-assistant .cr-phases { grid-column: 1 / -1; margin-top: clamp(8px, 2vh, 18px); }
+.cr-entete-assistant .cr-home-title--sm {
+  margin-bottom: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+@media (max-width: 600px) {
+  .cr-entete-assistant { display: block; }
+  .cr-entete-assistant .cr-retour { margin-bottom: 12px; }
+  .cr-entete-assistant .cr-home-title--sm { white-space: normal; }
+}
+
+/* Écran court : les phases perdent leur sous-titre, la barre d'actions
+   se resserre.
+   Hauteur effective : l'attribut remplace `max-height`, qui verrait la
+   hauteur avant mise a l'echelle (cf. utils/echelle.js). */
 :root[data-bas~="820"] .cr-assistant .cr-phase { padding: 6px 16px 6px 8px; gap: 10px; }
 :root[data-bas~="820"] .cr-assistant .cr-phase-num { width: 24px; height: 24px; }
 :root[data-bas~="820"] .cr-assistant .cr-phase-resume { display: none; }
