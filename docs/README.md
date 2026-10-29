@@ -31,6 +31,7 @@ Point d'entrée pour la documentation du dépôt. Les fichiers listés ci-dessou
 | **[PORTAL_COLORIMETRY.md](./PORTAL_COLORIMETRY.md)** | **Statuts portail (pastilles, bordures, PIF) — RAG / LMS / WCAG** |
 | [APPRENANT_VIEWS.md](../APPRENANT_VIEWS.md) | Écrans portail apprenant |
 | **[MODULE_RAPPORTS_FORMATEUR.md](./MODULE_RAPPORTS_FORMATEUR.md)** | **Rapports post-formation (04-5) : parcours, modèle PowerPoint, service de rendu, tests** |
+| [etude-journal-erreurs.md](./etude-journal-erreurs.md) | Étude : journal des erreurs des comptes rendus consultable par l’équipe technique |
 | [PORTAL_PROFILES.md](../PORTAL_PROFILES.md) | Profils & données mock portail |
 
 ## Gouvernance dépôt

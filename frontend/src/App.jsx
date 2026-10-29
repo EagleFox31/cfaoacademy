@@ -49,6 +49,7 @@ export default function App() {
           <Route path="/portail/formateur" element={<TrainerHome />} />
           {/* Le module des comptes rendus est servi à part (VITE_CR_URL). */}
           <Route path="/portail/compte-rendu/*" element={<RedirectionExterne />} />
+          <Route path="/portail/journal-erreurs" element={<RedirectionExterne />} />
         </Routes>
       </RouteMotion>
     </LocaleProvider>

@@ -4,6 +4,7 @@ import AppShell from './components/AppShell'
 import { AuthProvider, useAuth } from './lib/auth'
 import Accueil from './pages/Accueil'
 import Connexion from './pages/Connexion'
+import JournalErreurs from './pages/JournalErreurs'
 import TrainerReportNew from './pages/TrainerReportNew'
 import TrainerReportsEnCours from './pages/TrainerReportsEnCours'
 import TrainerReportsTermines from './pages/TrainerReportsTermines'
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/portail/compte-rendu/a-documenter"
             element={<TrainerReportsEnCours aDocumenterAussi />} />
           <Route path="/portail/compte-rendu/mes-rapports" element={<TrainerReportsTermines />} />
+          <Route path="/portail/journal-erreurs" element={<JournalErreurs />} />
           <Route path="/portail/compte-rendu" element={<Navigate to="/" replace />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
