@@ -629,8 +629,19 @@ def _anneau_excel(image, geo, valeurs):
         t = min(lw / 2 / abs(dirx) if abs(dirx) > 1e-6 else math.inf,
                 lh / 2 / abs(diry) if abs(diry) > 1e-6 else math.inf) + 0.04 * rayon
         rm = trou_xl + 0.5 * ep_xl
-        trait = [(cx + dirx * t, cy + diry * t), (cx + dirx * rm, cy + diry * rm)] \
-            if t < trou_xl - 0.04 * rayon and v is not None else []
+        # Traits droits seulement (horizontaux ou verticaux) : on quitte la
+        # boite par le cote le plus proche du bout de l'arc, puis un coude.
+        ax, ay = cx + dirx * rm, cy + diry * rm
+        if abs(diry) >= abs(dirx):
+            x0 = min(max(ax, cx - lw / 2), cx + lw / 2)
+            y0 = cy + math.copysign(lh / 2 + 0.04 * rayon, diry)
+            trait = [(x0, y0), (x0, ay), (ax, ay)]
+        else:
+            y0 = min(max(ay, cy - lh / 2), cy + lh / 2)
+            x0 = cx + math.copysign(lw / 2 + 0.04 * rayon, dirx)
+            trait = [(x0, y0), (ax, y0), (ax, ay)]
+        if t >= trou_xl - 0.04 * rayon or v is None:
+            trait = []
         etiquettes.append((texte, police, lh, cx, cy, trait))
     if len(series) > 1 and series[1][1] is not None:
         serie, v = series[1]
@@ -640,13 +651,14 @@ def _anneau_excel(image, geo, valeurs):
         dirx, diry = math.sin(angle), -math.cos(angle)
         rm = trou_xl + (1 + 0.5) * ep_xl if n > 1 else rayon - ep_xl / 2
         couloir = rayon * 1.16                    # hors du cercle
-        sortie = rayon * 1.08
         ex = cx + couloir + rayon * 0.08 + lw / 2
         ey = cy + rayon * 0.62
-        q = (cx + dirx * sortie, cy + diry * sortie)
+        # Traits droits seulement, trois au plus : du bout de l'arc vers le
+        # couloir a l'horizontale, le long du couloir, puis vers l'etiquette.
         # Sans valeur, pas d'arc a designer : l'etiquette reste seule.
-        trait = [(cx + dirx * rm, cy + diry * rm), q, (cx + couloir, q[1]),
-                 (cx + couloir, ey), (ex - lw / 2 - rayon * 0.03, ey)] if v is not None else []
+        ax, ay = cx + dirx * rm, cy + diry * rm
+        trait = [(ax, ay), (cx + couloir, ay), (cx + couloir, ey),
+                 (ex - lw / 2 - rayon * 0.03, ey)] if v is not None else []
         etiquettes.append((texte, police, lh, ex, ey, trait))
 
     # Sur la fiche, l'anneau est sous le tableau (rien au-dessus de lui) ;
@@ -763,7 +775,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 7
+VERSION_IMAGES = 8
 
 
 def _cadre_de(rendu, reference):
