@@ -101,5 +101,7 @@ for i in gateway api cerbos; do docker manifest inspect antifragile237/cfao-comp
 
 | Version | Date | Source | Contenu |
 |---|---|---|---|
+| v0.4.1 | 29/10/2026 | `feature/04-5-v0.4.0` ffecc97 | `gateway` reconstruite depuis `git archive` (messages d'erreur de connexion en blanc), digest `sha256:ffd55742…6cdc`. `api` et `cerbos` re-taguées depuis la v0.4.0. |
+| v0.4.0 | 29/10/2026 | `feature/04-5-v0.4.0` (main + 04-5) | Les 3 images reconstruites (`api` en `--no-cache` pour LibreOffice et les polices). Journal des erreurs (migration `0003`, règle Cerbos), compte technique sans identifiant par défaut, annonce de mise à jour par rôle. |
 | v0.3.0 | 27/10/2026 | `main` 34a9666 | `gateway` refaite par modification de la v0.2.0 (front : choix des éléments à retrouver dans les prochains comptes rendus). `api` et `cerbos` identiques à la v0.2.0. |
 | v0.2.0 | 19/10/2026 | `main` | Pile de prod sur images Docker Hub. |

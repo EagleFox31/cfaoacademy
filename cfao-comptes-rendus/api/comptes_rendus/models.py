@@ -60,3 +60,22 @@ class TacheRapport(models.Model):
     chemin = models.CharField(max_length=500, blank=True, default="")
     erreur = models.TextField(blank=True, default="")
     debut = models.FloatField()
+
+
+class Erreur(models.Model):
+    """Une erreur survenue chez un formateur, consultable par l'equipe technique.
+
+    `origine` : « service » (rendu, rapport, route en echec) ou « portail »
+    (ce que le navigateur a constate : delai, coupure, reponse en erreur).
+    """
+    le = models.DateTimeField(auto_now_add=True, db_index=True)
+    origine = models.CharField(max_length=10)
+    owner = models.CharField(max_length=128, blank=True, default="")
+    nom = models.CharField(max_length=160, blank=True, default="")
+    action = models.CharField(max_length=120)
+    message = models.TextField(blank=True, default="")
+    detail = models.TextField(blank=True, default="")
+    contexte = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-le"]

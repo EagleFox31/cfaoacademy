@@ -102,3 +102,10 @@ def changer_mot_de_passe(identifiant, mot_de_passe):
         cx.execute("INSERT INTO comptes (identifiant, empreinte, profil) VALUES (?, ?, '{}') "
                    "ON CONFLICT (identifiant) DO UPDATE SET empreinte = excluded.empreinte",
                    (identifiant, empreinter(mot_de_passe)))
+
+
+def existe(identifiant):
+    """True si le compte a deja un mot de passe."""
+    with closing(_base()) as cx:
+        return cx.execute("SELECT 1 FROM comptes WHERE identifiant = ?",
+                          ((identifiant or "").strip().lower(),)).fetchone() is not None

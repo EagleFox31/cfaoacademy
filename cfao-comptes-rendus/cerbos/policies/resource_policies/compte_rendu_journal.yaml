@@ -1,0 +1,21 @@
+# Ressource « compte_rendu_journal » — journal des erreurs des comptes rendus.
+# Default-deny : toute action non listee est refusee.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: compte_rendu_journal
+  schemas:
+    principalSchema:
+      ref: cerbos:///principal.json
+    resourceSchema:
+      ref: cerbos:///ressource.json
+  rules:
+    # Le portail d'un formateur signale ce qu'il a constate.
+    - actions: ["create"]
+      effect: EFFECT_ALLOW
+      roles: ["trainer", "ki", "pic"]
+
+    # Lecture et suppression : equipe technique seule (PLATFORM_ROLES.md).
+    - actions: ["*"]
+      effect: EFFECT_ALLOW
+      roles: ["superadmin"]

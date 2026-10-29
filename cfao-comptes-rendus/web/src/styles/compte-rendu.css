@@ -950,31 +950,51 @@
    l'écran et l'aperçu tombait à 450 px de large — il fallait dézoomer.
    Leurs marges et le titre suivent donc la hauteur de l'écran, sans
    réglage de la part du formateur. */
-.cr-entete-assistant {
-  padding: clamp(8px, 2vh, 16px) 32px clamp(8px, 1.6vh, 12px);
+.container.cr-entete-assistant {
+  padding: clamp(10px, 2vh, 16px) 32px;
 }
 .cr-assistant .cr-home-title--sm {
   font-size: clamp(20px, min(2.2vw, 3.6vh), 30px);
   margin-bottom: clamp(8px, 2vh, 18px);
 }
-.cr-assistant .cr-retour { padding-bottom: clamp(4px, 1.4vh, 12px); }
-
-/* Écran court : le retour passe à gauche du titre, les phases perdent
-   leur sous-titre, la barre d'actions se resserre.
-   Hauteur effective : l'attribut remplace `max-height`, qui verrait la
-   hauteur avant mise a l'echelle (cf. utils/echelle.js). */
-:root[data-bas~="820"] .cr-entete-assistant {
+/* Fil d'Ariane : le retour à gauche du titre, sur une ligne ; les phases
+   passent dessous, sur toute la largeur. Sans marge basse, la ligne reste
+   centrée entre la barre de navigation et le contenu. */
+.cr-entete-assistant {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  align-items: baseline;
+  align-items: center;
   column-gap: 18px;
 }
-:root[data-bas~="820"] .cr-entete-assistant .cr-phases { grid-column: 1 / -1; }
-:root[data-bas~="820"] .cr-entete-assistant .cr-home-title--sm {
+.cr-entete-assistant .cr-retour { margin-bottom: 0; }
+/* L'heure d'enregistrement suit le titre sur sa ligne, posee sur la meme
+   ligne de base que lui. */
+.cr-entete-assistant:has(.cr-enregistre) { grid-template-columns: auto minmax(0, max-content) 1fr; }
+.cr-entete-assistant:has(.cr-enregistre) .cr-home-title--sm { align-self: last baseline; }
+.cr-entete-assistant .cr-enregistre {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: last baseline;
+  margin: 0;
+  white-space: nowrap;
+}
+.cr-entete-assistant .cr-phases { grid-column: 1 / -1; margin-top: clamp(8px, 2vh, 18px); }
+.cr-entete-assistant .cr-home-title--sm {
+  margin-bottom: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+@media (max-width: 600px) {
+  .cr-entete-assistant { display: block; }
+  .cr-entete-assistant .cr-retour { margin-bottom: 12px; }
+  .cr-entete-assistant .cr-home-title--sm { white-space: normal; }
+}
+
+/* Écran court : les phases perdent leur sous-titre, la barre d'actions
+   se resserre.
+   Hauteur effective : l'attribut remplace `max-height`, qui verrait la
+   hauteur avant mise a l'echelle (cf. utils/echelle.js). */
 :root[data-bas~="820"] .cr-assistant .cr-phase { padding: 6px 16px 6px 8px; gap: 10px; }
 :root[data-bas~="820"] .cr-assistant .cr-phase-num { width: 24px; height: 24px; }
 :root[data-bas~="820"] .cr-assistant .cr-phase-resume { display: none; }
@@ -3588,3 +3608,11 @@
 .cr-proposition-portrait { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
 .cr-proposition-actions { justify-content: flex-start; margin-top: 12px; }
 .cr-proposition-reponse { max-width: 460px; margin: 18px auto 0; color: var(--muted); font-size: 13px; }
+
+/* Journal des erreurs (équipe technique) */
+.cr-journal { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.cr-journal th, .cr-journal td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px solid var(--rule); }
+.cr-journal td:nth-child(2) { white-space: nowrap; }
+.cr-journal .cr-journal-choix { width: 28px; }
+.cr-journal-actions { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.cr-journal pre { max-height: 320px; overflow: auto; white-space: pre-wrap; font-size: 0.75rem; background: var(--paper); padding: 8px; }

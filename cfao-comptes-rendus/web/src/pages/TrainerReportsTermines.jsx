@@ -6,6 +6,9 @@ import CarteCompteRendu, { BadgeCompteRendu, carteDeBrouillon } from '../compone
 import { brouillonsTermines, synchroniser } from '../utils/brouillonsCompteRendu'
 import '../styles/compte-rendu.css'
 
+// Le bouton retour de l'assistant ramene a cette liste.
+const DEPUIS = { chemin: '/portail/compte-rendu/mes-rapports', libelle: 'Comptes rendus terminés' }
+
 /**
  * Les comptes rendus termines : l'archive du formateur.
  *
@@ -26,7 +29,7 @@ export default function TrainerReportsTermines() {
     return () => { actif = false }
   }, [])
 
-  const ouvrir = b => naviguer(`/portail/compte-rendu/nouveau?session=${b.id}`)
+  const ouvrir = b => naviguer(`/portail/compte-rendu/nouveau?session=${b.id}`, { state: { depuis: DEPUIS } })
 
   return (
     <>
