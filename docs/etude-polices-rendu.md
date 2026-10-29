@@ -52,3 +52,11 @@ Transposable tel quel ; seules les polices libres peuvent être versionnées.
 Option A tout de suite (aligne Docker sur Windows, sans coût), avec le contrôle bloquant de
 Precis (`fc-match` attendu pour chaque police du modèle). Option C seulement si l'identité
 exacte du modèle est exigée : **décision et achat de licences à l'utilisateur**.
+
+## Mise en œuvre (a080bfd)
+Option A retenue : `ttf-mscorefonts-installer` (dépôt contrib), Carlito, alias fontconfig
+(`cfao-comptes-rendus/polices.conf`) et contrôle `fc-match` bloquant au build.
+Graphiques à 0 % dans l'aperçu Docker : l'image n'avait pas **LibreOffice Calc**, donc les
+classeurs embarqués n'étaient pas recalculés (image du modèle conservée). `libreoffice-calc`
+ajouté ; vérifié sur les diapos 17 et 27 (valeurs réelles). Non couvert sous Linux :
+Wingdings, Algerian (absents du rendu des comptes rendus testés).
