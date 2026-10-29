@@ -12,16 +12,26 @@ RUN /opt/venv/bin/pip install -r /tmp/requirements.txt
 # -- Image d'execution.
 FROM python:3.12-slim
 
-# LibreOffice convertit les diapositives (Impress) et les classeurs des
-# graphiques (Calc : sans lui, la conversion echoue sans bruit et les
-# graphiques gardent les valeurs du modele). Liberation et Carlito ont les
-# memes metriques qu'Arial et Calibri ; `polices.conf` y renvoie les polices
-# du modele absentes sous Linux.
-RUN apt-get update \
+# LibreOffice convertit les diapositives ; Calc rend les classeurs embarques
+# (graphiques et tableaux), sans lui leurs images restent celles du modele.
+# Polices : celles de Windows (Arial, Arial Black, depot contrib, licence
+# Microsoft acceptee) et Carlito (metrique de Calibri), pour retrouver les
+# substitutions du rendu Windows (docs/etude-polices-rendu.md).
+RUN sed -i 's/^Components: main$/Components: main contrib/' /etc/apt/sources.list.d/debian.sources \
+ && echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections \
+ && apt-get update \
  && apt-get install -y --no-install-recommends \
-      libreoffice-impress libreoffice-calc fonts-liberation fonts-crosextra-carlito curl \
+      libreoffice-impress libreoffice-calc fonts-liberation fonts-crosextra-carlito \
+      ttf-mscorefonts-installer curl \
  && rm -rf /var/lib/apt/lists/*
 COPY polices.conf /etc/fonts/conf.d/99-cr-polices.conf
+# Controle bloquant : chaque police du modele doit tomber sur la police voulue.
+RUN fc-cache -f >/dev/null && for paire in \
+      "Gotham Black=Arial Black" "Arial=Arial" "Arial Nova=Carlito" \
+      "Arial Nova Light=Carlito" "Brandon Grotesque Medium=Carlito" "Calibri=Carlito"; do \
+      voulue="${paire#*=}"; obtenue="$(fc-match -f '%{family[0]}' "${paire%%=*}")"; \
+      [ "$obtenue" = "$voulue" ] || { echo "Police ${paire%%=*} : $obtenue au lieu de $voulue"; exit 1; }; \
+    done
 
 # Utilisateur sans privilege ; LibreOffice a besoin d'un dossier personnel.
 RUN useradd --create-home --uid 1000 service \
