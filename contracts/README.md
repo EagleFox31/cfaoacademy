@@ -39,8 +39,9 @@ vient du registre.
    haussée ; rupture détectée par l'outil du format (oasdiff pour OpenAPI) =
    MAJOR haussée. La base de comparaison est découverte (`GITHUB_BASE_REF`,
    sinon `origin/HEAD`) ; introuvable, l'étape est sautée avec un avertissement.
-5. **Déploiement** (`can_i_deploy.py`) : avant `docker compose pull`, compare
-   les labels de l'image candidate à ceux des conteneurs en service.
+5. **Déploiement** (`can_i_deploy.py`) : avant de basculer, compare
+   les labels de l'image candidate à ceux des conteneurs en service (voir
+   [Porte de déploiement](#porte-de-déploiement)).
 
 ## Commandes
 
@@ -52,8 +53,8 @@ pytest -q contracts/tests
 python contracts/can_i_deploy.py antifragile237/cfao-needs-api:v0.2.0 --ssh cfao-serveur
 ```
 
-`can_i_deploy.py` ne fait que lire (`docker image inspect` en local,
-`docker inspect` sur le serveur). Un conteneur est rattaché à son module par son
+`can_i_deploy.py` ne fait que lire côté serveur (`docker inspect`) ; en local,
+il tire l'image candidate si elle manque, puis lit ses labels. Un conteneur est rattaché à son module par son
 label, sinon par le dépôt de son image déclaré dans `modules[*].images`. Un
 module rattaché mais sans labels (image publiée avant le registre) a une
 version inconnue ; les conteneurs étrangers au registre (bases, passerelles)
@@ -66,6 +67,26 @@ sont ignorés.
 | 2 | compatibilité inconnue (contrepartie sans labels) |
 
 `--allow-missing` tolère un fournisseur absent.
+
+## Porte de déploiement
+
+Depuis le poste de développement, une fois les images poussées et **avant**
+toute bascule sur le serveur (`cfao-update.sh plan|apply`, ou `deploy.sh`
+qui fait `docker compose pull`), pour chaque image d'un module déclaré :
+
+```bash
+python contracts/can_i_deploy.py antifragile237/cfao-needs-api:vX.Y.Z --ssh cfao-serveur
+```
+
+- **0** : basculer.
+- **1** : ne pas basculer ; corriger la plage ou migrer d'abord la contrepartie.
+- **2** : toléré uniquement tant que l'image en service ou la candidate est
+  antérieure aux labels (transition). Dès que les deux portent leurs labels,
+  le verdict doit être 0 ; un 2 persistant signale un module ou un dépôt
+  d'image manquant dans `registry.json`.
+
+La porte tourne sur le poste et non sur le serveur, qui n'a ni le registre ni
+Python outillé : elle lit le serveur par SSH sans rien y écrire.
 
 ## Ajouter ou faire évoluer un contrat
 

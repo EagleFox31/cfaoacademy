@@ -2,7 +2,8 @@
 
     python contracts/can_i_deploy.py IMAGE[:TAG] [--ssh HÔTE] [--allow-missing]
 
-Lit les labels de l'image candidate (`docker image inspect`, en local) et
+Lit les labels de l'image candidate (`docker image inspect`, en local, après
+`docker pull` si elle manque) et
 l'image et les labels des conteneurs en service (`docker inspect`, en local ou
 par SSH, lecture seule). Vérifie les deux sens :
 - chaque contrat consommé par l'image est fourni, en version compatible, par
@@ -41,7 +42,13 @@ def _json(args: list[str], ssh: str | None):
 
 
 def image_labels(image: str) -> dict[str, str]:
-    return _json(["image", "inspect", "--format", "'{{json .Config.Labels}}'", image], None) or {}
+    """Labels de l'image candidate, tirée du registre si elle manque en local."""
+    inspect = ["image", "inspect", "--format", "'{{json .Config.Labels}}'", image]
+    try:
+        return _json(inspect, None) or {}
+    except subprocess.CalledProcessError:
+        _docker(["pull", "-q", image], None)
+        return _json(inspect, None) or {}
 
 
 def running_containers(ssh: str | None) -> dict[str, dict]:

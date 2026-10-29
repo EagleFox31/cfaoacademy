@@ -224,6 +224,27 @@ def test_legacy_candidate_is_identified_but_unknown():
     assert unknown == ["antifragile237/cfao-needs-api:v0.1.2 : image de cfao-needs sans labels de contrat"]
 
 
+def test_candidate_absent_locally_is_pulled_once(monkeypatch):
+    calls: list[list[str]] = []
+    local: set[str] = set()
+
+    def docker(args, ssh):
+        calls.append(args)
+        if args[0] == "pull":
+            local.add(args[-1])
+            return ""
+        if args[-1] not in local:
+            raise can_i_deploy.subprocess.CalledProcessError(1, args)
+        return "'{\"org.cfao.module\": \"cfao-needs\"}'"
+
+    monkeypatch.setattr(can_i_deploy, "_docker", docker)
+    assert can_i_deploy.image_labels("x:v1") == {"org.cfao.module": "cfao-needs"}
+    assert [args[0] for args in calls] == ["image", "pull", "image"]
+    calls.clear()
+    can_i_deploy.image_labels("x:v1")
+    assert [args[0] for args in calls] == ["image"]
+
+
 # --- CI ---------------------------------------------------------------------------
 
 def _ci_filter(name: str) -> list[str]:
