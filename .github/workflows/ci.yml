@@ -107,16 +107,42 @@ jobs:
           docker compose -f $f up -d keycloak
           docker compose -f $f run --rm config
           KC_URL=http://localhost:18080 pytest -q keycloak/tests/smoke_realm.py
-      - name: smoke en configuration prod (SPA de dev coupée, secret injecté)
+      # Keycloak neuf (H2 en mémoire), realm sans les comptes de démo.
+      - name: smoke en configuration prod (SPA de dev coupée, secret injecté, sans démo)
         env:
           CFAO_SPA_ENABLED: "false"
           CFAO_PORTAL_SECRET: ci-secret-portail
+          SMOKE_IMPORT: /config/*.yaml,/fixtures/*.yaml
         run: |
           f=keycloak/tests/docker-compose.smoke.yml
+          docker compose -f $f up -d --force-recreate keycloak
           docker compose -f $f run --rm config
-          KC_URL=http://localhost:18080 SPA_ATTENDUE=disabled pytest -q keycloak/tests/smoke_realm.py
+          KC_URL=http://localhost:18080 SPA_ATTENDUE=disabled DEMO_ATTENDUE=absente pytest -q keycloak/tests/smoke_realm.py
+          # Migration des comptes de module (L5) : vrais flux de connexion, rejeu sans effet.
+          KC_URL=http://localhost:18080 pytest -q keycloak/tests/smoke_migration.py
+          docker compose -f $f down -v
+      # L'image publiée et son compose de prod, tels quels : build optimisé, Postgres,
+      # realm embarqué (sans dev/), aucun secret par défaut.
+      - name: smoke de l'image de prod (compose.prod.yml)
+        env:
+          KC_VERSION: smoke
+          KC_PORT: "18080"
+          KC_HOSTNAME: http://localhost:18080
+          KC_DB_PASSWORD: ci-db
+          KC_ADMIN_PASSWORD: ci-admin
+          CFAO_PORTAL_SECRET: ci-secret-portail
+          KC_IMPORT_LOCATIONS: /opt/cfao-realm/*.yaml,/fixtures/*.yaml
+        run: |
+          docker build -q -t antifragile237/cfao-keycloak:smoke keycloak
+          p="-f keycloak/compose.prod.yml -f keycloak/tests/compose.prod.smoke.yml"
+          docker compose $p up -d --wait keycloak
+          docker compose $p run --rm config
+          KC_URL=http://localhost:18080 SPA_ATTENDUE=disabled DEMO_ATTENDUE=absente pytest -q keycloak/tests/smoke_realm.py
+          KC_URL=http://localhost:18080 pytest -q keycloak/tests/smoke_migration.py
       - if: failure()
-        run: docker compose -f keycloak/tests/docker-compose.smoke.yml logs --tail=200
+        run: |
+          docker compose -f keycloak/tests/docker-compose.smoke.yml logs --tail=200
+          docker compose -f keycloak/compose.prod.yml logs --tail=200 || true
 
   core:
     name: cfao-core (Django · pytest)

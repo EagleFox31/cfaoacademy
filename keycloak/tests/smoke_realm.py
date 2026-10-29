@@ -2,7 +2,8 @@
 
 À lancer explicitement, Keycloak démarré et realm appliqué par keycloak-config-cli :
     KC_URL=http://localhost:18080 pytest -q tests/smoke_realm.py
-Variables : KC_ADMIN / KC_ADMIN_PASSWORD (admin/admin), SPA_ATTENDUE (enabled|disabled).
+Variables : KC_ADMIN / KC_ADMIN_PASSWORD (admin/admin), SPA_ATTENDUE (enabled|disabled),
+DEMO_ATTENDUE (presente|absente).
 
 Les jetons sont obtenus par les vrais flux (code + secret pour le BFF, PKCE pour
 la SPA needs) et vérifiés par la lib commune `core/auth/jwt_verifier.py`.
@@ -38,8 +39,15 @@ _spec.loader.exec_module(jwt_verifier)
 EMETTEURS = {REALM: f"{OIDC}/certs"}
 
 
-def _code(client_id, redirect_uri, **extra):
-    """Flux d'autorisation complet : page de login, saisie, code renvoyé."""
+def _formulaire(page, ident):
+    """L'URL d'action du formulaire Keycloak `ident` de cette page."""
+    formulaire = re.search(rf'<form[^>]*id="{ident}"[^>]*>', page.text)
+    assert formulaire, f"pas de formulaire {ident} ({page.status_code})"
+    return html.unescape(re.search(r'action="([^"]+)"', formulaire.group(0)).group(1))
+
+
+def _connexion(client_id, redirect_uri, utilisateur=UTILISATEUR, mot_de_passe=MOT_DE_PASSE, **extra):
+    """Page de login puis saisie : (session, réponse brute de Keycloak)."""
     s = requests.Session()
     page = s.get(f"{OIDC}/auth", params={"client_id": client_id, "redirect_uri": redirect_uri,
                                           "response_type": "code", "scope": "openid", **extra})
@@ -48,14 +56,21 @@ def _code(client_id, redirect_uri, **extra):
     # http://localhost (contexte sûr), requests non : on fait comme le navigateur.
     for cookie in s.cookies:
         cookie.secure = False
-    formulaire = re.search(r'<form[^>]*id="kc-form-login"[^>]*>', page.text)
-    assert formulaire, f"pas de formulaire de login ({page.status_code})"
-    action = html.unescape(re.search(r'action="([^"]+)"', formulaire.group(0)).group(1))
-    r = s.post(action, data={"username": UTILISATEUR, "password": MOT_DE_PASSE}, allow_redirects=False)
+    action = _formulaire(page, "kc-form-login")
+    return s, s.post(action, data={"username": utilisateur, "password": mot_de_passe}, allow_redirects=False)
+
+
+def _code_de(r, redirect_uri):
+    """Le code d'autorisation d'une redirection finale de Keycloak."""
     assert r.status_code == 302, r.text[:300]
     lieu = r.headers["Location"]
     assert lieu.startswith(redirect_uri), lieu
     return parse_qs(urlparse(lieu).query)["code"][0]
+
+
+def _code(client_id, redirect_uri, **extra):
+    """Flux d'autorisation complet du compte de test : code renvoyé."""
+    return _code_de(_connexion(client_id, redirect_uri, **extra)[1], redirect_uri)
 
 
 def _aud(claims):
@@ -149,6 +164,13 @@ def test_spa_de_dev_selon_l_environnement():
         assert "cfao-cr-api" in _aud(claims)
     else:
         assert r.status_code in (400, 401), r.text
+
+
+def test_comptes_de_demo_selon_l_environnement(admin):
+    # En prod, seul le compte du smoke existe : aucun compte « demo » importé.
+    trouves = admin.get(f"{KC_URL}/admin/realms/cfao/users",
+                        params={"username": "brahim.tahir", "exact": "true"}).json()
+    assert len(trouves) == (0 if os.environ.get("DEMO_ATTENDUE") == "absente" else 1)
 
 
 def test_role_training_coordinator_publie(admin):

@@ -13,6 +13,7 @@ import yaml
 
 RACINE = Path(__file__).resolve().parents[2]
 REALM = RACINE / "keycloak" / "config" / "cfao-realm.yaml"
+DEMO = RACINE / "keycloak" / "config" / "dev" / "cfao-demo-users.yaml"
 POLICIES = RACINE / "cerbos" / "policies"
 CATALOGUE = RACINE / "cfao-core" / "identity" / "roles.py"
 
@@ -154,6 +155,51 @@ def test_spa_de_dev_desactivable(realm):
     assert SUBSTITUTION.match(str(_clients(realm)["cfao-spa"]["enabled"]))
 
 
+def test_realm_de_prod_sans_aucun_compte(realm):
+    # Les comptes de démo (mot de passe « demo ») ne doivent jamais atteindre la prod.
+    assert "users" not in realm
+    assert "credentials" not in REALM.read_text(encoding="utf-8")
+
+
+def test_comptes_de_demo_isoles_dans_dev(realm):
+    demo = yaml.safe_load(DEMO.read_text(encoding="utf-8"))
+    for u in demo["users"]:
+        assert set(u["realmRoles"]) <= _roles_realm(realm), u["username"]
+    assert demo["realm"] == "cfao"
+    assert set(demo) == {"realm", "users"}, "dev/ ne porte que des comptes"
+    # Le glob de prod (/config/*.yaml) ne descend pas dans dev/.
+    assert DEMO.parent != REALM.parent
+
+
+def test_import_dev_seulement_par_defaut_du_compose_racine():
+    compose = (RACINE / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "IMPORT_FILES_LOCATIONS: ${KC_IMPORT_LOCATIONS:-/config/*.yaml,/config/dev/*.yaml}" in compose
+
+
+def test_image_de_prod_sans_les_comptes_de_demo():
+    # Le contexte de build n'admet que config/*.yaml : dev/ reste hors de l'image.
+    ignore = (RACINE / "keycloak" / ".dockerignore").read_text(encoding="utf-8").split()
+    assert ignore[0] == "*" and "!config/*.yaml" in ignore
+    assert not [r for r in ignore if "dev" in r]
+    dockerfile = (RACINE / "keycloak" / "Dockerfile").read_text(encoding="utf-8")
+    assert "COPY config/*.yaml /opt/cfao-realm/" in dockerfile
+    assert 'CMD ["start", "--optimized"]' in dockerfile
+
+
+def test_compose_de_prod_sans_secret_par_defaut():
+    prod = yaml.safe_load((RACINE / "keycloak" / "compose.prod.yml").read_text(encoding="utf-8"))
+    services = prod["services"]
+    for nom, cle in (("keycloak-db", "POSTGRES_PASSWORD"), ("keycloak", "KC_DB_PASSWORD"),
+                     ("keycloak", "KC_BOOTSTRAP_ADMIN_PASSWORD"), ("keycloak", "KC_HOSTNAME"),
+                     ("config", "KEYCLOAK_PASSWORD"), ("config", "CFAO_PORTAL_SECRET")):
+        assert re.fullmatch(r"\$\{[A-Z_]+:\?.+\}", services[nom]["environment"][cle]), f"{nom}.{cle}"
+    # Pas de `command` : le CMD de l'image (start --optimized), jamais start-dev.
+    assert "command" not in services["keycloak"]
+    assert services["config"]["environment"]["CFAO_SPA_ENABLED"] == "false"
+    assert services["config"]["environment"]["IMPORT_FILES_LOCATIONS"].endswith(":-/opt/cfao-realm/*.yaml}")
+    assert services["keycloak"]["image"] == services["config"]["image"]
+
+
 def test_job_ci_realm_filtre_sur_ses_chemins():
     ci = (RACINE / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     filtres = ci.split("            realm:\n", 1)[1].split("\n    steps:", 1)[0] if "            realm:\n" in ci else ""
@@ -162,3 +208,6 @@ def test_job_ci_realm_filtre_sur_ses_chemins():
     job = ci.split("\n  realm:\n", 1)[1].split("\n  core:\n", 1)[0]
     assert "needs.changes.outputs.realm == 'true'" in job
     assert "smoke_realm.py" in job and "SPA_ATTENDUE=disabled" in job
+    assert "DEMO_ATTENDUE=absente" in job and "--force-recreate keycloak" in job
+    assert "smoke_migration.py" in job
+    assert "-f keycloak/compose.prod.yml" in job and "docker build" in job

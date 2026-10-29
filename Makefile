@@ -66,7 +66,7 @@ SMOKE_REALM = docker compose -f keycloak/tests/docker-compose.smoke.yml
 smoke-realm: test-realm
 	$(SMOKE_REALM) up -d keycloak
 	$(SMOKE_REALM) run --rm config
-	KC_URL=http://localhost:18080 keycloak/.venv/Scripts/python.exe -m pytest -q keycloak/tests/smoke_realm.py
+	KC_URL=http://localhost:18080 keycloak/.venv/Scripts/python.exe -m pytest -q keycloak/tests/smoke_realm.py keycloak/tests/smoke_migration.py
 	$(SMOKE_REALM) down
 
 test-core:

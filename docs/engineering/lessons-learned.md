@@ -21,10 +21,29 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Une policy se relit pour le realm où elle tourne : ni `roles: ["*"]` en lecture large, ni DENY par rôle sans test de rôles cumulés | E (moindre privilège) | tests Cerbos « comptes externes » et « rôles cumulés », prouvés par mutation |
 | Un émetteur de jeton se compare à l'identique, contre une liste déclarée ; un hôte différent est une entrée de plus, jamais un suffixe ni une réécriture | E, R | `test_jwt_verifier.py` (même realm sur un autre hôte refusé), copies identiques vérifiées en CI |
 | Une audience vérifiée par une API est produite par un mapper du realm, et un secret de client n'a qu'une source | E, D | `keycloak/tests` (cohérence statique) + smoke sur Keycloak 26 (jetons réels, config dev et prod) |
+| Une donnée de dev (comptes, mots de passe) vit dans un emplacement que la prod n'importe pas, jamais derrière un simple commentaire | E, D | `test_realm_de_prod_sans_aucun_compte` + smoke prod sur Keycloak neuf (`DEMO_ATTENDUE=absente`) |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-29 — Le realm destiné à la prod embarquait 11 comptes de démo au mot de passe « demo » (fédération L5)
+- **Contexte / symptôme** : `keycloak/config/cfao-realm.yaml`, le fichier que keycloak-config-cli applique, contenait sous l'en-tête « DEV uniquement » 11 comptes au mot de passe `demo` non temporaire, dont `admin.groupe` et `moa.pilotage`. Rien ne séparait la dev de la prod : le même glob `/config/*.yaml` les importait partout.
+- **Impact** : near miss. Le premier déploiement du realm commun sur le serveur aurait ouvert des comptes privilégiés à mot de passe connu.
+- **Détection** : préparation de la migration des comptes (L5), en lisant le format des utilisateurs du realm.
+- **Cause racine** : une restriction d'environnement écrite en commentaire, sans mécanisme qui l'applique ni test qui la vérifie.
+- **Correctif** :
+  - les comptes de démo passent dans `keycloak/config/dev/` ;
+  - le compose de dev les importe par défaut (`KC_IMPORT_LOCATIONS`), la prod importe `/config/*.yaml` seul ;
+  - le smoke prod tourne sur un Keycloak neuf, avec un seul compte de test (`tests/fixtures/`).
+- **Prévention** :
+  - `test_realm_de_prod_sans_aucun_compte` vérifie qu'il n'y a ni `users` ni `credentials` dans le realm ;
+  - `test_comptes_de_demo_isoles_dans_dev` ;
+  - le smoke prod avec `DEMO_ATTENDUE=absente` interroge l'admin API pour confirmer l'absence de `brahim.tahir` ;
+  - le job CI vérifie `--force-recreate`.
+- **Leçon généralisée** : « DEV uniquement » ne protège que si c'est un emplacement ou un drapeau que le déploiement de prod exclut, et qu'un test le vérifie.
+- **Catégorie** : Sécurité / authentification
+- **Récidive** : non
 
 ### 2026-10-28 — Audience exigée qu'aucun mapper ne produisait, secret BFF en double (fédération L3)
 - **Contexte / symptôme** : le service des comptes rendus exigeait `aud = cfao-portal` dans le compose racine, mais le realm `cfao` n'avait aucun mapper d'audience : Keycloak met le client demandeur dans `azp`, pas dans `aud`. Le secret du client `cfao-portal` était écrit en dur dans le realm (`dev-portal-secret`) et, en parallèle, dans `.env` pour oauth2-proxy (`OAUTH2_PROXY_CLIENT_SECRET`), avec des valeurs différentes.
