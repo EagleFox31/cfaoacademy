@@ -23,6 +23,17 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
 
+### 2026-10-29 — Connexion refusée en prod après la v0.4.0, `ORIGINES_AUTORISEES` absente (cfao-comptes-rendus)
+- **Contexte / symptôme** : après le passage en v0.4.0, plus personne ne se connecte aux comptes rendus. Le navigateur affiche « forbidden », l'API répond 403 `origine non autorisee` à tous les POST.
+- **Impact** : module inutilisable (connexion, aperçu, enregistrement) pour tous les utilisateurs.
+- **Détection** : signalement d'un formateur ; journaux de la passerelle (403 et non 401).
+- **Cause racine** : la v0.4.0 ajoute le contrôle d'origine `ControleOrigine`. Le `.env` du serveur n'a pas reçu `ORIGINES_AUTORISEES` ; la valeur par défaut ne liste que `localhost`. Le guide de mise à jour ne citait pas la variable et le contrôle après déploiement n'essayait pas de connexion depuis l'adresse réelle.
+- **Correctif** : `ORIGINES_AUTORISEES=http://192.168.10.155:8092` ajoutée au `.env` du serveur, API recréée. Vérifié : origine du serveur 401 sur faux identifiants, origine étrangère 403.
+- **Prévention** : `MISE_A_JOUR.md` liste la variable à l'étape 4 et le contrôle de l'étape 6 envoie un POST de connexion avec l'en-tête `Origin` réel (401 attendu, jamais 403).
+- **Leçon généralisée** : toute nouvelle variable obligatoire en prod doit apparaître dans le guide de mise à jour, et le contrôle post-déploiement doit passer par l'adresse réelle des utilisateurs, pas par `localhost`.
+- **Catégorie** : déploiement
+- **Récidive** : non
+
 ### 2026-10-28 — Le filtre de chemins échouait sur GitHub faute de droit de lecture des PR (cfao-academy-mail)
 - **Contexte / symptôme** : premières PR (#21 hub mail, #22 contrôle `frontend/` seul). Le job `Chemins touchés` échoue sur les deux avec `Resource not accessible by integration`. Le job `mail` est alors `skipping` partout, y compris quand le hub change.
 - **Impact** : les tests du hub ne tournaient jamais en PR. Le test de fichier était vert.

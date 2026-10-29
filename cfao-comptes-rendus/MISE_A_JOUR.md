@@ -63,12 +63,16 @@ utilisé.
 CR_VERSION=v0.4.0
 CR_COMPTE_TECHNIQUE=<identifiant de l'équipe technique>
 CR_COMPTE_TECHNIQUE_MDP=<mot de passe fort, généré pour ce serveur>
+ORIGINES_AUTORISEES=http://192.168.10.155:8092
 ```
 
 - Les deux lignes `CR_COMPTE_TECHNIQUE*` sont nécessaires depuis la v0.4.0 : sans elles,
   le compte technique n'est pas créé. Le mot de passe peut être généré par
   `openssl rand -base64 24`. Il n'est lu qu'à la création du compte : un changement fait
   ensuite dans l'application n'est jamais écrasé.
+- `ORIGINES_AUTORISEES` est obligatoire depuis la v0.4.0 : l'origine exacte (schéma, hôte,
+  port) par laquelle les utilisateurs ouvrent le module, plusieurs valeurs séparées par
+  des virgules. Sans elle, toute connexion échoue en 403 « origine non autorisee ».
 - Ne modifier **ni** `SECRET_KEY` **ni** `POSTGRES_PASSWORD` : la base a été créée avec
   ce mot de passe.
 
@@ -87,6 +91,9 @@ compte technique. L'image Cerbos porte déjà la nouvelle règle du journal.
 dc ps                                   # cerbos, api, gateway : running ou healthy
 dc logs --tail 30 api                   # « compte technique : … cree » au premier démarrage
 dc exec api curl -fsS http://localhost:5175/apercu/sante
+# Connexion par l'origine réelle : 400 ou 401 attendu, jamais 403
+curl -s -o /dev/null -w "%{http_code}\n" -X POST http://127.0.0.1:8092/cr-donnees/connexion \
+  -H "Origin: http://192.168.10.155:8092" -H "Content-Type: application/json" -d '{}'
 ```
 
 Dans le navigateur :
