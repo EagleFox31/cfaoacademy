@@ -745,9 +745,20 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
     from PIL import Image
     image = _sans_blanc(pixmap_png if isinstance(pixmap_png, Image.Image)
                         else Image.open(io.BytesIO(pixmap_png)))
-    boite = cadre[:4] if cadre else image.getbbox()
+    boite = image.getbbox()
+    # Avec un cadre, le coin haut gauche reste celui de la reference (une
+    # moitie absente y laisse sa place vide) ; le bas et la droite sont
+    # ceux du rendu, pour ne rien couper.
+    if boite and cadre:
+        boite = (cadre[0], cadre[1], max(boite[2], cadre[0] + 1), max(boite[3], cadre[1] + 1))
     if boite:
         image = image.crop(boite)
+    # LibreOffice met la feuille a une note a une echelle un peu
+    # differente (~1,5 %) de celle aux deux notes, depuis ce coin : le
+    # tableau, qui donne toute la largeur, reprend celle de la reference.
+    if cadre and image.width != cadre[2] - cadre[0]:
+        f_ = (cadre[2] - cadre[0]) / image.width
+        image = image.resize((cadre[2] - cadre[0], max(1, round(image.height * f_))), Image.LANCZOS)
     if anneau:
         image = _anneau_excel(image, *anneau)
     if cadre:
@@ -758,15 +769,16 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
         toile.paste(image, (max(0, ox - dx), max(0, oy - dy)))
         image = toile
     # L'objet etire son image aux proportions de l'EMF d'origine : on les
-    # retrouve par un bord transparent, centre sur les deux axes pour ne
-    # pas laisser le contenu glisser vers un coin de son cadre.
+    # retrouve par un bord transparent, a droite et en bas. Excel ancre la
+    # zone visible en haut a gauche du cadre (l'EMF du modele aussi) :
+    # centre, l'apercu tombait a droite du vrai objet ouvert dans PowerPoint.
     if ratio:
         from PIL import Image
         l, h = image.size
         cible_l, cible_h = max(l, round(h * ratio)), max(h, round(l / ratio))
         if (cible_l, cible_h) != (l, h):
             cadre = Image.new('RGBA', (cible_l, cible_h), (255, 255, 255, 0))
-            cadre.paste(image, ((cible_l - l) // 2, (cible_h - h) // 2))
+            cadre.paste(image, (0, 0))
             image = cadre
     # optimize=True quadruple le temps pour un fichier a peine plus petit.
     sortie = io.BytesIO()
@@ -775,7 +787,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 10
+VERSION_IMAGES = 11
 
 
 def _cadre_de(rendu, reference):
@@ -960,7 +972,16 @@ def _sans_moitie_absente(parts, valeurs):
     for nom in [n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)]:
         graphique = parts[nom].decode('utf-8')
         if '<c:doughnutChart>' in graphique:
+            avant = graphique.count('<c:ser>')
             graphique = re.sub(r'<c:ser>.*?</c:ser>', hors_moitie, graphique, flags=re.S)
+            # Le trou grandit pour que l'anneau restant garde l'epaisseur
+            # d'une bande, au lieu de prendre celle des deux.
+            apres = graphique.count('<c:ser>')
+            if 0 < apres < avant:
+                graphique = re.sub(
+                    r'<c:holeSize val="(\d+)"/>',
+                    lambda m: f'<c:holeSize val="{min(90, round(100 - (100 - int(m.group(1))) * apres / avant))}"/>',
+                    graphique)
             # Seule, une serie donne son nom en titre au graphique : ce
             # titre automatique n'existe pas dans le modele.
             graphique = graphique.replace('<c:autoTitleDeleted val="0"/>',
