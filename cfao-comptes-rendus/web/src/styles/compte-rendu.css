@@ -976,7 +976,7 @@
   gap: 10px 18px;
   margin-top: clamp(8px, 2vh, 18px);
 }
-.cr-entete-assistant .cr-enregistre { margin: 0; white-space: nowrap; }
+.cr-entete-assistant .cr-enregistre { margin: 0 0 0 auto; align-self: flex-end; white-space: nowrap; }
 .cr-entete-assistant .cr-home-title--sm {
   margin-bottom: 0;
   white-space: nowrap;

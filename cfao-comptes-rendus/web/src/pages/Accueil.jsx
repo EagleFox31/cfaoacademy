@@ -232,11 +232,11 @@ export default function Accueil() {
                   kicker={
                     <span className="portal-status-chip done">
                       {termines.length > 0
-                        ? `${termines.length} rapport${termines.length > 1 ? 's' : ''}`
+                        ? `${termines.length} terminé${termines.length > 1 ? 's' : ''}`
                         : 'Archive'}
                     </span>
                   }
-                  title="Mes comptes rendus"
+                  title="Mes comptes rendus terminés"
                   meta={termines.length
                     ? `Les comptes rendus terminés — le dernier ${venuDe(termines[0].termineLe)}.`
                     : 'Les comptes rendus terminés s’y rangent.'}
