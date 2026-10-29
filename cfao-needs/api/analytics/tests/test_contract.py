@@ -50,15 +50,6 @@ PATHS = sorted(openapi_document()["paths"])
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("path", PATHS)
-@pytest.mark.xfail(
-    strict=True,
-    raises=Exception,
-    reason=(
-        "Les vues lisent campaigns_branchbrandquota, campaigns_courseallocation et "
-        "campaigns_trainingsession, qu'aucun modèle ne crée (absentes aussi en production). "
-        "Retirer ce marqueur quand les requêtes portent sur les modèles réels."
-    ),
-)
 def test_server_success_matches_published_contract(settings, path):
     settings.ANALYTICS_INBOUND_KEY = KEY
     ok = APIClient().get(path, {"year": 2026}, HTTP_X_ANALYTICS_KEY=KEY)

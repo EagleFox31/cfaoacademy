@@ -5,6 +5,8 @@
 
 -- ------------------------------------------------------------------------------
 -- 1. BASE NEEDS (cfao-needs-needs-db-1 : needs)
+-- Les trois premières tables sont aussi des modèles Django (campaigns, migration
+-- 0004) : garder ce schéma identique à cfao-needs/api/campaigns/models.py.
 -- ------------------------------------------------------------------------------
 
 -- Quotas filiales par marque et par pays (Clé de répartition 2026)

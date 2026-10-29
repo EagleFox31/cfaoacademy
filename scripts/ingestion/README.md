@@ -44,6 +44,12 @@ Ce dossier contient le pipeline complet et reproductible permettant d'extraire, 
 - `campaigns_trainingsession` : 180 sessions planifiées 2026 avec dates, lieux, formateurs et types.
 - `campaigns_coursenonchoisie` : Archive des 42 formations non retenues.
 
+`campaigns_branchbrandquota`, `campaigns_courseallocation` et `campaigns_trainingsession`
+sont des modèles Django (`cfao-needs/api/campaigns/models.py`, migration `0004`) lus par
+l'app `analytics`. Un changement de colonne passe par une migration, puis par
+`init_database_tables.sql`. Si le script a créé les tables avant `migrate`, la migration
+les adopte au lieu d'échouer.
+
 #### 2. `cfaoacademy-core-db-1` (Base `core`)
 - `lms_course` : 123 cours publiés pour la plateforme pédagogique LMS.
 - `lms_module` : 122 briques pédagogiques e-learning rattachées aux cours.

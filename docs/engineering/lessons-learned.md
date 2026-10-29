@@ -20,10 +20,22 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Une action CI qui appelle l'API GitHub reçoit le droit explicite dont elle a besoin | E (moindre privilège) | test du workflow (`pull-requests: read` sur `changes`) + run observé |
 | Toute frontière inter-modules est déclarée dans `contracts/registry.json`, avec test fournisseur et test consommateur | D, E (contrats explicites) | job CI `contracts` + tests consommateur de chaque module |
 | Un fichier dérivé d'une source (labels, spec publiée) est réconcilié par un outil qui n'écrit que son bloc et seulement s'il dérive | I, R | `contracts/sync.py --check` en CI + test de second passage sans écriture |
+| Une table lue par une application est portée par son modèle et sa migration, jamais par un script hors bande seul | D, R | test sur données réelles + migration qui adopte une table préexistante, rejouée sur Postgres |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-29 — Tables d'arbitrage needs adoptées par Django (cfao-needs) — suite de « tables inexistantes » ci-dessous
+- **Contexte / symptôme** : décision métier « A » (créer les tables). Leur schéma existait déjà dans `scripts/ingestion/init_database_tables.sql`, appliqué par `docker exec` hors des migrations. Deux near misses pendant le correctif. D'abord, un `RunPython` placé dans `SeparateDatabaseAndState(database_operations=...)` reçoit l'état *antérieur* aux modèles qu'il doit créer. Ensuite, SQLite (base de test) ne replie pas la casse des lettres accentuées (`PLACÉES` contre `Placées`), alors que Postgres le fait.
+- **Impact** : aucun (corrigés avant exécution pour le premier, au premier run pour le second).
+- **Détection** : relecture de la migration ; test `test_allocations_sum_by_country_without_summary_rows`, rouge sur SQLite.
+- **Cause racine** : une table créée par un script de chargement n'avait ni modèle ni migration. Les vues la lisaient donc en SQL brut, propre à Postgres (`ILIKE`), intestable sur la base de test.
+- **Correctif** : modèles `BranchBrandQuota`, `CourseAllocation`, `TrainingSession` (schéma identique au SQL) ; migration `0004` : état seul, puis `RunPython` qui crée les tables absentes et adopte celles du script ; vues réécrites en ORM ; xfail retiré.
+- **Prévention** : tests des trois agrégats sur données réelles ; test d'adoption ; suite rejouée sur Postgres 16, y compris l'ordre « script puis `migrate` », le SQL relancé après `migrate` et l'aller-retour de migration.
+- **Leçon généralisée** : un script de chargement alimente des tables, il ne les possède pas. L'opération qui crée une table doit voir l'état qui la déclare. Un test sur SQLite ne prouve pas un comportement de collation Postgres.
+- **Catégorie** : modèle de données
+- **Récidive** : non
 
 ### 2026-10-29 — Labels de contrat posés à la main dans les Dockerfiles (contracts)
 - **Contexte / symptôme** : première version du registre. Les labels `org.cfao.*` ont été ajoutés aux trois Dockerfiles par un script d'édition qui a écrit des `\n` littéraux au lieu de sauts de ligne. Le contrôle de `check.py` les a acceptés, car son parseur lisait l'instruction `LABEL` sur une seule ligne. Ensuite, un format de spec inconnu dans le registre faisait planter le calcul des labels au lieu d'être signalé.
