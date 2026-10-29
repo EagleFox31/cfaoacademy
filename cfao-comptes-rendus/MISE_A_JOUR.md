@@ -9,7 +9,7 @@ Durée : environ 15 min, dont 2 à 5 min d'interruption.
 
 ## Version à installer
 
-**v0.4.0** (29/10/2026). Ce qui change :
+**v0.4.1** (29/10/2026), depuis la v0.3.0. Ce qui change :
 
 - les graphiques de l'aperçu affichent les vrais chiffres de la session ;
 - sur la fiche individuelle, l'anneau de satisfaction et ses étiquettes sont lisibles et
@@ -18,6 +18,7 @@ Durée : environ 15 min, dont 2 à 5 min d'interruption.
 - une annonce prévient les utilisateurs avant une mise à jour, puis liste les nouveautés
   selon leur rôle ;
 - nouveau : un journal des erreurs, lu par le compte de l'équipe technique (superadmin).
+- les messages d'erreur de la page de connexion sont écrits en blanc, lisibles sur le fond rouge (v0.4.1).
 
 ## Étapes
 
@@ -60,7 +61,7 @@ utilisé.
 ### 4. Compléter le `.env`
 
 ```
-CR_VERSION=v0.4.0
+CR_VERSION=v0.4.1
 CR_COMPTE_TECHNIQUE=<identifiant de l'équipe technique>
 CR_COMPTE_TECHNIQUE_MDP=<mot de passe fort, généré pour ce serveur>
 ORIGINES_AUTORISEES=http://192.168.10.155:8092
@@ -151,6 +152,7 @@ Le script `deploy` n'est pas utilisable dans ce cas, car il commence par un tél
 
 | Version | Date | Changement |
 |---|---|---|
+| v0.4.1 | 29/10/2026 | Messages d'erreur de connexion lisibles (texte blanc) ; `ORIGINES_AUTORISEES` documentée, obligatoire depuis la v0.4.0. |
 | v0.4.0 | 29/10/2026 | Graphiques de l'aperçu, anneau de satisfaction, annonce de mise à jour par rôle, journal des erreurs et compte technique (`CR_COMPTE_TECHNIQUE*` à ajouter au `.env`). |
 | v0.3.0 | 27/10/2026 | Choix des éléments à retrouver dans les prochains comptes rendus. |
 | v0.2.0 | 19/10/2026 | Première version de production sur images Docker Hub. |
