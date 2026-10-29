@@ -37,13 +37,21 @@ function resolveView(roles) {
   return <LearnerDashboard />
 }
 
+// Compte pour lequel l'écran de chargement a déjà été joué dans ce chargement de
+// page : il ne revient qu'au rafraîchissement ou à une nouvelle connexion, pas à
+// une simple navigation.
+let dejaAccueilli = null
+
 export default function Portal() {
   const { user } = useAuth()
   usePortalBackground(user)
+  const cle = user && (user.compte || user.id || user.email || user.name)
   // 'loading' → 'leaving' (fondu) → 'done' (dashboard monté, animations d'entrée jouées)
-  const [phase, setPhase] = useState('loading')
+  const [phase, setPhase] = useState(() => (cle && cle === dejaAccueilli ? 'done' : 'loading'))
 
   useEffect(() => {
+    if (phase === 'done') return undefined
+    dejaAccueilli = cle
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     const hold = reduce ? 150 : 850
     const t1 = setTimeout(() => setPhase('leaving'), hold)
