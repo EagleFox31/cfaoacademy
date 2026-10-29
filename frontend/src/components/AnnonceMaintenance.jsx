@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import '../styles/annonce-maintenance.css'
+import { changementsVisibles } from '../utils/changementsMaintenance'
 
 const SOURCE = '/maintenance.json'
 const DUREE = 10
@@ -30,18 +31,22 @@ function ajouter(cle, id) {
 /**
  * Annonce d'une mise a jour, sur tous les postes ouverts.
  *
- * L'administrateur ecrit `public/maintenance.json` ({ id, etat, message }) :
+ * L'administrateur ecrit `public/maintenance.json`
+ * ({ id, etat, message, changements }) :
  * - `compte`   : compte a rebours de 10 s ; le travail est enregistre des
  *                le debut, puis a 3 s pour les dernieres frappes, et la
  *                saisie est bloquee jusqu'a la fin ;
  * - `terminee` : la mise a jour est faite, on reprend ou l'on en etait ;
- *                `message`, s'il est donne, dit ce qu'elle apporte.
+ *                `message`, s'il est donne, dit ce qu'elle apporte, et
+ *                `changements` la liste de ses nouveautes, chacune pour
+ *                tous ou pour certains roles seulement (`pour`) : chacun
+ *                ne voit que celles qui le concernent.
  * Une annonce deja vue dans cet onglet ne rejoue pas apres rechargement.
  * Mais la mise a jour elle-meme peut recharger la page : l'onglet qui
  * a vu le compte a rebours retrouve alors l'annonce ou elle en etait
  * (en cours, puis terminee) jusqu'a ce que le message de fin s'efface.
  */
-export default function AnnonceMaintenance() {
+export default function AnnonceMaintenance({ roles }) {
   const [annonce, setAnnonce] = useState(null) // { id, reste, phase }
   const courante = useRef(null)
 
@@ -69,7 +74,7 @@ export default function AnnonceMaintenance() {
           courante.current = m.id
           // Une seule fois : chaque lecture relancerait le delai d'effacement.
           setAnnonce(a => (a?.phase === 'terminee' ? a
-            : { id: m.id, reste: 0, phase: 'terminee', message: m.message }))
+            : { id: m.id, reste: 0, phase: 'terminee', message: m.message, changements: m.changements }))
         }
       } catch { /* serveur en redemarrage : on reessaie */ }
     }
@@ -90,12 +95,15 @@ export default function AnnonceMaintenance() {
     return () => clearTimeout(t)
   }, [annonce])
 
-  // Termine : le message reste quelques secondes, puis s'efface.
+  const nouveautes = changementsVisibles(annonce?.changements, roles)
+
+  // Termine : le message reste quelques secondes, puis s'efface ; une liste
+  // de nouveautes attend d'avoir ete lue (bouton « Compris »).
   useEffect(() => {
-    if (annonce?.phase !== 'terminee') return undefined
+    if (annonce?.phase !== 'terminee' || nouveautes.length) return undefined
     const t = setTimeout(fermer, 8000)
     return () => clearTimeout(t)
-  }, [annonce?.phase])
+  }, [annonce?.phase, nouveautes.length])
 
   function fermer() {
     if (courante.current) ajouter(CLOSES, courante.current)
@@ -131,6 +139,14 @@ export default function AnnonceMaintenance() {
             <div className="maj-ok" aria-hidden="true">✓</div>
             <h2 id="maj-titre">Mise à jour terminée</h2>
             <p>{message || 'Vous pouvez reprendre votre travail.'}</p>
+            {nouveautes.length > 0 && (
+              <>
+                <p className="maj-nouveautes-titre">Ce qui change pour vous</p>
+                <ul className="maj-nouveautes">
+                  {nouveautes.map(t => <li key={t}>{t}</li>)}
+                </ul>
+              </>
+            )}
             <button type="button" className="maj-fermer" onClick={fermer}>Compris</button>
           </>
         )}

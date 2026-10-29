@@ -9,6 +9,7 @@ import ScrollToTop from './components/ScrollToTop.jsx'
 import RedirectionExterne from './components/RedirectionExterne.jsx'
 import RouteMotion from './components/RouteMotion.jsx'
 import AnnonceMaintenance from './components/AnnonceMaintenance.jsx'
+import useAuth from './hooks/useAuth.js'
 import Accueil from './pages/Accueil.jsx'
 import Formations from './pages/Formations.jsx'
 import Publics from './pages/Publics.jsx'
@@ -22,12 +23,18 @@ import MentionsLegales from './pages/MentionsLegales.jsx'
 import Confidentialite from './pages/Confidentialite.jsx'
 import APropos from './pages/APropos.jsx'
 
+// Chacun ne voit, dans l'annonce, que les changements qui le concernent.
+function AnnonceSelonRole() {
+  const { user } = useAuth()
+  return <AnnonceMaintenance roles={user?.roles} />
+}
+
 export default function App() {
   return (
     <AuthProvider>
     <LocaleProvider>
       <ScrollToTop />
-      <AnnonceMaintenance />
+      <AnnonceSelonRole />
       <RouteMotion>
         <Routes>
           <Route path="/" element={<Accueil />} />
