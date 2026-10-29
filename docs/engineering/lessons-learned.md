@@ -28,10 +28,22 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Une ressource servie avec cache se vérifie avec le client réel, sur un marqueur que seule la nouvelle version contient | D | contrôle Playwright du thème (`.cfao-close` présent) |
 | Un élément d'interface se prouve visible (couleur calculée contre son fond), pas seulement présent dans le DOM | E | `keycloak/tests/test_theme.py` + couleur calculée du ✕ relevée par Playwright |
 | Un modèle `.env` partagé par plusieurs fichiers compose laisse vides les variables dont le défaut diffère selon le mode ; le déploiement refuse une valeur incompatible | A, D | `test_modele_env_laisse_l_audience_au_compose` + garde `OIDC_AUDIENCE` dans `deploy.sh/.ps1` |
+| Un changement de cible d'un tunnel nommé se répète d'abord sur un nom jetable ; on attend que l'ancien partage ait disparu côté API avant de recréer, et on recrée par l'agent, jamais en `--subordinate` à la main | D, I | `zrok2 list names` sans jeton de partage avant recréation ; `zrok2 agent status` + `agent-registry.json` montrent la nouvelle cible |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-29 — Bascule zrok vers la passerelle : ~3 min de coupure du lien public
+- **Contexte / symptôme** : pour repointer `academy-server` de `127.0.0.1:8080` (needs) vers `127.0.0.1:8086` (cfao-edge), on a enchaîné `zrok2 agent release share 8vf1hzzamkg5` puis la création d'un partage. Résultat : 409 `shareConflict` (nom encore lié à l'ancien partage). Ensuite, une recréation lancée à la main avec `--subordinate` a tourné hors agent, dans la session SSH (absente de `agent status` et du registre), et il a fallu la refaire.
+- **Impact** : lien public coupé de 18:28 à 18:32 UTC environ. Aucun utilisateur touché (personne sur zrok à ce moment ; le LAN passe par le serveur en direct).
+- **Détection** : erreur 409 au premier essai ; `zrok2 agent status` vide alors que l'URL publique répondait.
+- **Cause racine** : la libération d'un partage est asynchrone côté API (`delete share` répond 404 alors que le nom reste lié quelques secondes). `--subordinate` est le mode interne du processus lancé par l'agent, pas une option pour lui confier un partage.
+- **Correctif** : partage `fsek0mu1uksq` créé par `zrok2 share public -b proxy -n public:academy-server http://127.0.0.1:8086` (détection de l'agent), registre à jour. URL locale du watchdog passée à 8086 (sauvegarde dans `~/deploy-backups/zrok-20261029-182832`).
+- **Prévention** : procédure en trois temps : libérer, attendre que `zrok2 list names` ne montre plus de jeton sur le nom, recréer sans `--subordinate`. Contrôler ensuite avec `zrok2 agent status`, le registre et l'URL publique. Retour arrière, même procédure avec la cible 8080.
+- **Leçon généralisée** : une opération distante présentée comme « libérer puis recréer » n'est pas atomique. On attend l'état observé, pas le code de retour, avant l'étape suivante.
+- **Catégorie** : release/déploiement
+- **Récidive** : non
 
 ### 2026-10-29 — Le ✕ de la page de connexion était blanc sur fond blanc
 - **Contexte / symptôme** : revue utilisateur de la page de connexion. Le rond blanc du ✕ apparaissait sans croix.
