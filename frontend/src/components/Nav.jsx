@@ -65,6 +65,17 @@ function UserMenu({ user, onLogout, t }) {
             <span>{t.nav_my_portal}</span>
             <span className="nav-user-dropdown-arrow">→</span>
           </Link>
+          {(user.roles ?? []).includes('superadmin') && (
+            <Link
+              to="/portail/journal-erreurs"
+              className="nav-user-dropdown-item"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+            >
+              <span>Journal des erreurs</span>
+              <span className="nav-user-dropdown-arrow">→</span>
+            </Link>
+          )}
           <button
             type="button"
             className="nav-user-dropdown-item nav-user-dropdown-logout"

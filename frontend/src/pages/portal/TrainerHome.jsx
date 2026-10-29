@@ -19,6 +19,7 @@ import useAjustementEcran from '../../hooks/useAjustementEcran.js'
 import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
 import { aDocumenter, sessionsAVenir } from '../../utils/planningFormateur.js'
 import { periodeLongue } from '../../utils/compteRendu'
+import { lireErreurs } from '../../utils/journalErreurs'
 import {
   brouillonsEnregistres, brouillonsTermines, synchroniser,
 } from '../../utils/brouillonsCompteRendu'
@@ -42,7 +43,11 @@ const VISUEL_PRIORITE = {
   comptesRendus: '/assets/img_cards/test_theorie_senior.jpg',
   sessions: '/assets/img_cards/clients-carte.jpg',
   assistance: '/assets/img_cards/techniciens-carte.jpg',
+  journal: '/assets/img_cards/process_sav_equipment.png',
 }
+
+/** Fenetre des erreurs comptees sur la carte du journal : une semaine. */
+const SEMAINE = 7 * 24 * 3600 * 1000
 
 /** Visuel des cartes d'entree du module. */
 const VISUEL_ENTREE = {
@@ -112,6 +117,22 @@ export default function TrainerHome() {
     synchroniser().then(liste => { if (actif && liste) setBrouillons(liste) })
     return () => { actif = false }
   }, [])
+  // Equipe technique : les erreurs de la semaine. Le service decide seul
+  // qui lit le journal ; un refus (`null`) laisse la carte absente.
+  const superadmin = (user?.roles ?? []).includes('superadmin')
+  const [erreursSemaine, setErreursSemaine] = useState(null)
+  useEffect(() => {
+    if (!superadmin) return undefined
+    let actif = true
+    lireErreurs()
+      .then(liste => {
+        if (!actif || !liste) return
+        const depuis = Date.now() - SEMAINE
+        setErreursSemaine(liste.filter(e => new Date(e.le).getTime() >= depuis).length)
+      })
+      .catch(() => {})
+    return () => { actif = false }
+  }, [superadmin])
   // Les comptes rendus termines vont a l'archive ; a documenter : les
   // saisies a continuer et les sessions passees encore sans compte rendu.
   const termines = brouillonsTermines(brouillons)
@@ -144,6 +165,13 @@ export default function TrainerHome() {
       metaVide: 'Aucune demande d’assistance en attente.',
       section: null, cta: 'Voir les demandes',
     },
+    ...(erreursSemaine === null ? [] : [{
+      id: 'journal', img: VISUEL_PRIORITE.journal, nombre: erreursSemaine,
+      enAttente: 'cette semaine', titre: 'Journal des erreurs',
+      meta: 'Les erreurs du service des comptes rendus des 7 derniers jours.',
+      metaVide: 'Aucune erreur ces 7 derniers jours.',
+      lien: '/portail/journal-erreurs', cta: 'Ouvrir le journal des erreurs',
+    }]),
   ]
 
   if (!user) return null
