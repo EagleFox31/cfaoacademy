@@ -71,7 +71,7 @@ export default function TrainerReportsTermines() {
               )}
 
               <div className="cr-echappee">
-                <span className="cr-echappee-texte">Une autre formation à documenter ?</span>
+                <span className="cr-echappee-texte">Un autre compte rendu à rédiger ?</span>
                 <button type="button" className="cr-echappee-lien"
                   onClick={() => naviguer('/portail/compte-rendu/nouveau')}>
                   Nouveau compte rendu →

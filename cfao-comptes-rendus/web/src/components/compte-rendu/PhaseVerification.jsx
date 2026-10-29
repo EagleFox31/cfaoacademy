@@ -394,7 +394,7 @@ export default function PhaseVerification({
               <div className="cr-empty-title">Version de travail téléchargée</div>
               <p className="cr-empty-text">
                 {resteAFaire} page{resteAFaire > 1 ? 's restent' : ' reste'} à remplir :
-                le compte rendu reste en cours jusqu’à ce que tout soit rempli.
+                le compte rendu reste non terminé jusqu’à ce que tout soit rempli.
               </p>
             </>
           )}

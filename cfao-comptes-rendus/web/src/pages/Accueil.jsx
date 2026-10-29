@@ -117,10 +117,10 @@ export default function Accueil() {
   const priorites = [
     {
       id: 'cr', img: VISUEL_PRIORITE.comptesRendus, nombre: nbADocumenter,
-      enAttente: 'à documenter', titre: 'Comptes rendus à documenter',
-      meta: `${enCours.length} à continuer, ${aCommencer.length} à commencer.`,
+      enAttente: 'à rédiger', titre: 'Comptes rendus à rédiger',
+      meta: `${enCours.length} non terminé${enCours.length > 1 ? 's' : ''}, ${aCommencer.length} à commencer.`,
       metaVide: 'Tous vos comptes rendus sont à jour.',
-      lien: '/portail/compte-rendu/a-documenter', cta: 'Voir les comptes rendus à documenter',
+      lien: '/portail/compte-rendu/a-documenter', cta: 'Voir les comptes rendus à rédiger',
     },
     {
       id: 'sessions', img: VISUEL_PRIORITE.sessions, nombre: aVenir.length,
@@ -192,9 +192,7 @@ export default function Accueil() {
                 <PvCard
                   img={VISUEL_ENTREE.nouveau}
                   kicker={
-                    <span className={`portal-status-chip ${aCommencer.length ? 'progress' : 'done'}`}>
-                      {`${aCommencer.length} à rédiger`}
-                    </span>
+                    <span className="portal-status-chip progress">Rédiger</span>
                   }
                   title="Nouveau compte rendu"
                   meta="Depuis une session de formation planifiée, ou en saisissant tout manuellement."
@@ -213,16 +211,16 @@ export default function Accueil() {
                   img={VISUEL_ENTREE.brouillon}
                   kicker={
                     <span className="portal-status-chip todo">
-                      {enCours.length} en cours
+                      {enCours.length} non terminé{enCours.length > 1 ? 's' : ''}
                     </span>
                   }
-                  title="Comptes rendus en cours"
+                  title="Comptes rendus non terminés"
                   meta={enCours.length
-                    ? `Reprendre ou supprimer une saisie commencée — la dernière ${
+                    ? `Reprendre ou supprimer un compte rendu commencé — le dernier modifié ${
                       venuDe(enCours[0].modifieLe)}.`
-                    : 'Les saisies commencées s’y retrouvent, sur tout poste.'}
-                  cta="Voir les saisies"
-                  hoverHint="Choisir un compte rendu à reprendre"
+                    : 'Les comptes rendus commencés s’y retrouvent, sur tout poste.'}
+                  cta="Voir les comptes rendus non terminés"
+                  hoverHint="Terminer un compte rendu commencé"
                   onClick={() => naviguer('/portail/compte-rendu/en-cours')}
                   corner
                 />

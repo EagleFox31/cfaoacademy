@@ -39,7 +39,7 @@ export function BadgeCompteRendu({ etat, phase = 0, termineLe }) {
     const i = Math.min(phase ?? 0, ETAPES.length - 1)
     return (
       <span className="cr-badge cr-badge--info" title={`Reprendre à l’étape ${i + 1} : ${ETAPES[i]}`}>
-        En cours · étape {i + 1}
+        Non terminé · étape {i + 1}
       </span>
     )
   }
@@ -100,7 +100,7 @@ export default function CarteCompteRendu({ carte, badge, onClick, onSupprimer, a
           {badge}
           {onSupprimer && (
             <button type="button" className="cr-brouillon-suppr cr-carte-suppr"
-              title="Supprimer ce compte rendu en cours" aria-label="Supprimer ce compte rendu en cours"
+              title="Supprimer ce compte rendu non terminé" aria-label="Supprimer ce compte rendu non terminé"
               onClick={e => { e.stopPropagation(); onSupprimer() }}
               onKeyDown={e => e.stopPropagation()}>
               <IconeCorbeille />
