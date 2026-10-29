@@ -90,8 +90,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--cfao-navy);
-  font-size: 15px;
+  /* !important : la règle générale « .login-pf-page a » fixe déjà couleur et taille en !important. */
+  color: var(--cfao-navy) !important;
+  font-size: 15px !important;
   font-weight: 700;
   line-height: 36px;
   text-align: center;
@@ -103,7 +104,7 @@
 .login-pf-page .card-pf .cfao-close:hover,
 .login-pf-page .card-pf .cfao-close:focus-visible {
   transform: scale(1.05);
-  color: var(--cfao-red);
+  color: var(--cfao-red) !important;
 }
 
 .login-pf-page .card-pf .cfao-close:focus-visible {

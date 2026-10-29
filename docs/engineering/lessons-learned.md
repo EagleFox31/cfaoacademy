@@ -26,11 +26,23 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Un serveur qui calcule ses URL depuis la requête est servi sous le même chemin que son URL publique ; un proxy ne retire jamais son préfixe | E, R | `edge/tests/smoke_edge.py` : `token_endpoint` de la découverte commence par `<passerelle>/auth/`, même avec un Host falsifié |
 | Un fichier dont le CI dépend est prouvé présent dans le dépôt ; une exception se règle dans `.gitignore`, jamais par `git add -f` | D, A | `test_modeles_d_environnement_suivis_par_git` |
 | Une ressource servie avec cache se vérifie avec le client réel, sur un marqueur que seule la nouvelle version contient | D | contrôle Playwright du thème (`.cfao-close` présent) |
+| Un élément d'interface se prouve visible (couleur calculée contre son fond), pas seulement présent dans le DOM | E | `keycloak/tests/test_theme.py` + couleur calculée du ✕ relevée par Playwright |
 | Un modèle `.env` partagé par plusieurs fichiers compose laisse vides les variables dont le défaut diffère selon le mode ; le déploiement refuse une valeur incompatible | A, D | `test_modele_env_laisse_l_audience_au_compose` + garde `OIDC_AUDIENCE` dans `deploy.sh/.ps1` |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-29 — Le ✕ de la page de connexion était blanc sur fond blanc
+- **Contexte / symptôme** : revue utilisateur de la page de connexion. Le rond blanc du ✕ apparaissait sans croix.
+- **Impact** : aucun en prod (pas encore publié). Le seul moyen visible de quitter la page était invisible.
+- **Détection** : capture de l'utilisateur. Puis Playwright : couleur calculée `rgba(255, 255, 255, 0.88)` sur un fond `rgb(255, 255, 255)`.
+- **Cause racine** : la règle générale `.login-pf-page a` fixe `color` et `font-size` en `!important`. Le ✕ est devenu un lien `<a>` (commit `b660079`), et sa règle sans `!important` perdait. La recette vérifiait que `.cfao-close` était présent, pas qu'il était lisible.
+- **Correctif** : `color` et `font-size` en `!important` sur `.cfao-close`, ainsi que la couleur de survol.
+- **Prévention** : `keycloak/tests/test_theme.py` vérifie que le ✕ impose au moins ce que la règle des liens impose. Le test a été prouvé par mutation : il échoue sans le `!important`. Une recette d'interface relève la couleur calculée face au fond.
+- **Leçon généralisée** : changer la balise d'un élément (un `::after` devenu un `<a>`) le fait entrer dans de nouvelles règles générales. Présent dans le DOM ne veut pas dire visible.
+- **Catégorie** : interface / CSS
+- **Récidive** : non
 
 ### 2026-10-29 — Thème Keycloak : nouveau fichier sur le disque, ancien fichier servi au navigateur
 - **Contexte / symptôme** : aperçu du thème `cfao-academy` après copie des fichiers dans le Keycloak en marche. `curl` recevait le nouveau `login.js`, le navigateur l'ancien : le lien ✕ n'apparaissait pas.
