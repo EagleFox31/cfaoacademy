@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import useEnHautDePage from '../hooks/useEnHautDePage'
 import useSiteEffects from '../hooks/useSiteEffects'
@@ -49,9 +49,14 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
     : (total
       ? 'Les comptes rendus commencés, du plus récent au plus ancien.'
       : 'Aucun compte rendu en cours.')
-  const commencer = s => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`)
+  // Le bouton retour de l'assistant ramene a cette liste.
+  const depuis = {
+    chemin: useLocation().pathname,
+    libelle: aDocumenterAussi ? 'Comptes rendus à documenter' : 'Comptes rendus en cours',
+  }
+  const commencer = s => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`, { state: { depuis } })
 
-  const reprendre = b => naviguer(`/portail/compte-rendu/nouveau?session=${b.id}`)
+  const reprendre = b => naviguer(`/portail/compte-rendu/nouveau?session=${b.id}`, { state: { depuis } })
 
   function supprimer(b) {
     const titre = b.session || 'ce compte rendu'
