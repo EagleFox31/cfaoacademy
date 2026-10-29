@@ -1463,6 +1463,16 @@
 }
 .cr-assistant .cr-scene-tete { flex: none; }
 .cr-assistant .cr-scene .cr-edition { flex: 1; }
+/* La zone a remplir est un cadre net, distinct de la consigne au-dessus
+   et de la barre d'actions en dessous. */
+.cr-assistant .cr-scene .cr-edition {
+  margin-top: 4px;
+  padding: 20px 24px;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16, 20, 48, 0.04);
+}
 
 /* La diapositive garde son rapport 16:9 mais se contente de la place
    disponible : à hauteur libre, elle poussait la barre d'actions — donc
