@@ -60,9 +60,10 @@ class OutboundMessage(UUIDModel, TimeStampedModel):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["status", "-created_at"]),
-            models.Index(fields=["kind", "status"]),
-            models.Index(fields=["source_app", "-created_at"]),
+            # Noms figés sur ceux de 0001_initial, déjà créés en base.
+            models.Index(fields=["status", "-created_at"], name="outbound_ou_status_6a0b0d_idx"),
+            models.Index(fields=["kind", "status"], name="outbound_ou_kind_8f2c1a_idx"),
+            models.Index(fields=["source_app", "-created_at"], name="outbound_ou_source__9d4e2b_idx"),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -99,4 +100,4 @@ class EmailSendLog(UUIDModel, TimeStampedModel):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["status", "-created_at"])]
+        indexes = [models.Index(fields=["status", "-created_at"], name="outbound_em_status_1c3f5e_idx")]

@@ -111,6 +111,7 @@ jobs:
           cache: pip
           cache-dependency-path: cfao-core/requirements-dev.txt
       - run: pip install -r requirements-dev.txt
+      - run: DJANGO_SETTINGS_MODULE=config.settings.test python manage.py makemigrations --check --dry-run
       - run: pytest -q
 
   needs:
@@ -129,6 +130,7 @@ jobs:
           cache: pip
           cache-dependency-path: cfao-needs/api/requirements-dev.txt
       - run: pip install -r requirements-dev.txt
+      - run: DJANGO_SETTINGS_MODULE=config.settings.test python manage.py makemigrations --check --dry-run
       - run: pytest -q
 
   needs-web:
@@ -194,6 +196,7 @@ jobs:
           cache: pip
           cache-dependency-path: cfao-academy-mail/api/requirements-dev.txt
       - run: pip install -r requirements-dev.txt
+      - run: DJANGO_SETTINGS_MODULE=config.settings.test python manage.py makemigrations --check --dry-run
       - run: pytest -q
 
   frontend:
@@ -249,6 +252,7 @@ jobs:
       # mesurees aux metriques de Calibri ; Liberation, plus large, les deplace.
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-crosextra-carlito
       - run: pip install -r requirements-dev.txt
+      - run: DJANGO_SETTINGS_MODULE=config.settings.test python manage.py makemigrations --check --dry-run
       # Le rendu LibreOffice est saute sans LibreOffice ; le reste s'execute.
       - run: pytest -q
 

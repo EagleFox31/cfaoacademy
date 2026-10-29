@@ -26,6 +26,21 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
 
+### 2026-10-29 — Modèles et migrations divergents sans alerte (cfao-needs, cfao-academy-mail)
+- **Contexte / symptôme** : `makemigrations --check` signale deux dérives.
+  - Dans needs, les `choices` de `NeedLine.place_q1..q4` ont changé sans migration.
+  - Dans mail, les noms d'index de `0001_initial` ont été écrits à la main et ne correspondent pas aux noms auto du modèle. Django veut donc les renommer.
+- **Impact** : aucun en base aujourd'hui. Mais le prochain `makemigrations` aurait embarqué ces changements dans une migration sans rapport, et pour mail il aurait renommé des index en prod.
+- **Détection** : `makemigrations --check --dry-run`, lancé à la main lors d'une migration needs.
+- **Cause racine** : aucun job de CI ne compare les modèles aux migrations. Les tests passent tant que le schéma créé fonctionne.
+- **Correctif** :
+  - needs : migration `0005_needline_place_choices`, `sqlmigrate` sans aucune instruction SQL.
+  - mail : noms d'index figés dans `Meta.indexes` sur ceux de `0001`, donc pas de migration.
+- **Prévention** : une étape `makemigrations --check --dry-run` dans les 4 jobs Django de `ci.yml` (core, needs, mail, comptes-rendus).
+- **Leçon généralisée** : un état dérivé (migrations, specs, labels) doit avoir un contrôle de convergence en CI. Sinon, la dérive passe inaperçue jusqu'au jour où elle part avec un autre changement.
+- **Catégorie** : qualité/données
+- **Récidive** : non
+
 ### 2026-10-29 — Tables d'arbitrage needs adoptées par Django (cfao-needs) — suite de « tables inexistantes » ci-dessous
 - **Contexte / symptôme** : décision métier « A » (créer les tables). Leur schéma existait déjà dans `scripts/ingestion/init_database_tables.sql`, appliqué par `docker exec` hors des migrations. Deux near misses pendant le correctif. D'abord, un `RunPython` placé dans `SeparateDatabaseAndState(database_operations=...)` reçoit l'état *antérieur* aux modèles qu'il doit créer. Ensuite, SQLite (base de test) ne replie pas la casse des lettres accentuées (`PLACÉES` contre `Placées`), alors que Postgres le fait.
 - **Impact** : aucun (corrigés avant exécution pour le premier, au premier run pour le second).
