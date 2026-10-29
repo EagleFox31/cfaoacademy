@@ -1,4 +1,3 @@
-import { Navigate } from 'react-router-dom'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import PortalHeader from '../../components/PortalHeader'
@@ -9,6 +8,7 @@ import usePortalReveal from '../../hooks/usePortalReveal'
 import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
 import { LMS_BY_USER } from '../../data/mock_lms'
+import TrainerHome from './TrainerHome'
 
 export default function SuperAdminDashboard() {
   useSiteEffects()
@@ -17,8 +17,9 @@ export default function SuperAdminDashboard() {
   const { t } = useLocale('portal')
   const { t: td } = useLocale('delivery')
   const lms = LMS_BY_USER[user.id]
-  // Compte technique du mode local (sans donnees de demo) : le journal d'erreurs.
-  if (!lms) return <Navigate to="/portail/journal-erreurs" replace />
+  // Compte technique du mode local (sans donnees de demo) : les comptes rendus
+  // de tous les formateurs ; le journal reste sur /portail/journal-erreurs.
+  if (!lms) return <TrainerHome />
 
   const { globalKpis, filialesStats, recentLogs } = lms
 

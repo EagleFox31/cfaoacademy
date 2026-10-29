@@ -73,6 +73,13 @@ def _autoriser(request, kind, ident, action, owner=None, scope_node="", brand=""
     }, action)
 
 
+def _voit_tout(request):
+    """Equipe technique : lit les comptes rendus et photos de tous les
+    formateurs, pour reproduire leurs apercus et rapports. Ce qu'elle
+    enregistre reste sous son propre id : les originaux ne changent jamais."""
+    return "superadmin" in (request.user.roles or [])
+
+
 def _corps(request):
     return request.data if isinstance(request.data, dict) else {}
 
@@ -100,7 +107,8 @@ def _photos_a_soi(request, valeurs):
     """
     valeurs = [v if isinstance(v, dict) else {} for v in valeurs]
     cites = set().union(*(_ids_cites(v.get("@photos")) for v in valeurs))
-    a_soi = set(Photo.objects.filter(owner=request.user.id, ident__in=cites)
+    lisibles = Photo.objects.all() if _voit_tout(request) else Photo.objects.filter(owner=request.user.id)
+    a_soi = set(lisibles.filter(ident__in=cites)
                 .values_list("ident", flat=True)) if cites else set()
 
     def trier(x):
@@ -185,12 +193,21 @@ class Deconnexion(APIView):
 
 
 # ── Comptes rendus en cours ────────────────────────────────────────────
-# Ranges sous l'id du principal : chacun ne voit que les siens.
+# Ranges sous l'id du principal : chacun ne voit que les siens (l'equipe
+# technique lit aussi ceux des autres, voir `_voit_tout`).
 
 class BrouillonsListe(APIView):
     def get(self, request):
         _autoriser(request, COMPTE_RENDU, "*", "list")
         brouillons, supprimes, revisions = stockage.lister(request.user.id)
+        if _voit_tout(request):
+            # Ceux des formateurs ensuite ; la copie de l'equipe technique
+            # masque l'original du meme id.
+            vus = {b.ident for b in Brouillon.objects.filter(owner=request.user.id)}
+            for b in Brouillon.objects.exclude(owner=request.user.id).order_by("-modifie_le"):
+                if b.ident not in vus:
+                    vus.add(b.ident)
+                    brouillons.append(b.contenu)
         return Response({"brouillons": brouillons, "supprimes": supprimes,
                          "revisionsSupprimees": revisions})
 
@@ -203,6 +220,8 @@ class BrouillonDetail(APIView):
         if not stockage.valide(ident):
             return _erreur("requete invalide", 400)
         b = self._existant(request, ident)
+        if not b and _voit_tout(request):
+            b = Brouillon.objects.filter(ident=ident).order_by("-modifie_le").first()
         if not b:
             return _erreur("introuvable", 404)
         _autoriser(request, COMPTE_RENDU, ident, "read", b.owner, b.scope_node, b.brand)
@@ -257,7 +276,8 @@ class PhotoEnvoi(APIView):
 
 class PhotoServie(APIView):
     def get(self, request, ident):
-        p = Photo.objects.filter(owner=request.user.id, ident=ident).first()
+        lisibles = Photo.objects.all() if _voit_tout(request) else Photo.objects.filter(owner=request.user.id)
+        p = lisibles.filter(ident=ident).first()
         if not p:
             return _erreur("introuvable", 404)
         _autoriser(request, PHOTO, ident, "read", p.owner, p.scope_node, p.brand)
