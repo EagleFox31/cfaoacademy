@@ -957,7 +957,7 @@
   font-size: clamp(20px, min(2.2vw, 3.6vh), 30px);
   margin-bottom: clamp(8px, 2vh, 18px);
 }
-.cr-assistant .cr-retour { padding-bottom: clamp(4px, 1.4vh, 12px); }
+.cr-assistant .cr-retour { margin-bottom: clamp(4px, 1.4vh, 12px); }
 
 /* Écran court : le retour passe à gauche du titre, les phases perdent
    leur sous-titre, la barre d'actions se resserre.

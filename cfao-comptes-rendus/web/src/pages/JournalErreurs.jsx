@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import useEnHautDePage from '../hooks/useEnHautDePage'
 import useSiteEffects from '../hooks/useSiteEffects'
 import { lireErreurs } from '../utils/journalErreurs'
@@ -11,13 +12,15 @@ const date = iso => new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', 
 /**
  * Le journal des erreurs des comptes rendus, pour l'équipe technique.
  *
- * Lien direct du module (`/portail/journal-erreurs`, aussi renvoyé par le portail). Le service
+ * `/portail/journal-erreurs`, ouvert depuis les priorités du superadmin ou
+ * le menu de son profil ; le retour ramène au portail. Le service
  * décide seul qui le lit (Cerbos) ; un refus affiche l'accès réservé.
  * Chaque ligne se déplie sur sa pile et son contexte.
  */
 export default function JournalErreurs() {
   useEnHautDePage('Journal des erreurs')
   useSiteEffects()
+  const naviguer = useNavigate()
   const [origine, setOrigine] = useState('')
   const [erreurs, setErreurs] = useState()
   const [probleme, setProbleme] = useState(false)
@@ -37,6 +40,9 @@ export default function JournalErreurs() {
       <main className="portal-page cr-assistant">
         <header className="cr-home-header cr-home-header--slim">
           <div className="container cr-entete-assistant">
+            <button type="button" className="cr-retour" onClick={() => naviguer('/')}>
+              ← Accueil
+            </button>
             <h1 className="cr-home-title cr-home-title--sm">Journal des erreurs</h1>
           </div>
         </header>
