@@ -151,6 +151,14 @@ def test_aucun_secret_litteral(realm):
             assert SUBSTITUTION.match(client["secret"]), client["clientId"]
 
 
+@pytest.mark.parametrize("client_id", ["cfao-portal", "cfao-needs-web"])
+def test_hotes_des_clients_de_prod_fournis_par_l_environnement(realm, client_id):
+    # Aucun hôte codé : la même image sert dev, LAN, zrok ou un futur domaine.
+    client = _clients(realm)[client_id]
+    assert SUBSTITUTION.match(client["redirectUris"]), client_id
+    assert client["webOrigins"] == ["+"], client_id
+
+
 def test_spa_de_dev_desactivable(realm):
     assert SUBSTITUTION.match(str(_clients(realm)["cfao-spa"]["enabled"]))
 
@@ -191,8 +199,11 @@ def test_compose_de_prod_sans_secret_par_defaut():
     services = prod["services"]
     for nom, cle in (("keycloak-db", "POSTGRES_PASSWORD"), ("keycloak", "KC_DB_PASSWORD"),
                      ("keycloak", "KC_BOOTSTRAP_ADMIN_PASSWORD"), ("keycloak", "KC_HOSTNAME"),
-                     ("config", "KEYCLOAK_PASSWORD"), ("config", "CFAO_PORTAL_SECRET")):
+                     ("config", "KEYCLOAK_PASSWORD"), ("config", "CFAO_PORTAL_SECRET"),
+                     ("config", "CFAO_PORTAL_REDIRECT_URIS"), ("config", "CFAO_NEEDS_REDIRECT_URIS")):
         assert re.fullmatch(r"\$\{[A-Z_]+:\?.+\}", services[nom]["environment"][cle]), f"{nom}.{cle}"
+    # Émetteur canonique, chemin réseau des modules libre.
+    assert services["keycloak"]["environment"]["KC_HOSTNAME_BACKCHANNEL_DYNAMIC"] == "true"
     # Pas de `command` : le CMD de l'image (start --optimized), jamais start-dev.
     assert "command" not in services["keycloak"]
     assert services["config"]["environment"]["CFAO_SPA_ENABLED"] == "false"

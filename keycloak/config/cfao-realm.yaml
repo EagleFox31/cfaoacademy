@@ -188,10 +188,11 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
     secret: "$(env:CFAO_PORTAL_SECRET:-dev-portal-secret)"  # défaut = dev ; prod via Key Vault
-    redirectUris:
-      - "http://localhost:8000/oauth2/callback"
+    # Hôtes fournis par l'environnement (liste JSON) : plusieurs URL coexistent
+    # pendant un changement d'hôte. Origines CORS déduites des redirections (`+`).
+    redirectUris: $(env:CFAO_PORTAL_REDIRECT_URIS:-["http://localhost:8000/oauth2/callback"])
     webOrigins:
-      - "http://localhost:8000"
+      - "+"
     defaultClientScopes:
       - basic
       - web-origins
@@ -244,10 +245,7 @@ clients:
     publicClient: true
     standardFlowEnabled: true
     directAccessGrantsEnabled: false
-    redirectUris:
-      - "http://localhost:8082/*"
-      - "http://localhost:5174/*"
-      - "http://127.0.0.1:8082/*"
+    redirectUris: $(env:CFAO_NEEDS_REDIRECT_URIS:-["http://localhost:8082/*","http://localhost:5174/*","http://127.0.0.1:8082/*"])
     webOrigins:
       - "+"
     attributes:

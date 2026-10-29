@@ -3,7 +3,8 @@
 À lancer explicitement, Keycloak démarré et realm appliqué par keycloak-config-cli :
     KC_URL=http://localhost:18080 pytest -q tests/smoke_realm.py
 Variables : KC_ADMIN / KC_ADMIN_PASSWORD (admin/admin), SPA_ATTENDUE (enabled|disabled),
-DEMO_ATTENDUE (presente|absente).
+DEMO_ATTENDUE (presente|absente), EMETTEUR_ATTENDU (prod : KC_HOSTNAME + /realms/cfao),
+CFAO_PORTAL_REDIRECT_URIS / CFAO_NEEDS_REDIRECT_URIS (listes JSON passées au job config).
 
 Les jetons sont obtenus par les vrais flux (code + secret pour le BFF, PKCE pour
 la SPA needs) et vérifiés par la lib commune `core/auth/jwt_verifier.py`.
@@ -12,6 +13,7 @@ import base64
 import hashlib
 import html
 import importlib.util
+import json
 import os
 import re
 import secrets
@@ -183,3 +185,33 @@ def test_secret_du_portail_injecte(admin):
     secret = admin.get(f"{KC_URL}/admin/realms/cfao/clients/{client['id']}/client-secret").json()["value"]
     assert secret == os.environ.get("CFAO_PORTAL_SECRET", "dev-portal-secret")
     assert not secret.startswith("$(")
+
+
+@pytest.mark.parametrize("client_id, variable, defaut", [
+    ("cfao-portal", "CFAO_PORTAL_REDIRECT_URIS", ["http://localhost:8000/oauth2/callback"]),
+    ("cfao-needs-web", "CFAO_NEEDS_REDIRECT_URIS",
+     ["http://localhost:8082/*", "http://localhost:5174/*", "http://127.0.0.1:8082/*"]),
+])
+def test_redirections_issues_de_l_environnement(admin, client_id, variable, defaut):
+    # La liste JSON devient une vraie liste (plusieurs hôtes pendant une transition).
+    attendues = json.loads(os.environ[variable]) if variable in os.environ else defaut
+    (client,) = admin.get(f"{KC_URL}/admin/realms/cfao/clients", params={"clientId": client_id}).json()
+    assert sorted(client["redirectUris"]) == sorted(attendues)
+
+
+def test_redirection_vers_un_hote_inconnu_refusee():
+    r = requests.get(f"{OIDC}/auth", params={"client_id": "cfao-portal", "response_type": "code",
+                                             "scope": "openid", "redirect_uri": "http://evil.example/cb"})
+    assert r.status_code == 400 and "redirect_uri" in r.text
+
+
+def test_emetteur_canonique_quel_que_soit_l_hote_recu():
+    # Prod : l'émetteur vient de KC_HOSTNAME, jamais du Host de la requête.
+    attendu = os.environ.get("EMETTEUR_ATTENDU")
+    if not attendu:
+        pytest.skip("EMETTEUR_ATTENDU absent (pile de dev, hostname dynamique)")
+    hote = urlparse(KC_URL).netloc
+    for host in (hote, "evil.example"):
+        conf = requests.get(f"{REALM}/.well-known/openid-configuration", headers={"Host": host}).json()
+        assert conf["issuer"] == attendu, host
+        assert conf["authorization_endpoint"].startswith(attendu), host

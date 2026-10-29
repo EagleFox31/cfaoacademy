@@ -132,6 +132,10 @@ jobs:
           KC_ADMIN_PASSWORD: ci-admin
           CFAO_PORTAL_SECRET: ci-secret-portail
           KC_IMPORT_LOCATIONS: /opt/cfao-realm/*.yaml,/fixtures/*.yaml
+          # Deux hôtes à la fois : un changement d'hôte se fait sans rupture.
+          CFAO_PORTAL_REDIRECT_URIS: '["http://localhost:8000/oauth2/callback","https://portail.exemple/oauth2/callback"]'
+          CFAO_NEEDS_REDIRECT_URIS: '["http://localhost:8082/*","https://needs.exemple/*"]'
+          EMETTEUR_ATTENDU: http://localhost:18080/realms/cfao
         run: |
           docker build -q -t antifragile237/cfao-keycloak:smoke keycloak
           p="-f keycloak/compose.prod.yml -f keycloak/tests/compose.prod.smoke.yml"
