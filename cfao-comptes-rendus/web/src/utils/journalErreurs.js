@@ -30,3 +30,14 @@ export async function lireErreurs(origine = '') {
   if (!r.ok) throw new Error(String(r.status))
   return (await r.json()).erreurs
 }
+
+/** Retire du journal les erreurs choisies ; renvoie le nombre retiré. */
+export async function supprimerErreurs(ids) {
+  const r = await fetch(ROUTE, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  })
+  if (!r.ok) throw new Error(String(r.status))
+  return (await r.json()).retirees
+}

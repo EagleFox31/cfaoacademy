@@ -495,3 +495,12 @@ class Erreurs(APIView):
                       detail=corps.get("detail") or "", user=request.user,
                       contexte=corps.get("contexte"))
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def delete(self, request):
+        """Retire du journal les erreurs choisies (`ids`), pour l'equipe technique seule."""
+        _autoriser(request, JOURNAL, "*", "delete")
+        ids = _corps(request).get("ids")
+        if not isinstance(ids, list) or not ids or not all(isinstance(i, int) for i in ids):
+            return _erreur("ids attendus", 400)
+        retirees, _ = Erreur.objects.filter(id__in=ids).delete()
+        return Response({"retirees": retirees})
