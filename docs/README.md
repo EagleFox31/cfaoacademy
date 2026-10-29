@@ -32,6 +32,7 @@ Point d'entrée pour la documentation du dépôt. Les fichiers listés ci-dessou
 | [APPRENANT_VIEWS.md](../APPRENANT_VIEWS.md) | Écrans portail apprenant |
 | **[MODULE_RAPPORTS_FORMATEUR.md](./MODULE_RAPPORTS_FORMATEUR.md)** | **Rapports post-formation (04-5) : parcours, modèle PowerPoint, service de rendu, tests** |
 | [etude-journal-erreurs.md](./etude-journal-erreurs.md) | Étude : journal des erreurs des comptes rendus consultable par l’équipe technique |
+| [etude-polices-rendu.md](./etude-polices-rendu.md) | Étude : polices du PowerPoint, écarts de rendu Docker / Windows et options |
 | [PORTAL_PROFILES.md](../PORTAL_PROFILES.md) | Profils & données mock portail |
 
 ## Gouvernance dépôt
