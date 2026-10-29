@@ -635,32 +635,25 @@ def _anneau_excel(image, geo, valeurs):
     if len(series) > 1 and series[1][1] is not None:
         serie, v = series[1]
         texte = texte_de(serie, v)
-        corps = max(10, round(serie['pt'] * pt))
-        police, lw, lh = bloc(texte, corps)
-        # L'etiquette reste dans la largeur du tableau : le couloir se
-        # resserre, le taux passe a la ligne, puis le texte rapetisse,
-        # plutot que d'elargir l'image (ce qui reduirait et decalerait le
-        # tableau sur la page).
-        bord = image.width - 4
-        if cx + rayon * 1.12 + lw > bord:
-            texte = texte[:1] + texte[1].rsplit(' ', 1)
-            police, lw, lh = bloc(texte, corps)
-        while corps > 8 and cx + rayon * 1.12 + lw > bord:
-            corps -= 1
-            police, lw, lh = bloc(texte, corps)
+        police, lw, lh = bloc(texte, max(10, round(serie['pt'] * pt)))
         angle = math.radians(float(v or 0) * 180)
         dirx, diry = math.sin(angle), -math.cos(angle)
         rm = trou_xl + (1 + 0.5) * ep_xl if n > 1 else rayon - ep_xl / 2
-        couloir = min(rayon * 1.16,               # hors du cercle
-                      max(rayon * 1.04, bord - lw - rayon * 0.08 - cx))
-        sortie = min(rayon * 1.08, couloir - rayon * 0.02)
-        ex = min(cx + couloir + rayon * 0.08 + lw / 2, bord - lw / 2)
+        couloir = rayon * 1.16                    # hors du cercle
+        sortie = rayon * 1.08
+        ex = cx + couloir + rayon * 0.08 + lw / 2
         ey = cy + rayon * 0.62
         q = (cx + dirx * sortie, cy + diry * sortie)
         # Sans valeur, pas d'arc a designer : l'etiquette reste seule.
         trait = [(cx + dirx * rm, cy + diry * rm), q, (cx + couloir, q[1]),
                  (cx + couloir, ey), (ex - lw / 2 - rayon * 0.03, ey)] if v is not None else []
         etiquettes.append((texte, police, lh, ex, ey, trait))
+
+    # Sur la fiche, l'anneau est sous le tableau (rien au-dessus de lui) ;
+    # en page 19 il est a cote.
+    haut_anneau = max(0, int(cy - rayon * 1.1))
+    sous_tableau = opaque[:haut_anneau, max(0, int(cx - rayon / 2)):int(cx + rayon / 2)].any()
+    largeur_tableau = image.width
 
     # La toile s'agrandit si une etiquette deborde de l'image rognee.
     def boite(e):
@@ -682,7 +675,8 @@ def _anneau_excel(image, geo, valeurs):
         toile.paste(image, (dx0, dy0))
         image = toile
     dessin = ImageDraw.Draw(image)
-    epaisseur = max(1, round(rayon / 180))
+    # Sur la fiche, le graphique est reduit ensuite : trait plus epais.
+    epaisseur = max(2, round(rayon / 90)) if sous_tableau else max(1, round(rayon / 180))
     gris = (89, 89, 89, 255)
     for texte, police, lh, ex, ey, trait in etiquettes:
         if trait:
@@ -694,6 +688,21 @@ def _anneau_excel(image, geo, valeurs):
             dessin.text((ex + dx0 - dessin.textlength(ligne, font=police) / 2, y), ligne,
                         font=police, fill=(0, 0, 0, 255))
             y += pas
+    if sous_tableau and image.width > largeur_tableau:
+        # Le graphique et ses etiquettes, dessines comme dans Excel, sont
+        # reduits ensemble a la largeur du tableau et centres dessous :
+        # elargir l'image reduirait et decalerait le tableau sur la page.
+        coupe = haut_anneau + dy0
+        bas_ = image.crop((0, coupe, image.width, image.height))
+        g_, _, d_, _ = bas_.getbbox() or (0, 0, bas_.width, 0)
+        graphique = bas_.crop((g_, 0, d_, bas_.height))
+        f_ = min(1, largeur_tableau / graphique.width)
+        graphique = graphique.resize((max(1, round(graphique.width * f_)),
+                                      max(1, round(graphique.height * f_))), Image.LANCZOS)
+        toile = Image.new('RGBA', (largeur_tableau, coupe + graphique.height), (255, 255, 255, 0))
+        toile.paste(image.crop((dx0, 0, dx0 + largeur_tableau, coupe)), (0, 0))
+        toile.alpha_composite(graphique, ((largeur_tableau - graphique.width) // 2, coupe))
+        image, dx0 = toile, 0
     # Ou l'image d'entree a atterri sur la toile agrandie.
     image.info['decalage'] = (dx0, dy0)
     return image
@@ -754,7 +763,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 5
+VERSION_IMAGES = 7
 
 
 def _cadre_de(rendu, reference):
