@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { periodeLongue } from '../../utils/compteRendu'
 import CarteCompteRendu, { BadgeCompteRendu, carteDeSession } from './CarteCompteRendu'
 import Consigne from './Consigne'
 import RepriseStagiaires from './RepriseStagiaires'
-import { lireEvaluation, lireResultats, appliquerEvaluation } from '../../utils/importEvaluation'
 import { brouillonsEnregistres, estTermine, synchroniser } from '../../utils/brouillonsCompteRendu'
 import { CERTIFICATION, FORMATION, champsDeType, estCertification } from '../../utils/certification'
 
@@ -28,7 +27,7 @@ import { CERTIFICATION, FORMATION, champsDeType, estCertification } from '../../
  * decide de toute la suite —, puis les participants.
  */
 export default function PhaseSession({
-  brouillon, maj, sessions, onChoisirSession, onSaisieManuelle,
+  brouillon, maj, sessions, onChoisirSession, onSaisieManuelle, onListeVide,
 }) {
   // Le mode se deduit du brouillon : l'orchestrateur porte le bouton de
   // retour dans sa barre fixe, et doit pouvoir revenir au choix sans
@@ -57,10 +56,14 @@ export default function PhaseSession({
   // liste des formations dit ou en est chacune, pas seulement le
   // planning. Cliquer une formation commencee la reprend.
   const [commences, setCommences] = useState(() => (mode ? [] : brouillonsEnregistres()))
+  const [synchronise, setSynchronise] = useState(false)
   useEffect(() => {
     if (mode) return undefined
     let actif = true
-    synchroniser().then(liste => { if (actif && liste) setCommences(liste) })
+    synchroniser()
+      .then(liste => { if (actif && liste) setCommences(liste) })
+      .catch(() => {})
+      .finally(() => { if (actif) setSynchronise(true) })
     return () => { actif = false }
   }, [mode])
 
@@ -78,59 +81,6 @@ export default function PhaseSession({
   const participants = brouillon.participants || []
   const presents = participants.filter(p => p.present !== false).length
 
-  // Un classeur d'evaluation porte deja la formation et ses stagiaires :
-  // l'importer evite de recopier vingt noms a la main. Sur le choix
-  // initial, il cree la saisie ; dans la saisie, il la complete sans
-  // ecraser ce qui y est deja ecrit.
-  const fichier = useRef(null)
-  const [importInfo, setImportInfo] = useState(null)
-  async function importer(f) {
-    if (!f) return
-    try {
-      let lu
-      try {
-        lu = await lireEvaluation(f)
-      } catch (e1) {
-        try { lu = await lireResultats(f) } catch { throw e1 }
-      }
-      const { entete, stagiaires } = lu
-      if (!mode) {
-        const r = appliquerEvaluation({ participants: [] }, stagiaires)
-        onSaisieManuelle({
-          ...Object.fromEntries(Object.entries(entete).filter(([, v]) => v)),
-          participants: r.participants, satisfaction: r.satisfaction,
-        })
-      } else {
-        const r = appliquerEvaluation(brouillon, stagiaires)
-        if (r.remplaces && !window.confirm(
-          `Le classeur remplace des notes déjà saisies pour ${r.remplaces} stagiaire`
-          + `${r.remplaces > 1 ? 's' : ''}. Continuer ?`)) return
-        const vides = Object.fromEntries(Object.entries(entete)
-          .filter(([k, v]) => v && !String(brouillon[k] || '').trim()))
-        maj({ ...vides, participants: r.participants, satisfaction: r.satisfaction })
-      }
-      setImportInfo({
-        ok: true,
-        texte: `${stagiaires.length} stagiaire${stagiaires.length > 1 ? 's' : ''} repris du classeur,`
-          + ' avec leurs notes et leurs réponses. Vérifiez les noms et prénoms.',
-      })
-    } catch (e) {
-      setImportInfo({ ok: false, texte: `Classeur non reconnu : ${e.message}` })
-    }
-  }
-  const champFichier = (
-    <input ref={fichier} type="file" hidden
-      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      onChange={e => { importer(e.target.files?.[0]); e.target.value = '' }} />
-  )
-  const message = importInfo && (
-    <p className={`cr-import-info${importInfo.ok ? '' : ' cr-import-info--ko'}`} role="status">
-      {importInfo.texte}
-      <button type="button" className="cr-import-fermer" aria-label="Masquer"
-        onClick={() => setImportInfo(null)}>×</button>
-    </p>
-  )
-
   // Un compte rendu termine n'est plus a faire : sa formation quitte la
   // liste et se retrouve dans « Mes comptes rendus ». Une session deja
   // documentee au planning n'y revient que si une saisie la reprend.
@@ -140,6 +90,14 @@ export default function PhaseSession({
     if (estTermine(b)) return false
     return s.statut !== 'termine' || !!b
   })
+
+  // Aucune formation a proposer : une liste vide n'apprend rien, la
+  // saisie s'ouvre directement. On attend la synchronisation, qui peut
+  // ramener une formation commencee sur un autre poste.
+  const listeVide = !mode && synchronise && proposables.length === 0
+  useEffect(() => {
+    if (listeVide) onListeVide()
+  }, [listeVide, onListeVide])
 
   // ── Le volet de la formation : le type, puis la formation elle-meme
   let formation
@@ -170,15 +128,7 @@ export default function PhaseSession({
             onClick={passerEnManuel}>
             Saisir les informations moi-même →
           </button>
-          <span className="cr-echappee-ou">ou</span>
-          <button type="button" className="cr-echappee-lien cr-echappee-lien--second"
-            onClick={() => fichier.current?.click()}
-            title="Formation, dates, stagiaires, notes et satisfaction, repris d’un fichier Excel">
-            j’ai déjà les notes dans un fichier Excel
-          </button>
-          {champFichier}
         </div>
-        {message}
       </>
     )
   } else if (saisie) {
@@ -241,6 +191,9 @@ export default function PhaseSession({
   // ── Rien d'engage : la liste des formations, seule. Une session du
   // planning porte deja son type et ses stagiaires.
   if (!mode) {
+    // Pendant la synchronisation, une liste vide ne s'affiche pas : elle
+    // laisserait voir une page sans formation juste avant la saisie.
+    if (!synchronise && proposables.length === 0) return null
     return (
       <div className="cr-panel cr-panel--choix">
         <Consigne faire="Cliquez sur la formation de ce compte rendu."
@@ -270,23 +223,7 @@ export default function PhaseSession({
             {edition ? '✓ Terminer la modification' : '✎ Modifier les informations'}
           </button>
         )}
-        {mode === 'manuel' && (
-          <>
-            <button type="button" className="cr-btn cr-btn--ghost cr-export cr-import"
-              onClick={() => fichier.current?.click()}
-              title="Reprendre formation, stagiaires, notes et satisfaction d’un fichier Excel">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-                strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5" />
-                <path d="M4 15.5v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
-              </svg>
-              Reprendre d’un fichier Excel
-            </button>
-            {champFichier}
-          </>
-        )}
       </Consigne>
-      {mode === 'manuel' && message}
 
       <div className="cr-blocs cr-blocs--etape1">
         <Bloc titre="1. Formation"

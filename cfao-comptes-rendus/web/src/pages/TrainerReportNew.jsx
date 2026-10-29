@@ -93,6 +93,21 @@ export default function TrainerReportNew() {
   const [phase, setPhase] = useState(brouillon.phase || 0)
   const haut = useRef(null)
 
+  // Sans formation a proposer, la saisie s'ouvre d'elle-meme : revenir
+  // au choix n'aurait plus de sens, le retour ramene donc au tableau de bord.
+  const [sansListe, setSansListe] = useState(false)
+  const saisieManuelle = useCallback(() => setBrouillon({
+    ...brouillonVide(), manuel: true, participants: [],
+    // Un id propre a cette saisie : sans lui, toutes les
+    // saisies manuelles partageaient la cle 'manuel' et
+    // s'ecrasaient l'une l'autre dans le stockage local.
+    sessionId: `manuel-${Date.now()}`,
+  }), [])
+  const listeVide = useCallback(() => {
+    setSansListe(true)
+    saisieManuelle()
+  }, [saisieManuelle])
+
   // Le brouillon a peut-etre avance sur un autre poste : on demande au
   // serveur sa version avant tout enregistrement — sinon la copie de ce
   // navigateur, re-enregistree a l'ouverture, passerait pour la derniere.
@@ -253,7 +268,7 @@ export default function TrainerReportNew() {
   // Le retour suit la profondeur reelle : a la premiere phase, une
   // session engagee se quitte d'abord vers la liste, et seule la liste
   // vide ramene au tableau de bord.
-  const engage = Boolean(brouillon.sessionId || brouillon.manuel)
+  const engage = Boolean(brouillon.sessionId || brouillon.manuel) && !sansListe
   const libelleRetour = phase > 0 ? 'Retour'
     : engage ? 'Changer de formation' : 'Annuler'
 
@@ -329,15 +344,8 @@ export default function TrainerReportNew() {
                 brouillon={brouillon} maj={maj}
                 sessions={sessions}
                 onChoisirSession={reprendreOuCommencer}
-                onSaisieManuelle={(depart = {}) => setBrouillon({
-                  ...brouillonVide(), manuel: true, participants: [],
-                  // Un id propre a cette saisie : sans lui, toutes les
-                  // saisies manuelles partageaient la cle 'manuel' et
-                  // s'ecrasaient l'une l'autre dans le stockage local.
-                  sessionId: `manuel-${Date.now()}`,
-                  // Ce qu'un classeur d'evaluation importe a deja rempli.
-                  ...depart,
-                })}
+                onSaisieManuelle={saisieManuelle}
+                onListeVide={listeVide}
               />
             )}
             {phase === 1 && (
