@@ -4473,7 +4473,8 @@ section:nth-of-type(even) .card-carousel--peek.card-carousel--can-scroll-left::b
   margin: 0;
   font-size: 12px;
   line-height: 1.4;
-  color: var(--red);
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .form-alert {
@@ -4485,9 +4486,10 @@ section:nth-of-type(even) .card-carousel--peek.card-carousel--can-scroll-left::b
 }
 
 .form-alert--error {
-  background: rgba(227, 0, 27, 0.08);
-  border: 1px solid rgba(227, 0, 27, 0.22);
-  color: #9f1239;
+  background: rgba(227, 0, 27, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .form-alert--success {

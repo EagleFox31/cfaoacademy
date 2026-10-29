@@ -39,8 +39,8 @@ from moteur_fiche import rediger_appreciation
 from moteur_session import rediger_acquisition, rediger_bilan, rediger_progression
 from service import CACHE, MODELE, SOFFICE, document, image_de, rapport
 
-from . import stockage, taches
-from .models import Brouillon, Photo, TacheRapport
+from . import erreurs, stockage, taches
+from .models import Brouillon, Erreur, Photo, TacheRapport
 from .perimetre import perimetre_du_contenu
 
 journal = logging.getLogger(__name__)
@@ -48,16 +48,18 @@ journal = logging.getLogger(__name__)
 COMPTE_RENDU = "compte_rendu"
 PHOTO = "compte_rendu_photo"
 RENDU = "compte_rendu_rendu"
+JOURNAL = "compte_rendu_journal"
 
 
 def _erreur(message, code):
     return Response({"erreur": message}, status=code)
 
 
-def _echec_du_rendu():
-    """La cause reste dans le journal : le navigateur ne recoit ni chemin
-    ni message interne."""
+def _echec_du_rendu(request, action, contexte=None):
+    """La cause reste dans les journaux (serveur et `erreurs`) : le
+    navigateur ne recoit ni chemin ni message interne."""
     journal.exception("rendu en echec")
+    erreurs.noter("service", action, "rendu en echec", user=request.user, contexte=contexte)
     return _erreur("rendu impossible", 500)
 
 
@@ -69,6 +71,13 @@ def _autoriser(request, kind, ident, action, owner=None, scope_node="", brand=""
         "attr": {"ownerId": owner if owner is not None else request.user.id,
                  "scopeNode": scope_node, "brand": brand},
     }, action)
+
+
+def _voit_tout(request):
+    """Equipe technique : lit les comptes rendus et photos de tous les
+    formateurs, pour reproduire leurs apercus et rapports. Ce qu'elle
+    enregistre reste sous son propre id : les originaux ne changent jamais."""
+    return "superadmin" in (request.user.roles or [])
 
 
 def _corps(request):
@@ -98,7 +107,8 @@ def _photos_a_soi(request, valeurs):
     """
     valeurs = [v if isinstance(v, dict) else {} for v in valeurs]
     cites = set().union(*(_ids_cites(v.get("@photos")) for v in valeurs))
-    a_soi = set(Photo.objects.filter(owner=request.user.id, ident__in=cites)
+    lisibles = Photo.objects.all() if _voit_tout(request) else Photo.objects.filter(owner=request.user.id)
+    a_soi = set(lisibles.filter(ident__in=cites)
                 .values_list("ident", flat=True)) if cites else set()
 
     def trier(x):
@@ -183,12 +193,21 @@ class Deconnexion(APIView):
 
 
 # ── Comptes rendus en cours ────────────────────────────────────────────
-# Ranges sous l'id du principal : chacun ne voit que les siens.
+# Ranges sous l'id du principal : chacun ne voit que les siens (l'equipe
+# technique lit aussi ceux des autres, voir `_voit_tout`).
 
 class BrouillonsListe(APIView):
     def get(self, request):
         _autoriser(request, COMPTE_RENDU, "*", "list")
         brouillons, supprimes, revisions = stockage.lister(request.user.id)
+        if _voit_tout(request):
+            # Ceux des formateurs ensuite ; la copie de l'equipe technique
+            # masque l'original du meme id.
+            vus = {b.ident for b in Brouillon.objects.filter(owner=request.user.id)}
+            for b in Brouillon.objects.exclude(owner=request.user.id).order_by("-modifie_le"):
+                if b.ident not in vus:
+                    vus.add(b.ident)
+                    brouillons.append(b.contenu)
         return Response({"brouillons": brouillons, "supprimes": supprimes,
                          "revisionsSupprimees": revisions})
 
@@ -201,6 +220,8 @@ class BrouillonDetail(APIView):
         if not stockage.valide(ident):
             return _erreur("requete invalide", 400)
         b = self._existant(request, ident)
+        if not b and _voit_tout(request):
+            b = Brouillon.objects.filter(ident=ident).order_by("-modifie_le").first()
         if not b:
             return _erreur("introuvable", 404)
         _autoriser(request, COMPTE_RENDU, ident, "read", b.owner, b.scope_node, b.brand)
@@ -255,7 +276,8 @@ class PhotoEnvoi(APIView):
 
 class PhotoServie(APIView):
     def get(self, request, ident):
-        p = Photo.objects.filter(owner=request.user.id, ident=ident).first()
+        lisibles = Photo.objects.all() if _voit_tout(request) else Photo.objects.filter(owner=request.user.id)
+        p = lisibles.filter(ident=ident).first()
         if not p:
             return _erreur("introuvable", 404)
         _autoriser(request, PHOTO, ident, "read", p.owner, p.scope_node, p.brand)
@@ -291,7 +313,7 @@ class Page(APIView):
         try:
             chemin = image_de(diapo, valeurs, voisines)
         except Exception:  # noqa: BLE001
-            return _echec_du_rendu()
+            return _echec_du_rendu(request, "apercu d'une page", {"diapo": diapo})
         return FileResponse(open(chemin, "rb"), content_type="image/png")
 
 
@@ -313,7 +335,7 @@ class Document(APIView):
                 corps.get("nbJours") or 0, corps.get("nbParticipants") or 0,
                 corps.get("format") or "pptx", corps.get("variantes"))
         except Exception:  # noqa: BLE001
-            return _echec_du_rendu()
+            return _echec_du_rendu(request, "document complet", {"parties": parties})
         return _fichier(chemin, f"rapport{Path(chemin).suffix}")
 
 
@@ -338,7 +360,8 @@ class RapportComplet(APIView):
         try:
             chemin = rapport(pages, _format(corps))
         except Exception:  # noqa: BLE001
-            return _echec_du_rendu()
+            return _echec_du_rendu(request, "rapport complet",
+                                   {"diapos": [p.get("diapo") for p in pages]})
         return _fichier(chemin, f"rapport{Path(chemin).suffix}")
 
 
@@ -437,3 +460,47 @@ class Redaction(APIView):
             journal.info("redaction refusee", exc_info=True)
             return _erreur("redaction impossible : donnees du participant incompletes", 400)
         return Response(sortie)
+
+
+# ── Journal des erreurs ────────────────────────────────────────────────
+
+ORIGINES = ("service", "portail")
+
+
+class Erreurs(APIView):
+    def get(self, request):
+        """Les dernieres erreurs, pour l'equipe technique seule."""
+        _autoriser(request, JOURNAL, "*", "read")
+        try:
+            nombre = min(max(int(request.query_params.get("nombre", 200)), 1), 500)
+        except ValueError:
+            nombre = 200
+        lignes = Erreur.objects.all()
+        if request.query_params.get("origine") in ORIGINES:
+            lignes = lignes.filter(origine=request.query_params["origine"])
+        return Response({"erreurs": [
+            {"id": e.id, "le": e.le.isoformat(), "origine": e.origine, "utilisateur": e.owner,
+             "nom": e.nom, "action": e.action, "message": e.message, "detail": e.detail,
+             "contexte": e.contexte}
+            for e in lignes[:nombre]]})
+
+    def post(self, request):
+        """Une erreur constatee par le portail (delai, coupure, reponse en erreur)."""
+        _autoriser(request, JOURNAL, "_new", "create")
+        corps = _corps(request)
+        action = corps.get("action")
+        if not isinstance(action, str) or not action.strip():
+            return _erreur("action attendue", 400)
+        erreurs.noter("portail", action.strip(), corps.get("message") or "",
+                      detail=corps.get("detail") or "", user=request.user,
+                      contexte=corps.get("contexte"))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def delete(self, request):
+        """Retire du journal les erreurs choisies (`ids`), pour l'equipe technique seule."""
+        _autoriser(request, JOURNAL, "*", "delete")
+        ids = _corps(request).get("ids")
+        if not isinstance(ids, list) or not ids or not all(isinstance(i, int) for i in ids):
+            return _erreur("ids attendus", 400)
+        retirees, _ = Erreur.objects.filter(id__in=ids).delete()
+        return Response({"retirees": retirees})

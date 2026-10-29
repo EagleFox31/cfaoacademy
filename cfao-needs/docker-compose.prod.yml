@@ -42,7 +42,7 @@ services:
   needs-api:
     mem_limit: 512m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-api:v0.1.2
+    image: antifragile237/cfao-needs-api:v0.1.3
     environment: &api_env
       DJANGO_SETTINGS_MODULE: config.settings.dev
       NEEDS_SECRET_KEY: ${NEEDS_SECRET_KEY:-ueDBVqGE8R7OzHALv+e5Hnp710zP2xf1A4uWlC+7oPA5pxtctl3LmKPzo01PYrbf}

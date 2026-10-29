@@ -134,6 +134,19 @@ function UserMenu({ user, onLogout, t, onPortal = false }) {
               <span className="nav-user-dropdown-item-label">{t.nav_tech_assistance || 'Assistance technique'}</span>
               <span className="nav-user-dropdown-arrow">→</span>
             </Link>
+
+            {(user.roles ?? []).includes('superadmin') && (
+              <Link
+                to="/portail/journal-erreurs"
+                className="nav-user-dropdown-item"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+              >
+                <LifeBuoyIcon size={16} className="nav-user-dropdown-item-icon" />
+                <span className="nav-user-dropdown-item-label">{t.nav_error_log || 'Journal des erreurs'}</span>
+                <span className="nav-user-dropdown-arrow">→</span>
+              </Link>
+            )}
           </div>
 
           <div className="nav-user-dropdown-divider" />

@@ -5,6 +5,10 @@ COPY api/requirements.txt /tmp/requirements.txt
 RUN /opt/venv/bin/pip install -r /tmp/requirements.txt
 
 FROM python:3.12-slim
+# contracts:begin - bloc géré par contracts/sync.py, ne pas éditer
+LABEL org.cfao.contracts.provides="mail-outbound@0.1.0" \
+      org.cfao.module="cfao-academy-mail"
+# contracts:end
 RUN useradd --create-home --uid 1000 service
 COPY --from=dependances /opt/venv /opt/venv
 WORKDIR /app

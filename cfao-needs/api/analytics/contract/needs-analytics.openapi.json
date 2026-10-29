@@ -1,0 +1,320 @@
+{
+  "components": {
+    "schemas": {
+      "AllocationsPerBranch": {
+        "examples": [
+          {
+            "allocations": [
+              {
+                "country": "TOGO",
+                "seats": 264
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "properties": {
+          "allocations": {
+            "items": {
+              "properties": {
+                "country": {
+                  "type": "string"
+                },
+                "seats": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "country",
+                "seats"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "year": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "allocations"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "type": "object"
+      },
+      "ErrorEnvelope": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "details": {
+                "type": "object"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "ScheduledTrainings": {
+        "examples": [
+          {
+            "count": 180,
+            "year": 2026
+          }
+        ],
+        "properties": {
+          "count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "year": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "count"
+        ],
+        "type": "object"
+      },
+      "TotalTechnicians": {
+        "examples": [
+          {
+            "bu": "equipment",
+            "count": 392,
+            "year": 2026
+          }
+        ],
+        "properties": {
+          "bu": {
+            "enum": [
+              "equipment",
+              "motors",
+              "all"
+            ],
+            "type": "string"
+          },
+          "count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "year": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bu",
+          "year",
+          "count"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "AnalyticsKey": {
+        "in": "header",
+        "name": "X-Analytics-Key",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "description": "Agrégats de service à service lus par cfao-core (tableau de bord super admin).",
+    "title": "CFAO Needs Analytics",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/needs/analytics/allocations-per-branch": {
+      "get": {
+        "operationId": "allocationsPerBranch",
+        "parameters": [
+          {
+            "description": "Année de campagne. Défaut : année en cours.",
+            "in": "query",
+            "name": "year",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllocationsPerBranch"
+                }
+              }
+            },
+            "description": "Agrégat."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "`year` n'est pas un entier."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Clé `X-Analytics-Key` absente ou invalide (DRF sans authentificateur : 403)."
+          }
+        },
+        "summary": "Places allouées par pays."
+      }
+    },
+    "/api/v1/needs/analytics/scheduled-trainings": {
+      "get": {
+        "operationId": "scheduledTrainings",
+        "parameters": [
+          {
+            "description": "Année de campagne. Défaut : année en cours.",
+            "in": "query",
+            "name": "year",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduledTrainings"
+                }
+              }
+            },
+            "description": "Agrégat."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "`year` n'est pas un entier."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Clé `X-Analytics-Key` absente ou invalide (DRF sans authentificateur : 403)."
+          }
+        },
+        "summary": "Sessions programmées."
+      }
+    },
+    "/api/v1/needs/analytics/total-technicians": {
+      "get": {
+        "operationId": "totalTechnicians",
+        "parameters": [
+          {
+            "description": "Pôle. Valeur inconnue traitée comme `all`.",
+            "in": "query",
+            "name": "bu",
+            "required": false,
+            "schema": {
+              "enum": [
+                "equipment",
+                "motors",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Année de campagne. Défaut : année en cours.",
+            "in": "query",
+            "name": "year",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotalTechnicians"
+                }
+              }
+            },
+            "description": "Agrégat."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "`year` n'est pas un entier."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Clé `X-Analytics-Key` absente ou invalide (DRF sans authentificateur : 403)."
+          }
+        },
+        "summary": "Techniciens par pôle (Clé de Répartition)."
+      }
+    }
+  },
+  "security": [
+    {
+      "AnalyticsKey": []
+    }
+  ]
+}

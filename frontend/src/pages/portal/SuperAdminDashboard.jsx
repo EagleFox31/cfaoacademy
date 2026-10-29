@@ -19,6 +19,8 @@ import {
   describeProfile,
 } from '../../config/medacapMatrix.js'
 import { loadBuildState, buildStateKey } from '../../config/profileBuildStatus.js'
+import TrainerHome from './TrainerHome'
+import { OIDC_ACTIF } from '../../lib/auth.js'
 
 export const CFAO_ACADEMY_APPS_CONFIG = [
   {
@@ -504,6 +506,15 @@ export const OPERATIONAL_PROFILES_CONFIG = [
  * Chaque section = PortalReveal + container + PortalSectionHead + PortalStaggerGrid + PlanEntryCard.
  */
 export default function SuperAdminDashboard() {
+  const { user } = useAuth()
+  // Compte technique du mode local (sans donnees de demo) : les comptes rendus
+  // de tous les formateurs ; le journal reste sur /portail/journal-erreurs.
+  // En OIDC, le super admin n'a pas de demoKey et lit ses chiffres via l'API.
+  if (!OIDC_ACTIF && !LMS_BY_USER[user?.demoKey]) return <TrainerHome />
+  return <SuperAdminGroupe />
+}
+
+function SuperAdminGroupe() {
   const { user } = useAuth()
   const { t } = useLocale('portal')
   const { t: td } = useLocale('delivery')

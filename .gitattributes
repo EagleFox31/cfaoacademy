@@ -5,3 +5,6 @@ keycloak/** text=auto eol=lf
 edge/** text=auto eol=lf
 # Script exécuté par l'image de la passerelle : un CR casse le shebang.
 cfao-needs/gateway/** text=auto eol=lf
+# Registre de contrats et specs publiées : octets identiques à la génération, quel que soit core.autocrlf.
+contracts/** text=auto eol=lf
+**/contract/*.openapi.json text eol=lf

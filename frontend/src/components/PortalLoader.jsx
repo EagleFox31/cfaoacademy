@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-/** Écran de chargement premium à l'entrée du portail. */
+/** Écran de chargement premium à l'entrée du portail. Rendu dans <body> : le
+ * conteneur d'animation des routes (transform) capterait sinon le position fixed. */
 export default function PortalLoader({
   leaving = false,
   messages: messagesProp,
