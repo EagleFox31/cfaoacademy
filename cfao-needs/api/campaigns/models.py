@@ -287,3 +287,87 @@ class SubmissionEvent(UUIDModel):
 
     def __str__(self) -> str:
         return f"{self.kind} · {self.at:%Y-%m-%d %H:%M}"
+
+
+# --- Données d'arbitrage importées ---------------------------------------------
+# Alimentées par scripts/ingestion (Clé de Répartition, répartition des places,
+# planning des sessions) et lues par l'app analytics. Le schéma reprend
+# scripts/ingestion/init_database_tables.sql, colonne pour colonne.
+
+
+class BranchBrandQuota(UUIDModel, TimeStampedModel):
+    """Clé de Répartition : effectifs et places d'une filiale pour une marque."""
+
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="branch_quotas")
+    pole = models.CharField(max_length=32)
+    country = models.CharField(max_length=64)
+    brand = models.CharField(max_length=64)
+    # Effectif total de la filiale pour le pôle, répété sur chaque marque.
+    total_branch_techs = models.IntegerField(default=0)
+    brand_tech_count = models.IntegerField(default=0)
+    requested_needs = models.IntegerField(default=0)
+    allocated_seats = models.IntegerField(default=0)
+    source_file = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["campaign", "pole", "country", "brand"],
+                                    name="uniq_campaign_branch_quota"),
+        ]
+        indexes = [
+            models.Index(fields=["country"], name="idx_branch_quota_country"),
+            models.Index(fields=["brand"], name="idx_branch_quota_brand"),
+        ]
+
+
+class CourseAllocation(UUIDModel, TimeStampedModel):
+    """Places attribuées à une filiale pour un module.
+
+    Le fichier source mêle des lignes récapitulatives (`TOTAL DEMANDÉES`,
+    `PLACÉES AU CAMEROUN`, `RESTE À PLACER`) aux pays : voir SUMMARY_ROW_PREFIXES.
+    """
+
+    SUMMARY_ROW_PREFIXES = ("TOTAL", "PLACÉES", "RESTE")
+
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="course_allocations")
+    brand = models.CharField(max_length=64)
+    code = models.CharField(max_length=64)
+    title = models.CharField(max_length=512)
+    level = models.CharField(max_length=32, default="STANDARD")
+    country = models.CharField(max_length=64)
+    allocated_seats = models.IntegerField(default=0)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["code"], name="idx_course_alloc_code"),
+            models.Index(fields=["country"], name="idx_course_alloc_country"),
+        ]
+
+
+class TrainingSession(UUIDModel, TimeStampedModel):
+    """Session de formation planifiée, numérotée dans l'année."""
+
+    session_index = models.IntegerField()
+    year = models.IntegerField()
+    pole = models.CharField(max_length=32)
+    brand = models.CharField(max_length=64)
+    code = models.CharField(max_length=64, null=True, blank=True)
+    title = models.CharField(max_length=512)
+    training_type = models.CharField(max_length=64, default="Présentiel")
+    location = models.CharField(max_length=128)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    duration_days = models.IntegerField(null=True, blank=True)
+    trainer = models.CharField(max_length=128, null=True, blank=True)
+    client_scope = models.CharField(max_length=128, null=True, blank=True)
+    version_source = models.CharField(max_length=128)
+    is_authoritative = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["year", "session_index"], name="uniq_training_session_idx"),
+        ]
+        indexes = [
+            models.Index(fields=["brand"], name="idx_trainingsession_brand"),
+            models.Index(fields=["start_date", "end_date"], name="idx_trainingsession_dates"),
+        ]

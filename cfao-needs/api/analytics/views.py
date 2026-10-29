@@ -11,11 +11,13 @@ En prod : `NEEDS_ANALYTICS_INBOUND_KEY` vient du Key Vault, jamais du dépôt.
 from datetime import date
 
 from django.conf import settings
-from django.db import connection
+from django.db.models import Q, Sum
 from django.views.decorators.http import require_GET
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
+
+from campaigns.models import BranchBrandQuota, CourseAllocation, TrainingSession
 
 
 def _check_shared_key(request) -> None:
@@ -64,28 +66,22 @@ def allocations_per_branch(request):
     except (TypeError, ValueError):
         return Response({"detail": "year must be an integer"}, status=400)
 
-    with connection.cursor() as cur:
-        cur.execute(
-            """
-            SELECT ca.country, SUM(ca.allocated_seats) AS seats
-              FROM campaigns_courseallocation ca
-              JOIN campaigns_campaign c ON c.id = ca.campaign_id
-             WHERE c.year = %s
-               AND ca.country NOT ILIKE 'TOTAL%%'
-               AND ca.country NOT ILIKE 'PLACÉES%%'
-               AND ca.country NOT ILIKE 'RESTE%%'
-             GROUP BY ca.country
-             ORDER BY seats DESC
-            """,
-            (year,),
-        )
-        rows = cur.fetchall()
+    summary_rows = Q()
+    for prefix in CourseAllocation.SUMMARY_ROW_PREFIXES:
+        summary_rows |= Q(country__istartswith=prefix)
+    rows = (
+        CourseAllocation.objects.filter(campaign__year=year)
+        .exclude(summary_rows)
+        .values("country")
+        .annotate(seats=Sum("allocated_seats"))
+        .order_by("-seats", "country")
+    )
 
     return Response({
         "year": year,
         "allocations": [
-            {"country": country, "seats": int(seats or 0)}
-            for country, seats in rows
+            {"country": row["country"], "seats": int(row["seats"] or 0)}
+            for row in rows
         ],
     })
 
@@ -123,29 +119,11 @@ def total_technicians(request):
     if bu not in ("equipment", "motors", "all"):
         bu = "all"
 
-    pole_filter = ""
-    params: list = [year]
-    if bu == "equipment":
-        pole_filter = "AND bq.pole = 'EQUIPMENT'"
-    elif bu == "motors":
-        pole_filter = "AND bq.pole = 'MOTORS'"
-
-    with connection.cursor() as cur:
-        cur.execute(
-            f"""
-            SELECT COALESCE(SUM(total_branch_techs), 0)
-              FROM (
-                SELECT DISTINCT bq.pole, bq.country, bq.total_branch_techs
-                  FROM campaigns_branchbrandquota bq
-                  JOIN campaigns_campaign c ON c.id = bq.campaign_id
-                 WHERE c.year = %s
-                   {pole_filter}
-              ) t
-            """,
-            params,
-        )
-        row = cur.fetchone()
-        count = int(row[0]) if row else 0
+    quotas = BranchBrandQuota.objects.filter(campaign__year=year)
+    if bu != "all":
+        quotas = quotas.filter(pole=bu.upper())
+    branches = quotas.values_list("pole", "country", "total_branch_techs").distinct()
+    count = sum(total for _, _, total in branches)
 
     return Response({"bu": bu, "year": year, "count": count})
 
@@ -176,12 +154,6 @@ def scheduled_trainings(request):
     except (TypeError, ValueError):
         return Response({"detail": "year must be an integer"}, status=400)
 
-    with connection.cursor() as cur:
-        cur.execute(
-            "SELECT COUNT(*) FROM campaigns_trainingsession WHERE year = %s",
-            (year,),
-        )
-        row = cur.fetchone()
-        count = int(row[0]) if row else 0
+    count = TrainingSession.objects.filter(year=year).count()
 
     return Response({"year": year, "count": count})
