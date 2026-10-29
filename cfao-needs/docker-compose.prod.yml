@@ -1,58 +1,13 @@
-# CFAO Needs — Stack complète clé-en-main (Zero Build / Turnkey)
+# CFAO Needs — production, derrière la passerelle commune cfao-edge.
 # Toutes les images proviennent directement de votre Docker Hub (antifragile237).
-# Lancement immédiat sur n'importe quelle machine sans aucun fichier source :
+# Prérequis : le Keycloak commun (keycloak/compose.prod.yml, projet cfao-identity)
+# tourne, et cfao-edge publie needs et /auth. Puis :
 #   docker compose -f docker-compose.prod.yml up -d
+# Connexion : realm `cfao`, client cfao-needs-web, audience cfao-needs-api.
 
 name: cfao-needs
 
 services:
-  needs-kc-db:
-    mem_limit: 256m
-    restart: unless-stopped
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:-2P09iYigO13G6kc4ti+trLQ7}
-    volumes:
-      - needs-kc-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak"]
-      interval: 20s
-      timeout: 5s
-      retries: 10
-
-  needs-keycloak:
-    mem_limit: 768m
-    restart: unless-stopped
-    image: antifragile237/cfao-needs-keycloak:v0.1.2
-    command: ["start-dev", "--import-realm"]
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://needs-kc-db:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-2P09iYigO13G6kc4ti+trLQ7}
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-${KC_ADMIN:-admin}}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-${KC_ADMIN_PASSWORD:-4g3BOwwdgL46ful1}}
-      KEYCLOAK_ADMIN: ${KC_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-4g3BOwwdgL46ful1}
-      KC_HOSTNAME: ${NEEDS_PUBLIC_BASE_URL:-http://localhost:${NEEDS_PORT:-8082}}
-      KC_HOSTNAME_STRICT: "false"
-      KC_PROXY_HEADERS: xforwarded
-      KC_HTTP_ENABLED: "true"
-      NEEDS_LAN_HOST: ${NEEDS_LAN_HOST:-}
-      NEEDS_PUBLIC_BASE_URL: ${NEEDS_PUBLIC_BASE_URL:-}
-      KEYCLOAK_ADDITIONAL_REDIRECT_URIS: ${KEYCLOAK_ADDITIONAL_REDIRECT_URIS:-}
-      KC_HEALTH_ENABLED: "true"
-      JAVA_OPTS_KC_HEAP: "-Xms64m -Xmx256m"
-      JAVA_OPTS_APPEND: "-Dkeycloak.migration.replace-placeholders=true"
-      NEEDS_DEMO_PASSWORD: ${NEEDS_DEMO_PASSWORD:-Recette2027!}
-    depends_on:
-      needs-kc-db:
-        condition: service_healthy
-    ports:
-      - "${KC_PORT:-8081}:8080"
-
   needs-cerbos:
     mem_limit: 256m
     restart: unless-stopped
@@ -97,15 +52,18 @@ services:
       NEEDS_DB_USER: ${NEEDS_DB_USER:-needs}
       NEEDS_DB_PASSWORD: ${NEEDS_DB_PASSWORD:-ZyHDiHqm8UMIbsNy5Hmoi2Cl}
       CERBOS_HTTP: http://needs-cerbos:3592
-      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://needs-keycloak:8080/realms/cfao-needs/protocol/openid-connect/certs}
-      OIDC_ISSUER: ${OIDC_ISSUER:-${NEEDS_PUBLIC_BASE_URL:-http://localhost:${NEEDS_PORT:-8082}}/realms/cfao-needs}
-      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-needs-web}
+      # Clés lues en interne, sur le réseau du Keycloak commun.
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/cfao/protocol/openid-connect/certs}
+      # Émetteur canonique : KC_HOSTNAME du Keycloak commun + /realms/cfao.
+      OIDC_ISSUER: ${OIDC_ISSUER:?OIDC_ISSUER manquant (ex. https://<hote>/auth/realms/cfao)}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-cfao-needs-api}
       NEEDS_CORS_ORIGINS: ${NEEDS_CORS_ORIGINS:-http://localhost:8082,http://localhost:8080,http://localhost:5174}
       NEEDS_PUBLIC_BASE_URL: ${NEEDS_PUBLIC_BASE_URL:-http://localhost:8082}
       NEEDS_INTERNAL_DOMAINS: ${NEEDS_INTERNAL_DOMAINS:-cfao.com}
       NEEDS_TEAM_RECIPIENTS: ${NEEDS_TEAM_RECIPIENTS:-academy@cfao.com}
       NEEDS_EMAIL_BACKEND: ${NEEDS_EMAIL_BACKEND:-console}
       NEEDS_SMTP_HOST: ${NEEDS_SMTP_HOST:-}
+    networks: [default, identite]
     depends_on:
       needs-db:
         condition: service_healthy
@@ -132,14 +90,24 @@ services:
   needs-gateway:
     mem_limit: 64m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-gateway:v0.1.2
+    image: antifragile237/cfao-needs-gateway:v0.2.0
+    environment:
+      # Absolu : le LAN (sans /auth) se connecte aussi sur l'émetteur public.
+      NEEDS_OIDC_ISSUER: ${OIDC_ISSUER:?OIDC_ISSUER manquant}
+      NEEDS_OIDC_CLIENT_ID: ${NEEDS_OIDC_CLIENT_ID:-cfao-needs-web}
+    # Local par défaut : cfao-edge est la seule entrée (zrok et LAN).
     ports:
-      - "${NEEDS_PORT:-8082}:80"
+      - "${NEEDS_BIND:-127.0.0.1}:${NEEDS_PORT:-8082}:80"
     depends_on:
       needs-api:
         condition: service_started
 
+networks:
+  # Réseau du Keycloak commun (projet compose cfao-identity), créé par lui.
+  identite:
+    name: ${IDENTITY_NETWORK:-cfao-identity_default}
+    external: true
+
 volumes:
-  needs-kc-db-data:
   needs-db-data:
   needs-cerbos-audit:

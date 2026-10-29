@@ -25,10 +25,21 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Une image publiée contient les octets testés ; les fins de ligne sont fixées par le dépôt, pas par le poste | D, A | `.gitattributes` `eol=lf` + `diff -r` export/testé avant push |
 | Un serveur qui calcule ses URL depuis la requête est servi sous le même chemin que son URL publique ; un proxy ne retire jamais son préfixe | E, R | `edge/tests/smoke_edge.py` : `token_endpoint` de la découverte commence par `<passerelle>/auth/`, même avec un Host falsifié |
 | Un fichier dont le CI dépend est prouvé présent dans le dépôt ; une exception se règle dans `.gitignore`, jamais par `git add -f` | D, A | `test_modeles_d_environnement_suivis_par_git` |
+| Un modèle `.env` partagé par plusieurs fichiers compose laisse vides les variables dont le défaut diffère selon le mode ; le déploiement refuse une valeur incompatible | A, D | `test_modele_env_laisse_l_audience_au_compose` + garde `OIDC_AUDIENCE` dans `deploy.sh/.ps1` |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-29 — Audience du realm de module imposée à la prod par le `.env` (needs sur l'émetteur commun, L6)
+- **Contexte / symptôme** : needs basculé sur le realm `cfao` ; connexion, jeton, `iss` et `aud` corrects, mais l'API répondait 401 (`InvalidAudienceError`). Le conteneur avait `OIDC_AUDIENCE=needs-web` alors que le compose de prod déclare `${OIDC_AUDIENCE:-cfao-needs-api}`.
+- **Impact** : aucun, relevé en recette locale (`recette_needs.py` 15/17). En prod, tout appel à l'API aurait été refusé après la bascule.
+- **Détection** : recette de bout en bout avec de vrais jetons, journaux de l'API.
+- **Cause racine** : `cfao-needs/.env.example` fixait `OIDC_AUDIENCE=needs-web` (valeur du mode autonome). Compose lit `.env` d'office et une valeur non vide écrase le défaut de chaque fichier compose.
+- **Correctif** : `OIDC_AUDIENCE=` vide dans le modèle ; `deploy.sh/.ps1` refusent une audience qui ne contient pas `cfao-needs-api`.
+- **Prévention** : `test_modele_env_laisse_l_audience_au_compose` ; garde des scripts de déploiement vérifiée sur `needs-web` (refus) et valeur vide (accepté).
+- **Leçon généralisée** : un `.env` commun à plusieurs modes ne fixe pas une valeur propre à l'un d'eux ; le défaut vit dans le fichier compose du mode. Une valeur incompatible est refusée au déploiement, pas découverte au premier 401.
+- **Catégorie** : configuration / déploiement
 
 ### 2026-10-29 — Modèle `.env.prod.example` de la passerelle ignoré par git, lu par le CI
 - **Contexte / symptôme** : `edge/.env.prod.example` existait sur le poste, mais `.gitignore` (`.env.*`) l'excluait. Le commit `8f688dd` ne le contenait pas. Le job CI `edge` le lit (`nginx -t --env-file`, tests statiques).

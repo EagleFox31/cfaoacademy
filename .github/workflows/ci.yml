@@ -44,6 +44,11 @@ jobs:
             edge:
               - 'edge/**'
               - 'keycloak/**'
+              - 'cfao-needs/gateway/**'
+              - 'cfao-needs/docker-compose*.yml'
+              - 'cfao-needs/.env.example'
+              - 'cfao-needs/web/index.html'
+              - 'cfao-needs/web/src/lib/auth.js'
               - '.github/workflows/ci.yml'
 
   cerbos:
@@ -173,7 +178,7 @@ jobs:
       CFAO_PORTAL_SECRET: ci-secret-portail
       KC_IMPORT_LOCATIONS: /opt/cfao-realm/*.yaml,/fixtures/*.yaml
       CFAO_PORTAL_REDIRECT_URIS: '[]'
-      CFAO_NEEDS_REDIRECT_URIS: '["http://localhost:18088/*"]'
+      CFAO_NEEDS_REDIRECT_URIS: '["http://localhost:18088/callback","http://localhost:18088/"]'
       # Passerelle et modules factices.
       EDGE_VERSION: smoke
       EDGE_LISTEN: 127.0.0.1:18088
@@ -199,7 +204,15 @@ jobs:
           cache: pip
           cache-dependency-path: keycloak/tests/requirements.txt
       - run: pip install -r keycloak/tests/requirements.txt
-      - run: pytest -q edge/tests/test_edge_config.py
+      - run: pytest -q edge/tests/test_edge_config.py edge/tests/test_needs_federation.py
+      - name: passerelle needs, config OIDC écrite au démarrage
+        run: |
+          mkdir -p cfao-needs/web/dist
+          docker build -q -t needs-gateway:ci -f cfao-needs/gateway/Dockerfile cfao-needs
+          lancer() { docker run --rm --network none --add-host needs-api:127.0.0.1 -e NEEDS_OIDC_ISSUER="$1" -e NEEDS_OIDC_CLIENT_ID=cfao-needs-web needs-gateway:ci "${@:2}"; }
+          lancer https://h.exemple/auth/realms/cfao sh -c '/docker-entrypoint.sh nginx -t && cat /etc/nginx/needs-config.js' \
+            | grep -F '{"oidcIssuer": "https://h.exemple/auth/realms/cfao", "oidcClientId": "cfao-needs-web"}'
+          if lancer 'javascript:alert(1)' /docker-entrypoint.sh nginx -t; then exit 1; fi
       - name: image + nginx -t avec les valeurs du modèle de prod
         run: |
           docker build -q -t antifragile237/cfao-edge:smoke edge

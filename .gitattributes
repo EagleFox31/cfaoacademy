@@ -3,3 +3,5 @@ assets/** filter=lfs diff=lfs merge=lfs -text
 # Contexte de l'image Keycloak : octets identiques au test, quel que soit core.autocrlf.
 keycloak/** text=auto eol=lf
 edge/** text=auto eol=lf
+# Script exécuté par l'image de la passerelle : un CR casse le shebang.
+cfao-needs/gateway/** text=auto eol=lf

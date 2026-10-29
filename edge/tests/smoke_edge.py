@@ -32,7 +32,7 @@ os.environ["KC_URL"] = f"{EDGE_URL}/auth"
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "keycloak" / "tests"))
 from smoke_realm import _code_de, _connexion, jwt_verifier  # noqa: E402
 
-REDIRECT_NEEDS = f"{EDGE_URL}/cb"
+REDIRECT_NEEDS = f"{EDGE_URL}/callback"
 HOTE_PUBLIC = urlparse(EDGE_URL).netloc
 
 
