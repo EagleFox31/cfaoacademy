@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+
+// Le bouton retour de l'assistant ramene a cette liste.
+const DEPUIS = { chemin: '/portail/compte-rendu/mes-rapports', libelle: 'Comptes rendus terminés' }
 import Nav from '../../components/Nav'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import CarteCompteRendu, { BadgeCompteRendu, carteDeBrouillon } from '../../components/compte-rendu/CarteCompteRendu'
@@ -25,7 +28,7 @@ export default function TrainerReportsTermines() {
     return () => { actif = false }
   }, [])
 
-  const ouvrir = b => naviguer(`/portail/compte-rendu/nouveau?session=${b.id}`)
+  const ouvrir = b => naviguer(`/portail/compte-rendu/nouveau?session=${b.id}`, { state: { depuis: DEPUIS } })
 
   return (
     <>

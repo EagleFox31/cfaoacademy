@@ -967,6 +967,8 @@
   column-gap: 18px;
 }
 .cr-entete-assistant .cr-retour { margin-bottom: 0; }
+/* L'heure d'enregistrement se range sous le titre, pas sous le bouton. */
+.cr-entete-assistant .cr-enregistre { grid-column: 2; margin: 2px 0 0; }
 .cr-entete-assistant .cr-phases { grid-column: 1 / -1; margin-top: clamp(8px, 2vh, 18px); }
 .cr-entete-assistant .cr-home-title--sm {
   margin-bottom: 0;
