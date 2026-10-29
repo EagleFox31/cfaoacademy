@@ -451,11 +451,17 @@ button[type="submit"]#kc-login:hover,
   z-index: 25 !important;
 }
 
+/* Sur mobile, le logo centré ne laisse pas la place : le sélecteur monte dans
+   la marge haute de la carte. */
 @media (max-width: 480px) {
+  .login-pf-page .card-pf {
+    padding-top: 76px !important;
+  }
+
   #kc-locale-wrapper,
   #kc-locale {
-    top: 20px !important;
-    right: 20px !important;
+    top: -24px !important;
+    right: 0 !important;
   }
 }
 
@@ -484,6 +490,13 @@ button[type="submit"]#kc-login:hover,
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
   color: var(--cfao-ink) !important;
   margin-bottom: 16px !important;
+}
+
+/* Erreur sous un champ : le rouge PatternFly est illisible sur le verre. */
+#input-error,
+.login-pf-page .card-pf .pf-c-form__helper-text.pf-m-error {
+  color: #ffd9de !important;
+  font-weight: 600 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
