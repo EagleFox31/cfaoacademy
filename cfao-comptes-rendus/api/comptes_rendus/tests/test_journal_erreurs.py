@@ -50,6 +50,20 @@ def test_la_lecture_passe_par_le_pdp(client, pdp):
     assert client("f-demo").get("/cr-donnees/erreurs").status_code == 403
 
 
+def test_la_suppression_retire_les_erreurs_choisies(client, pdp):
+    for a in ("a", "b", "c"):
+        erreurs.noter("portail", a, "m", detail="", owner="f-demo")
+    ids = list(Erreur.objects.filter(action__in=["a", "b"]).values_list("id", flat=True))
+    r = client("s-demo").delete("/cr-donnees/erreurs", {"ids": ids}, format="json")
+    assert r.status_code == 200 and r.json()["retirees"] == 2
+    assert list(Erreur.objects.values_list("action", flat=True)) == ["c"]
+    assert pdp.demandes[-1]["kind"] == "compte_rendu_journal" and pdp.demandes[-1]["action"] == "delete"
+    assert client("s-demo").delete("/cr-donnees/erreurs", {"ids": "x"}, format="json").status_code == 400
+    pdp.reponse = False
+    assert client("f-demo").delete("/cr-donnees/erreurs", {"ids": [1]}, format="json").status_code == 403
+    assert Erreur.objects.count() == 1
+
+
 def test_une_exception_non_rattrapee_est_notee(monkeypatch, client):
     monkeypatch.setattr(views.Sante, "get", _panne)
     c = client()

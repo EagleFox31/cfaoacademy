@@ -3603,5 +3603,7 @@
 /* Journal des erreurs (équipe technique) */
 .cr-journal { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 .cr-journal th, .cr-journal td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px solid var(--rule); }
-.cr-journal td:first-child { white-space: nowrap; }
+.cr-journal td:nth-child(2) { white-space: nowrap; }
+.cr-journal .cr-journal-choix { width: 28px; }
+.cr-journal-actions { display: flex; justify-content: flex-end; margin-bottom: 8px; }
 .cr-journal pre { max-height: 320px; overflow: auto; white-space: pre-wrap; font-size: 0.75rem; background: var(--paper); padding: 8px; }

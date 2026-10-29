@@ -37,14 +37,14 @@ tests:
     input:
       principals: ["formateur", "suppleant_ki"]
       resources: ["journal"]
-      actions: ["create", "read"]
+      actions: ["create", "read", "delete"]
     expected:
       - principal: formateur
         resource: journal
-        actions: { create: EFFECT_ALLOW, read: EFFECT_DENY }
+        actions: { create: EFFECT_ALLOW, read: EFFECT_DENY, delete: EFFECT_DENY }
       - principal: suppleant_ki
         resource: journal
-        actions: { create: EFFECT_ALLOW, read: EFFECT_DENY }
+        actions: { create: EFFECT_ALLOW, read: EFFECT_DENY, delete: EFFECT_DENY }
 
   - name: hors formation et anonyme ne font rien
     input:
@@ -59,12 +59,12 @@ tests:
         resource: journal
         actions: { create: EFFECT_DENY, read: EFFECT_DENY, delete: EFFECT_DENY }
 
-  - name: l'equipe technique lit le journal
+  - name: l'equipe technique lit et nettoie le journal
     input:
       principals: ["superadmin"]
       resources: ["journal"]
-      actions: ["read", "create"]
+      actions: ["read", "create", "delete"]
     expected:
       - principal: superadmin
         resource: journal
-        actions: { read: EFFECT_ALLOW, create: EFFECT_ALLOW }
+        actions: { read: EFFECT_ALLOW, create: EFFECT_ALLOW, delete: EFFECT_ALLOW }

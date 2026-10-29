@@ -15,7 +15,7 @@ resourcePolicy:
       effect: EFFECT_ALLOW
       roles: ["trainer", "ki", "pic"]
 
-    # Lecture : equipe technique seule (PLATFORM_ROLES.md).
+    # Lecture et suppression : equipe technique seule (PLATFORM_ROLES.md).
     - actions: ["*"]
       effect: EFFECT_ALLOW
       roles: ["superadmin"]
