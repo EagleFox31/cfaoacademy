@@ -592,10 +592,14 @@ def _anneau_excel(image, geo, valeurs):
     mesure = ImageDraw.Draw(image)
 
     def police_de(corps):
-        try:
-            return ImageFont.truetype('calibrib.ttf', corps)
-        except OSError:
-            return ImageFont.load_default()
+        # Calibri gras sous Windows, Carlito gras (meme metrique) sous Linux :
+        # la police par defaut de Pillow ignore le corps et rend un texte minuscule.
+        for nom in ('calibrib.ttf', 'Carlito-Bold.ttf'):
+            try:
+                return ImageFont.truetype(nom, corps)
+            except OSError:
+                pass
+        return ImageFont.load_default(corps)
 
     def texte_de(serie, v):
         # Un questionnaire non rempli s'affiche d'un tiret, pas de 0 %.
