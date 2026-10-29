@@ -1,2 +1,4 @@
 catalogues/** filter=lfs diff=lfs merge=lfs -text
 assets/** filter=lfs diff=lfs merge=lfs -text
+# Contexte de l'image Keycloak : octets identiques au test, quel que soit core.autocrlf.
+keycloak/** text=auto eol=lf

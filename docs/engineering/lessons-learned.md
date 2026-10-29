@@ -22,10 +22,22 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Un émetteur de jeton se compare à l'identique, contre une liste déclarée ; un hôte différent est une entrée de plus, jamais un suffixe ni une réécriture | E, R | `test_jwt_verifier.py` (même realm sur un autre hôte refusé), copies identiques vérifiées en CI |
 | Une audience vérifiée par une API est produite par un mapper du realm, et un secret de client n'a qu'une source | E, D | `keycloak/tests` (cohérence statique) + smoke sur Keycloak 26 (jetons réels, config dev et prod) |
 | Une donnée de dev (comptes, mots de passe) vit dans un emplacement que la prod n'importe pas, jamais derrière un simple commentaire | E, D | `test_realm_de_prod_sans_aucun_compte` + smoke prod sur Keycloak neuf (`DEMO_ATTENDUE=absente`) |
+| Une image publiée contient les octets testés ; les fins de ligne sont fixées par le dépôt, pas par le poste | D, A | `.gitattributes` `eol=lf` + `diff -r` export/testé avant push |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-29 — Image publiée à partir d'octets différents de ceux testés (Keycloak commun v0.1.0)
+- **Contexte / symptôme** : `cfao-keycloak:v0.1.0` est construite depuis `git archive` du commit, pour ne pas embarquer le dossier de travail. Avec `core.autocrlf=true`, l'archive sort le realm en CRLF. Le smoke, lui, avait tourné sur le dossier de travail, en LF.
+- **Impact** : faible. YAML tolère CRLF et le smoke de `v0.1.0` est vert. Mais le tag publié ne contenait pas exactement les fichiers testés. `v0.1.0` est remplacée par `v0.2.0` et n'est pas déployée.
+- **Détection** : `diff -r` entre l'export et le dossier de travail, fait avant le build de `v0.2.0`.
+- **Cause racine** : la conversion des fins de ligne dépend d'un réglage du poste (`core.autocrlf`) et non du dépôt.
+- **Correctif** : `.gitattributes` : `keycloak/** text=auto eol=lf`. `v0.2.0` est construite depuis un export identique octet pour octet au dossier testé.
+- **Prévention** : `git -c core.autocrlf=true archive HEAD keycloak/config/cfao-realm.yaml | tar -xO | grep -c $'\r'` renvoie 0. Avant tout push, `diff -r` entre l'export et ce qui a été testé.
+- **Leçon généralisée** : un artefact publié se construit à partir des octets testés. Toute transformation entre test et build (export, fins de ligne, filtres) est fixée par le dépôt, pas par le poste.
+- **Catégorie** : release/déploiement
+- **Récidive** : non
 
 ### 2026-10-29 — Le realm destiné à la prod embarquait 11 comptes de démo au mot de passe « demo » (fédération L5)
 - **Contexte / symptôme** : `keycloak/config/cfao-realm.yaml`, le fichier que keycloak-config-cli applique, contenait sous l'en-tête « DEV uniquement » 11 comptes au mot de passe `demo` non temporaire, dont `admin.groupe` et `moa.pilotage`. Rien ne séparait la dev de la prod : le même glob `/config/*.yaml` les importait partout.
