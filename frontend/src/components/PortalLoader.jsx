@@ -1,6 +1,9 @@
-/** Écran de chargement premium à l'entrée du portail. */
+import { createPortal } from 'react-dom'
+
+/** Écran de chargement premium à l'entrée du portail. Rendu dans <body> : le
+ * conteneur d'animation des routes (transform) capterait sinon le position fixed. */
 export default function PortalLoader({ leaving = false }) {
-  return (
+  return createPortal(
     <div
       className={`portal-loader${leaving ? ' is-leaving' : ''}`}
       role="status"
@@ -22,6 +25,7 @@ export default function PortalLoader({ leaving = false }) {
           <span className="portal-loader-bar-fill" />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
