@@ -1,0 +1,30 @@
+{
+  "modules": {
+    "cfao-academy-mail": {"dockerfile": "cfao-academy-mail/Dockerfile"},
+    "cfao-core": {"dockerfile": "cfao-core/Dockerfile"},
+    "cfao-needs": {"dockerfile": "cfao-needs/api/Dockerfile"}
+  },
+  "contracts": [
+    {
+      "id": "mail-outbound",
+      "provider": "cfao-academy-mail",
+      "kind": "http",
+      "spec": "cfao-academy-mail/api/outbound/contract/mail.openapi.json",
+      "consumers": []
+    },
+    {
+      "id": "needs-analytics",
+      "provider": "cfao-needs",
+      "kind": "http",
+      "spec": "cfao-needs/api/analytics/contract/needs-analytics.openapi.json",
+      "consumers": [
+        {
+          "module": "cfao-core",
+          "range": "^1",
+          "client_files": ["cfao-core/analytics/services.py"],
+          "tests": ["cfao-core/analytics/tests/test_needs_analytics_consumer.py"]
+        }
+      ]
+    }
+  ]
+}

@@ -18,10 +18,22 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Un service écrit dans Compose n'est prouvé que par une exécution observée | D | sortie collée dans le walkthrough (échec compris) |
 | La commande documentée doit exister sur la machine qui produit la preuve | A | `make` présent dans le PATH, sinon le trou est écrit |
 | Une action CI qui appelle l'API GitHub reçoit le droit explicite dont elle a besoin | E (moindre privilège) | test du workflow (`pull-requests: read` sur `changes`) + run observé |
+| Toute frontière inter-modules est déclarée dans `contracts/registry.json`, avec test fournisseur et test consommateur | D, E (contrats explicites) | job CI `contracts` + tests consommateur de chaque module |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-29 — Les agrégats needs lus par core interrogent des tables inexistantes (cfao-needs, cfao-core)
+- **Contexte / symptôme** : premier test fournisseur du contrat `needs-analytics`. Les trois routes `/api/v1/needs/analytics/*` lèvent `no such table` dès que la clé est valide.
+- **Impact** : le tableau de bord super admin de core afficherait 0 techniciens, 0 sessions et aucune allocation, sans erreur visible (core renvoie 0 ou `[]` sur toute réponse non 200 et ne journalise qu'un warning). Pas d'impact constaté : core n'est pas déployé sur le serveur.
+- **Détection** : `cfao-needs/api/analytics/tests/test_contract.py` ; vérifié en lecture seule sur la base de production de needs (tables absentes).
+- **Cause racine** : les vues lisent en SQL brut `campaigns_branchbrandquota`, `campaigns_courseallocation` et `campaigns_trainingsession`, qu'aucun modèle ni migration ne crée. Aucune frontière inter-modules n'était testée, et le repli silencieux de core masquait l'erreur. Deux autres écarts avec la docstring : refus de clé en 403 (et non 401) avec l'enveloppe `{"error": ...}`.
+- **Correctif** : contrat publié selon le comportement réel (403, deux formats d'erreur). Le cas 200 est marqué `xfail(strict=True)` jusqu'à la réécriture des requêtes sur les modèles réels, qui demande une décision métier sur la source des effectifs et des allocations.
+- **Prévention** : registre `contracts/`, test fournisseur contre le serveur, test consommateur dans core, job CI `contracts`, `can_i_deploy.py` avant tout déploiement.
+- **Leçon généralisée** : une intégration qui se replie en silence doit être couverte par un test de contrat des deux côtés, sinon sa panne ressemble à une donnée nulle.
+- **Catégorie** : contrat inter-modules
+- **Récidive** : non
 
 ### 2026-10-29 — Connexion refusée en prod après la v0.4.0, `ORIGINES_AUTORISEES` absente (cfao-comptes-rendus)
 - **Contexte / symptôme** : après le passage en v0.4.0, plus personne ne se connecte aux comptes rendus. Le navigateur affiche « forbidden », l'API répond 403 `origine non autorisee` à tous les POST.
