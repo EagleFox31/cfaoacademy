@@ -77,9 +77,8 @@
   overflow: visible !important;
 }
 
-/* Bouton de fermeture (✕) en haut à droite */
-.login-pf-page .card-pf::after {
-  content: "✕";
+/* Bouton de fermeture (✕) en haut à droite, lien injecté par js/login.js */
+.login-pf-page .card-pf .cfao-close {
   position: absolute;
   top: -14px;
   right: -14px;
@@ -96,14 +95,20 @@
   font-weight: 700;
   line-height: 36px;
   text-align: center;
-  cursor: pointer;
+  text-decoration: none;
   z-index: 10;
   transition: transform 0.15s ease, color 0.15s ease;
 }
 
-.login-pf-page .card-pf:hover::after {
+.login-pf-page .card-pf .cfao-close:hover,
+.login-pf-page .card-pf .cfao-close:focus-visible {
   transform: scale(1.05);
   color: var(--cfao-red);
+}
+
+.login-pf-page .card-pf .cfao-close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
 
 /* ── Logo CFAO Mobility centré ───────────────────────────────────────────── */

@@ -25,11 +25,22 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Une image publiée contient les octets testés ; les fins de ligne sont fixées par le dépôt, pas par le poste | D, A | `.gitattributes` `eol=lf` + `diff -r` export/testé avant push |
 | Un serveur qui calcule ses URL depuis la requête est servi sous le même chemin que son URL publique ; un proxy ne retire jamais son préfixe | E, R | `edge/tests/smoke_edge.py` : `token_endpoint` de la découverte commence par `<passerelle>/auth/`, même avec un Host falsifié |
 | Un fichier dont le CI dépend est prouvé présent dans le dépôt ; une exception se règle dans `.gitignore`, jamais par `git add -f` | D, A | `test_modeles_d_environnement_suivis_par_git` |
+| Une ressource servie avec cache se vérifie avec le client réel, sur un marqueur que seule la nouvelle version contient | D | contrôle Playwright du thème (`.cfao-close` présent) |
 | Un modèle `.env` partagé par plusieurs fichiers compose laisse vides les variables dont le défaut diffère selon le mode ; le déploiement refuse une valeur incompatible | A, D | `test_modele_env_laisse_l_audience_au_compose` + garde `OIDC_AUDIENCE` dans `deploy.sh/.ps1` |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-29 — Thème Keycloak : nouveau fichier sur le disque, ancien fichier servi au navigateur
+- **Contexte / symptôme** : aperçu du thème `cfao-academy` après copie des fichiers dans le Keycloak en marche. `curl` recevait le nouveau `login.js`, le navigateur l'ancien : le lien ✕ n'apparaissait pas.
+- **Impact** : aucun, relevé en vérification locale. Une capture prise sans contrôle aurait « validé » l'ancien thème.
+- **Détection** : Playwright, `fetch` du script depuis la page (676 octets, sans `cfao-close`) comparé à la réponse de `curl`.
+- **Cause racine** : Keycloak 26 garde une copie gzip des ressources du thème (`data/tmp/kc-gzip-cache`), servie aux clients qui acceptent la compression. Les URL portent une version fixe par version de Keycloak (`/resources/ypvoo/...`) avec `max-age=2592000` : le navigateur garde aussi l'ancien fichier 30 jours.
+- **Correctif** : cache gzip vidé pour l'aperçu. Le thème n'est livré que par une image neuve (cache vide au démarrage).
+- **Prévention** : la vérification d'un thème se fait dans un vrai navigateur, sur un élément que seule la nouvelle version contient. Dette ouverte : une modification de thème après la première mise en prod reste en cache 30 jours chez les utilisateurs. Il faudra réduire `static-max-age` ou versionner les noms de fichiers, et le prouver par smoke.
+- **Leçon généralisée** : un serveur qui met ses ressources en cache peut en servir une autre version que celle du disque, selon les en-têtes du client. On vérifie avec le client réel, et une ressource modifiable change d'URL ou a une durée de cache courte.
+- **Catégorie** : déploiement / cache
 
 ### 2026-10-29 — Audience du realm de module imposée à la prod par le `.env` (needs sur l'émetteur commun, L6)
 - **Contexte / symptôme** : needs basculé sur le realm `cfao` ; connexion, jeton, `iss` et `aud` corrects, mais l'API répondait 401 (`InvalidAudienceError`). Le conteneur avait `OIDC_AUDIENCE=needs-web` alors que le compose de prod déclare `${OIDC_AUDIENCE:-cfao-needs-api}`.
