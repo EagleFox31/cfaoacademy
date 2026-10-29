@@ -198,7 +198,7 @@ export default function Accueil() {
                   meta="Depuis une session de formation planifiée, ou en saisissant tout manuellement."
                   cta="Commencer"
                   accentColor="#E3001B"
-                  hoverHint="Ouvrir un compte rendu"
+                  hoverHint="Compléter un compte rendu"
                   onClick={() => naviguer('/portail/compte-rendu/nouveau')}
                   corner
                 />
@@ -220,7 +220,7 @@ export default function Accueil() {
                       venuDe(enCours[0].modifieLe)}.`
                     : 'Les comptes rendus commencés s’y retrouvent, sur tout poste.'}
                   cta="Voir les comptes rendus non terminés"
-                  hoverHint="Terminer un compte rendu commencé"
+                  hoverHint="Terminer un compte rendu"
                   onClick={() => naviguer('/portail/compte-rendu/en-cours')}
                   corner
                 />
@@ -241,7 +241,7 @@ export default function Accueil() {
                     ? `Les comptes rendus terminés — le dernier ${venuDe(termines[0].termineLe)}.`
                     : 'Les comptes rendus terminés s’y rangent.'}
                   cta="Ouvrir l’archive"
-                  hoverHint="Voir les rapports produits"
+                  hoverHint="Voir les comptes rendus terminés"
                   onClick={() => naviguer('/portail/compte-rendu/mes-rapports')}
                   corner
                 />
