@@ -1,0 +1,16 @@
+# Smoke de cfao-edge, en plus de compose.prod.yml : deux modules factices sur le
+# réseau hôte, aux ports que visent les variables EDGE_*_UPSTREAM du CI.
+# Chemins relatifs au premier fichier (edge/).
+services:
+  needs:
+    image: python:3.12-alpine
+    network_mode: host
+    command: ["python", "/stub/echo.py"]
+    environment: { NOM: needs, PORT: "18081" }
+    volumes: ["./tests/stub:/stub:ro"]
+  cr:
+    image: python:3.12-alpine
+    network_mode: host
+    command: ["python", "/stub/echo.py"]
+    environment: { NOM: cr, PORT: "18092" }
+    volumes: ["./tests/stub:/stub:ro"]

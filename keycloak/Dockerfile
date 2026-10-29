@@ -7,7 +7,11 @@
 FROM adorsys/keycloak-config-cli:6.5.1-26.5.5 AS config-cli
 
 FROM quay.io/keycloak/keycloak:26.5.5 AS builder
-ENV KC_DB=postgres KC_HEALTH_ENABLED=true
+# Servi sous /auth, comme son URL publique : Keycloak calcule ses URL depuis le
+# chemin reçu, la passerelle commune ne retire donc jamais le préfixe.
+# Gestion (9000) laissée à la racine : /health/ready inchangé.
+ENV KC_DB=postgres KC_HEALTH_ENABLED=true \
+    KC_HTTP_RELATIVE_PATH=/auth KC_HTTP_MANAGEMENT_RELATIVE_PATH=/
 COPY themes /opt/keycloak/themes
 RUN /opt/keycloak/bin/kc.sh build
 
@@ -18,6 +22,7 @@ LABEL org.opencontainers.image.title="CFAO Keycloak" \
       org.opencontainers.image.vendor="CFAO Mobility" \
       org.opencontainers.image.version="${VERSION}"
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
+ENV KC_HTTP_RELATIVE_PATH=/auth KC_HTTP_MANAGEMENT_RELATIVE_PATH=/
 COPY --from=config-cli /app/keycloak-config-cli.jar /opt/cfao-config-cli/keycloak-config-cli.jar
 COPY config/*.yaml /opt/cfao-realm/
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]

@@ -25,6 +25,7 @@ jobs:
     outputs:
       mail: ${{ steps.filter.outputs.mail }}
       realm: ${{ steps.filter.outputs.realm }}
+      edge: ${{ steps.filter.outputs.edge }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -39,6 +40,10 @@ jobs:
               - 'cerbos/policies/**'
               - 'cfao-core/identity/roles.py'
               - 'cfao-core/core/auth/jwt_verifier.py'
+              - '.github/workflows/ci.yml'
+            edge:
+              - 'edge/**'
+              - 'keycloak/**'
               - '.github/workflows/ci.yml'
 
   cerbos:
@@ -127,7 +132,8 @@ jobs:
         env:
           KC_VERSION: smoke
           KC_PORT: "18080"
-          KC_HOSTNAME: http://localhost:18080
+          KC_HOSTNAME: http://localhost:18080/auth
+          KC_HOSTNAME_ADMIN: http://localhost:18080/auth
           KC_DB_PASSWORD: ci-db
           KC_ADMIN_PASSWORD: ci-admin
           CFAO_PORTAL_SECRET: ci-secret-portail
@@ -135,17 +141,87 @@ jobs:
           # Deux hôtes à la fois : un changement d'hôte se fait sans rupture.
           CFAO_PORTAL_REDIRECT_URIS: '["http://localhost:8000/oauth2/callback","https://portail.exemple/oauth2/callback"]'
           CFAO_NEEDS_REDIRECT_URIS: '["http://localhost:8082/*","https://needs.exemple/*"]'
-          EMETTEUR_ATTENDU: http://localhost:18080/realms/cfao
+          EMETTEUR_ATTENDU: http://localhost:18080/auth/realms/cfao
         run: |
           docker build -q -t antifragile237/cfao-keycloak:smoke keycloak
           p="-f keycloak/compose.prod.yml -f keycloak/tests/compose.prod.smoke.yml"
           docker compose $p up -d --wait keycloak
           docker compose $p run --rm config
-          KC_URL=http://localhost:18080 SPA_ATTENDUE=disabled DEMO_ATTENDUE=absente pytest -q keycloak/tests/smoke_realm.py
-          KC_URL=http://localhost:18080 pytest -q keycloak/tests/smoke_migration.py
+          KC_URL=http://localhost:18080/auth SPA_ATTENDUE=disabled DEMO_ATTENDUE=absente pytest -q keycloak/tests/smoke_realm.py
+          KC_URL=http://localhost:18080/auth pytest -q keycloak/tests/smoke_migration.py
       - if: failure()
         run: |
           docker compose -f keycloak/tests/docker-compose.smoke.yml logs --tail=200
+          docker compose -f keycloak/compose.prod.yml logs --tail=200 || true
+
+  edge:
+    name: Passerelle commune (config + smoke devant Keycloak 26)
+    needs: changes
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_call' ||
+      needs.changes.outputs.edge == 'true'
+    runs-on: ubuntu-latest
+    env:
+      # Keycloak commun, servi sous /auth derrière la passerelle (18088).
+      KC_VERSION: smoke
+      KC_PORT: "18080"
+      KC_HOSTNAME: http://localhost:18088/auth
+      KC_HOSTNAME_ADMIN: http://localhost:18080/auth
+      KC_DB_PASSWORD: ci-db
+      KC_ADMIN_PASSWORD: ci-admin
+      CFAO_PORTAL_SECRET: ci-secret-portail
+      KC_IMPORT_LOCATIONS: /opt/cfao-realm/*.yaml,/fixtures/*.yaml
+      CFAO_PORTAL_REDIRECT_URIS: '[]'
+      CFAO_NEEDS_REDIRECT_URIS: '["http://localhost:18088/*"]'
+      # Passerelle et modules factices.
+      EDGE_VERSION: smoke
+      EDGE_LISTEN: 127.0.0.1:18088
+      EDGE_PUBLIC_PROTO: http
+      EDGE_PUBLIC_HOST: localhost
+      EDGE_PUBLIC_PORT: "18088"
+      EDGE_NEEDS_UPSTREAM: 127.0.0.1:18081
+      EDGE_KEYCLOAK_UPSTREAM: 127.0.0.1:18080
+      EDGE_CR_UPSTREAM: 127.0.0.1:18092
+      # Tests.
+      EDGE_URL: http://localhost:18088
+      EDGE_HTTPS_URL: http://localhost:18089
+      KC_INTERNE: http://localhost:18080/auth
+      EMETTEUR_ATTENDU: http://localhost:18088/auth/realms/cfao
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: keycloak/tests/requirements.txt
+      - run: pip install -r keycloak/tests/requirements.txt
+      - run: pytest -q edge/tests/test_edge_config.py
+      - name: image + nginx -t avec les valeurs du modèle de prod
+        run: |
+          docker build -q -t antifragile237/cfao-edge:smoke edge
+          docker run --rm --network none --env-file edge/.env.prod.example antifragile237/cfao-edge:smoke nginx -t
+      - name: Keycloak commun (image de prod) + realm
+        run: |
+          docker build -q -t antifragile237/cfao-keycloak:smoke keycloak
+          p="-f keycloak/compose.prod.yml -f keycloak/tests/compose.prod.smoke.yml"
+          docker compose $p up -d --wait keycloak
+          docker compose $p run --rm config
+      - name: passerelle + modules factices
+        run: |
+          docker compose -p cfao-edge-smoke -f edge/compose.prod.yml -f edge/tests/compose.smoke.yml up -d --wait
+          # Même image, sans Keycloak ni CR, en https : HSTS et retour sur needs.
+          docker run -d --name edge-https --network host \
+            -e EDGE_LISTEN=127.0.0.1:18089 -e EDGE_PUBLIC_PROTO=https \
+            -e EDGE_PUBLIC_HOST=localhost -e EDGE_PUBLIC_PORT=443 \
+            -e EDGE_NEEDS_UPSTREAM=127.0.0.1:18081 \
+            antifragile237/cfao-edge:smoke
+          sleep 3
+      - run: pytest -q edge/tests/smoke_edge.py
+      - if: failure()
+        run: |
+          docker compose -p cfao-edge-smoke -f edge/compose.prod.yml -f edge/tests/compose.smoke.yml logs --tail=200 || true
+          docker logs --tail=100 edge-https || true
           docker compose -f keycloak/compose.prod.yml logs --tail=200 || true
 
   core:

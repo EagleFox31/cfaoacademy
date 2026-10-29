@@ -23,10 +23,22 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Une audience vérifiée par une API est produite par un mapper du realm, et un secret de client n'a qu'une source | E, D | `keycloak/tests` (cohérence statique) + smoke sur Keycloak 26 (jetons réels, config dev et prod) |
 | Une donnée de dev (comptes, mots de passe) vit dans un emplacement que la prod n'importe pas, jamais derrière un simple commentaire | E, D | `test_realm_de_prod_sans_aucun_compte` + smoke prod sur Keycloak neuf (`DEMO_ATTENDUE=absente`) |
 | Une image publiée contient les octets testés ; les fins de ligne sont fixées par le dépôt, pas par le poste | D, A | `.gitattributes` `eol=lf` + `diff -r` export/testé avant push |
+| Un serveur qui calcule ses URL depuis la requête est servi sous le même chemin que son URL publique ; un proxy ne retire jamais son préfixe | E, R | `edge/tests/smoke_edge.py` : `token_endpoint` de la découverte commence par `<passerelle>/auth/`, même avec un Host falsifié |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-29 — Keycloak derrière un préfixe retiré par le proxy aurait annoncé de mauvaises URL (passerelle commune)
+- **Contexte / symptôme** : première idée pour publier le Keycloak commun sous `/auth` : le proxy retire `/auth` avant de relayer. Avec le backchannel dynamique, Keycloak calcule `token_endpoint`, `jwks_uri` et les redirections depuis le chemin reçu. La découverte aurait annoncé `https://<hôte>/realms/cfao/...`, chemin qui part vers l'ancien Keycloak de needs.
+- **Impact** : aucun, relevé en revue de conception avant tout code. Un client OIDC (oauth2-proxy, SPA) lisant la découverte aurait échoué.
+- **Détection** : relecture du plan par l'agent architecte, contre `compose.prod.yml` (`KC_HOSTNAME_BACKCHANNEL_DYNAMIC`).
+- **Cause racine** : supposer qu'un reverse proxy peut masquer un préfixe à un serveur qui construit ses URL absolues à partir de la requête.
+- **Correctif** : l'image v0.3.0 est servie sous `KC_HTTP_RELATIVE_PATH=/auth` (gestion 9000 laissée à la racine) ; la passerelle conserve le préfixe et impose l'hôte public (jamais le Host reçu).
+- **Prévention** : `test_image_servie_sous_auth` (statique) et `smoke_edge.py` (vrai Keycloak derrière la vraie passerelle, Host falsifié).
+- **Leçon généralisée** : un serveur qui calcule ses URL depuis la requête est servi sous le même chemin que son URL publique ; un proxy ne retire jamais son préfixe.
+- **Catégorie** : conception / réseau
+- **Récidive** : non
 
 ### 2026-10-29 — Image publiée à partir d'octets différents de ceux testés (Keycloak commun v0.1.0)
 - **Contexte / symptôme** : `cfao-keycloak:v0.1.0` est construite depuis `git archive` du commit, pour ne pas embarquer le dossier de travail. Avec `core.autocrlf=true`, l'archive sort le realm en CRLF. Le smoke, lui, avait tourné sur le dossier de travail, en LF.

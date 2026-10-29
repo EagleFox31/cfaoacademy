@@ -199,7 +199,7 @@ def test_compose_de_prod_sans_secret_par_defaut():
     services = prod["services"]
     for nom, cle in (("keycloak-db", "POSTGRES_PASSWORD"), ("keycloak", "KC_DB_PASSWORD"),
                      ("keycloak", "KC_BOOTSTRAP_ADMIN_PASSWORD"), ("keycloak", "KC_HOSTNAME"),
-                     ("config", "KEYCLOAK_PASSWORD"), ("config", "CFAO_PORTAL_SECRET"),
+                     ("keycloak", "KC_HOSTNAME_ADMIN"), ("config","KEYCLOAK_PASSWORD"), ("config", "CFAO_PORTAL_SECRET"),
                      ("config", "CFAO_PORTAL_REDIRECT_URIS"), ("config", "CFAO_NEEDS_REDIRECT_URIS")):
         assert re.fullmatch(r"\$\{[A-Z_]+:\?.+\}", services[nom]["environment"][cle]), f"{nom}.{cle}"
     # Émetteur canonique, chemin réseau des modules libre.
@@ -211,12 +211,28 @@ def test_compose_de_prod_sans_secret_par_defaut():
     assert services["keycloak"]["image"] == services["config"]["image"]
 
 
+def test_image_servie_sous_auth():
+    # Keycloak calcule ses URL depuis le chemin reçu : il est servi sous le même
+    # chemin que son URL publique, aucun proxy ne retire le préfixe.
+    dockerfile = (RACINE / "keycloak" / "Dockerfile").read_text(encoding="utf-8")
+    etages = dockerfile.split("\nFROM ")
+    for etage in (etages[2], etages[3]):  # builder, puis image finale
+        assert "KC_HTTP_RELATIVE_PATH=/auth" in etage
+        assert "KC_HTTP_MANAGEMENT_RELATIVE_PATH=/" in etage  # healthcheck 9000/health/ready
+    prod = yaml.safe_load((RACINE / "keycloak" / "compose.prod.yml").read_text(encoding="utf-8"))
+    assert prod["services"]["config"]["environment"]["KEYCLOAK_URL"].endswith("/auth")
+    # Keycloak n'écoute qu'en local par défaut : seule la passerelle le publie.
+    assert prod["services"]["keycloak"]["ports"][0].startswith("${KC_BIND:-127.0.0.1}:")
+    exemple = (RACINE / "keycloak" / ".env.prod.example").read_text(encoding="utf-8")
+    assert re.search(r"^KC_HOSTNAME=https://\S+/auth$", exemple, re.M)
+
+
 def test_job_ci_realm_filtre_sur_ses_chemins():
     ci = (RACINE / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     filtres = ci.split("            realm:\n", 1)[1].split("\n    steps:", 1)[0] if "            realm:\n" in ci else ""
     for chemin in ("keycloak/**", "cerbos/policies/**", "cfao-core/identity/roles.py"):
         assert f"'{chemin}'" in filtres, chemin
-    job = ci.split("\n  realm:\n", 1)[1].split("\n  core:\n", 1)[0]
+    job = ci.split("\n  realm:\n", 1)[1].split("\n  edge:\n", 1)[0]
     assert "needs.changes.outputs.realm == 'true'" in job
     assert "smoke_realm.py" in job and "SPA_ATTENDUE=disabled" in job
     assert "DEMO_ATTENDUE=absente" in job and "--force-recreate keycloak" in job

@@ -1,0 +1,36 @@
+# Passerelle commune en production : /srv/apps/cfao-edge.
+#   docker compose --env-file .env -f compose.prod.yml up -d
+# Réseau hôte : les modules sont liés à 127.0.0.1 (pas de DNS interne) et la
+# passerelle ne rejoint le réseau docker d'aucun module.
+name: cfao-edge
+
+x-journaux: &journaux
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+services:
+  edge:
+    image: antifragile237/cfao-edge:${EDGE_VERSION:?EDGE_VERSION manquant}
+    restart: unless-stopped
+    network_mode: host
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 64m
+    logging: *journaux
+    environment:
+      EDGE_LISTEN: ${EDGE_LISTEN:?EDGE_LISTEN manquant}
+      EDGE_PUBLIC_PROTO: ${EDGE_PUBLIC_PROTO:?EDGE_PUBLIC_PROTO manquant}
+      EDGE_PUBLIC_HOST: ${EDGE_PUBLIC_HOST:?EDGE_PUBLIC_HOST manquant}
+      EDGE_PUBLIC_PORT: ${EDGE_PUBLIC_PORT:?EDGE_PUBLIC_PORT manquant}
+      EDGE_NEEDS_UPSTREAM: ${EDGE_NEEDS_UPSTREAM:?EDGE_NEEDS_UPSTREAM manquant}
+      # Vide : module inactif, son préfixe reste servi par needs.
+      EDGE_KEYCLOAK_UPSTREAM: ${EDGE_KEYCLOAK_UPSTREAM:-}
+      EDGE_CR_UPSTREAM: ${EDGE_CR_UPSTREAM:-}
+    healthcheck:
+      # Port d'écoute ouvert, sans route de santé publique.
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 $${EDGE_LISTEN##*:}"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
