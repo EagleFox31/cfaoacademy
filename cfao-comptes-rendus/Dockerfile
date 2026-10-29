@@ -18,6 +18,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       libreoffice-impress fonts-liberation fonts-crosextra-carlito curl \
  && rm -rf /var/lib/apt/lists/*
+COPY polices.conf /etc/fonts/conf.d/99-cr-polices.conf
 
 # Utilisateur sans privilege ; LibreOffice a besoin d'un dossier personnel.
 RUN useradd --create-home --uid 1000 service \
