@@ -635,13 +635,26 @@ def _anneau_excel(image, geo, valeurs):
     if len(series) > 1 and series[1][1] is not None:
         serie, v = series[1]
         texte = texte_de(serie, v)
-        police, lw, lh = bloc(texte, max(10, round(serie['pt'] * pt)))
+        corps = max(10, round(serie['pt'] * pt))
+        police, lw, lh = bloc(texte, corps)
+        # L'etiquette reste dans la largeur du tableau : le couloir se
+        # resserre, le taux passe a la ligne, puis le texte rapetisse,
+        # plutot que d'elargir l'image (ce qui reduirait et decalerait le
+        # tableau sur la page).
+        bord = image.width - 4
+        if cx + rayon * 1.12 + lw > bord:
+            texte = texte[:1] + texte[1].rsplit(' ', 1)
+            police, lw, lh = bloc(texte, corps)
+        while corps > 8 and cx + rayon * 1.12 + lw > bord:
+            corps -= 1
+            police, lw, lh = bloc(texte, corps)
         angle = math.radians(float(v or 0) * 180)
         dirx, diry = math.sin(angle), -math.cos(angle)
         rm = trou_xl + (1 + 0.5) * ep_xl if n > 1 else rayon - ep_xl / 2
-        couloir = rayon * 1.16                    # hors du cercle
-        sortie = rayon * 1.08
-        ex = cx + couloir + rayon * 0.08 + lw / 2
+        couloir = min(rayon * 1.16,               # hors du cercle
+                      max(rayon * 1.04, bord - lw - rayon * 0.08 - cx))
+        sortie = min(rayon * 1.08, couloir - rayon * 0.02)
+        ex = min(cx + couloir + rayon * 0.08 + lw / 2, bord - lw / 2)
         ey = cy + rayon * 0.62
         q = (cx + dirx * sortie, cy + diry * sortie)
         # Sans valeur, pas d'arc a designer : l'etiquette reste seule.
@@ -741,7 +754,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 3
+VERSION_IMAGES = 5
 
 
 def _cadre_de(rendu, reference):
