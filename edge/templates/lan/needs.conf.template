@@ -1,0 +1,3 @@
+# Écoute directe du LAN : needs seul, comme son ancien port publié. Ni /auth ni
+# /cr : la connexion passe par l'URL publique de l'émetteur.
+include /tmp/conf.d/racine/needs.conf;

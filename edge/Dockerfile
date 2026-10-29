@@ -2,6 +2,7 @@
 # (le partage zrok `academy-server`) routé par chemin vers les modules.
 #   /auth/ -> Keycloak commun   /cr/ -> comptes rendus   / -> needs (inchangé)
 # Une route de module n'existe que si son adresse est renseignée (EDGE_*_UPSTREAM).
+# Écoutes directes du LAN en option (EDGE_LAN) : une application par port.
 # Contexte de build : edge/.
 FROM nginxinc/nginx-unprivileged:1.27-alpine
 ARG VERSION=dev

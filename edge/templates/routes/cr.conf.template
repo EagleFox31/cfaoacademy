@@ -10,9 +10,10 @@ location /cr/ {
     client_max_body_size 25m;
     include /etc/nginx/snippets/proxy-commun.conf;
     proxy_set_header Host $http_host;
-    proxy_set_header X-Forwarded-Proto ${EDGE_PUBLIC_PROTO};
-    proxy_set_header X-Forwarded-Host ${EDGE_PUBLIC_HOST};
-    proxy_set_header X-Forwarded-Port ${EDGE_PUBLIC_PORT};
+    # URL vue des navigateurs, posée par le bloc server (publique ou LAN).
+    proxy_set_header X-Forwarded-Proto $edge_fwd_proto;
+    proxy_set_header X-Forwarded-Host $edge_fwd_host;
+    proxy_set_header X-Forwarded-Port $edge_fwd_port;
     proxy_set_header X-Forwarded-Prefix /cr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     # Cookies confinés au préfixe, quel que soit le code du module.

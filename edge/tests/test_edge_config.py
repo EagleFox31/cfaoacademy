@@ -20,13 +20,36 @@ def _locations(texte):
 def test_liste_blanche_des_routes():
     # Toute nouvelle route publique doit modifier ce test, donc être relue.
     trouvees = sorted(loc for m in MODELES for loc in _locations(_texte(m)))
-    assert trouvees == sorted(["/", "/auth/", "/auth", r"^/auth/(realms|resources)/", "/cr", "/cr/"])
+    assert trouvees == sorted(["/", "/", "/auth/", "/auth", r"^/auth/(realms|resources)/", "/cr", "/cr/"])
 
 
 def test_needs_transparent():
-    modele = _texte(EDGE / "templates" / "edge.conf.template")
+    modele = _texte(EDGE / "templates" / "racine" / "needs.conf.template")
     bloc = modele.split("location / {", 1)[1]
     assert "X-Forwarded" not in bloc, "/ doit relayer les en-têtes reçus tels quels"
+
+
+def test_ecoutes_lan_sans_auth_ni_hsts():
+    # Le LAN est en http direct : ni Keycloak (URL publique seule), ni HSTS.
+    lan = sorted((EDGE / "templates" / "lan").glob("*.conf.template"))
+    assert [m.name for m in lan] == ["cr.conf.template", "needs.conf.template"]
+    for m in lan:
+        code = "\n".join(ligne for ligne in _texte(m).splitlines() if not ligne.lstrip().startswith("#"))
+        for interdit in ("auth", "edge_hsts", "EDGE_PUBLIC"):
+            assert interdit not in code, (m.name, interdit)
+    cr = _texte(EDGE / "templates" / "lan" / "cr.conf.template")
+    assert "set $edge_fwd_proto http;" in cr
+    generateur = _texte(EDGE / "entrypoint.d" / "26-ecoutes-lan.sh")
+    assert "absolute_redirect off" in generateur and "location" not in generateur
+
+
+def test_modules_sous_prefixe_recoivent_l_url_du_bloc_server():
+    cr = _texte(EDGE / "templates" / "routes" / "cr.conf.template")
+    assert "EDGE_PUBLIC" not in cr
+    for v in ("$edge_fwd_proto", "$edge_fwd_host", "$edge_fwd_port"):
+        assert v in cr
+        assert f"set {v} " in _texte(EDGE / "templates" / "edge.conf.template")
+        assert f"set {v} " in _texte(EDGE / "templates" / "lan" / "cr.conf.template")
 
 
 def test_chaque_proxy_pass_inclut_le_snippet_commun():
@@ -72,8 +95,10 @@ def test_variables_declarees_partout():
         assert v in exiger or v in optionnelles, v
     for v in utilisees - optionnelles:
         assert re.fullmatch(r"\$\{[A-Z_]+:\?.+\}", compose[v]), v
-    for v in optionnelles:
+    for v in optionnelles | {"EDGE_LAN"}:
         assert compose[v].endswith(":-}"), v
+    # Vide dans le modèle : une écoute LAN exige d'abord de libérer le port.
+    assert re.search(r"^EDGE_LAN=$", exemple, re.M)
 
 
 def test_compose_durci():

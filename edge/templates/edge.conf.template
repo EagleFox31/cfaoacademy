@@ -23,17 +23,16 @@ server {
 
     set $edge_module edge;
 
+    # URL vue des navigateurs, annoncée aux modules servis sous préfixe.
+    set $edge_fwd_proto ${EDGE_PUBLIC_PROTO};
+    set $edge_fwd_host  ${EDGE_PUBLIC_HOST};
+    set $edge_fwd_port  ${EDGE_PUBLIC_PORT};
+
     # Modules actifs (fichier présent seulement si leur adresse est renseignée).
     include /tmp/conf.d/routes/*.conf;
 
-    # needs : identique au partage zrok en direct. Host et X-Forwarded-* reçus
-    # transmis tels quels (rétroactif).
-    location / {
-        set $edge_module needs;
-        client_max_body_size 12m;   # aligné sur NEEDS_IMPORT_MAX_FILE_MB
-        include /etc/nginx/snippets/proxy-commun.conf;
-        proxy_set_header Host $http_host;
-        proxy_read_timeout 120s;    # imports needs
-        proxy_pass http://${EDGE_NEEDS_UPSTREAM};
-    }
+    include /tmp/conf.d/racine/needs.conf;
 }
+
+# Écoutes directes du LAN (EDGE_LAN), une application par port : lan.conf,
+# écrit au démarrage par 26-ecoutes-lan.sh.

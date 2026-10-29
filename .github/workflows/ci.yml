@@ -183,8 +183,11 @@ jobs:
       EDGE_NEEDS_UPSTREAM: 127.0.0.1:18081
       EDGE_KEYCLOAK_UPSTREAM: 127.0.0.1:18080
       EDGE_CR_UPSTREAM: 127.0.0.1:18092
+      EDGE_LAN: needs@127.0.0.1:18093 cr@127.0.0.1:18094
       # Tests.
       EDGE_URL: http://localhost:18088
+      EDGE_LAN_NEEDS_URL: http://127.0.0.1:18093
+      EDGE_LAN_CR_URL: http://127.0.0.1:18094
       EDGE_HTTPS_URL: http://localhost:18089
       KC_INTERNE: http://localhost:18080/auth
       EMETTEUR_ATTENDU: http://localhost:18088/auth/realms/cfao

@@ -1,0 +1,13 @@
+# Écoute directe du LAN (http) : les comptes rendus seuls, sous /cr/ comme sur
+# l'URL publique. L'URL vue des navigateurs est celle de la requête.
+set $edge_fwd_proto http;
+set $edge_fwd_host  $host;
+set $edge_fwd_port  $server_port;
+
+include /tmp/conf.d/routes/cr.conf;
+
+# Anciens liens du port (servis à la racine avant /cr/) : redirigés, relatifs.
+location / {
+    set $edge_module cr;
+    return 308 /cr$request_uri;
+}

@@ -28,6 +28,8 @@ services:
       # Vide : module inactif, son préfixe reste servi par needs.
       EDGE_KEYCLOAK_UPSTREAM: ${EDGE_KEYCLOAK_UPSTREAM:-}
       EDGE_CR_UPSTREAM: ${EDGE_CR_UPSTREAM:-}
+      # Vide : aucune écoute directe du LAN.
+      EDGE_LAN: ${EDGE_LAN:-}
     healthcheck:
       # Port d'écoute ouvert, sans route de santé publique.
       test: ["CMD-SHELL", "nc -z 127.0.0.1 $${EDGE_LISTEN##*:}"]

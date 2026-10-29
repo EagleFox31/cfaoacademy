@@ -4,7 +4,8 @@
 Variables : EDGE_URL (passerelle complète, proto http), EDGE_HTTPS_URL (instance
 en proto https sans Keycloak ni CR), KC_INTERNE (Keycloak en direct, avec /auth),
 EMETTEUR_ATTENDU, EDGE_CONTENEUR_HTTPS (nom du conteneur de l'instance https,
-pour les journaux).
+pour les journaux), EDGE_LAN_NEEDS_URL et EDGE_LAN_CR_URL (écoutes LAN de la
+passerelle complète), EDGE_IMAGE (refus au démarrage).
 """
 import base64
 import hashlib
@@ -22,6 +23,9 @@ EDGE_URL = os.environ["EDGE_URL"].rstrip("/")
 EDGE_HTTPS_URL = os.environ["EDGE_HTTPS_URL"].rstrip("/")
 KC_INTERNE = os.environ["KC_INTERNE"].rstrip("/")
 EMETTEUR = os.environ["EMETTEUR_ATTENDU"]
+LAN_NEEDS = os.environ["EDGE_LAN_NEEDS_URL"].rstrip("/")
+LAN_CR = os.environ["EDGE_LAN_CR_URL"].rstrip("/")
+IMAGE = os.environ.get("EDGE_IMAGE", "antifragile237/cfao-edge:smoke")
 
 # Les helpers du smoke du realm lisent KC_URL à l'import : on le pose avant.
 os.environ["KC_URL"] = f"{EDGE_URL}/auth"
@@ -114,9 +118,51 @@ def test_cr_garde_son_prefixe_et_confine_ses_cookies():
     vu = _vu(r)
     assert vu["module"] == "cr" and vu["chemin"] == "/cr/cr-donnees/x"
     assert vu["en_tetes"]["x-forwarded-prefix"] == "/cr"
+    assert vu["en_tetes"]["x-forwarded-host"] == urlparse(EDGE_URL).hostname
     cookies = r.raw.headers.getlist("Set-Cookie")
     assert "t1=1; Path=/cr/" in cookies
     assert "t2=1; Path=/cr/x" in cookies
+
+
+@pytest.mark.parametrize("chemin", ["/", "/x", "/cr/x", "/auth/realms/cfao/.well-known/openid-configuration"])
+def test_lan_needs_ne_sert_que_needs(chemin):
+    r = requests.get(f"{LAN_NEEDS}{chemin}")
+    assert _vu(r)["module"] == "needs" and _vu(r)["en_tetes"]["host"] == urlparse(LAN_NEEDS).netloc
+    assert "Strict-Transport-Security" not in r.headers
+
+
+def test_lan_cr_annonce_l_url_de_la_requete():
+    r = requests.get(f"{LAN_CR}/cr/x")
+    vu = _vu(r)
+    assert vu["module"] == "cr" and vu["chemin"] == "/cr/x"
+    attendu = urlparse(LAN_CR)
+    assert vu["en_tetes"]["x-forwarded-proto"] == "http"
+    assert vu["en_tetes"]["x-forwarded-host"] == attendu.hostname
+    assert vu["en_tetes"]["x-forwarded-port"] == str(attendu.port)
+    assert "Strict-Transport-Security" not in r.headers
+
+
+@pytest.mark.parametrize("chemin, cible", [("/", "/cr/"), ("/rapport/12?v=1", "/cr/rapport/12?v=1"),
+                                           ("/cr", "/cr/"), ("/auth/realms/cfao/x", "/cr/auth/realms/cfao/x")])
+def test_lan_cr_redirige_les_anciens_liens_sous_cr(chemin, cible):
+    r = requests.get(f"{LAN_CR}{chemin}", allow_redirects=False)
+    assert r.status_code == 308 and r.headers["Location"] == cible
+
+
+@pytest.mark.parametrize("lan, motif", [
+    ("needs@127.0.0.1", "module@adresse:port"),
+    ("inconnu@127.0.0.1:1", "sans écoute LAN"),
+    ("cr@127.0.0.1:1", "EDGE_CR_UPSTREAM vide"),
+    ("needs@127.0.0.1:1,needs@127.0.0.1:1", "déjà écouté"),
+    ("needs@127.0.0.1:2", "déjà écouté"),
+])
+def test_ecoute_lan_invalide_bloque_le_demarrage(lan, motif):
+    r = subprocess.run(["docker", "run", "--rm", "--network", "none",
+                        "-e", "EDGE_LISTEN=127.0.0.1:2", "-e", "EDGE_PUBLIC_PROTO=https",
+                        "-e", "EDGE_PUBLIC_HOST=localhost", "-e", "EDGE_PUBLIC_PORT=443",
+                        "-e", "EDGE_NEEDS_UPSTREAM=127.0.0.1:3", "-e", f"EDGE_LAN={lan}", IMAGE, "nginx", "-t"],
+                       capture_output=True, encoding="utf-8", timeout=60)
+    assert r.returncode != 0 and motif in r.stderr, r.stderr[-500:]
 
 
 def test_en_tetes_de_la_passerelle():
