@@ -3599,8 +3599,6 @@
 .cr-proposition-reponse { max-width: 460px; margin: 18px auto 0; color: var(--muted); font-size: 13px; }
 
 /* Journal des erreurs (équipe technique) */
-.cr-journal-outils { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
-.cr-journal-outils .cr-panel-title { margin-right: auto; }
 .cr-journal { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 .cr-journal th, .cr-journal td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px solid var(--rule); }
 .cr-journal td:first-child { white-space: nowrap; }

@@ -5,35 +5,45 @@ import useSiteEffects from '../hooks/useSiteEffects'
 import { lireErreurs } from '../utils/journalErreurs'
 import '../styles/compte-rendu.css'
 
-const ORIGINES = [['', 'Toutes'], ['service', 'Service'], ['portail', 'Portail']]
+// Rafraîchissement continu : une nouvelle erreur apparaît sans action.
+const CADENCE = 5000
 
 const date = iso => new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'medium' })
 
 /**
- * Le journal des erreurs des comptes rendus, pour l'équipe technique.
+ * Le journal des erreurs du service des comptes rendus (et de ses pages
+ * portail), pour l'équipe technique ; il ne couvre pas le reste du site.
  *
  * `/portail/journal-erreurs`, ouvert depuis les priorités du superadmin ou
  * le menu de son profil ; le retour ramène au portail. Le service
  * décide seul qui le lit (Cerbos) ; un refus affiche l'accès réservé.
+ * La liste se relit toutes les 5 s tant que l'onglet est visible.
  * Chaque ligne se déplie sur sa pile et son contexte.
  */
 export default function JournalErreurs() {
   useEnHautDePage('Journal des erreurs')
   useSiteEffects()
   const naviguer = useNavigate()
-  const [origine, setOrigine] = useState('')
   const [erreurs, setErreurs] = useState()
   const [probleme, setProbleme] = useState(false)
-  const [rafraichi, setRafraichi] = useState(0)
 
   useEffect(() => {
     let actif = true
-    setProbleme(false)
-    lireErreurs(origine)
-      .then(liste => { if (actif) setErreurs(liste) })
-      .catch(() => { if (actif) setProbleme(true) })
-    return () => { actif = false }
-  }, [origine, rafraichi])
+    const lire = () => {
+      if (document.hidden) return
+      lireErreurs()
+        .then(liste => { if (actif) { setErreurs(liste); setProbleme(false) } })
+        .catch(() => { if (actif) setProbleme(true) })
+    }
+    lire()
+    const minuterie = setInterval(lire, CADENCE)
+    document.addEventListener('visibilitychange', lire)
+    return () => {
+      actif = false
+      clearInterval(minuterie)
+      document.removeEventListener('visibilitychange', lire)
+    }
+  }, [])
 
   return (
     <>
@@ -43,7 +53,7 @@ export default function JournalErreurs() {
             <button type="button" className="cr-retour" onClick={() => naviguer('/')}>
               ← Accueil
             </button>
-            <h1 className="cr-home-title cr-home-title--sm">Journal des erreurs</h1>
+            <h1 className="cr-home-title cr-home-title--sm">Journal des erreurs des comptes rendus</h1>
           </div>
         </header>
 
@@ -54,22 +64,17 @@ export default function JournalErreurs() {
                 <p className="cr-panel-hint">Accès réservé à l’équipe technique.</p>
               ) : (
                 <>
-                  <div className="cr-panel-head cr-journal-outils">
+                  <div className="cr-panel-head">
                     <h2 className="cr-panel-title">
-                      {erreurs ? `${erreurs.length} erreur${erreurs.length > 1 ? 's' : ''}` : 'Chargement…'}
+                      {!erreurs ? 'Chargement…'
+                        : erreurs.length ? `${erreurs.length} erreur${erreurs.length > 1 ? 's' : ''}`
+                        : 'Aucune erreur enregistrée'}
                     </h2>
-                    <label>
-                      Origine{' '}
-                      <select value={origine} onChange={e => setOrigine(e.target.value)}>
-                        {ORIGINES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
-                    </label>
-                    <button type="button" className="cr-echappee-lien" onClick={() => setRafraichi(n => n + 1)}>
-                      Actualiser
-                    </button>
+                    <p className="cr-panel-hint">
+                      Erreurs du service des comptes rendus et de ses pages, mises à jour en temps réel.
+                    </p>
                   </div>
                   {probleme && <p className="cr-panel-hint" role="alert">Journal indisponible pour le moment.</p>}
-                  {erreurs?.length === 0 && <p className="cr-panel-hint">Aucune erreur enregistrée.</p>}
                   {erreurs?.length > 0 && (
                     <table className="cr-journal">
                       <thead>
