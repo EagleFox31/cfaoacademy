@@ -26,6 +26,11 @@ Retours du 29/10 sur la copie Tamo :
 ## Choix
 1a, 2a, 3a. `VERSION_IMAGES` passe à 11 (images en cache régénérées).
 
+**Révision (retour utilisateur) :** l'aperçu était juste, c'est l'objet qui devait suivre.
+`placer_objets` (`rendu/classeurs.py`) déplace le cadre de chaque objet (et son image de
+repli) pour centrer le contenu visible sous son titre, et aligne le haut des trois tableaux
+de la fiche. Aperçu et PowerPoint partagent ainsi la même position.
+
 ## Impacts et risques
 Aucune donnée ni migration. Les brouillons dont `nbJours` est déjà enregistré gardent leur
 valeur. Jours fériés : non traités (à trancher si besoin). Le point 2 se vérifie dans

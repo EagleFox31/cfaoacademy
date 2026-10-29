@@ -1037,6 +1037,49 @@ def rafraichir(contenus, slides, valeurs, soffice, profil, cache):
     rafraichir_pages(contenus, [(s, valeurs) for s in slides], soffice, profil, cache)
 
 
+# Deux en-tetes de tableaux sont sur la meme ligne a moins de cet ecart.
+MEME_LIGNE = 228600
+
+
+def placer_objets(xml, objets):
+    """Centre chaque objet sous son titre et aligne le haut des tableaux.
+
+    `objets` : `[(r:id de l'objet, image PNG)]`. Excel dessine la zone
+    visible en haut a gauche du cadre (l'apercu aussi, voir `_rogner`) :
+    c'est le cadre qu'on deplace, de sorte que le contenu soit centre sur
+    la largeur d'origine, donc sous le titre de meme largeur, et que les
+    contenus d'une meme ligne commencent a la meme hauteur.
+    """
+    from PIL import Image
+    boites = {}
+    for rid, png in objets:
+        image = Image.open(io.BytesIO(png))
+        boite = image.getchannel('A').getbbox() if 'A' in image.getbands() else None
+        m = re.search(r'<p:graphicFrame>(?:(?!</p:graphicFrame>).)*?r:id="' + re.escape(rid)
+                      + r'"', xml, re.S)
+        if not boite or not m:
+            continue
+        x, y, cx, cy = (int(v) for v in re.search(
+            r'<a:off x="(\d+)" y="(\d+)"/>\s*<a:ext cx="(\d+)" cy="(\d+)"', m.group(0)).groups())
+        sx, sy = cx / image.width, cy / image.height
+        gauche, droite = boite[0] * sx, (image.width - boite[2]) * sx
+        boites[rid] = [x + round((droite - gauche) / 2), y, y + round(boite[1] * sy)]
+    hauts = sorted(b[2] for b in boites.values())
+    for b in boites.values():
+        haut = min(h for h in hauts if abs(h - b[2]) <= MEME_LIGNE)
+        b[1] -= b[2] - haut
+
+    def deplacer(m):
+        rid = re.search(r'<p:oleObj [^>]*r:id="([^"]+)"', m.group(0))
+        if not rid or rid.group(1) not in boites:
+            return m.group(0)
+        # Le cadre et l'image de repli (`p:pic` de l'objet) bougent ensemble.
+        x, y, _ = boites[rid.group(1)]
+        return re.sub(r'<a:off x="\d+" y="\d+"/>', f'<a:off x="{x}" y="{y}"/>', m.group(0))
+
+    return RE_OLE.sub(deplacer, xml)
+
+
 def rafraichir_pages(contenus, pages, soffice, profil, cache):
     """Comme `rafraichir`, chaque diapositive avec ses propres valeurs.
 
@@ -1045,7 +1088,7 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
     un seul lancement de LibreOffice plutot qu'un par page.
     """
     types = contenus['[Content_Types].xml'].decode('utf-8')
-    a_rendre, poses, natures = {}, [], {}
+    a_rendre, poses, natures, objets = {}, [], {}, {}
     for slide, valeurs in pages:
         if not valeurs:
             continue
@@ -1094,6 +1137,7 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             ratio = int(taille.group(1)) / int(taille.group(2)) if taille else None
             natures[emb] = (quoi, valeurs[quoi], ratio, reference)
             poses += [(rels_nom, rid, emb) for rid in images]
+            objets.setdefault(slide, []).append((objet.group(1), emb))
         if retirer:
             for debut, fin in reversed(retirer):
                 xml = xml[:debut] + xml[fin:]
@@ -1111,6 +1155,11 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
         rels = re.sub(r'(<Relationship [^>]*Id="' + re.escape(rid) + r'"[^>]*Target=")[^"]+"',
                       lambda k: k.group(1) + f'../media/{Path(media).name}"', rels)
         contenus[rels_nom] = rels.encode('utf-8')
+    for slide, liste in objets.items():
+        places = [(rid, rendus[emb]) for rid, emb in liste if emb in rendus]
+        if places:
+            xml = placer_objets(contenus[slide].decode('utf-8'), places)
+            contenus[slide] = xml.encode('utf-8')
     if 'Extension="png"' not in types:
         types = types.replace('<Default ', '<Default Extension="png" '
                               'ContentType="image/png"/><Default ', 1)

@@ -290,28 +290,30 @@ export default function TrainerReportNew() {
             <h1 className="cr-home-title cr-home-title--sm">
               {session?.moduleFormation || 'Nouveau compte rendu'}
             </h1>
-            {enregistreA && !conflit && (
-              <p className="cr-enregistre" role="status">
-                ✓ Enregistré à {enregistreA.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}
-              </p>
-            )}
-            <div className="cr-phases" role="tablist" aria-label="Phases">
-              {PHASES.map((p, i) => (
-                <button key={p.cle} type="button" role="tab"
-                  aria-selected={i === phase}
-                  className={`cr-phase${i === phase ? ' cr-phase--on' : ''}`
-                    + `${i < phase ? ' cr-phase--done' : ''}`}
-                  onClick={() => i <= phase && aller(i)}
-                  disabled={i > phase && !pret}>
-                  <span className="cr-phase-num">{i < phase ? '✓' : i + 1}</span>
-                  <span className="cr-phase-texte">
-                    <span className="cr-phase-titre">{p.titre}</span>
-                    <span className="cr-phase-resume">
-                      {certification && p.cle === 'resultats' ? 'Modules et satisfaction' : p.resume}
+            <div className="cr-phases-ligne">
+              <div className="cr-phases" role="tablist" aria-label="Phases">
+                {PHASES.map((p, i) => (
+                  <button key={p.cle} type="button" role="tab"
+                    aria-selected={i === phase}
+                    className={`cr-phase${i === phase ? ' cr-phase--on' : ''}`
+                      + `${i < phase ? ' cr-phase--done' : ''}`}
+                    onClick={() => i <= phase && aller(i)}
+                    disabled={i > phase && !pret}>
+                    <span className="cr-phase-num">{i < phase ? '✓' : i + 1}</span>
+                    <span className="cr-phase-texte">
+                      <span className="cr-phase-titre">{p.titre}</span>
+                      <span className="cr-phase-resume">
+                        {certification && p.cle === 'resultats' ? 'Modules et satisfaction' : p.resume}
+                      </span>
                     </span>
-                  </span>
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
+              {enregistreA && !conflit && (
+                <p className="cr-enregistre" role="status">
+                  ✓ Enregistré à {enregistreA.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}
+                </p>
+              )}
             </div>
           </div>
         </header>

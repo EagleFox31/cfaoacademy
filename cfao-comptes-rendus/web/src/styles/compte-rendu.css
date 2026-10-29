@@ -967,18 +967,16 @@
   column-gap: 18px;
 }
 .cr-entete-assistant .cr-retour { margin-bottom: 0; }
-/* L'heure d'enregistrement suit le titre sur sa ligne, posee sur la meme
-   ligne de base que lui. */
-.cr-entete-assistant:has(.cr-enregistre) { grid-template-columns: auto minmax(0, max-content) 1fr; }
-.cr-entete-assistant:has(.cr-enregistre) .cr-home-title--sm { align-self: last baseline; }
-.cr-entete-assistant .cr-enregistre {
-  grid-column: 3;
-  grid-row: 1;
-  align-self: last baseline;
-  margin: 0;
-  white-space: nowrap;
+/* Les phases et, a leur droite, l'heure d'enregistrement : une seule ligne. */
+.cr-entete-assistant .cr-phases-ligne {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: clamp(8px, 2vh, 18px);
 }
-.cr-entete-assistant .cr-phases { grid-column: 1 / -1; margin-top: clamp(8px, 2vh, 18px); }
+.cr-entete-assistant .cr-enregistre { margin: 0; white-space: nowrap; }
 .cr-entete-assistant .cr-home-title--sm {
   margin-bottom: 0;
   white-space: nowrap;
