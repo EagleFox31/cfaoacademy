@@ -12,7 +12,6 @@ import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
 import useSuperadminGroupStats from '../../hooks/useSuperadminGroupStats.js'
 import { LMS_BY_USER } from '../../data/mock_lms'
-<<<<<<< HEAD
 import useDeliveryState from '../../hooks/useDeliveryState.js'
 import { computeProgress, computeTestStats } from '../../utils/deliveryAccess.js'
 import {
