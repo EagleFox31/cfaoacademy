@@ -112,6 +112,8 @@ export default function Accueil() {
   const { aContinuer: enCours, aCommencer } = aDocumenter(sessions, brouillons)
 
   const nbADocumenter = aCommencer.length + enCours.length
+  // Rien a rediger ni a venir : la section (et son entree de menu) disparait.
+  const rienAFaire = nbADocumenter === 0 && aVenir.length === 0
   // Une carte par zone, au modele du portail : la pastille porte le nombre
   // d'elements qui attendent le formateur, 0 compris.
   const priorites = [
@@ -135,7 +137,7 @@ export default function Accueil() {
 
   return (
     <>
-      <Nav />
+      <Nav sansPriorites={rienAFaire} />
       <PortalStickyBar user={user} headerRef={headerRef} />
       <main className="portal-page">
         <div ref={headerRef}>
@@ -144,8 +146,9 @@ export default function Accueil() {
 
         {/* ── 1. Priorites : ce qui attend une action du formateur ── */}
         {/* Un compteur par section, a 0 quand rien n'attend : le formateur
-            voit d'un coup d'oeil ou agir, sans carte vide. */}
-        <PortalReveal id="a-documenter" className="portal-next-actions-viewport">
+            voit d'un coup d'oeil ou agir, sans carte vide. Masquee quand
+            les deux sont a 0. */}
+        {!rienAFaire && <PortalReveal id="a-documenter" className="portal-next-actions-viewport">
           <div ref={contenuPriorites} className="container" style={{ padding: '16px 32px' }}>
             <div className="portal-section-head">
               <p className="portal-section-eyebrow">Vos priorités</p>
@@ -174,7 +177,7 @@ export default function Accueil() {
               ))}
             </PortalStaggerGrid>
           </div>
-        </PortalReveal>
+        </PortalReveal>}
 
         {/* ── 2. Le module compte rendu ─────────────────────────── */}
         <PortalReveal id="comptes-rendus">

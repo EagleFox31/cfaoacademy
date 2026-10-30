@@ -112,7 +112,7 @@ function NavLinkList({ variant, portalSections, isActive, handlePortalNavClick, 
  * Connecté : mode portail formateur (sections de l'accueil, menu du compte).
  * Sur la connexion : mode « non connecté », sans lien vers d'autres pages.
  */
-export default function Nav() {
+export default function Nav({ sansPriorites = false }) {
   const { pathname, hash } = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -129,8 +129,9 @@ export default function Nav() {
   const portalSections = useMemo(() => {
     if (!onPortal) return []
     const aVenir = sessionsAVenir(sessionsDuFormateur(user)).length > 0
-    return aVenir ? SECTIONS_FORMATEUR : SECTIONS_FORMATEUR.filter(s => s.key !== 'sessions-a-venir')
-  }, [onPortal, user])
+    return SECTIONS_FORMATEUR.filter(s => (aVenir || s.key !== 'sessions-a-venir')
+      && !(sansPriorites && s.key === 'a-documenter'))
+  }, [onPortal, user, sansPriorites])
 
   // Le suivi de défilement n'a de sens que sur l'accueil, où sont les sections.
   const spyEnabled = onPortal && onHome
