@@ -2631,6 +2631,17 @@
 }
 .cr-fiche-appreciation { flex: 1; min-height: 0; }
 .cr-fiche-appreciation .cr-res-texte { flex: 1; min-height: 72px; }
+/* La photo du stagiaire, carree, a droite de l'appreciation et a sa hauteur. */
+.cr-fiche-zone { display: flex; gap: 10px; flex: 1; min-height: 0; }
+.cr-fiche-zone .cr-res-texte { min-width: 0; }
+.cr-groupe.cr-photo-stagiaire {
+  flex: none;
+  align-self: stretch;
+  width: auto;
+  height: auto;
+  min-width: 72px;
+  aspect-ratio: 1;
+}
 
 /* La marge de numerotation des objectifs : elle suit le defilement de
    la zone et reprend exactement sa hauteur de ligne. */

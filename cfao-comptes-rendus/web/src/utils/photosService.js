@@ -97,10 +97,13 @@ export function ancrerPhotos(b, refs) {
   const formateurs = (b.formateurs || []).map(f =>
     (f?.portrait ? { ...f, portrait: ancrer(f.portrait) } : f))
   const photoGroupe = b.photoGroupe ? ancrer(b.photoGroupe) : b.photoGroupe
+  const participants = (b.participants || []).map(p =>
+    (p?.photo ? { ...p, photo: ancrer(p.photo) } : p))
   if (!change) return null
   return {
     photos,
     ...(b.formateurs ? { formateurs } : {}),
     ...(b.photoGroupe ? { photoGroupe } : {}),
+    ...(b.participants ? { participants } : {}),
   }
 }

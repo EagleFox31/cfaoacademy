@@ -11,7 +11,7 @@ import ApercuReel from './ApercuReel'
 import { signalerErreur } from '../../utils/journalErreurs'
 import Consigne from './Consigne'
 import EditeurObjectifs from './EditeurObjectifs'
-import EditeurParticipants from './EditeurParticipants'
+import EditeurParticipants, { PhotoStagiaire } from './EditeurParticipants'
 import EditeurJournee, { MAX_PHOTOS_JOUR } from './EditeurJournee'
 import EditeurBilan from './EditeurBilan'
 import { avecIntercalaires, diapoDe, valeursDrapeaux } from '../../utils/diapositives'
@@ -121,12 +121,13 @@ export default function PhaseVerification({
   // Les drapeaux transmis au service d'apercu. Memorises : une nouvelle
   // reference relancerait une conversion a chaque rendu.
   // Toutes les images a transmettre au service : celles des rubriques,
-  // les portraits des formateurs et la photo de groupe.
+  // les portraits des formateurs, la photo de groupe et celles des stagiaires.
   const aTransmettre = useMemo(() => ({
     ...(brouillon.photos || {}),
     portraits: (brouillon.formateurs || []).map(f => f.portrait).filter(Boolean),
     groupe: brouillon.photoGroupe ? [brouillon.photoGroupe] : [],
-  }), [brouillon.photos, brouillon.formateurs, brouillon.photoGroupe])
+    stagiaires: (brouillon.participants || []).map(p => p.photo).filter(Boolean),
+  }), [brouillon.photos, brouillon.formateurs, brouillon.photoGroupe, brouillon.participants])
   const refsPhotos = useRefsPhotos(aTransmettre)
 
   // Chaque photo envoyee garde son identifiant serveur dans le brouillon :
@@ -556,6 +557,10 @@ export default function PhaseVerification({
             photoGroupe={brouillon.photoGroupe}
             onFormateurs={v => maj({ formateurs: v })}
             onPhotoGroupe={v => maj({ photoGroupe: v })}
+            onPhotoStagiaire={(id, photo) => maj(b => ({
+              participants: (b.participants || []).map(p =>
+                (String(p.id) === String(id) ? { ...p, photo } : p)),
+            }))}
             redaction={redaction}
             onProposer={async (pg, cle) => {
               const k = `${pg.cle}.${cle}`
@@ -852,7 +857,7 @@ function FormulairePage({
   page, textes, onTexte, photos, disposition, modeLegende, onModeLegende,
   onAjouter, onRetirer, onLegender, onCadrer, onDisposition,
   objectifs, marquage, onObjectifs, onMarquage, onReordonner,
-  formateurs, stagiaires, photoGroupe, onFormateurs, onPhotoGroupe,
+  formateurs, stagiaires, photoGroupe, onFormateurs, onPhotoGroupe, onPhotoStagiaire,
   jours, onJournee, legendes, onLegende, onProposer, redaction,
 }) {
   // Une page jour porte son numero : « jour-3 » edite la 3e journee.
@@ -1015,30 +1020,45 @@ function FormulairePage({
           && page.cle !== 'bilan' && (
           <div className="cr-edition-large cr-res-saisie">
             <TableauxResultats tableaux={page.tableaux} compact />
-            {page.blocs.map(b => (
-              <label key={b.cle} className="cr-fiche-appreciation">
-                <span className="cr-field-label">
-                  {b.titre} <span>facultatif</span>
-                  {page.participant && (
-                    <BoutonsRedaction
-                      aTexte={!!String(valeur(b.cle, b.texte) || '').trim()}
-                      enCours={redaction?.redigeant === `${page.cle}.${b.cle}`}
-                      desactive={!chiffresSuffisants(page.calcul)}
-                      raison="Saisissez d’abord les notes (étape 2)"
-                      onRediger={() => onProposer?.(page, b.cle)}
-                      peutAnnuler={`${page.cle}.${b.cle}` in (redaction?.avant || {})}
-                      onAnnuler={() => redaction?.annuler(`${page.cle}.${b.cle}`)} />
-                  )}
-                </span>
+            {page.blocs.map(b => {
+              // Avec la photo a cote, le cadre n'est plus un <label> : un
+              // clic sur la photo ne doit pas donner le focus au texte.
+              const Cadre = page.photo ? 'div' : 'label'
+              const texte = (
                 <textarea className="cr-textarea cr-res-texte"
+                  aria-label={page.photo ? b.titre : undefined}
                   value={valeur(b.cle, b.texte)}
                   onChange={e => onTexte(`${page.cle}.${b.cle}`, e.target.value)} />
-                {page.participant && (
-                  <AlertePerime cle={`${page.cle}.${b.cle}`} redaction={redaction}
-                    onRediger={() => onProposer?.(page, b.cle)} />
-                )}
-              </label>
-            ))}
+              )
+              return (
+                <Cadre key={b.cle} className="cr-fiche-appreciation">
+                  <span className="cr-field-label">
+                    {b.titre} <span>facultatif</span>
+                    {page.participant && (
+                      <BoutonsRedaction
+                        aTexte={!!String(valeur(b.cle, b.texte) || '').trim()}
+                        enCours={redaction?.redigeant === `${page.cle}.${b.cle}`}
+                        desactive={!chiffresSuffisants(page.calcul)}
+                        raison="Saisissez d’abord les notes (étape 2)"
+                        onRediger={() => onProposer?.(page, b.cle)}
+                        peutAnnuler={`${page.cle}.${b.cle}` in (redaction?.avant || {})}
+                        onAnnuler={() => redaction?.annuler(`${page.cle}.${b.cle}`)} />
+                    )}
+                  </span>
+                  {page.photo ? (
+                    <div className="cr-fiche-zone">
+                      {texte}
+                      <PhotoStagiaire stagiaire={page.participant}
+                        onPhoto={v => onPhotoStagiaire?.(page.participant.id, v)} />
+                    </div>
+                  ) : texte}
+                  {page.participant && (
+                    <AlertePerime cle={`${page.cle}.${b.cle}`} redaction={redaction}
+                      onRediger={() => onProposer?.(page, b.cle)} />
+                  )}
+                </Cadre>
+              )
+            })}
             {page.participant && redaction?.panne && (
               <p className="cr-redac-panne">
                 Le service de rédaction ne répond pas : écrivez l’appréciation, ou réessayez.
@@ -1599,7 +1619,8 @@ function composerPages(b, session, s) {
       const satPropre = syntheseSatisfaction(siennes)
       pages.push({
         cle: `fiche-${p.id}`, titre: `${p.prenom} ${p.nom}`, type: 'texte',
-        participant: p, calcul: c,
+        // La fiche de formation accepte une photo du stagiaire.
+        participant: p, calcul: c, photo: true,
         titrePage: `RÉSULTAT INDIVIDUEL — ${p.prenom} ${p.nom}`.toUpperCase(),
         sousTitre: `Score final ${afficher(c.scoreFinal)} · progression `
           + (c.progression == null ? '—' : `${c.progression > 0 ? '+' : ''}${c.progression} %`),

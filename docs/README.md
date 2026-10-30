@@ -34,6 +34,7 @@ Point d'entrée pour la documentation du dépôt. Les fichiers listés ci-dessou
 | [MISE_A_JOUR_PROD.md](./MISE_A_JOUR_PROD.md) | Mettre à jour le module des comptes rendus en production : sauvegarde, reconstruction, annonce aux utilisateurs, retour arrière |
 | [etude-journal-erreurs.md](./etude-journal-erreurs.md) | Étude : journal des erreurs des comptes rendus consultable par l’équipe technique |
 | [etude-polices-rendu.md](./etude-polices-rendu.md) | Étude : polices du PowerPoint, écarts de rendu Docker / Windows et options |
+| [etude-photo-individuelle.md](./etude-photo-individuelle.md) | Étude : photo facultative du stagiaire sur sa fiche individuelle |
 | [etude-fiche-anneau-jours.md](./etude-fiche-anneau-jours.md) | Étude : anneau seul et position de l’objet sur la fiche individuelle, jours ouvrés |
 | [PORTAL_PROFILES.md](../PORTAL_PROFILES.md) | Profils & données mock portail |
 
