@@ -19,6 +19,7 @@ import {
   brouillonsEnregistres, brouillonsTermines, synchroniser,
 } from '../utils/brouillonsCompteRendu'
 import { periodeLongue } from '../utils/compteRendu'
+import { lireErreurs } from '../utils/journalErreurs'
 import { aDocumenter, sessionsAVenir } from '../utils/planningFormateur.js'
 import { resolvePortalCardBrand } from '../utils/portalCardMedia.js'
 import { scrollToPortalSection } from '../utils/portalScroll.js'
@@ -115,6 +116,14 @@ export default function Accueil() {
   const nbADocumenter = aCommencer.length + enCours.length
   // Equipe technique : le journal des erreurs, que Cerbos reserve au superadmin.
   const superadmin = (user?.roles ?? []).includes('superadmin')
+  // Journal vide (ou illisible) : 0, donc pas de carte ; le menu y mene toujours.
+  const [nbErreurs, setNbErreurs] = useState(0)
+  useEffect(() => {
+    if (!superadmin) return undefined
+    let actif = true
+    lireErreurs().then(liste => { if (actif) setNbErreurs(liste?.length ?? 0) }).catch(() => {})
+    return () => { actif = false }
+  }, [superadmin])
   // Une carte par zone, au modele du portail : la pastille porte le nombre
   // d'elements qui attendent le formateur ; une zone a 0 n'a pas de carte.
   const priorites = [
@@ -133,8 +142,8 @@ export default function Accueil() {
       section: aVenir.length ? 'sessions-a-venir' : null, cta: 'Voir les sessions de formation',
     },
     ...(superadmin ? [{
-      id: 'journal', img: VISUEL_PRIORITE.journal, nombre: null,
-      enAttente: 'équipe technique', titre: 'Journal des erreurs',
+      id: 'journal', img: VISUEL_PRIORITE.journal, nombre: nbErreurs,
+      enAttente: nbErreurs > 1 ? 'erreurs' : 'erreur', titre: 'Journal des erreurs',
       meta: 'Les erreurs du service des comptes rendus.',
       lien: '/portail/journal-erreurs', cta: 'Ouvrir le journal des erreurs',
     }] : []),
