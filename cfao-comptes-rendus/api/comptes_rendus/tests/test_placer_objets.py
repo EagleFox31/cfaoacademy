@@ -55,3 +55,16 @@ def test_cadre_aux_proportions_de_l_image_centre_sur_sa_place():
     xml = classeurs.placer_objets(_cadre('rId2', 1000, 2000, 1000, 1000),
                                   [('rId2', _png((0, 0, 50, 100), (50, 100)))])
     assert xml.count('<a:off x="1250" y="2000"/><a:ext cx="500" cy="1000"/>') == 2
+
+
+def test_hauteur_de_zone_mesuree_sur_les_lignes_comme_excel():
+    parts = {
+        'xl/workbook.xml': b'<workbook><oleSize ref="A1:B4"/></workbook>',
+        'xl/worksheets/sheet1.xml': (
+            b'<worksheet><sheetFormatPr defaultRowHeight="14.4"/><sheetData>'
+            b'<row r="1" ht="21" customHeight="1"/><row r="2" hidden="1" ht="30"/>'
+            b'<row r="4" spans="1:2"><c r="A4"/></row><row r="9" ht="50"/>'
+            b'</sheetData></worksheet>'),
+    }
+    # 21 + 0 (masquee) + 14,4 (sans ligne) + 14,4 (sans hauteur), hors zone ignoree
+    assert classeurs._hauteur_zone(parts) == round(49.8 * 12700)

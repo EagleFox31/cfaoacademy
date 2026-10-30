@@ -399,6 +399,32 @@ def _ajouter_signes_acquisition(parts):
     return parts
 
 
+def _hauteur_zone(parts):
+    """Hauteur (EMU) de la zone visible de l'objet, comme Excel la mesure.
+
+    `imgH` du modele est faux (754,8 pt pour 796,2 pt reels sur la fiche) :
+    Excel recalcule la zone a l'activation et retaille le cadre depuis son
+    coin gauche, ce qui decentre l'objet. La somme des hauteurs de lignes
+    (`ht`, sinon `defaultRowHeight`) est celle qu'il obtient.
+    """
+    classeur = parts['xl/workbook.xml'].decode('utf-8')
+    zone = re.search(r'<oleSize ref="[A-Z]+(\d+)(?::[A-Z]+(\d+))?"', classeur)
+    feuille = parts.get('xl/worksheets/sheet1.xml', b'').decode('utf-8')
+    defaut = re.search(r'<sheetFormatPr [^>]*defaultRowHeight="([\d.]+)"', feuille)
+    if not zone or not defaut:
+        return None
+    haut, bas = int(zone.group(1)), int(zone.group(2) or zone.group(1))
+    lignes = {int(n): a for n, a in re.findall(r'<row [^>]*?r="(\d+)"([^>]*)>', feuille)}
+    total = 0.0
+    for n in range(haut, bas + 1):
+        a = lignes.get(n, '')
+        if 'hidden="1"' in a:
+            continue
+        ht = re.search(r'\bht="([\d.]+)"', a)
+        total += float(ht.group(1) if ht else defaut.group(1))
+    return round(total * 12700)
+
+
 def _pour_rendu(parts):
     """Une copie a imprimer : la zone visible de l'objet, sur une page."""
     parts = dict(parts)
@@ -794,7 +820,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 13
+VERSION_IMAGES = 14
 
 
 def _cadre_de(rendu, reference):
@@ -1151,10 +1177,14 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             # Les proportions de la zone que dessine Excel (imgW/imgH), et non
             # celles du cadre du modele (page 27, plus large) : le cadre les
             # reprend (`placer_objets`), et l'apercu regenere par Excel tombe
-            # au meme endroit que le notre.
+            # au meme endroit que le notre. La hauteur est celle des lignes
+            # du classeur (`_hauteur_zone`), imgH du modele etant faux.
             taille = (re.search(r'imgW="(\d+)" imgH="(\d+)"', m.group(0))
                       or re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', m.group(0)))
             ratio = int(taille.group(1)) / int(taille.group(2)) if taille else None
+            hauteur = _hauteur_zone(remplies)
+            if hauteur and 'imgW="' in m.group(0):
+                ratio = int(taille.group(1)) / hauteur
             natures[emb] = (quoi, valeurs[quoi], ratio, reference)
             poses += [(rels_nom, rid, emb) for rid in images]
             objets.setdefault(slide, []).append((objet.group(1), emb))
