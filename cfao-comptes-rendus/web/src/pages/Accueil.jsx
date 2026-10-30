@@ -125,8 +125,8 @@ export default function Accueil() {
     return () => { actif = false }
   }, [superadmin])
   // Une carte par zone, au modele du portail : la pastille porte le nombre
-  // d'elements qui attendent le formateur ; a 0, la carte reste visible mais
-  // ne mene nulle part, et son survol dit qu'il n'y a rien (`vide`).
+  // d'elements qui attendent le formateur. Une zone a 0 n'est pas une
+  // priorite : sa carte disparait, et la section avec la derniere.
   const priorites = [
     {
       id: 'cr', img: VISUEL_PRIORITE.comptesRendus, nombre: nbADocumenter,
@@ -151,11 +151,13 @@ export default function Accueil() {
     }] : []),
   ]
 
+  const aTraiter = priorites.filter(c => c.nombre !== 0)
+
   if (!user) return null
 
   return (
     <>
-      <Nav />
+      <Nav sansPriorites={!aTraiter.length} />
       <PortalStickyBar user={user} headerRef={headerRef} />
       <main className="portal-page">
         <div ref={headerRef}>
@@ -163,16 +165,15 @@ export default function Accueil() {
         </div>
 
         {/* ── 1. Priorites : ce qui attend une action du formateur ── */}
-        {/* Un compteur par section, a 0 quand rien n'attend : le formateur
-            voit d'un coup d'oeil ou agir. */}
-        <PortalReveal id="a-documenter" className="portal-next-actions-viewport">
+        {/* Seulement ce qui attend : le formateur voit d'un coup d'oeil ou agir. */}
+        {aTraiter.length > 0 && <PortalReveal id="a-documenter" className="portal-next-actions-viewport">
           <div ref={contenuPriorites} className="container" style={{ padding: '16px 32px' }}>
             <div className="portal-section-head">
               <p className="portal-section-eyebrow">Vos priorités</p>
               <h2 className="portal-section-title">À faire maintenant</h2>
             </div>
             <PortalStaggerGrid>
-              {priorites.map(c => {
+              {aTraiter.map(c => {
                 const actif = c.nombre !== 0 && Boolean(c.lien || c.section)
                 return <div key={c.id} className="portal-card-anchor">
                   <PvCard
@@ -195,7 +196,7 @@ export default function Accueil() {
               })}
             </PortalStaggerGrid>
           </div>
-        </PortalReveal>
+        </PortalReveal>}
 
         {/* ── 2. Le module compte rendu ─────────────────────────── */}
         <PortalReveal id="comptes-rendus">
