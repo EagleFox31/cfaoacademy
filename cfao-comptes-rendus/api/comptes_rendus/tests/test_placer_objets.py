@@ -30,3 +30,19 @@ def test_objet_centre_sous_son_titre_et_hauts_alignes():
     # visible (2100 + 100) rejoigne celui de rId2 (2000).
     assert xml.count('<a:off x="1200" y="2000"/>') == 2
     assert xml.count('<a:off x="5000" y="1900"/>') == 2
+
+
+def test_centrage_sur_la_largeur_utile_et_non_sur_le_dessin():
+    # Une note absente laisse sa place vide : le dessin (0..50) est plus
+    # etroit que l'image complete (90 px utiles, 10 px de bord des
+    # proportions). Le cadre ne bouge que de ce bord, comme avec deux notes.
+    from PIL.PngImagePlugin import PngInfo
+    image = Image.new('RGBA', (100, 100), (0, 0, 0, 0))
+    image.paste((0, 0, 0, 255), (0, 0, 50, 100))
+    infos = PngInfo()
+    infos.add_text('largeur-utile', '90')
+    sortie = io.BytesIO()
+    image.save(sortie, 'PNG', pnginfo=infos)
+    xml = classeurs.placer_objets(_cadre('rId2', 1000, 2000, 1000, 1000),
+                                  [('rId2', sortie.getvalue())])
+    assert xml.count('<a:off x="1050" y="2000"/>') == 2

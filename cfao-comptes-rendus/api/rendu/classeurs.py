@@ -772,6 +772,10 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
     # retrouve par un bord transparent, a droite et en bas. Excel ancre la
     # zone visible en haut a gauche du cadre (l'EMF du modele aussi) :
     # centre, l'apercu tombait a droite du vrai objet ouvert dans PowerPoint.
+    # La largeur utile, avant le bord transparent des proportions : avec un
+    # cadre, celle de l'image complete. `placer_objets` centre sur elle,
+    # pour que la place de l'objet ne depende pas des notes presentes.
+    largeur_utile = image.width
     if ratio:
         from PIL import Image
         l, h = image.size
@@ -781,13 +785,16 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
             cadre.paste(image, (0, 0))
             image = cadre
     # optimize=True quadruple le temps pour un fichier a peine plus petit.
+    from PIL.PngImagePlugin import PngInfo
+    infos = PngInfo()
+    infos.add_text('largeur-utile', str(largeur_utile))
     sortie = io.BytesIO()
-    image.save(sortie, 'PNG', compress_level=6)
+    image.save(sortie, 'PNG', compress_level=6, pnginfo=infos)
     return sortie.getvalue()
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 11
+VERSION_IMAGES = 12
 
 
 def _cadre_de(rendu, reference):
@@ -1062,7 +1069,11 @@ def placer_objets(xml, objets):
         x, y, cx, cy = (int(v) for v in re.search(
             r'<a:off x="(\d+)" y="(\d+)"/>\s*<a:ext cx="(\d+)" cy="(\d+)"', m.group(0)).groups())
         sx, sy = cx / image.width, cy / image.height
-        gauche, droite = boite[0] * sx, (image.width - boite[2]) * sx
+        utile = getattr(image, 'text', {}).get('largeur-utile')
+        if utile:
+            gauche, droite = 0, (image.width - int(utile)) * sx
+        else:
+            gauche, droite = boite[0] * sx, (image.width - boite[2]) * sx
         boites[rid] = [x + round((droite - gauche) / 2), y, y + round(boite[1] * sy)]
     hauts = sorted(b[2] for b in boites.values())
     for b in boites.values():
