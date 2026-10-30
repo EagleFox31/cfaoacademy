@@ -794,7 +794,7 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 12
+VERSION_IMAGES = 13
 
 
 def _cadre_de(rendu, reference):
@@ -1068,13 +1068,19 @@ def placer_objets(xml, objets):
             continue
         x, y, cx, cy = (int(v) for v in re.search(
             r'<a:off x="(\d+)" y="(\d+)"/>\s*<a:ext cx="(\d+)" cy="(\d+)"', m.group(0)).groups())
-        sx, sy = cx / image.width, cy / image.height
+        # Le cadre prend les proportions de l'image (celles de la zone que
+        # dessine Excel, voir `rafraichir_pages`), au plus grand dans sa
+        # place du modele et centre sur elle : regenere par Excel, l'apercu
+        # occupe le meme cadre.
+        s = min(cx / image.width, cy / image.height)
+        ncx, ncy = round(image.width * s), round(image.height * s)
+        x += (cx - ncx) // 2
         utile = getattr(image, 'text', {}).get('largeur-utile')
         if utile:
-            gauche, droite = 0, (image.width - int(utile)) * sx
+            gauche, droite = 0, (image.width - int(utile)) * s
         else:
-            gauche, droite = boite[0] * sx, (image.width - boite[2]) * sx
-        boites[rid] = [x + round((droite - gauche) / 2), y, y + round(boite[1] * sy)]
+            gauche, droite = boite[0] * s, (image.width - boite[2]) * s
+        boites[rid] = [x + round((droite - gauche) / 2), y, y + round(boite[1] * s), ncx, ncy]
     hauts = sorted(b[2] for b in boites.values())
     for b in boites.values():
         haut = min(h for h in hauts if abs(h - b[2]) <= MEME_LIGNE)
@@ -1085,8 +1091,10 @@ def placer_objets(xml, objets):
         if not rid or rid.group(1) not in boites:
             return m.group(0)
         # Le cadre et l'image de repli (`p:pic` de l'objet) bougent ensemble.
-        x, y, _ = boites[rid.group(1)]
-        return re.sub(r'<a:off x="\d+" y="\d+"/>', f'<a:off x="{x}" y="{y}"/>', m.group(0))
+        x, y, _, cx, cy = boites[rid.group(1)]
+        return re.sub(r'<a:off x="\d+" y="\d+"/>(\s*)<a:ext cx="\d+" cy="\d+"/>',
+                      lambda k: f'<a:off x="{x}" y="{y}"/>{k.group(1)}<a:ext cx="{cx}" cy="{cy}"/>',
+                      m.group(0))
 
     return RE_OLE.sub(deplacer, xml)
 
@@ -1140,11 +1148,12 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             brut = _ecrire(remplies)
             contenus[emb] = brut
             a_rendre[emb] = brut
-            # L'image s'etire aux proportions du cadre de l'objet, qui ne
-            # sont pas toujours celles de l'EMF (page 27) : c'est sur le
-            # cadre qu'on les prend, sinon l'anneau devient ovale.
-            taille = (re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', m.group(0))
-                      or re.search(r'imgW="(\d+)" imgH="(\d+)"', m.group(0)))
+            # Les proportions de la zone que dessine Excel (imgW/imgH), et non
+            # celles du cadre du modele (page 27, plus large) : le cadre les
+            # reprend (`placer_objets`), et l'apercu regenere par Excel tombe
+            # au meme endroit que le notre.
+            taille = (re.search(r'imgW="(\d+)" imgH="(\d+)"', m.group(0))
+                      or re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', m.group(0)))
             ratio = int(taille.group(1)) / int(taille.group(2)) if taille else None
             natures[emb] = (quoi, valeurs[quoi], ratio, reference)
             poses += [(rels_nom, rid, emb) for rid in images]

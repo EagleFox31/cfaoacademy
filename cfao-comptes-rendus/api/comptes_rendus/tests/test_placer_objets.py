@@ -46,3 +46,12 @@ def test_centrage_sur_la_largeur_utile_et_non_sur_le_dessin():
     xml = classeurs.placer_objets(_cadre('rId2', 1000, 2000, 1000, 1000),
                                   [('rId2', sortie.getvalue())])
     assert xml.count('<a:off x="1050" y="2000"/>') == 2
+
+
+def test_cadre_aux_proportions_de_l_image_centre_sur_sa_place():
+    # Fiche individuelle : le cadre du modele (1000 x 1000) est plus large
+    # que la zone dessinee par Excel (50 x 100) ; il la reprend, sans bord
+    # vide a droite, centre sur sa place pour rester sous le titre.
+    xml = classeurs.placer_objets(_cadre('rId2', 1000, 2000, 1000, 1000),
+                                  [('rId2', _png((0, 0, 50, 100), (50, 100)))])
+    assert xml.count('<a:off x="1250" y="2000"/><a:ext cx="500" cy="1000"/>') == 2
