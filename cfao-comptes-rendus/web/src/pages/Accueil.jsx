@@ -205,8 +205,8 @@ export default function Accueil() {
               <h2 className="portal-section-title">Comptes rendus</h2>
             </div>
 
-            {/* Trois entrees, toujours presentes : commencer, reprendre,
-                retrouver. Les sessions a documenter se choisissent a
+            {/* Trois entrees : commencer (toujours), reprendre et retrouver
+                (seulement s'il y a quelque chose). Les sessions a documenter se choisissent a
                 l'ouverture d'un nouveau compte rendu. */}
             <PortalStaggerGrid>
               <div className="portal-card-anchor">
@@ -226,8 +226,9 @@ export default function Accueil() {
               </div>
 
               {/* Une seule entree vers les saisies commencees : la liste,
-                  avec reprise et suppression, est sur sa propre page. */}
-              <div className="portal-card-anchor">
+                  avec reprise et suppression, est sur sa propre page.
+                  Sans saisie en cours, la carte n'a pas d'interet. */}
+              {enCours.length > 0 && <div className="portal-card-anchor">
                 <PvCard
                   img={VISUEL_ENTREE.brouillon}
                   kicker={
@@ -236,37 +237,31 @@ export default function Accueil() {
                     </span>
                   }
                   title="Comptes rendus non terminés"
-                  meta={enCours.length
-                    ? `Reprendre ou supprimer un compte rendu commencé — le dernier modifié ${
-                      venuDe(enCours[0].modifieLe)}.`
-                    : 'Les comptes rendus commencés s’y retrouvent, sur tout poste.'}
+                  meta={`Reprendre ou supprimer un compte rendu commencé — le dernier modifié ${
+                    venuDe(enCours[0].modifieLe)}.`}
                   cta="Voir les comptes rendus non terminés"
                   hoverHint="Terminer un compte rendu"
                   onClick={() => naviguer('/portail/compte-rendu/en-cours')}
                   corner
                 />
-              </div>
+              </div>}
 
-              <div className="portal-card-anchor">
+              {termines.length > 0 && <div className="portal-card-anchor">
                 <PvCard
                   img={VISUEL_ENTREE.archive}
                   kicker={
                     <span className="portal-status-chip done">
-                      {termines.length > 0
-                        ? `${termines.length} terminé${termines.length > 1 ? 's' : ''}`
-                        : 'Archive'}
+                      {termines.length} terminé{termines.length > 1 ? 's' : ''}
                     </span>
                   }
                   title="Comptes rendus terminés"
-                  meta={termines.length
-                    ? `Les comptes rendus terminés — le dernier ${venuDe(termines[0].termineLe)}.`
-                    : 'Les comptes rendus terminés s’y rangent.'}
+                  meta={`Les comptes rendus terminés — le dernier ${venuDe(termines[0].termineLe)}.`}
                   cta="Ouvrir l’archive"
                   hoverHint="Voir les comptes rendus terminés"
                   onClick={() => naviguer('/portail/compte-rendu/mes-rapports')}
                   corner
                 />
-              </div>
+              </div>}
             </PortalStaggerGrid>
           </div>
         </PortalReveal>
