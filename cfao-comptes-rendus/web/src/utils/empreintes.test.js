@@ -42,4 +42,14 @@ describe('empreintes des textes rediges', () => {
     expect(suite.empreintes.r.chiffres).toBe(avant)
     expect(suite.empreintes.n.chiffres).toBe(apres)
   })
+
+  it('reecrit un texte sans empreinte a la mise a jour et garde l’ancien', () => {
+    const b = { textes: { v: 'Acquisition 95 %', w: 'Acquisition 95 %' } }
+    const suite = poserRediges({ ...b, textes: { ...b.textes, w: 'retouche entre-temps' } }, {
+      v: { texte: 'Acquisition 83 %', chiffres: apres, ancien: 'Acquisition 95 %' },
+      w: { texte: 'Acquisition 83 %', chiffres: apres, ancien: 'Acquisition 95 %' },
+    })
+    expect(suite.textes).toEqual({ v: 'Acquisition 83 %', w: 'retouche entre-temps' })
+    expect(suite.anciens).toEqual({ v: 'Acquisition 95 %' })
+  })
 })

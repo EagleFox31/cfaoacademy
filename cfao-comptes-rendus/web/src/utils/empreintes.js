@@ -9,6 +9,14 @@
  * l'est pas, le formateur est seulement prevenu.
  */
 
+/**
+ * La version de la redaction. A augmenter a chaque mise a jour du service
+ * qui change la facon d'ecrire ou de calculer : a l'ouverture suivante,
+ * chaque compte rendu fait reecrire ses textes avec les notes actuelles
+ * (sauf ceux retouches apres redaction, signales par l'alerte).
+ */
+export const VERSION_TEXTES = 1
+
 /** Une empreinte courte et stable d'une valeur serialisable. */
 export function empreinte(donnees) {
   const s = JSON.stringify(donnees ?? null)
@@ -33,17 +41,23 @@ export function etatTexte(b, cle, chiffres) {
 
 /**
  * Les textes rediges, poses dans le brouillon avec leur empreinte.
- * `nouveaux` : `{ cle: { texte, chiffres } }`. Un texte retouche entre
- * la demande et la reponse garde la priorite.
+ * `nouveaux` : `{ cle: { texte, chiffres, ancien? } }`. `ancien` : le
+ * texte d'origine inconnue qu'une mise a jour fait reecrire ; il est
+ * garde dans `anciens` pour que le formateur puisse y revenir. Un texte
+ * retouche entre la demande et la reponse garde la priorite.
  */
 export function poserRediges(b, nouveaux) {
   const textes = { ...(b?.textes || {}) }
   const empreintes = { ...(b?.empreintes || {}) }
-  Object.entries(nouveaux).forEach(([k, { texte, chiffres }]) => {
+  const anciens = { ...(b?.anciens || {}) }
+  Object.entries(nouveaux).forEach(([k, { texte, chiffres, ancien }]) => {
     const e = empreintes[k]
-    if (textes[k] !== undefined && !(e && textes[k] === e.texte)) return
+    const libre = textes[k] === undefined
+      || (e ? textes[k] === e.texte : ancien !== undefined && textes[k] === ancien)
+    if (!libre) return
+    if (!e && ancien) anciens[k] = ancien
     textes[k] = texte
     empreintes[k] = { chiffres, texte }
   })
-  return { textes, empreintes }
+  return { textes, empreintes, anciens }
 }
