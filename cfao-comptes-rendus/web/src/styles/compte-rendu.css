@@ -3643,6 +3643,8 @@
 
 /* Fin du compte rendu : consigne, fichier, proposition ; les deux suites en bas a droite. */
 .cr-fin { display: flex; flex-direction: column; }
+/* La page de fin prend la hauteur de son contenu, pas celle de l'ecran. */
+.cr-assistant .cr-panel.cr-fin { flex: 0 1 auto; }
 .cr-fin-fichier { margin: 20px 0 0; font-size: 14px; line-height: 1.55; color: var(--ink); overflow-wrap: anywhere; }
 .cr-fin .cr-proposition { max-width: 520px; margin: 20px 0 0; }
 .cr-fin > :nth-last-child(2) { margin-bottom: 26px; }
