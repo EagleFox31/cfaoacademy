@@ -1032,8 +1032,10 @@ function FormulairePage({
               )
               return (
                 <Cadre key={b.cle} className="cr-fiche-appreciation">
-                  <span className="cr-field-label">
-                    {b.titre} <span>facultatif</span>
+                  <div className="cr-redac-entete">
+                    <span className="cr-field-label">
+                      {b.titre} <span>facultatif</span>
+                    </span>
                     {page.participant && (
                       <BoutonsRedaction
                         aTexte={!!String(valeur(b.cle, b.texte) || '').trim()}
@@ -1044,7 +1046,7 @@ function FormulairePage({
                         peutAnnuler={`${page.cle}.${b.cle}` in (redaction?.avant || {})}
                         onAnnuler={() => redaction?.annuler(`${page.cle}.${b.cle}`)} />
                     )}
-                  </span>
+                  </div>
                   {page.photo ? (
                     <div className="cr-fiche-zone">
                       {texte}

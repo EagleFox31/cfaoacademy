@@ -2733,6 +2733,9 @@
 /* Le bouton de proposition se tient a droite du libelle, discret :
    c'est une aide, pas l'action principale. */
 .cr-redac {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   margin-left: auto;
   padding: 3px 9px;
   font-size: 0.72rem;
