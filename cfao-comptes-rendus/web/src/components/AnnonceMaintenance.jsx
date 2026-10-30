@@ -51,6 +51,10 @@ function ajouter(cle, id) {
 export default function AnnonceMaintenance({ roles }) {
   const [annonce, setAnnonce] = useState(null) // { id, reste, phase }
   const courante = useRef(null)
+  // Annonce en place a l'ouverture de l'onglet ('' si aucune) : une autre,
+  // terminee, veut dire que l'onglet a manque le compte a rebours (onglet en
+  // arriere-plan, lu une fois par minute par le navigateur).
+  const initiale = useRef(null)
 
   useEffect(() => {
     let actif = true
@@ -59,7 +63,13 @@ export default function AnnonceMaintenance({ roles }) {
         const r = await fetch(`${SOURCE}?t=${Date.now()}`, { cache: 'no-store' })
         if (!r.ok) return
         const m = await r.json()
-        if (!actif || !m?.id) return
+        if (!actif) return
+        if (initiale.current === null) initiale.current = m?.id || ''
+        if (!m?.id) return
+        if (m.etat === 'terminee' && m.id !== initiale.current && !liste(DEJA_VUES).includes(m.id)) {
+          ajouter(DEJA_VUES, m.id)
+          initiale.current = m.id
+        }
         const vue = liste(DEJA_VUES).includes(m.id)
         const suivie = courante.current === m.id
           || (vue && !courante.current && !liste(CLOSES).includes(m.id))
