@@ -59,23 +59,7 @@ export default function BoutonsRedaction({
  * rapport ne montre plus. Le formateur le fait reecrire, ou garde le sien.
  */
 export function AlertePerime({ cle, redaction, onRediger }) {
-  if (!redaction || redaction.redigeant) return null
-  if (redaction.ancien?.(cle) !== undefined) {
-    return (
-      <p className="cr-redac-perime" role="status">
-        Texte réécrit avec les notes actuelles lors de la mise à jour du service.
-        <span className="cr-redac-perime-actions">
-          <button type="button" className="cr-part-ajout cr-redac" onClick={() => redaction.accepter(cle)}>
-            Garder le nouveau texte
-          </button>
-          <button type="button" className="cr-redac-annuler" onClick={() => redaction.revenir(cle)}>
-            Revenir à l’ancien texte
-          </button>
-        </span>
-      </p>
-    )
-  }
-  if (!redaction.perime(cle)) return null
+  if (!redaction?.perime(cle) || redaction.redigeant) return null
   return (
     <p className="cr-redac-perime" role="status">
       Les notes ont changé depuis l’écriture de ce texte : il peut citer d’anciens chiffres.

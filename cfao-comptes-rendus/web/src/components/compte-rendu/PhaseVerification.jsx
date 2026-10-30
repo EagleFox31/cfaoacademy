@@ -21,7 +21,7 @@ import { chiffresSession, satisfactionPresents, constatsParDefaut, donneesSessio
   redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
 import BoutonsRedaction, { AlertePerime } from './BoutonsRedaction'
-import { VERSION_TEXTES, empreinte, etatTexte, poserRediges } from '../../utils/empreintes'
+import { empreinte, etatTexte, poserRediges } from '../../utils/empreintes'
 import { formateurInitial, nouveautes, retenir } from '../../utils/formateurParDefaut'
 import { estCertification, calculerCertification, libelleModule } from '../../utils/certification'
 import { candidatPourMoteur, donneesCertification, statutElearning }
@@ -204,19 +204,9 @@ export default function PhaseVerification({
     const empreintes = {}
     const chiffresDe = k => (empreintes[k] ??= empreinte(entreeMoteur(brouillon, session, k)))
     const neuf = k => t[k] === undefined
-    // Mise a jour du service : tout texte non vide est reecrit, sauf celui
-    // retouche apres sa redaction (l'alerte le signale deja).
-    const miseAJour = (brouillon.versionTextes || 0) < VERSION_TEXTES
-    const aRafraichir = k => miseAJour && t[k] !== ''
-      && etatTexte(brouillon, k, chiffresDe(k)) !== 'perime'
-    const absent = k => neuf(k) || aRafraichir(k)
+    const absent = k => neuf(k)
       || etatTexte(brouillon, k, chiffresDe(k)) === 'a-reecrire'
-    let echecs = 0
-    const redige = k => texte => {
-      if (!texte) { echecs += 1; return {} }
-      const ancien = !neuf(k) && !brouillon.empreintes?.[k] ? t[k] : undefined
-      return { [k]: { texte, chiffres: chiffresDe(k), ancien } }
-    }
+    const redige = k => texte => (texte ? { [k]: { texte, chiffres: chiffresDe(k) } } : {})
     const certif = estCertification(brouillon)
     const donnees = certif ? donneesCertification(brouillon, session) : donneesSession(brouillon, session)
     const travaux = []
@@ -244,13 +234,11 @@ export default function PhaseVerification({
       travaux.push(redigerRemarque(certif ? 'bilan_certification' : 'bilan', donnees).then(sortie => Object.assign({},
         ...rubriques.filter(r => absent(`bilan.${r}`)).map(r => redige(`bilan.${r}`)(sortie?.[r])))))
     }
-    // La version n'est notee qu'une fois tout reecrit : un moteur en panne
-    // laisse la mise a jour a refaire a l'ouverture suivante.
-    const version = () => (miseAJour && !echecs ? { versionTextes: VERSION_TEXTES } : {})
-    if (!travaux.length) { if (miseAJour) maj(version()); return }
+    if (!travaux.length) return
     Promise.all(travaux).then(parts => {
       const nouveaux = Object.assign({}, ...parts)
-      maj(b => ({ ...(Object.keys(nouveaux).length ? poserRediges(b, nouveaux) : {}), ...version() }))
+      if (!Object.keys(nouveaux).length) return
+      maj(b => poserRediges(b, nouveaux))
     })
   // Une seule fois, a l'arrivee dans l'edition.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -289,18 +277,6 @@ export default function PhaseVerification({
       setAvant(a => { const suite = { ...a }; delete suite[cle]; return suite })
     },
     perime: cle => perimes.has(cle),
-    // Un texte d'origine inconnue reecrit a la mise a jour : le formateur
-    // peut revenir au sien.
-    ancien: cle => brouillon.anciens?.[cle],
-    revenir: cle => {
-      const { [cle]: ancien, ...anciens } = brouillon.anciens || {}
-      const { [cle]: _, ...empreintes } = brouillon.empreintes || {}
-      maj({ textes: { ...(brouillon.textes || {}), [cle]: ancien }, anciens, empreintes })
-    },
-    accepter: cle => {
-      const { [cle]: _, ...anciens } = brouillon.anciens || {}
-      maj({ anciens })
-    },
     // Garder son texte : l'empreinte suit les chiffres actuels, le texte
     // reste « retouche » et ne sera pas reecrit d'office.
     garder: cle => maj({
