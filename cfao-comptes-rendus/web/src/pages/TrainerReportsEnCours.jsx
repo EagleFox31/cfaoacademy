@@ -7,6 +7,7 @@ import { sessionsDuFormateur } from '../data/mock_sessions_formateur'
 import CarteCompteRendu, {
   BadgeCompteRendu, carteDeBrouillon, carteDeSession,
 } from '../components/compte-rendu/CarteCompteRendu'
+import ListeVide from '../components/compte-rendu/ListeVide'
 import { brouillonsEnregistres, oublier, synchroniser } from '../utils/brouillonsCompteRendu'
 import { aDocumenter } from '../utils/planningFormateur.js'
 import '../styles/compte-rendu.css'
@@ -107,6 +108,7 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
                     ))}
                   </div>
                 )}
+                {total === 0 && <ListeVide />}
               </div>
 
               <div className="cr-echappee">
