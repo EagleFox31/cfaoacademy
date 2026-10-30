@@ -3625,115 +3625,25 @@
 .cr-journal-actions { display: flex; justify-content: flex-end; margin-bottom: 8px; }
 .cr-journal pre { max-height: 320px; overflow: auto; white-space: pre-wrap; font-size: 0.75rem; background: var(--paper); padding: 8px; }
 
-/* Preparation du PowerPoint : attente au premier plan, etape en cours et temps ecoule. */
+/* Preparation du PowerPoint : une roue dans le bouton, de la couleur de son texte. */
 .cr-btn-roue {
   display: inline-block;
   width: 14px;
   height: 14px;
   margin-right: 8px;
   vertical-align: -2px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
   border-radius: 50%;
   animation: cr-tourne 0.8s linear infinite;
 }
-.cr-production {
-  position: fixed;
-  inset: 0;
-  z-index: 9000;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: rgba(10, 18, 40, 0.55);
-  backdrop-filter: blur(3px);
-}
-.cr-production-boite {
-  width: min(440px, 100%);
-  padding: 30px 30px 26px;
-  border-radius: 20px;
-  background: var(--paper, #fff);
-  box-shadow: 0 24px 60px rgba(10, 18, 40, 0.35);
-  text-align: center;
-  color: var(--ink);
-}
-.cr-production-boite .cr-apercu-roue { display: block; margin: 14px auto 0; width: 44px; height: 44px; border-width: 4px; }
-.cr-production-surtitre {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--red);
-}
-.cr-production-titre { margin: 14px 0 16px; font-size: 19px; }
-.cr-production-etapes {
-  display: grid;
-  gap: 8px;
-  margin: 0 auto 18px;
-  padding: 0;
-  max-width: 280px;
-  list-style: none;
-  text-align: left;
-  font-size: 14px;
-  color: var(--muted);
-}
-.cr-production-etapes li { display: flex; align-items: center; gap: 10px; }
-.cr-production-puce {
-  display: inline-grid;
-  place-items: center;
-  flex: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1.5px solid var(--rule);
-  font-size: 11.5px;
-  font-weight: 700;
-}
-.cr-production-etape--en-cours { color: var(--ink); font-weight: 600; }
-.cr-production-etape--en-cours .cr-production-puce { border-color: var(--red); color: var(--red); }
-.cr-production-etape--faite { color: var(--ink); }
-.cr-production-etape--faite .cr-production-puce { border-color: #147a41; background: #147a41; color: #fff; }
-.cr-production-barre { height: 6px; border-radius: 999px; background: var(--paper-2, #e8ebf1); overflow: hidden; }
-.cr-production-barre span { display: block; height: 100%; background: var(--red); transition: width 1s linear; }
-.cr-production-temps { margin: 10px 0 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.cr-production-aide { margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) {
   .cr-btn-roue { animation-duration: 2.4s; }
-  .cr-production-barre span { transition: none; }
 }
 
-/* Fin du compte rendu : consigne, fichier telecharge, proposition, puis deux suites. */
-.cr-fin-corps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 18px;
-  align-items: start;
-  margin-top: 22px;
-}
-.cr-fin-fichier {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 16px;
-  border: 1px solid var(--rule);
-  border-radius: 12px;
-  background: var(--paper-2);
-}
-.cr-fin-icone {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 46px;
-  height: 54px;
-  border-radius: 6px;
-  background: #c43e1c;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-.cr-fin-fichier-texte p { margin: 0; }
-.cr-fin-fichier-titre { font-size: 14px; font-weight: 600; color: var(--ink); }
-.cr-fin-fichier-nom { margin-top: 4px !important; font-size: 13px; color: var(--ink); overflow-wrap: anywhere; }
-.cr-fin-fichier-aide { margin-top: 10px !important; font-size: 12.5px; color: var(--muted); }
-.cr-fin .cr-proposition { max-width: none; margin: 0; }
+/* Fin du compte rendu : consigne, fichier, proposition ; les deux suites en bas a droite. */
+.cr-fin { display: flex; flex-direction: column; }
+.cr-fin-fichier { margin: 20px 0 0; font-size: 14px; line-height: 1.55; color: var(--ink); overflow-wrap: anywhere; }
+.cr-fin .cr-proposition { max-width: 520px; margin: 20px 0 0; }
+.cr-fin > :nth-last-child(2) { margin-bottom: 26px; }
+.cr-fin .cr-fin-actions { margin-top: auto; justify-content: flex-end; }

@@ -289,8 +289,6 @@ export default function PhaseVerification({
   // (le service le garde une heure).
   const [fichier, setFichier] = useState(null)
   const [echec, setEchec] = useState(false)
-  // Ou en est la production, montre pendant l'attente : envoi, assemblage, telechargement.
-  const [etape, setEtape] = useState(null)
 
   // Un simple lien : le navigateur ecrit le fichier sur le disque au fil
   // de l'eau. Le lire d'abord en memoire (blob) echouait sur les gros
@@ -316,11 +314,9 @@ export default function PhaseVerification({
    */
   async function rapportProduit(corps) {
     const json = { 'Content-Type': 'application/json' }
-    setEtape('envoi')
     const lancement = await fetch('/apercu/rapports', { method: 'POST', headers: json, body: JSON.stringify(corps) })
     if (!lancement.ok) throw new Error(String(lancement.status))
     const { id } = await lancement.json()
-    setEtape('assemblage')
     const limite = Date.now() + 10 * 60_000
     let coupures = 0
     for (;;) {
@@ -361,15 +357,12 @@ export default function PhaseVerification({
     }
     try {
       const url = await rapportProduit(corps)
-      setEtape('telechargement')
       setFichier(url)
       telecharger(url)
       // Toutes les pages remplies, le compte rendu est deja a l'archive ;
       // on y date sa sortie. Sinon le PowerPoint n'est qu'une version de
       // travail, et la saisie reste en cours.
       if (resteAFaire === 0) maj({ termineLe: new Date().toISOString() })
-      // Un instant sur la barre pleine : la fin se voit avant de changer de page.
-      await new Promise(r => setTimeout(r, 900))
       setEtat('fait')
     } catch (e) {
       console.error('Rapport non produit :', e)
@@ -393,30 +386,22 @@ export default function PhaseVerification({
             ? 'Il est rangé dans « Mes comptes rendus » : vous pourrez le rouvrir et le modifier à tout moment.'
             : `${resteAFaire} page${resteAFaire > 1 ? 's restent' : ' reste'} à remplir : le compte rendu reste « non terminé » tant que tout n’est pas rempli.`} />
 
-        <div className="cr-fin-corps">
-          <section className="cr-fin-fichier" aria-label="Fichier téléchargé">
-            <span className="cr-fin-icone" aria-hidden="true">PPTX</span>
-            <div className="cr-fin-fichier-texte">
-              <p className="cr-fin-fichier-titre">Le PowerPoint est dans vos téléchargements</p>
-              <p className="cr-fin-fichier-nom">{nomCompteRendu(brouillon, session)}.pptx · {pages.length} pages</p>
-              <p className="cr-fin-fichier-aide">
-                Le téléchargement n’a pas démarré ?{' '}
-                <button type="button" className="cr-lien-discret" onClick={() => fichier && telecharger(fichier)}>
-                  Télécharger à nouveau
-                </button>
-              </p>
-            </div>
-          </section>
-          {termine && (
-            <PropositionFormateur session={session}
-              formateur={(brouillon.formateurs || formateursInitiaux(session))[0]} />
-          )}
-        </div>
+        <p className="cr-fin-fichier">
+          Le PowerPoint <strong>{nomCompteRendu(brouillon, session)}.pptx</strong> est
+          dans vos téléchargements. Il n’est pas arrivé ?{' '}
+          <button type="button" className="cr-lien-discret" onClick={() => fichier && telecharger(fichier)}>
+            Télécharger à nouveau
+          </button>
+        </p>
+        {termine && (
+          <PropositionFormateur session={session}
+            formateur={(brouillon.formateurs || formateursInitiaux(session))[0]} />
+        )}
 
-        <div className="cr-actions">
+        <div className="cr-actions cr-fin-actions">
           <button type="button" className={`cr-btn ${termine ? 'cr-btn--ghost' : 'cr-btn--primary'}`}
             onClick={() => setEtat('revue')}>
-            ← {termine ? 'Revenir à l’édition' : 'Continuer à remplir'}
+            {termine ? 'Revenir à l’édition' : 'Continuer à remplir'}
           </button>
           <button type="button" className={`cr-btn ${termine ? 'cr-btn--primary' : 'cr-btn--ghost'}`}
             onClick={onTerminer}>
@@ -598,66 +583,6 @@ export default function PhaseVerification({
             )}
           </div>
         </div>
-      </div>
-      {etat === 'production' && <PreparationPowerPoint etape={etape} pages={pages.length} />}
-    </div>
-  )
-}
-
-const ETAPES_PRODUCTION = [
-  ['envoi', 'Envoi des pages'],
-  ['assemblage', 'Assemblage du PowerPoint'],
-  ['telechargement', 'Téléchargement du fichier'],
-]
-// Duree habituelle d'une production : la barre s'en approche sans
-// l'atteindre, et ne se remplit qu'a la fin reelle.
-const DUREE_HABITUELLE = 60
-
-/**
- * L'attente de la production, au premier plan : elle dure une minute,
- * parfois plus, et un simple libelle de bouton laissait croire a une
- * page figee. On montre l'etape en cours, le temps ecoule et une barre
- * d'avancement estimee ; la page reste bloquee jusqu'au bout, puisque
- * une modification faite pendant l'attente ne serait pas dans le fichier.
- */
-function PreparationPowerPoint({ etape, pages }) {
-  const [secondes, setSecondes] = useState(0)
-  useEffect(() => {
-    const debut = Date.now()
-    const t = setInterval(() => setSecondes(Math.floor((Date.now() - debut) / 1000)), 1000)
-    return () => clearInterval(t)
-  }, [])
-  const rang = Math.max(0, ETAPES_PRODUCTION.findIndex(([cle]) => cle === etape))
-  const avance = etape === 'telechargement' ? 100
-    : Math.round(95 * (1 - Math.exp(-secondes / (DUREE_HABITUELLE / 2))))
-  const duree = secondes < 60 ? `${secondes} s` : `${Math.floor(secondes / 60)} min ${String(secondes % 60).padStart(2, '0')} s`
-  return (
-    <div className="cr-production" role="dialog" aria-modal="true" aria-labelledby="cr-production-titre">
-      <div className="cr-production-boite">
-        <p className="cr-production-surtitre">Préparation du PowerPoint</p>
-        <span className="cr-apercu-roue" aria-hidden="true" />
-        <h2 id="cr-production-titre" className="cr-production-titre">
-          Votre rapport de {pages} pages se prépare
-        </h2>
-        <ol className="cr-production-etapes" aria-live="polite">
-          {ETAPES_PRODUCTION.map(([cle, libelle], i) => (
-            <li key={cle} className={i < rang ? 'cr-production-etape--faite'
-              : i === rang ? 'cr-production-etape--en-cours' : undefined}>
-              <span className="cr-production-puce" aria-hidden="true">{i < rang ? '✓' : i + 1}</span>
-              {libelle}{i === rang && '…'}
-            </li>
-          ))}
-        </ol>
-        <div className="cr-production-barre" role="progressbar" aria-label="Avancement estimé"
-          aria-valuemin={0} aria-valuemax={100} aria-valuenow={avance}>
-          <span style={{ width: `${avance}%` }} />
-        </div>
-        <p className="cr-production-temps">
-          {duree} écoulée{secondes > 1 ? 's' : ''} · comptez une minute environ
-        </p>
-        <p className="cr-production-aide">
-          Restez sur cette page : le fichier arrivera tout seul dans vos téléchargements.
-        </p>
       </div>
     </div>
   )
@@ -1712,7 +1637,7 @@ function PropositionFormateur({ formateur, session }) {
   }
 
   return (
-    <section className="cr-proposition" aria-labelledby="cr-proposition-titre">
+    <section className="cr-proposition cr-section-claire" aria-labelledby="cr-proposition-titre">
       <h3 id="cr-proposition-titre" className="cr-proposition-titre">
         Préremplir vos prochains comptes rendus
       </h3>
