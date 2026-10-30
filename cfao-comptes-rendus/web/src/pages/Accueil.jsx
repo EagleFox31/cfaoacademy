@@ -116,7 +116,7 @@ export default function Accueil() {
   const nbADocumenter = aCommencer.length + enCours.length
   // Equipe technique : le journal des erreurs, que Cerbos reserve au superadmin.
   const superadmin = (user?.roles ?? []).includes('superadmin')
-  // Journal vide (ou illisible) : 0, donc pas de carte ; le menu y mene toujours.
+  // Journal vide (ou illisible) : 0.
   const [nbErreurs, setNbErreurs] = useState(0)
   useEffect(() => {
     if (!superadmin) return undefined
@@ -125,13 +125,14 @@ export default function Accueil() {
     return () => { actif = false }
   }, [superadmin])
   // Une carte par zone, au modele du portail : la pastille porte le nombre
-  // d'elements qui attendent le formateur ; une zone a 0 n'a pas de carte.
+  // d'elements qui attendent le formateur ; a 0, la carte reste visible mais
+  // ne mene nulle part, et son survol dit qu'il n'y a rien (`vide`).
   const priorites = [
     {
       id: 'cr', img: VISUEL_PRIORITE.comptesRendus, nombre: nbADocumenter,
       enAttente: 'à rédiger', titre: 'Comptes rendus à rédiger',
       meta: `${enCours.length} non terminé${enCours.length > 1 ? 's' : ''}, ${aCommencer.length} à commencer.`,
-      metaVide: 'Tous vos comptes rendus sont à jour.',
+      metaVide: 'Tous vos comptes rendus sont à jour.', vide: 'Aucun compte rendu à rédiger',
       lien: '/portail/compte-rendu/a-documenter', cta: 'Voir les comptes rendus à rédiger',
     },
     {
@@ -139,23 +140,22 @@ export default function Accueil() {
       enAttente: 'à venir', titre: 'Sessions de formation à venir',
       meta: 'Les sessions de formation que vous animez prochainement.',
       metaVide: 'Aucune session de formation planifiée pour le moment.',
-      section: aVenir.length ? 'sessions-a-venir' : null, cta: 'Voir les sessions de formation',
+      vide: 'Aucune session de formation à venir',
+      section: 'sessions-a-venir', cta: 'Voir les sessions de formation',
     },
     ...(superadmin ? [{
       id: 'journal', img: VISUEL_PRIORITE.journal, nombre: nbErreurs,
       enAttente: nbErreurs > 1 ? 'erreurs' : 'erreur', titre: 'Journal des erreurs',
-      meta: 'Les erreurs du service des comptes rendus.',
+      meta: 'Les erreurs du service des comptes rendus.', vide: 'Aucune erreur enregistrée',
       lien: '/portail/journal-erreurs', cta: 'Ouvrir le journal des erreurs',
     }] : []),
-  ].filter(c => c.nombre !== 0)
-  // Plus aucune carte : la section (et son entree de menu) disparait.
-  const rienAFaire = priorites.length === 0
+  ]
 
   if (!user) return null
 
   return (
     <>
-      <Nav sansPriorites={rienAFaire} />
+      <Nav />
       <PortalStickyBar user={user} headerRef={headerRef} />
       <main className="portal-page">
         <div ref={headerRef}>
@@ -164,17 +164,17 @@ export default function Accueil() {
 
         {/* ── 1. Priorites : ce qui attend une action du formateur ── */}
         {/* Un compteur par section, a 0 quand rien n'attend : le formateur
-            voit d'un coup d'oeil ou agir, sans carte vide. Masquee quand
-            les deux sont a 0. */}
-        {!rienAFaire && <PortalReveal id="a-documenter" className="portal-next-actions-viewport">
+            voit d'un coup d'oeil ou agir. */}
+        <PortalReveal id="a-documenter" className="portal-next-actions-viewport">
           <div ref={contenuPriorites} className="container" style={{ padding: '16px 32px' }}>
             <div className="portal-section-head">
               <p className="portal-section-eyebrow">Vos priorités</p>
               <h2 className="portal-section-title">À faire maintenant</h2>
             </div>
             <PortalStaggerGrid>
-              {priorites.map(c => (
-                <div key={c.id} className="portal-card-anchor">
+              {priorites.map(c => {
+                const actif = c.nombre !== 0 && Boolean(c.lien || c.section)
+                return <div key={c.id} className="portal-card-anchor">
                   <PvCard
                     img={c.img}
                     kicker={
@@ -184,18 +184,18 @@ export default function Accueil() {
                     }
                     title={c.titre}
                     meta={c.nombre !== 0 ? c.meta : c.metaVide}
-                    cta={c.lien || c.section ? c.cta : undefined}
+                    cta={actif ? c.cta : undefined}
                     accentColor={c.nombre ? '#E3001B' : undefined}
-                    hoverHint={c.lien || c.section ? c.cta : undefined}
-                    onClick={c.lien ? () => naviguer(c.lien)
-                      : c.section ? () => scrollToPortalSection(c.section) : undefined}
-                    corner={Boolean(c.lien || c.section)}
+                    hoverHint={actif ? c.cta : c.vide}
+                    onClick={!actif ? undefined : c.lien ? () => naviguer(c.lien)
+                      : () => scrollToPortalSection(c.section)}
+                    corner={actif}
                   />
                 </div>
-              ))}
+              })}
             </PortalStaggerGrid>
           </div>
-        </PortalReveal>}
+        </PortalReveal>
 
         {/* ── 2. Le module compte rendu ─────────────────────────── */}
         <PortalReveal id="comptes-rendus">
@@ -227,8 +227,8 @@ export default function Accueil() {
 
               {/* Une seule entree vers les saisies commencees : la liste,
                   avec reprise et suppression, est sur sa propre page.
-                  Sans saisie en cours, la carte n'a pas d'interet. */}
-              {enCours.length > 0 && <div className="portal-card-anchor">
+                  Sans saisie en cours, la carte reste mais ne mene nulle part. */}
+              <div className="portal-card-anchor">
                 <PvCard
                   img={VISUEL_ENTREE.brouillon}
                   kicker={
@@ -237,16 +237,18 @@ export default function Accueil() {
                     </span>
                   }
                   title="Comptes rendus non terminés"
-                  meta={`Reprendre ou supprimer un compte rendu commencé — le dernier modifié ${
-                    venuDe(enCours[0].modifieLe)}.`}
-                  cta="Voir les comptes rendus non terminés"
-                  hoverHint="Terminer un compte rendu"
-                  onClick={() => naviguer('/portail/compte-rendu/en-cours')}
-                  corner
+                  meta={enCours.length
+                    ? `Reprendre ou supprimer un compte rendu commencé — le dernier modifié ${
+                      venuDe(enCours[0].modifieLe)}.`
+                    : 'Reprendre ou supprimer un compte rendu commencé.'}
+                  cta={enCours.length ? 'Voir les comptes rendus non terminés' : undefined}
+                  hoverHint={enCours.length ? 'Terminer un compte rendu' : 'Aucun compte rendu en cours'}
+                  onClick={enCours.length ? () => naviguer('/portail/compte-rendu/en-cours') : undefined}
+                  corner={enCours.length > 0}
                 />
-              </div>}
+              </div>
 
-              {termines.length > 0 && <div className="portal-card-anchor">
+              <div className="portal-card-anchor">
                 <PvCard
                   img={VISUEL_ENTREE.archive}
                   kicker={
@@ -255,13 +257,15 @@ export default function Accueil() {
                     </span>
                   }
                   title="Comptes rendus terminés"
-                  meta={`Les comptes rendus terminés — le dernier ${venuDe(termines[0].termineLe)}.`}
-                  cta="Ouvrir l’archive"
-                  hoverHint="Voir les comptes rendus terminés"
-                  onClick={() => naviguer('/portail/compte-rendu/mes-rapports')}
-                  corner
+                  meta={termines.length
+                    ? `Les comptes rendus terminés — le dernier ${venuDe(termines[0].termineLe)}.`
+                    : 'Les comptes rendus terminés.'}
+                  cta={termines.length ? 'Ouvrir l’archive' : undefined}
+                  hoverHint={termines.length ? 'Voir les comptes rendus terminés' : 'Aucun compte rendu terminé'}
+                  onClick={termines.length ? () => naviguer('/portail/compte-rendu/mes-rapports') : undefined}
+                  corner={termines.length > 0}
                 />
-              </div>}
+              </div>
             </PortalStaggerGrid>
           </div>
         </PortalReveal>
