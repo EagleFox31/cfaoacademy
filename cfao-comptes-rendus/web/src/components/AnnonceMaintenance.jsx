@@ -6,6 +6,7 @@ const SOURCE = '/maintenance.json'
 const DUREE = 10
 const DEJA_VUES = 'cfao.maintenances-vues'
 const CLOSES = 'cfao.maintenances-closes'
+const RECHARGEES = 'cfao.maintenances-rechargees'
 
 /**
  * Enregistre tout de suite le travail en cours.
@@ -42,9 +43,10 @@ function ajouter(cle, id) {
  *                tous ou pour certains roles seulement (`pour`) : chacun
  *                ne voit que celles qui le concernent.
  * Une annonce deja vue dans cet onglet ne rejoue pas apres rechargement.
- * Mais la mise a jour elle-meme peut recharger la page : l'onglet qui
- * a vu le compte a rebours retrouve alors l'annonce ou elle en etait
- * (en cours, puis terminee) jusqu'a ce que le message de fin s'efface.
+ * L'onglet qui a vu le compte a rebours se recharge de lui-meme a
+ * `terminee` (nouvelle version de l'interface), puis retrouve l'annonce
+ * jusqu'a ce que le message de fin s'efface.
+ * Le script `demarrer-module.ps1` ecrit ces deux etats a chaque deploiement.
  */
 export default function AnnonceMaintenance({ roles }) {
   const [annonce, setAnnonce] = useState(null) // { id, reste, phase }
@@ -71,6 +73,13 @@ export default function AnnonceMaintenance({ roles }) {
           courante.current = m.id
           setAnnonce({ id: m.id, reste: 0, phase: 'en_cours' })
         } else if (m.etat === 'terminee' && suivie) {
+          // L'onglet tourne encore sur l'ancienne version : il charge la
+          // nouvelle (une seule fois), puis affiche le message de fin.
+          if (!liste(RECHARGEES).includes(m.id)) {
+            ajouter(RECHARGEES, m.id)
+            window.location.reload()
+            return
+          }
           courante.current = m.id
           // Une seule fois : chaque lecture relancerait le delai d'effacement.
           setAnnonce(a => (a?.phase === 'terminee' ? a

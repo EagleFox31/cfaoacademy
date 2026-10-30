@@ -5,6 +5,17 @@ Toutes les commandes se lancent depuis `cfao-comptes-rendus/`.
 
 Durée : environ 15 min, dont 2 à 5 min d'interruption.
 
+> **Module seul (`demarrer-module.ps1`, port 5174)** : l'annonce est automatique.
+> Si le site tourne déjà, le script construit d'abord les images sans coupure. Ensuite :
+> 1. il écrit `compte` dans la passerelle : les onglets ouverts affichent un compte à rebours de 10 s et enregistrent le travail ;
+> 2. il attend 15 s, puis redémarre les services ;
+> 3. il écrit `terminee` : chaque onglet recharge une fois la nouvelle version, puis affiche le message.
+>
+> Pour ajouter un message et une liste de nouveautés, déposer un fichier `annonce.json` à côté du script, de la forme `{ "message": "…", "changements": [{ "texte": "…", "pour": ["formateur"] }] }`. Il est archivé dans `annonces\` après usage.
+>
+> En urgence, `-sansAnnonce` redémarre sans prévenir.
+> Les étapes 1 et 6 ci-dessous ne concernent que la pile complète.
+
 ## 1. Prévenir les utilisateurs (5 min avant)
 
 Les pages ouvertes lisent `maintenance.json` toutes les 2 s. Avec l'état `compte`, une
