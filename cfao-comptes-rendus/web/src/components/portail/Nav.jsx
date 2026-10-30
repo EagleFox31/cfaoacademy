@@ -44,6 +44,7 @@ function UserMenu({ user, onLogout }) {
   }, [])
 
   const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase()
+  const superadmin = (user.roles ?? []).includes('superadmin')
 
   return (
     <div className="nav-user-menu" ref={ref}>
@@ -63,8 +64,19 @@ function UserMenu({ user, onLogout }) {
         <div className="nav-user-dropdown" role="menu">
           <div className="nav-user-dropdown-head">
             <span className="nav-user-dropdown-name">{user.firstName} {user.lastName}</span>
-            <span className="nav-user-dropdown-filiale">{user.filiale || 'Formateur'}</span>
+            <span className="nav-user-dropdown-filiale">{user.filiale || (superadmin ? 'Super Admin' : 'Formateur')}</span>
           </div>
+          {superadmin && (
+            <Link
+              to="/portail/journal-erreurs"
+              className="nav-user-dropdown-item"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+            >
+              <span>Journal des erreurs</span>
+              <span className="nav-user-dropdown-arrow">→</span>
+            </Link>
+          )}
           <button
             type="button"
             className="nav-user-dropdown-item nav-user-dropdown-logout"

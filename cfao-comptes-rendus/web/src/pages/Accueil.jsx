@@ -39,6 +39,7 @@ const VISUEL_POLE = {
 const VISUEL_PRIORITE = {
   comptesRendus: '/assets/img_cards/test_theorie_senior.jpg',
   sessions: '/assets/img_cards/clients-carte.jpg',
+  journal: '/assets/img_cards/process_sav_equipment.png',
 }
 
 /** Visuel des cartes d'entree du module. */
@@ -112,8 +113,10 @@ export default function Accueil() {
   const { aContinuer: enCours, aCommencer } = aDocumenter(sessions, brouillons)
 
   const nbADocumenter = aCommencer.length + enCours.length
+  // Equipe technique : le journal des erreurs, que Cerbos reserve au superadmin.
+  const superadmin = (user?.roles ?? []).includes('superadmin')
   // Rien a rediger ni a venir : la section (et son entree de menu) disparait.
-  const rienAFaire = nbADocumenter === 0 && aVenir.length === 0
+  const rienAFaire = !superadmin && nbADocumenter === 0 && aVenir.length === 0
   // Une carte par zone, au modele du portail : la pastille porte le nombre
   // d'elements qui attendent le formateur, 0 compris.
   const priorites = [
@@ -131,6 +134,12 @@ export default function Accueil() {
       metaVide: 'Aucune session de formation planifiée pour le moment.',
       section: aVenir.length ? 'sessions-a-venir' : null, cta: 'Voir les sessions de formation',
     },
+    ...(superadmin ? [{
+      id: 'journal', img: VISUEL_PRIORITE.journal, nombre: null,
+      enAttente: 'équipe technique', titre: 'Journal des erreurs',
+      meta: 'Les erreurs du service des comptes rendus.',
+      lien: '/portail/journal-erreurs', cta: 'Ouvrir le journal des erreurs',
+    }] : []),
   ]
 
   if (!user) return null
@@ -161,11 +170,11 @@ export default function Accueil() {
                     img={c.img}
                     kicker={
                       <span className={`portal-status-chip ${c.nombre ? 'progress' : 'done'}`}>
-                        {`${c.nombre} ${c.enAttente}`}
+                        {c.nombre === null ? c.enAttente : `${c.nombre} ${c.enAttente}`}
                       </span>
                     }
                     title={c.titre}
-                    meta={c.nombre ? c.meta : c.metaVide}
+                    meta={c.nombre !== 0 ? c.meta : c.metaVide}
                     cta={c.lien || c.section ? c.cta : undefined}
                     accentColor={c.nombre ? '#E3001B' : undefined}
                     hoverHint={c.lien || c.section ? c.cta : undefined}
