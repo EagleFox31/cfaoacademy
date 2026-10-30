@@ -96,15 +96,20 @@ def _nature_de(parts, feuille, ref):
 
 
 def _poser_cellule(feuille, ref, valeur):
-    """La valeur d'une cellule, formule conservee."""
+    """La valeur d'une cellule, sans la formule du modele.
+
+    La valeur posee fait foi : Excel, en recalculant a l'activation, ne
+    doit pas la remplacer. Le score final, par exemple, est la moyenne des
+    stagiaires, pas `AVERAGE(B2:B3)` des moyennes theorie et pratique —
+    les deux s'ecartent des qu'une note manque.
+    """
     v = f'<v>{float(valeur):.10g}</v>'
     motif = re.compile(r'<c r="' + ref + r'"([^>]*?)(/>|>(.*?)</c>)', re.S)
     m = motif.search(feuille)
     if not m:
         return feuille
     attributs = re.sub(r'\s+t="\w+"', '', m.group(1))
-    formule = re.search(r'<f>.*?</f>|<f [^>]*/>|<f [^>]*>.*?</f>', m.group(3) or '', re.S)
-    neuf = f'<c r="{ref}"{attributs}>{formule.group(0) if formule else ""}{v}</c>'
+    neuf = f'<c r="{ref}"{attributs}>{v}</c>'
     return feuille[:m.start()] + neuf + feuille[m.end():]
 
 

@@ -20,7 +20,8 @@ import { participantPourMoteur, proposerTexte } from '../../utils/redaction'
 import { chiffresSession, satisfactionPresents, constatsParDefaut, donneesSession, formeBilan, paragrapheBilan,
   redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
-import BoutonsRedaction from './BoutonsRedaction'
+import BoutonsRedaction, { AlertePerime } from './BoutonsRedaction'
+import { empreinte, etatTexte, poserRediges } from '../../utils/empreintes'
 import { formateurInitial, nouveautes, retenir } from '../../utils/formateurParDefaut'
 import { estCertification, calculerCertification, libelleModule } from '../../utils/certification'
 import { candidatPourMoteur, donneesCertification, statutElearning }
@@ -47,6 +48,27 @@ const PUCE_INITIALE = new RegExp('^[-\u2022*\u2013]\s*')
 
 /** Le modele ne prevoit pas de disposition au-dela de cinq images. */
 const MAX_PHOTOS = 5
+
+/**
+ * Ce que le moteur recoit pour ecrire le texte `cle` — et dont l'empreinte
+ * dit si le texte suit encore les notes. Les constats de resultats ne
+ * dependent que des chiffres, pas des journees ni de l'intitule.
+ */
+function entreeMoteur(b, session, cle) {
+  const certif = estCertification(b)
+  const fiche = /^fiche-(.+)\.appreciation$/.exec(cle)
+  if (fiche) {
+    const p = (b.participants || []).find(x => String(x.id) === fiche[1])
+    if (!p) return null
+    if (certif) return candidatPourMoteur(p, b)
+    const propre = satisfactionStagiaire(b.satisfaction?.[p.id] || {})
+    return participantPourMoteur(p, calculer(p, b.baremes), propre?.formation, propre?.accueil)
+  }
+  const d = certif ? donneesCertification(b, session) : donneesSession(b, session)
+  if (!cle.startsWith('resultats.')) return d
+  const { effectif, reussis, entree, sortie, progression, taux, theorie, pratique, participants } = d
+  return { effectif, reussis, entree, sortie, progression, taux, theorie, pratique, participants }
+}
 
 /** Les objectifs d'un brouillon anterieur, repris ligne a ligne.
  *
@@ -164,21 +186,27 @@ export default function PhaseVerification({
       ...a,
       ...Object.fromEntries(Object.keys(nouveaux).map(k => [k, textes[k] ?? defauts[k] ?? ''])),
     }))
-    maj({ textes: { ...textes, ...nouveaux } })
+    noterRediges(textes, nouveaux)
   }
 
   // Premiere redaction : chaque texte que le moteur sait ecrire recoit
   // une proposition des l'arrivee a l'edition, au lieu d'une phrase de
-  // gabarit sans rapport avec les chiffres. Seuls les champs jamais
-  // renseignes sont concernes — un texte ecrit, ou vide a dessein,
-  // n'est pas touche — et ce qui est saisi pendant la redaction garde
-  // la priorite.
+  // gabarit sans rapport avec les chiffres. Sont concernes les champs
+  // jamais renseignes — un texte ecrit, ou vide a dessein, n'est pas
+  // touche — et ceux que le moteur avait ecrits sur des notes qui ont
+  // change depuis, s'ils n'ont pas ete retouches. Ce qui est saisi
+  // pendant la redaction garde la priorite.
   const premiere = useRef(false)
   useEffect(() => {
     if (premiere.current) return
     premiere.current = true
     const t = brouillon.textes || {}
-    const absent = k => t[k] === undefined
+    const empreintes = {}
+    const chiffresDe = k => (empreintes[k] ??= empreinte(entreeMoteur(brouillon, session, k)))
+    const neuf = k => t[k] === undefined
+    const absent = k => neuf(k)
+      || etatTexte(brouillon, k, chiffresDe(k)) === 'a-reecrire'
+    const redige = k => texte => (texte ? { [k]: { texte, chiffres: chiffresDe(k) } } : {})
     const certif = estCertification(brouillon)
     const donnees = certif ? donneesCertification(brouillon, session) : donneesSession(brouillon, session)
     const travaux = []
@@ -186,41 +214,56 @@ export default function PhaseVerification({
       const k = `fiche-${p.id}.appreciation`
       const c = certif ? calculerCertification(p, brouillon.modules) : calculer(p, brouillon.baremes)
       if (!absent(k) || p.appreciation || !chiffresSuffisants(c)) return
-      const propre = satisfactionStagiaire(brouillon.satisfaction?.[p.id] || {})
-      travaux.push((certif
-        ? proposerTexte(candidatPourMoteur(p, brouillon), 'certification')
-        : proposerTexte(participantPourMoteur(p, c, propre?.formation, propre?.accueil), 'accueil'))
-        .then(texte => (texte ? { [k]: texte } : {})))
+      travaux.push(proposerTexte(entreeMoteur(brouillon, session, k), certif ? 'certification' : 'accueil')
+        .then(redige(k)))
     })
     // La page de progression n'existe pas en certification.
     ;(certif ? [] : [['resultats.commentaireProgression', 'progression'],
       ['resultats.commentaireAcquisition', 'acquisition']]).forEach(([k, type]) => {
-      if (absent(k)) {
-        travaux.push(redigerRemarque(type, donnees)
-          .then(texte => (texte ? { [k]: texte } : {})))
-      }
+      if (absent(k)) travaux.push(redigerRemarque(type, donnees).then(redige(k)))
     })
     const rubriques = ['contexte', 'resultats', 'vigilance', 'suites']
     // Le paragraphe a sa propre redaction, plus liee que les rubriques mises
     // bout a bout — sauf si une rubrique a deja ete ecrite : elle le compose.
-    if (absent('bilan.paragraphe') && rubriques.every(r => absent(`bilan.${r}`))) {
+    if (absent('bilan.paragraphe')
+      && (!neuf('bilan.paragraphe') || rubriques.every(r => neuf(`bilan.${r}`)))) {
       travaux.push(redigerRemarque(certif ? 'bilan_certification' : 'bilan', donnees, 'paragraphe')
-        .then(sortie => (sortie?.paragraphe ? { 'bilan.paragraphe': sortie.paragraphe } : {})))
+        .then(sortie => redige('bilan.paragraphe')(sortie?.paragraphe)))
     }
     if (rubriques.some(r => absent(`bilan.${r}`))) {
-      travaux.push(redigerRemarque(certif ? 'bilan_certification' : 'bilan', donnees).then(sortie => Object.fromEntries(
-        rubriques.filter(r => absent(`bilan.${r}`) && sortie?.[r])
-          .map(r => [`bilan.${r}`, sortie[r]]))))
+      travaux.push(redigerRemarque(certif ? 'bilan_certification' : 'bilan', donnees).then(sortie => Object.assign({},
+        ...rubriques.filter(r => absent(`bilan.${r}`)).map(r => redige(`bilan.${r}`)(sortie?.[r])))))
     }
     if (!travaux.length) return
     Promise.all(travaux).then(parts => {
       const nouveaux = Object.assign({}, ...parts)
       if (!Object.keys(nouveaux).length) return
-      maj(b => ({ textes: { ...nouveaux, ...(b.textes || {}) } }))
+      maj(b => poserRediges(b, nouveaux))
     })
   // Une seule fois, a l'arrivee dans l'edition.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Les textes ecrits sur d'anciennes notes : le formateur est prevenu, et
+  // choisit de faire reecrire ou de garder le sien. Un texte jamais
+  // retouche l'est aussi le temps de sa reecriture, ou si elle echoue.
+  const perimes = useMemo(() => new Set(Object.keys(brouillon.empreintes || {})
+    .filter(k => ['perime', 'a-reecrire']
+      .includes(etatTexte(brouillon, k, empreinte(entreeMoteur(brouillon, session, k)))))),
+  [brouillon, session])
+
+  // Le texte que le moteur vient d'ecrire, avec l'empreinte de ses chiffres.
+  function noterRediges(textes, nouveaux) {
+    maj({
+      textes: { ...textes, ...nouveaux },
+      empreintes: {
+        ...(brouillon.empreintes || {}),
+        ...Object.fromEntries(Object.entries(nouveaux).map(([k, texte]) => [k, {
+          texte, chiffres: empreinte(entreeMoteur(brouillon, session, k)),
+        }])),
+      },
+    })
+  }
 
   const redaction = {
     redigeant, panne, avant,
@@ -233,6 +276,15 @@ export default function PhaseVerification({
       majTexte(cle, avant[cle])
       setAvant(a => { const suite = { ...a }; delete suite[cle]; return suite })
     },
+    perime: cle => perimes.has(cle),
+    // Garder son texte : l'empreinte suit les chiffres actuels, le texte
+    // reste « retouche » et ne sera pas reecrit d'office.
+    garder: cle => maj({
+      empreintes: {
+        ...(brouillon.empreintes || {}),
+        [cle]: { ...brouillon.empreintes?.[cle], chiffres: empreinte(entreeMoteur(brouillon, session, cle)) },
+      },
+    }),
   }
 
   function ajouterPhotos(rubrique, fichiers) {
@@ -507,19 +559,15 @@ export default function PhaseVerification({
             redaction={redaction}
             onProposer={async (pg, cle) => {
               const k = `${pg.cle}.${cle}`
-              const reponses = brouillon.satisfaction?.[pg.participant.id]
-              const propre = satisfactionStagiaire(reponses || {})
               setRedigeant(k)
               setPanne(false)
-              const texte = await (estCertification(brouillon)
-                ? proposerTexte(candidatPourMoteur(pg.participant, brouillon), 'certification')
-                : proposerTexte(participantPourMoteur(pg.participant, pg.calcul,
-                  propre?.formation, propre?.accueil), 'accueil'))
+              const texte = await proposerTexte(entreeMoteur(brouillon, session, k),
+                estCertification(brouillon) ? 'certification' : 'accueil')
               setRedigeant(null)
               if (!texte) { setPanne(true); return }
               const textes = brouillon.textes || {}
               setAvant(a => ({ ...a, [k]: textes[k] ?? '' }))
-              majTexte(k, texte)
+              noterRediges(textes, { [k]: texte })
             }}
             jours={brouillon.jours || {}}
             onJournee={(n, v) => maj({
@@ -985,6 +1033,10 @@ function FormulairePage({
                 <textarea className="cr-textarea cr-res-texte"
                   value={valeur(b.cle, b.texte)}
                   onChange={e => onTexte(`${page.cle}.${b.cle}`, e.target.value)} />
+                {page.participant && (
+                  <AlertePerime cle={`${page.cle}.${b.cle}`} redaction={redaction}
+                    onRediger={() => onProposer?.(page, b.cle)} />
+                )}
               </label>
             ))}
             {page.participant && redaction?.panne && (
@@ -1074,6 +1126,8 @@ function FormulairePage({
                       value={valeur(c.cle, '')}
                       placeholder={redaction?.defauts?.[c.cle] || c.exemple}
                       onChange={e => onTexte(cle, e.target.value)} />
+                    <AlertePerime cle={cle} redaction={redaction}
+                      onRediger={() => redaction?.constat(c.cle)} />
                   </div>
                 )
               })}

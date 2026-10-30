@@ -3649,3 +3649,14 @@
 .cr-fin .cr-proposition { max-width: 520px; margin: 20px 0 0; }
 .cr-fin > :nth-last-child(2) { margin-bottom: 26px; }
 .cr-fin .cr-fin-actions { margin-top: auto; justify-content: flex-end; }
+
+/* Texte ecrit sur d'anciennes notes : prevenir, proposer de reecrire */
+.cr-redac-perime {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--warn-ink);
+  background: var(--warn-bg);
+  font-size: 0.8rem;
+  color: var(--warn-ink);
+}
+.cr-redac-perime-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
