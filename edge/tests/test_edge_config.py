@@ -21,7 +21,7 @@ def _locations(texte):
 def test_liste_blanche_des_routes():
     # Toute nouvelle route publique doit modifier ce test, donc être relue.
     trouvees = sorted(loc for m in MODELES for loc in _locations(_texte(m)))
-    assert trouvees == sorted(["/", "/", "/auth/", "/auth", r"^/auth/(realms|resources)/", "/cr", "/cr/"])
+    assert trouvees == sorted(["/", "/", "/auth/", "/auth", r"^/auth/(realms/cfao|resources)/", "/cr", "/cr/"])
 
 
 def test_needs_transparent():

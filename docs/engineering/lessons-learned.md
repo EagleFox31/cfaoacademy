@@ -32,10 +32,22 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Toute frontière inter-modules est déclarée dans `contracts/registry.json`, avec test fournisseur et test consommateur | D, E (contrats explicites) | job CI `contracts` + tests consommateur de chaque module |
 | Un fichier dérivé d'une source (labels, spec publiée) est réconcilié par un outil qui n'écrit que son bloc et seulement s'il dérive | I, R | `contracts/sync.py --check` en CI + test de second passage sans écriture |
 | Une table lue par une application est portée par son modèle et sa migration, jamais par un script hors bande seul | D, R | test sur données réelles + migration qui adopte une table préexistante, rejouée sur Postgres |
+| Un relais public vers un service multi-tenant nomme le tenant exposé (liste blanche), jamais une famille de chemins | E (moindre privilège) | `edge/tests/smoke_edge.py` : `/auth/realms/master/…` et tout autre realm en 404 |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-30 — Realm master du Keycloak commun exposé sur Internet par la passerelle
+- **Contexte / symptôme** : à l'activation de `EDGE_KEYCLOAK_UPSTREAM` sur le serveur, `https://academy-server.shares.zrok.io/auth/realms/master/.well-known/openid-configuration` répond 200 (Keycloak). La console d'admin était bien en 404, mais le point de jeton du realm master (`admin-cli`, mot de passe) était joignable.
+- **Impact** : environ 2 minutes d'exposition. La connexion admin pouvait être tentée en force brute depuis Internet. Aucun utilisateur ne passait par cette route. Le relais a été coupé dès la détection.
+- **Détection** : vérification manuelle après déploiement (liste de chemins sensibles via l'URL publique).
+- **Cause racine** : `location ~ ^/auth/(realms|resources)/` relaie tous les realms. Le smoke ne vérifiait que la console et les métriques, et aucun test ne demandait un realm autre que `cfao`.
+- **Correctif** : `^/auth/(realms/cfao|resources)/` (cfao-edge v0.1.1). Tout autre realm tombe sur le 404 de `/auth/`.
+- **Prévention** : `test_surface_auth_reduite` couvre maintenant `/auth/realms/master/…` (découverte et jeton) et un realm voisin (`cfao-autre`). La liste blanche des routes de `test_edge_config.py` fige l'expression.
+- **Leçon généralisée** : devant un service multi-tenant, la route publique nomme le tenant. Un préfixe générique expose aussi les tenants d'administration.
+- **Catégorie** : sécurité / configuration
+- **Récidive** : non
 
 ### 2026-10-29 — Bascule zrok vers la passerelle : ~3 min de coupure du lien public
 - **Contexte / symptôme** : pour repointer `academy-server` de `127.0.0.1:8080` (needs) vers `127.0.0.1:8086` (cfao-edge), on a enchaîné `zrok2 agent release share 8vf1hzzamkg5` puis la création d'un partage. Résultat : 409 `shareConflict` (nom encore lié à l'ancien partage). Ensuite, une recréation lancée à la main avec `--subordinate` a tourné hors agent, dans la session SSH (absente de `agent status` et du registre), et il a fallu la refaire.

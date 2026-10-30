@@ -1,6 +1,8 @@
 # Keycloak commun, servi sous /auth comme son URL publique : le préfixe n'est
 # jamais retiré (Keycloak calcule ses URL depuis le chemin reçu).
 # Seuls les chemins publics sont relayés ; console, métriques, santé : 404.
+# Le realm master (jetons d'administration) n'est jamais exposé : seul le realm
+# cfao est relayé, tout autre realm tombe sur le 404 de /auth/.
 
 location /auth/ {
     set $edge_module auth;
@@ -12,7 +14,7 @@ location = /auth {
     return 404;
 }
 
-location ~ ^/auth/(realms|resources)/ {
+location ~ ^/auth/(realms/cfao|resources)/ {
     set $edge_module auth;
     client_max_body_size 1m;
     include /etc/nginx/snippets/proxy-commun.conf;

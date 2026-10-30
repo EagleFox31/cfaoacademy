@@ -63,7 +63,10 @@ def test_chemins_de_l_ancien_keycloak_de_needs_restent_chez_needs(chemin):
 
 
 @pytest.mark.parametrize("chemin", ["/auth", "/auth/", "/auth/admin/", "/auth/admin/realms/cfao/users",
-                                    "/auth/metrics", "/auth/health/ready", "/auth/js/keycloak.js"])
+                                    "/auth/metrics", "/auth/health/ready", "/auth/js/keycloak.js",
+                                    "/auth/realms/master/.well-known/openid-configuration",
+                                    "/auth/realms/master/protocol/openid-connect/token",
+                                    "/auth/realms/cfao-autre/.well-known/openid-configuration"])
 def test_surface_auth_reduite(chemin):
     assert requests.get(f"{EDGE_URL}{chemin}").status_code == 404
 
