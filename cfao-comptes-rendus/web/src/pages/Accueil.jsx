@@ -115,10 +115,8 @@ export default function Accueil() {
   const nbADocumenter = aCommencer.length + enCours.length
   // Equipe technique : le journal des erreurs, que Cerbos reserve au superadmin.
   const superadmin = (user?.roles ?? []).includes('superadmin')
-  // Rien a rediger ni a venir : la section (et son entree de menu) disparait.
-  const rienAFaire = !superadmin && nbADocumenter === 0 && aVenir.length === 0
   // Une carte par zone, au modele du portail : la pastille porte le nombre
-  // d'elements qui attendent le formateur, 0 compris.
+  // d'elements qui attendent le formateur ; une zone a 0 n'a pas de carte.
   const priorites = [
     {
       id: 'cr', img: VISUEL_PRIORITE.comptesRendus, nombre: nbADocumenter,
@@ -140,7 +138,9 @@ export default function Accueil() {
       meta: 'Les erreurs du service des comptes rendus.',
       lien: '/portail/journal-erreurs', cta: 'Ouvrir le journal des erreurs',
     }] : []),
-  ]
+  ].filter(c => c.nombre !== 0)
+  // Plus aucune carte : la section (et son entree de menu) disparait.
+  const rienAFaire = priorites.length === 0
 
   if (!user) return null
 
