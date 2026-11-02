@@ -33,10 +33,22 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Un fichier dérivé d'une source (labels, spec publiée) est réconcilié par un outil qui n'écrit que son bloc et seulement s'il dérive | I, R | `contracts/sync.py --check` en CI + test de second passage sans écriture |
 | Une table lue par une application est portée par son modèle et sa migration, jamais par un script hors bande seul | D, R | test sur données réelles + migration qui adopte une table préexistante, rejouée sur Postgres |
 | Un relais public vers un service multi-tenant nomme le tenant exposé (liste blanche), jamais une famille de chemins | E (moindre privilège) | `edge/tests/smoke_edge.py` : `/auth/realms/master/…` et tout autre realm en 404 |
+| La base d'un module se crée et se met à jour seule à chaque `up` (job `migrate` dédié), en no-op si elle est à jour, sans écraser les données de prod | A, I, R | smoke sur base vide + second démarrage sans écriture + rejeu sur copie de base existante (AGENTS.md §7) |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-10-30 — Recette needs sur base neuve : API en 500, schéma jamais créé
+- **Contexte / symptôme** : recette locale du vrai needs (compose prod) derrière cfao-edge et le Keycloak commun. Login et jetons conformes, mais toute requête authentifiée répond 500 : `relation "referential_userprofile" does not exist`.
+- **Impact** : aucun en prod (base serveur déjà migrée). Un déploiement neuf (nouveau serveur, reprise après perte de volume) aurait livré une application inutilisable sans erreur au démarrage : l'API était « healthy ».
+- **Détection** : recette de bout en bout (`test_recette_needs.py`).
+- **Cause racine** : migrations et seeds volontairement manuels (`make migrate`, `make seed`, décision 10 du README needs) pour éviter les migrations dans l'entrypoint. Aucun mécanisme automatique ne les remplaçait, et le healthcheck ne touche pas la base.
+- **Correctif** : `migrate` + `seed_*` lancés à la main dans la recette.
+- **Prévention** : règle AGENTS.md §7 (job `migrate` idempotent par module, dépendance `service_completed_successfully`). Contrôle renforcé : garde CI `scripts/ci/compose_bootstrap.py` (job `composes`, sans filtre de chemins) qui refuse tout compose où un service consomme une base sans attendre son job, ou migre dans sa commande ; smoke `scripts/ci/smoke_bootstrap.sh` (base vide, rejeu = zéro écriture).
+- **Leçon généralisée** : « explicite » ne veut pas dire « manuel ». Une étape obligatoire du déploiement est portée par le déploiement lui-même, dans un service dédié et idempotent.
+- **Catégorie** : release/déploiement
+- **Récidive** : non
 
 ### 2026-10-30 — Realm master du Keycloak commun exposé sur Internet par la passerelle
 - **Contexte / symptôme** : à l'activation de `EDGE_KEYCLOAK_UPSTREAM` sur le serveur, `https://academy-server.shares.zrok.io/auth/realms/master/.well-known/openid-configuration` répond 200 (Keycloak). La console d'admin était bien en 404, mais le point de jeton du realm master (`admin-cli`, mot de passe) était joignable.

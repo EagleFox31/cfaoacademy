@@ -79,3 +79,16 @@
 - **Avant** : lire la synthèse de [docs/engineering/lessons-learned.md](docs/engineering/lessons-learned.md), puis faire la recherche reuse-first (Adopt / Adapt / Learn / Build).
 - **Après** toute erreur ou near miss : y ajouter une entrée avec cause racine, prévention vérifiable et leçon généralisée. En cas de récidive, renforcer le contrôle.
 - Toute exception à RAIDER est justifiée dans le walkthrough ou la PR.
+
+---
+
+## 7. RÈGLE STRICTE : CRÉATION DE BASE AUTOMATIQUE, IDEMPOTENTE, RÉTROACTIVE ET AGNOSTIQUE
+
+> **DÉCISION UTILISATEUR (31/10/2026), POUR CHAQUE MODULE QUI POSSÈDE UNE BASE :**
+>
+> - **Automatique** : un `docker compose up` sur une base vide aboutit à une application utilisable (schéma + référentiel), sans commande manuelle (`make migrate`, `manage.py migrate`, `seed`…).
+> - **Idempotente** : chaque démarrage relance la création ; sur une base à jour, c'est un no-op (zéro écriture).
+> - **Rétroactive** : sur une base existante (prod), seules les migrations manquantes et les lignes de référentiel absentes sont ajoutées. Une donnée modifiée en prod (statut de campagne, libellé, compte) n'est jamais écrasée.
+> - **Agnostique** : même patron pour tous les modules, quelle que soit la stack. Un job ponctuel `migrate` dans le compose, sur l'image de l'API, dont l'API et les workers dépendent (`service_completed_successfully`). Jamais dans l'entrypoint de l'API, pour éviter les migrations concurrentes entre répliques et workers.
+> - Les données de démo ne passent jamais par ce chemin en prod.
+> - **Preuve** : smoke sur une base vide (l'API répond), second démarrage = zéro écriture, rejeu sur une copie d'une base existante.
