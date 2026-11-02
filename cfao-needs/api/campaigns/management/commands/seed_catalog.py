@@ -17,7 +17,7 @@ from django.core.management.base import BaseCommand, CommandError
 from openpyxl import Workbook
 
 from campaigns.imports.catalog import COLUMNS, CatalogImporter
-from campaigns.models import Campaign
+from campaigns.models import Campaign, CatalogLine
 from referential.models import CatalogFamily
 
 DEFAULT_SOURCE = Path(__file__).resolve().parents[3] / "referential" / "data" / "catalog_2027.json"
@@ -36,26 +36,38 @@ class Command(BaseCommand):
             raise CommandError(
                 f"Aucune campagne {options['year']}. Lancez d'abord seed_referential."
             )
+        # Le job needs-migrate rejoue cette commande à chaque démarrage : sur une
+        # campagne ouverte ou close on ne touche à rien, sans échouer (un code non
+        # nul bloquerait le démarrage de l'API).
         if campaign.status != Campaign.Status.DRAFT:
-            raise CommandError(
-                "Le catalogue ne peut être chargé que sur une campagne en brouillon : "
-                "les besoins déjà saisis sont rattachés aux lignes existantes."
+            self.stdout.write(
+                f"Campagne {campaign.year} {campaign.get_status_display()} : catalogue laissé tel quel "
+                f"(les besoins saisis sont rattachés aux lignes existantes)."
             )
+            return
 
         source = options["source"]
         if not source.exists():
             raise CommandError(f"Fichier introuvable : {source}")
         rows = json.loads(source.read_text(encoding="utf-8"))
 
-        # Les familles dont le catalogue n'est pas livré ne sont pas importées :
-        # elles restent visibles dans la grille avec leur bandeau (spec §3.4).
+        # Créer seulement : une famille qui a déjà des lignes garde son catalogue
+        # (importé à la main, corrigé…). Les familles dont le catalogue n'est pas
+        # livré ne sont pas importées : elles restent visibles avec leur bandeau
+        # (spec §3.4).
+        filled = set(
+            CatalogLine.objects.filter(campaign=campaign).values_list("family__key", flat=True)
+        )
         ready = set(
             CatalogFamily.objects.filter(status=CatalogFamily.Status.READY).values_list("key", flat=True)
         )
-        kept = [r for r in rows if r["family"] in ready]
-        deferred = len(rows) - len(kept)
+        kept = [r for r in rows if r["family"] in ready - filled]
+        deferred = len([r for r in rows if r["family"] not in ready])
+        if not kept:
+            self.stdout.write(f"Catalogue {campaign.year} : rien à ajouter.")
+            return
 
-        importer = CatalogImporter(campaign)
+        importer = CatalogImporter(campaign, replace=False)
         result = importer.parse(self._workbook(kept))
 
         if result.fatal:

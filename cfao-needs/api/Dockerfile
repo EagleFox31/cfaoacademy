@@ -32,7 +32,8 @@ EXPOSE 8000
 
 # Interdit n° 10 : migration et amorçage ne sont PAS dans l'entrypoint.
 # Academix enchaînait `alembic upgrade head && seed_all` à chaque démarrage de
-# conteneur ; acceptable en développement, risqué en production. Ici les deux sont
-# des commandes explicites (`make migrate`, `make seed`).
+# conteneur ; acceptable en développement, risqué en production. Ici les deux
+# passent par `manage.py bootstrap`, lancé par le job ponctuel `needs-migrate` du
+# compose (AGENTS.md §7) : l'API et le worker l'attendent, une seule exécution.
 # 2 workers : ~100 utilisateurs sur une campagne de six semaines, pas un site public.
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]

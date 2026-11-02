@@ -11,7 +11,6 @@ from pathlib import Path
 
 import pytest
 from django.core.management import call_command
-from django.core.management.base import CommandError
 
 from campaigns.models import Campaign, CatalogLine
 from referential.models import Brand, BrandAlias, CatalogFamily, OrgUnitRef, UserProfile
@@ -30,10 +29,17 @@ def seeded():
 def test_le_referentiel_charge_familles_marques_et_organisation(seeded):
     assert CatalogFamily.objects.count() == 8
     assert Brand.objects.count() == 21          # 10 Mobility + 10 Equipment + Yamaha
+    # Hors demonstration : la racine seule, aucun compte (AGENTS.md section 7).
+    assert OrgUnitRef.objects.count() == 1
+    assert UserProfile.objects.count() == 0
+    assert seeded.status == Campaign.Status.DRAFT
+
+
+def test_la_demo_ajoute_agences_et_comptes(seeded):
+    call_command("seed_referential", demo=True, verbosity=0)
     assert OrgUnitRef.objects.count() == 7
     # 7 comptes de demonstration : un par role du parcours, coordonnateur inclus.
     assert UserProfile.objects.count() == 7
-    assert seeded.status == Campaign.Status.DRAFT
 
 
 def test_stellantis_est_bien_eclate_en_quatre_marques(seeded):
@@ -103,13 +109,28 @@ def test_les_familles_process_portent_aussi_des_marques(seeded):
     assert process.count() > 0
 
 
-def test_le_catalogue_est_refuse_sur_une_campagne_ouverte(seeded):
+def test_le_catalogue_d_une_campagne_ouverte_reste_intact(seeded):
+    """Le job needs-migrate rejoue le seed : il ne doit ni echouer ni toucher aux lignes."""
+    call_command("seed_catalog", verbosity=0)
+    avant = list(CatalogLine.objects.filter(campaign=seeded).values_list("pk", flat=True))
     seeded.status = Campaign.Status.OPEN
     seeded.save(update_fields=["status"])
 
-    with pytest.raises(CommandError) as exc:
-        call_command("seed_catalog", verbosity=0)
-    assert "brouillon" in str(exc.value)
+    call_command("seed_catalog", verbosity=0)
+
+    assert list(CatalogLine.objects.filter(campaign=seeded).values_list("pk", flat=True)) == avant
+
+
+def test_une_famille_deja_remplie_garde_son_catalogue(seeded):
+    """Creer seulement : un catalogue importe a la main n'est ni remplace ni complete."""
+    call_command("seed_catalog", verbosity=0)
+    motors = CatalogLine.objects.filter(campaign=seeded, family__key="techniques-motors")
+    garde = motors.first()
+    motors.exclude(pk=garde.pk).delete()
+
+    call_command("seed_catalog", verbosity=0)
+
+    assert list(motors.values_list("pk", flat=True)) == [garde.pk]
 
 
 def test_le_seed_est_rejouable(seeded):

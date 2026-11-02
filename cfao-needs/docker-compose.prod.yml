@@ -3,6 +3,9 @@
 # Prérequis : le Keycloak commun (keycloak/compose.prod.yml, projet cfao-identity)
 # tourne, et cfao-edge publie needs et /auth. Puis :
 #   docker compose -f docker-compose.prod.yml up -d
+# Le job needs-migrate crée ou complète la base à chaque `up` (AGENTS.md §7) :
+# migrations + référentiel manquant, jamais d'écrasement. S'il échoue, l'API et
+# le worker ne démarrent pas : lire `docker compose logs needs-migrate`.
 # Connexion : realm `cfao`, client cfao-needs-web, audience cfao-needs-api.
 
 name: cfao-needs
@@ -42,7 +45,7 @@ services:
   needs-api:
     mem_limit: 512m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-api:v0.1.3
+    image: antifragile237/cfao-needs-api:v0.1.4
     environment: &api_env
       DJANGO_SETTINGS_MODULE: config.settings.dev
       NEEDS_SECRET_KEY: ${NEEDS_SECRET_KEY:-ueDBVqGE8R7OzHALv+e5Hnp710zP2xf1A4uWlC+7oPA5pxtctl3LmKPzo01PYrbf}
@@ -67,6 +70,8 @@ services:
     depends_on:
       needs-db:
         condition: service_healthy
+      needs-migrate:
+        condition: service_completed_successfully
       needs-cerbos:
         condition: service_started
     healthcheck:
@@ -77,15 +82,29 @@ services:
       retries: 5
       start_period: 20s
 
+  # Job ponctuel : schéma + référentiel manquant, puis sortie en 0. Même image
+  # que l'API : le code qui migre est celui qui sert.
+  needs-migrate:
+    mem_limit: 384m
+    restart: "no"
+    image: antifragile237/cfao-needs-api:v0.1.4
+    command: ["python", "manage.py", "bootstrap"]
+    environment: *api_env
+    networks: [default]
+    depends_on:
+      needs-db:
+        condition: service_healthy
+
+  # Même image que l'API (l'image worker dédiée n'était plus reconstruite).
   needs-worker:
     mem_limit: 384m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-worker:v0.1.0
-    command: ["sh", "-c", "python manage.py wait_for_schema && exec python manage.py qcluster"]
+    image: antifragile237/cfao-needs-api:v0.1.4
+    command: ["python", "manage.py", "qcluster"]
     environment: *api_env
     depends_on:
-      needs-api:
-        condition: service_started
+      needs-migrate:
+        condition: service_completed_successfully
 
   needs-gateway:
     mem_limit: 64m

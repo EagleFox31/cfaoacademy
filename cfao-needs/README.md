@@ -15,10 +15,13 @@
 cp .env.example .env         # puis remplir les 5 secrets — aucun n'a de défaut
 cp web/.env.example web/.env # Vite lit ces valeurs AU BUILD, pas au runtime
 make build-web               # la passerelle sert web/dist, elle ne le construit pas
-make up
-make migrate                 # explicite : jamais dans l'entrypoint
-make seed
+make up                      # le job needs-migrate crée la base : schéma, référentiel, démo
 ```
+
+Aucune commande de migration ni de seed à lancer : à chaque `up`, le job ponctuel
+`needs-migrate` exécute `manage.py bootstrap --demo` (AGENTS.md §7) puis s'arrête en 0 ;
+l'API et le worker l'attendent. Rejoué sur une base à jour, il n'écrit rien ; sur une
+base existante, il n'ajoute que ce qui manque. En production : `bootstrap` sans `--demo`.
 
 Interface sur `http://localhost:8080`, Keycloak sur `http://localhost:8081`.
 
@@ -93,11 +96,11 @@ visible au rechargement de la page, sans redémarrer le conteneur. Les libellés
 dans `messages/messages_fr.properties`, limités à ceux que l'utilisateur relit ensuite
 dans le SPA.
 
-Enfin, `make seed` laisse la campagne en brouillon, comme en production où l'ouverture
+Enfin, le job laisse la campagne en brouillon, comme en production où l'ouverture
 est un geste tracé du directeur du centre. Pour une recette immédiatement saisissable :
 
 ```bash
-docker compose exec needs-api python manage.py seed_referential --open
+make seed-demo-open
 ```
 
 ### Titres anglais du catalogue
@@ -290,7 +293,7 @@ Chacun est un contrôle, pas une consigne.
 | 7 | Deux chemins d'authentification | Un seul middleware, un seul code d'erreur (401) — `core/auth/oidc.py` |
 | 8 | Endpoint sans PEP | `CerbosPermission` sur chaque vue ; pas de `cerbos_resource_kind` ⇒ refus |
 | 9 | Dépendance vulnérable | `pip-audit` en CI ; `openpyxl` côté serveur, jamais `xlsx` côté navigateur |
-| 10 | Migration + seed au démarrage | Entrypoint = gunicorn seul ; `make migrate` / `make seed` explicites |
+| 10 | Migration + seed au démarrage | Entrypoint = gunicorn seul ; job ponctuel `needs-migrate` (`bootstrap`, créer seulement), attendu par l'API et le worker |
 | 11 | Envoi automatique vers l'extérieur | `assert_catalog_is_safe()` au boot |
 
 ---

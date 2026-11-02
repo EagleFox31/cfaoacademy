@@ -145,6 +145,8 @@ services:
     depends_on:
       needs-db:
         condition: service_healthy
+      needs-migrate:
+        condition: service_completed_successfully
       needs-cerbos:
         condition: service_started
     healthcheck:
@@ -159,18 +161,31 @@ services:
       retries: 5
       start_period: 20s
 
+  # Job ponctuel (AGENTS.md §7) : migrations + référentiel manquant + comptes de
+  # démonstration, puis sortie en 0. Rejouable : sur une base à jour, zéro écriture.
+  needs-migrate:
+    mem_limit: 384m
+    restart: "no"
+    build: ./api
+    volumes:
+      - ./api:/app
+    command: ["python", "manage.py", "bootstrap", "--demo"]
+    environment: *api_env
+    depends_on:
+      needs-db:
+        condition: service_healthy
+
   needs-worker:
     # Django-Q — mesure 89 Mio
     mem_limit: 384m
     restart: unless-stopped
     build: ./api
-    # Le worker attend le schema : les migrations sont explicites (make migrate),
-    # donc la table de file peut ne pas exister au demarrage du conteneur.
-    command: ["sh", "-c", "python manage.py wait_for_schema && exec python manage.py qcluster"]
+    # Le schéma est en place : le worker attend la fin du job needs-migrate.
+    command: ["python", "manage.py", "qcluster"]
     environment: *api_env
     depends_on:
-      needs-api:
-        condition: service_started
+      needs-migrate:
+        condition: service_completed_successfully
 
   needs-gateway:
     # nginx — mesure 5 Mio
