@@ -39,6 +39,17 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
 
+### 2026-11-03 — Seeds « idempotents » qui écrasaient la prod ou recréaient un modèle désactivé (needs, mail, planning)
+- **Contexte / symptôme** : en généralisant le job `migrate` (AGENTS.md §7), trois défauts de seed sont apparus. needs et planning utilisaient `update_or_create` : chaque rejeu remettait les libellés, statuts et comptes à leur valeur d'origine. mail testait l'existence avec `is_active=True` : un modèle désactivé en prod faisait recréer une v1 déjà présente, donc une erreur d'intégrité qui aurait bloqué le job, puis l'API.
+- **Impact** : quasi-incident. Une fois le seed lancé à chaque `up`, il aurait écrasé la prod (needs : rôles des 7 comptes serveur, campagne rouverte en brouillon) ou empêché le démarrage (mail).
+- **Détection** : revue du plan bootstrap, puis tests de rejeu sur base existante (brownfield needs v0.1.3 vers v0.1.4).
+- **Cause racine** : le mot « idempotent » était compris comme « relançable sans erreur », pas comme « zéro écriture et aucune donnée de prod modifiée ». Un seed lancé à la main une seule fois ne révélait ni l'un ni l'autre.
+- **Correctif** : `get_or_create` partout, relations M2M posées seulement à la création, test d'existence sans filtre d'état ; helper `core.seeding.ensure` dans le gabarit.
+- **Prévention** : chaque seed a deux tests, le rejeu sans écriture (`CaptureQueriesContext`, aucun INSERT/UPDATE/DELETE) et la donnée revue préservée et la donnée supprimée recréée. Le smoke `scripts/ci/smoke_bootstrap.sh` mesure les écritures Postgres au second passage.
+- **Leçon généralisée** : un seed qui tourne à chaque déploiement se teste comme une migration : sur une base à jour, il n'écrit rien ; sur une base modifiée, il ne touche que ce qui manque. Le test d'existence porte sur la clé d'unicité, jamais sur un état métier.
+- **Catégorie** : données/persistance
+- **Récidive** : non (même famille que l'[entrée du 2026-10-30](#2026-10-30--recette-needs-sur-base-neuve--api-en-500-schéma-jamais-créé))
+
 ### 2026-10-30 — Recette needs sur base neuve : API en 500, schéma jamais créé
 - **Contexte / symptôme** : recette locale du vrai needs (compose prod) derrière cfao-edge et le Keycloak commun. Login et jetons conformes, mais toute requête authentifiée répond 500 : `relation "referential_userprofile" does not exist`.
 - **Impact** : aucun en prod (base serveur déjà migrée). Un déploiement neuf (nouveau serveur, reprise après perte de volume) aurait livré une application inutilisable sans erreur au démarrage : l'API était « healthy ».
