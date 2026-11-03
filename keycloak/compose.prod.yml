@@ -1,7 +1,7 @@
 # Keycloak commun (realm `cfao`) en production : /srv/apps/cfao-identity.
-# Deux services permanents (Keycloak, sa base) et un job ponctuel (config).
-#   docker compose --env-file .env -f compose.prod.yml up -d keycloak
-#   docker compose --env-file .env -f compose.prod.yml run --rm config
+# Deux services permanents (Keycloak, sa base) et un job ponctuel (config),
+# relance a chaque `up` (AGENTS.md section 7) :
+#   docker compose --env-file .env -f compose.prod.yml up -d
 # Aucun secret par défaut : une variable manquante bloque le démarrage.
 name: cfao-identity
 
@@ -56,10 +56,11 @@ services:
       retries: 20
       start_period: 60s
 
-  # Job : applique le realm embarqué dans l'image, puis sort. Idempotent.
+  # Job : applique le realm embarqué dans l'image, puis sort. Idempotent : la
+  # somme de contrôle du fichier importé est gardée dans le realm, un rejeu avec
+  # la même image ne touche à rien ; seule une nouvelle image réapplique le realm.
   config:
     image: antifragile237/cfao-keycloak:${KC_VERSION:?KC_VERSION manquant}
-    profiles: [config]
     restart: "no"
     entrypoint: ["java", "-jar", "/opt/cfao-config-cli/keycloak-config-cli.jar"]
     command: []
@@ -73,6 +74,7 @@ services:
       KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 120s
       IMPORT_FILES_LOCATIONS: ${KC_IMPORT_LOCATIONS:-/opt/cfao-realm/*.yaml}
       IMPORT_VARSUBSTITUTION_ENABLED: "true"
+      IMPORT_CACHE_ENABLED: "true"
       CFAO_PORTAL_SECRET: ${CFAO_PORTAL_SECRET:?CFAO_PORTAL_SECRET manquant}
       CFAO_SPA_ENABLED: "false"
       CFAO_PORTAL_REDIRECT_URIS: ${CFAO_PORTAL_REDIRECT_URIS:?CFAO_PORTAL_REDIRECT_URIS manquant}
