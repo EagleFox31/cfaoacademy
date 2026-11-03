@@ -40,7 +40,7 @@ policy-test:
 	fi
 
 migrate:
-	docker compose exec api python manage.py migrate
+	docker compose run --rm migrate
 
 shell:
 	docker compose exec api python manage.py shell

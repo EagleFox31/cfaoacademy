@@ -57,7 +57,7 @@ services:
     logging: *journaux
     mem_limit: 1g
     env_file: .env
-    environment:
+    environment: &api_env
       DATABASE_URL: postgres://${POSTGRES_USER:-comptes_rendus}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-comptes_rendus}
       CERBOS_HTTP: http://cerbos:3592
       # Le module fixe son propre nom de cookie (meme hote = meme site que le portail).
@@ -69,6 +69,7 @@ services:
       - cr-donnees:/donnees
     depends_on:
       db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
       cerbos: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:5175/apercu/sante"]
@@ -76,6 +77,22 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  # Job ponctuel (AGENTS.md section 7) : migrations + compte technique manquant,
+  # puis sortie en 0. Rejouable sans ecriture ; un mot de passe change n'est
+  # jamais ecrase. S'il echoue, l'API ne demarre pas : `docker compose logs migrate`.
+  migrate:
+    build: ./api
+    restart: "no"
+    logging: *journaux
+    mem_limit: 512m
+    env_file: .env
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py compte_technique"]
+    environment: *api_env
+    volumes:
+      - cr-donnees:/donnees
+    depends_on:
+      db: { condition: service_healthy }
 
   gateway:
     build:
