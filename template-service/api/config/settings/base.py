@@ -91,3 +91,9 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.JSONParser",
     ],
 }
+
+# Commandes de referentiel lancees par `manage.py bootstrap` (job service-migrate).
+# Chacune cree seulement ce qui manque (core.seeding.ensure).
+BOOTSTRAP_SEEDS = []
+# Donnees de demonstration : `bootstrap --demo`, jamais en production.
+BOOTSTRAP_DEMO_SEEDS = []

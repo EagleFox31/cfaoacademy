@@ -286,7 +286,8 @@ def main() -> int:
     print(
         f"\nModule '{module}' généré (ressource {resource}/{kind}).\n"
         "Prochaines étapes :\n"
-        f"  cd cfao-core && python manage.py makemigrations {module} && python manage.py migrate\n"
+        f"  cd cfao-core && python manage.py makemigrations {module}\n"
+        "  docker compose run --rm core-migrate   # ou `docker compose up` (AGENTS.md section 7)\n"
         f"  pytest {module}\n"
         f"  docker run --rm -v \"$PWD/cerbos:/cerbos\" ghcr.io/cerbos/cerbos:0.40.0 "
         "compile --tests=/cerbos/tests /cerbos/policies"

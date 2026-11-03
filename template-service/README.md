@@ -31,11 +31,14 @@ cp .env.example .env
 # 2. Démarrer la stack locale (API + PostgreSQL + Cerbos)
 make up
 # ou : docker compose up -d --build
-
-# 3. Appliquer les migrations et charger les données de test
-make migrate
-make seed
+# Le job service-migrate crée le schéma et le référentiel avant l'API :
+# aucune commande manuelle (AGENTS.md §7).
 ```
+
+Référentiel : une commande de seed par jeu de données, déclarée dans
+`BOOTSTRAP_SEEDS` (`api/config/settings/base.py`) et écrite avec
+`core.seeding.ensure` (créer seulement, jamais d'écrasement). Données de démo :
+`BOOTSTRAP_DEMO_SEEDS`, chargées par `bootstrap --demo` en dev uniquement.
 
 L'API est accessible sur : `http://localhost:8000`  
 Le PDP Cerbos est accessible sur : `http://localhost:3592`
@@ -251,8 +254,6 @@ docker compose exec service-api python manage.py migrate mon_domaine 0001_initia
 make down
 docker volume rm cfao-template-service_service-db-data
 make up
-make migrate
-make seed
 ```
 
 > ⚠️ Ne jamais faire cela sur un environnement partagé ou de production.

@@ -42,7 +42,7 @@ services:
     restart: unless-stopped
     mem_limit: 512m
     env_file: .env
-    environment:
+    environment: &api_env
       DATABASE_URL: postgres://${DB_USER:-service_user}:${DB_PASSWORD}@service-db:5432/${DB_NAME:-service_db}
       CERBOS_HTTP: http://service-cerbos:3592
     ports:
@@ -52,7 +52,29 @@ services:
     depends_on:
       service-db:
         condition: service_healthy
+      service-migrate:
+        condition: service_completed_successfully
       service-cerbos:
+        condition: service_healthy
+
+  # Job ponctuel (AGENTS.md section 7) : schema + referentiel manquant, puis
+  # sortie en 0. Rejouable sans ecriture ; aucune donnee de prod ecrasee.
+  # Ne jamais migrer dans le CMD ou l'entrypoint de l'API.
+  service-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: "no"
+    mem_limit: 384m
+    env_file: .env
+    environment: *api_env
+    volumes:
+      - ./api:/app
+    # Dev : comptes et donnees de demonstration. Un compose de prod lance
+    # `bootstrap` seul.
+    command: ["python", "manage.py", "bootstrap", "--demo"]
+    depends_on:
+      service-db:
         condition: service_healthy
 
 volumes:
