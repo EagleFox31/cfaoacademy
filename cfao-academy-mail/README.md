@@ -12,8 +12,7 @@ Modèle métier repris de `cfao-needs/api/outbound/` (F17 Academix), généralis
 
 ```bash
 cp .env.example .env   # renseigner MAIL_SECRET_KEY, MAIL_INBOUND_KEY, DB_PASSWORD
-make up
-make seed
+make up               # le job mail-migrate crée le schéma et les modèles v1
 curl -s http://127.0.0.1:5180/api/v1/mail/healthz
 ```
 
