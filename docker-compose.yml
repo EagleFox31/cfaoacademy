@@ -127,7 +127,7 @@ services:
     build: ./cfao-core
     restart: unless-stopped
     env_file: [.env]
-    environment:
+    environment: &core_env
       DJANGO_SETTINGS_MODULE: config.settings.dev
       CORE_DB_HOST: core-db
       CERBOS_HTTP: http://cerbos:3592
@@ -149,13 +149,14 @@ services:
       # y est résolu par DNS docker.
       NEEDS_API_URL: ${NEEDS_API_URL:-http://needs-api:8000}
       NEEDS_ANALYTICS_KEY: ${NEEDS_ANALYTICS_KEY:-dev-analytics-shared-secret}
-    command: >
-      sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    # Le schéma est posé par le job core-migrate (AGENTS.md §7).
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
     networks:
       - default
       - cfao-needs
     depends_on:
       core-db: { condition: service_healthy }
+      core-migrate: { condition: service_completed_successfully }
       cerbos: { condition: service_healthy }
       mongodb: { condition: service_healthy }
     healthcheck:
@@ -169,6 +170,17 @@ services:
         limits:
           cpus: "${CPU_CORE:-0.75}"
           memory: "${MEM_CORE:-512M}"
+
+  # Job ponctuel (AGENTS.md §7) : migrations, puis sortie en 0 ; no-op sur une
+  # base à jour. S'il échoue, core ne démarre pas : `docker compose logs core-migrate`.
+  core-migrate:
+    build: ./cfao-core
+    restart: "no"
+    env_file: [.env]
+    environment: *core_env
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    depends_on:
+      core-db: { condition: service_healthy }
 
   ops-db:
     image: postgres:16-alpine
@@ -224,7 +236,7 @@ services:
   rapports:
     build: ./cfao-comptes-rendus/api
     restart: unless-stopped
-    environment:
+    environment: &rapports_env
       DEPLOYMENT_MODE: integrated
       SECRET_KEY: ${RAPPORTS_SECRET_KEY:?RAPPORTS_SECRET_KEY est obligatoire}
       # La passerelle transmet le nom public (Host) ; localhost pour la sonde.
@@ -243,6 +255,7 @@ services:
     # (reprise des brouillons : `make rapports-importer`).
     volumes: [rapports-donnees:/donnees]
     depends_on:
+      rapports-migrate: { condition: service_completed_successfully }
       cerbos: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:5175/apercu/sante"]
@@ -257,6 +270,14 @@ services:
           # monte a plusieurs centaines de Mo.
           cpus: "${CPU_RAPPORTS:-1.0}"
           memory: "${MEM_RAPPORTS:-1G}"
+
+  # Job ponctuel (AGENTS.md §7) : schéma SQLite du volume rapports-donnees.
+  rapports-migrate:
+    build: ./cfao-comptes-rendus/api
+    restart: "no"
+    environment: *rapports_env
+    volumes: [rapports-donnees:/donnees]
+    command: ["python", "manage.py", "migrate", "--noinput"]
 
   gateway:
     image: nginx:1.27-alpine
