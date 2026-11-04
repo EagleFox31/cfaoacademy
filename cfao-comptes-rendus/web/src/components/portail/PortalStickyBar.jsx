@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
+import { adresse } from '../../lib/adresse'
 
 const BRAND_LOGOS = {
-  toyota:     '/assets/logos/toyota.png',
-  mercedes:   '/assets/logos/mercedes.png',
-  suzuki:     '/assets/logos/suzuki.png',
-  mitsubishi: '/assets/logos/mitsubishi.png',
-  fuso:       '/assets/logos/fuso.png',
-  hino:       '/assets/logos/hino.png',
-  byd:        '/assets/logos/byd.png',
-  citroen:    '/assets/logos/citroen.png',
-  yamaha:     '/assets/logos/yamaha.png',
+  toyota:     adresse('/assets/logos/toyota.png'),
+  mercedes:   adresse('/assets/logos/mercedes.png'),
+  suzuki:     adresse('/assets/logos/suzuki.png'),
+  mitsubishi: adresse('/assets/logos/mitsubishi.png'),
+  fuso:       adresse('/assets/logos/fuso.png'),
+  hino:       adresse('/assets/logos/hino.png'),
+  byd:        adresse('/assets/logos/byd.png'),
+  citroen:    adresse('/assets/logos/citroen.png'),
+  yamaha:     adresse('/assets/logos/yamaha.png'),
 }
 
 /** Barre collante : apparaît quand l'entête de page sort du champ. */

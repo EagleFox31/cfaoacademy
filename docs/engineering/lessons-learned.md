@@ -39,6 +39,17 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
 
+### 2026-11-04 — `npm ci` en échec attribué au passage à Node 22, cause réelle : inspection TLS du poste (cfao-comptes-rendus)
+- **Contexte / symptôme** : le build de la passerelle CR échouait sur `npm ci` (« Exit handler never called ») après le passage de l'image de build à `node:22.23.4-alpine`, alors que `node:20-alpine` passait. Le bump a été noté comme cassant et la publication suspendue.
+- **Impact** : quasi-incident. On allait retirer un correctif de CVE ou garder Node 20, qui n'est plus corrigé.
+- **Détection** : essais avec 22.23.3, 24 et une image Debian (même échec), puis une simple installation d'un paquet (échec aussi), puis lecture du certificat présenté pour `registry.npmjs.org` : émis par un FortiGate (« FG101FTK20007517 / Fortinet »), non vérifiable (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`), y compris sous Node 20.
+- **Cause racine** : le réseau du poste intercepte TLS. npm 10.9 rapporte l'échec de téléchargement d'archive par « Exit handler never called » au lieu de l'erreur TLS. La corrélation avec la version de Node a été prise pour une cause.
+- **Correctif** : aucun dans le code. Le build Node 22 se valide hors de ce réseau (CI GitHub, job `cfao-comptes-rendus/web` en Node 22.23.4).
+- **Prévention** : avant d'imputer un échec réseau de build à une version, lancer `node -e` avec `tls.connect` vers le registre et lire l'émetteur du certificat ; un émetteur autre que l'autorité publique attendue désigne le réseau.
+- **Leçon généralisée** : une erreur d'outil opaque qui apparaît avec un changement de version se reproduit d'abord sur un cas minimal (un seul paquet) et sur la version d'avant, dans le même environnement, avant d'accuser la version.
+- **Catégorie** : environnement/outillage
+- **Récidive** : non (même famille que `deb.debian.org` en 403 depuis le poste)
+
 ### 2026-11-03 — Seeds « idempotents » qui écrasaient la prod ou recréaient un modèle désactivé (needs, mail, planning)
 - **Contexte / symptôme** : en généralisant le job `migrate` (AGENTS.md §7), trois défauts de seed sont apparus. needs et planning utilisaient `update_or_create` : chaque rejeu remettait les libellés, statuts et comptes à leur valeur d'origine. mail testait l'existence avec `is_active=True` : un modèle désactivé en prod faisait recréer une v1 déjà présente, donc une erreur d'intégrité qui aurait bloqué le job, puis l'API.
 - **Impact** : quasi-incident. Une fois le seed lancé à chaque `up`, il aurait écrasé la prod (needs : rôles des 7 comptes serveur, campagne rouverte en brouillon) ou empêché le démarrage (mail).

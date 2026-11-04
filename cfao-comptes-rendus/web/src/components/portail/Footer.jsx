@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { adresse } from '../../lib/adresse'
 
 // Le module n'a pas les pages du site : les entrées du pied de page restent
 // affichées (même rendu que le portail) mais en simple texte.
@@ -35,7 +36,7 @@ export default function Footer() {
           {/* Colonne brand */}
           <div className="footer-brand-col">
             <Link to="/" className="footer-brand-link">
-              <img src="/assets/logo-cfao-mobility.jpg" alt="CFAO Mobility" className="footer-logo" />
+              <img src={adresse('/assets/logo-cfao-mobility.jpg')} alt="CFAO Mobility" className="footer-logo" />
               <span className="footer-brand-name">academy<span className="footer-brand-dot">.</span></span>
             </Link>
 

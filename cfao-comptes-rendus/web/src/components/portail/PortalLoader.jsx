@@ -1,3 +1,4 @@
+import { adresse } from '../../lib/adresse'
 /** Écran de chargement premium à l'entrée du portail. */
 export default function PortalLoader({ leaving = false }) {
   return (
@@ -10,7 +11,7 @@ export default function PortalLoader({ leaving = false }) {
       <div className="portal-loader-inner">
         <div className="portal-loader-brand">
           <img
-            src="/assets/logo-cfao-mobility.jpg"
+            src={adresse('/assets/logo-cfao-mobility.jpg')}
             alt=""
             className="portal-loader-logo"
           />

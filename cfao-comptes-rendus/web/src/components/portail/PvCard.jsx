@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { adresse } from '../../lib/adresse'
 
-const DEFAULT_IMG = '/assets/logo-cfao-mobility.jpg'
+const DEFAULT_IMG = adresse('/assets/logo-cfao-mobility.jpg')
 
 export default function PvCard({
   kicker, title, meta, variant, corner,

@@ -26,10 +26,14 @@ La copie brute de `.env.example` (`standalone`, `DEBUG=True`, profils fictifs **
 est réservée au **poste de développement**. Pour un usage réel : `DEPLOYMENT_MODE=local`,
 `DEBUG=False`, une vraie `SECRET_KEY` (voir « Mode local » ci-dessous).
 
-Le module répond sur **http://localhost:8090** (variable `CR_PORT`). La passerelle est le seul
+Le module répond sur **http://localhost:8090/cr/** (variable `CR_PORT`). La passerelle est le seul
 port publié (`127.0.0.1`) ; l'API, la base et Cerbos restent sur le réseau interne. Le portail
 y renvoie via `VITE_CR_URL` (par défaut `http://localhost:8090`). Arrêt : `docker compose down`
 (`-v` efface aussi la base et les photos).
+
+L'interface et l'API sont servies sous `/cr/`, le préfixe de `cfao-edge` (préfixe fixé au build
+de la passerelle par `CR_BASE`). La passerelle le retire avant l'API ; les anciens liens à la
+racine sont redirigés (308) sous `/cr/`. `npm run dev` reste servi à la racine.
 
 ## Modes d'authentification (`DEPLOYMENT_MODE`)
 

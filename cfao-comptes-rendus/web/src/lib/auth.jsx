@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { adresse } from './adresse'
 
 const AuthContext = createContext(null)
 
@@ -6,7 +7,7 @@ const AuthContext = createContext(null)
 // (`brouillonsCompteRendu`). Il vient de la session du service ; on
 // ne s'y fie jamais sans l'avoir vérifiée auprès de lui.
 const CLE = 'cfao_mock_user'
-const SESSION = '/cr-donnees/session'
+const SESSION = adresse('/cr-donnees/session')
 
 function retenir(profil) {
   try {
@@ -49,7 +50,7 @@ export function AuthProvider({ children }) {
   async function connexion(identifiant, motDePasse, seSouvenir) {
     let r
     try {
-      r = await appeler('/cr-donnees/connexion', {
+      r = await appeler(adresse('/cr-donnees/connexion'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifiant: identifiant.trim(), motDePasse, seSouvenir }),
@@ -66,7 +67,7 @@ export function AuthProvider({ children }) {
   }
 
   function logout() {
-    appeler('/cr-donnees/deconnexion', { method: 'POST' }).catch(() => {})
+    appeler(adresse('/cr-donnees/deconnexion'), { method: 'POST' }).catch(() => {})
     retenir(null)
     setUser(null)
   }

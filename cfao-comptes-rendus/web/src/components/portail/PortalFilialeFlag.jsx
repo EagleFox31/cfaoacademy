@@ -1,18 +1,19 @@
 import { resolveProfileFilialeLabel, resolveProfilePays } from '../../utils/profilOrg.js'
+import { adresse } from '../../lib/adresse'
 
 const FILIALE_FLAGS = {
-  "Côte d'Ivoire": '/assets/flags/ivory-coast.svg',
-  Maroc: '/assets/flags/morocco.svg',
-  Sénégal: '/assets/flags/senegal.svg',
-  Cameroun: '/assets/flags/cameroon.svg',
-  Ghana: '/assets/flags/ghana.svg',
-  Nigeria: '/assets/flags/nigeria.svg',
-  Kenya: '/assets/flags/kenya.svg',
-  Tanzanie: '/assets/flags/tanzania.svg',
-  Angola: '/assets/flags/angola.svg',
-  Madagascar: '/assets/flags/madagascar.svg',
-  Mozambique: '/assets/flags/mozambique.svg',
-  Zambie: '/assets/flags/zambia.svg',
+  "Côte d'Ivoire": adresse('/assets/flags/ivory-coast.svg'),
+  Maroc: adresse('/assets/flags/morocco.svg'),
+  Sénégal: adresse('/assets/flags/senegal.svg'),
+  Cameroun: adresse('/assets/flags/cameroon.svg'),
+  Ghana: adresse('/assets/flags/ghana.svg'),
+  Nigeria: adresse('/assets/flags/nigeria.svg'),
+  Kenya: adresse('/assets/flags/kenya.svg'),
+  Tanzanie: adresse('/assets/flags/tanzania.svg'),
+  Angola: adresse('/assets/flags/angola.svg'),
+  Madagascar: adresse('/assets/flags/madagascar.svg'),
+  Mozambique: adresse('/assets/flags/mozambique.svg'),
+  Zambie: adresse('/assets/flags/zambia.svg'),
 }
 
 /** Pastille drapeau pays + libellé filiale (ex. CFAO EQUIPMENT Cameroun). */

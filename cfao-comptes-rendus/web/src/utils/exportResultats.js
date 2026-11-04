@@ -1,5 +1,6 @@
 import { BAREMES } from './baremeCfao'
 import { periodeCourte } from './exportEvaluation'
+import { adresse } from '../lib/adresse'
 
 /**
  * Le classeur « Résultats » d'une formation, rempli dans le modèle du
@@ -16,7 +17,7 @@ import { periodeCourte } from './exportEvaluation'
  * pourcentage vaut alors 0 et la case se colore en conséquence.
  */
 
-export const MODELE_RESULTATS = '/modeles/resultats.xlsx'
+export const MODELE_RESULTATS = adresse('/modeles/resultats.xlsx')
 
 const PREMIERE = 5
 const LIGNES_MODELE = 13

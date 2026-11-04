@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import '../styles/annonce-maintenance.css'
 import { changementsVisibles } from '../utils/changementsMaintenance'
+import { adresse } from '../lib/adresse'
 
-const SOURCE = '/maintenance.json'
+const SOURCE = adresse('/maintenance.json')
 const DUREE = 10
 const DEJA_VUES = 'cfao.maintenances-vues'
 const CLOSES = 'cfao.maintenances-closes'

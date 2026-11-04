@@ -17,9 +17,10 @@
  */
 import { pagesARemplir } from '../components/compte-rendu/PhaseVerification'
 import { SESSIONS_FORMATEUR } from '../data/mock_sessions_formateur'
+import { adresse } from '../lib/adresse'
 
 const CLE_ANCIENNE = 'cfao.comptes-rendus'
-const API = '/cr-donnees/brouillons'
+const API = adresse('/cr-donnees/brouillons')
 
 /** Le compte connecte : ses brouillons ne sont qu'a lui (le serveur le tient de la session). */
 function utilisateur() {
