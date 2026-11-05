@@ -7,6 +7,7 @@ const SOURCE = adresse('/maintenance.json')
 const DUREE = 10
 const DEJA_VUES = 'cfao.maintenances-vues'
 const CLOSES = 'cfao.maintenances-closes'
+const RECHARGEES = 'cfao.maintenances-rechargees'
 
 /**
  * Enregistre tout de suite le travail en cours.
@@ -37,8 +38,10 @@ function ajouter(cle, id) {
  * - `compte`   : compte a rebours de 10 s ; le travail est enregistre des
  *                le debut, puis a 3 s pour les dernieres frappes, et la
  *                saisie est bloquee jusqu'a la fin ;
- * - `terminee` : la mise a jour est faite, on reprend ou l'on en etait ;
- *                `message`, s'il est donne, dit ce qu'elle apporte, et
+ * - `terminee` : la mise a jour est faite ; l'onglet qui a vu le compte a
+ *                rebours enregistre et se recharge seul (une fois), pour
+ *                tourner sur la nouvelle version, puis on reprend ou l'on
+ *                en etait ; `message`, s'il est donne, dit ce qu'elle apporte, et
  *                `changements` la liste de ses nouveautes, chacune pour
  *                tous ou pour certains roles seulement (`pour`) : chacun
  *                ne voit que celles qui le concernent.
@@ -72,6 +75,14 @@ export default function AnnonceMaintenance({ roles }) {
           courante.current = m.id
           setAnnonce({ id: m.id, reste: 0, phase: 'en_cours' })
         } else if (m.etat === 'terminee' && suivie) {
+          // L'onglet tourne encore sur l'ancienne version : il se recharge
+          // une fois, seul, puis affiche le message de fin.
+          if (!liste(RECHARGEES).includes(m.id)) {
+            ajouter(RECHARGEES, m.id)
+            toutEnregistrer()
+            window.location.reload()
+            return
+          }
           courante.current = m.id
           // Une seule fois : chaque lecture relancerait le delai d'effacement.
           setAnnonce(a => (a?.phase === 'terminee' ? a

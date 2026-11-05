@@ -39,6 +39,17 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
 
+### 2026-11-05 — Rechargement « à 20 s » mesuré par Playwright, réel à 3 s (cfao-comptes-rendus)
+- **Contexte / symptôme** : test de bascule CR v0.4.1 → passerelle v0.4.3. Un onglet devait se recharger seul à l'état `terminee` ; le script mesurait l'événement `load` à 20,7 s.
+- **Impact** : quasi-incident. On allait chercher un bug de délai dans `AnnonceMaintenance.jsx` qui n'existait pas.
+- **Détection** : rejeu instrumenté (horodatage des sondages `maintenance.json`) : cinq réponses au même instant, juste après un `time.sleep`.
+- **Cause racine** : le client Python synchrone de Playwright ne livre les événements (`load`, `response`, `framenavigated`) qu'au prochain appel à Playwright. Pendant `time.sleep(20)`, rien n'est livré ; l'horodatage pris dans le gestionnaire est celui de la livraison.
+- **Correctif** : mesure par sondage court qui appelle Playwright (`is_visible` toutes les secondes) : rechargement 3 s après l'écriture de `terminee`, une seule fois.
+- **Prévention** : dans un test Playwright synchrone, attendre avec `page.wait_for_timeout` ou un `wait_for_*`, jamais `time.sleep`, dès qu'on horodate des événements.
+- **Leçon généralisée** : un horodatage pris dans un rappel d'événement mesure l'instant de livraison ; avant de conclure à une lenteur, vérifier que la boucle d'événements de l'outil de mesure tournait.
+- **Catégorie** : tests/outillage
+- **Récidive** : non
+
 ### 2026-11-04 — `npm ci` en échec attribué au passage à Node 22, cause réelle : inspection TLS du poste (cfao-comptes-rendus)
 - **Contexte / symptôme** : le build de la passerelle CR échouait sur `npm ci` (« Exit handler never called ») après le passage de l'image de build à `node:22.23.4-alpine`, alors que `node:20-alpine` passait. Le bump a été noté comme cassant et la publication suspendue.
 - **Impact** : quasi-incident. On allait retirer un correctif de CVE ou garder Node 20, qui n'est plus corrigé.
