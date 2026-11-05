@@ -193,3 +193,13 @@ describe('une session du planning retouchee sans note', () => {
     expect(envois).toHaveLength(0)
   })
 })
+
+describe('aDuContenu', () => {
+  it("une saisie libre sans information n'est pas un compte rendu", async () => {
+    const m = await onglet()
+    const vide = { sessionId: 'manuel-1', manuel: true, codeFormation: ' ', type: 'formation', infosModifiees: true }
+    expect(m.aDuContenu(vide)).toBe(false)
+    expect(m.aDuContenu({ ...vide, intitule: 'Freinage' })).toBe(true)
+    expect(m.aDuContenu({ sessionId: 's1', infosModifiees: true })).toBe(true)
+  })
+})

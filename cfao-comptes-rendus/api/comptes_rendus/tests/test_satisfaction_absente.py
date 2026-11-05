@@ -153,3 +153,40 @@ def test_les_taux_de_l_anneau_suivent_les_series_restantes(tmp_path, monkeypatch
                      {'a': ('satisfaction', accueil, None)})
     geo, taux = vus[0]
     assert len(geo['series']) == 1 and taux == [0.75]
+
+
+def test_l_anneau_seul_garde_l_epaisseur_d_une_bande(contenus):
+    """Le trou grandit : l'anneau restant n'occupe plus l'epaisseur des deux."""
+    modele = classeur_de_satisfaction(contenus, FICHE)['xl/charts/chart1.xml']
+    trou = int(re.search(rb'<c:holeSize val="(\d+)"', modele).group(1))
+    rafraichir(contenus, FICHE, {**CELLULES, 'B2': 0.8, 'B9': 0.8, 'C9': 0.2})
+    graphique = classeur_de_satisfaction(contenus, FICHE)['xl/charts/chart1.xml']
+    assert re.search(rb'<c:holeSize val="(\d+)"', graphique).group(1) == str(
+        round(100 - (100 - trou) / 2)).encode()
+
+
+def test_le_rendu_a_une_note_reprend_la_largeur_du_cadre():
+    """Rendu un peu plus grand : ramene a la largeur de reference, sans rien couper."""
+    import io
+    from PIL import Image, ImageDraw
+    page = Image.new('RGB', (300, 300), 'white')
+    ImageDraw.Draw(page).rectangle((10, 20, 210, 250), outline='black')
+    sortie = io.BytesIO()
+    page.save(sortie, 'PNG')
+    cadre = (10, 20, 208, 248, 198, 228, 0, 0)
+    image = Image.open(io.BytesIO(classeurs._rogner(sortie.getvalue(), cadre=cadre)))
+    assert image.size == (198, 228)
+    assert image.getpixel((197, 100))[3] > 0 and image.getpixel((100, 227))[3] > 0
+
+
+def test_l_image_s_ancre_en_haut_a_gauche_comme_l_objet_excel():
+    """Le bord ajoute pour les proportions du cadre va a droite, comme dans PowerPoint."""
+    import io
+    from PIL import Image
+    page = Image.new('RGB', (100, 100), 'white')
+    page.paste((0, 0, 0), (0, 0, 40, 40))
+    sortie = io.BytesIO()
+    page.save(sortie, 'PNG')
+    image = Image.open(io.BytesIO(classeurs._rogner(sortie.getvalue(), ratio=2)))
+    assert image.size == (80, 40)
+    assert image.getpixel((0, 0))[3] > 0 and image.getpixel((79, 0))[3] == 0

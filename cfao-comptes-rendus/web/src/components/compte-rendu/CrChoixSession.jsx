@@ -23,7 +23,7 @@ export default function CrChoixSession({ sessions, statuts, choisi, onChoisir })
   return (
     <div className="cr-panel">
       <div className="cr-panel-head">
-        <h2 className="cr-panel-title">Quelle formation voulez-vous documenter ?</h2>
+        <h2 className="cr-panel-title">Pour quelle formation rédigez-vous le compte rendu ?</h2>
         <p className="cr-panel-hint">
           Choisissez la session dans la liste. Tout ce qui est déjà connu —
           intitulé, dates, lieu, participants — sera repris automatiquement.

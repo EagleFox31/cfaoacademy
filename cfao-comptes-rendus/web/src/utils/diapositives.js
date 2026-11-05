@@ -163,7 +163,23 @@ function photosDesDiapos(b, refsPhotos, page) {
     const photos = photosPosees(b, page.cle, refsPhotos)
     if (photos) poses[diapoJour(jour)] = photos
   }
+  const fiche = photoDeFiche(b, refsPhotos, page)
+  if (fiche) poses[DIAPO_PAR_PAGE.fiches] = fiche
   return poses
+}
+
+/**
+ * La photo du stagiaire de la fiche, posee a droite de son appreciation
+ * (qui se retrecit d'autant). Sans photo, la fiche reste telle quelle.
+ */
+function photoDeFiche(b, refsPhotos, page) {
+  const cle = page?.cle || ''
+  if (!cle.startsWith('fiche-') || estCertification(b)) return null
+  const id = cle.slice('fiche-'.length)
+  const photo = (b.participants || []).find(x => String(x.id) === id)?.photo
+  const ref = photo && refsPhotos?.[photo.id]
+  if (!ref) return null
+  return { 'ZoneTexte 9': { id: ref, cote: 'droite', ...(photo.cadrage ? { cadrage: photo.cadrage } : {}) } }
 }
 
 /** La disposition retenue pour une rubrique, ou la premiere possible. */

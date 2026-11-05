@@ -95,23 +95,36 @@ export function syntheseSession(participants, seuil = SEUIL_DEFAUT) {
   }
 }
 
-/** Le nombre de jours d'une session, bornes comprises. */
-export function nombreDeJours(session) {
-  if (session?.nbJours) return session.nbJours
+/** Les jours ouvres (ni samedi ni dimanche) d'une session, bornes comprises. */
+function joursOuvres(session) {
   const d = new Date(session?.debut)
   const f = new Date(session?.fin)
-  if (Number.isNaN(d) || Number.isNaN(f)) return 1
-  return Math.max(1, Math.round((f - d) / 86400000) + 1)
+  if (Number.isNaN(d.getTime()) || Number.isNaN(f.getTime())) return []
+  const jours = []
+  for (; d <= f; d.setUTCDate(d.getUTCDate() + 1)) {
+    if (d.getUTCDay() % 6) jours.push(d.toISOString().slice(0, 10))
+  }
+  return jours
 }
 
-/** Les dates d'une session, une par jour, au format ISO. */
+/** Le nombre de jours d'une session, bornes comprises, week-ends exclus. */
+export function nombreDeJours(session) {
+  if (session?.nbJours) return session.nbJours
+  return Math.max(1, joursOuvres(session).length)
+}
+
+/** Les dates d'une session, une par jour ouvre, au format ISO. */
 export function joursDeSession(session) {
   const n = nombreDeJours(session)
+  const ouvres = joursOuvres(session)
   const debut = new Date(session?.debut)
   return Array.from({ length: n }, (_, i) => {
+    if (ouvres[i]) return { index: i + 1, date: ouvres[i] }
+    // Au-dela des jours ouvres (planning plus long, session d'un
+    // week-end) : les jours suivants du calendrier, comme avant.
     const d = new Date(debut)
     d.setDate(d.getDate() + i)
-    return { index: i + 1, date: Number.isNaN(d) ? null : d.toISOString().slice(0, 10) }
+    return { index: i + 1, date: Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10) }
   })
 }
 

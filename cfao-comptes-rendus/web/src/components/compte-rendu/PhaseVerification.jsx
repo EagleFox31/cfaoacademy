@@ -11,7 +11,7 @@ import ApercuReel from './ApercuReel'
 import { signalerErreur } from '../../utils/journalErreurs'
 import Consigne from './Consigne'
 import EditeurObjectifs from './EditeurObjectifs'
-import EditeurParticipants from './EditeurParticipants'
+import EditeurParticipants, { PhotoStagiaire } from './EditeurParticipants'
 import EditeurJournee, { MAX_PHOTOS_JOUR } from './EditeurJournee'
 import EditeurBilan from './EditeurBilan'
 import { avecIntercalaires, diapoDe, valeursDrapeaux } from '../../utils/diapositives'
@@ -20,7 +20,8 @@ import { participantPourMoteur, proposerTexte } from '../../utils/redaction'
 import { chiffresSession, satisfactionPresents, constatsParDefaut, donneesSession, formeBilan, paragrapheBilan,
   redigerRemarque, rubriquesBilan }
   from '../../utils/remarquesSession'
-import BoutonsRedaction from './BoutonsRedaction'
+import BoutonsRedaction, { AlertePerime } from './BoutonsRedaction'
+import { empreinte, etatTexte, poserRediges } from '../../utils/empreintes'
 import { formateurInitial, nouveautes, retenir } from '../../utils/formateurParDefaut'
 import { estCertification, calculerCertification, libelleModule } from '../../utils/certification'
 import { candidatPourMoteur, donneesCertification, statutElearning }
@@ -47,6 +48,27 @@ const PUCE_INITIALE = new RegExp('^[-\u2022*\u2013]\s*')
 
 /** Le modele ne prevoit pas de disposition au-dela de cinq images. */
 const MAX_PHOTOS = 5
+
+/**
+ * Ce que le moteur recoit pour ecrire le texte `cle` — et dont l'empreinte
+ * dit si le texte suit encore les notes. Les constats de resultats ne
+ * dependent que des chiffres, pas des journees ni de l'intitule.
+ */
+function entreeMoteur(b, session, cle) {
+  const certif = estCertification(b)
+  const fiche = /^fiche-(.+)\.appreciation$/.exec(cle)
+  if (fiche) {
+    const p = (b.participants || []).find(x => String(x.id) === fiche[1])
+    if (!p) return null
+    if (certif) return candidatPourMoteur(p, b)
+    const propre = satisfactionStagiaire(b.satisfaction?.[p.id] || {})
+    return participantPourMoteur(p, calculer(p, b.baremes), propre?.formation, propre?.accueil)
+  }
+  const d = certif ? donneesCertification(b, session) : donneesSession(b, session)
+  if (!cle.startsWith('resultats.')) return d
+  const { effectif, reussis, entree, sortie, progression, taux, theorie, pratique, participants } = d
+  return { effectif, reussis, entree, sortie, progression, taux, theorie, pratique, participants }
+}
 
 /** Les objectifs d'un brouillon anterieur, repris ligne a ligne.
  *
@@ -99,12 +121,13 @@ export default function PhaseVerification({
   // Les drapeaux transmis au service d'apercu. Memorises : une nouvelle
   // reference relancerait une conversion a chaque rendu.
   // Toutes les images a transmettre au service : celles des rubriques,
-  // les portraits des formateurs et la photo de groupe.
+  // les portraits des formateurs, la photo de groupe et celles des stagiaires.
   const aTransmettre = useMemo(() => ({
     ...(brouillon.photos || {}),
     portraits: (brouillon.formateurs || []).map(f => f.portrait).filter(Boolean),
     groupe: brouillon.photoGroupe ? [brouillon.photoGroupe] : [],
-  }), [brouillon.photos, brouillon.formateurs, brouillon.photoGroupe])
+    stagiaires: (brouillon.participants || []).map(p => p.photo).filter(Boolean),
+  }), [brouillon.photos, brouillon.formateurs, brouillon.photoGroupe, brouillon.participants])
   const refsPhotos = useRefsPhotos(aTransmettre)
 
   // Chaque photo envoyee garde son identifiant serveur dans le brouillon :
@@ -164,21 +187,27 @@ export default function PhaseVerification({
       ...a,
       ...Object.fromEntries(Object.keys(nouveaux).map(k => [k, textes[k] ?? defauts[k] ?? ''])),
     }))
-    maj({ textes: { ...textes, ...nouveaux } })
+    noterRediges(textes, nouveaux)
   }
 
   // Premiere redaction : chaque texte que le moteur sait ecrire recoit
   // une proposition des l'arrivee a l'edition, au lieu d'une phrase de
-  // gabarit sans rapport avec les chiffres. Seuls les champs jamais
-  // renseignes sont concernes — un texte ecrit, ou vide a dessein,
-  // n'est pas touche — et ce qui est saisi pendant la redaction garde
-  // la priorite.
+  // gabarit sans rapport avec les chiffres. Sont concernes les champs
+  // jamais renseignes — un texte ecrit, ou vide a dessein, n'est pas
+  // touche — et ceux que le moteur avait ecrits sur des notes qui ont
+  // change depuis, s'ils n'ont pas ete retouches. Ce qui est saisi
+  // pendant la redaction garde la priorite.
   const premiere = useRef(false)
   useEffect(() => {
     if (premiere.current) return
     premiere.current = true
     const t = brouillon.textes || {}
-    const absent = k => t[k] === undefined
+    const empreintes = {}
+    const chiffresDe = k => (empreintes[k] ??= empreinte(entreeMoteur(brouillon, session, k)))
+    const neuf = k => t[k] === undefined
+    const absent = k => neuf(k)
+      || etatTexte(brouillon, k, chiffresDe(k)) === 'a-reecrire'
+    const redige = k => texte => (texte ? { [k]: { texte, chiffres: chiffresDe(k) } } : {})
     const certif = estCertification(brouillon)
     const donnees = certif ? donneesCertification(brouillon, session) : donneesSession(brouillon, session)
     const travaux = []
@@ -186,41 +215,56 @@ export default function PhaseVerification({
       const k = `fiche-${p.id}.appreciation`
       const c = certif ? calculerCertification(p, brouillon.modules) : calculer(p, brouillon.baremes)
       if (!absent(k) || p.appreciation || !chiffresSuffisants(c)) return
-      const propre = satisfactionStagiaire(brouillon.satisfaction?.[p.id] || {})
-      travaux.push((certif
-        ? proposerTexte(candidatPourMoteur(p, brouillon), 'certification')
-        : proposerTexte(participantPourMoteur(p, c, propre?.formation, propre?.accueil), 'accueil'))
-        .then(texte => (texte ? { [k]: texte } : {})))
+      travaux.push(proposerTexte(entreeMoteur(brouillon, session, k), certif ? 'certification' : 'accueil')
+        .then(redige(k)))
     })
     // La page de progression n'existe pas en certification.
     ;(certif ? [] : [['resultats.commentaireProgression', 'progression'],
       ['resultats.commentaireAcquisition', 'acquisition']]).forEach(([k, type]) => {
-      if (absent(k)) {
-        travaux.push(redigerRemarque(type, donnees)
-          .then(texte => (texte ? { [k]: texte } : {})))
-      }
+      if (absent(k)) travaux.push(redigerRemarque(type, donnees).then(redige(k)))
     })
     const rubriques = ['contexte', 'resultats', 'vigilance', 'suites']
     // Le paragraphe a sa propre redaction, plus liee que les rubriques mises
     // bout a bout — sauf si une rubrique a deja ete ecrite : elle le compose.
-    if (absent('bilan.paragraphe') && rubriques.every(r => absent(`bilan.${r}`))) {
+    if (absent('bilan.paragraphe')
+      && (!neuf('bilan.paragraphe') || rubriques.every(r => neuf(`bilan.${r}`)))) {
       travaux.push(redigerRemarque(certif ? 'bilan_certification' : 'bilan', donnees, 'paragraphe')
-        .then(sortie => (sortie?.paragraphe ? { 'bilan.paragraphe': sortie.paragraphe } : {})))
+        .then(sortie => redige('bilan.paragraphe')(sortie?.paragraphe)))
     }
     if (rubriques.some(r => absent(`bilan.${r}`))) {
-      travaux.push(redigerRemarque(certif ? 'bilan_certification' : 'bilan', donnees).then(sortie => Object.fromEntries(
-        rubriques.filter(r => absent(`bilan.${r}`) && sortie?.[r])
-          .map(r => [`bilan.${r}`, sortie[r]]))))
+      travaux.push(redigerRemarque(certif ? 'bilan_certification' : 'bilan', donnees).then(sortie => Object.assign({},
+        ...rubriques.filter(r => absent(`bilan.${r}`)).map(r => redige(`bilan.${r}`)(sortie?.[r])))))
     }
     if (!travaux.length) return
     Promise.all(travaux).then(parts => {
       const nouveaux = Object.assign({}, ...parts)
       if (!Object.keys(nouveaux).length) return
-      maj(b => ({ textes: { ...nouveaux, ...(b.textes || {}) } }))
+      maj(b => poserRediges(b, nouveaux))
     })
   // Une seule fois, a l'arrivee dans l'edition.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Les textes ecrits sur d'anciennes notes : le formateur est prevenu, et
+  // choisit de faire reecrire ou de garder le sien. Un texte jamais
+  // retouche l'est aussi le temps de sa reecriture, ou si elle echoue.
+  const perimes = useMemo(() => new Set(Object.keys(brouillon.empreintes || {})
+    .filter(k => ['perime', 'a-reecrire']
+      .includes(etatTexte(brouillon, k, empreinte(entreeMoteur(brouillon, session, k)))))),
+  [brouillon, session])
+
+  // Le texte que le moteur vient d'ecrire, avec l'empreinte de ses chiffres.
+  function noterRediges(textes, nouveaux) {
+    maj({
+      textes: { ...textes, ...nouveaux },
+      empreintes: {
+        ...(brouillon.empreintes || {}),
+        ...Object.fromEntries(Object.entries(nouveaux).map(([k, texte]) => [k, {
+          texte, chiffres: empreinte(entreeMoteur(brouillon, session, k)),
+        }])),
+      },
+    })
+  }
 
   const redaction = {
     redigeant, panne, avant,
@@ -233,6 +277,15 @@ export default function PhaseVerification({
       majTexte(cle, avant[cle])
       setAvant(a => { const suite = { ...a }; delete suite[cle]; return suite })
     },
+    perime: cle => perimes.has(cle),
+    // Garder son texte : l'empreinte suit les chiffres actuels, le texte
+    // reste « retouche » et ne sera pas reecrit d'office.
+    garder: cle => maj({
+      empreintes: {
+        ...(brouillon.empreintes || {}),
+        [cle]: { ...brouillon.empreintes?.[cle], chiffres: empreinte(entreeMoteur(brouillon, session, cle)) },
+      },
+    }),
   }
 
   function ajouterPhotos(rubrique, fichiers) {
@@ -374,38 +427,38 @@ export default function PhaseVerification({
 
   const resteAFaire = pages.filter(p => etatPage(p, brouillon, session) === 'afaire').length
 
+  // Apres le telechargement : ce qui s'est passe, ou est le fichier, et
+  // deux suites seulement — revenir a l'edition ou rentrer a l'accueil.
   if (etat === 'fait') {
+    const termine = resteAFaire === 0
     return (
-      <div className="cr-panel">
-        <div className="cr-empty">
-          {resteAFaire === 0 ? (
-            <>
-              <div style={{ fontSize: 38, color: '#147a41' }} aria-hidden="true">✓</div>
-              <div className="cr-empty-title">Compte rendu terminé</div>
-              <p className="cr-empty-text">
-                Le PowerPoint est dans vos téléchargements. Le compte rendu
-                est rangé dans « Mes comptes rendus ».
-              </p>
-              <PropositionFormateur session={session}
-                formateur={(brouillon.formateurs || formateursInitiaux(session))[0]} />
-            </>
-          ) : (
-            <>
-              <div className="cr-empty-title">Version de travail téléchargée</div>
-              <p className="cr-empty-text">
-                {resteAFaire} page{resteAFaire > 1 ? 's restent' : ' reste'} à remplir :
-                le compte rendu reste en cours jusqu’à ce que tout soit rempli.
-              </p>
-            </>
-          )}
-        </div>
-        <div className="cr-actions" style={{ justifyContent: 'center' }}>
-          <button type="button" className="cr-btn cr-btn--primary"
-            onClick={() => fichier && telecharger(fichier)}>
+      <div className="cr-panel cr-fin">
+        <Consigne
+          faire={termine ? 'Votre compte rendu est terminé.' : 'Votre version de travail est téléchargée.'}
+          ensuite={termine
+            ? 'Il est rangé dans « Mes comptes rendus » : vous pourrez le rouvrir et le modifier à tout moment.'
+            : `${resteAFaire} page${resteAFaire > 1 ? 's restent' : ' reste'} à remplir : le compte rendu reste « non terminé » tant que tout n’est pas rempli.`} />
+
+        <p className="cr-fin-fichier">
+          Le PowerPoint <strong>{nomCompteRendu(brouillon, session)}.pptx</strong> est
+          dans vos téléchargements. Il n’est pas arrivé ?{' '}
+          <button type="button" className="cr-lien-discret" onClick={() => fichier && telecharger(fichier)}>
             Télécharger à nouveau
           </button>
-          <button type="button" className="cr-btn cr-btn--ghost" onClick={onTerminer}>
-            Retour à mes comptes rendus
+        </p>
+        {termine && (
+          <PropositionFormateur session={session}
+            formateur={(brouillon.formateurs || formateursInitiaux(session))[0]} />
+        )}
+
+        <div className="cr-actions cr-fin-actions">
+          <button type="button" className={`cr-btn ${termine ? 'cr-btn--ghost' : 'cr-btn--primary'}`}
+            onClick={() => setEtat('revue')}>
+            {termine ? 'Revenir à l’édition' : 'Continuer à remplir'}
+          </button>
+          <button type="button" className={`cr-btn ${termine ? 'cr-btn--primary' : 'cr-btn--ghost'}`}
+            onClick={onTerminer}>
+            Retour à l’accueil
           </button>
         </div>
       </div>
@@ -504,22 +557,22 @@ export default function PhaseVerification({
             photoGroupe={brouillon.photoGroupe}
             onFormateurs={v => maj({ formateurs: v })}
             onPhotoGroupe={v => maj({ photoGroupe: v })}
+            onPhotoStagiaire={(id, photo) => maj(b => ({
+              participants: (b.participants || []).map(p =>
+                (String(p.id) === String(id) ? { ...p, photo } : p)),
+            }))}
             redaction={redaction}
             onProposer={async (pg, cle) => {
               const k = `${pg.cle}.${cle}`
-              const reponses = brouillon.satisfaction?.[pg.participant.id]
-              const propre = satisfactionStagiaire(reponses || {})
               setRedigeant(k)
               setPanne(false)
-              const texte = await (estCertification(brouillon)
-                ? proposerTexte(candidatPourMoteur(pg.participant, brouillon), 'certification')
-                : proposerTexte(participantPourMoteur(pg.participant, pg.calcul,
-                  propre?.formation, propre?.accueil), 'accueil'))
+              const texte = await proposerTexte(entreeMoteur(brouillon, session, k),
+                estCertification(brouillon) ? 'certification' : 'accueil')
               setRedigeant(null)
               if (!texte) { setPanne(true); return }
               const textes = brouillon.textes || {}
               setAvant(a => ({ ...a, [k]: textes[k] ?? '' }))
-              majTexte(k, texte)
+              noterRediges(textes, { [k]: texte })
             }}
             jours={brouillon.jours || {}}
             onJournee={(n, v) => maj({
@@ -560,11 +613,7 @@ export default function PhaseVerification({
             ← Page précédente
           </button>
           <div className="cr-actions-right">
-            {etat === 'production' ? (
-              <span className="cr-actions-info">
-                Le PowerPoint se prépare, cela peut prendre une minute.
-              </span>
-            ) : echec ? (
+            {etat === 'production' ? null : echec ? (
               <span className="cr-actions-info cr-actions-info--erreur" role="alert">
                 Le PowerPoint n’a pas pu être préparé. Réessayez dans un instant.
               </span>
@@ -576,6 +625,7 @@ export default function PhaseVerification({
             <button type="button"
               className={`cr-btn ${active < pages.length - 1 ? 'cr-btn--ghost' : 'cr-btn--primary'}`}
               onClick={produire} disabled={etat === 'production'}>
+              {etat === 'production' && <span className="cr-btn-roue" aria-hidden="true" />}
               {etat === 'production' ? 'Préparation du PowerPoint…' : 'Terminer le compte rendu'}
             </button>
             {active < pages.length - 1 && (
@@ -807,7 +857,7 @@ function FormulairePage({
   page, textes, onTexte, photos, disposition, modeLegende, onModeLegende,
   onAjouter, onRetirer, onLegender, onCadrer, onDisposition,
   objectifs, marquage, onObjectifs, onMarquage, onReordonner,
-  formateurs, stagiaires, photoGroupe, onFormateurs, onPhotoGroupe,
+  formateurs, stagiaires, photoGroupe, onFormateurs, onPhotoGroupe, onPhotoStagiaire,
   jours, onJournee, legendes, onLegende, onProposer, redaction,
 }) {
   // Une page jour porte son numero : « jour-3 » edite la 3e journee.
@@ -970,26 +1020,47 @@ function FormulairePage({
           && page.cle !== 'bilan' && (
           <div className="cr-edition-large cr-res-saisie">
             <TableauxResultats tableaux={page.tableaux} compact />
-            {page.blocs.map(b => (
-              <label key={b.cle} className="cr-fiche-appreciation">
-                <span className="cr-field-label">
-                  {b.titre} <span>facultatif</span>
-                  {page.participant && (
-                    <BoutonsRedaction
-                      aTexte={!!String(valeur(b.cle, b.texte) || '').trim()}
-                      enCours={redaction?.redigeant === `${page.cle}.${b.cle}`}
-                      desactive={!chiffresSuffisants(page.calcul)}
-                      raison="Saisissez d’abord les notes (étape 2)"
-                      onRediger={() => onProposer?.(page, b.cle)}
-                      peutAnnuler={`${page.cle}.${b.cle}` in (redaction?.avant || {})}
-                      onAnnuler={() => redaction?.annuler(`${page.cle}.${b.cle}`)} />
-                  )}
-                </span>
+            {page.blocs.map(b => {
+              // Avec la photo a cote, le cadre n'est plus un <label> : un
+              // clic sur la photo ne doit pas donner le focus au texte.
+              const Cadre = page.photo ? 'div' : 'label'
+              const texte = (
                 <textarea className="cr-textarea cr-res-texte"
+                  aria-label={page.photo ? b.titre : undefined}
                   value={valeur(b.cle, b.texte)}
                   onChange={e => onTexte(`${page.cle}.${b.cle}`, e.target.value)} />
-              </label>
-            ))}
+              )
+              return (
+                <Cadre key={b.cle} className="cr-fiche-appreciation">
+                  <div className="cr-redac-entete">
+                    <span className="cr-field-label">
+                      {b.titre} <span>facultatif</span>
+                    </span>
+                    {page.participant && (
+                      <BoutonsRedaction
+                        aTexte={!!String(valeur(b.cle, b.texte) || '').trim()}
+                        enCours={redaction?.redigeant === `${page.cle}.${b.cle}`}
+                        desactive={!chiffresSuffisants(page.calcul)}
+                        raison="Saisissez d’abord les notes (étape 2)"
+                        onRediger={() => onProposer?.(page, b.cle)}
+                        peutAnnuler={`${page.cle}.${b.cle}` in (redaction?.avant || {})}
+                        onAnnuler={() => redaction?.annuler(`${page.cle}.${b.cle}`)} />
+                    )}
+                  </div>
+                  {page.photo ? (
+                    <div className="cr-fiche-zone">
+                      {texte}
+                      <PhotoStagiaire stagiaire={page.participant}
+                        onPhoto={v => onPhotoStagiaire?.(page.participant.id, v)} />
+                    </div>
+                  ) : texte}
+                  {page.participant && (
+                    <AlertePerime cle={`${page.cle}.${b.cle}`} redaction={redaction}
+                      onRediger={() => onProposer?.(page, b.cle)} />
+                  )}
+                </Cadre>
+              )
+            })}
             {page.participant && redaction?.panne && (
               <p className="cr-redac-panne">
                 Le service de rédaction ne répond pas : écrivez l’appréciation, ou réessayez.
@@ -1077,6 +1148,8 @@ function FormulairePage({
                       value={valeur(c.cle, '')}
                       placeholder={redaction?.defauts?.[c.cle] || c.exemple}
                       onChange={e => onTexte(cle, e.target.value)} />
+                    <AlertePerime cle={cle} redaction={redaction}
+                      onRediger={() => redaction?.constat(c.cle)} />
                   </div>
                 )
               })}
@@ -1548,7 +1621,8 @@ function composerPages(b, session, s) {
       const satPropre = syntheseSatisfaction(siennes)
       pages.push({
         cle: `fiche-${p.id}`, titre: `${p.prenom} ${p.nom}`, type: 'texte',
-        participant: p, calcul: c,
+        // La fiche de formation accepte une photo du stagiaire.
+        participant: p, calcul: c, photo: true,
         titrePage: `RÉSULTAT INDIVIDUEL — ${p.prenom} ${p.nom}`.toUpperCase(),
         sousTitre: `Score final ${afficher(c.scoreFinal)} · progression `
           + (c.progression == null ? '—' : `${c.progression > 0 ? '+' : ''}${c.progression} %`),
@@ -1640,7 +1714,7 @@ function PropositionFormateur({ formateur, session }) {
   }
 
   return (
-    <section className="cr-proposition" aria-labelledby="cr-proposition-titre">
+    <section className="cr-proposition cr-section-claire" aria-labelledby="cr-proposition-titre">
       <h3 id="cr-proposition-titre" className="cr-proposition-titre">
         Préremplir vos prochains comptes rendus
       </h3>
