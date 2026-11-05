@@ -32,7 +32,7 @@ Points d'attention :
 | P0 Audit et cadrage | En validation | 100 % | 06/11 | Décisions ci-dessous | Ce document |
 | P1 Référentiel et droits | Étude faite | 25 % | 20/11 | Décision 11 | Étude `etude-referentiel-formations.md` |
 | P1 Évaluations et progression | Cadré | 50 % | 13/11 | Décision 3 (barème, progression) | Audit, section E |
-| P2 Saisie guidée et appréciations | Non démarré | 40 % | 27/11 | Décisions 4, 7, 8 | Audit, annexe S |
+| P2 Saisie guidée et appréciations | Cadré | 40 % | 27/11 | Validation des formulations | Audit, section S |
 | P2 Synthèse et rapports | Non démarré | 70 % | 03/12 | Décisions 5, 6 | Audit, annexe P |
 | P3 Ergonomie et recette | Non démarré | 20 % | 08/12 | Retrait d'éléments après validation | Audit, annexe U |
 
@@ -52,8 +52,10 @@ Décisions déjà prises le 05/11 pour le référentiel (détail : `docs/etude-r
 - Claudia, André Yves et Laurent Gonin **consultent et téléchargent** tous les comptes rendus, sans modifier.
 - Le formateur ne voit que ses sessions. Plusieurs formateurs partagent **un seul compte rendu par session**,
   avec une réservation en écriture qui se libère seule (fermeture, inactivité) : ni collision, ni blocage.
-- **Session = code + dates.** Un même code peut couvrir plusieurs sessions (groupes différents) ; un même
-  groupe sur plusieurs semaines forme une seule session.
+- **Session = code + dates.** Un même code peut couvrir plusieurs sessions (groupes différents). Le 06/11 :
+  un même groupe sur plusieurs semaines forme une session par semaine, chacune avec son compte rendu.
+- Chaque modification d'un compte rendu est gardée dans un **historique** (qui, quand, avant, après) que
+  personne ne peut effacer.
 - Stagiaire identifié par nom, prénom et pays (pas de matricule) ; un absent est marqué, jamais retiré.
 - Un **% de complétion** est calculé et affiché sur chaque compte rendu.
 - Les comptes rendus existants sont repris dans la nouvelle base, après un essai à blanc et un rapport.
@@ -66,13 +68,11 @@ Décisions encore attendues :
    **Progression, à clarifier avec les formateurs.** Aujourd'hui, elle est calculée par rapport à la note
    d'entrée : passer de 10/30 à 20/30 donne +100 %, et rien n'est affiché si la note d'entrée vaut 0. Proposition :
    un écart en points, rapporté au barème. Le même exemple donne alors +10 points, soit +33 %.
-4. Appréciations croisées : qui apprécie qui (formateur ↔ stagiaire, stagiaires entre eux) ?
+4. ~~Appréciations croisées~~ : tranchée le 06/11 (une seule appréciation de la formation, voir S).
 5. Lot de 25 rapports : un seul fichier ou 25 fichiers ?
 6. Photos repositionnables : recadrage dans la case (existe) ou placement libre sur la page ?
-7. Ordre du parcours : administration → objectifs → journées → évaluations, à la place de l'ordre actuel
-   (formation → notes → pages) ?
-8. Plafond de 5 jours : les certifications sur 10 jours sont-elles exclues ?
-   Le fichier compte déjà une formation sur 3 semaines (même groupe).
+7. ~~Ordre du parcours~~ : tranchée le 06/11 (administration → objectifs → journées → évaluations).
+8. ~~Plafond de 5 jours~~ : tranchée le 06/11 (5 jours par session, certification comprise).
 9. ~~Un code, plusieurs groupes ou dates~~ : tranchée (session = code + dates).
 10. ~~Matricule~~ : tranchée (nom, prénom, pays).
 11. Pondération du % de complétion (proposition dans l'étude, § 7).
@@ -98,7 +98,7 @@ Prévu (étude du 05/11, `etude-referentiel-formations.md`) :
 - **Alimentation de la base :**
   - import du fichier « Liste des participants » ;
   - essai à blanc et rapport avant tout enregistrement ;
-  - regroupement proposé pour les semaines d'un même groupe ;
+  - une session de plus de 5 jours signalée : chaque semaine forme sa propre session ;
   - correction à l'écran par l'administrateur.
 - **Droits contrôlés par le serveur :**
   - l'administrateur tient la base ;
@@ -106,6 +106,8 @@ Prévu (étude du 05/11, `etude-referentiel-formations.md`) :
   - les lecteurs consultent et téléchargent.
 - **Écriture à plusieurs sans conflit.** Le compte rendu est réservé pendant la saisie et libéré
   automatiquement : à la fermeture, ou après une inactivité.
+- **Historique strict.** Chaque enregistrement garde l'auteur, l'heure et les valeurs avant et après.
+  L'historique ne peut être ni modifié ni effacé, même par l'administrateur.
 - **Avancement.** Un % de complétion et un statut enregistré sur le serveur. Les comptes rendus existants
   sont repris dans la nouvelle base.
 
@@ -150,6 +152,18 @@ Prévu (cadrage du 05/11) :
 | 10 formulations par catégorie | Absente | Points forts et axes en saisie libre ; 1 à 5 variantes dans le moteur de rédaction |
 | Saisie libre, commentaires personnalisés | Livrée | Textes libres, proposition modifiable |
 | Appréciations croisées | Absente | — |
+
+Prévu (réponses du 06/11) :
+- **Ordre du parcours.** Administration → objectifs → journées → évaluations : les notes passent en dernier.
+- **5 jours au plus par session**, certification comprise. Un même groupe sur plusieurs semaines forme une
+  session par semaine, chacune avec son compte rendu. Le 6e jour ne peut pas être ajouté.
+- **4 à 5 thématiques par jour.** En dessous ou au-dessus, le compteur passe en orange avec un message ; le
+  formateur peut continuer.
+- **10 formulations par catégorie** (points forts, axes de progrès…), rédigées par nous puis validées par
+  Jennifer Lawrynn. La saisie libre reste possible.
+- **Une seule appréciation de la formation** (qualité, accueil), pas d'appréciation croisée. Quand la session
+  a plusieurs formateurs, l'un la remplit et les autres peuvent la modifier. Chaque modification est gardée
+  dans l'historique du compte rendu (voir R).
 
 ### P — Synthèse et rapports
 | Demande | Statut | Constat |

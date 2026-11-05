@@ -29,7 +29,7 @@ Règles métier confirmées :
 
 | Cas | Codes | Lecture |
 |---|---|---|
-| Mêmes stagiaires, semaines consécutives | E09, M34, M58, M115 | Une formation étalée sur 2 à 3 semaines |
+| Mêmes stagiaires, semaines consécutives | E09, M34, M58, M115 | Une session par semaine, chacune avec son compte rendu (décidé le 06/11) |
 | Stagiaires différents | M65, M66, M73, M114, M116, CE52 | Sessions distinctes d'une même formation |
 
 Anomalies que l'import doit signaler : deux libellés à la même date (M16, M18), date de fin en 2028 (CE52),
@@ -54,11 +54,12 @@ Conséquence : le compte rendu est lié à **une personne**, pas à une session.
 | Table | Champs principaux | Règles |
 |---|---|---|
 | `Formation` | code (unique), libellé, marque, type | Créée et corrigée par l'administrateur seul |
-| `Session` | formation, date de début, date de fin, lieu, pays, statut | Unique sur (code, début) ; regroupe les semaines d'un même groupe |
+| `Session` | formation, date de début, date de fin, lieu, pays, statut | Unique sur (code, début) ; 5 jours au plus : une semaine de plus est une autre session |
 | `Stagiaire` | nom, prénom, pays | Doublon détecté sur (nom, prénom, pays) normalisés |
 | `Inscription` | session, stagiaire, absent (oui/non) | Jamais supprimée : marquée absente |
 | `Animation` | session, formateur (identifiant de connexion) | Plusieurs formateurs par session |
 | `CompteRendu` | session (unique), contenu JSON, révision, modifié par, modifié le | Un seul par session |
+| `HistoriqueCompteRendu` | compte rendu, révision, auteur, date, champs modifiés (avant, après) | Ajout seul : jamais modifié ni supprimé, y compris par l'administrateur |
 | `Verrou` | compte rendu, détenteur, pris le, dernier signe de vie, dernière saisie | Voir § 6 |
 | `ImportReferentiel` | fichier, auteur, date, rapport, état (essai / appliqué) | Trace de chaque import |
 
@@ -98,6 +99,7 @@ Choix : **verrou pessimiste à durée de vie courte**, doublé d'un **contrôle 
 | Verrou libéré pendant qu'un autre écrit | Le premier repasse en lecture seule, sans perte : son dernier état est enregistré |
 | Exception | L'administrateur libère le verrou à la main (tracé) |
 | Filet de sécurité | Un enregistrement fondé sur une révision plus ancienne est refusé (409), avec copie locale conservée |
+| Traçabilité | Chaque enregistrement ajoute une ligne à l'historique : qui, quand, quels champs, avant et après. Personne ne peut nier une modification |
 
 Options écartées :
 
@@ -129,8 +131,8 @@ absents ne comptent pas. Pondération proposée, à confirmer avec Jennifer Lawr
 
 1. L'administrateur dépose le fichier.
 2. **Essai à blanc** : rapport à l'écran (sessions à créer, à mettre à jour, inchangées ; anomalies).
-3. Regroupement proposé des semaines d'un même groupe (mêmes stagiaires, même code, semaines consécutives).
-4. Correction à l'écran, puis **application**. Rien n'est écrit avant.
+3. Correction à l'écran, puis **application**. Rien n'est écrit avant.
+4. Une session de plus de 5 jours est signalée comme anomalie : chaque semaine forme sa propre session.
 5. Réimport : met à jour sans dupliquer (clé session = code + début ; stagiaire = nom + prénom + pays) ; un
    stagiaire disparu du fichier est **signalé**, jamais retiré.
 
@@ -159,7 +161,7 @@ rapport, puis application en production sur go explicite.
 
 | Domaine | Impact |
 |---|---|
-| Données | 8 tables nouvelles, migrations Django réversibles ; `Brouillon` conservé |
+| Données | 9 tables nouvelles, migrations Django réversibles ; `Brouillon` conservé |
 | Sécurité | 2 rôles, 3 ressources Cerbos, tests négatifs ; import réservé à l'administrateur ; fichier non conservé après import |
 | Navigateur | Liste des sessions depuis l'API (fin de la liste de démonstration) ; code en lecture seule ; signe de vie ; bandeau de verrou ; écran administrateur (import, corrections) ; écran lecteur |
 | Hors ligne | La copie locale reste, mais l'écriture sans verrou est refusée au retour en ligne : on propose de la reprendre |
@@ -180,15 +182,14 @@ rapport, puis application en production sur go explicite.
 
 1. Pondération du % de complétion (§ 7) : à valider avec Jennifer Lawrynn.
 2. Durées du verrou (2 min, 15 min) : défaut proposé.
-3. Regroupement des semaines (E09, M34, M58, M115) en une session : proposé par l'import, validé par
-   l'administrateur. M34 dépasse alors 5 jours (voir décision 8 de l'état des lieux).
+3. ~~Regroupement des semaines~~ : tranché le 06/11, une session par semaine, chacune avec son compte rendu.
 
 ## 13. Étapes
 
 1. Modèles, migrations, admin des tables (tests).
 2. Rôles et policies Cerbos, tests positifs et négatifs ; 2 comptes administrateur fictifs.
 3. API sessions (liste filtrée par profil, filtres pays, marque, formation) et compte rendu par session.
-4. Verrou et contrôle de révision (API, tests de concurrence).
+4. Verrou, contrôle de révision et historique des modifications (API, tests de concurrence).
 5. Import Excel : essai, rapport, application (tests sur fichier fictif).
 6. Navigateur : liste des sessions, code en lecture seule, bandeau de verrou, % et statut.
 7. Écrans administrateur et lecteur.
