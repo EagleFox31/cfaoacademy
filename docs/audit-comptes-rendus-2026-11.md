@@ -33,7 +33,7 @@ Points d'attention :
 | P1 Référentiel et droits | Étude faite | 25 % | 20/11 | Décision 11 | Étude `etude-referentiel-formations.md` |
 | P1 Évaluations et progression | Cadré | 50 % | 13/11 | Décision 3 (barème, progression) | Audit, section E |
 | P2 Saisie guidée et appréciations | Cadré | 40 % | 27/11 | Validation des formulations | Audit, section S |
-| P2 Synthèse et rapports | Non démarré | 70 % | 03/12 | Décisions 5, 6 | Audit, annexe P |
+| P2 Synthèse et rapports | Cadré | 70 % | 03/12 | — | Audit, section P |
 | P3 Ergonomie et recette | Non démarré | 20 % | 08/12 | Retrait d'éléments après validation | Audit, annexe U |
 
 Le « réalisé » compte une demande livrée pour 1 et une demande partielle pour ½. Il mesure l'existant, pas le
@@ -69,8 +69,8 @@ Décisions encore attendues :
    d'entrée : passer de 10/30 à 20/30 donne +100 %, et rien n'est affiché si la note d'entrée vaut 0. Proposition :
    un écart en points, rapporté au barème. Le même exemple donne alors +10 points, soit +33 %.
 4. ~~Appréciations croisées~~ : tranchée le 06/11 (une seule appréciation de la formation, voir S).
-5. Lot de 25 rapports : un seul fichier ou 25 fichiers ?
-6. Photos repositionnables : recadrage dans la case (existe) ou placement libre sur la page ?
+5. ~~Lot de 25 rapports~~ : tranchée le 06/11 (25 fichiers dans un .zip).
+6. ~~Photos repositionnables~~ : tranchée le 06/11 (exclues ; recadrage conservé, voir P).
 7. ~~Ordre du parcours~~ : tranchée le 06/11 (administration → objectifs → journées → évaluations).
 8. ~~Plafond de 5 jours~~ : tranchée le 06/11 (5 jours par session, certification comprise).
 9. ~~Un code, plusieurs groupes ou dates~~ : tranchée (session = code + dates).
@@ -176,6 +176,26 @@ Prévu (réponses du 06/11) :
 | Aperçu en cours de saisie | Livrée | Rendu réel de chaque page |
 | Cohérence des chiffres dans l'aperçu | Livrée | Aperçu et fichier utilisent les mêmes valeurs ; l'écart vient de la page des notes (voir E) |
 | Lot de 25 rapports | Absente | Un rapport à la fois ; durée pour 25 stagiaires non mesurée |
+
+Prévu (réponses du 06/11) :
+- **Lot de 25 rapports** : 25 fichiers séparés, réunis dans un seul .zip. La durée est mesurée d'abord sur
+  25 stagiaires fictifs.
+- **Synthèse du groupe** : même barème partout, corrigé avec le lot Évaluations.
+- **Photos repositionnables : exclues du plan.** Le recadrage dans la case reste. Étude de complexité
+  ci-dessous ; on ne le fera que si Jennifer Lawrynn le redemande.
+
+Étude — placement libre des photos :
+- **Aujourd'hui.** Le serveur place les photos lui-même (grille et légendes calculées), puis l'aperçu
+  est une image de la page produite par LibreOffice.
+- **Ce qu'il faudrait.** Un calque posé sur l'aperçu pour déplacer et redimensionner chaque photo. La
+  position serait gardée en unités PowerPoint, et le serveur l'utiliserait à la place de sa grille. La
+  légende suit sa photo. Il faudrait aussi empêcher de sortir de la page ou de couvrir le texte, et prévoir
+  un bouton « Revenir à la disposition automatique ».
+- **Précision.** Exacte : l'aperçu et le fichier reçoivent les mêmes coordonnées.
+- **Temps réel.** Seulement en partie. La photo suit la souris, mais la page complète n'est recalculée
+  qu'au relâchement : il faut attendre que LibreOffice refasse le rendu (durée non mesurée).
+- **Effort.** Environ 5 jours, avec les tests. **Verdict : complexe**, le temps réel exigé n'est pas
+  atteignable sur la page entière. On n'y touche pas.
 
 ### U — Ergonomie et recette
 | Demande | Statut | Constat |
