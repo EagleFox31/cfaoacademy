@@ -68,3 +68,13 @@ def test_hauteur_de_zone_mesuree_sur_les_lignes_comme_excel():
     }
     # 21 + 0 (masquee) + 14,4 (sans ligne) + 14,4 (sans hauteur), hors zone ignoree
     assert classeurs._hauteur_zone(parts) == round(49.8 * 12700)
+
+
+def test_remplir_fige_les_hauteurs_de_lignes():
+    parts = {'xl/worksheets/sheet1.xml': (
+        b'<worksheet><sheetData><row r="1" spans="1:3" ht="21"/>'
+        b'<row r="2" ht="30" customHeight="1"/><row r="3"/></sheetData></worksheet>')}
+    feuille = classeurs.remplir_classeur(parts, {})['xl/worksheets/sheet1.xml'].decode()
+    assert '<row customHeight="1" r="1" spans="1:3" ht="21"/>' in feuille
+    assert feuille.count('customHeight') == 2
+    assert '<row r="3"/>' in feuille

@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
-import { BAREMES, SEUIL, calculer, anomalies, afficher } from '../../utils/baremeCfao'
+import {
+  BAREMES, SEUIL, calculer, anomalies, afficher, enPourcentage, normaliserNote,
+} from '../../utils/baremeCfao'
 import {
   MENTIONS,
   CRITERES_FORMATION,
@@ -94,10 +96,11 @@ export default function PhaseResultats({
     setVolet(cle)
   }
 
-  function modifier(id, champ, valeur) {
+  function modifier(id, champ, valeur, bareme) {
     // On garde la chaine vide : un champ vide et un zero ne disent pas
-    // la meme chose dans un compte rendu.
-    const v = valeur === '' ? '' : valeur.replace(/[^\d]/g, '').slice(0, 3)
+    // la meme chose dans un compte rendu. Demi-points admis, plafond au
+    // bareme : 32 sur 30 devient 30.
+    const v = normaliserNote(valeur, bareme)
     maj({
       participants: brouillon.participants.map(p =>
         p.id === id ? { ...p, [champ]: v } : p),
@@ -448,17 +451,23 @@ export default function PhaseResultats({
                         ['entreeBrut', 'entrée', 'entreeTheorique'],
                         ['sortieTheoBrut', 'théorie', 'sortieTheorique'],
                         ['sortiePratBrut', 'pratique', 'sortiePratique'],
-                      ].map(([champ, nom, bareme]) => (
-                        <td key={champ}>
-                          <input
-                            className={`cr-num${erreurs.has(champ) ? ' cr-num--erreur' : ''}`}
-                            type="number" min="0" max={baremes[bareme]}
-                            inputMode="numeric" value={p[champ] ?? ''}
-                            onChange={e => modifier(p.id, champ, e.target.value)}
-                            placeholder="—"
-                            aria-label={`Note ${nom} de ${p.prenom} ${p.nom}`} />
-                        </td>
-                      ))}
+                      ].map(([champ, nom, bareme]) => {
+                        const taux = enPourcentage(p[champ], baremes[bareme])
+                        return (
+                          <td key={champ}>
+                            <input
+                              className={`cr-num${erreurs.has(champ) ? ' cr-num--erreur' : ''}`}
+                              type="text" inputMode="decimal"
+                              value={String(p[champ] ?? '').replace('.', ',')}
+                              onChange={e => modifier(p.id, champ, e.target.value, baremes[bareme])}
+                              placeholder="—"
+                              aria-label={`Note ${nom} de ${p.prenom} ${p.nom}, sur ${baremes[bareme]}`} />
+                            {taux != null && (
+                              <small className="cr-num-taux">{afficher(Math.round(taux * 10) / 10)}</small>
+                            )}
+                          </td>
+                        )
+                      })}
                       <td>
                         <span className={`cr-calc${c.progression == null ? ' cr-calc--vide'
                           : c.progression > 0 ? ' cr-calc--ok'
@@ -470,9 +479,11 @@ export default function PhaseResultats({
                       <td>
                         <span className={`cr-calc${c.scoreFinal == null ? ' cr-calc--vide'
                           : c.scoreFinal >= SEUIL ? ' cr-calc--ok' : ' cr-calc--ko'}`}
-                          title={avertis || undefined}>
+                          title={[c.partielle && 'Une seule épreuve de sortie saisie', avertis]
+                            .filter(Boolean).join(' ') || undefined}>
                           {afficher(c.scoreFinal)}
                         </span>
+                        {c.partielle && <small className="cr-calc-partielle">partielle</small>}
                       </td>
                       <td>
                         {[p.entreeBrut, p.sortieTheoBrut, p.sortiePratBrut].some(v => String(v ?? '').trim()) && (
@@ -500,7 +511,9 @@ export default function PhaseResultats({
                 legende={`Sous le seuil de ${SEUIL} %`}
                 ton={synthese.enRetrait === 0 ? 'ok' : 'ko'} />
               <Indicateur valeur={`${synthese.saisis}/${synthese.effectif}`}
-                legende="Notes saisies" />
+                legende={synthese.partielles
+                  ? `Notes saisies, dont ${synthese.partielles} partielle${synthese.partielles > 1 ? 's' : ''}`
+                  : 'Notes saisies'} />
             </div>
           )}
           <SuiteVolet onClick={() => ouvrir('avis')}>

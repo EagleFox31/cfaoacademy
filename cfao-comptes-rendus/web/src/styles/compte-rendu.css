@@ -332,6 +332,14 @@
 .cr-calc--ok { background: #E6F6EC; color: #147a41; }
 .cr-calc--ko { background: var(--red-soft); color: var(--red-deep); }
 .cr-calc--vide { color: var(--muted-2); font-weight: 400; }
+.cr-num-taux,
+.cr-calc-partielle {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--muted-2);
+}
+.cr-calc-partielle { color: var(--red-deep); font-weight: 600; }
 
 /* ── Bandeau d'information ──────────────────────────────────────── */
 

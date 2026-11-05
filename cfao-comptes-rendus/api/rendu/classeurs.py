@@ -167,10 +167,20 @@ def remplir_classeur(parts, cellules):
     for ref, valeur in cellules.items():
         feuille = (_poser_cellule(feuille, ref, valeur) if valeur is not None
                    else _poser_tiret(feuille, ref))
-    parts['xl/worksheets/sheet1.xml'] = feuille.encode('utf-8')
+    parts['xl/worksheets/sheet1.xml'] = _figer_hauteurs(feuille).encode('utf-8')
     for nom in [n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)]:
         parts[nom] = _cache(parts[nom].decode('utf-8'), cellules).encode('utf-8')
     return parts
+
+
+def _figer_hauteurs(feuille):
+    """Les hauteurs de lignes du modele, marquees comme voulues.
+
+    Sans `customHeight="1"`, Excel reajuste les lignes a l'ouverture
+    (double-clic sur l'objet dans PowerPoint) et l'objet change de taille.
+    """
+    return re.sub(r'<row (?![^>]*customHeight)([^>]*\bht="[\d.]+")',
+                  r'<row customHeight="1" \1', feuille)
 
 
 # ── Signes + et = du graphique d'acquisition ────────────────────────────

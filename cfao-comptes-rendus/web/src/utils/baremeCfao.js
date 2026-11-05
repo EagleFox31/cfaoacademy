@@ -75,7 +75,21 @@ export function calculer(p, baremes = BAREMES) {
     valide: scoreFinal == null ? null : scoreFinal >= SEUIL,
     // Ce qui manque encore, pour l'afficher sans le deviner.
     complet: sortieTh != null && sortiePr != null,
+    // Une note finale tiree d'une seule epreuve de sortie : a signaler.
+    partielle: scoreFinal != null && (sortieTh == null || sortiePr == null),
   }
+}
+
+/** Une note tapee, telle qu'on la garde : chiffres, une decimale au plus
+ * (virgule ou point), jamais au-dessus du bareme. Une saisie en cours
+ * (« 12, ») reste telle quelle pour qu'on puisse finir de taper.
+ */
+export function normaliserNote(saisie, bareme) {
+  const brut = String(saisie ?? '').replace(',', '.').replace(/[^\d.]/g, '')
+  if (!brut) return ''
+  const [entier, ...reste] = brut.split('.')
+  const v = reste.length ? `${entier || '0'}.${reste.join('').slice(0, 1)}` : entier.slice(0, 3)
+  return bareme && Number(v) > bareme ? String(bareme) : v
 }
 
 function arrondi(v) {
@@ -103,6 +117,7 @@ export function syntheseGroupe(participants, baremes = BAREMES) {
     progression: moy(calculs.map(c => c.progression)),
     scoreFinal: moy(scores),
     enRetrait,
+    partielles: calculs.filter(c => c.partielle).length,
     tauxReussite: scores.length
       ? Math.round((100 * (scores.length - enRetrait)) / scores.length)
       : null,
