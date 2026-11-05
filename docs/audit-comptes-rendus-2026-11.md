@@ -34,7 +34,7 @@ Points d'attention :
 | P1 Évaluations et progression | Cadré | 50 % | 13/11 | Décision 3 (barème, progression) | Audit, section E |
 | P2 Saisie guidée et appréciations | Cadré | 40 % | 27/11 | Validation des formulations | Audit, section S |
 | P2 Synthèse et rapports | Cadré | 70 % | 03/12 | — | Audit, section P |
-| P3 Ergonomie et recette | Non démarré | 20 % | 08/12 | Retrait d'éléments après validation | Audit, annexe U |
+| P3 Ergonomie et recette | Cadré | 20 % | 08/12 | Formations et testeurs de recette | Audit, section U |
 
 Le « réalisé » compte une demande livrée pour 1 et une demande partielle pour ½. Il mesure l'existant, pas le
 travail du plan.
@@ -205,6 +205,16 @@ Prévu (réponses du 06/11) :
 | Libellés clairs | Partielle | Statuts nommés différemment d'un écran à l'autre |
 | Retrait des éléments obsolètes | Absente | 10 composants inutilisés (~1 250 lignes) et anciennes fonctions de calcul, à retirer après validation |
 | Recette sur 2 formations | Absente | À planifier en fin de plan |
+
+Prévu (réponses du 06/11) :
+- **Libellés.** Trois statuts partout : « À rédiger », « En cours · étape N/4 », « Terminé le … ». Pages et
+  liens alignés : « Comptes rendus à rédiger / en cours / terminés ».
+- **Filtres.** Recherche par code ou intitulé et filtre par mois sur les listes ; filtre par formateur pour
+  les lecteurs. Les listes déroulantes (code, pays, stagiaires) arrivent avec le référentiel.
+- **Code inutilisé.** Les 10 composants `Cr*` et les anciennes fonctions de calcul sont retirés, dans un
+  commit séparé.
+- **Recette.** Deux formations (dont une avec certification), deux testeurs, sur le site d'essai (5186) ;
+  formations, testeurs et date à fixer.
 
 ## Annexe technique (références de code, `cfao-comptes-rendus/`)
 
