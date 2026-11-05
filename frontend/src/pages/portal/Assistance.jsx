@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
@@ -6,21 +7,29 @@ import useSiteEffects from '../../hooks/useSiteEffects'
 import useAuth from '../../hooks/useAuth'
 import usePortalBackground from '../../hooks/usePortalBackground'
 import useLocale from '../../hooks/useLocale'
+import { LMS_BY_USER } from '../../data/mock_lms'
+import { resolveLearnerAssistanceTickets } from '../../utils/assistanceTickets.js'
 
-const MOCK_TICKETS = [
+import PortalSectionEyebrow from '../../components/PortalSectionEyebrow.jsx'
+
+const FALLBACK_TICKETS = [
   {
     id: 'tk-1042',
+    userId: 'u9',
     ord: 'OR #CI-2847',
     subject: 'Diagnostic hybridation — voyant prêt bloqué',
     status: 'open',
     updated: '2 juin 2026',
+    brand: 'toyota',
   },
   {
     id: 'tk-0987',
+    userId: 'u9',
     ord: 'OR #CI-2901',
     subject: 'Validation couple de serrage culasse',
     status: 'resolved',
     updated: '20 mars 2026',
+    brand: 'toyota',
   },
 ]
 
@@ -33,15 +42,22 @@ function ticketStatusLabel(status, t) {
 function ticketStatusClass(status) {
   if (status === 'resolved') return 'done'
   if (status === 'progress') return 'progress'
-  return 'todo'
+  return 'open'
 }
 
 export default function Assistance() {
   useSiteEffects()
-  const { user } = useAuth()
+  const { user, status } = useAuth()
   usePortalBackground(user)
   const { t } = useLocale('portal')
+  const lms = LMS_BY_USER[user?.demoKey]
+  const tickets = useMemo(() => {
+    const fromLms = resolveLearnerAssistanceTickets(lms, user)
+    if (fromLms.length) return fromLms
+    return resolveLearnerAssistanceTickets({ myTickets: FALLBACK_TICKETS }, user)
+  }, [lms, user])
 
+  if (status === "loading") return null
   if (!user) return <Navigate to="/login" replace />
 
   return (
@@ -53,7 +69,7 @@ export default function Assistance() {
             <Link to="/portail#assistance" className="portal-assistance-back">
               ← {t.nav_my_portal}
             </Link>
-            <p className="portal-section-eyebrow">{t.assistance_page_eyebrow}</p>
+            <PortalSectionEyebrow icon="lifebuoy" label={t.assistance_page_eyebrow} />
             <h1 className="portal-section-title">{t.assistance_page_title}</h1>
             <p className="portal-assistance-lead">{t.assistance_page_lead}</p>
           </div>
@@ -69,7 +85,7 @@ export default function Assistance() {
             </div>
 
             <div className="portal-assistance-list">
-              {MOCK_TICKETS.map(ticket => (
+              {tickets.map(ticket => (
                 <article key={ticket.id} className="portal-assistance-ticket">
                   <div className="portal-assistance-ticket-main">
                     <span className="portal-assistance-ticket-id">{ticket.id}</span>

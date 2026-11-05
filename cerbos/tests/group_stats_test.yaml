@@ -1,0 +1,68 @@
+# Tests policy group_stats — KPIs consolidés groupe (+ négatifs).
+name: GroupStatsSuite
+description: Lecture des KPIs groupe (hero portail Super Admin)
+
+principals:
+  superadmin:
+    id: s_1
+    roles: ["superadmin"]
+    attr: { scopeNodes: ["groupe"] }
+  group_admin:
+    id: g_1
+    roles: ["group_admin"]
+    attr: { scopeNodes: ["groupe"] }
+  group_hr:
+    id: h_1
+    roles: ["group_hr"]
+    attr: { scopeNodes: ["groupe"] }
+  branch_hr:
+    id: bh_1
+    roles: ["branch_hr"]
+    attr: { scopeNodes: ["groupe.cmr"] }
+  dps:
+    id: d_1
+    roles: ["dps"]
+    attr: { scopeNodes: ["groupe.cmr"] }
+  learner:
+    id: l_1
+    roles: ["learner"]
+    attr: { scopeNodes: ["groupe.cmr.douala"] }
+
+resources:
+  stats:
+    kind: group_stats
+    id: "*"
+    attr: {}
+
+tests:
+  - name: rôles groupe (superadmin, group_admin, group_hr) lisent les KPIs
+    input:
+      principals: ["superadmin", "group_admin", "group_hr"]
+      resources: ["stats"]
+      actions: ["read"]
+    expected:
+      - principal: superadmin
+        resource: stats
+        actions: { "read": EFFECT_ALLOW }
+      - principal: group_admin
+        resource: stats
+        actions: { "read": EFFECT_ALLOW }
+      - principal: group_hr
+        resource: stats
+        actions: { "read": EFFECT_ALLOW }
+
+  - name: rôles filiale (branch_hr, dps) et terrain (learner) NE lisent PAS (négatif)
+    input:
+      principals: ["branch_hr", "dps", "learner"]
+      resources: ["stats"]
+      actions: ["read"]
+    expected:
+      - principal: branch_hr
+        resource: stats
+        actions: { "read": EFFECT_DENY }
+      - principal: dps
+        resource: stats
+        actions: { "read": EFFECT_DENY }
+      - principal: learner
+        resource: stats
+        actions: { "read": EFFECT_DENY }

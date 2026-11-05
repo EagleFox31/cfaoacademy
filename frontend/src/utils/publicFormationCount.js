@@ -77,12 +77,19 @@ function countTechnicoCommercialTrainings() {
 }
 
 const PUBLIC_FORMATION_COUNTERS = {
+  'Techniciens Véhicules Légers': () => countBrandTrainings(MOTORS_BRAND_KEYS),
   'Techniciens Voitures': () => countBrandTrainings(MOTORS_BRAND_KEYS),
   'Techniciens Poids lourds, Engins, Chariots & Bus': () => countBrandTrainings(EQUIPMENT_BRAND_KEYS),
   Carrossiers: () => countBrandTrainings(['CARROSSERIE']),
+  'Conseillers Services': () => countProcessParts(),
+  'Manager et conseillers services administratifs, financiers': () => countProcessParts(),
+  'Process Parts': () => countProcessParts(),
   Parts: () => countProcessParts(),
   'Technico-commerciaux': () => countTechnicoCommercialTrainings(),
   Commerciaux: () => countProcessSavFrontOffice(),
+  Managers: () => countProcessSav(),
+  'Manager et responsables organisation SAV': () => countProcessSav(),
+  'Process SAV': () => countProcessSav(),
   'Process SAV & Parts': () => countProcessSav(),
   Clients: () => 0,
 }

@@ -37,8 +37,11 @@ Implications :
 - `00-6` En tant que système, je veux que le realm Keycloak soit initialisé via `keycloak-config-cli` (clients OAuth, mappers, upstream MS/Google) afin que l'environnement soit reproductible et non dépendant d'une configuration manuelle.
 - `00-7` En tant que tech lead, je veux un script de smoke test post-migration qui vérifie qu'un compte de chaque rôle peut se connecter et accéder à ses apps afin de valider la mise en production.
 - `00-8` En tant que tech lead, je veux une **gate go-live** (checklist migration + smoke + rollback documenté) validée avant toute ouverture aux utilisateurs réels afin de ne pas basculer en prod sur des données ou droits incohérents.
+- `00-9` En tant que système, je veux que **tout import de fichier** (comptes, catalogue, sessions, besoins) applique le **patron d'import tabulaire** — synonymes d'en-têtes, modèle vierge téléchargeable, prévisualisation avant écriture, rapport d'erreurs exhaustif, transaction tout-ou-rien — afin qu'une filiale puisse déposer son classeur habituel et corriger seule ses erreurs. → **`docs/PATRON_IMPORT_TABULAIRE.md`**
 
 > **Planification PERT** : le nœud **M (Migration 00)** converge vers la gate **J** ; webhooks inter-services documentés sur le graphe → voir `planning.md`.
+
+> **Patron d'import.** `00-2`, `00-4` et `00-5` sont des applications du patron `00-9`. Chaque import déclare sa **clé naturelle** et la teste sur un jeu contenant un doublon volontaire sur clé partielle — le catalogue formations se rapproche sur `(famille, marque, code)`, jamais sur `code` seul.
 
 ---
 
@@ -95,6 +98,7 @@ Implications :
 - `05-2` En tant qu'utilisateur du centre, je veux voir le planning général et l'occupation.
 - `05-3` En tant qu'assistante centre, je veux gérer le planning complet et arbitrer les conflits.
 - `05-4` En tant que directeur centre, je veux valider et avoir la vue d'ensemble.
+- `05-5` En tant qu'assistante ou directeur centre, je veux un **calendrier matriciel annuel** — lignes groupées mois → marque → formateur, colonnes jours 1 à 31, cellules fusionnées sur la durée de la session, week-ends grisés, couleur par statut, légende et **export Excel** — afin de retrouver et de diffuser le planning mural du centre. *(reprise `docs/AUDIT_ACADEMIX.md` F14 — spécification déjà écrite et validée par les utilisateurs)*
 
 ## 06 · Assistance formateurs — *epic : tickets de support*
 
@@ -119,6 +123,10 @@ Implications :
 - `08-4` En tant que chef d'atelier, je veux proposer des inscriptions pour mon équipe.
 - `08-5` En tant que formateur, je veux saisir les présences et les résultats de mes sessions.
 - `08-6` En tant que directeur centre, je veux annuler ou modifier en profondeur une session.
+- `08-7` En tant qu'assistante centre, je veux saisir la **logistique et le coût par stagiaire** d'une session — vols d'arrivée et de départ, nuitées, hôtel, navettes, visa, frais annexes, total en FCFA — afin de préparer la refacturation à la filiale d'origine. *(reprise `docs/AUDIT_ACADEMIX.md` F07 — le coût réel d'un stagiaire au centre de Douala est son déplacement, pas sa formation)*
+- `08-8` En tant que directeur filiale ou RH, je veux consulter le **coût formation consolidé** de mes collaborateurs sur un exercice afin de justifier et piloter mon budget.
+
+> **Périmètre `08-7` / `08-8`.** À modéliser séparément de la session : une table logistique et une table de coûts rattachées à l'inscription, pas cinquante colonnes sur la session (erreur de modélisation Academix F06).
 
 ## 09 · Recrutement & évaluation candidats — *epic : pipeline de recrutement*
 
@@ -175,6 +183,11 @@ Implications :
 - `14-9` En tant qu'utilisateur, je veux un centre de notifications in-app dans le portail, pas seulement des emails.
 - `14-10` En tant que système, je veux envoyer les notifications de façon **asynchrone et événementielle** afin de ne pas coupler l'envoi aux requêtes métier.
 - `14-11` En tant que système, je veux planifier les notifications **temporelles** (rappels de session, certifications expirantes) via un scheduler.
+- `14-12` En tant qu'administrateur, je veux un **journal d'envoi** (destinataires, template et version utilisés, statut envoyé / échec / rejeté, erreur, tentatives) avec **renvoi manuel**, afin de savoir ce qui est réellement parti et de rattraper une indisponibilité du relais. *(reprise `docs/AUDIT_ACADEMIX.md` F17 — absent de la spécification initiale)*
+- `14-13` En tant que système, je veux gérer les relances par une **machine à états persistée** sur l'objet concerné (état + horodatage de dernière relance), avec **escalade au responsable** après la dernière relance sans réponse, afin qu'une relance ne parte qu'une fois même si le worker rejoue. *(reprise F18)*
+- `14-14` En tant qu'utilisateur qui enchaîne plusieurs actions, je veux recevoir **un seul email groupé** après une temporisation d'inactivité plutôt qu'un mail par action. *(reprise F18)*
+- `14-15` En tant qu'utilisateur, je veux que **ma langue et ma civilité soient portées par mon compte** — modifiables par moi — plutôt que déduites de ma filiale, afin de recevoir les messages dans la bonne langue et sans supposition sur mon genre. *(correctif F19 : la déduction par filiale a coûté six PR correctives à Academix ; la civilité par défaut est neutre)*
+- `14-16` En tant qu'administrateur, je veux gérer les **templates en base, versionnés et localisés**, avec prévisualisation sur données réelles avant envoi ; l'absence d'une traduction doit **faire échouer la CI**, jamais produire un repli silencieux.
 
 > Architecture : module `notifications` dans `cfao-core`, **abonné aux événements métier** des deux services (`enrollment_created`, `session_completed`, `certificate_issued`, `ticket_resolved`, `assessment_assigned`, `ki_training_assigned`, `session_assigned`…) — les émetteurs ne connaissent pas la logique d'envoi. Envoi **asynchrone** via worker (Celery / Django-Q), fournisseur d'email transactionnel **abstrait derrière une interface** (SES, SendGrid ou Azure Communication Services), templates localisés, et scheduler (`pg_cron` / Celery beat) pour les notifications temporelles. C'est l'un des rares cas qui justifiera un vrai broker quand le volume montera.
 
@@ -199,6 +212,61 @@ Implications :
 - `15-13` En tant que tech lead, je veux **relire et valider** le brouillon du rapport vendredi in-app avant envoi automatique aux destinataires MOA afin de garantir le ton et l'exactitude.
 
 > **Intégration Git.** Webhook `POST /api/v1/core/delivery/webhooks/git`. Tâches planifiées : `delivery.tasks.send_weekly_dev_reminder` (**jeudi**), `delivery.tasks.send_weekly_digest` (**vendredi**). Templates : `delivery/weekly_dev_reminder`, `delivery/weekly_digest_moa` (corps formel) + annexe technique optionnelle. Conventions commits : **`CONTRIBUTING.md`**. Envoi via module `notifications`.
+
+---
+
+## 16 · Recueil des besoins de formation — *epic : campagne annuelle des filiales*
+
+> **Module détachable, travail parallèle.** Se déploie et fonctionne **seul** (`docker-compose.needs.yml`), puis se raccorde à la plateforme par variables d'environnement. Hors chemin critique go-live — nœud **N** de `planning.md`. Remplace le recueil Academix (F10, F11) et le classeur HTML autonome.
+> **Campagne cible : exercice 2027.** Spécification complète → **`docs/SPEC_RECUEIL_BESOINS_2027.md`**.
+
+**Socle — R0**
+
+- `16-1` En tant que directeur du centre, je veux **ouvrir une campagne** pour un exercice (libellé, date d'ouverture, date de clôture) afin que les filiales sachent quand et jusqu'à quand déclarer leurs besoins.
+- `16-2` En tant qu'utilisateur, je veux me connecter au module **par le SSO**, sans compte ni mot de passe propres au module, afin qu'aucun identifiant ne soit géré ni stocké ici.
+- `16-3` En tant que système, je veux appliquer **Cerbos en default-deny** sur chaque route et **filtrer le référentiel par query plan** afin qu'un manager ne reçoive jamais les lignes des marques qu'il ne gère pas.
+- `16-4` En tant qu'administrateur, je veux **importer le référentiel de campagne** par **famille** (Techniques Motors / Equipment / Carrosserie, Process SAV et Parts Motors / Equipment) via le patron `00-9`, avec rapprochement sur `(famille, marque, code)`, marque **nullable** pour les lignes transverses et correction tracée des alias, afin de figer le catalogue avant l'ouverture.
+- `16-5` En tant qu'administrateur, je veux qu'une famille dont le **catalogue n'est pas encore livré** reste au statut `PENDING` — visible dans la grille avec un bandeau « catalogue en préparation », non saisissable — afin d'ouvrir la campagne sans attendre le dernier catalogue.
+- `16-6` En tant que manager de filiale, je veux saisir, pour chaque formation de mon périmètre, **l'effectif à former par trimestre (T1–T4) et le lieu souhaité (CFR ou filiale) par trimestre**, afin de déclarer un besoin complet en une seule grille.
+- `16-7` En tant que manager, je veux que ma saisie soit **enregistrée côté serveur en continu** (brouillon) afin de ne rien perdre et de reprendre depuis un autre poste.
+- `16-8` En tant que manager, je veux **filtrer et rechercher** dans la grille (famille, marque, niveau, public, texte libre) afin de retrouver une formation parmi plusieurs centaines.
+- `16-9` En tant que manager, je veux **désigner les destinataires en copie** de la confirmation (ma hiérarchie, la RH filiale) au moment de soumettre, afin qu'ils soient informés une fois ma fiche validée.
+- `16-10` En tant que manager, je veux **soumettre ma déclaration** après un récapitulatif (total collaborateurs, ventilation trimestrielle, répartition CFR / filiale) et suivre son état — « en cours de relecture par l'équipe Academy ».
+
+**Circuit de validation des envois — R0**
+
+> **Principe.** Aucun email ne part vers une filiale sans qu'un membre de l'équipe Academy l'ait validé dans la plateforme. Le seul envoi automatique est **interne** : un résumé + un lien.
+
+- `16-11` En tant qu'équipe Academy, je veux recevoir à chaque soumission un **email interne de résumé** (totaux, filiale, auteur) avec un **lien profond vers la fiche**, groupé après 30 minutes d'inactivité, afin d'aller relire dans la plateforme plutôt que dans ma boîte mail.
+- `16-12` En tant qu'équipe Academy, je veux **ouvrir une fiche soumise**, la relire, la corriger si besoin, puis **valider** ou **réouvrir avec motif obligatoire**, afin de ne confirmer que des chiffres exacts.
+- `16-13` En tant qu'équipe Academy, je veux un écran **« À envoyer »** listant les messages en attente, avec **prévisualisation du rendu réel**, envoi **unitaire ou par lot** et rejet motivé, afin de garder la main sur ce qui sort.
+- `16-14` En tant que système, je veux qu'à la validation d'une fiche la **confirmation parte à son auteur avec ses destinataires en copie**, afin que la filiale et sa hiérarchie soient informées d'un seul coup.
+- `16-15` En tant que système, je veux **refuser le démarrage** si un type de message visant une adresse hors équipe Academy est configuré en envoi automatique, afin que le principe ne puisse pas être contourné par la configuration.
+
+**Délégation et relances — R1**
+
+- `16-16` En tant qu'assistante ou admin filiale, je veux **saisir ou importer les besoins au nom d'une filiale**, avec traçabilité de l'acteur réel, afin de ne pas dépendre de la connexion effective de chaque manager. *(leçon F11 : sur 92 managers, une partie ne se connectera pas — la voie déléguée fait partie du périmètre, pas du rattrapage)*
+- `16-17` En tant qu'équipe Academy, je veux que le système **prépare** les relances des filiales silencieuses (J-21, J-10, J-3) puis l'**escalade au directeur de filiale** à J+1, et me les présente **en lot dans l'écran « À envoyer »** — chaque relance n'étant préparée qu'une fois. *(applique `14-13`, sous circuit de validation)*
+- `16-18` En tant qu'administrateur, je veux **éditer les templates d'email de campagne**, les prévisualiser, consulter le **journal d'envoi** et **renvoyer** un message échoué. *(applique `14-12`, `14-16`)*
+- `16-19` En tant qu'équipe Academy, je veux être alertée quand une fiche attend ma relecture **depuis plus de 48 heures**, afin que le circuit de validation ne devienne pas un goulot silencieux.
+
+**Consolidation — R2**
+
+- `16-20` En tant qu'équipe Academy, je veux un **tableau de bord de campagne** — filiales soumises, en relecture, en saisie, silencieuses ; totaux par famille, marque, trimestre et lieu — afin de piloter la collecte et de relancer utilement.
+- `16-21` En tant qu'équipe Academy, je veux **exporter le consolidé** et la **synthèse par famille et par marque** en Excel afin d'alimenter le budget et l'arbitrage.
+- `16-22` En tant que directeur du centre, je veux **arbitrer la répartition CFR / filiale** sur une règle explicite et auditable, afin que les décisions soient défendables devant les filiales. *(correctif F12 : la clé de répartition d'Academix vivait dans un fichier JSON hors base)*
+- `16-23` En tant que système, je veux émettre **`needs_consolidated`** vers le module sessions afin que la planification d'ouverture parte du besoin réel. *(contrat figé dès R0, implémenté en R2 — `planning.md` §3)*
+
+**Dépendance plateforme — hors module**
+
+- `16-24` En tant qu'équipe plateforme, je veux **éclater `STELLANTIS`** en CITROEN, FIAT, JEEP et PEUGEOT dans `catalogues/training-catalog.json`, `catalogues/stellantis/` et les données du site, afin que le site et le module partagent le même référentiel de marques. *(l'éclatement est une nouveauté pour CFAO Academy aussi, pas seulement pour la campagne 2027)*
+- `16-25` En tant qu'équipe plateforme, je veux **remplacer `OMODA & JAECCO` par `OMODA & JAECOO`** — orthographe de référence confirmée par le métier — dans les **15 fichiers** du dépôt qui portent encore la graphie fautive (`catalogues/training-catalog.json`, `frontend/src/data/`, utilitaires de marque, `Formations.jsx`, règles Cursor), afin qu'une seule graphie circule dans le produit. *(`JAECCO` reste un alias d'import, jamais une valeur stockée)*
+
+> **Familles de catalogue.** Le référentiel n'est pas une liste de marques mais une liste de **familles** — Techniques Motors, Techniques Equipment, Techniques Carrosserie, Process SAV Motors, Process Parts Motors, Process SAV Equipment, Process Parts Equipment, plus Techniques Yamaha à venir. Seules certaines se déclinent par marque, et **les familles Process se déclinent aussi par marque** dans certains cas (`TP02` existe sur 10 marques, `X24017V` est propre à MERCEDES). Une ligne transverse a `marque = NULL`, jamais une pseudo-marque « TOUTES MARQUES ».
+
+> **Éclatement des marques.** Stellantis n'existe plus : les besoins se déclarent sur **CITROEN, FIAT, JEEP, PEUGEOT** séparément — 10 marques Motors, 10 marques Equipment, plus YAMAHA à venir.
+
+> **Ce que le module ne fait pas.** Ni session, ni inscription nominative, ni logistique voyage, ni compétence. Il produit un plan de besoins consolidé ; l'ouverture des sessions reste à l'app 08.
 
 ---
 

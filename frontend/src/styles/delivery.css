@@ -429,3 +429,12 @@ button.dlv-gate-item:hover { border-color: var(--dlv-navy); box-shadow: 0 8px 22
   .dlv-story-tests { order: 3; }
   .dlv-gantt-row, .dlv-gantt-scale { grid-template-columns: 88px 1fr; }
 }
+
+/* État d'attente — la donnée vient du webhook Git et n'est pas encore disponible.
+   Visuellement en retrait : c'est une absence assumée, pas une alerte. */
+.dlv-awaiting {
+  border-style: dashed;
+  background: transparent;
+}
+.dlv-awaiting .dlv-panel-k { color: var(--dlv-muted); }
+.dlv-awaiting .dlv-panel-sub { margin-top: 6px; max-width: 62ch; }

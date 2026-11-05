@@ -1,224 +1,181 @@
-import { useMemo, useState } from 'react'
-import ChipFilterBar from './ChipFilterBar.jsx'
+import PortalSectionEyebrow from './PortalSectionEyebrow.jsx'
+import { useMemo } from 'react'
 import LearnerEvalCard from './LearnerEvalCard.jsx'
 import PortalReveal from './PortalReveal.jsx'
 import PortalStaggerGrid from './PortalStaggerGrid.jsx'
-import { resolveTeamBrands } from '../utils/teamBrands.js'
-import {
-  competencyTestEvaluations,
-  EVAL_STATUS_FILTER_IDS,
-  formationTestEvaluations,
-  groupEvaluationsByBrand,
-  learnerTestEvaluations,
-  matchesEvalStatusFilter,
-} from '../utils/learnerTests.js'
-import { scrollToPortalSection } from '../utils/portalScroll.js'
+import { competencyTierForCertLevel } from '../utils/learnerTests.js'
 
-function testStatusFilterLabel(filterId, t) {
-  const key = `test_filter_${filterId}`
-  return t[key] ?? filterId
-}
-
-function TestSubsection({ id, title, count, isOpen, onToggle, emptyMessage, children, brandLogo }) {
-  const panelId = `portal-test-panel-${id}`
-
-  return (
-    <div
-      className={`portal-plan-subsection portal-test-subsection portal-results-subsection portal-test-subsection--${id}${isOpen ? ' is-open' : ' is-collapsed'}`}
-    >
-      <button
-        type="button"
-        className="portal-plan-subsection-head"
-        onClick={onToggle}
-        aria-expanded={isOpen}
-        aria-controls={panelId}
-      >
-        {brandLogo ? (
-          <span className="portal-results-subsection-brand">
-            <span className="portal-brand-logo portal-brand-logo--subsection">
-              <img src={brandLogo} alt="" loading="lazy" />
-            </span>
-            <span className="portal-plan-subsection-title">{title}</span>
-          </span>
-        ) : (
-          <span className="portal-plan-subsection-title">{title}</span>
-        )}
-        <span className="portal-plan-subsection-count">{count}</span>
-        <span className="portal-plan-subsection-chevron" aria-hidden="true" />
-      </button>
-      <div
-        id={panelId}
-        className="portal-plan-subsection-body"
-        hidden={!isOpen}
-      >
-        {count === 0 ? (
-          <div className="portal-plan-subsection-empty" role="status">
-            <span className="portal-plan-subsection-empty-dot" aria-hidden="true" />
-            <p>{emptyMessage}</p>
-          </div>
-        ) : (
-          children
-        )}
-      </div>
-    </div>
-  )
+const TIER_ORDER = {
+  junior: 1,
+  maintenance: 1,
+  senior: 2,
+  reparation: 2,
+  'réparation': 2,
+  repair: 2,
+  expert: 3,
+  diagnostic: 3,
+  diagnostics: 3,
 }
 
 export default function LearnerTestsSection({
-  user, lms, t, onOpenEval, evaluations: evaluationsSource, medacapLive,
-  isMedacapLearner = false, medacapLoading = false, medacapError = null,
+  user,
+  lms,
+  t,
+  onOpenEval,
+  evaluations: evaluationsSource,
+  medacapLive,
+  isMedacapLearner = false,
+  medacapLoading = false,
+  medacapError = null,
+  titleOverride,
+  eyebrowOverride,
+  id = 'tests',
 }) {
-  const [testStatusFilter, setTestStatusFilter] = useState('all')
-  const [testOpen, setTestOpen] = useState({})
-
   const sourceEvaluations = evaluationsSource ?? lms?.evaluations ?? []
 
-  const brandItems = useMemo(
-    () => resolveTeamBrands(user?.brands ?? []),
-    [user?.brands],
+  // Plafond de tier atteignable par l'apprenant (basé sur ses certLevels multimarques).
+  // Un technicien SENIOR (Réparation) ne doit pas voir les tests Diagnostic (Expert), etc.
+  const userMaxTierRank = useMemo(() => {
+    const levels = user?.certLevels && typeof user.certLevels === 'object'
+      ? Object.values(user.certLevels)
+      : []
+    let max = 0
+    for (const lvl of levels) {
+      const tier = competencyTierForCertLevel(lvl)
+      const rank = TIER_ORDER[tier] ?? 0
+      if (rank > max) max = rank
+    }
+    return max
+  }, [user])
+
+  // Tests de mesure de compétences MEDACAP filtrés par tier atteignable.
+  const allCompetencyTests = useMemo(
+    () => sourceEvaluations.filter(e => {
+      if (e.kind !== 'competency') return false
+      if (!userMaxTierRank) return true
+      const rank = TIER_ORDER[(e.competencyTier ?? '').toLowerCase()] ?? 0
+      return rank <= userMaxTierRank
+    }),
+    [sourceEvaluations, userMaxTierRank],
   )
 
-  const visibleEvaluations = useMemo(
-    () => learnerTestEvaluations(sourceEvaluations),
-    [sourceEvaluations],
-  )
-  const testStatusCounts = useMemo(() => {
-    const counts = { all: visibleEvaluations.length, todo: 0, done: 0 }
-    for (const e of visibleEvaluations) {
-      if (matchesEvalStatusFilter(e, 'todo')) counts.todo += 1
-      if (matchesEvalStatusFilter(e, 'done')) counts.done += 1
+  const tierTitles = {
+    junior: t.tests_title_maintenance ?? 'Maintenance préventive des véhicules',
+    maintenance: t.tests_title_maintenance ?? 'Maintenance préventive des véhicules',
+    senior: t.tests_title_reparation ?? 'Réparation des composants des véhicules',
+    reparation: t.tests_title_reparation ?? 'Réparation des composants des véhicules',
+    'réparation': t.tests_title_reparation ?? 'Réparation des composants des véhicules',
+    repair: t.tests_title_reparation ?? 'Réparation des composants des véhicules',
+  }
+
+  const tierImages = {
+    junior: '/assets/publics/techniciens.jpg',
+    maintenance: '/assets/publics/techniciens.jpg',
+    senior: '/assets/img_cards/equipment_niveau_2_test_pratique.png',
+    reparation: '/assets/img_cards/equipment_niveau_2_test_pratique.png',
+    'réparation': '/assets/img_cards/equipment_niveau_2_test_pratique.png',
+    repair: '/assets/img_cards/equipment_niveau_2_test_pratique.png',
+  }
+
+  // Une seule card par niveau : on regroupe les modalités (théorique + pratique) et
+  // on agrège le statut. Click → ouvre le premier test non terminé, sinon le premier.
+  const tierCards = useMemo(() => {
+    const byTier = new Map()
+    for (const e of allCompetencyTests) {
+      const key = (e.competencyTier ?? '').toLowerCase()
+      if (!byTier.has(key)) byTier.set(key, [])
+      byTier.get(key).push(e)
     }
-    return counts
-  }, [visibleEvaluations])
-  const evaluationsByStatus = useMemo(
-    () => visibleEvaluations.filter(e => matchesEvalStatusFilter(e, testStatusFilter)),
-    [visibleEvaluations, testStatusFilter],
-  )
-  const competencyItems = useMemo(
-    () => competencyTestEvaluations(evaluationsByStatus),
-    [evaluationsByStatus],
-  )
-  const formationByBrand = useMemo(() => {
-    if (isMedacapLearner) return { groups: {} }
-    return groupEvaluationsByBrand(
-      formationTestEvaluations(evaluationsByStatus),
-      user?.brands ?? [],
+    return [...byTier.entries()]
+      .sort(([a], [b]) => (TIER_ORDER[a] ?? 99) - (TIER_ORDER[b] ?? 99))
+      .map(([tierKey, evals]) => {
+        const allDone = evals.every(x => x.status === 'done')
+        const anyProgress = evals.some(x => x.status === 'progress')
+        const status = allDone ? 'done' : anyProgress ? 'progress' : 'todo'
+        const base = evals.find(x => x.modality === 'theory') ?? evals[0]
+        const nextTodo = evals.find(x => x.status !== 'done') ?? base
+        const tierImg = tierImages[tierKey] ?? base.img
+        return {
+          ...base,
+          id: `tier-card-${tierKey}`,
+          modality: 'theory',
+          status,
+          img: tierImg,
+          imgFallback: tierImg,
+          medacap: nextTodo?.medacap,
+          __openTarget: nextTodo,
+        }
+      })
+  }, [allCompetencyTests])
+
+  const effectiveTitle = titleOverride ?? t.title_your_tests
+  const effectiveEyebrow = eyebrowOverride ? (
+    typeof eyebrowOverride === 'string'
+      ? <PortalSectionEyebrow icon="award" label={eyebrowOverride} />
+      : eyebrowOverride
+  ) : <PortalSectionEyebrow icon="award" label={t.tests_eyebrow_label ?? 'Mesure des compétences'} />
+
+  if (!isMedacapLearner && !allCompetencyTests.length && !medacapLive) return null
+
+  // Des tests déjà connus restent affichés : l'état chargement/erreur ne
+  // remplace la section que si aucune évaluation n'est exploitable.
+  if (isMedacapLearner && !allCompetencyTests.length && medacapLoading) {
+    return (
+      <PortalReveal id={id}>
+        <div className="container" style={{ padding: '16px 32px' }}>
+          <div className="portal-section-head">
+            {effectiveEyebrow}
+            <h2 className="portal-section-title">{effectiveTitle}</h2>
+          </div>
+          <div className="portal-medacap-status" role="status">{t.medacap_loading}</div>
+        </div>
+      </PortalReveal>
     )
-  }, [evaluationsByStatus, user?.brands, isMedacapLearner])
-  const { groups: formationGroups } = formationByBrand
-  const testFilteredTotal = evaluationsByStatus.length
-
-  function toggleTestSubsection(sectionId) {
-    setTestOpen(prev => ({ ...prev, [sectionId]: !(prev[sectionId] ?? true) }))
   }
 
-  const scrollToResults = () => scrollToPortalSection('resultats')
-
-  if (!isMedacapLearner && !visibleEvaluations.length && !medacapLive) return null
-
-  // Learner MEDACAP sans aucune évaluation exploitable (ni live, ni mock) :
-  // on affiche l'état loading/erreur seul. Si des tests mock existent, on les
-  // rend normalement (un bandeau non bloquant peut accompagner en cas d'erreur).
-  if (isMedacapLearner && !visibleEvaluations.length) {
-    if (medacapLoading) {
-      return (
-        <PortalReveal id="tests">
-          <div className="container" style={{ padding: '16px 32px' }}>
-            <div className="portal-section-head">
-              <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
-              <h2 className="portal-section-title">{t.title_your_tests}</h2>
-            </div>
-            <div className="portal-medacap-status" role="status">{t.medacap_loading}</div>
+  if (isMedacapLearner && !allCompetencyTests.length && medacapError) {
+    return (
+      <PortalReveal id={id}>
+        <div className="container" style={{ padding: '16px 32px' }}>
+          <div className="portal-section-head">
+            {effectiveEyebrow}
+            <h2 className="portal-section-title">{effectiveTitle}</h2>
           </div>
-        </PortalReveal>
-      )
-    }
-    if (medacapError) {
-      return (
-        <PortalReveal id="tests">
-          <div className="container" style={{ padding: '16px 32px' }}>
-            <div className="portal-section-head">
-              <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
-              <h2 className="portal-section-title">{t.title_your_tests}</h2>
-            </div>
-            <div className="portal-medacap-status portal-medacap-status--error" role="alert">
-              {t.medacap_error}
-            </div>
+          <div className="portal-medacap-status portal-medacap-status--error" role="alert">
+            {t.medacap_error}
           </div>
-        </PortalReveal>
-      )
-    }
+        </div>
+      </PortalReveal>
+    )
   }
-
-  const evalGrid = items => (
-    <PortalStaggerGrid>
-      {items.map(e => (
-        <LearnerEvalCard
-          key={e.id}
-          e={e}
-          user={user}
-          lms={lms}
-          t={t}
-          onOpen={onOpenEval}
-          onViewResults={e.status === 'done' ? scrollToResults : undefined}
-        />
-      ))}
-    </PortalStaggerGrid>
-  )
 
   return (
-    <PortalReveal id="tests">
+    <PortalReveal id={id}>
       <div className="container" style={{ padding: '16px 32px' }}>
         <div className="portal-section-head">
-          <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
-          <h2 className="portal-section-title">{t.title_your_tests}</h2>
+          {effectiveEyebrow}
+          <h2 className="portal-section-title">{effectiveTitle}</h2>
         </div>
-        <ChipFilterBar
-          portal
-          label={t.test_filter_lbl}
-          ariaLabel={t.test_filter_aria}
-          value={testStatusFilter}
-          onChange={setTestStatusFilter}
-          options={EVAL_STATUS_FILTER_IDS.map(filterId => ({
-            id: filterId,
-            label: testStatusFilterLabel(filterId, t),
-            count: testStatusCounts[filterId] ?? 0,
-          }))}
-        />
-        {testFilteredTotal === 0 && testStatusFilter !== 'all' ? (
+
+        {tierCards.length === 0 ? (
           <div className="portal-plan-filter-empty" role="status">
             {t.test_filter_empty}
           </div>
         ) : (
-          <div className="portal-plan-subsections portal-test-subsections">
-            {(isMedacapLearner || competencyItems.length > 0) && (
-              competencyItems.length > 0
-                ? evalGrid(competencyItems)
-                : (
-                  <div className="portal-plan-filter-empty" role="status">
-                    {t.medacap_no_tests}
-                  </div>
-                )
-            )}
-
-            {!isMedacapLearner && brandItems.map(({ id, label, logo }) => {
-              const items = formationGroups[id] ?? []
-              return (
-                <TestSubsection
-                  key={id}
-                  id={id}
-                  title={label}
-                  brandLogo={logo}
-                  count={items.length}
-                  isOpen={testOpen[id] ?? true}
-                  onToggle={() => toggleTestSubsection(id)}
-                  emptyMessage={t.tests_brand_empty}
-                >
-                  {evalGrid(items)}
-                </TestSubsection>
-              )
-            })}
-          </div>
+          <PortalStaggerGrid className="cols-4 pv-grid--stretch">
+            {tierCards.map(card => (
+              <LearnerEvalCard
+                key={card.id}
+                e={card}
+                user={user}
+                lms={lms}
+                t={t}
+                statusOnly={true}
+                titleOverride={tierTitles[(card.competencyTier ?? '').toLowerCase()]}
+                onOpen={(x) => onOpenEval?.(x.__openTarget ?? x)}
+              />
+            ))}
+          </PortalStaggerGrid>
         )}
       </div>
     </PortalReveal>

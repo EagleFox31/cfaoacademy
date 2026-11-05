@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { resolveSectionBackdrop } from '../data/homeSectionBg.js'
+import { normalizeSectionVeil } from '../data/sectionBackdropVeils.js'
 
 export default function PreviewSection({
   id, ix, title, voir, tabs, filters,
   bgWord, bgWordSide = 'right',
   sectionBg,
-  sectionBgPosition = 'center',
+  sectionBgPosition,
+  sectionVeil,
   activeTab: controlledActive,
   onTabChange,
   headClass,
@@ -13,23 +16,31 @@ export default function PreviewSection({
 }) {
   const [internalActive, setInternalActive] = useState(tabs?.length ? tabs[0].id : null)
   const active = controlledActive !== undefined ? controlledActive : internalActive
-  const setActive = (id) => {
-    if (onTabChange) onTabChange(id)
-    else setInternalActive(id)
+  const setActive = (tabId) => {
+    if (onTabChange) onTabChange(tabId)
+    else setInternalActive(tabId)
   }
+
+  const autoBackdrop = resolveSectionBackdrop(id)
+  const bgImage = sectionBg ?? autoBackdrop?.image ?? null
+  const bgPosition = sectionBg
+    ? (sectionBgPosition ?? 'center')
+    : (sectionBgPosition ?? autoBackdrop?.position ?? 'center')
+  const veilKey = normalizeSectionVeil(sectionVeil ?? autoBackdrop?.veil)
 
   return (
     <section
       id={id}
-      className={`tight section-anchor${bgWord ? ' has-deco' : ''}${sectionBg ? ' has-section-bg' : ''}`}
+      className={`tight section-anchor${bgWord ? ' has-deco' : ''}${bgImage ? ' has-section-bg' : ''}`}
+      data-section-veil={bgImage ? veilKey : undefined}
     >
-      {sectionBg && (
+      {bgImage && (
         <div
           className="section-bg"
           aria-hidden="true"
           style={{
-            backgroundImage: `url(${sectionBg})`,
-            backgroundPosition: sectionBgPosition,
+            backgroundImage: `url(${bgImage})`,
+            backgroundPosition: bgPosition,
           }}
         />
       )}
@@ -50,26 +61,6 @@ export default function PreviewSection({
             <div className="pv-ix">{ix}</div>
             <h2>{title}</h2>
           </div>
-          {voir && (
-            voir.href ? (
-              <a
-                className="pv-voir"
-                href={voir.href}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {voir.label} <span className="arrow">↗</span>
-              </a>
-            ) : voir.to ? (
-              <Link className="pv-voir" to={voir.to}>
-                {voir.label} <span className="arrow">→</span>
-              </Link>
-            ) : (
-              <button type="button" className="pv-voir" onClick={voir.onClick}>
-                {voir.label} <span className="arrow">{voir.expanded ? '↑' : '→'}</span>
-              </button>
-            )
-          )}
         </div>
 
         {tabs?.length > 0 && (
@@ -99,6 +90,29 @@ export default function PreviewSection({
         )}
 
         {typeof children === 'function' ? children(active) : children}
+
+        {voir && (
+          <div className="pv-foot">
+            {voir.href ? (
+              <a
+                className={`pv-voir${voir.filled ? ' pv-voir--filled' : ''}`}
+                href={voir.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {voir.label} <span className="arrow">↗</span>
+              </a>
+            ) : voir.to ? (
+              <Link className="pv-voir" to={voir.to}>
+                {voir.label} <span className="arrow">→</span>
+              </Link>
+            ) : (
+              <button type="button" className="pv-voir" onClick={voir.onClick}>
+                {voir.label} <span className="arrow">{voir.expanded ? '↑' : '→'}</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   )

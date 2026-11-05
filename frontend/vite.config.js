@@ -80,8 +80,18 @@ export default defineConfig(({ mode }) => ({
   css: { postcss: { plugins: [unitesEcran] } },
   publicDir: 'public',
   server: {
+    host: '0.0.0.0',
+    port: 5173,
     fs: { allow: ['..'] },
     proxy: {
+      '/api/v1': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/realms': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
       // La session du formateur (connexion par compte), tenue par le service
       // des comptes rendus. L'interface des comptes rendus, elle, est servie
       // a part : cfao-comptes-rendus/web.

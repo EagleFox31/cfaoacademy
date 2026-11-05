@@ -13,6 +13,7 @@ export default function PvCard({
   onBeforeNavigate,
   selected,
   className = '',
+  noMedia = false,
 }) {
   const isInteractive = Boolean(onClick)
   const hasDualCta = Boolean(secondCta && secondCtaTo)
@@ -48,7 +49,7 @@ export default function PvCard({
     className,
   ].filter(Boolean).join(' ')
   const outerProps = isInteractive
-    ? { type: 'button', onClick }
+    ? { type: 'button', onClick: (e) => { e.preventDefault(); onClick?.(e) } }
     : hasDualCta
       ? {}
       : href
@@ -72,24 +73,26 @@ export default function PvCard({
 
   return (
     <Tag className={cls} style={outerStyle} {...outerProps}>
-      <div className="pv-card-media">
-        {cardMedia ?? (
-          <div className="pv-card-img">
-            <img
-              src={resolvedImg}
-              alt=""
-              loading="lazy"
-              onError={handleImgError}
-              style={imgPosition ? { objectPosition: imgPosition } : undefined}
-            />
-          </div>
-        )}
-        {resolvedHoverHint && (
-          <span className="pv-card-hover-hint" role="tooltip">
-            {resolvedHoverHint}
-          </span>
-        )}
-      </div>
+      {!noMedia && (
+        <div className="pv-card-media">
+          {cardMedia ?? (
+            <div className="pv-card-img">
+              <img
+                src={resolvedImg}
+                alt=""
+                loading="lazy"
+                onError={handleImgError}
+                style={imgPosition ? { objectPosition: imgPosition } : undefined}
+              />
+            </div>
+          )}
+          {resolvedHoverHint && (
+            <span className="pv-card-hover-hint" role="tooltip">
+              {resolvedHoverHint}
+            </span>
+          )}
+        </div>
+      )}
       <div className="pv-card-body">
         {(logo || brandLabel || brandAside) && (
           <div className="pv-card-brand-row">
@@ -101,7 +104,7 @@ export default function PvCard({
           </div>
         )}
         {kicker && <div className="kicker">{kicker}</div>}
-        <h3>{title}</h3>
+        {title ? <h3>{title}</h3> : null}
         {meta && <div className="meta">{meta}</div>}
 
         {(ctaAside || cta || secondCta) && (
@@ -126,7 +129,11 @@ export default function PvCard({
           </div>
         )}
 
-        {corner && <span className="corner">↗</span>}
+        {corner && (
+          <span className="corner">
+            {typeof corner === 'boolean' ? '↗' : corner}
+          </span>
+        )}
       </div>
     </Tag>
   )

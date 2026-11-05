@@ -1,3 +1,4 @@
+import PortalSectionEyebrow from './PortalSectionEyebrow.jsx'
 import { useRef } from 'react'
 import PortalReveal from './PortalReveal.jsx'
 import PortalStaggerGrid from './PortalStaggerGrid.jsx'
@@ -113,7 +114,7 @@ function LegacyNextActions({ user, items, onEval }) {
     <PortalReveal id="next-actions">
       <div className="container" style={{ padding: '16px 32px' }}>
         <div className="portal-section-head">
-          <p className="portal-section-eyebrow">{t.eyebrow_next_actions}</p>
+          <PortalSectionEyebrow icon="listtodo" label={t.eyebrow_next_actions} />
           <h2 className="portal-section-title">{t.title_next_actions}</h2>
         </div>
         <PortalStaggerGrid>

@@ -16,6 +16,7 @@ export default function PortalSessionCard({
   accentColor,
   cta,
   hoverHint,
+  onClick,
   statusOnImage = false,
   /** Plan pluri annuel : fiche PNG + pastille statut sur l'image (tous statuts). */
   planMode = false,
@@ -97,6 +98,7 @@ export default function PortalSessionCard({
       cta={cta}
       hoverHint={hoverHint}
       extraAction={extraAction}
+      onClick={onClick}
     />
   )
 }

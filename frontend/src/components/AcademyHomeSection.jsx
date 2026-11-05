@@ -1,13 +1,12 @@
 import { useCallback, useState } from 'react'
 import PreviewSection from './PreviewSection.jsx'
-import PvCardGrid from './PvCardGrid.jsx'
+import CardRail from './CardRail.jsx'
 import PvCard from './PvCard.jsx'
 import AcademyMedacapPanel from './AcademyMedacapPanel.jsx'
 import AcademyEquipePanel from './AcademyEquipePanel.jsx'
 import AcademyPaysPanel from './AcademyPaysPanel.jsx'
 import AcademyDetailPanel from './AcademyDetailPanel.jsx'
 import { ACADEMY_PREVIEW, getAcademyPillar } from '../data/academy/index.js'
-import { HOME_SECTION_BG } from '../data/homeSectionBg.js'
 import useLocale from '../hooks/useLocale.js'
 import { localizedAcademyPreview } from '../utils/localizeCard.js'
 import { sectionTitle } from '../utils/sectionTitle.jsx'
@@ -35,10 +34,14 @@ export default function AcademyHomeSection() {
       headClass="pv-head--compact-line"
       bgWord="academy"
       bgWordSide="left"
-      sectionBg={HOME_SECTION_BG.academy}
     >
       {!openId ? (
-        <PvCardGrid className="pv-card-grid--expertise">
+        <CardRail
+          className="card-rail--expertise"
+          ariaLabel={homeT.academyIx ?? 'Expertise'}
+          arrowLabelPrev={commonT.prev ?? 'Précédent'}
+          arrowLabelNext={commonT.next ?? 'Suivant'}
+        >
           {ACADEMY_PREVIEW.map((a) => {
             const card = localizedAcademyPreview(a, locale)
             return (
@@ -54,7 +57,7 @@ export default function AcademyHomeSection() {
             />
             )
           })}
-        </PvCardGrid>
+        </CardRail>
       ) : pillar?.id === 'medacap' ? (
         <AcademyMedacapPanel data={pillar} onBack={backToGrid} />
       ) : pillar?.id === 'equipe' ? (

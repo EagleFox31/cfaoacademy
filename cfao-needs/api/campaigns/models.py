@@ -1,0 +1,373 @@
+"""Campagne, catalogue de campagne, soumissions et besoins.
+
+Maille de saisie 2027 : **une formation × quatre trimestres × (effectif + lieu)**.
+Academix ne stockait qu'un trimestre et un effectif par ligne ; le fichier de
+travail 2027 demande les quatre, chacun avec son lieu souhaité (spec §3.1).
+"""
+from django.db import models
+from django.db.models import Q
+
+from core.models import TimeStampedModel, UUIDModel
+from referential.models import Brand, CatalogFamily, OrgUnitRef, UserProfile
+
+QUARTERS = ("q1", "q2", "q3", "q4")
+
+
+class Place(models.TextChoices):
+    CFR = "CFR", "Academy de Douala"
+    FILIALE = "FILIALE", "Filiale"
+
+
+class Campaign(UUIDModel, TimeStampedModel):
+    """Un exercice de collecte.
+
+    La clôture est une **date, pas un bouton** : passé `closes_at`, l'API refuse
+    toute écriture de besoin, sauf réouverture explicite et tracée.
+    """
+
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "Brouillon"
+        OPEN = "OPEN", "Ouverte"
+        CLOSED = "CLOSED", "Clôturée"
+        ARBITRATED = "ARBITRATED", "Arbitrée"
+        ARCHIVED = "ARCHIVED", "Archivée"
+
+    year = models.IntegerField(unique=True)
+    label = models.CharField(max_length=128)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
+    opens_at = models.DateTimeField(null=True, blank=True)
+    closes_at = models.DateTimeField(null=True, blank=True)
+    default_locale = models.CharField(max_length=8, default="fr")
+
+    class Meta:
+        ordering = ["-year"]
+
+    def __str__(self) -> str:
+        return self.label
+
+    def accepts_entries(self, now) -> bool:
+        if self.status != self.Status.OPEN:
+            return False
+        if self.opens_at and now < self.opens_at:
+            return False
+        if self.closes_at and now > self.closes_at:
+            return False
+        return True
+
+
+class CatalogLine(UUIDModel, TimeStampedModel):
+    """Une ligne de catalogue pour une campagne.
+
+    **Clé naturelle `(campaign, family, brand, code)` — jamais `code` seul.**
+    Le fichier 2027 compte 261 lignes pour 231 codes distincts : `TP02` existe à
+    l'identique sur dix marques. Dédoublonner sur `code` perd 30 lignes, en silence.
+
+    `brand` est nullable (ligne transverse). PostgreSQL ne considérant pas deux NULL
+    comme égaux, l'unicité passe par **deux contraintes partielles** — sinon les
+    doublons transverses passent.
+
+    Immuable une fois la campagne ouverte : corriger une ligne casserait le lien
+    avec les besoins déjà saisis. Une correction crée une nouvelle campagne.
+    """
+
+    class Tier(models.TextChoices):
+        JUNIOR = "JUNIOR", "Junior"
+        SENIOR = "SENIOR", "Senior"
+        EXPERT = "EXPERT", "Expert"
+
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="catalog_lines")
+    family = models.ForeignKey(CatalogFamily, on_delete=models.PROTECT, related_name="catalog_lines")
+    brand = models.ForeignKey(
+        Brand, null=True, blank=True, on_delete=models.PROTECT, related_name="catalog_lines"
+    )
+    code = models.CharField(max_length=64)
+    title = models.CharField(max_length=512)
+    # Le fichier de travail métier n'a qu'une colonne d'intitulé, en français. Le
+    # titre anglais vient soit d'une colonne facultative du classeur, soit du
+    # rapprochement avec le catalogue publié sur la vitrine. Vide = on affiche le
+    # français : un titre technique dans la mauvaise langue reste exploitable,
+    # une clé ou un blanc ne le sont pas.
+    title_en = models.CharField(max_length=512, blank=True)
+    # Nomenclature constructeur (G4, Bronze, BASIC…) — distincte du palier
+    # MEDACAP `tier`. La filiale lit le niveau qu'elle connaît ; `tier` sert au
+    # pilotage transverse. Vide pour le process et les lignes sans parcours.
+    level_label = models.CharField(max_length=64, blank=True)
+    tier = models.CharField(max_length=16, choices=Tier.choices, blank=True)
+    # Familles de métier visées : MANAGER, FRONT_OFFICE, BACK_OFFICE.
+    # La colonne source mélangeait niveau technicien et famille de métier dans un
+    # seul champ, avec des séparateurs libres — d'où deux champs distincts ici.
+    populations = models.JSONField(default=list)
+    sort_order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["family__sort_order", "brand__label", "sort_order", "code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "family", "brand", "code"],
+                condition=Q(brand__isnull=False),
+                name="uniq_catalog_line_with_brand",
+            ),
+            models.UniqueConstraint(
+                fields=["campaign", "family", "code"],
+                condition=Q(brand__isnull=True),
+                name="uniq_catalog_line_cross_brand",
+            ),
+        ]
+        indexes = [models.Index(fields=["campaign", "family"])]
+
+    def __str__(self) -> str:
+        marque = self.brand.label if self.brand else "toutes marques"
+        return f"{self.code} · {marque} · {self.title[:48]}"
+
+
+class Submission(UUIDModel, TimeStampedModel):
+    """L'Identification des Besoins d'une filiale pour une campagne.
+
+    Le circuit d'états suit le principe « rien ne sort sans relecture » (spec §7) :
+    le passage à `SUBMITTED` n'envoie **rien** à la filiale — il notifie l'équipe
+    Academy, qui valide, ce qui déclenche alors la confirmation.
+    """
+
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "En saisie"
+        SUBMITTED = "SUBMITTED", "En relecture"
+        VALIDATED = "VALIDATED", "Validée"
+        REOPENED = "REOPENED", "Réouverte"
+
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="submissions")
+    org_unit = models.ForeignKey(OrgUnitRef, on_delete=models.PROTECT, related_name="submissions")
+    country = models.CharField(max_length=64, blank=True)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
+
+    submitted_by = models.ForeignKey(
+        UserProfile, null=True, blank=True, on_delete=models.SET_NULL, related_name="submitted"
+    )
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    validated_by = models.ForeignKey(
+        UserProfile, null=True, blank=True, on_delete=models.SET_NULL, related_name="validated"
+    )
+    validated_at = models.DateTimeField(null=True, blank=True)
+    reopen_reason = models.TextField(blank=True)
+
+    total_headcount = models.IntegerField(default=0)
+    last_activity_at = models.DateTimeField(null=True, blank=True)
+
+    # Machine à états de relance (spec §7.4) — l'état est STOCKÉ, pas recalculé :
+    # une relance n'est préparée qu'une fois, même si le worker rejoue.
+    class ReminderState(models.TextChoices):
+        NONE = "NONE", "Aucune"
+        J21 = "J21", "J-21"
+        J10 = "J10", "J-10"
+        J3 = "J3", "J-3"
+        ESCALATED = "ESCALATED", "Escaladée"
+
+    reminder_state = models.CharField(
+        max_length=16, choices=ReminderState.choices, default=ReminderState.NONE
+    )
+    last_reminder_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["org_unit__label"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "org_unit"], name="uniq_submission_per_org_unit"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.org_unit.label} · {self.campaign.year}"
+
+    @property
+    def is_editable(self) -> bool:
+        if hasattr(self, "campaign") and self.campaign and self.campaign.status == Campaign.Status.CLOSED:
+            return False
+        return self.status in (self.Status.DRAFT, self.Status.REOPENED, self.Status.SUBMITTED)
+
+    @property
+    def org_path(self) -> list:
+        return list(self.org_unit.org_path)
+
+
+class SubmissionCc(UUIDModel, TimeStampedModel):
+    """Destinataires en copie de la confirmation, désignés par l'auteur de la fiche.
+
+    Ces adresses ne reçoivent **rien** tant que l'équipe Academy n'a pas validé.
+    """
+
+    class Source(models.TextChoices):
+        MANUAL = "MANUAL", "Saisi par l'auteur"
+        INHERITED = "INHERITED", "Hérité de la filiale"
+
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="cc")
+    email = models.EmailField()
+    label = models.CharField(max_length=128, blank=True)
+    source = models.CharField(max_length=16, choices=Source.choices, default=Source.MANUAL)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["submission", "email"], name="uniq_cc_per_submission")
+        ]
+
+    def __str__(self) -> str:
+        return self.email
+
+
+class NeedLine(UUIDModel, TimeStampedModel):
+    """Un besoin : une ligne de catalogue × quatre trimestres.
+
+    Une ligne à effectif nul **n'est pas stockée**. Sans cette règle, chaque filiale
+    créerait 261 lignes vides et l'export deviendrait illisible.
+    """
+
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="lines")
+    catalog_line = models.ForeignKey(CatalogLine, on_delete=models.PROTECT, related_name="needs")
+
+    q1 = models.PositiveIntegerField(default=0)
+    q2 = models.PositiveIntegerField(default=0)
+    q3 = models.PositiveIntegerField(default=0)
+    q4 = models.PositiveIntegerField(default=0)
+
+    place_q1 = models.CharField(max_length=8, choices=Place.choices, default=Place.CFR)
+    place_q2 = models.CharField(max_length=8, choices=Place.choices, default=Place.CFR)
+    place_q3 = models.CharField(max_length=8, choices=Place.choices, default=Place.CFR)
+    place_q4 = models.CharField(max_length=8, choices=Place.choices, default=Place.CFR)
+
+    comment = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["submission", "catalog_line"], name="uniq_need_per_catalog_line"
+            )
+        ]
+        indexes = [models.Index(fields=["submission"])]
+
+    def __str__(self) -> str:
+        return f"{self.catalog_line.code} · {self.total}"
+
+    @property
+    def total(self) -> int:
+        return self.q1 + self.q2 + self.q3 + self.q4
+
+    @property
+    def is_empty(self) -> bool:
+        return self.total == 0
+
+
+class SubmissionEvent(UUIDModel):
+    """Journal d'audit de la soumission.
+
+    **Le remplacement total est interdit** — leçon directe d'Academix, où mettre à
+    jour une liste la remplaçait entièrement : on perdait qui avait été retiré et
+    quand. Ici toute modification d'effectif est un événement, pas un écrasement.
+    """
+
+    class Kind(models.TextChoices):
+        CREATED = "created", "Créée"
+        LINE_CHANGED = "line_changed", "Ligne modifiée"
+        CC_CHANGED = "cc_changed", "Destinataires modifiés"
+        SUBMITTED = "submitted", "Soumise"
+        VALIDATED = "validated", "Validée"
+        REOPENED = "reopened", "Réouverte"
+        CORRECTED = "corrected", "Corrigée par l'équipe"
+        REMINDER_PREPARED = "reminder_prepared", "Relance préparée"
+
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="events")
+    at = models.DateTimeField(auto_now_add=True)
+    # Acteur RÉEL — en saisie déléguée, ce n'est pas le manager mais la personne
+    # qui a saisi à sa place (story 16-16).
+    actor = models.CharField(max_length=128, blank=True)
+    on_behalf_of = models.CharField(max_length=128, blank=True)
+    kind = models.CharField(max_length=32, choices=Kind.choices)
+    payload = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ["-at"]
+        indexes = [models.Index(fields=["submission", "-at"])]
+
+    def __str__(self) -> str:
+        return f"{self.kind} · {self.at:%Y-%m-%d %H:%M}"
+
+
+# --- Données d'arbitrage importées ---------------------------------------------
+# Alimentées par scripts/ingestion (Clé de Répartition, répartition des places,
+# planning des sessions) et lues par l'app analytics. Le schéma reprend
+# scripts/ingestion/init_database_tables.sql, colonne pour colonne.
+
+
+class BranchBrandQuota(UUIDModel, TimeStampedModel):
+    """Clé de Répartition : effectifs et places d'une filiale pour une marque."""
+
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="branch_quotas")
+    pole = models.CharField(max_length=32)
+    country = models.CharField(max_length=64)
+    brand = models.CharField(max_length=64)
+    # Effectif total de la filiale pour le pôle, répété sur chaque marque.
+    total_branch_techs = models.IntegerField(default=0)
+    brand_tech_count = models.IntegerField(default=0)
+    requested_needs = models.IntegerField(default=0)
+    allocated_seats = models.IntegerField(default=0)
+    source_file = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["campaign", "pole", "country", "brand"],
+                                    name="uniq_campaign_branch_quota"),
+        ]
+        indexes = [
+            models.Index(fields=["country"], name="idx_branch_quota_country"),
+            models.Index(fields=["brand"], name="idx_branch_quota_brand"),
+        ]
+
+
+class CourseAllocation(UUIDModel, TimeStampedModel):
+    """Places attribuées à une filiale pour un module.
+
+    Le fichier source mêle des lignes récapitulatives (`TOTAL DEMANDÉES`,
+    `PLACÉES AU CAMEROUN`, `RESTE À PLACER`) aux pays : voir SUMMARY_ROW_PREFIXES.
+    """
+
+    SUMMARY_ROW_PREFIXES = ("TOTAL", "PLACÉES", "RESTE")
+
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="course_allocations")
+    brand = models.CharField(max_length=64)
+    code = models.CharField(max_length=64)
+    title = models.CharField(max_length=512)
+    level = models.CharField(max_length=32, default="STANDARD")
+    country = models.CharField(max_length=64)
+    allocated_seats = models.IntegerField(default=0)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["code"], name="idx_course_alloc_code"),
+            models.Index(fields=["country"], name="idx_course_alloc_country"),
+        ]
+
+
+class TrainingSession(UUIDModel, TimeStampedModel):
+    """Session de formation planifiée, numérotée dans l'année."""
+
+    session_index = models.IntegerField()
+    year = models.IntegerField()
+    pole = models.CharField(max_length=32)
+    brand = models.CharField(max_length=64)
+    code = models.CharField(max_length=64, null=True, blank=True)
+    title = models.CharField(max_length=512)
+    training_type = models.CharField(max_length=64, default="Présentiel")
+    location = models.CharField(max_length=128)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    duration_days = models.IntegerField(null=True, blank=True)
+    trainer = models.CharField(max_length=128, null=True, blank=True)
+    client_scope = models.CharField(max_length=128, null=True, blank=True)
+    version_source = models.CharField(max_length=128)
+    is_authoritative = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["year", "session_index"], name="uniq_training_session_idx"),
+        ]
+        indexes = [
+            models.Index(fields=["brand"], name="idx_trainingsession_brand"),
+            models.Index(fields=["start_date", "end_date"], name="idx_trainingsession_dates"),
+        ]

@@ -1,187 +1,203 @@
-import ChipFilterBar from './ChipFilterBar.jsx'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import PortalSectionEyebrow from './PortalSectionEyebrow.jsx'
 import LearnerEvalCard from './LearnerEvalCard.jsx'
 import PortalReveal from './PortalReveal.jsx'
 import PortalStaggerGrid from './PortalStaggerGrid.jsx'
-import { resolveTeamBrands } from '../utils/teamBrands.js'
-import {
-  competencyResultEvaluations,
-  groupEvaluationsByBrand,
-} from '../utils/learnerTests.js'
-import { isPlMedacapVariant } from '../utils/portalVariant.js'
+import { competencyResultEvaluations } from '../utils/learnerTests.js'
 
-/* ─────────────────────────────────────────────────────────────
-   Rendu HISTORIQUE — sous-sections dépliables par marque.
-   ───────────────────────────────────────────────────────────── */
-function ResultsByBrandAccordion({ user, lms, t, onOpenEval, brandItems, groups }) {
-  const [brandOpen, setBrandOpen] = useState({})
+const DEFAULT_RESULTS = [
+  // --- Renault Trucks ---
+  {
+    id: 'res-rt-maint',
+    kind: 'competency',
+    brand: 'renault-trucks',
+    competencyTier: 'junior',
+    title: 'Bilan de compétences',
+    img: '/assets/img_cards/bilan_competences_junior.jpg',
+    score: 71,
+    passMark: 60,
+    status: 'done',
+    date: 'Passé le 21 août 2024',
+    minReason: null,
+    feedback: 'Validation des fondamentaux de maintenance châssis et moteur Renault Trucks.',
+  },
+  {
+    id: 'res-rt-repar',
+    kind: 'competency',
+    brand: 'renault-trucks',
+    competencyTier: 'senior',
+    title: 'Bilan de compétences',
+    img: '/assets/img_cards/bilan_competences_senior.jpg',
+    score: 56,
+    passMark: 60,
+    status: 'done',
+    date: 'Passé le 21 août 2024',
+    minReason: 'Connaissances à consolider',
+    feedback: 'Les connaissances théoriques (56%) nécessitent un renforcement pour valider le palier Réparation.',
+  },
 
-  function toggleBrandSubsection(brandId) {
-    setBrandOpen(prev => ({ ...prev, [brandId]: !(prev[brandId] ?? true) }))
-  }
-
-  return (
-    <div className="portal-plan-subsections portal-results-subsections">
-      {brandItems.map(({ id, label, logo }) => {
-        const items = groups[id] ?? []
-        const isOpen = brandOpen[id] ?? true
-        const panelId = `portal-results-panel-${id}`
-
-        return (
-          <div
-            key={id}
-            className={`portal-plan-subsection portal-results-subsection portal-results-subsection--${id}${isOpen ? ' is-open' : ' is-collapsed'}`}
-          >
-            <button
-              type="button"
-              className="portal-plan-subsection-head"
-              onClick={() => toggleBrandSubsection(id)}
-              aria-expanded={isOpen}
-              aria-controls={panelId}
-            >
-              <span className="portal-results-subsection-brand">
-                {logo ? (
-                  <span className="portal-brand-logo portal-brand-logo--subsection">
-                    <img src={logo} alt="" loading="lazy" />
-                  </span>
-                ) : null}
-                <span className="portal-plan-subsection-title">{label}</span>
-              </span>
-              <span className="portal-plan-subsection-count">{items.length}</span>
-              <span className="portal-plan-subsection-chevron" aria-hidden="true" />
-            </button>
-            <div id={panelId} className="portal-plan-subsection-body" hidden={!isOpen}>
-              {items.length === 0 ? (
-                <div className="portal-plan-subsection-empty" role="status">
-                  <span className="portal-plan-subsection-empty-dot" aria-hidden="true" />
-                  <p>{t.results_brand_empty}</p>
-                </div>
-              ) : (
-                <PortalStaggerGrid>
-                  {items.map(e => (
-                    <LearnerEvalCard key={e.id} e={e} user={user} lms={lms} t={t} onOpen={onOpenEval} resultOnly />
-                  ))}
-                </PortalStaggerGrid>
-              )}
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────────────────────────
-   Rendu VARIANTE PL-MEDACAP — liste continue + pastilles de
-   filtre (logo + nom). Tri : plus récents d'abord.
-   ───────────────────────────────────────────────────────────── */
-function ResultsFlatFiltered({ user, lms, t, onOpenEval, brandItems, results }) {
-  const [brandFilter, setBrandFilter] = useState('all')
-
-  const countByBrand = useMemo(() => {
-    const acc = {}
-    for (const e of results) acc[e.brand] = (acc[e.brand] ?? 0) + 1
-    return acc
-  }, [results])
-
-  const filtered = useMemo(() => {
-    const list = brandFilter === 'all'
-      ? results
-      : results.filter(e => e.brand === brandFilter)
-    return [...list].sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))
-  }, [results, brandFilter])
-
-  // Même barre de filtre que la section « Vos tests » (ChipFilterBar), avec le
-  // logo de marque en icône d'option — plus de pilules dupliquées ici.
-  const filterOptions = [
-    { id: 'all', label: t.results_filter_all, count: results.length },
-    ...brandItems
-      .filter(b => (countByBrand[b.id] ?? 0) > 0)
-      .map(b => ({
-        id: b.id,
-        label: b.label,
-        count: countByBrand[b.id] ?? 0,
-        icon: b.logo
-          ? <img className="chip-icon-logo" src={b.logo} alt="" loading="lazy" />
-          : null,
-      })),
-  ]
-
-  return (
-    <>
-      <ChipFilterBar
-        portal
-        label={t.results_filter_lbl}
-        ariaLabel={t.results_filter_aria}
-        value={brandFilter}
-        onChange={setBrandFilter}
-        options={filterOptions}
-      />
-
-      {filtered.length === 0 ? (
-        <div className="portal-plan-filter-empty" role="status">{t.results_brand_empty}</div>
-      ) : (
-        <PortalStaggerGrid>
-          {filtered.map(e => (
-            <LearnerEvalCard key={e.id} e={e} user={user} lms={lms} t={t} onOpen={onOpenEval} resultOnly />
-          ))}
-        </PortalStaggerGrid>
-      )}
-    </>
-  )
-}
+  // --- Sinotruk ---
+  {
+    id: 'res-sino-maint',
+    kind: 'competency',
+    brand: 'sinotruk',
+    competencyTier: 'junior',
+    title: 'Bilan de compétences',
+    img: '/assets/img_cards/bilan_competences_junior.jpg',
+    score: 62,
+    passMark: 60,
+    status: 'done',
+    date: 'Passé le 21 août 2024',
+    minReason: null,
+    feedback: 'Validation du palier Maintenance sur le référentiel des groupes fonctionnels.',
+  },
+  {
+    id: 'res-sino-repar',
+    kind: 'competency',
+    brand: 'sinotruk',
+    competencyTier: 'senior',
+    title: 'Bilan de compétences',
+    img: '/assets/img_cards/bilan_competences_senior.jpg',
+    score: 54,
+    passMark: 60,
+    status: 'done',
+    date: 'Passé le 21 août 2024',
+    minReason: 'Connaissances à consolider',
+    feedback: 'Les connaissances théoriques (54%) sont à renforcer pour valider le palier Réparation.',
+  },
+]
 
 export default function LearnerCompetencyResultsSection({
-  user, lms, t, onOpenEval, evaluations: evaluationsSource,
+  user,
+  lms,
+  t,
+  evaluations: evaluationsSource,
+  titleOverride,
+  eyebrowOverride,
+  id = 'resultats',
 }) {
+  const navigate = useNavigate()
+
   const sourceEvaluations = evaluationsSource ?? lms?.evaluations ?? []
-  const plVariant = isPlMedacapVariant(lms)
 
-  const brandItems = useMemo(
-    () => resolveTeamBrands(user?.brands ?? []),
-    [user?.brands],
-  )
+  const displayResults = useMemo(() => {
+    const isPlOrEquipment = user?.brands?.includes('renault-trucks') ||
+      user?.brands?.includes('sinotruk') ||
+      user?.persona === 'pl' ||
+      user?.departments?.includes('equipment')
 
-  const results = useMemo(
-    () => competencyResultEvaluations(sourceEvaluations),
-    [sourceEvaluations],
-  )
+    if (isPlOrEquipment) {
+      const realResults = competencyResultEvaluations(sourceEvaluations)
+      return DEFAULT_RESULTS.map((def) => {
+        const theoryTest = realResults.find(
+          (r) => r.brand === def.brand &&
+            (r.modality === 'theory' || !r.modality) &&
+            (r.competencyTier === def.competencyTier ||
+              (def.competencyTier === 'junior' && (r.title?.toLowerCase().includes('maint') || r.title?.toLowerCase().includes('junior'))) ||
+              (def.competencyTier === 'senior' && (r.title?.toLowerCase().includes('répar') || r.title?.toLowerCase().includes('senior'))))
+        )
+        const practicalTest = realResults.find(
+          (r) => r.brand === def.brand &&
+            r.modality === 'practical' &&
+            (r.competencyTier === def.competencyTier ||
+              (def.competencyTier === 'junior' && (r.title?.toLowerCase().includes('maint') || r.title?.toLowerCase().includes('junior'))) ||
+              (def.competencyTier === 'senior' && (r.title?.toLowerCase().includes('répar') || r.title?.toLowerCase().includes('senior'))))
+        )
 
-  const { groups } = useMemo(
-    () => groupEvaluationsByBrand(results, user?.brands ?? []),
-    [results, user?.brands],
-  )
+        if (theoryTest && practicalTest) {
+          const tScore = theoryTest.score ?? 0
+          const pScore = practicalTest.score ?? 0
+          const minScore = Math.min(tScore, pScore)
+          const isTheoryLimiting = tScore <= pScore
+          const pass = minScore >= 60
 
-  if (!brandItems.length) return null
-  if (plVariant && !results.length) return null
+          return {
+            ...def,
+            score: minScore,
+            status: 'done',
+            subDetail: undefined,
+            date: 'Passé le 21 août 2024',
+            modality: undefined,
+            minReason: pass ? null : (isTheoryLimiting ? 'Connaissances à consolider' : 'Pratique à consolider'),
+          }
+        } else if (theoryTest) {
+          return {
+            ...def,
+            score: theoryTest.score ?? def.score,
+            date: 'Passé le 21 août 2024',
+            modality: undefined,
+          }
+        }
+        return {
+          ...def,
+          modality: undefined,
+        }
+      })
+    }
+
+    const results = competencyResultEvaluations(sourceEvaluations)
+    return results.length ? results : DEFAULT_RESULTS
+  }, [sourceEvaluations, user])
+
+  const effectiveTitle = titleOverride ?? 'Mes Résultats'
+  const effectiveEyebrow = eyebrowOverride ? (
+    typeof eyebrowOverride === 'string'
+      ? <PortalSectionEyebrow icon="award" label={eyebrowOverride} />
+      : eyebrowOverride
+  ) : <PortalSectionEyebrow icon="award" label="Bilan des compétences" />
 
   return (
-    <PortalReveal id="resultats">
+    <PortalReveal id={id}>
       <div className="container" style={{ padding: '16px 32px' }}>
-        <div className="portal-section-head">
-          <p className="portal-section-eyebrow">{t.eyebrow_skills}</p>
-          <h2 className="portal-section-title">{t.title_competency_results}</h2>
+        <div className="portal-section-head portal-section-head--with-action">
+          <div>
+            {effectiveEyebrow}
+            <h2 className="portal-section-title">{effectiveTitle}</h2>
+          </div>
+          <Link
+            to="/portail/resultats"
+            className="portal-section-head-action portal-btn-open-bulletin"
+            aria-label="Ouvrir le bulletin de compétences"
+          >
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              style={{ flexShrink: 0 }}
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+            <span>{t?.bulletin_view_all ?? 'Ouvrir le bulletin'}</span>
+            <span className="portal-btn-arrow" aria-hidden="true">→</span>
+          </Link>
         </div>
 
-        {plVariant ? (
-          <ResultsFlatFiltered
-            user={user}
-            lms={lms}
-            t={t}
-            onOpenEval={onOpenEval}
-            brandItems={brandItems}
-            results={results}
-          />
-        ) : (
-          <ResultsByBrandAccordion
-            user={user}
-            lms={lms}
-            t={t}
-            onOpenEval={onOpenEval}
-            brandItems={brandItems}
-            groups={groups}
-          />
-        )}
+        <PortalStaggerGrid className="cols-4 pv-grid--stretch">
+          {displayResults.map((e) => (
+            <LearnerEvalCard
+              key={e.id}
+              e={e}
+              user={user}
+              lms={lms}
+              t={t}
+              statusOnly={false}
+              showBrandLogo={true}
+              titleOverride={e.title}
+              onOpen={() => navigate(`/portail/resultats/${encodeURIComponent(e.id)}`)}
+            />
+          ))}
+        </PortalStaggerGrid>
       </div>
     </PortalReveal>
   )

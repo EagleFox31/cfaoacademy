@@ -1,3 +1,4 @@
+import PortalSectionEyebrow from './PortalSectionEyebrow.jsx'
 import PlanEntryCard from './PlanEntryCard.jsx'
 import TeamMemberCard from './TeamMemberCard.jsx'
 import { countTeamPlansInProgress } from '../utils/teamManagerMetrics.js'
@@ -14,7 +15,7 @@ export default function TeamPlansSection({ members, t, planYear }) {
     <section id="plans">
       <div className="container" style={{ padding: '16px 32px' }}>
         <div className="portal-section-head">
-          <p className="portal-section-eyebrow">{t.eyebrow_plan}</p>
+          <PortalSectionEyebrow icon="milestone" label={t.eyebrow_plan} />
           <h2 className="portal-section-title">{t.tm_title_plans}</h2>
         </div>
 

@@ -2,6 +2,8 @@ import CardMemberTitle, { memberInitials } from './CardMemberTitle.jsx'
 import PvCard from './PvCard.jsx'
 import PortalBrandLogo from './PortalBrandLogo.jsx'
 import TechnicianMediaIcon from './TechnicianMediaIcon.jsx'
+import ProfileAvatar from './ProfileAvatar.jsx'
+import { resolveProfileIcon } from '../utils/resolveProfileIcon.js'
 
 function memberStatusChip(member, t) {
   if (member.certified) return { label: t.status_certified, className: 'done' }
@@ -22,6 +24,7 @@ function memberCardTheme(member) {
 
 export function TeamMemberCardMedia({ member, showAvatar = true }) {
   const brandMod = member.brand ?? 'default'
+  const iconSrc = resolveProfileIcon(member)
   return (
     <div
       className={[
@@ -33,12 +36,31 @@ export function TeamMemberCardMedia({ member, showAvatar = true }) {
     >
       <div className="portal-team-member-card-media-pattern" aria-hidden="true" />
       {showAvatar && (
-        <div className="portal-mini-avatar portal-mini-avatar--lg portal-team-member-avatar">
-          {memberInitials(member.nom)}
-        </div>
+        iconSrc ? (
+          <ProfileAvatar
+            person={member}
+            name={member.nom}
+            className="portal-mini-avatar portal-mini-avatar--lg portal-team-member-avatar"
+          />
+        ) : (
+          <div className="portal-mini-avatar portal-mini-avatar--lg portal-team-member-avatar">
+            {memberInitials(member.nom)}
+          </div>
+        )
       )}
       {!showAvatar && (
-        <TechnicianMediaIcon alert={Boolean(member.alert)} />
+        iconSrc ? (
+          <img
+            src={iconSrc}
+            alt=""
+            className="portal-dps-collab-tech-icon"
+            width={72}
+            height={72}
+            decoding="async"
+          />
+        ) : (
+          <TechnicianMediaIcon alert={Boolean(member.alert)} />
+        )
       )}
       <PortalBrandLogo brand={member.brand} size="media" className="portal-team-member-card-brand" />
     </div>
@@ -102,6 +124,7 @@ export default function TeamMemberCard({ member, t, onFiche, onManage }) {
         <CardMemberTitle
           name={member.nom}
           variant={theme.avatarVariant}
+          person={member}
         />
       )}
       meta={<MemberSubcards member={member} t={t} fillColor={theme.fill} />}

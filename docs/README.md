@@ -18,20 +18,36 @@ Point d'entrée pour la documentation du dépôt. Les fichiers listés ci-dessou
 | [architecture.md](../architecture.md) | Topologie, modules, authN/authZ, déploiement |
 | **[DEPLOYMENT.md](./DEPLOYMENT.md)** | **CI/CD, ACR, Azure, limites runners GitHub, Jenkins ou non** |
 | [architecture_complement.md](../architecture_complement.md) | Compléments architecture |
-| [PLATFORM_APPS.md](../PLATFORM_APPS.md) | Les 15 apps métier |
+| [PLATFORM_APPS.md](../PLATFORM_APPS.md) | Les 16 apps métier |
 | [PLATFORM_ROLES.md](../PLATFORM_ROLES.md) | Rôles, scopes, Cerbos |
-| [planning.md](../planning.md) | Planning projet |
+| [planning.md](../planning.md) | Planning projet (PERT, nœuds A→N) |
 | [backlog.md](../backlog.md) | Backlog stories |
+
+## Méthodologie des Rôles & Habilitations
+
+| Document | Contenu |
+|----------|---------|
+| **[docs/methodologie-roles/README.md](./methodologie-roles/README.md)** | **Cadre méthodologique des rôles, multi-affectation, scopes et typologie** |
+| **[docs/methodologie-roles/KEY_INSTRUCTOR.md](./methodologie-roles/KEY_INSTRUCTOR.md)** | **Dossier de référence : Key Instructor (KI / PIC), standards OEM, TWI/Dojo et innovations portail** |
+
+## App 16 · Recueil des besoins *(module détachable, campagne 2027)*
+
+| Document | Contenu |
+|----------|---------|
+| **[SPEC_RECUEIL_BESOINS_2027.md](./SPEC_RECUEIL_BESOINS_2027.md)** | **Spécification du module : détachabilité, référentiel éclaté par marque, modèle, emailing, jalons** |
+| **[PATRON_IMPORT_TABULAIRE.md](./PATRON_IMPORT_TABULAIRE.md)** | **Patron transverse d'import Excel/CSV — story `00-9`** |
+| **[AUDIT_ACADEMIX.md](./AUDIT_ACADEMIX.md)** | **Audit de l'existant remplacé : 26 fonctions, 10 failles, correspondance epics** |
 
 ## Frontend & UX
 
 | Document | Contenu |
 |----------|---------|
+| **[rapport-conges-portail-dps-2026.md](./rapport-conges-portail-dps-2026.md)** | **Passation congés — travail portail DPS, MEDACAP, visible en démo** |
 | [DESIGN_SYSTEM.md](../DESIGN_SYSTEM.md) | Tokens, composants, styles |
 | **[PORTAL_COLORIMETRY.md](./PORTAL_COLORIMETRY.md)** | **Statuts portail (pastilles, bordures, PIF) — RAG / LMS / WCAG** |
 | [APPRENANT_VIEWS.md](../APPRENANT_VIEWS.md) | Écrans portail apprenant |
 | **[MODULE_RAPPORTS_FORMATEUR.md](./MODULE_RAPPORTS_FORMATEUR.md)** | **Rapports post-formation (04-5) : parcours, modèle PowerPoint, service de rendu, tests** |
-| [MISE_A_JOUR_PROD.md](./MISE_A_JOUR_PROD.md) | Mettre à jour le module des comptes rendus en production : sauvegarde, reconstruction, annonce aux utilisateurs, retour arrière |
+| [MISE_A_JOUR.md](../cfao-comptes-rendus/MISE_A_JOUR.md) | Mettre à jour le module des comptes rendus en production (images Docker Hub, `CR_VERSION`) : sauvegarde, annonce aux utilisateurs, retour arrière |
 | [etude-journal-erreurs.md](./etude-journal-erreurs.md) | Étude : journal des erreurs des comptes rendus consultable par l’équipe technique |
 | [etude-polices-rendu.md](./etude-polices-rendu.md) | Étude : polices du PowerPoint, écarts de rendu Docker / Windows et options |
 | [etude-photo-individuelle.md](./etude-photo-individuelle.md) | Étude : photo facultative du stagiaire sur sa fiche individuelle |

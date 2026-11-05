@@ -7,7 +7,11 @@ import './styles/index.css'
 import './styles/academy.css'
 import './styles/portal.css'
 import './styles/delivery.css'
+import './styles/bulletin.css'
 import './styles/motion.css'
+import './styles/medacap.css'
+
+suivreEchelle()
 
 suivreEchelle()
 

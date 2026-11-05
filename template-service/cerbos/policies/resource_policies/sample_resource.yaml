@@ -1,0 +1,38 @@
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "sample_resource"
+  rules:
+    # 1. Superadmin : accès complet sans restriction
+    - actions: ["*"]
+      effect: EFFECT_ALLOW
+      roles: ["superadmin"]
+
+    # 2. Lecture : autorisé pour les rôles autorisés si le périmètre filiale / agence correspond
+    - actions: ["read"]
+      effect: EFFECT_ALLOW
+      roles: ["branch_director", "workshop_manager", "team_manager"]
+      condition:
+        match:
+          expr: >
+            request.resource.attr.scopeNode in request.principal.attr.scopeNodes
+
+    # 3. Modification : chefs d'atelier sur leur filiale
+    - actions: ["update", "create"]
+      effect: EFFECT_ALLOW
+      roles: ["workshop_manager"]
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.scopeNode in request.principal.attr.scopeNodes
+              - expr: request.resource.attr.brand in request.principal.attr.brands
+
+    # 4. Suppression : uniquement branch_director ou superadmin
+    - actions: ["delete"]
+      effect: EFFECT_ALLOW
+      roles: ["branch_director"]
+      condition:
+        match:
+          expr: request.resource.attr.scopeNode in request.principal.attr.scopeNodes

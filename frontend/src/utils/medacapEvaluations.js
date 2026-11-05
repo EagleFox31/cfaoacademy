@@ -64,6 +64,25 @@ export async function fetchMedacapCompetencyEvaluations(user) {
   }
 }
 
+/** PIF apprenant depuis Define (allocations formation / validations). */
+export async function fetchMedacapLearnerPif(user) {
+  if (!isMedacapEnabled()) return null
+
+  const query = resolveMedacapUserQuery(user)
+  if (!query) return null
+
+  const url = medacapApiUrl('learner-pif.php', query)
+  const res = await fetch(url, { credentials: 'omit' })
+  if (!res.ok) return null
+
+  const data = await res.json()
+  return {
+    planningStatus: data.planningStatus ?? {},
+    planPathway: data.planPathway ?? [],
+    brandPifStats: data.brandPifStats ?? [],
+  }
+}
+
 /** Identité affichée : mock + surcharge MEDACAP si compte technicien lié. */
 export function resolvePortalDisplayUser(user, medacapProfile) {
   return resolveMedacapLearnerUser(user, medacapProfile)

@@ -1,0 +1,56 @@
+# Tests policy enrollment — self (apprenant) + encadrement scopé (+ négatifs).
+name: EnrollmentSuite
+description: Inscriptions — self + équipe dans le périmètre
+
+principals:
+  kouame:                       # apprenant Abidjan
+    id: u_kouame
+    roles: ["learner"]
+    attr: { scopeNodes: ["groupe.civ.abidjan"] }
+  manager_civ:                  # chef d'équipe Côte d'Ivoire
+    id: m_1
+    roles: ["team_manager"]
+    attr: { scopeNodes: ["groupe.civ"] }
+  manager_cmr:                  # chef d'équipe Cameroun (hors scope CIV)
+    id: m_2
+    roles: ["team_manager"]
+    attr: { scopeNodes: ["groupe.cmr"] }
+
+resources:
+  enr_kouame:                   # inscription de kouame (périmètre CIV)
+    kind: enrollment
+    id: e_1
+    attr:
+      learnerSub: u_kouame
+      orgPath: ["groupe", "groupe.civ", "groupe.civ.abidjan"]
+
+tests:
+  - name: l'apprenant gère sa propre inscription (self)
+    input:
+      principals: ["kouame"]
+      resources: ["enr_kouame"]
+      actions: ["view", "create", "update"]
+    expected:
+      - principal: kouame
+        resource: enr_kouame
+        actions: { "view": EFFECT_ALLOW, "create": EFFECT_ALLOW, "update": EFFECT_ALLOW }
+
+  - name: le manager voit l'inscription de son équipe (dans le périmètre)
+    input:
+      principals: ["manager_civ"]
+      resources: ["enr_kouame"]
+      actions: ["view", "list", "update"]
+    expected:
+      - principal: manager_civ
+        resource: enr_kouame
+        actions: { "view": EFFECT_ALLOW, "list": EFFECT_ALLOW, "update": EFFECT_ALLOW }
+
+  - name: un manager hors périmètre NE voit PAS (négatif)
+    input:
+      principals: ["manager_cmr"]
+      resources: ["enr_kouame"]
+      actions: ["view", "update"]
+    expected:
+      - principal: manager_cmr
+        resource: enr_kouame
+        actions: { "view": EFFECT_DENY, "update": EFFECT_DENY }

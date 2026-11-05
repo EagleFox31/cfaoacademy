@@ -19,9 +19,49 @@ dist/
 # Build / divers
 .DS_Store
 
+# Classeurs de production (données personnelles) — ne jamais versionner
+docs/*.xlsx
+docs/*.xls
+docs/*.csv
+
+# Sorties de dry-run : entities/report portent les 932 personnes
+# le referentiel partage (agrege, sans DCP) reste versionnable
+docs/dryrun_participants_2025/*
+!docs/dryrun_participants_2025/README.md
+!docs/dryrun_participants_2025/cfao_needs_referential.json
 # Comptes rendus et photos conserves par le service d'apercu
 cfao-comptes-rendus/api/rendu/donnees/
 cfao-comptes-rendus/api/db.sqlite3
 
 # Donnees reelles propres a un poste (noms des stagiaires) : jamais versionnees
 *.local.js
+
+# Extractions MEDACAP nominatives (techniciens) : jamais versionnees
+/data/dps/
+
+# Exports metier et donnees de production poses a la racine (DCP) : jamais versionnes
+/*.xlsx
+/*.xlsm
+/*.xlsb
+/*.docx
+/*.pdf
+/*.lnk
+*.dump
+infra/mongo-dump/
+/data/normalized/
+cfao-comptes-rendus/donnees-formateurs-*/
+
+# Notes de session et brouillons locaux
+/PASSATION.md
+/MEMORY.md
+/scratch/
+/scratch_*
+debug.log
+/debug-*.json
+/deepseek_html_*.html
+vite.config.js.timestamp-*.mjs
+
+# Extraits bruts et scripts de debug nominatifs (DCP)
+docs/etude-si-suivi-techniciens-*/as_is_*.json
+scripts/inspect-ngasseu-*.php
+scripts/compare-pif-pluriannuel.php

@@ -1,24 +1,24 @@
-import PvCardGrid from './PvCardGrid.jsx'
+import CardRail from './CardRail.jsx'
 import CatalogTrainingCard from './CatalogTrainingCard.jsx'
+import useLocale from '../hooks/useLocale.js'
 
-const SHOW_ALL_UP_TO = 12
-const PREVIEW_LIMIT = 8
-
-function homePreviewLimit(count) {
-  return count > SHOW_ALL_UP_TO ? PREVIEW_LIMIT : null
-}
-
-/** Grille formations process SAV sur l'accueil — même pattern que carrosserie. */
+/** Grille formations process SAV sur l'accueil — rail horizontal. */
 export default function ProcessSavHomeGrid({ items, folder }) {
+  const { t: commonT } = useLocale('common')
+
   if (!items?.length) {
     return <div className="empty-section">—</div>
   }
 
   return (
-    <PvCardGrid limit={homePreviewLimit(items.length)}>
+    <CardRail
+      ariaLabel="Formations SAV"
+      arrowLabelPrev={commonT.prev ?? 'Précédent'}
+      arrowLabelNext={commonT.next ?? 'Suivant'}
+    >
       {items.map((training) => (
         <CatalogTrainingCard key={training.code} folder={folder} training={training} />
       ))}
-    </PvCardGrid>
+    </CardRail>
   )
 }

@@ -8,6 +8,7 @@ import usePortalReveal from '../../hooks/usePortalReveal'
 import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
 import { LMS_BY_USER } from '../../data/mock_lms'
+import PortalSectionEyebrow from '../../components/PortalSectionEyebrow.jsx'
 
 function initials(nom) {
   return nom.split(' ').map(n => n[0]).join('').toUpperCase()
@@ -18,7 +19,7 @@ export default function BranchHRDashboard() {
   usePortalReveal()
   const { user } = useAuth()
   const { t } = useLocale('portal')
-  const lms = LMS_BY_USER[user.id]
+  const lms = LMS_BY_USER[user.demoKey]
   const [query, setQuery] = useState('')
   if (!lms) return null
 
@@ -43,7 +44,7 @@ export default function BranchHRDashboard() {
         <section>
           <div className="container" style={{ padding: '48px 32px' }}>
             <div className="portal-section-head">
-              <p className="portal-section-eyebrow">{t.eyebrow_overview}</p>
+              <PortalSectionEyebrow icon="users" label={t.eyebrow_overview} />
               <h2 className="portal-section-title">{t.title_branch_dashboard}</h2>
             </div>
             <div className="portal-kpi-row">
@@ -75,7 +76,7 @@ export default function BranchHRDashboard() {
         <section>
           <div className="container" style={{ padding: '48px 32px' }}>
             <div className="portal-section-head">
-              <p className="portal-section-eyebrow">{t.eyebrow_records}</p>
+              <PortalSectionEyebrow icon="clipboard" label={t.eyebrow_records} />
               <h2 className="portal-section-title">{t.title_directory}</h2>
             </div>
 

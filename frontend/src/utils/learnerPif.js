@@ -227,6 +227,110 @@ export function resolvePifBrandAnnualStatus(user, lms, brandId, scope) {
   return resolvePifBrandAnnualStatusFromItems(user, lms, brandId, scope)
 }
 
+/** Statuts inscription / planification — vocabulaire apprenant, pas DPS filiale. */
+const DPS_FILIALE_HIDDEN_ANNUAL_STATUSES = new Set([
+  'inscrit',
+  'a_inscrire',
+  'a_programmer',
+])
+
+function normalizeBrandByYear(byYear) {
+  if (!byYear || Array.isArray(byYear)) return {}
+  return byYear
+}
+
+function resolveDpsFilialePifProposedRow(lms, brandId, scope) {
+  const brandSummary = lms?.brandPlanningSummary?.[brandId]
+  if (!brandSummary) return null
+  if (scope === PIF_SCOPE_PLURI) return brandSummary
+  const year = String(scope)
+  const byYear = normalizeBrandByYear(brandSummary.byYear)
+  return byYear[year] ?? { total: 0, done: 0 }
+}
+
+/** Validés filiale (x) — branché depuis brandPlanningSummary.byYear. */
+export function resolveDpsFilialePifValidatedCount(lms, brandId, scope) {
+  const row = resolveDpsFilialePifProposedRow(lms, brandId, scope)
+  return row?.done ?? 0
+}
+
+/** Statut annuel DPS filiale — badge désactivé tant que x (validés filiale) n'est pas calculé. */
+export function resolveDpsFilialePifAnnualStatus(user, lms, brandId, scope) {
+  const row = resolveDpsFilialePifProposedRow(lms, brandId, scope)
+  if (!row?.total) return 'a_programmer'
+  return null
+}
+
+/** Puce statut DPS : synthèse d'avancement seulement (pas inscrit / à programmer). */
+export function resolveDpsFilialePifStatus(annualStatus) {
+  if (!annualStatus || DPS_FILIALE_HIDDEN_ANNUAL_STATUSES.has(annualStatus)) return null
+  return annualStatus
+}
+
+/** Bordure carte PIF filiale — avancement x/y quand disponible. */
+export function resolveDpsFilialePifAccentColor(user, lms, brandId, scope) {
+  const row = resolveDpsFilialePifProposedRow(lms, brandId, scope)
+  if (!row?.total) return 'var(--muted)'
+  const done = row.done ?? 0
+  const total = row.total ?? 0
+  if (total <= 0) return 'var(--muted)'
+  const ratio = done / total
+  if (ratio >= 0.7) return '#1aab5b'
+  if (ratio > 0) return '#e67e00'
+  return 'var(--navy)'
+}
+
+/** Total formations PIF filiale pour les filtres année / pluri. */
+export function resolveDpsFilialePifScopeCount(lms, scope) {
+  const summary = lms?.brandPlanningSummary
+  if (!summary || typeof summary !== 'object') return null
+
+  if (scope === PIF_SCOPE_PLURI) {
+    return Object.values(summary).reduce((sum, row) => sum + (row?.total ?? 0), 0)
+  }
+
+  const year = String(scope)
+  return Object.values(summary).reduce(
+    (sum, row) => sum + (normalizeBrandByYear(row?.byYear)[year]?.total ?? 0),
+    0,
+  )
+}
+
+/** Compteur PIF filiale DPS — pluri = allocations Define ; année = y/x pool 2025 par marque. */
+export function resolveDpsFilialePifCardState(lms, brandId, user, scope, t) {
+  const brandSummary = lms?.brandPlanningSummary?.[brandId]
+  if (scope === PIF_SCOPE_PLURI && brandSummary?.total > 0) {
+    const year2025 = normalizeBrandByYear(brandSummary.byYear)['2025']
+    return {
+      kind: 'count',
+      current: brandSummary.total,
+      done: year2025?.done ?? brandSummary.done ?? 0,
+      total: brandSummary.total,
+      muted: false,
+    }
+  }
+
+  if (brandSummary && scope !== PIF_SCOPE_PLURI) {
+    const row = resolveDpsFilialePifProposedRow(lms, brandId, scope)
+    if (row.total > 0) {
+      return {
+        kind: 'count',
+        current: row.total,
+        done: row.done ?? 0,
+        total: row.total,
+        muted: false,
+      }
+    }
+    return {
+      kind: 'empty_year',
+      lines: [t.pif_card_line_empty_year.replace('{year}', String(scope))],
+      muted: true,
+    }
+  }
+
+  return resolvePifBrandCardState(lms, brandId, user, scope, t)
+}
+
 /** Bordure carte PIF — même convention que les sessions (planningSessionAccent). */
 export function resolvePifBrandAccentColor(user, lms, brandId, scope) {
   return planningSessionAccent(resolvePifBrandAnnualStatusFromItems(user, lms, brandId, scope))

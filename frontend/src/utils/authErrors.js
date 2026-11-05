@@ -9,6 +9,8 @@ export const AUTH_ERROR_CODES = {
   NETWORK: 'NETWORK',
   GENERIC: 'GENERIC',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+  OIDC_UNAVAILABLE: 'OIDC_UNAVAILABLE',
+  SESSION_EXPIRED: 'SESSION_EXPIRED',
 }
 
 export const AUTH_SUCCESS_CODES = {
@@ -25,6 +27,10 @@ export const AUTH_MESSAGES = {
   [AUTH_ERROR_CODES.GENERIC]: 'Connexion impossible pour le moment. Réessayez plus tard.',
   [AUTH_ERROR_CODES.SERVICE_UNAVAILABLE]:
     'La connexion au portail apprenant sera bientôt disponible.',
+  [AUTH_ERROR_CODES.OIDC_UNAVAILABLE]:
+    'Service d\u2019authentification temporairement indisponible. Veuillez réessayer plus tard.',
+  [AUTH_ERROR_CODES.SESSION_EXPIRED]:
+    'Votre session de travail a expiré. Veuillez vous reconnecter.',
   [AUTH_SUCCESS_CODES.FORGOT_EMAIL_SENT]:
     'Si un compte est associé à cette adresse, vous recevrez un e-mail de réinitialisation sous quelques minutes.',
 }
@@ -39,6 +45,10 @@ export const AUTH_MESSAGES_EN = {
   [AUTH_ERROR_CODES.GENERIC]: 'Unable to sign in right now. Please try again later.',
   [AUTH_ERROR_CODES.SERVICE_UNAVAILABLE]:
     'Learner portal sign-in will be available soon.',
+  [AUTH_ERROR_CODES.OIDC_UNAVAILABLE]:
+    'Authentication service temporarily unavailable. Please try again later.',
+  [AUTH_ERROR_CODES.SESSION_EXPIRED]:
+    'Your work session has expired. Please sign in again.',
   [AUTH_SUCCESS_CODES.FORGOT_EMAIL_SENT]:
     'If an account exists for this address, you will receive a reset email within a few minutes.',
 }
@@ -53,6 +63,10 @@ export const AUTH_MESSAGES_PT = {
   [AUTH_ERROR_CODES.GENERIC]: 'Impossível iniciar sessão neste momento. Tente mais tarde.',
   [AUTH_ERROR_CODES.SERVICE_UNAVAILABLE]:
     'O início de sessão no portail apprenant estará disponível em breve.',
+  [AUTH_ERROR_CODES.OIDC_UNAVAILABLE]:
+    'Serviço de autenticação temporariamente indisponível. Tente novamente mais tarde.',
+  [AUTH_ERROR_CODES.SESSION_EXPIRED]:
+    'A sua sessão de trabalho expirou. Inicie sessão novamente.',
   [AUTH_SUCCESS_CODES.FORGOT_EMAIL_SENT]:
     'Se existir uma conta associada a este endereço, receberá um e-mail de reposição em poucos minutos.',
 }

@@ -1,0 +1,68 @@
+{
+  "id":       "yamaha-moto-technique-douala-2026",
+  "cat":      "Formation",
+  "date":     "2026-08-04",
+  "brand":    "YAMAHA",
+  "tone":     "t1",
+  "titre":    "Formation technique Yamaha Moto · Immersion deux-roues & injection à Douala",
+  "resume":   "Au Centre de Formation de Douala, Gauthier OUEDRAOGO forme les spécialistes deux-roues du réseau CFAO aux technologies injection et motorisation Yamaha.",
+  "readtime": "4 min",
+  "views":    0,
+  "contenu":  "Des modèles utilitaires urbains aux motos tout-terrain, le parc deux-roues Yamaha exige une précision mécanique et électronique sans faille. À Douala, la session technique Yamaha Moto réunit les techniciens clés du réseau pour une semaine d'immersion totale.\n\n## Les spécialistes deux-roues\n\nVenus des différentes concessions CFAO réparties en Afrique de l'Ouest et Centrale, les techniciens motos se rassemblent autour de leur formateur référent, Gauthier OUEDRAOGO. Leur ambition : perfectionner leurs compétences sur les motorisations 4 temps, l'injection électronique YDIS et la partie cycle Yamaha.\n\n## Technologie et diagnostic YDIS\n\n« Sur une moto moderne, le réglage empirique n'a plus cours : l'outil de diagnostic Yamaha et la rigueur métrologique priment. »\n\nC'est ainsi que Gauthier OUEDRAOGO résume la démarche dans la vidéo. Après les rappels sur les principes de carburation et d'injection électronique, les techniciens se confrontent aux schémas de faisceaux et à la détection de pannes complexes.\n\n## En atelier pratique\n\nSur le banc de démontage, les stagiaires s'affairent : calage de la distribution, métrologie des cylindres, révision des suspensions et contrôle des circuits de charge. Gauthier OUEDRAOGO supervise chaque binôme au millimètre, partageant les astuces métier et calquant la gestuelle sur les standards stricts de Yamaha Motor.\n\n## Des ateliers motos renforcés\n\nLa session se termine par un débriefing collectif présidé par Laurent GONIN, Directeur du Centre, et la remise des attestations de compétences. Grâce à cette formation de pointe, les filiales CFAO renforcent leur capacité à entretenir et dépanner les flottes de deux-roues professionnelles et de particuliers avec une fiabilité irréprochable.",
+  "highlights": [
+    {
+      "label": "Lieu",
+      "value": "Douala, Cameroun",
+      "icon": "flag",
+      "flag": "/assets/flags/cameroon.svg"
+    },
+    {
+      "label": "Marque",
+      "value": "Yamaha",
+      "icon": "logo",
+      "logo": "/assets/logos/yamaha.png"
+    },
+    {
+      "label": "Format",
+      "value": "Présentiel & Atelier"
+    },
+    {
+      "label": "Formateur référent",
+      "value": "Gauthier OUEDRAOGO",
+      "icon": "avatar",
+      "avatar": "/assets/team/gauthier-ouedraogo-1.png"
+    }
+  ],
+  "castTitle": "Les acteurs de la formation",
+  "cast": [
+    {
+      "name": "Gauthier OUEDRAOGO",
+      "role": "Formateur Référent Yamaha Moto",
+      "lieu": "Burkina Faso",
+      "photo": "/assets/team/gauthier-ouedraogo-1.png"
+    },
+    {
+      "name": "Laurent GONIN",
+      "role": "Directeur du Centre de Formation",
+      "lieu": "France",
+      "photo": "/assets/images_articles/laurent_gonin.jpg"
+    }
+  ],
+  "cover":    "/assets/hover_section_motors/08_hover_yamaha_bg.png",
+  "photos":   {
+    "count": 3,
+    "urls": [
+      "/assets/hover_section_motors/08_hover_yamaha_bg.png"
+    ],
+    "captures": [
+      { "at": 14 },
+      { "at": 30 }
+    ]
+  },
+  "videos":   {
+    "count": 1,
+    "urls": [
+      "/assets/videos_articles/Formation%20YAMAHA%20Moto%20EN.mp4"
+    ]
+  }
+}

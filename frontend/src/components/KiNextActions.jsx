@@ -1,9 +1,17 @@
+import PortalSectionEyebrow from './PortalSectionEyebrow.jsx'
 import PvCard from './PvCard.jsx'
 import FadStatusBadge from './FadStatusBadge.jsx'
 import useLocale from '../hooks/useLocale'
 
+export function resolveKiUpcomingSessions(lms, limit = 3) {
+  const order = { planifie: 0, attente: 1 }
+  return [...(lms?.formationsADispenser ?? [])]
+    .sort((a, b) => (order[a.statut] ?? 9) - (order[b.statut] ?? 9))
+    .slice(0, limit)
+}
+
 export function resolveKiNextActions(lms) {
-  const fad = lms?.formationsADispenser?.find(f => f.statut === 'planifie')
+  const fad = resolveKiUpcomingSessions(lms, 1)[0]
   if (!fad) return []
   return [{ id: `ki-next-fad-${fad.id}`, kind: 'fad', data: fad }]
 }
@@ -33,7 +41,7 @@ export default function KiNextActions({ lms }) {
   return (
     <div className="portal-ki-next-actions">
       <div className="portal-section-head portal-section-head--compact">
-        <p className="portal-section-eyebrow">{t.eyebrow_next_actions}</p>
+        <PortalSectionEyebrow icon="listtodo" label={t.eyebrow_next_actions} />
         <h2 className="portal-section-title portal-section-title--sm">{t.ki_next_fad_title}</h2>
       </div>
       <div className="pv-grid cols-4 pv-grid--stretch">

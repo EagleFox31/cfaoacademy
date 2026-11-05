@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import useSiteEffects from '../hooks/useSiteEffects.js'
+import useAuth from '../hooks/useAuth.js'
+import usePortalBackground from '../hooks/usePortalBackground.js'
 import useLocale from '../hooks/useLocale.js'
 import { NEWS_TAB_KEYS, CARRO_TAB_KEYS } from '../i18n/home.js'
 import { SESSION_TAB_KEYS } from '../i18n/sessions.js'
@@ -8,17 +10,15 @@ import { sectionTitle } from '../utils/sectionTitle.jsx'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import HomeHero from '../components/HomeHero.jsx'
-import BackToTopFab from '../components/BackToTopFab.jsx'
 import LogoMarquee from '../components/LogoMarquee.jsx'
 import KpiBand from '../components/KpiBand.jsx'
 import PreviewSection from '../components/PreviewSection.jsx'
 import PublicCard from '../components/PublicCard.jsx'
 import BrandOfferGrid from '../components/BrandOfferGrid.jsx'
 import ProcessSavHomeGrid from '../components/ProcessSavHomeGrid.jsx'
-import PvCardGrid from '../components/PvCardGrid.jsx'
+import CardRail from '../components/CardRail.jsx'
 import CatalogTrainingCard from '../components/CatalogTrainingCard.jsx'
 import SessionCard from '../components/SessionCard.jsx'
-import SessionsExpandedView from '../components/SessionsExpandedView.jsx'
 import CtaBanner from '../components/CtaBanner.jsx'
 import FlagMarquee from '../components/FlagMarquee.jsx'
 import {
@@ -29,14 +29,14 @@ import {
 import TestimonialShowcase from '../components/TestimonialShowcase.jsx'
 import { TESTIMONIALS } from '../data/testimonials.js'
 import AcademyHomeSection from '../components/AcademyHomeSection.jsx'
+import AssistanceHomeSection from '../components/AssistanceHomeSection.jsx'
 import { ARTICLES } from '../data/articles/index.js'
 import ArticleCard from '../components/ArticleCard.jsx'
 import {
   mergeSessionsReturn,
   scheduleSessionsScroll,
 } from '../utils/sessionsReturn.js'
-import { HOME_SECTION_BG, HOME_SECTION_BG_POSITION, HOME_BACKDROP_SECTION_IDS } from '../data/homeSectionBg.js'
-import { getMotorsSectionHoverBg } from '../data/motorsSectionHoverBg.js'
+import { HOME_BACKDROP_SECTION_IDS } from '../data/homeSectionBg.js'
 import CATALOG from '../data/training-catalog.json'
 import {
   EQUIPMENT_SAV_FOLDER,
@@ -63,12 +63,6 @@ function bootstrapSessionsRestore(location, searchParams) {
 }
 
 // Grille accueil : tout afficher jusqu’à 12 cartes ; au-delà, 8 visibles + « Voir tout »
-const HOME_GRID_SHOW_ALL_UP_TO = 12
-const HOME_GRID_PREVIEW_LIMIT = 8
-
-function homeGridPreviewLimit(count) {
-  return count > HOME_GRID_SHOW_ALL_UP_TO ? HOME_GRID_PREVIEW_LIMIT : null
-}
 const MOTORS_BRANDS = BRANDS.filter(b => b.bu === 'motors' && b.name !== 'Citroën')
 const EQUIPMENT_BRANDS = BRANDS.filter(b => b.bu === 'equipment')
 
@@ -111,6 +105,8 @@ const sessionTabsFromCopy = (sessionsT, upcoming) =>
 
 export default function Accueil() {
   useSiteEffects()
+  const { user } = useAuth()
+  usePortalBackground(user, { requireUser: true })
   const { locale, t: homeT } = useLocale('home')
   const { t: commonT } = useLocale('common')
   const { t: cardsT } = useLocale('cards')
@@ -144,24 +140,15 @@ export default function Accueil() {
   const initialRestore = restoreBoot.current === false ? null : restoreBoot.current
 
   const [newsTab, setNewsTab] = useState('all')
-  const [newsExpanded, setNewsExpanded] = useState(false)
   const [sessionTab, setSessionTab] = useState(
     () => initialRestore?.tab ?? BU[0].short,
-  )
-  const [sessionsExpanded, setSessionsExpanded] = useState(
-    () => Boolean(initialRestore?.expanded),
   )
   const [sessionBrand, setSessionBrand] = useState(
     () => initialRestore?.brand ?? 'all',
   )
 
-  useEffect(() => {
-    setNewsExpanded(false)
-  }, [newsTab])
-
   const handleSessionTabChange = (tabId) => {
     setSessionTab(tabId)
-    setSessionsExpanded(false)
     setSessionBrand('all')
   }
 
@@ -177,7 +164,6 @@ export default function Accueil() {
 
     if (merged.tab && isValidSessionTab(merged.tab)) {
       setSessionTab(merged.tab)
-      setSessionsExpanded(Boolean(merged.expanded))
       setSessionBrand(merged.brand ?? 'all')
     }
 
@@ -202,72 +188,46 @@ export default function Accueil() {
     }
   }, [location.key, location.pathname, location.search, location.state, searchParams])
 
-  const newsItemsForTab = newsTab === 'all'
-    ? ARTICLES
-    : ARTICLES.filter((a) => a.category === newsTab)
-  const newsVoir = newsItemsForTab.length > HOME_GRID_SHOW_ALL_UP_TO
-    ? {
-        label: newsExpanded ? commonT.seeLess : commonT.seeMore,
-        expanded: newsExpanded,
-        onClick: () => setNewsExpanded((v) => !v),
-      }
-    : undefined
-
   const sessionsForTab = (active) =>
     UPCOMING.filter((s) => s.bu === BU.find((b) => b.short === active)?.id)
-
-  const sessionsVoir = (active) => {
-    const count = sessionsForTab(active).length
-    return count > HOME_GRID_SHOW_ALL_UP_TO
-      ? {
-          label: sessionsExpanded ? commonT.seeLess : commonT.seeMore,
-          expanded: sessionsExpanded,
-          onClick: () => setSessionsExpanded((v) => !v),
-        }
-      : undefined
-  }
 
   useEffect(() => {
     if (!hash) return
     const id = hash.replace('#', '')
-    requestAnimationFrame(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
+    const scrollToTarget = () => {
+      const el = document.getElementById(id)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }
+    const rafId = requestAnimationFrame(scrollToTarget)
+    const timerId = setTimeout(scrollToTarget, 160)
+    return () => {
+      cancelAnimationFrame(rafId)
+      clearTimeout(timerId)
+    }
   }, [hash])
 
-  const { activeId: activeSectionId, heroVisible } = useHomeSectionFocus(HOME_BACKDROP_SECTION_IDS)
+  const { heroVisible } = useHomeSectionFocus(HOME_BACKDROP_SECTION_IDS)
   const homePageRef = useRef(null)
-  useHomeNewsBgReveal(homePageRef, heroVisible)
-  const backdropSectionId = heroVisible
-    ? null
-    : (activeSectionId ?? HOME_BACKDROP_SECTION_IDS[0])
-
-  const [motorsHoverBg, setMotorsHoverBg] = useState(null)
-  const handleMotorsBrandHover = useCallback((brand) => {
-    setMotorsHoverBg(getMotorsSectionHoverBg(brand.name))
-  }, [])
-  const handleMotorsBrandHoverEnd = useCallback(() => {
-    setMotorsHoverBg(null)
-  }, [])
-  const sectionHoverImages = useMemo(
-    () => (motorsHoverBg ? { offres: motorsHoverBg } : {}),
-    [motorsHoverBg],
-  )
+  useHomeNewsBgReveal(homePageRef, user ? false : heroVisible)
 
   useEffect(() => {
+    if (user) {
+      document.documentElement.classList.remove('home-scroll-snap')
+      return undefined
+    }
     document.documentElement.classList.add('home-scroll-snap')
     return () => document.documentElement.classList.remove('home-scroll-snap')
-  }, [])
+  }, [user])
 
   return (
     <>
       <div className="cursor-glow" id="cursor-glow" />
-      <div ref={homePageRef} className={`home-page${heroVisible ? ' is-hero-phase' : ''}`}>
-      <HomeBackdrop
-        activeId={backdropSectionId}
-        heroPhase={heroVisible}
-        sectionHoverImages={sectionHoverImages}
-      />
+      <div ref={homePageRef} className={`home-page${user ? ' home-page--logged' : ''}${!user && heroVisible ? ' is-hero-phase' : ''}`}>
+      {!user && (
+        <HomeBackdrop heroPhase={heroVisible} />
+      )}
       <Nav />
       <HomeHero />
 
@@ -282,28 +242,20 @@ export default function Accueil() {
         tabs={newsTabs}
         bgWord="news"
         bgWordSide="left"
-        sectionBg={HOME_SECTION_BG.actualites}
-        voir={newsVoir}
       >
         {(active) => {
           const items = active === 'all' ? ARTICLES : ARTICLES.filter((a) => a.category === active)
-
-          if (newsExpanded) {
-            return (
-              <div className="article-grid news-grid-expanded">
-                {items.map((article) => (
-                  <ArticleCard key={article.slug} article={article} />
-                ))}
-              </div>
-            )
-          }
-
           return (
-            <PvCardGrid limit={homeGridPreviewLimit(items.length)} className="pv-card-grid--news">
+            <CardRail
+              className="card-rail--news"
+              ariaLabel={homeT.newsIx ? `${homeT.newsIx}` : 'Actualités'}
+              arrowLabelPrev={commonT.prev ?? 'Précédent'}
+              arrowLabelNext={commonT.next ?? 'Suivant'}
+            >
               {items.map((article) => (
                 <ArticleCard key={article.slug} article={article} />
               ))}
-            </PvCardGrid>
+            </CardRail>
           )
         }}
       </PreviewSection>
@@ -314,13 +266,16 @@ export default function Accueil() {
         ix={homeT.publicsIx}
         title={sectionTitle(homeT.publicsTitleBefore, homeT.publicsTitleEm, homeT.publicsTitleAfter)}
         headClass="pv-head--compact-line"
-        sectionBg={HOME_SECTION_BG.publics}
       >
-        <PvCardGrid>
+        <CardRail
+          ariaLabel={homeT.publicsIx ?? 'Publics'}
+          arrowLabelPrev={commonT.prev ?? 'Précédent'}
+          arrowLabelNext={commonT.next ?? 'Suivant'}
+        >
           {PUBLICS.map((p, i) => (
             <PublicCard key={p.name + i} public={p} />
           ))}
-        </PvCardGrid>
+        </CardRail>
       </PreviewSection>
 
       {/* ── 04 · FORMATIONS MOTORS ── */}
@@ -330,13 +285,9 @@ export default function Accueil() {
         title={sectionTitle(homeT.motorsTitleBefore, homeT.motorsTitleEm, homeT.motorsTitleAfter)}
         headClass="pv-head--compact-line"
         bgWord="motors"
-        bgWordSide="right"
-        sectionBg={HOME_SECTION_BG.motors}
-      >
+        bgWordSide="right"      >
         <BrandOfferGrid
           brands={MOTORS_BRANDS}
-          onBrandHover={handleMotorsBrandHover}
-          onBrandHoverEnd={handleMotorsBrandHoverEnd}
         />
       </PreviewSection>
 
@@ -347,9 +298,7 @@ export default function Accueil() {
         title={sectionTitle(homeT.equipmentTitleBefore, homeT.equipmentTitleEm, homeT.equipmentTitleAfter)}
         headClass="pv-head--compact-line"
         bgWord="equipment"
-        bgWordSide="left"
-        sectionBg={HOME_SECTION_BG.equipment}
-      >
+        bgWordSide="left"      >
         <BrandOfferGrid brands={EQUIPMENT_BRANDS} showAll />
       </PreviewSection>
 
@@ -361,17 +310,25 @@ export default function Accueil() {
         headClass="pv-head--compact-line"
         bgWord="carrosserie"
         bgWordSide="left"
-        sectionBg={HOME_SECTION_BG.carrosserie}
         tabs={carrosserieTabsLocalized}
+        voir={{
+          href: getOfferCataloguePdf('carrosserie', locale),
+          label: cardsT.openCatalogue,
+          filled: true,
+        }}
       >
         {(active) => {
           const group = CATALOG.CARROSSERIE.find((g) => g.level === active)
           return (
-            <PvCardGrid>
+            <CardRail
+              ariaLabel={homeT.carrosserieIx ?? 'Formations carrosserie'}
+              arrowLabelPrev={commonT.prev ?? 'Précédent'}
+              arrowLabelNext={commonT.next ?? 'Suivant'}
+            >
               {group?.trainings.map((f) => (
                 <CatalogTrainingCard key={f.code} folder="carrosserie" training={f} />
               ))}
-            </PvCardGrid>
+            </CardRail>
           )
         }}
       </PreviewSection>
@@ -383,13 +340,11 @@ export default function Accueil() {
         title={sectionTitle(homeT.savMotorsTitleBefore, homeT.savMotorsTitleEm, homeT.savMotorsTitleAfter)}
         headClass="pv-head--compact-line"
         bgWord="sav"
-        bgWordSide="right"
-        sectionBg={HOME_SECTION_BG.savMotors}
-        sectionBgPosition={HOME_SECTION_BG_POSITION.savMotors}
-        tabs={motorsSavTabsLocalized}
+        bgWordSide="right"        tabs={motorsSavTabsLocalized}
         voir={{
           href: getOfferCataloguePdf('savMotors', locale),
           label: cardsT.openCatalogue,
+          filled: true,
         }}
       >
         {(active) => (
@@ -408,12 +363,11 @@ export default function Accueil() {
         title={sectionTitle(homeT.savEquipmentTitleBefore, homeT.savEquipmentTitleEm, homeT.savEquipmentTitleAfter)}
         headClass="pv-head--compact-line"
         bgWord="sav"
-        bgWordSide="right"
-        sectionBg={HOME_SECTION_BG.savEquipment}
-        tabs={equipmentSavTabsLocalized}
+        bgWordSide="right"        tabs={equipmentSavTabsLocalized}
         voir={{
           href: getOfferCataloguePdf('savEquipment', locale),
           label: cardsT.openCatalogue,
+          filled: true,
         }}
       >
         {(active) => (
@@ -439,14 +393,12 @@ export default function Accueil() {
         tabs={sessionTabs}
         bgWord="2026"
         bgWordSide="right"
-        sectionBg={HOME_SECTION_BG.sessions}
-        voir={sessionsVoir(sessionTab)}
       >
         {(active) => {
           const filtered = sessionsForTab(active)
           const sessionsReturn = {
             tab: active,
-            expanded: sessionsExpanded,
+            expanded: false,
             brand: sessionBrand,
             sectionId: 'sessions',
           }
@@ -458,24 +410,17 @@ export default function Accueil() {
             )
           }
 
-          if (sessionsExpanded) {
-            return (
-              <SessionsExpandedView
-                sessions={filtered}
-                filterKey={active}
-                brand={sessionBrand}
-                onBrandChange={setSessionBrand}
-                sessionsReturn={sessionsReturn}
-              />
-            )
-          }
-
           return (
-            <PvCardGrid limit={homeGridPreviewLimit(filtered.length)} className="pv-card-grid--sessions">
+            <CardRail
+              className="card-rail--sessions"
+              ariaLabel={homeT.sessionsIx ?? 'Sessions 2026'}
+              arrowLabelPrev={commonT.prev ?? 'Précédent'}
+              arrowLabelNext={commonT.next ?? 'Suivant'}
+            >
               {filtered.map((s) => (
                 <SessionCard key={s.uid} session={s} sessionsReturn={sessionsReturn} />
               ))}
-            </PvCardGrid>
+            </CardRail>
           )
         }}
       </PreviewSection>
@@ -485,7 +430,8 @@ export default function Accueil() {
       {/* ── 07 · L'ACADEMY ── */}
       <AcademyHomeSection />
 
-      <FlagMarquee />
+      {/* ── ASSISTANCE TECHNIQUE ── */}
+      <AssistanceHomeSection />
 
       {/* ── 08 · TÉMOIGNAGES ── */}
       <PreviewSection
@@ -494,20 +440,15 @@ export default function Accueil() {
         title={sectionTitle(homeT.testimonialsTitleBefore, homeT.testimonialsTitleEm, homeT.testimonialsTitleAfter)}
         headClass="pv-head--compact-line"
         bgWord="terrain"
-        bgWordSide="left"
-        sectionBg={HOME_SECTION_BG.testimonials}
-      >
+        bgWordSide="left"      >
         <TestimonialShowcase items={TESTIMONIALS} />
       </PreviewSection>
 
-      <CtaBanner
-        id="cta-contact"
-        sectionBg={HOME_SECTION_BG.cta}
-        sectionBgPosition={HOME_SECTION_BG_POSITION.cta}
-      />
+      <FlagMarquee />
+
+      <CtaBanner id="cta-contact" />
       <LogoMarquee />
       <Footer />
-      <BackToTopFab />
       </div>
     </>
   )

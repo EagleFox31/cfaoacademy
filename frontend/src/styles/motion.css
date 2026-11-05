@@ -3,13 +3,27 @@
    ═══════════════════════════════════════════════════ */
 
 /* ── Morph de route : crossfade + léger scale ─────── */
+/* Pas de `will-change: transform/filter` ici : il rendrait `.route-motion`
+   containing block des éléments `position: fixed` enfants (ex. .home-backdrop),
+   qui seraient alors dimensionnés sur la page entière au lieu de l'écran. */
 .route-motion {
-  animation: routeIn 0.30s cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: opacity, transform, filter;
+  animation: routeIn 0.30s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.route-motion--pending {
+  visibility: hidden;
+  pointer-events: none;
+}
+/* Après PortalLoader : pas de fade depuis opacity 0 (évite flash body --ink sur l’accueil) */
+.route-motion--ready {
+  animation: routeInReady 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes routeIn {
   from { opacity: 0; transform: translateY(8px) scale(0.994); filter: blur(3px); }
   to   { opacity: 1; transform: none; filter: none; }
+}
+@keyframes routeInReady {
+  from { transform: translateY(6px) scale(0.996); }
+  to   { transform: none; }
 }
 
 /* ── Skeleton shimmer ─────────────────────────────── */
@@ -36,6 +50,7 @@
 .skel--dim { background: #eef0f6; }
 
 @media (prefers-reduced-motion: reduce) {
-  .route-motion { animation: none; }
+  .route-motion,
+  .route-motion--ready { animation: none; }
   .skel::after { animation: none; }
 }

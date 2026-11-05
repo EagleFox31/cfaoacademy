@@ -1,2 +1,5 @@
 catalogues/** filter=lfs diff=lfs merge=lfs -text
 assets/** filter=lfs diff=lfs merge=lfs -text
+# Registre de contrats et specs publiées : octets identiques à la génération, quel que soit core.autocrlf.
+contracts/** text=auto eol=lf
+**/contract/*.openapi.json text eol=lf

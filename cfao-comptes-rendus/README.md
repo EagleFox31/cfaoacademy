@@ -55,6 +55,11 @@ formateurs, déposer un fichier JSON de même forme dans le volume `/donnees` et
 `PROFILS_LOCAUX=/donnees/profils-locaux.json`). Cinq échecs consécutifs bloquent un identifiant
 pendant une minute.
 
+## Mise en production
+
+- [MISE_A_JOUR.md](MISE_A_JOUR.md) : mettre à jour le module sur le serveur (changer `CR_VERSION`, relancer `deploy`).
+- [PUBLIER_IMAGES.md](PUBLIER_IMAGES.md) : construire ou modifier les images et les pousser sur Docker Hub.
+
 ## Exposer en interne
 
 Par défaut la passerelle n'écoute que sur `127.0.0.1` (`CR_BIND`). Pour l'ouvrir au réseau

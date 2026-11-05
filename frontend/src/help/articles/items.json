@@ -1,0 +1,170 @@
+[
+  {
+    "id": "portal-overview",
+    "topics": ["portal"],
+    "roles": ["*"],
+    "contextKeys": ["portal-home"],
+    "fr": {
+      "title": "Vue d'ensemble du portail",
+      "summary": "À quoi sert votre espace connecté et comment s'y repérer.",
+      "body": "Le portail regroupe vos plans de formation, vos résultats, vos certifications et, selon votre profil, le suivi d'équipe ou de filiale.\n\nChaque section correspond à une ancre dans la page : la barre de navigation du portail fait défiler la page jusqu'à la zone concernée.\n\nUtilisez le bouton Aide (actuellement : visite guidée ou contact expert) pour un rappel rapide. Ce centre d'aide viendra compléter ces raccourcis."
+    },
+    "en": {
+      "title": "Portal overview",
+      "summary": "What your signed-in workspace is for and how to find your way around.",
+      "body": "The portal brings together your training plans, results, certifications and, depending on your profile, team or branch monitoring.\n\nEach section matches an anchor on the page: the portal navigation bar scrolls to the relevant area.\n\nUse the Help button (currently: guided tour or contact an expert) for a quick reminder. This help center will extend those shortcuts."
+    },
+    "pt": {
+      "title": "Visão geral do portal",
+      "summary": "Para que serve o seu espaço autenticado e como orientar-se.",
+      "body": "O portal reúne os seus planos de formação, resultados, certificações e, consoante o perfil, o acompanhamento de equipa ou filial.\n\nCada secção corresponde a uma âncora na página: a barra de navegação do portal desloca-se até à zona relevante.\n\nUse o botão Ajuda (atualmente: visita guiada ou contacto com especialista) para um lembrete rápido. Este centro de ajuda completará esses atalhos."
+    }
+  },
+  {
+    "id": "training-plans",
+    "topics": ["training"],
+    "roles": ["learner", "dps", "dop", "team_manager", "workshop_manager"],
+    "contextKeys": ["pif", "plans"],
+    "fr": {
+      "title": "Plans de formation (PIF)",
+      "summary": "Suivre votre parcours, reprendre un module ou piloter les plans de vos équipes.",
+      "body": "La section Plans de formation affiche les parcours en cours, les modules à venir et la progression par marque.\n\nEn tant qu'apprenant, reprenez un module ou un test depuis cette zone. En tant que manager ou DPS, ouvrez le détail d'un collaborateur pour voir son plan et ses écarts.\n\nLes niveaux affichés dans l'en-tête (Junior, Senior, Expert…) reflètent le référentiel MEDACAP de votre marque."
+    },
+    "en": {
+      "title": "Training plans (PIF)",
+      "summary": "Track your pathway, resume a module or manage your teams' plans.",
+      "body": "The Training plans section shows ongoing pathways, upcoming modules and progress by brand.\n\nAs a learner, resume a module or test from this area. As a manager or DPS, open a collaborator's detail to review their plan and gaps.\n\nLevels shown in the header (Junior, Senior, Expert…) reflect your brand's MEDACAP framework."
+    },
+    "pt": {
+      "title": "Planos de formação (PIF)",
+      "summary": "Acompanhar o percurso, retomar um módulo ou gerir planos das equipas.",
+      "body": "A secção Planos de formação mostra percursos em curso, módulos futuros e progresso por marca.\n\nComo formando, retome um módulo ou teste a partir desta zona. Como gestor ou DPS, abra o detalhe de um colaborador para ver o plano e lacunas.\n\nOs níveis no cabeçalho (Junior, Senior, Expert…) reflectem o referencial MEDACAP da marca."
+    }
+  },
+  {
+    "id": "competency-results",
+    "topics": ["results"],
+    "roles": ["learner", "dps", "dop", "team_manager", "workshop_manager", "branch_director"],
+    "contextKeys": ["resultats"],
+    "fr": {
+      "title": "Résultats de compétence",
+      "summary": "Lire vos bilans, comparer les scores et comprendre les niveaux.",
+      "body": "Les résultats regroupent vos évaluations pratiques et théoriques par marque et par niveau.\n\nUn clic sur une évaluation ouvre le bulletin détaillé (compétences, scores, recommandations). Les managers voient une synthèse par technicien ou par équipe.\n\nConsultez le modèle MEDACAP dans la documentation interne pour le détail des grilles Junior / Senior / Expert."
+    },
+    "en": {
+      "title": "Competency results",
+      "summary": "Read your reports, compare scores and understand levels.",
+      "body": "Results gather your practical and theoretical assessments by brand and level.\n\nClick an assessment to open the detailed bulletin (skills, scores, recommendations). Managers see a summary per technician or team.\n\nRefer to the internal MEDACAP model documentation for Junior / Senior / Expert grid details."
+    },
+    "pt": {
+      "title": "Resultados de competência",
+      "summary": "Ler relatórios, comparar pontuações e compreender níveis.",
+      "body": "Os resultados reúnem avaliações práticas e teóricas por marca e nível.\n\nClique numa avaliação para abrir o boletim detalhado (competências, pontuações, recomendações). Gestores veem síntese por técnico ou equipa.\n\nConsulte o modelo MEDACAP na documentação interna para detalhes das grelhas Junior / Senior / Expert."
+    }
+  },
+  {
+    "id": "tests-certifications",
+    "topics": ["results", "training"],
+    "roles": ["learner", "team_manager", "workshop_manager"],
+    "contextKeys": ["tests", "certifs"],
+    "fr": {
+      "title": "Tests et certifications",
+      "summary": "Planifier un test, comprendre une certification constructeur.",
+      "body": "La section Tests liste les évaluations disponibles ou à planifier. Les certifications validées apparaissent dans Certifications avec la marque et la date.\n\nUn test en atelier est souvent déclenché par votre manager ou votre KI. En cas de blocage (accès, créneau, marque), passez par Assistance."
+    },
+    "en": {
+      "title": "Tests and certifications",
+      "summary": "Schedule a test, understand a manufacturer certification.",
+      "body": "The Tests section lists available or schedulable assessments. Validated certifications appear under Certifications with brand and date.\n\nA workshop test is often triggered by your manager or KI. If blocked (access, slot, brand), use Assistance."
+    },
+    "pt": {
+      "title": "Testes e certificações",
+      "summary": "Planear um teste, compreender uma certificação de construtor.",
+      "body": "A secção Testes lista avaliações disponíveis ou a planear. Certificações validadas aparecem em Certificações com marca e data.\n\nUm teste em oficina é frequentemente iniciado pelo gestor ou KI. Se bloqueado (acesso, horário, marca), use Assistência."
+    }
+  },
+  {
+    "id": "assistance-support",
+    "topics": ["support"],
+    "roles": ["*"],
+    "contextKeys": ["assistance"],
+    "fr": {
+      "title": "Assistance atelier",
+      "summary": "Poser une question technique, suivre un ticket OR.",
+      "body": "La carte Assistance en bas du portail permet d'ouvrir un ticket lié à un ordre de réparation (OR) ou à un besoin pédagogique en atelier.\n\nIndiquez la marque, le contexte véhicule et votre question : un expert Academy ou constructeur vous répond. L'historique de vos tickets est accessible depuis la page Assistance dédiée.\n\nSans section Assistance sur votre profil, le menu Aide vous redirige vers le formulaire de contact."
+    },
+    "en": {
+      "title": "Workshop assistance",
+      "summary": "Ask a technical question, track a repair order ticket.",
+      "body": "The Assistance card at the bottom of the portal lets you open a ticket linked to a repair order (RO) or a workshop training need.\n\nState the brand, vehicle context and your question: an Academy or manufacturer expert will reply. Ticket history is available on the dedicated Assistance page.\n\nIf your profile has no Assistance section, the Help menu sends you to the contact form."
+    },
+    "pt": {
+      "title": "Assistência oficina",
+      "summary": "Fazer uma pergunta técnica, acompanhar ticket OR.",
+      "body": "O cartão Assistência no fundo do portal permite abrir um ticket ligado a uma ordem de reparação (OR) ou necessidade formativa em oficina.\n\nIndique marca, contexto do veículo e pergunta: um especialista Academy ou construtor responde. O histórico está na página Assistência.\n\nSem secção Assistência no perfil, o menu Ajuda redireciona para o formulário de contacto."
+    }
+  },
+  {
+    "id": "guided-tour",
+    "topics": ["portal"],
+    "roles": ["*"],
+    "contextKeys": ["portal-home"],
+    "fr": {
+      "title": "Visite guidée",
+      "summary": "Relancer le parcours pas à pas du portail.",
+      "body": "La visite guidée existante surligne chaque section de votre profil et fait défiler la page automatiquement.\n\nElle se lance à la première connexion puis reste accessible via Aide → Visite guidée. Ce centre d'aide proposera bientôt des micro-visites ciblées (ex. « Aide sur les plans de formation ») en complément du parcours complet."
+    },
+    "en": {
+      "title": "Guided tour",
+      "summary": "Restart the step-by-step portal walkthrough.",
+      "body": "The existing guided tour highlights each section for your profile and scrolls the page automatically.\n\nIt runs on first login and stays available via Help → Guided tour. This help center will soon offer targeted micro-tours (e.g. \"Help on training plans\") alongside the full walkthrough."
+    },
+    "pt": {
+      "title": "Visita guiada",
+      "summary": "Reiniciar o percurso passo a passo do portal.",
+      "body": "A visita guiada existente destaca cada secção do seu perfil e desloca a página automaticamente.\n\nInicia-se no primeiro login e permanece em Ajuda → Visita guiada. Este centro de ajuda terá em breve micro-visitas (ex. « Ajuda nos planos de formação ») além do percurso completo."
+    }
+  },
+  {
+    "id": "dps-dashboard",
+    "topics": ["training", "results"],
+    "roles": ["dps", "dop"],
+    "contextKeys": ["pif", "resultats", "activite", "collaborateurs"],
+    "fr": {
+      "title": "Portail DPS / DOP",
+      "summary": "Piloter les plans, résultats et activité par marque.",
+      "body": "Votre portail met en avant les effectifs par marque dans l'en-tête, puis les sections Plans, Résultats, Activité et Collaborateurs.\n\nUtilisez les filtres marque pour comparer les filiales ou ateliers. Les plans ouvrent le détail par technicien ; les résultats agrègent les bilans récents.\n\nLa visite guidée DPS inclut une étape dédiée aux pastilles marque en haut de page."
+    },
+    "en": {
+      "title": "DPS / DOP portal",
+      "summary": "Manage plans, results and activity by brand.",
+      "body": "Your portal highlights headcount by brand in the header, then Plans, Results, Activity and Collaborators sections.\n\nUse brand filters to compare branches or workshops. Plans open per-technician detail; results aggregate recent bulletins.\n\nThe DPS guided tour includes a step for the brand chips at the top."
+    },
+    "pt": {
+      "title": "Portal DPS / DOP",
+      "summary": "Gerir planos, resultados e actividade por marca.",
+      "body": "O portal destaca efectivos por marca no cabeçalho, depois Planos, Resultados, Actividade e Colaboradores.\n\nUse filtros de marca para comparar filiais ou oficinas. Planos abrem detalhe por técnico; resultados agregam boletins recentes.\n\nA visita guiada DPS inclui passo dedicado às pastilhas de marca no topo."
+    }
+  },
+  {
+    "id": "language-locale",
+    "topics": ["portal"],
+    "roles": ["*"],
+    "contextKeys": ["portal-home"],
+    "fr": {
+      "title": "Langue du portail",
+      "summary": "Changer entre français, anglais et portugais.",
+      "body": "Le sélecteur de langue en haut à droite applique immédiatement la traduction du portail (navigation, cartes, visites guidées).\n\nLes contenus de formation e-learning peuvent rester dans la langue constructeur selon la marque. Ce centre d'aide suit la même locale que le reste de l'interface."
+    },
+    "en": {
+      "title": "Portal language",
+      "summary": "Switch between French, English and Portuguese.",
+      "body": "The language selector at the top right instantly applies portal translations (navigation, cards, guided tours).\n\nE-learning content may remain in the manufacturer language depending on brand. This help center follows the same locale as the rest of the UI."
+    },
+    "pt": {
+      "title": "Idioma do portal",
+      "summary": "Alternar entre francês, inglês e português.",
+      "body": "O selector de idioma no canto superior direito aplica imediatamente a tradução do portal (navegação, cartões, visitas guiadas).\n\nConteúdos e-learning podem permanecer na língua do construtor consoante a marca. Este centro de ajuda segue a mesma locale que o resto da interface."
+    }
+  }
+]

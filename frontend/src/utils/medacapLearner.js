@@ -20,17 +20,35 @@ export function resolveMedacapLearnerUser(user, medacapProfile) {
     ? Object.fromEntries(brands.map(b => [b, certKey]))
     : user.certLevels
 
+  const rawFiliale = medacapProfile.subsidiary ?? user.filiale
+  const filiale = /^CAMEROON\s+MOTORS(?:\s+INDUSTRIES)?$/i.test(String(rawFiliale ?? '').trim())
+    ? 'CFAO MOBILITY CAMEROUN'
+    : rawFiliale
+
   return {
     ...user,
     firstName: medacapProfile.firstName ?? user.firstName,
     lastName: medacapProfile.lastName ?? user.lastName,
-    filiale: medacapProfile.subsidiary ?? user.filiale,
+    filiale,
     orgLabel: medacapProfile.agency ?? user.orgLabel,
     pays: medacapProfile.country ?? user.pays,
     brands,
     certLevels,
     medacapUserId: medacapProfile.medacapUserId ?? user.medacapUserId,
   }
+}
+
+/** Objectifs certification hero — dérivés du profil MEDACAP si disponible. */
+export function resolveMedacapLearnerCertGoals(medacapProfile) {
+  if (!medacapProfile?.brands?.length) return []
+  const current = levelToCertKey(medacapProfile.level) ?? 'JUNIOR'
+  const target = current === 'EXPERT' ? 'EXPERT' : current === 'SENIOR' ? 'EXPERT' : 'SENIOR'
+  return medacapProfile.brands.map(brand => ({
+    brand,
+    currentLevel: current,
+    targetLevel: target,
+    targetDate: '—',
+  }))
 }
 
 /**

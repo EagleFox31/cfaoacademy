@@ -1,0 +1,13 @@
+# Ressource « course » (LMS) — catalogue GLOBAL. Lecture pour tout authentifié ;
+# écriture réservée aux rôles contenu (pas de périmètre org sur le catalogue).
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: course
+  rules:
+    - actions: ["view", "list"]
+      effect: EFFECT_ALLOW
+      roles: ["*"]
+    - actions: ["create", "update", "delete"]
+      effect: EFFECT_ALLOW
+      roles: ["trainer", "content_editor", "center_director", "superadmin"]

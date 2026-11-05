@@ -1,0 +1,19 @@
+server:
+  httpListenAddr: ":3592"
+  grpcListenAddr: ":3593"
+
+storage:
+  driver: disk
+  disk:
+    directory: /policies
+    watchForChanges: true
+
+# Journal des decisions d'autorisation — utile en investigation : il dit qui a
+# demande quoi et ce que la politique a repondu. `storagePath` est OBLIGATOIRE
+# des que le backend local est actif, sinon Cerbos refuse de demarrer.
+audit:
+  enabled: true
+  backend: local
+  local:
+    storagePath: /audit
+    retentionPeriod: 168h

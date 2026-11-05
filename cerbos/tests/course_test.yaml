@@ -1,0 +1,56 @@
+# Tests policy course — catalogue global : lecture ouverte, écriture rôles contenu (+ négatifs).
+name: CourseSuite
+description: Catalogue LMS — lecture pour tous, écriture rôles contenu
+
+principals:
+  learner:
+    id: l_1
+    roles: ["learner"]
+    attr: { scopeNodes: ["groupe.cmr.douala"] }
+  content_editor:
+    id: e_1
+    roles: ["content_editor"]
+    attr: { scopeNodes: ["groupe"] }
+  trainer:
+    id: t_1
+    roles: ["trainer"]
+    attr: { scopeNodes: ["groupe"] }
+
+resources:
+  course:
+    kind: course
+    id: c_1
+    attr: {}
+
+tests:
+  - name: tout le monde lit le catalogue
+    input:
+      principals: ["learner", "content_editor", "trainer"]
+      resources: ["course"]
+      actions: ["view", "list"]
+    expected:
+      - principal: learner
+        resource: course
+        actions: { "view": EFFECT_ALLOW, "list": EFFECT_ALLOW }
+      - principal: content_editor
+        resource: course
+        actions: { "view": EFFECT_ALLOW, "list": EFFECT_ALLOW }
+      - principal: trainer
+        resource: course
+        actions: { "view": EFFECT_ALLOW, "list": EFFECT_ALLOW }
+
+  - name: rôles contenu écrivent, apprenant NON (négatif)
+    input:
+      principals: ["content_editor", "trainer", "learner"]
+      resources: ["course"]
+      actions: ["create", "update", "delete"]
+    expected:
+      - principal: content_editor
+        resource: course
+        actions: { "create": EFFECT_ALLOW, "update": EFFECT_ALLOW, "delete": EFFECT_ALLOW }
+      - principal: trainer
+        resource: course
+        actions: { "create": EFFECT_ALLOW, "update": EFFECT_ALLOW, "delete": EFFECT_ALLOW }
+      - principal: learner
+        resource: course
+        actions: { "create": EFFECT_DENY, "update": EFFECT_DENY, "delete": EFFECT_DENY }

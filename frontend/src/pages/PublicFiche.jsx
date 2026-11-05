@@ -46,8 +46,8 @@ export default function PublicFiche() {
     backgroundPosition: pageBgPosition,
   }
 
-  if (slug === 'techniciens') {
-    return <Navigate to="/publics/techniciens-voitures/toyota" replace />
+  if (slug === 'techniciens' || slug === 'techniciens-voitures') {
+    return <Navigate to="/publics/techniciens-vehicules-legers/toyota" replace />
   }
 
   if (!data) {

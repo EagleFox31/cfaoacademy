@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useLocation } from 'react-router-dom'
 import SitePageLayout from '../components/SitePageLayout.jsx'
 import useLocale from '../hooks/useLocale.js'
-import PageCloseButton from '../components/PageCloseButton.jsx'
+import PageHeaderClose from '../components/PageHeaderClose.jsx'
 import ContentNotFound from '../components/ContentNotFound.jsx'
 import PreviewSection from '../components/PreviewSection.jsx'
 import CardCarousel from '../components/CardCarousel.jsx'
@@ -13,7 +13,8 @@ import { ARTICLES, getArticle, catSlug } from '../data/articles/index.js'
 import { localizedArticleCardBadge, localizedArticleFields } from '../utils/localizeCard.js'
 import { resolveArticleDetailCfaoLogo } from '../utils/resolveDetailCfaoLogo.js'
 import DetailHeaderLogos from '../components/DetailHeaderLogos.jsx'
-import ArticleVideoEmbed from '../components/ArticleVideoEmbed.jsx'
+import ArticleHeroVideo from '../components/ArticleHeroVideo.jsx'
+import useArticleHeroScroll from '../hooks/useArticleHeroScroll.js'
 import { resolveArticleMedia } from '../utils/articleMedia.js'
 import { sectionTitle } from '../utils/sectionTitle.jsx'
 import { ARTICLE_BU_TAB_KEYS } from '../i18n/articlePage.js'
@@ -44,12 +45,15 @@ function useArticleViews(slug) {
 
 export default function Article() {
   const { slug } = useParams()
+  const location = useLocation()
+  const returnTo = location.state?.from || { pathname: '/', hash: 'actualites' }
   const { locale, t: pageT } = useLocale('articlePage')
   const { t: nfT } = useLocale('notFound')
   const { t: sessionsT } = useLocale('sessions')
   const article = getArticle(slug)
   useArticleViews(slug)
   const media = article ? resolveArticleMedia(article) : null
+  useArticleHeroScroll(media?.heroVideo, slug)
 
   const relatedTabs = useMemo(
     () => RELATED_TAB_IDS.map((id) => {
@@ -76,7 +80,7 @@ export default function Article() {
       <SitePageLayout navActive="actualites">
         <main className="article-page">
           <div className="container article-shell">
-            <PageCloseButton to="/" ariaLabel={pageT.closeHome} />
+            <PageHeaderClose to={returnTo} ariaLabel={pageT.closeHome} />
             <ContentNotFound
               eyebrow={nfT.eyebrow}
               title={pageT.notFoundTitle}
@@ -98,7 +102,9 @@ export default function Article() {
     <SitePageLayout navActive="actualites">
       <main className="article-page">
         <div className="container article-shell">
-          <PageCloseButton to="/" ariaLabel={pageT.closeArticle} />
+          {!media?.heroVideo && (
+            <PageHeaderClose to={returnTo} ariaLabel={pageT.closeArticle} />
+          )}
 
           <div className="article-main">
               <article className="article-sheet">
@@ -117,9 +123,14 @@ export default function Article() {
                 </header>
 
                 {media.heroVideo && (
-                  <figure className="article-hero article-hero--video">
-                    <ArticleVideoEmbed url={media.heroVideo} title={copy.title} />
-                  </figure>
+                  <ArticleHeroVideo
+                    url={media.heroVideo}
+                    title={copy.title}
+                    poster={media.videoPoster}
+                    framePosterSec={media.framePosterSec}
+                    closeTo={returnTo}
+                    closeAriaLabel={pageT.closeArticle}
+                  />
                 )}
                 {!media.heroVideo && media.heroImage && (
                   <figure className="article-hero">
@@ -133,6 +144,9 @@ export default function Article() {
                   photos={media.galleryPhotos}
                   videos={media.bodyVideos}
                   articleSlug={article.slug}
+                  highlights={copy.highlights}
+                  cast={copy.cast}
+                  castTitle={copy.castTitle}
                 />
               </article>
           </div>

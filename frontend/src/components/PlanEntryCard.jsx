@@ -1,4 +1,5 @@
 import PvCard from './PvCard.jsx'
+import { flagUrlForCountry } from '../utils/countryFlag.js'
 
 function PlanEntryIcon({ kind }) {
   const svg = {
@@ -74,35 +75,86 @@ export default function PlanEntryCard({
   hoverHint,
   accentColor = '#1a56db',
   logo,
+  flagSrc,
+  countryFlag,
   brandLabel,
   muted = false,
   statusChip,
+  href,
+  to,
+  onOpen,
   onClick,
+  corner = true,
   className = '',
+  cardMedia,
+  kicker,
+  isComingSoon = false,
+  noMedia = false,
 }) {
-  const mediaClass = `pv-card-img portal-plan-entry-card-img portal-plan-entry-card-img--${kind}${logo || brandLabel ? ' portal-plan-entry-card-img--brand' : ''}`
+  const resolvedFlag = flagSrc || (countryFlag ? flagUrlForCountry(countryFlag) : null)
+  const isFlag = Boolean(resolvedFlag)
+  const mediaClass = `pv-card-img portal-plan-entry-card-img portal-plan-entry-card-img--${kind}${logo || brandLabel ? ' portal-plan-entry-card-img--brand' : ''}${isFlag ? ' portal-plan-entry-card-img--flag' : ''}`
+
+  const resolvedCardMedia = noMedia ? null : (cardMedia ?? (
+    <div className={mediaClass}>
+      {resolvedFlag ? (
+        <div className="portal-plan-entry-flag-wrapper">
+          <img
+            src={resolvedFlag}
+            alt={countryFlag || title || 'Drapeau filiale'}
+            className="portal-plan-entry-flag-img"
+            loading="lazy"
+          />
+        </div>
+      ) : logo ? (
+        <img src={logo} alt="" className="portal-plan-entry-brand-logo" loading="lazy" />
+      ) : brandLabel ? (
+        <span className="portal-plan-entry-brand-wordmark">{brandLabel}</span>
+      ) : (
+        <PlanEntryIcon kind={kind} />
+      )}
+      {statusChip ? (
+        <div className="portal-eval-img-tags">{statusChip}</div>
+      ) : null}
+    </div>
+  ))
+
+  const resolvedCorner = isComingSoon ? (
+    <span className="portal-corner-slash" title="Bientôt disponible">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+      </svg>
+    </span>
+  ) : corner
+
+  const resolvedCta = isComingSoon ? (
+    <span className="portal-cta-coming-soon">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+      </svg>
+      <span>Bientôt disponible</span>
+    </span>
+  ) : cta
+
+  const resolvedHoverHint = isComingSoon
+    ? (hoverHint ? `${hoverHint} (Bientôt disponible)` : "Bientôt disponible")
+    : hoverHint
 
   return (
     <PvCard
+      href={onOpen || onClick ? undefined : href}
+      to={onOpen || onClick ? undefined : to}
+      onClick={onOpen || onClick}
       className={[
         'portal-plan-entry-card',
-        className,
         muted ? 'portal-plan-entry-card--muted' : '',
+        isComingSoon ? 'portal-card--coming-soon' : '',
+        className,
       ].filter(Boolean).join(' ')}
-      cardMedia={(
-        <div className={mediaClass}>
-          {logo ? (
-            <img src={logo} alt="" className="portal-plan-entry-brand-logo" loading="lazy" />
-          ) : brandLabel ? (
-            <span className="portal-plan-entry-brand-wordmark">{brandLabel}</span>
-          ) : (
-            <PlanEntryIcon kind={kind} />
-          )}
-          {statusChip ? (
-            <div className="portal-eval-img-tags">{statusChip}</div>
-          ) : null}
-        </div>
-      )}
+      cardMedia={resolvedCardMedia}
+      kicker={kicker}
       title={title}
       meta={(
         <>
@@ -114,11 +166,11 @@ export default function PlanEntryCard({
           )}
         </>
       )}
-      cta={cta}
+      cta={resolvedCta}
       accentColor={accentColor}
-      hoverHint={hoverHint}
-      onClick={onClick}
-      corner
+      hoverHint={resolvedHoverHint}
+      corner={resolvedCorner}
+      noMedia={noMedia}
     />
   )
 }

@@ -5,7 +5,6 @@ const MAX_BLUR_PX = 22
 /**
  * Sous le hero : aperçu de la photo Actualités (section-bg locale) floutée.
  * Au scroll, le flou et le voile blanc diminuent jusqu’à la netteté.
- * N’affecte pas le hero ni le HomeBackdrop.
  */
 export default function useHomeNewsBgReveal(containerRef, heroVisible) {
   useEffect(() => {

@@ -34,8 +34,10 @@ import {
   WEEKLY_STATUS_DRAFT,
 } from '../../data/mock_delivery'
 
-const NODE_BY_ID = Object.fromEntries(PERT_NODES.map(n => [n.id, n]))
-const EPIC_BY_ID = Object.fromEntries(DELIVERY_EPICS.map(e => [e.id, e]))
+// `.filter(Boolean)` : ces tableaux sont maintenus a la main. Une virgule en trop
+// cree un trou (element undefined) qui faisait planter toute la page au chargement.
+const NODE_BY_ID = Object.fromEntries(PERT_NODES.filter(Boolean).map(n => [n.id, n]))
+const EPIC_BY_ID = Object.fromEntries(DELIVERY_EPICS.filter(Boolean).map(e => [e.id, e]))
 const TEST_KEYS = ['tu', 'ti', 'contract', 'e2e']
 const TEST_CYCLE = { pending: 'done', done: 'na', na: 'pending' }
 
@@ -82,7 +84,7 @@ function TestDots({ story, editable, onTestChange, t }) {
 
 export default function Delivery() {
   useSiteEffects()
-  const { user } = useAuth()
+  const { user, status } = useAuth()
   usePortalBackground(user)
   const { t, locale, setLocale } = useLocale('delivery')
   const { t: commonT } = useLocale('common')
@@ -124,7 +126,8 @@ export default function Delivery() {
       return node.status === 'done' ? 'done' : node.status === 'in_progress' ? 'progress' : 'todo'
     }
     if (prog.pct === 100) return 'done'
-    if (list.some(s => s.status === 'in_progress')) return 'progress'
+    // « En cours » dès qu'au moins une story est terminée OU en cours (pas seulement in_progress).
+    if (prog.done > 0 || list.some(s => s.status === 'in_progress')) return 'progress'
     return 'todo'
   }
   const storiesForPhase = phase => {
@@ -149,6 +152,7 @@ export default function Delivery() {
     })
   }, [stories, epicFilter, statusFilter, phaseFilter, search, locale])
 
+  if (status === "loading") return null
   if (!user) return <Navigate to="/login" replace />
   if (!canAccessDelivery(user.roles)) return <Navigate to="/portail" replace />
 
@@ -213,7 +217,9 @@ export default function Delivery() {
                   <Link to="/" className="dlv-topbar-back">{t.back_to_site} →</Link>
                 </div>
                 <div className="dlv-topbar-chips">
-                  <span className="dlv-week-chip">{t.week_label} {WEEKLY_STATUS_DRAFT.week}</span>
+                  {WEEKLY_STATUS_DRAFT && (
+                    <span className="dlv-week-chip">{t.week_label} {WEEKLY_STATUS_DRAFT.week}</span>
+                  )}
                   <span className={`dlv-role-chip ${editable ? '' : 'ro'}`}>
                     {user.firstName} {user.lastName} · {editable ? 'build' : 'MOA'}
                   </span>
@@ -633,7 +639,8 @@ export default function Delivery() {
         </div>
 
         <div className="dlv-section-title">{t.digest_preview}</div>
-        <div className="dlv-panel">
+        {!GIT_CONFIG.connected && awaitingGit()}
+        <div className="dlv-panel" hidden={!GIT_CONFIG.connected}>
           <div className="dlv-moa">{t.digest_preview_w22}</div>
           {editable && (
             <div className="dlv-actions">
@@ -645,6 +652,7 @@ export default function Delivery() {
         </div>
 
         <div className="dlv-section-title">{t.digest_history}</div>
+        {DIGEST_HISTORY.length === 0 && awaitingGit()}
         <div className="dlv-grid-3">
           {DIGEST_HISTORY.map(d => (
             <div key={d.id} className="dlv-panel">
@@ -661,13 +669,29 @@ export default function Delivery() {
     )
   }
 
+  /** Bandeau d'attente — utilisé partout où la donnée vient du webhook Git. */
+  function awaitingGit() {
+    return (
+      <div className="dlv-panel dlv-awaiting">
+        <div className="dlv-panel-k">{t.awaiting_git_title}</div>
+        <p className="dlv-panel-sub">{t.awaiting_git_body}</p>
+      </div>
+    )
+  }
+
   function renderGit() {
-    const blocks = [
-      { key: 'weekly_avancements', lines: WEEKLY_STATUS_DRAFT.avancements },
-      { key: 'weekly_objectifs', lines: WEEKLY_STATUS_DRAFT.objectifsEnCours },
-      { key: 'weekly_next', lines: WEEKLY_STATUS_DRAFT.objectifsSemaineProchaine },
-      { key: 'weekly_goulots', lines: WEEKLY_STATUS_DRAFT.goulots },
-    ]
+    // Le voyant rouge gouverne le bloc : tant que le dépôt n'est pas connecté,
+    // on n'affiche AUCUN statut hebdo plutôt qu'un statut périmé présenté comme
+    // « en cours ». Un cockpit n'invente pas un contenu qu'il n'a pas.
+    const connected = GIT_CONFIG.connected
+    const blocks = connected
+      ? [
+          { key: 'weekly_avancements', lines: WEEKLY_STATUS_DRAFT.avancements },
+          { key: 'weekly_objectifs', lines: WEEKLY_STATUS_DRAFT.objectifsEnCours },
+          { key: 'weekly_next', lines: WEEKLY_STATUS_DRAFT.objectifsSemaineProchaine },
+          { key: 'weekly_goulots', lines: WEEKLY_STATUS_DRAFT.goulots },
+        ]
+      : []
     return (
       <>
         <div className="dlv-view-head">
@@ -683,17 +707,24 @@ export default function Delivery() {
           {editable && <div className="dlv-actions"><button type="button" className="dlv-btn">{t.git_connect}</button></div>}
         </div>
 
-        <div className="dlv-section-title">{t.weekly_status} · {WEEKLY_STATUS_DRAFT.week}</div>
-        <div className="dlv-grid-2">
-          {blocks.map(b => (
-            <div key={b.key} className="dlv-panel">
-              <div className="dlv-panel-k">{t[b.key]}</div>
-              <ul>{b.lines.map((line, i) => <li key={i}>{line}</li>)}</ul>
-            </div>
-          ))}
+        <div className="dlv-section-title">
+          {t.weekly_status}{connected && WEEKLY_STATUS_DRAFT ? ` · ${WEEKLY_STATUS_DRAFT.week}` : ''}
         </div>
+        {connected ? (
+          <div className="dlv-grid-2">
+            {blocks.map(b => (
+              <div key={b.key} className="dlv-panel">
+                <div className="dlv-panel-k">{t[b.key]}</div>
+                <ul>{b.lines.map((line, i) => <li key={i}>{line}</li>)}</ul>
+              </div>
+            ))}
+          </div>
+        ) : (
+          awaitingGit()
+        )}
 
         <div className="dlv-section-title">{t.commits_week}</div>
+        {!connected && awaitingGit()}
         <div className="dlv-grid-2">
           {RECENT_COMMITS.map(c => (
             <div key={c.id} className="dlv-commit">

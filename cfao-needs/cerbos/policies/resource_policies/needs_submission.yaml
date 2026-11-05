@@ -1,0 +1,47 @@
+# Ressource « needs_submission » — l'Identification des Besoins d'une filiale.
+#
+# Deux mondes séparés volontairement :
+#   - la FILIALE saisit et soumet, dans son périmètre org ;
+#   - l'ÉQUIPE ACADEMY relit, valide ou réouvre — jamais la filiale.
+#
+# `validate` et `reopen` déclenchent un email vers la filiale : les réserver à
+# l'équipe est la traduction en policy du principe « rien ne sort sans relecture ».
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: needs_submission
+  importDerivedRoles:
+    - common_scope
+    - needs_review
+  rules:
+    # Saisie et soumission : encadrement dans le périmètre org.
+    - actions: ["view", "list", "create", "update", "submit"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - team_within_scope
+
+    # Lecture élargie (RH, direction, admins) dans le périmètre.
+    - actions: ["view", "list"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - within_org_scope
+
+    # L'équipe Academy : tout, sur toutes les filiales.
+    - actions: ["view", "list", "create", "update", "submit", "validate", "reopen"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - academy_reviewer
+
+    # Verrou explicite : aucun rôle de filiale ne valide, même dans son périmètre.
+    # Un DENY l'emporte sur tout ALLOW — c'est ce qui rend la règle non contournable.
+    - actions: ["validate", "reopen"]
+      effect: EFFECT_DENY
+      roles:
+        - team_manager
+        - workshop_manager
+        - dps
+        - dop
+        - branch_director
+        - branch_admin
+        - branch_hr
+        - regional_director

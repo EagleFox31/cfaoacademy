@@ -7,7 +7,7 @@
     "sync-catalogues": "node scripts/sync-catalogues.mjs",
     "predev": "npm run sync-catalogues",
     "prebuild": "npm run sync-catalogues",
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run"

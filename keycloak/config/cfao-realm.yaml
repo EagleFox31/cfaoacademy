@@ -10,7 +10,27 @@ registrationAllowed: false
 loginWithEmailAllowed: true
 duplicateEmailsAllowed: false
 resetPasswordAllowed: true
-accessTokenLifespan: 300
+# ── Durées de session (Phase 3 — Auth & Sessions) ──
+# JWT court : 15 minutes. La continuité est assurée par le Silent Refresh côté SPA.
+accessTokenLifespan: 900
+# SSO Session standard (journée de travail) :
+ssoSessionIdleTimeout: 28800          # 8 heures
+ssoSessionMaxLifespan: 86400          # 24 heures
+# "Se souvenir de moi" natif Keycloak (postes personnels, pas les ateliers) :
+rememberMe: true
+ssoSessionIdleTimeoutRememberMe: 604800   # 7 jours
+ssoSessionMaxLifespanRememberMe: 604800   # 7 jours
+# Client session alignée sur la session SSO :
+clientSessionIdleTimeout: 28800
+clientSessionMaxLifespan: 86400
+loginTheme: cfao-academy
+internationalizationEnabled: true
+supportedLocales:
+  - fr
+  - en
+  - pt
+defaultLocale: fr
+
 
 # User profile : déclare les attributs de périmètre 3D pour qu'ils soient acceptés
 # (KC 24+ rejette les attributs non déclarés). unmanagedAttributePolicy ENABLED en filet.
@@ -138,6 +158,10 @@ clients:
     redirectUris:
       - "http://localhost:5173/*"
       - "http://localhost:8000/*"
+      - "http://192.168.1.126:5173/*"
+      - "http://192.168.1.126:8000/*"
+      - "http://192.168.*:5173/*"
+      - "http://192.168.*:8000/*"
     webOrigins:
       - "+"
     attributes:
@@ -326,6 +350,48 @@ users:
       scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
       departments: ["equipment"]
       brands: ["fuso", "renault-trucks", "king-long", "jcb", "lovol"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_centrale"
+        - "groupe.afrique_centrale.cameroun"
+        - "groupe.afrique_centrale.cameroun.douala"
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  # Cameroun — profils MEDACAP. Sans eux, les tableaux de bord DPS et KI n'ont
+  # aucun compte reel derriere leur maquette.
+  - username: jacques.robin
+    id: "11111111-1111-1111-1111-000000000010"
+    enabled: true
+    emailVerified: true
+    email: jacques.robin@cfao.example
+    firstName: Jacques
+    lastName: Robin
+    realmRoles: [dps]
+    attributes:
+      scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
+      departments: ["equipment"]
+      brands: ["sinotruk", "renault-trucks", "king-long", "hino", "jcb", "toyota-forklift", "bt", "lovol"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_centrale"
+        - "groupe.afrique_centrale.cameroun"
+        - "groupe.afrique_centrale.cameroun.douala"
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: andre.yogba
+    id: "11111111-1111-1111-1111-000000000011"
+    enabled: true
+    emailVerified: true
+    email: andre.yogba@cfao.example
+    firstName: Andre
+    lastName: Yogba
+    realmRoles: [learner, ki]
+    attributes:
+      scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
+      departments: ["motors"]
+      brands: ["toyota"]
       orgPath:
         - "groupe"
         - "groupe.afrique_centrale"

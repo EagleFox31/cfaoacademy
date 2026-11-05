@@ -1,0 +1,64 @@
+name: cfao-academy-mail
+
+services:
+  mail-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    mem_limit: 256m
+    environment:
+      POSTGRES_DB: ${DB_NAME:-cfao_mail}
+      POSTGRES_USER: ${DB_USER:-cfao_mail}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD est obligatoire}
+    volumes:
+      - mail-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cfao_mail} -d ${DB_NAME:-cfao_mail}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mail-api:
+    build: .
+    restart: unless-stopped
+    mem_limit: 512m
+    env_file: .env
+    environment:
+      MAIL_DB_HOST: mail-db
+      MAIL_DB_NAME: ${DB_NAME:-cfao_mail}
+      MAIL_DB_USER: ${DB_USER:-cfao_mail}
+      MAIL_DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${API_PORT:-5180}:5180"
+    depends_on:
+      mail-db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5180/api/v1/mail/healthz')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+
+  mail-worker:
+    # Même ordre de grandeur que needs-worker (mesuré 89 Mio, plafond 384 Mio).
+    build: .
+    restart: unless-stopped
+    mem_limit: 384m
+    env_file: .env
+    environment:
+      MAIL_DB_HOST: mail-db
+      MAIL_DB_NAME: ${DB_NAME:-cfao_mail}
+      MAIL_DB_USER: ${DB_USER:-cfao_mail}
+      MAIL_DB_PASSWORD: ${DB_PASSWORD}
+    command: ["python", "manage.py", "qcluster"]
+    depends_on:
+      mail-db: { condition: service_healthy }
+      mail-api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; os.kill(1, 0)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  mail-db:

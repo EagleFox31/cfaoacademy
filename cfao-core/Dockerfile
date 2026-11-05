@@ -1,4 +1,8 @@
 FROM python:3.12-slim
+# contracts:begin - bloc géré par contracts/sync.py, ne pas éditer
+LABEL org.cfao.contracts.consumes="needs-analytics@^1" \
+      org.cfao.module="cfao-core"
+# contracts:end
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1

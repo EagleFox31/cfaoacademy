@@ -3,11 +3,16 @@ import { HERO_IMAGES, HERO_BG_POSITION } from '../data/heroImages.js'
 
 /** Cartes publics — visuels hero (pas les PNG fiches catalogue). */
 const PUBLIC_HERO_ID = {
+  'Techniciens Véhicules Légers': 'vl',
   'Techniciens Voitures': 'vl',
   'Techniciens Poids lourds, Engins, Chariots & Bus': 'pl',
   Carrossiers: 'carrossier',
-  Parts: 'savParts',
-  'Process SAV & Parts': 'savParts',
+  'Conseillers Services': 'savParts',
+  'Manager et conseillers services administratifs, financiers': 'savParts',
+  'Process Parts': 'savParts',
+  Managers: 'savParts',
+  'Manager et responsables organisation SAV': 'savParts',
+  'Process SAV': 'savParts',
   Clients: 'b2b',
 }
 
@@ -21,11 +26,12 @@ const PUBLIC_LOCKED = new Set([
 
 /** Slug URL → nom public */
 export const PUBLIC_FICHE_SLUGS = {
-  'techniciens-voitures': 'Techniciens Voitures',
+  'techniciens-vehicules-legers': 'Techniciens Véhicules Légers',
+  'techniciens-voitures': 'Techniciens Véhicules Légers',
   'techniciens-equipment': 'Techniciens Poids lourds, Engins, Chariots & Bus',
   carrossiers: 'Carrossiers',
-  parts: 'Parts',
-  'process-sav-parts': 'Process SAV & Parts',
+  parts: 'Conseillers Services',
+  'process-sav-parts': 'Managers',
 }
 
 /** Slug variante → logo marque (fiche technicien). */
@@ -49,16 +55,19 @@ export const PUBLIC_BRAND_LOGOS = {
   lovol: '/assets/logos/lovol.png',
 }
 
+const TECHNICIENS_VL_SETS = [
+  { slug: 'toyota', label: 'Toyota', path: 'toyota/technicien_toyota.png' },
+  { slug: 'mercedes', label: 'Mercedes-Benz', path: 'mercedes/technicien_mercedes.png' },
+  { slug: 'stellantis', label: 'Stellantis', path: 'stellantis/technicien_stellantis.png' },
+  { slug: 'suzuki', label: 'Suzuki', path: 'suzuki/technicien_suzuki.png' },
+  { slug: 'byd', label: 'BYD', path: 'byd/technicien_byd.png' },
+  { slug: 'mitsubishi', label: 'Mitsubishi', path: 'mitsubishi/technicien_mitsubishi.png' },
+  { slug: 'omoda-jaecoo', label: 'Omoda & Jaecoo', path: 'omoda-jaecco/technicien_omoda.png' },
+]
+
 const PUBLIC_FICHE_SETS = {
-  'Techniciens Voitures': [
-    { slug: 'toyota', label: 'Toyota', path: 'toyota/technicien_toyota.png' },
-    { slug: 'mercedes', label: 'Mercedes-Benz', path: 'mercedes/technicien_mercedes.png' },
-    { slug: 'stellantis', label: 'Stellantis', path: 'stellantis/technicien_stellantis.png' },
-    { slug: 'suzuki', label: 'Suzuki', path: 'suzuki/technicien_suzuki.png' },
-    { slug: 'byd', label: 'BYD', path: 'byd/technicien_byd.png' },
-    { slug: 'mitsubishi', label: 'Mitsubishi', path: 'mitsubishi/technicien_mitsubishi.png' },
-    { slug: 'omoda-jaecoo', label: 'Omoda & Jaecoo', path: 'omoda-jaecco/technicien_omoda.png' },
-  ],
+  'Techniciens Véhicules Légers': TECHNICIENS_VL_SETS,
+  'Techniciens Voitures': TECHNICIENS_VL_SETS,
   'Techniciens Poids lourds, Engins, Chariots & Bus': [
     { slug: 'fuso', label: 'Fuso', path: 'fuso/technicien_fuso.png' },
     { slug: 'hino', label: 'Hino', path: 'hino/techniciens_hino.png' },
@@ -72,7 +81,7 @@ const PUBLIC_FICHE_SETS = {
     { slug: 'lovol', label: 'Lovol', path: 'lovol/technicien_lovol.png' },
   ],
   Carrossiers: [{ slug: 'carrosserie', label: 'Carrosserie', path: 'carrosserie/carrossier.png' }],
-  Parts: [
+  'Conseillers Services': [
     {
       slug: 'motors',
       label: 'Motors',
@@ -84,7 +93,45 @@ const PUBLIC_FICHE_SETS = {
       path: 'process_sav_parts_equipment/process_parts/profil_parts_equipment.png',
     },
   ],
-  'Process SAV & Parts': [
+  'Manager et conseillers services administratifs, financiers': [
+    {
+      slug: 'motors',
+      label: 'Motors',
+      path: 'process_sav_parts_motors/process_parts/profil_process_parts.png',
+    },
+    {
+      slug: 'equipment',
+      label: 'Equipment',
+      path: 'process_sav_parts_equipment/process_parts/profil_parts_equipment.png',
+    },
+  ],
+  'Process Parts': [
+    {
+      slug: 'motors',
+      label: 'Motors',
+      path: 'process_sav_parts_motors/process_parts/profil_process_parts.png',
+    },
+    {
+      slug: 'equipment',
+      label: 'Equipment',
+      path: 'process_sav_parts_equipment/process_parts/profil_parts_equipment.png',
+    },
+  ],
+  Managers: [
+    {
+      slug: 'sav-motors',
+      label: 'Profils SAV · Motors',
+      path: 'process_sav_parts_motors/process_sav/profils_sav.png',
+    },
+  ],
+  'Manager et responsables organisation SAV': [
+    {
+      slug: 'sav-motors',
+      label: 'Profils SAV · Motors',
+      path: 'process_sav_parts_motors/process_sav/profils_sav.png',
+    },
+  ],
+  'Process SAV': [
     {
       slug: 'sav-motors',
       label: 'Profils SAV · Motors',

@@ -1,0 +1,68 @@
+{
+  "id":       "toyota-g3-douala-pratique-2026",
+  "cat":      "Formation",
+  "date":     "2026-07-08",
+  "brand":    "TOYOTA",
+  "tone":     "t1",
+  "titre":    "Formation Toyota Niveau G3 · Réparation de composants à Douala",
+  "resume":   "Sous la conduite d'Eugène EBENE, les techniciens du réseau valident le niveau Toyota G3 en révision et réparation de composants à Douala.",
+  "readtime": "5 min",
+  "views":    0,
+  "contenu":  "Au centre CFAO Academy de Douala, le cycle Toyota Niveau G3 marque une étape clé pour les techniciens du réseau : passer de la maintenance préventive à la maîtrise de la révision et réparation complète des composants et organes du véhicule. Une session rythmée, exigeante, sous l'œil attentif des experts du centre.\n\n## Les techniciens en action\n\nVenus de plusieurs filiales du réseau CFAO, ils partagent un même cap : franchir le palier Senior en validant le Niveau G3 Toyota. Pour les accompagner, Eugène EBENE, formateur référent Toyota, orchestre chaque séquence d'évaluation et de mise en pratique avec une rigueur millimétrée.\n\n## Théorie et geste atelier\n\n« Maîtriser le niveau Toyota G3, c'est comprendre l'assemblage mécanique, la métrologie et savoir réparer chaque composant dans le strict respect des tolérances constructeur. »\n\nC'est ainsi qu'Eugène EBENE résume l'esprit de ce niveau dans la vidéo. D'un côté, l'analyse approfondie des procédures techniques et des couples de serrage. De l'autre, l'action immédiate à l'atelier : démonter, métrologier, remplacer les pièces d'usure et réassembler les sous-ensembles mécaniques et électriques sans dévier du standard officiel.\n\n## En atelier\n\nDans les allées du centre de Douala, les techniciens démontent, révisent, contrôlent et réparent les organes moteurs, châssis et électriques. Sous le regard d'Eugène EBENE et la supervision de Laurent GONIN, chaque étape est chronométrée et vérifiée. La vidéo restitue cette ambiance de concentration extrême où la précision du geste fait toute la différence.\n\n## Certifications remises\n\nLa semaine s'achève par la validation des épreuves pratiques et la remise des attestations. Une étape décisive pour les ateliers CFAO à travers l'Afrique : des techniciens désormais autonomes sur la réparation de composants, prêts à élever le standard de qualité dès leur retour en concession.",
+  "highlights": [
+    {
+      "label": "Lieu",
+      "value": "Douala, Cameroun",
+      "icon": "flag",
+      "flag": "/assets/flags/cameroon.svg"
+    },
+    {
+      "label": "Marque",
+      "value": "Toyota",
+      "icon": "logo",
+      "logo": "/assets/logos/toyota.png"
+    },
+    {
+      "label": "Format",
+      "value": "Présentiel & Atelier"
+    },
+    {
+      "label": "Formateur référent",
+      "value": "Eugène EBENE",
+      "icon": "avatar",
+      "avatar": "/assets/images_articles/eugene_ebene.jpg"
+    }
+  ],
+  "castTitle": "Les acteurs de la formation",
+  "cast": [
+    {
+      "name": "Eugène EBENE",
+      "role": "Formateur Référent Toyota",
+      "lieu": "Cameroun",
+      "photo": "/assets/images_articles/eugene_ebene.jpg"
+    },
+    {
+      "name": "Laurent GONIN",
+      "role": "Directeur du Centre de Formation",
+      "lieu": "France",
+      "photo": "/assets/images_articles/laurent_gonin.jpg"
+    }
+  ],
+  "cover":    "/assets/images_articles/formation_toyota_g3.jpg",
+  "photos":   {
+    "count": 3,
+    "urls": [
+      "/assets/images_articles/formation_toyota_g3.jpg"
+    ],
+    "captures": [
+      { "at": 14 },
+      { "at": 28 }
+    ]
+  },
+  "videos":   {
+    "count": 1,
+    "urls": [
+      "/assets/videos_articles/FORMATION%20TOYOTA%20NIVEAU%20G3%20FINAL.mp4"
+    ]
+  }
+}

@@ -14,12 +14,11 @@
     {
       "id": "toyota",
       "shortLabel": "Toyota",
-      "label": "Pôle Toyota · 4",
+      "label": "Pôle Toyota · 3",
       "members": [
         { "name": "Eugène EBENE", "role": "Formateur Toyota", "lieu": "Cameroun", "brands": ["toyota"], "photo": "/assets/team/eugene-ebene.png" },
         { "name": "Alassane DIALLO", "role": "Formateur Toyota", "lieu": "Sénégal", "brands": ["toyota"], "photo": "/assets/team/alassane-diallo.png" },
-        { "name": "Jacques MAVILA", "role": "Formateur Toyota & Suzuki", "lieu": "RDC", "brands": ["toyota", "suzuki"], "photo": "/assets/team/jacques-mavila.png" },
-        { "name": "Brice NECHI", "role": "Formateur Stellantis & Toyota", "note": "Jusqu'en Mai 2026", "lieu": "Cameroun", "brands": ["stellantis", "toyota"], "photo": "/assets/team/brice-nechi.png" }
+        { "name": "Jacques MAVILA", "role": "Formateur Toyota & Suzuki", "lieu": "RDC", "brands": ["toyota", "suzuki"], "photo": "/assets/team/jacques-mavila.png" }
       ]
     },
     {
@@ -43,13 +42,12 @@
     {
       "id": "equipement",
       "shortLabel": "Équipement",
-      "label": "Pôle Équipement · 5",
+      "label": "Pôle Équipement · 4",
       "members": [
         { "name": "Thierry KOUGHA", "role": "Formateur · Forklift · JCB · Lovol", "lieu": "Cameroun", "brands": ["toyota-forklift", "jcb", "lovol"], "photo": "/assets/team/thierry-kougha.png" },
         { "name": "Lucien GAGNE", "role": "Formateur · RT · Hino · Fuso", "lieu": "Cameroun", "brands": ["renault-trucks", "hino", "fuso"], "photo": "/assets/team/lucien-gagne.png" },
         { "name": "Idris NKOA", "role": "Formateur · BT · KL · Sinotruk", "lieu": "Cameroun", "brands": ["bt", "king-long", "sinotruk"], "photo": "/assets/team/idris-nkoa.png" },
-        { "name": "Roland NENDA", "role": "Formateur opérateur", "lieu": "Cameroun", "brands": ["jcb", "lovol"], "photo": "/assets/team/roland-nenda.png" },
-        { "name": "Johann GAUDIN", "role": "Formateur · Lovol", "lieu": "Cameroun", "brands": ["lovol"], "photo": "/assets/team/johann-gaudin.png" }
+        { "name": "Roland NENDA", "role": "Formateur opérateur", "lieu": "Cameroun", "brands": ["jcb", "lovol"], "photo": "/assets/team/roland-nenda.png" }
       ]
     },
     {

@@ -1,0 +1,68 @@
+{
+  "id":       "yamaha-marine-hors-bord-douala-2026",
+  "cat":      "Formation",
+  "date":     "2026-08-11",
+  "brand":    "YAMAHA",
+  "tone":     "t1",
+  "titre":    "Formation Yamaha Marine · Maintenance des moteurs hors-bord de pointe à Douala",
+  "resume":   "Gauthier OUEDRAOGO anime au Centre de Douala une session de haute technicité sur les moteurs hors-bord Yamaha Marine et leurs circuits nautiques.",
+  "readtime": "5 min",
+  "views":    0,
+  "contenu":  "L'environnement marin ne pardonne aucune approximation. Au Centre de Formation CFAO Academy de Douala, les techniciens navals du réseau se sont perfectionnés sur la gamme de moteurs hors-bord Yamaha Marine, leaders des côtes et cours d'eau africains.\n\n## Les experts nautiques\n\nVenus des filiales côtières et des zones lacustres du réseau CFAO, ces techniciens ont la responsabilité d'entretenir des moteurs soumis à rude épreuve : sel, humidité, cycles d'utilisation intensifs. À Douala, ils sont encadrés par Gauthier OUEDRAOGO, formateur référent Yamaha Marine, pour approfondir l'architecture mécanique et électrique des moteurs hors-bord.\n\n## Systèmes de refroidissement et diagnostic YDIS Marine\n\n« En mer, la fiabilité est une question de sécurité absolue : la maîtrise du circuit de refroidissement et du diagnostic informatisé fait toute la différence. »\n\nC'est ainsi que Gauthier OUEDRAOGO définit la priorité dans la vidéo. Au programme : circuits d'alimentation en carburant haute pression, protection cathodique anti-corrosion, systèmes de commande électronique et connexion au logiciel de diagnostic Yamaha YDIS Marine.\n\n## Travaux pratiques sur banc d'essai\n\nSur les bancs d'atelier spécialement équipés à Douala, les techniciens démontent les embases, inspectent les turbines de pompe à eau, règlent les tringleries et effectuent des simulations de pannes réelles sur les moteurs d'essai. Laurent GONIN, Directeur du Centre, suit l'évolution des binômes et souligne l'importance stratégique de ce pôle nautique pour le réseau CFAO.\n\n## Clôture et impact sur le terrain\n\nLa remise des attestations clôture cinq jours d'immersion intense. Les techniciens repartent armés de compétences certifiées pour assurer la disponibilité maximale des moteurs Yamaha Marine, qu'il s'agisse d'embarcations de pêche artisanale, de vedettes de transport ou d'unités de surveillance.",
+  "highlights": [
+    {
+      "label": "Lieu",
+      "value": "Douala, Cameroun",
+      "icon": "flag",
+      "flag": "/assets/flags/cameroon.svg"
+    },
+    {
+      "label": "Marque",
+      "value": "Yamaha",
+      "icon": "logo",
+      "logo": "/assets/logos/yamaha.png"
+    },
+    {
+      "label": "Format",
+      "value": "Atelier Pratique Marine"
+    },
+    {
+      "label": "Formateur référent",
+      "value": "Gauthier OUEDRAOGO",
+      "icon": "avatar",
+      "avatar": "/assets/team/gauthier-ouedraogo-1.png"
+    }
+  ],
+  "castTitle": "Les acteurs de la formation",
+  "cast": [
+    {
+      "name": "Gauthier OUEDRAOGO",
+      "role": "Formateur Référent Yamaha Marine",
+      "lieu": "Burkina Faso",
+      "photo": "/assets/team/gauthier-ouedraogo-1.png"
+    },
+    {
+      "name": "Laurent GONIN",
+      "role": "Directeur du Centre de Formation",
+      "lieu": "France",
+      "photo": "/assets/images_articles/laurent_gonin.jpg"
+    }
+  ],
+  "cover":    "/assets/hover_section_motors/08_hover_yamaha_bg.png",
+  "photos":   {
+    "count": 3,
+    "urls": [
+      "/assets/hover_section_motors/08_hover_yamaha_bg.png"
+    ],
+    "captures": [
+      { "at": 18 },
+      { "at": 36 }
+    ]
+  },
+  "videos":   {
+    "count": 1,
+    "urls": [
+      "/assets/videos_articles/Formation%20YAMAHA%20Marine%20EN.mp4"
+    ]
+  }
+}

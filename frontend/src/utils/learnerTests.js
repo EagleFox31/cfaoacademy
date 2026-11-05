@@ -10,7 +10,7 @@ export const COMPETENCY_TIER_BY_LEVEL = {
   G4: 'junior',
   G3: 'senior',
   G2: 'expert',
-  G1: 'expert',
+  G1: 'expert', // diag avancé — même palier mesure MEDACAP que G2
   JUNIOR: 'junior',
   SENIOR: 'senior',
   EXPERT: 'expert',
@@ -65,7 +65,122 @@ export function isFormationTestLocked(user, lms, evalItem, year = 2026) {
   return !isFormationTestUnlocked(user, lms, evalItem, year)
 }
 
-export const EVAL_STATUS_FILTER_IDS = ['all', 'todo', 'done']
+/** Rangs numériques des paliers CFAO MEDACAP (1 = Maintenance, 2 = Réparation, 3 = Diagnostic). */
+export const MEDACAP_TIER_RANK = {
+  // Palier 1 : Maintenance / Junior (Motors G4, Equipment Junior / Bronze / Basic)
+  junior: 1,
+  maintenance: 1,
+  g4: 1,
+  bronze: 1,
+  basic: 1,
+
+  // Palier 2 : Réparation / Senior (Motors G3, Equipment Senior / Silver / Certified)
+  senior: 2,
+  reparation: 2,
+  'réparation': 2,
+  repair: 2,
+  reparacao: 2,
+  'reparação': 2,
+  g3: 2,
+  silver: 2,
+  certified: 2,
+
+  // Palier 3 : Diagnostic / Expert (Motors G2 / G1, Equipment Expert / Gold)
+  expert: 3,
+  diagnostic: 3,
+  diagnostics: 3,
+  diagnostico: 3,
+  'diagnóstico': 3,
+  diag: 3,
+  g2: 3,
+  g1: 3,
+  gold: 3,
+}
+
+/** Résout le rang de niveau d'un test (1 = Maintenance, 2 = Réparation, 3 = Diagnostic). */
+export function resolveEvalItemTierRank(evalItem) {
+  if (!evalItem) return 1
+  const candidates = [
+    evalItem.competencyTier,
+    evalItem.certLevel,
+    evalItem.level,
+  ]
+  for (const c of candidates) {
+    if (!c) continue
+    const key = String(c).toLowerCase().trim()
+    if (MEDACAP_TIER_RANK[key] != null) {
+      return MEDACAP_TIER_RANK[key]
+    }
+  }
+  const title = String(evalItem.title ?? '').toLowerCase()
+  if (title.includes('diag')) return 3
+  if (title.includes('répar') || title.includes('repar')) return 2
+  if (title.includes('maint')) return 1
+  return 1
+}
+
+/** Résout le rang certifié le plus élevé de l'apprenant (G3 = 2 Réparation, G2/G1 = 3 Diagnostic, G4 = 1 Maintenance). */
+export function resolveUserCertifiedTierRank(user, lms, brand = null) {
+  const levelsToCheck = []
+
+  if (brand) {
+    const brandSlug = String(brand).toLowerCase().trim()
+    if (user?.certLevels?.[brandSlug]) levelsToCheck.push(user.certLevels[brandSlug])
+    if (user?.certLevels?.[brand]) levelsToCheck.push(user.certLevels[brand])
+    const brandCert = lms?.certifications?.find(c => String(c.brand).toLowerCase() === brandSlug)
+    if (brandCert?.level) levelsToCheck.push(brandCert.level)
+  }
+
+  if (user?.certLevels && typeof user.certLevels === 'object') {
+    levelsToCheck.push(...Object.values(user.certLevels))
+  }
+  if (user?.certLevel) levelsToCheck.push(user.certLevel)
+  if (user?.level) levelsToCheck.push(user.level)
+
+  if (Array.isArray(lms?.certifications)) {
+    for (const c of lms.certifications) {
+      if (c?.level) levelsToCheck.push(c.level)
+    }
+  }
+
+  let maxRank = 1
+  for (const raw of levelsToCheck) {
+    if (!raw) continue
+    const key = String(raw).toLowerCase().trim()
+    const rank = MEDACAP_TIER_RANK[key]
+    if (rank != null && rank > maxRank) {
+      maxRank = rank
+    }
+  }
+  return maxRank
+}
+
+/**
+ * Test de mesure de compétences CFAO MEDACAP verrouillé :
+ * Si le niveau du test (Maintenance = 1, Réparation = 2, Diagnostic = 3)
+ * est strictement supérieur au palier certifié du technicien.
+ * Ex. : Technicien G3 (Réparation = 2) → tous les tests Diagnostic (palier 3) sont verrouillés.
+ */
+export function isCompetencyTestLocked(user, lms, evalItem) {
+  if (!evalItem || evalItem.status === 'done') return false
+  const testRank = resolveEvalItemTierRank(evalItem)
+  const userRank = resolveUserCertifiedTierRank(user, lms, evalItem.brand)
+  return testRank > userRank
+}
+
+/** Test apprenant verrouillé (compétences selon niveau certifié G3/G2... ou formation selon session présentiel). */
+export function isEvalTestLocked(user, lms, evalItem, year = 2026) {
+  if (!evalItem || evalItem.status === 'done') return false
+  if (evalItem.kind === 'competency') {
+    return isCompetencyTestLocked(user, lms, evalItem)
+  }
+  if (evalItem.kind === 'formation') {
+    return isFormationTestLocked(user, lms, evalItem, year)
+  }
+  return false
+}
+
+export const EVAL_STATUS_FILTER_IDS = ['all', 'todo', 'progress', 'done']
 
 /** Toyota Motors — groupes tests formations par niveau G. */
 export const TOYOTA_FORMATION_GROUP_IDS = [
@@ -117,13 +232,20 @@ export function isEquipmentLearner(user) {
   return false
 }
 
-/** Libellé palier compétences / formation — Equipment : Maintenance/Réparation/Diagnostic ; Motors : Junior/Senior/Expert. */
+/** Libellé niveau compétences — Maintenance / Réparation / Diagnostic */
 export function resolveCompetencyTierLabel(tier, t, user) {
   if (!tier) return null
-  const key = isEquipmentLearner(user)
-    ? `competency_scope_${tier}`
-    : `competency_${tier}`
-  return t?.[key] ?? tier
+  const lower = String(tier).toLowerCase().trim()
+  if (lower === 'junior' || lower === 'maintenance') {
+    return t?.competency_scope_junior ?? 'Maintenance'
+  }
+  if (lower === 'senior' || lower === 'reparation' || lower === 'réparation' || lower === 'repair' || lower === 'reparacao' || lower === 'reparação') {
+    return t?.competency_scope_senior ?? 'Réparation'
+  }
+  if (lower === 'expert' || lower === 'diagnostic' || lower === 'diagnostics' || lower === 'diagnostico' || lower === 'diagnóstico') {
+    return t?.competency_scope_expert ?? 'Diagnostic'
+  }
+  return t?.[`competency_scope_${lower}`] ?? t?.[`competency_${lower}`] ?? tier
 }
 
 /** Sous-sections « Vos tests » selon la BU (Motors G* vs Equipment Maintenance/Réparation/Diagnostic). */
@@ -146,6 +268,14 @@ export function isEvalDone(evalItem) {
   return evalItem?.status === 'done'
 }
 
+export function isEvalInProgress(evalItem) {
+  return evalItem?.status === 'progress'
+}
+
+export function isEvalTodo(evalItem) {
+  return !isEvalDone(evalItem) && !isEvalInProgress(evalItem)
+}
+
 export function evalGroupId(evalItem) {
   if (evalItem?.kind === 'competency') return 'competency'
   const level = evalCatalogLevel(evalItem)
@@ -155,7 +285,8 @@ export function evalGroupId(evalItem) {
 export function matchesEvalStatusFilter(evalItem, filterId) {
   if (filterId === 'all') return true
   if (filterId === 'done') return isEvalDone(evalItem)
-  if (filterId === 'todo') return !isEvalDone(evalItem)
+  if (filterId === 'progress') return isEvalInProgress(evalItem)
+  if (filterId === 'todo') return isEvalTodo(evalItem)
   return true
 }
 
@@ -307,18 +438,51 @@ export function evalQuestionsAnswered(evalItem) {
   return evalItem.questionsAnswered ?? 0
 }
 
+const MONTHS_FR = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+]
+
+/**
+ * Reformate proprement les dates brutes retournées par l'API (ex. 26-06-24 04:43:40 -> 26 juin 2024).
+ * Les heures sont masquées car dépendantes de l'heure serveur UTC.
+ */
+export function formatEvalDate(raw) {
+  if (!raw || raw === '—') return '—'
+  const str = String(raw).trim()
+
+  // Match MEDACAP format: DD-MM-YY HH:mm:ss ou DD-MM-YYYY HH:mm:ss ou DD/MM/YYYY
+  const m = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})(?:\s+(\d{1,2}):(\d{1,2})(?::\d{1,2})?)?$/)
+  if (m) {
+    const day = parseInt(m[1], 10)
+    const monthIdx = parseInt(m[2], 10) - 1
+    let year = parseInt(m[3], 10)
+    if (year < 100) year += 2000
+    const monthName = MONTHS_FR[monthIdx] ?? m[2]
+
+    return `${day} ${monthName} ${year}`
+  }
+
+  return raw
+}
+
 export function evalQuestionsRemaining(evalItem) {
   const total = evalItem.questions ?? 0
   return Math.max(0, total - evalQuestionsAnswered(evalItem))
 }
 
-export function evalAccentColor(evalItem) {
-  if (evalItem.status === 'progress') return '#e67e00'
-  const tier = evalScoreTier(evalItem.score)
+/** Couleur bordure / accent — mêmes paliers que evalScoreTier. */
+export function evalScoreAccentColor(score) {
+  const tier = evalScoreTier(score)
   if (tier === 'high') return '#1aab5b'
   if (tier === 'mid') return '#e67e00'
   if (tier === 'low') return 'var(--red)'
   return 'var(--muted)'
+}
+
+export function evalAccentColor(evalItem) {
+  if (evalItem.status === 'progress') return '#e67e00'
+  return evalScoreAccentColor(evalItem.score)
 }
 
 function evalCardTier(evalItem) {

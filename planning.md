@@ -29,6 +29,13 @@ flowchart TB
     K2["K₂ · Reporting MOA<br/>TE 1.0"]
   end
 
+  subgraph detachable["Module détachable — livraison propre"]
+    N0["N₀ · Recueil socle<br/>TE 0.7 · R0 ven. 28/08"]
+    N1["N₁ · Emailing + délégation<br/>TE 1.7"]
+    N2["N₂ · Consolidation<br/>TE 1.1"]
+    N0 --> N1 --> N2
+  end
+
   A --> F
   C --> E
   C --> D
@@ -37,6 +44,9 @@ flowchart TB
   D --> I
   E --> I
   G --> I
+
+  A -.->|"patrons seulement<br/>Keycloak + Cerbos embarqués"| N0
+  N2 -.->|"needs_consolidated"| E
 
   B --> M
   F --> M
@@ -69,6 +79,7 @@ flowchart TB
 | **M → J** | Gate **obligatoire** — pas d'accès prod sans migration validée |
 | **H, G, K₂** | **Hors chemin critique R1** — post go-live ou parallèle MOA |
 | **K₁** | Démarre tôt (phase 1) ; **ne bloque pas J** |
+| **N₀·N₁·N₂** | **Module détachable** (app 16) — release propre, **ne bloque pas J** et n'est pas bloqué par lui ; A n'en est pas une dépendance de livraison mais une source de patrons |
 
 ### Ce qui a changé (v1 → v2)
 
@@ -100,10 +111,15 @@ flowchart TB
 | **J** | **Gate go-live** | **00-8** | **0,5** | **M** + D (+ E si sessions R1) | *O/M/P : 0,3 / 0,5 / 0,7* |
 | **K₁** | Delivery socle | 15 | **1,4** | A, B, C | Webhook Git, cockpit — *O/M/P : 1,0 / 1,4 / 1,8* |
 | **K₂** | Reporting MOA | 15 | **1,0** | K₁ + I (socle email) | Rappel jeudi, rapport vendredi — *O/M/P : 0,7 / 1,0 / 1,3* |
+| **N₀** | **Recueil socle** | **16** | **0,7** | *(aucune — Keycloak + Cerbos embarqués)* | Compose détachable, familles de catalogue, **parcours complet** saisie → soumission → relecture équipe → validation → envoi — **R0 ven. 28/08** — *O/M/P : 0,5 / 0,7 / 1,1* |
+| **N₁** | Recueil emailing | 16 | **1,7** | N₀ | Templates versionnés, journal + renvoi, relances préparées en lot, saisie déléguée — *O/M/P : 1,2 / 1,6 / 2,3* |
+| **N₂** | Recueil consolidation | 16 | **1,1** | N₁ | Tableau de bord campagne, exports, arbitrage, contrat `needs_consolidated` — *O/M/P : 0,8 / 1,1 / 1,6* |
 
 > **Recrutement ↔ LMS.** G ne démarre qu'après le **socle QCM** de D. Hors périmètre release 1 minimale si MOA valide un MVP sans recrutement.
 
 > **TE cumulée chemin critique R1 :** 2,5 + 3,8 + 3,7 + 6,2 + 3,6 + 0,5 ≈ **20,3 sem.** (1 dev équivalent ; diviser par la taille d'équipe pour le calendrier).
+
+> **Coût du track N :** 0,7 + 1,7 + 1,1 = **3,5 sem.-personne**. Il n'allonge pas le chemin critique *en dépendance*, mais **consomme la même capacité** : à effectif constant, il décale J d'environ 3,5 semaines-personne ÷ effectif. C'est un arbitrage assumé — la campagne 2027 ne peut pas attendre le nœud E.
 
 ### Matrice « bloque le go-live ? »
 
@@ -116,6 +132,18 @@ flowchart TB
 | G, H, K₂ | **Non** (phase 2 / 1.1 / pilotage MOA) |
 | K₁ | **Non** (recommandé dès phase 1 pour visibilité build) |
 | I (métier complet) | **Non** pour J — **oui** pour K₂ et confort utilisateur (rappels, mails formation) |
+| **N₀, N₁, N₂** | **Non** — release propre, jalon calendaire externe (campagne 2027). Contrainte inverse : **J ne bloque pas N** |
+
+### Nœud N — pourquoi il est détaché
+
+| Question | Réponse |
+|----------|---------|
+| Pourquoi ne pas attendre le nœud E ? | La collecte 2027 doit partir avant que E ne soit livré. Attendre ferait sauter une campagne. |
+| Pourquoi pas de dépendance à A, B, C ? | En mode `standalone`, le module embarque **son propre** Keycloak, Cerbos et Postgres. Il reprend les *patrons* de A/B/C, pas leurs livrables. |
+| Comment il rejoint la plateforme ? | Par variables d'environnement (mode `integrated`), sans modification de code — interfaces `ReferentialSource` et `IdentityProvider`. |
+| Que se passe-t-il si N dérive ? | Rien pour J. Le risque est inverse : une dérive de N fait rater la fenêtre de campagne, pas le go-live. |
+
+> Spécification : **`docs/SPEC_RECUEIL_BESOINS_2027.md`** · Stories : `backlog.md` §16 · Accès : `PLATFORM_APPS.md` §16
 
 ### Annexe — triplets O / M / P par nœud *(recalibrage sprint 0)*
 
@@ -136,6 +164,11 @@ Formule : **TE = (O + 4M + P) / 6** (semaines-personne). Les TE du §2 incluent 
 | **J** | 0,3 | 0,5 | 0,7 | **0,5** | — | Checklist, validation MOA, rollback |
 | **K₁** | 1,0 | 1,4 | 1,8 | **1,4** | n/a | Webhook Git, cockpit, backlog |
 | **K₂** | 0,7 | 1,0 | 1,3 | **1,0** | n/a | Templates MOA, rappel jeudi, envoi vendredi |
+| **N₀** | 0,5 | 0,7 | 1,1 | **0,7** | n/a | **Contrainte calendaire, pas d'estimation** — R0 imposé au ven. 28/08 (3 j ouvrés). P élargi : le référentiel dépend d'une validation métier externe |
+| **N₁** | 1,2 | 1,6 | 2,3 | **1,7** | n/a | Emailing asynchrone + templates versionnés + délégation ; P élargi (relais SMTP interne peu fiable, cf. F17) |
+| **N₂** | 0,8 | 1,1 | 1,6 | **1,1** | n/a | Consolidation, arbitrage, contrat `needs_consolidated` |
+
+> **N₀ est un engagement, pas une estimation.** L'écart O–P (0,5–1,1) dépasse la charge réellement disponible (3 jours ≈ 0,6 sem.). Le périmètre est donc tenu par un **ordre de sacrifice écrit** (`docs/SPEC_RECUEIL_BESOINS_2027.md` §12) : export XLSX, puis les filtres avancés, puis l’éditeur de templates. Le PEP Cerbos, la clé `(famille, marque, code)` et le refus de démarrage sans secret ne sont jamais sacrifiés.
 
 **Procédure après sprint 0**
 
@@ -179,12 +212,14 @@ Implémentation initiale : **HTTP webhook direct** (`integration/webhooks.py` c�
 | `certificate_issued` | **LMS → Analytics** | D ⇢ H | Idem |
 | `ki_training_assigned` | **LMS → Notifications** | D ⇢ I | Notif KI/PIC (formation à dispenser) |
 | `org_restructured` | **Identity → Ops, Analytics** | B ⇢ E, H | Recalcul batch `orgPath` (rare) |
+| `needs_consolidated` | **Recueil (app 16) → Ops** | N₂ ⇢ E | Plan de besoins arbitré → alimente l'ouverture des sessions. **Contrat figé dès R0**, implémenté en R2 — E peut être écrit en le supposant |
 
 **Endpoints cibles (core)**
 
 | Webhook entrant | Route indicative | Secret |
 |-----------------|------------------|--------|
 | Ops → core | `POST /api/v1/core/integration/webhooks/session-completed` | HMAC partagé ops↔core |
+| Recueil → ops | `POST /api/v1/ops/integration/webhooks/needs-consolidated` | HMAC partagé needs↔ops |
 | (futur broker) | même contrat, transport changé seulement | — |
 
 **Événements intra-core (Django signals → handler)** — pas de HTTP :
@@ -235,6 +270,7 @@ Implémentation initiale : **HTTP webhook direct** (`integration/webhooks.py` c�
 | **Release** | **J** | Gate go-live utilisateurs | ~sem. **20** (TE critique ÷ effectif) |
 | **1.1** | H, I métier complet | Dashboards + notifications formation | Post-J |
 | **2** | G, webhooks D↔G | Recrutement candidats | Post-J ou parallèle tardif |
+| **N** *(hors phasage)* | **N₀ → N₁ → N₂** | **Campagne besoins 2027** — jalon calendaire externe | **R0 ven. 28 août 2026**, R1 +2 sem., R2 +4 sem. |
 
 ```text
 Semaine →  0    5    10   15   20   25
@@ -246,7 +282,12 @@ M                    [========]
 K₂ I socle              [==]
 J                           [J]
 H G                              [==== optionnel]
+
+track N (détaché, calendrier campagne — ne s'aligne pas sur les semaines ci-dessus)
+N₀ [R0 ven. 28/08]  N₁ [+2 sem.]  N₂ [+4 sem.]
 ```
+
+> **Le track N ne s'inscrit pas dans le phasage plateforme.** Sa contrainte est la fenêtre de collecte 2027, pas la gate **J**. Il partage en revanche la capacité de l'équipe (§2) — c'est la seule interaction à piloter.
 
 ---
 
@@ -285,10 +326,78 @@ Implémentation → ① TU → ② TI → ③ Contrat → ④ E2E
 - [ ] ③ Contrat si la story expose ou consomme une API / webhook inter-service
 - [ ] ④ E2E si la story a un parcours utilisateur ou un rôle métier visible
 - [ ] Documentation API / événement mise à jour si le contrat change
+- [ ] **Budget de ressources** déclaré si la story ajoute ou modifie un conteneur (§7)
 
 ---
 
-## 7. Références
+## 7. Budget de ressources — norme de développement
+
+**Tout conteneur qu'on ajoute déclare ce qu'il a le droit de consommer.** Sans plafond,
+un service peut prendre toute la machine ; sur une infra partagée, c'est le voisin qui
+tombe, et le diagnostic part dans la mauvaise direction.
+
+### Les quatre règles
+
+| # | Règle | Pourquoi |
+|---|-------|----------|
+| **1** | `mem_limit` sur **chaque** service, calibré sur une **mesure**, pas sur une intuition | Un plafond deviné est soit inutile, soit une panne différée |
+| **2** | `restart: unless-stopped` sur tout service persistant | Sinon un conteneur mort la nuit se découvre le matin |
+| **3** | **Pas** de `cpus:` par défaut | Le throttling est silencieux et se diagnostique mal ; on agit sur la **cause** (intervalle de scrutation, nombre de workers), pas sur le symptôme |
+| **4** | Toute valeur par défaut d'un composant tiers est **suspecte** | Elle vise le cas d'usage du fournisseur, jamais le nôtre |
+
+### La règle 4 en pratique
+
+Trois exemples relevés au premier démarrage du module `cfao-needs`, tous invisibles
+avant de mesurer :
+
+| Défaut du fournisseur | Ce qu'il vise | Ce qu'on en fait |
+|---|---|---|
+| Keycloak — tas JVM libre, **524 Mio** mesurés | Un annuaire d'entreprise | `JAVA_OPTS_KC_HEAP=-Xmx256m` pour ~100 comptes saisonniers |
+| Django-Q — `guard_cycle` **0,5 s**, ~4 % CPU à vide | De la tâche temps réel | `guard_cycle: 5` — passe à ~0,5 % |
+| gunicorn — nombre de workers arbitraire | Un site public | 2 workers pour une campagne de six semaines |
+
+### Le piège des sondes de santé
+
+**Une sonde peut coûter plus cher que le service qu'elle surveille.** Sur le module 16, la
+sonde `docker healthcheck` de l'API lançait un interpréteur Python toutes les 15 s :
+pics mesurés à **165 % de CPU**, pour un service dont l'usage réel est à 0,01 %.
+
+Trois réflexes :
+
+- **Espacer.** Détecter une panne 30 s plus tard qu'aux 10 s par défaut ne change rien à
+  un module interne. C'est le levier le plus rentable.
+- **Alléger.** `python -S` saute le chargement de `site.py`. Un binaire natif (`pg_isready`,
+  `/cerbos healthcheck`) coûte bien moins qu'un interpréteur.
+- **Se méfier de l'échantillon unique.** `docker stats --no-stream` prend une seconde : s'il
+  tombe sur une sonde, le chiffre est faux d'un ordre de grandeur. **Toujours plusieurs
+  relevés**, et raisonner en médiane.
+
+> C'est en corrigeant une consommation apparente qu'on a trouvé la vraie : le premier
+> réglage (`poll: 2`) n'a rien donné parce que le bruit venait d'ailleurs. Mesurer, changer
+> **une** chose, re-mesurer.
+
+### La procédure
+
+```
+1. démarrer la stack réellement      docker compose up -d
+2. laisser reposer (fin du boot)     les JVM mentent pendant 60 s
+3. mesurer                           docker stats --no-stream
+4. plafonner a ~3-8x le mesure       marge de croissance, pas de plafond decoratif
+5. re-demarrer et re-mesurer         verifier qu'aucun service n'est etrangle
+```
+
+**Le point non négociable : mesurer sur la stack démarrée, avant le push.** Un budget
+posé sans mesure est une décoration. C'est aussi le seul moment où l'on découvre qu'un
+conteneur ne démarre pas — trois défauts bloquants du module 16 (PDP sans
+`storagePath`, build dépendant de `deb.debian.org`, worker démarrant avant le schéma)
+n'ont été vus qu'à ce moment-là.
+
+> Cette norme s'applique à `cfao-core`, `cfao-operations` et `cfao-needs` — et à tout
+> service futur. Détail d'application : `architecture.md` §7, skill `module-securise`.
+
+---
+
+## 8. Références
 
 - Architecture événements : `architecture.md` §5.4  
 - Stratégie tests (résumé) : `architecture.md` §5.5  
@@ -296,3 +405,6 @@ Implémentation → ① TU → ② TI → ③ Contrat → ④ E2E
 - Note transverse tests : `backlog.md` (entête)  
 - Dépendance QCM recrutement : `backlog.md` §09, `architecture.md` §3 et §5.2 recruitment
 - App pilotage & digest Git : `backlog.md` §15, `PLATFORM_APPS.md` §15, `architecture.md` §5.4 bis, **`CONTRIBUTING.md`**
+- **Module détachable recueil des besoins (nœud N)** : **`docs/SPEC_RECUEIL_BESOINS_2027.md`**, `backlog.md` §16, `PLATFORM_APPS.md` §16
+- **Patron d'import tabulaire** (`00-9`) : `docs/PATRON_IMPORT_TABULAIRE.md`
+- **Audit de l'existant remplacé** : `docs/AUDIT_ACADEMIX.md`

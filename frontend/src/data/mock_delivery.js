@@ -235,6 +235,55 @@ export const PERT_NODES = [
       en: 'Thursday reminder, formal Friday report — after email core I.',
     },
   },
+  {
+    id: 'N0',
+    label: { fr: 'N₀ · Recueil socle', en: 'N₀ · Needs core', pt: 'N₀ · Base recolha' },
+    module: { fr: 'Module détachable — app 16', en: 'Detachable module — app 16', pt: 'Módulo destacável — app 16' },
+    epics: ['16'],
+    status: 'in_progress',
+    te: 0.7,
+    omp: { o: 0.5, m: 0.7, p: 1.1 },
+    phase: 'N',
+    deps: [],
+    critical: false,
+    blocks: 'no',
+    note: {
+      fr: 'Keycloak et Cerbos embarqués : aucune dépendance de livraison. Jalon calendaire externe (campagne 2027), pas la gate J.',
+      en: 'Embedded Keycloak and Cerbos: no delivery dependency. External calendar milestone (2027 campaign), not gate J.',
+    },
+  },
+  {
+    id: 'N1',
+    label: { fr: 'N₁ · Emailing & délégation', en: 'N₁ · Emailing & delegation', pt: 'N₁ · Emailing & delegação' },
+    module: { fr: 'Circuit de validation des envois', en: 'Send review circuit', pt: 'Circuito de validação de envios' },
+    epics: ['16'],
+    te: 1.7,
+    omp: { o: 1.2, m: 1.6, p: 2.3 },
+    phase: 'N',
+    deps: ['N0'],
+    critical: false,
+    blocks: 'no',
+    note: {
+      fr: 'Templates versionnés, journal d’envoi, relances préparées en lot, saisie déléguée.',
+      en: 'Versioned templates, send log, batch-prepared reminders, delegated entry.',
+    },
+  },
+  {
+    id: 'N2',
+    label: { fr: 'N₂ · Consolidation', en: 'N₂ · Consolidation', pt: 'N₂ · Consolidação' },
+    module: { fr: 'Tableau de bord campagne & arbitrage', en: 'Campaign dashboard & arbitration', pt: 'Painel de campanha & arbitragem' },
+    epics: ['16'],
+    te: 1.1,
+    omp: { o: 0.8, m: 1.1, p: 1.6 },
+    phase: 'N',
+    deps: ['N1'],
+    critical: false,
+    blocks: 'no',
+    note: {
+      fr: 'Exports consolidés, arbitrage CFR / filiale, contrat needs_consolidated vers le module sessions.',
+      en: 'Consolidated exports, CFR / subsidiary arbitration, needs_consolidated contract to the sessions module.',
+    },
+  }
 ]
 
 /* ─── Phases recommandées (planning.md §5) ───────────────────────── */
@@ -351,6 +400,7 @@ export const DELIVERY_EPICS = [
   { id: '13', title: { fr: 'Blog / CMS (Wagtail)', en: 'Blog / CMS (Wagtail)', pt: 'Blog / CMS (Wagtail)' }, node: 'F', phase: '1bis' },
   { id: '14', title: { fr: 'Notifications', en: 'Notifications', pt: 'Notificações' }, node: 'I', phase: '1.1' },
   { id: '15', title: { fr: 'Pilotage projet & reporting', en: 'Project delivery & reporting', pt: 'Gestão de projeto & reporting' }, node: 'K1', phase: '1' },
+  { id: '16', title: { fr: 'Recueil des besoins de formation', en: 'Training needs collection', pt: 'Recolha de necessidades de formação' }, node: 'N0', phase: 'N' },
   { id: 'T', title: { fr: 'Stories transverses', en: 'Cross-cutting stories', pt: 'Stories transversais' }, node: 'C', phase: '0' },
 ]
 
@@ -369,6 +419,7 @@ export const DELIVERY_STORIES = [
   S('00-6', '00', 'Initialiser le realm Keycloak via config-as-code', 'Bootstrap the Keycloak realm via config-as-code', { status: 'done', tests: { tu: 'na', ti: 'done', contract: 'na', e2e: 'na' } }),
   S('00-7', '00', 'Smoke tests post-migration : 1 compte par rôle', 'Post-migration smoke tests: one account per role', { e: true }),
   S('00-8', '00', 'Gate go-live : checklist + smoke + rollback', 'Go-live gate: checklist + smoke + rollback', { e: true }),
+  S('00-9', '00', 'Patron d’import tabulaire : synonymes, modèle, rapport, tout-ou-rien', 'Tabular import pattern: synonyms, template, report, all-or-nothing', { status: 'in_progress', tests: { tu: 'pending', ti: 'pending', contract: 'na', e2e: 'na' } }),
   // 01 · Site public
   S('01-1', '01', 'Parcourir le catalogue des formations', 'Browse the training catalogue', { e: true }),
   S('01-2', '01', 'Consulter les sessions ouvertes et le calendrier', 'View open sessions and the calendar', { e: true }),
@@ -376,13 +427,13 @@ export const DELIVERY_STORIES = [
   S('01-4', '01', 'Envoyer un message via le formulaire de contact', 'Send a message via the contact form', { e: true }),
   S('01-5', '01', 'Accéder à mon portail selon mon rôle', 'Access my role-based portal', { e: true }),
   // 02 · Espace apprenant
-  S('02-1', '02', 'Voir mes modules attribués', 'View my assigned modules', { e: true }),
-  S('02-2', '02', 'Suivre des modules e-learning', 'Follow e-learning modules', { e: true }),
+  S('02-1', '02', 'Voir mes modules attribués', 'View my assigned modules', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'done' } }),
+  S('02-2', '02', 'Suivre des modules e-learning', 'Follow e-learning modules', { status: 'in_progress', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'pending' } }),
   S('02-3', '02', 'Passer mes évaluations (QCM)', 'Take my assessments (QCM)', { e: true }),
-  S('02-4', '02', 'Suivre ma progression', 'Track my progress'),
+  S('02-4', '02', 'Suivre ma progression', 'Track my progress', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'done' } }),
   S('02-5', '02', 'Télécharger mes attestations et certifications', 'Download my certificates'),
   S('02-6', '02', 'KI/PIC : suivre mon propre parcours d’apprenant', 'KI/PIC: follow my own learner path'),
-  S('02-7', '02', 'Chef d’équipe/atelier : consulter la progression de mon équipe', 'Team/workshop manager: view my team progress'),
+  S('02-7', '02', 'Chef d’équipe/atelier : consulter la progression de mon équipe', 'Team/workshop manager: view my team progress', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'done' } }),
   S('02-8', '02', 'RH/Admin : consulter les dossiers de formation', 'HR/Admin: view training records'),
   // 03 · Espace KI/PIC
   S('03-1', '03', 'KI/PIC : voir les formations que je dois dispenser', 'KI/PIC: view trainings I must deliver'),
@@ -406,6 +457,7 @@ export const DELIVERY_STORIES = [
   S('05-2', '05', 'Voir le planning général et l’occupation', 'View overall schedule and occupancy'),
   S('05-3', '05', 'Assistante : gérer le planning et arbitrer les conflits', 'Assistant: manage schedule and resolve conflicts'),
   S('05-4', '05', 'Directeur centre : valider et vue d’ensemble', 'Center director: validate and overview'),
+  S('05-5', '05', 'Calendrier matriciel annuel (mois × marque × formateur) + export Excel', 'Annual matrix calendar (month × brand × trainer) + Excel export', { e: true }),
   // 06 · Assistance / tickets
   S('06-1', '06', 'Créer un ticket (logistique, pédagogique, technique)', 'Create a ticket (logistics, training, technical)'),
   S('06-2', '06', 'Suivre la résolution et clôturer mon ticket', 'Track resolution and close my ticket'),
@@ -424,6 +476,8 @@ export const DELIVERY_STORIES = [
   S('08-4', '08', 'Chef d’atelier : proposer des inscriptions', 'Workshop manager: propose enrollments'),
   S('08-5', '08', 'Formateur : saisir présences et résultats', 'Trainer: enter attendance and results', { c: true, e: true }),
   S('08-6', '08', 'Directeur centre : annuler/modifier en profondeur', 'Center director: cancel/deeply edit'),
+  S('08-7', '08', 'Logistique et coût par stagiaire (vols, nuitées, visa, total FCFA)', 'Logistics and cost per trainee (flights, nights, visa, XAF total)'),
+  S('08-8', '08', 'Coût formation consolidé par filiale sur un exercice', 'Consolidated training cost per subsidiary for a fiscal year'),
   // 09 · Recrutement
   S('09-1', '09', 'Candidat : compléter mon dossier de candidature', 'Candidate: complete my application'),
   S('09-2', '09', 'Candidat : passer mes évaluations et voir mes résultats', 'Candidate: take assessments and see results', { c: true, e: true }),
@@ -445,7 +499,7 @@ export const DELIVERY_STORIES = [
   // 12 · Admin plateforme
   S('12-1', '12', 'Créer/modifier filiales, agences, départements', 'Create/edit branches, agencies, departments', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'done' } }),
   S('12-2', '12', 'Gérer les marques assignées par département', 'Manage brands assigned per department', { status: 'in_progress', tests: { tu: 'done', ti: 'pending', contract: 'na', e2e: 'na' } }),
-  S('12-3', '12', 'Super admin : gérer les rôles système', 'Super admin: manage system roles'),
+  S('12-3', '12', 'Super admin : gérer les rôles système', 'Super admin: manage system roles', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'done', e2e: 'done' } }),
   S('12-4', '12', 'Super admin : consulter les logs d’audit', 'Super admin: view audit logs', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'done' } }),
   S('12-5', '12', 'Super admin : configurer branding et intégrations', 'Super admin: configure branding and integrations'),
   // 13 · Blog / CMS
@@ -466,7 +520,38 @@ export const DELIVERY_STORIES = [
   S('14-9', '14', 'Centre de notifications in-app', 'In-app notification center'),
   S('14-10', '14', 'Envoi asynchrone et événementiel', 'Async, event-driven sending', { c: true }),
   S('14-11', '14', 'Scheduler de notifications temporelles', 'Scheduler for time-based notifications'),
+  S('14-12', '14', 'Journal d’envoi avec renvoi manuel', 'Send log with manual resend'),
+  S('14-13', '14', 'Machine à états de relance persistée + escalade', 'Persisted reminder state machine + escalation'),
+  S('14-14', '14', 'Regroupement des envois par inactivité', 'Batching of sends by inactivity'),
+  S('14-15', '14', 'Langue et civilité portées par la personne', 'Language and salutation carried by the person'),
+  S('14-16', '14', 'Templates versionnés et localisés, traduction manquante = échec CI', 'Versioned localized templates, missing translation fails CI'),
   // 15 · Pilotage projet
+  // 16 · Recueil des besoins (module détachable — nœud N)
+  S('16-1', '16', 'Ouvrir une campagne pour un exercice', 'Open a campaign for a fiscal year', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-2', '16', 'Se connecter par le SSO, sans compte propre au module', 'Sign in through SSO, no module-specific account', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-3', '16', 'Cerbos default-deny et filtrage du catalogue par query plan', 'Cerbos default-deny and catalogue filtering by query plan', { status: 'done', tests: { tu: 'done', ti: 'pending', contract: 'na', e2e: 'na' } }),
+  S('16-4', '16', 'Importer le référentiel par famille, clé (famille, marque, code)', 'Import the referential by family, key (family, brand, code)', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'done', e2e: 'pending' } }),
+  S('16-5', '16', 'Famille sans catalogue livré : visible mais non saisissable', 'Family without catalogue: visible but not fillable', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-6', '16', 'Saisir effectif T1–T4 et lieu souhaité par trimestre', 'Enter Q1–Q4 headcount and preferred location per quarter', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-7', '16', 'Brouillon enregistré côté serveur en continu', 'Draft saved server-side continuously', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-8', '16', 'Filtrer et rechercher dans la grille', 'Filter and search the grid', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-9', '16', 'Désigner les destinataires en copie de la confirmation', 'Designate recipients copied on the confirmation', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-10', '16', 'Transmettre sa déclaration et suivre son état', 'Send the submission and track its status', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-11', '16', 'Résumé interne à l’équipe Academy avec lien vers la fiche', 'Internal summary to the Academy team with a link to the submission', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-12', '16', 'Relire une fiche, la valider ou la réouvrir avec motif', 'Review a submission, approve it or reopen it with a reason', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-13', '16', 'Écran « À envoyer » : prévisualisation, envoi unitaire ou par lot', '“Ready to send” screen: preview, single or batch send', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-14', '16', 'Confirmation à l’auteur avec ses destinataires en copie', 'Confirmation to the author with their copied recipients', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-15', '16', 'Refus de démarrage si un envoi automatique vise l’extérieur', 'Startup refused if an automatic send targets an external recipient', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'na' } }),
+  S('16-16', '16', 'Saisie déléguée au nom d’une filiale, acteur réel tracé', 'Delegated entry on behalf of a subsidiary, real actor traced'),
+  S('16-17', '16', 'Relances J-21 / J-10 / J-3 et escalade J+1 préparées en lot', 'J-21 / J-10 / J-3 reminders and J+1 escalation prepared in batches'),
+  S('16-18', '16', 'Éditer les templates, consulter le journal, renvoyer un message', 'Edit templates, view the log, resend a message'),
+  S('16-19', '16', 'Alerte au-delà de 48 h d’attente de relecture', 'Alert beyond 48 h waiting for review'),
+  S('16-20', '16', 'Tableau de bord de campagne', 'Campaign dashboard'),
+  S('16-21', '16', 'Exports consolidé et synthèse par famille et marque', 'Consolidated exports and summary by family and brand'),
+  S('16-22', '16', 'Arbitrer la répartition CFR / filiale sur une règle auditable', 'Arbitrate CFR / subsidiary split on an auditable rule'),
+  S('16-23', '16', 'Émettre needs_consolidated vers le module sessions', 'Emit needs_consolidated to the sessions module', { c: true }),
+  S('16-24', '16', 'Éclater STELLANTIS en CITROEN, FIAT, JEEP, PEUGEOT', 'Split STELLANTIS into CITROEN, FIAT, JEEP, PEUGEOT'),
+  S('16-25', '16', 'Corriger OMODA & JAECCO en OMODA & JAECOO dans le dépôt', 'Fix OMODA & JAECCO to OMODA & JAECOO across the repo'),
   S('15-1', '15', 'Visualiser la roadmap (epics, phases, PERT)', 'View the roadmap (epics, phases, PERT)', { status: 'done', tests: { tu: 'done', ti: 'done', contract: 'na', e2e: 'done' } }),
   S('15-2', '15', 'Synchroniser/saisir le statut des stories', 'Sync/enter story status', { status: 'in_progress', tests: { tu: 'done', ti: 'pending', contract: 'na', e2e: 'na' } }),
   S('15-3', '15', 'Marquer l’état des tests TU→TI→contrat→E2E', 'Mark test state UT→IT→contract→E2E', { status: 'in_progress', tests: { tu: 'done', ti: 'pending', contract: 'na', e2e: 'na' } }),
@@ -548,43 +633,22 @@ export const DIGEST_RECIPIENTS = [
   { id: 'r2', email: 'direction.projet@cfao.com', name: 'Direction projet' },
 ]
 
-export const DIGEST_HISTORY = [
-  { id: 'd-2026-w22', week: '2026-W22', sentAt: '30 mai 2026', status: 'sent', previewKey: 'digest_preview_w22' },
-]
+/* ─── Alimenté par le webhook Git — VIDE tant que K₁ n'est pas livré ─────
+ *
+ * Ces trois jeux de données viennent des commits (stories 15-5, 15-7). Tant que
+ * `GIT_CONFIG.connected === false`, ils restent vides et l'écran affiche un état
+ * « en attente de connexion ».
+ *
+ * Un cockpit qui affiche une semaine périmée en la présentant comme « en cours »
+ * décrédibilise tous les autres chiffres de la page — y compris ceux qui sont
+ * justes et tenus à la main (roadmap, backlog, gate). D'où le choix de ne rien
+ * afficher plutôt que d'entretenir un faux jeu de données.
+ */
+export const DIGEST_HISTORY = []
 
-export const RECENT_COMMITS = [
-  {
-    id: 'c1', sha: 'a3f91c2', author: 'Équipe build', date: '4 juin 2026',
-    subject: '15-1: maquette cockpit pilotage projet',
-    avancement: 'Mise en place de l’interface de suivi de la roadmap et du backlog pour le comité de pilotage.',
-    storyIds: ['15-1'],
-  },
-  {
-    id: 'c2', sha: 'b8e204f', author: 'Équipe build', date: '3 juin 2026',
-    subject: 'docs: planning PERT v2 et annexe O/M/P',
-    avancement: 'Documentation de la planification projet et des estimations pour faciliter le recalibrage après le sprint 0.',
-    storyIds: [],
-  },
-]
+export const RECENT_COMMITS = []
 
-export const WEEKLY_STATUS_DRAFT = {
-  week: '2026-W23',
-  avancements: [
-    'Démarrage de l’app 15 — gestionnaire de projet dans le portail.',
-    'Documentation CONTRIBUTING pour les rapports hebdomadaires MOA.',
-  ],
-  objectifsEnCours: [
-    'Scaffolding infra Docker (nœud A du PERT).',
-    'Connexion du dépôt Git à l’environnement de staging.',
-  ],
-  objectifsSemaineProchaine: [
-    'Premier healthcheck cfao-core et cfao-operations.',
-    'Pipeline CI avec tests unitaires sur les squelettes.',
-  ],
-  goulots: [
-    'Dépôt Git et environnement staging à finaliser.',
-  ],
-}
+export const WEEKLY_STATUS_DRAFT = null
 
 /* ─── Merge état local (localStorage) ────────────────────────────── */
 export function mergeDeliveryState(baseStories, stored) {

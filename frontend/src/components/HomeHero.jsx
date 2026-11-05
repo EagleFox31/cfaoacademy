@@ -1,12 +1,33 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import useLocale from '../hooks/useLocale.js'
 import useAuth from '../hooks/useAuth.js'
 import { HERO_PERSONA_IDS } from '../i18n/hero.js'
 import { HERO_DEFAULT, HERO_IMAGES, HERO_BG_POSITION, HERO_VISUAL_IDS } from '../data/heroImages.js'
 import HeroLoggedInPanel, { HeroLoggedInBadge } from './HeroLoggedInPanel.jsx'
+import HeroNewsCarousel from './HeroNewsCarousel.jsx'
+import { ARTICLES } from '../data/articles/index.js'
+import { localizedArticleFields } from '../utils/localizeCard.js'
+import { resolveHeroNewsGallery, heroNewsGalleryStaticSrcs } from '../utils/heroNewsSlides.js'
+import { resolvePortalBackgroundSelection } from '../utils/portalBackgroundSelect.js'
+import {
+  resolveLoggedHeroVisualId,
+  resolveLoggedLearnerHeroHeadline,
+  resolveLoggedManagerHeroHeadline,
+} from '../utils/portalPersona.js'
 
 const HERO_AUTO_CYCLE = ['default', ...HERO_PERSONA_IDS, 'b2b']
-const HERO_AUTO_STEP_MS = 18000
+const HERO_AUTO_STEP_MS = 10000
+const HERO_WELCOME_MS = 5500
+const HERO_NEWS_MS = 5000
+
+const HERO_VISUAL_TO_OFFERS_SECTION = {
+  vl: 'offres',
+  pl: 'formations-equipment',
+  carrossier: 'formations-carrosserie',
+  savParts: 'formations-sav-motors',
+  b2b: 'offres',
+  default: 'offres',
+}
 
 const PERSONA_ICONS = {
   vl: (
@@ -71,11 +92,19 @@ function HeroTitlePrefix({ firstName }) {
   )
 }
 
-function HeroTitle({ activeId, t, firstName }) {
+function HeroTitle({ activeId, t, firstName, user }) {
+  const managerHeadline = user ? resolveLoggedManagerHeroHeadline(user, t) : null
+  const loggedLearnerHeadline = user ? resolveLoggedLearnerHeroHeadline(user, activeId, t) : null
   const persona = t.personas[activeId] ?? (activeId === 'b2b' ? t.b2b : null)
-  const headline = persona?.headlineHighlight
-    ? { before: persona.headlineBefore, highlight: persona.headlineHighlight, after: persona.headlineAfter, afterBlock: persona.headlineAfterBlock }
-    : null
+  const headline = managerHeadline ?? loggedLearnerHeadline ?? (persona?.headlineHighlight
+    ? {
+        prefix: t.headlineTemplateBefore,
+        before: persona.headlineBefore,
+        highlight: persona.headlineHighlight,
+        after: persona.headlineAfter,
+        afterBlock: persona.headlineAfterBlock,
+      }
+    : null)
 
   if (!headline?.highlight) {
     return (
@@ -92,19 +121,40 @@ function HeroTitle({ activeId, t, firstName }) {
   return (
     <h1 className="hero-home-title" aria-live="polite">
       <HeroTitlePrefix firstName={firstName} />
-      {t.headlineTemplateBefore}
+      {headline.prefix}
       {headline.before && `${headline.before} `}
       <span className="hero-home-title-tail">
         <span className="hero-home-highlight" key={headline.highlight}>
           {headline.highlight}
         </span>
-        {headline.after && <span key={`after-${headline.highlight}`} className={headline.afterBlock ? 'hero-home-title-after--block' : undefined}>{headline.after}</span>}
+        {headline.after && (
+          <span
+            key={`after-${headline.highlight}`}
+            className={headline.afterBlock ? 'hero-home-title-after--block' : undefined}
+          >
+            {headline.after}
+          </span>
+        )}
       </span>
     </h1>
   )
 }
 
-function HeroBackground({ activeId }) {
+function HeroBackground({ activeId, loggedBackground }) {
+  if (loggedBackground) {
+    return (
+      <div className="hero-home-bg" aria-hidden="true">
+        <div
+          className="hero-home-bg-layer is-active"
+          style={{
+            backgroundImage: `url(${loggedBackground.src})`,
+            backgroundPosition: loggedBackground.position,
+          }}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="hero-home-bg" aria-hidden="true">
       {HERO_VISUAL_IDS.map((id) => (
@@ -122,17 +172,135 @@ function HeroBackground({ activeId }) {
 }
 
 export default function HomeHero({ onVisualChange }) {
-  const { t } = useLocale('hero')
+  const { t, locale } = useLocale('hero')
   const { user } = useAuth()
-  const [activeVisual, setActiveVisual] = useState(() => user?.persona || 'default')
+  const loggedBackground = useMemo(
+    () => (user ? resolvePortalBackgroundSelection(user) : null),
+    [user],
+  )
+  const [activeVisual, setActiveVisual] = useState(() => resolveLoggedHeroVisualId(user))
   const [isManual] = useState(() => !!user)
   const [veilPct, setVeilPct] = useState(100)
+  const [heroPhase, setHeroPhase] = useState('welcome')
+  const [newsIndex, setNewsIndex] = useState(0)
+  const [newsPaused, setNewsPaused] = useState(false)
+  const [reducedMotion, setReducedMotion] = useState(false)
   const frameRef = useRef(null)
   const cycleIndexRef = useRef(0)
+
+  const newsSlides = useMemo(() => {
+    if (!user) return []
+    return ARTICLES.slice(0, 3).map((article) => {
+      const copy = localizedArticleFields(article, locale)
+      const gallery = resolveHeroNewsGallery(article)
+      return {
+        slug: article.slug,
+        title: copy.title,
+        summary: copy.summary,
+        category: copy.categoryLabel,
+        gallery,
+      }
+    })
+  }, [user, locale])
+
+  const showNewsCarousel = Boolean(
+    user && heroPhase === 'news' && newsSlides.length > 0 && !reducedMotion,
+  )
+
+  useEffect(() => {
+    setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  }, [])
+
+  /* Mobile : pas de split voile/image — carte pleine largeur lisible */
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)')
+    const syncVeil = () => {
+      if (mq.matches) setVeilPct(100)
+    }
+    syncVeil()
+    mq.addEventListener('change', syncVeil)
+    return () => mq.removeEventListener('change', syncVeil)
+  }, [])
+
+  useEffect(() => {
+    if (!user || reducedMotion || newsPaused || newsSlides.length === 0) return undefined
+
+    const delay = heroPhase === 'welcome' ? HERO_WELCOME_MS : HERO_NEWS_MS
+    const timer = window.setTimeout(() => {
+      if (heroPhase === 'welcome') {
+        setHeroPhase('news')
+        setNewsIndex(0)
+        return
+      }
+      setNewsIndex((prev) => {
+        const next = prev + 1
+        if (next >= newsSlides.length) {
+          setHeroPhase('welcome')
+          return 0
+        }
+        return next
+      })
+    }, delay)
+
+    return () => window.clearTimeout(timer)
+  }, [user, heroPhase, newsIndex, newsPaused, reducedMotion, newsSlides.length])
+
+  useEffect(() => {
+    if (!user) {
+      setHeroPhase('welcome')
+      setNewsIndex(0)
+    }
+  }, [user])
+
+  useEffect(() => {
+    newsSlides.forEach((slide) => {
+      heroNewsGalleryStaticSrcs(slide.gallery).forEach((src) => {
+        const img = new Image()
+        img.src = src
+      })
+    })
+  }, [newsSlides])
+
+  useEffect(() => {
+    if (user) {
+      setActiveVisual(resolveLoggedHeroVisualId(user))
+    }
+  }, [user])
 
   useEffect(() => {
     onVisualChange?.(activeVisual)
   }, [activeVisual, onVisualChange])
+
+  const [autoCycleTick, setAutoCycleTick] = useState(0)
+
+  const goToSlide = useCallback((direction) => {
+    const currentIndex = HERO_AUTO_CYCLE.indexOf(activeVisual)
+    const baseIndex = currentIndex >= 0 ? currentIndex : cycleIndexRef.current
+    const nextIndex = (baseIndex + direction + HERO_AUTO_CYCLE.length) % HERO_AUTO_CYCLE.length
+    cycleIndexRef.current = nextIndex
+    setActiveVisual(HERO_AUTO_CYCLE[nextIndex])
+    setAutoCycleTick((t) => t + 1)
+  }, [activeVisual])
+
+  const handlePrev = useCallback(() => goToSlide(-1), [goToSlide])
+  const handleNext = useCallback(() => goToSlide(1), [goToSlide])
+
+  const handleCardClick = useCallback(() => {
+    if (user) return
+    const targetId = HERO_VISUAL_TO_OFFERS_SECTION[activeVisual] || 'offres'
+    const el = document.getElementById(targetId)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [user, activeVisual])
+
+  const handleCardKeyDown = useCallback((e) => {
+    if (user) return
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleCardClick()
+    }
+  }, [user, handleCardClick])
 
   useEffect(() => {
     if (isManual) return undefined
@@ -144,7 +312,7 @@ export default function HomeHero({ onVisualChange }) {
     }, HERO_AUTO_STEP_MS)
 
     return () => window.clearInterval(timer)
-  }, [isManual])
+  }, [isManual, autoCycleTick])
 
   const glassRef = useRef(null)
 
@@ -188,26 +356,32 @@ export default function HomeHero({ onVisualChange }) {
   }
 
   useEffect(() => {
-    Object.values(HERO_IMAGES).forEach((src) => {
+    const sources = loggedBackground
+      ? [loggedBackground.src]
+      : Object.values(HERO_IMAGES)
+    sources.forEach((src) => {
       const img = new Image()
       img.src = src
     })
-  }, [])
+  }, [loggedBackground])
 
   return (
     <header
       id="accueil"
-      className={`hero hero--home${isManual ? '' : ' hero--home--auto'}${user ? ' hero--home--logged' : ''}`}
+      className={`hero hero--home${isManual ? '' : ' hero--home--auto'}${user ? ' hero--home--logged' : ''}${showNewsCarousel ? ' hero--home--news' : ''}`}
     >
       <div
         className="hero-home-frame"
         ref={frameRef}
         style={{ '--hero-veil-width': `${veilPct}%` }}
       >
-        <HeroBackground activeId={activeVisual} />
+        {!user && (
+          <HeroBackground activeId={activeVisual} loggedBackground={loggedBackground} />
+        )}
 
-        <div className="hero-home-veil" aria-hidden="true" />
+        {!user && <div className="hero-home-veil" aria-hidden="true" />}
 
+        {!user && (
         <div
           className="hero-home-veil-scrubber"
           role="slider"
@@ -217,25 +391,68 @@ export default function HomeHero({ onVisualChange }) {
           aria-valuenow={Math.round(veilPct)}
           onPointerDown={onVeilScrubStart}
         />
+        )}
+
+        {!user && (
+          <>
+            <button
+              type="button"
+              className="hero-home-nav-arrow hero-home-nav-arrow--prev"
+              onClick={handlePrev}
+              aria-label={t.prevSlideAria || 'Diapositive précédente'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="hero-home-nav-arrow hero-home-nav-arrow--next"
+              onClick={handleNext}
+              aria-label={t.nextSlideAria || 'Diapositive suivante'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </>
+        )}
 
         <div className="container">
-          <div
-            key={activeVisual}
-            className="hero-home-copy hero-home-glass"
-            ref={glassRef}
-            onMouseMove={handleTilt}
-            onMouseLeave={handleTiltReset}
-          >
-            <div className="hero-indicator" aria-hidden="true" />
+          {showNewsCarousel ? (
+            <HeroNewsCarousel
+              slide={newsSlides[newsIndex]}
+              slideIndex={newsIndex}
+              slideCount={newsSlides.length}
+              eyebrow={t.newsEyebrow}
+              readLabel={t.newsRead}
+              onPause={() => setNewsPaused(true)}
+              onResume={() => setNewsPaused(false)}
+            />
+          ) : (
+            <div
+              key={activeVisual}
+              className={`hero-home-copy hero-home-glass${!user ? ' hero-home-glass--clickable' : ''}`}
+              ref={glassRef}
+              onMouseMove={handleTilt}
+              onMouseLeave={handleTiltReset}
+              onClick={!user ? handleCardClick : undefined}
+              onKeyDown={!user ? handleCardKeyDown : undefined}
+              role={!user ? 'button' : undefined}
+              tabIndex={!user ? 0 : undefined}
+              aria-label={!user ? (t.cardScrollHint || 'Découvrir les offres de formation') : undefined}
+            >
+              <div className="hero-indicator" aria-hidden="true" />
 
-            {user && <HeroLoggedInBadge user={user} />}
+              {user && <HeroLoggedInBadge user={user} />}
 
-            <HeroTitle activeId={activeVisual} t={t} firstName={user?.firstName} />
+              <HeroTitle activeId={activeVisual} t={t} firstName={user?.firstName} user={user} />
 
-            <p className="hero-home-lead">{t.lead}</p>
+              {!user && <p className="hero-home-lead">{t.lead}</p>}
 
-            {user && <HeroLoggedInPanel user={user} />}
-          </div>
+              {user && <HeroLoggedInPanel user={user} />}
+            </div>
+          )}
         </div>
       </div>
     </header>

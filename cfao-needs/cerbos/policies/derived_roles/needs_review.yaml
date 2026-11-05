@@ -1,0 +1,39 @@
+# Rôles dérivés propres à l'app 16 — deux niveaux, pas un.
+#
+# La relecture n'est pas une question d'organisation mais de fonction : l'équipe
+# centrale relit TOUTES les filiales. D'où des rôles dérivés sans condition de
+# périmètre, contrairement à `common_scope`.
+#
+# **Pourquoi deux niveaux.** « Relire une fiche » et « ouvrir la campagne » ne
+# sont pas le même pouvoir. Le premier porte sur un dossier, le second engage
+# l'exercice entier : rouvrir une campagne close ou rejouer l'arbitrage CFR /
+# filiale se rattrape difficilement. La spec §5 les distinguait déjà en toutes
+# lettres — la policy, elle, les confondait et laissait l'assistante ouvrir et
+# clôturer. Écart corrigé ici.
+apiVersion: api.cerbos.dev/v1
+derivedRoles:
+  name: needs_review
+  definitions:
+    # Niveau 1 — instruire les dossiers : relire, valider, réouvrir, faire partir
+    # les emails. C'est le quotidien de la campagne.
+    - name: academy_reviewer
+      parentRoles:
+        - center_assistant
+        - training_coordinator
+        - center_director
+        - superadmin
+      condition:
+        match:
+          expr: "true"
+
+    # Niveau 2 — piloter l'exercice : ouvrir, clôturer, importer le référentiel,
+    # arbitrer la répartition CFR / filiale. Le coordonnateur des formations en
+    # fait partie ; l'assistante non.
+    - name: academy_pilot
+      parentRoles:
+        - training_coordinator
+        - center_director
+        - superadmin
+      condition:
+        match:
+          expr: "true"

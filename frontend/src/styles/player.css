@@ -1,0 +1,450 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   CFAO ACADEMY · LECTEUR VIDÉO SUR MESURE (UX / UI / CX FLUIDE)
+   Contrôles clavier (Flèches, Espace, K, J, L, M, F) + Sauts 30s + Mini-Player
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.cfao-player {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #0a0c16;
+  overflow: hidden;
+  user-select: none;
+  font-family: inherit;
+  outline: none;
+}
+
+.cfao-player:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--red, #e3001b);
+}
+
+.cfao-player-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #000;
+  cursor: pointer;
+}
+
+/* ── Masquage automatique au repos ───────────────────────────────────── */
+.cfao-player--idle:not(.cfao-player--paused) {
+  cursor: none;
+}
+.cfao-player--idle:not(.cfao-player--paused) .cfao-player-overlay,
+.cfao-player--idle:not(.cfao-player--paused) .cfao-player-controls {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+}
+
+/* ── Overlay sombre & Titre ─────────────────────────────────────────── */
+.cfao-player-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.cfao-player-topbar {
+  padding: 18px 24px;
+  background: linear-gradient(to bottom, rgba(10, 12, 22, 0.82) 0%, rgba(10, 12, 22, 0.4) 60%, transparent 100%);
+  pointer-events: auto;
+}
+
+.cfao-player-title {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── OSD (On-Screen Display Feedback) ────────────────────────────────── */
+.cfao-player-osd {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 24px;
+  border-radius: 999px;
+  background: rgba(14, 17, 38, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  animation: cfaoOsdPop 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cfao-player-osd-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cfao-player-osd-label {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+@keyframes cfaoOsdPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.75);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
+/* ── Grand bouton central au tap / pause ────────────────────────────── */
+.cfao-player-bigplay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(227, 0, 27, 0.9);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(227, 0, 27, 0.45);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s;
+  z-index: 10;
+}
+
+.cfao-player-bigplay:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  background: #ff1a35;
+}
+
+/* ── Barre de contrôle inférieure ───────────────────────────────────── */
+.cfao-player-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px 18px 14px;
+  background: linear-gradient(to top, rgba(10, 12, 22, 0.94) 0%, rgba(10, 12, 22, 0.72) 65%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 15;
+  pointer-events: auto;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+/* ── Timeline / Scrubber ────────────────────────────────────────────── */
+.cfao-player-timeline-wrap {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.cfao-player-timeline {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  transition: height 0.15s ease;
+}
+
+.cfao-player-timeline-wrap:hover .cfao-player-timeline {
+  height: 7px;
+}
+
+.cfao-player-progress-buffered {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.cfao-player-progress-played {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #b90016 0%, #e3001b 80%, #ff3b53 100%);
+  border-radius: 999px;
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(227, 0, 27, 0.6);
+}
+
+.cfao-player-thumb {
+  position: absolute;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--red, #e3001b);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.15s ease;
+  pointer-events: none;
+}
+
+.cfao-player-timeline-wrap:hover .cfao-player-thumb,
+.cfao-player-timeline-wrap:active .cfao-player-thumb {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Tooltip heure au survol de la timeline */
+.cfao-player-tooltip {
+  position: absolute;
+  bottom: 24px;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(14, 17, 38, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Rangée des boutons d'actions ───────────────────────────────────── */
+.cfao-player-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cfao-player-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cfao-player-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+/* Boutons icônes du lecteur */
+.cfao-player-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+  outline: none;
+}
+
+.cfao-player-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.cfao-player-btn:active {
+  transform: scale(0.92);
+}
+
+.cfao-player-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--red, #e3001b);
+}
+
+/* Boutons de saut 30s */
+.cfao-player-btn--skip {
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.cfao-player-btn--skip:hover {
+  background: rgba(227, 0, 27, 0.22);
+  border-color: rgba(227, 0, 27, 0.45);
+  color: #fff;
+}
+
+/* Temps affiché */
+.cfao-player-time {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  margin-left: 4px;
+}
+
+.cfao-player-time-total {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── Volume ─────────────────────────────────────────────────────────── */
+.cfao-player-volume-group {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.cfao-player-volume-slider-wrap {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: width 0.22s ease, opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.cfao-player-volume-group:hover .cfao-player-volume-slider-wrap,
+.cfao-player-volume-slider-wrap:focus-within {
+  width: 64px;
+  opacity: 1;
+  margin-left: 6px;
+}
+
+.cfao-player-volume-slider {
+  width: 60px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  cursor: pointer;
+  outline: none;
+}
+
+.cfao-player-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* ── Sélecteur de vitesse ───────────────────────────────────────────── */
+.cfao-player-speed-btn {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  min-width: 38px;
+}
+
+.cfao-player-speed-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MODE MINIATURE / FLOTTANT (STICKY PICTURE-IN-PICTURE SANS COUPURE)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.cfao-player--floating .cfao-player-topbar {
+  padding: 8px 12px;
+}
+
+.cfao-player--floating .cfao-player-title {
+  font-size: 11px;
+}
+
+.cfao-player--floating .cfao-player-controls {
+  padding: 6px 10px 8px;
+  gap: 4px;
+}
+
+.cfao-player--floating .cfao-player-timeline-wrap {
+  height: 14px;
+}
+
+.cfao-player--floating .cfao-player-timeline {
+  height: 3px;
+}
+
+.cfao-player--floating .cfao-player-bar {
+  gap: 6px;
+}
+
+.cfao-player--floating .cfao-player-time,
+.cfao-player--floating .cfao-player-volume-group,
+.cfao-player--floating .cfao-player-speed-btn {
+  display: none;
+}
+
+.cfao-player--floating .cfao-player-btn--skip {
+  padding: 2px 4px;
+}
+
+.cfao-player--floating .cfao-player-btn--skip svg {
+  width: 18px;
+  height: 18px;
+}
+
+.cfao-player--floating .cfao-player-expand-btn {
+  display: flex !important;
+}
+
+.cfao-player-expand-btn {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .cfao-player-volume-group {
+    display: none;
+  }
+  .cfao-player-time {
+    font-size: 11px;
+  }
+  .cfao-player-controls {
+    padding: 8px 12px 10px;
+  }
+}

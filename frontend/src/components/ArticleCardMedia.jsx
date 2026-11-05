@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CARD_VIDEO_PREVIEW_MS, getCardHoverPreview } from '../utils/videoEmbed.js'
+import { CARD_VIDEO_PREVIEW_MS, getCardHoverPreview, isVideoFile } from '../utils/videoEmbed.js'
+import { useVideoFramePoster, VIDEO_FRAME_POSTER_SEC } from '../utils/videoFramePoster.js'
 
 function PlayIcon() {
   return (
@@ -22,6 +23,8 @@ function initialPosterSrc(preview, siteFallback) {
   if (!preview || preview.type !== 'video') {
     return preview?.image || siteFallback
   }
+  if (preview.thumbnail) return preview.thumbnail
+  if (isVideoFile(preview.videoUrl)) return null
   return preview.fallbackImage || preview.image || siteFallback
 }
 
@@ -36,6 +39,13 @@ export default function ArticleCardMedia({ preview, fallback = '/assets/logo-cfa
 
   const isVideo = preview?.type === 'video'
   const videoUrl = preview?.videoUrl
+  const frameSec = preview?.framePosterSec ?? VIDEO_FRAME_POSTER_SEC
+  const needsLocalFrame = isVideo && !preview?.thumbnail && isVideoFile(videoUrl)
+  const { poster: framePoster, failed: frameFailed } = useVideoFramePoster(
+    videoUrl,
+    frameSec,
+    needsLocalFrame,
+  )
   const { remoteThumb, articleImage, siteFallback } = resolvePosterChain(preview, fallback)
   const hoverPreview = isVideo && videoUrl && hoverEnabled
     ? getCardHoverPreview(videoUrl)
@@ -45,6 +55,16 @@ export default function ArticleCardMedia({ preview, fallback = '/assets/logo-cfa
     if (!isVideo) {
       setPosterSrc(preview?.image || siteFallback)
       setHoverEnabled(true)
+      return undefined
+    }
+
+    if (framePoster) {
+      setPosterSrc(framePoster)
+      setHoverEnabled(true)
+      return undefined
+    }
+
+    if (needsLocalFrame && !frameFailed) {
       return undefined
     }
 
@@ -73,7 +93,17 @@ export default function ArticleCardMedia({ preview, fallback = '/assets/logo-cfa
     return () => {
       cancelled = true
     }
-  }, [isVideo, remoteThumb, articleImage, siteFallback, videoUrl, preview?.image])
+  }, [
+    isVideo,
+    remoteThumb,
+    articleImage,
+    siteFallback,
+    videoUrl,
+    preview?.image,
+    framePoster,
+    frameFailed,
+    needsLocalFrame,
+  ])
 
   const stopPreview = useCallback(() => {
     if (timerRef.current) {
@@ -138,6 +168,8 @@ export default function ArticleCardMedia({ preview, fallback = '/assets/logo-cfa
   }
 
   const showPlayBadge = hoverEnabled && Boolean(hoverPreview)
+  const displayPoster = posterSrc
+    ?? (needsLocalFrame && !frameFailed ? null : (articleImage || siteFallback))
 
   return (
     <div
@@ -147,13 +179,17 @@ export default function ArticleCardMedia({ preview, fallback = '/assets/logo-cfa
       onFocus={startPreview}
       onBlur={stopPreview}
     >
-      <img
-        src={posterSrc || articleImage || siteFallback}
-        alt=""
-        loading="lazy"
-        className="pv-card-video-poster"
-        onError={handlePosterError}
-      />
+      {displayPoster ? (
+        <img
+          src={displayPoster}
+          alt=""
+          loading="lazy"
+          className="pv-card-video-poster"
+          onError={handlePosterError}
+        />
+      ) : (
+        <div className="pv-card-video-poster pv-card-video-poster--loading" aria-hidden="true" />
+      )}
       {playing && hoverPreview?.kind === 'iframe' && (
         <iframe
           key={iframeKey}

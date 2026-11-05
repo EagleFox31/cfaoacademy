@@ -1,0 +1,653 @@
+{
+  "meta": {
+    "note": "Référentiel pour cfao-needs (standalone seed / integrated sync). L'historique PARTICIPATION reste dans cfao-operations ; needs consomme marques + org (filiales) + codes catalogue pour aligner les campagnes.",
+    "mode": "standalone_seed_candidate"
+  },
+  "brands": [
+    {
+      "code": "RENAULT_TRUCKS",
+      "label": "RENAULT TRUCKS",
+      "pole": "EQUIPMENT"
+    },
+    {
+      "code": "HOHAN",
+      "label": "HOHAN",
+      "pole": "EQUIPMENT"
+    },
+    {
+      "code": "TOYOTA",
+      "label": "TOYOTA",
+      "pole": "MOBILITY"
+    },
+    {
+      "code": "MITSUBISHI",
+      "label": "MITSUBISHI",
+      "pole": "MOBILITY"
+    },
+    {
+      "code": "KING_LONG",
+      "label": "KING LONG",
+      "pole": "EQUIPMENT"
+    },
+    {
+      "code": "BYD",
+      "label": "BYD",
+      "pole": "MOBILITY"
+    },
+    {
+      "code": "BT",
+      "label": "BT",
+      "pole": "EQUIPMENT"
+    },
+    {
+      "code": "TOYOTA_FORKLIFT",
+      "label": "TOYOTA FORKLIFT",
+      "pole": "EQUIPMENT"
+    },
+    {
+      "code": "SUZUKI",
+      "label": "SUZUKI",
+      "pole": "MOBILITY"
+    },
+    {
+      "code": "OMODA",
+      "label": "OMODA",
+      "pole": "MOBILITY"
+    },
+    {
+      "code": "LOVOL",
+      "label": "LOVOL",
+      "pole": "EQUIPMENT"
+    },
+    {
+      "code": "FUSO",
+      "label": "FUSO",
+      "pole": "EQUIPMENT"
+    },
+    {
+      "code": "HINO",
+      "label": "HINO",
+      "pole": "EQUIPMENT"
+    },
+    {
+      "code": "STELLANTIS",
+      "label": "STELLANTIS",
+      "pole": "MOBILITY"
+    },
+    {
+      "code": "SHACMAN",
+      "label": "SHACMAN",
+      "pole": "EQUIPMENT"
+    },
+    {
+      "code": "JCB",
+      "label": "JCB",
+      "pole": "EQUIPMENT"
+    }
+  ],
+  "org_units": [
+    {
+      "code": "cfao-equipment-cameroon",
+      "label": "CFAO EQUIPMENT CAMEROON",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-benin",
+      "label": "CFAO MOTORS BENIN",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-cameroon",
+      "label": "CFAO MOTORS CAMEROON",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-burkina-faso",
+      "label": "CFAO MOTORS BURKINA FASO",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "ambassade-des-usa",
+      "label": "Ambassade des USA",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-rdc",
+      "label": "CFAO MOTORS RDC",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-senegal",
+      "label": "CFAO MOTORS SENEGAL",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-tchad",
+      "label": "CFAO MOTORS TCHAD",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-cong",
+      "label": "CFAO MOTORS CONG",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-congo",
+      "label": "CFAO MOTORS CONGO",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-cote-d-ivoire",
+      "label": "CFAO MOTORS COTE D'IVOIRE",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-rci",
+      "label": "CFAO MOTORS RCI",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-nigeria",
+      "label": "CFAO MOTORS NIGERIA",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-equipment-rci",
+      "label": "CFAO EQUIPMENT RCI",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-equipment-rdc",
+      "label": "CFAO EQUIPMENT RDC",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-maroc",
+      "label": "CFAO MOTORS MAROC",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-gabon",
+      "label": "CFAO MOTORS GABON",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-guinee-conakry",
+      "label": "CFAO MOTORS GUINEE CONAKRY",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-togo",
+      "label": "CFAO MOTORS TOGO",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-madagascar",
+      "label": "CFAO MOTORS MADAGASCAR",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-cameroun-ngaoundere",
+      "label": "CFAO MOTORS CAMEROUN- NGAOUNDERE",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-equipement-cameroun",
+      "label": "CFAO EQUIPEMENT CAMEROUN",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-equipement-senegal",
+      "label": "CFAO EQUIPEMENT SENEGAL",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-equipement-ghana",
+      "label": "CFAO EQUIPEMENT GHANA",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-equipement-tchad",
+      "label": "CFAO EQUIPEMENT  TCHAD",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-equipement-togo",
+      "label": "CFAO EQUIPEMENT TOGO",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-guinee-equatoriale",
+      "label": "CFAO MOTORS GUINEE EQUATORIALE",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-equipment-nigeria",
+      "label": "CFAO EQUIPMENT NIGERIA",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-equipment-senegal",
+      "label": "CFAO EQUIPMENT SENEGAL",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-equipment-madagasgar",
+      "label": "CFAO EQUIPMENT MADAGASGAR",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-motors-rca",
+      "label": "CFAO MOTORS RCA",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-equipement-congo",
+      "label": "CFAO EQUIPEMENT CONGO",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-equipment-togo",
+      "label": "CFAO EQUIPMENT TOGO",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-motors-sari",
+      "label": "CFAO MOBILITY MOTORS SARI",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-motors-babi",
+      "label": "CFAO MOBILITY MOTORS BABI",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-motors-procar",
+      "label": "CFAO MOBILITY MOTORS PROCAR",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-motors-rci",
+      "label": "CFAO MOBILITY MOTORS RCI",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "stagiairetech",
+      "label": "STAGIAIRETECH",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-sari",
+      "label": "CFAO MOBILITY SARI",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-yamassoukro",
+      "label": "CFAO MOBILITY YAMASSOUKRO",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-equipement",
+      "label": "CFAO MOBILITY EQUIPEMENT",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-equipement-rdc",
+      "label": "CFAO MOBILITY EQUIPEMENT  RDC",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-motors-niger",
+      "label": "CFAO MOBILITY MOTORS NIGER",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-motors-burkina",
+      "label": "CFAO MOBILITY MOTORS BURKINA",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-rci",
+      "label": "CFAO MOBILITY RCI",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-equipement-senegal",
+      "label": "CFAO MOBILITY EQUIPEMENT SENEGAL",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-motors-gabon",
+      "label": "CFAO MOBILITY MOTORS GABON",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-motors-cameroun",
+      "label": "CFAO MOBILITY MOTORS CAMEROUN",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-motors-mauritanie",
+      "label": "CFAO MOBILITY MOTORS Mauritanie",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cafo-mobility-equipement",
+      "label": "CAFO MOBILITY EQUIPEMENT",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-guinee-conakry",
+      "label": "CFAO MOBILITY Guinee Conakry",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "cfao-mobility-motors",
+      "label": "CFAO MOBILITY MOTORS",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "socomar",
+      "label": "SOCOMAR",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "usine-sabc-ndokotti",
+      "label": "USINE SABC NDOKOTTI",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "socaver",
+      "label": "SOCAVER",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "usine-sabc-yaounde",
+      "label": "Usine SABC YAOUNDE",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "usine-sabc-bafoussam",
+      "label": "Usine SABC BAFOUSSAM",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    },
+    {
+      "code": "usine-semc",
+      "label": "USINE SEMC",
+      "nature": "filiale_cfao",
+      "is_cfao_branch": true
+    }
+  ],
+  "org_partners_b2b": [
+    {
+      "code": "total-energie",
+      "label": "Total Energie"
+    },
+    {
+      "code": "cfao-motors-cameroun",
+      "label": "CFAO MOTORS CAMEROUN"
+    },
+    {
+      "code": "unhcr",
+      "label": "UNHCR"
+    },
+    {
+      "code": "cfao-equipment-cameroun",
+      "label": "CFAO EQUIPMENT CAMEROUN"
+    },
+    {
+      "code": "cfao-mobility-equipement-rci",
+      "label": "CFAO MOBILITY EQUIPEMENT RCI"
+    },
+    {
+      "code": "socapalm",
+      "label": "SOCAPALM"
+    },
+    {
+      "code": "g5-sahel",
+      "label": "G5 SAHEL"
+    },
+    {
+      "code": "sodecoton",
+      "label": "SODECOTON"
+    },
+    {
+      "code": "sogb-rci",
+      "label": "SOGB RCI"
+    },
+    {
+      "code": "tech",
+      "label": "TECH"
+    },
+    {
+      "code": "coord-kaizen",
+      "label": "COORD KAIZEN"
+    },
+    {
+      "code": "relation-client",
+      "label": "RELATION CLIENT"
+    }
+  ],
+  "catalog_codes": [
+    "BEV01",
+    "BT07",
+    "F01",
+    "F03",
+    "F06",
+    "H02",
+    "H06",
+    "H11",
+    "H430",
+    "HI01",
+    "HI07",
+    "HO01",
+    "JCB",
+    "KL 04",
+    "KL01",
+    "KL02",
+    "KL09",
+    "KL09-2025",
+    "L0V01",
+    "L0V02",
+    "LC300",
+    "LV01",
+    "LV02",
+    "LV03",
+    "LV06",
+    "LVL04",
+    "LVO2",
+    "M-STEP01",
+    "M-STEPII",
+    "MSTEP01",
+    "MSTEP02",
+    "MSTEP03",
+    "MSTEP04",
+    "MSTEP05",
+    "MSTEP06",
+    "MSTEP07",
+    "RT01",
+    "RT02",
+    "RT03",
+    "RT08",
+    "RT12",
+    "RT13",
+    "RT17",
+    "SINOTRUK",
+    "SS03-silver",
+    "SS05-silver",
+    "SS06-2025",
+    "SS07-2025",
+    "SS08-2025",
+    "SS09-2025",
+    "SSGF01",
+    "TFT01",
+    "TOY01",
+    "TOY02",
+    "TOY05",
+    "TOY11",
+    "TOY12",
+    "TOY14",
+    "TP01",
+    "TP02",
+    "TS01-G4",
+    "TS02-G4",
+    "TS03",
+    "TS03-G3",
+    "TS04-G3",
+    "TS05-G3",
+    "TS06",
+    "TS06-2025",
+    "TS06-G3",
+    "TS07-G10",
+    "TS07-G3",
+    "TS07-G4",
+    "TS07-G5",
+    "TS07-G6",
+    "TS07-G7",
+    "TS07-G8",
+    "TS07-G9",
+    "TS08",
+    "TS08-G2",
+    "TS09-G2",
+    "TS10",
+    "TS10-G2",
+    "TS11-G2",
+    "TS12-G2",
+    "TS13",
+    "TS14",
+    "TS15-G1",
+    "TS16-G1",
+    "TSK01",
+    "TSO3",
+    "UNHCR"
+  ],
+  "participation_counts_by_org": {
+    "cfao-motors-cameroun": 286,
+    "cfao-mobility-motors-sari": 90,
+    "cfao-motors-rci": 84,
+    "cfao-equipment-cameroun": 67,
+    "unhcr": 48,
+    "cfao-mobility-motors-cameroun": 41,
+    "sodecoton": 40,
+    "g5-sahel": 29,
+    "cfao-motors-madagascar": 28,
+    "cfao-motors-rca": 28,
+    "cfao-motors-togo": 26,
+    "cfao-mobility-motors-gabon": 26,
+    "cfao-equipment-rci": 23,
+    "cfao-mobility-equipement-rci": 21,
+    "cfao-motors-rdc": 19,
+    "cfao-equipement-cameroun": 17,
+    "cfao-motors-senegal": 16,
+    "cfao-mobility-motors-rci": 16,
+    "cfao-mobility-rci": 16,
+    "cfao-mobility-motors": 16,
+    "cfao-motors-gabon": 14,
+    "cfao-motors-cameroun-ngaoundere": 14,
+    "cfao-motors-guinee-equatoriale": 14,
+    "cfao-equipment-madagasgar": 14,
+    "cfao-mobility-equipement-rdc": 14,
+    "usine-sabc-bafoussam": 13,
+    "cfao-equipment-cameroon": 12,
+    "socapalm": 12,
+    "cfao-equipment-rdc": 10,
+    "cfao-mobility-guinee-conakry": 10,
+    "usine-sabc-yaounde": 10,
+    "usine-semc": 10,
+    "total-energie": 9,
+    "cfao-mobility-motors-mauritanie": 9,
+    "cfao-motors-nigeria": 8,
+    "cfao-motors-maroc": 8,
+    "cfao-motors-guinee-conakry": 8,
+    "cfao-equipement-ghana": 8,
+    "cfao-equipement-congo": 8,
+    "cfao-motors-benin": 7,
+    "ambassade-des-usa": 7,
+    "cfao-motors-tchad": 7,
+    "cfao-motors-cote-d-ivoire": 7,
+    "cfao-equipment-senegal": 7,
+    "cfao-mobility-motors-procar": 7,
+    "cfao-mobility-motors-burkina": 7,
+    "cfao-mobility-equipement-senegal": 7,
+    "socomar": 7,
+    "cfao-equipement-senegal": 6,
+    "cfao-equipement-togo": 6,
+    "cfao-mobility-sari": 6,
+    "cafo-mobility-equipement": 6,
+    "usine-sabc-ndokotti": 6,
+    "socaver": 5,
+    "cfao-equipment-nigeria": 4,
+    "sogb-rci": 4,
+    "stagiairetech": 3,
+    "tech": 3,
+    "cfao-mobility-equipement": 3,
+    "cfao-mobility-motors-niger": 3,
+    "cfao-motors-cameroon": 2,
+    "cfao-motors-cong": 2,
+    "cfao-motors-congo": 2,
+    "cfao-equipment-togo": 2,
+    "relation-client": 2,
+    "cfao-motors-burkina-faso": 1,
+    "cfao-equipement-tchad": 1,
+    "cfao-mobility-motors-babi": 1,
+    "coord-kaizen": 1,
+    "cfao-mobility-yamassoukro": 1
+  }
+}

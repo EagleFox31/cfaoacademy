@@ -45,7 +45,31 @@ export function localizedArticleCategory(category, locale = 'fr') {
   return key ? home[key] ?? category : category
 }
 
+function mergeArticleCast(base = [], localized = []) {
+  if (!localized.length) return base
+  return localized.map((person, i) => ({
+    ...base[i],
+    ...person,
+    photo: person.photo ?? base[i]?.photo,
+    name: person.name ?? base[i]?.name,
+  }))
+}
+
+function mergeHighlights(base = [], localized = []) {
+  if (!localized.length) return base
+  return base.map((item, i) => ({
+    ...item,
+    label: localized[i]?.label ?? item.label,
+    value: localized[i]?.value ?? item.value,
+  }))
+}
+
 export function localizedArticleFields(article, locale = 'fr') {
+  const extras = {
+    highlights: article.highlights ?? [],
+    cast: article.cast ?? [],
+    castTitle: article.castTitle ?? '',
+  }
   if (locale === 'fr') {
     return {
       categoryLabel: article.category,
@@ -53,6 +77,7 @@ export function localizedArticleFields(article, locale = 'fr') {
       summary: article.summary,
       dateLabel: article.dateLabel,
       content: article.content,
+      ...extras,
     }
   }
   const entry = getCopy('articles', locale)[article.slug] ?? {}
@@ -63,6 +88,9 @@ export function localizedArticleFields(article, locale = 'fr') {
     summary: entry.summary ?? article.summary,
     dateLabel: fmtNewsDateLocale(article.date, locale),
     content: body ?? article.content,
+    highlights: mergeHighlights(extras.highlights, entry.highlights),
+    castTitle: entry.castTitle ?? extras.castTitle,
+    cast: mergeArticleCast(extras.cast, entry.cast),
   }
 }
 

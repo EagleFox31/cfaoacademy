@@ -14,11 +14,17 @@ class Principal:
     id: str
     roles: list[str] = field(default_factory=list)
     attr: dict = field(default_factory=dict)
+    username: str = ""  # preferred_username du JWT (ex : venance.tonga)
 
     # DRF traite cet objet comme request.user.
     @property
     def is_authenticated(self) -> bool:
         return True
+
+    @property
+    def sub(self) -> str:
+        """Alias historique — quelques vues lisent request.user.sub."""
+        return self.id
 
     def to_cerbos(self) -> dict:
         """Principal au format attendu par Cerbos."""
@@ -36,4 +42,9 @@ def build_principal(claims: dict) -> Principal:
         "departments": claims.get("departments", []),
         "brands": claims.get("brands", []),
     }
-    return Principal(id=claims["sub"], roles=roles, attr=attr)
+    return Principal(
+        id=claims["sub"],
+        roles=roles,
+        attr=attr,
+        username=claims.get("preferred_username", ""),
+    )

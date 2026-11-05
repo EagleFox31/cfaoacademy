@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "source": "Suivi_Techniciens_02-09-2026_harmonise.xlsx",
+    "extractedAt": "2026-09-04",
+    "definition": "elearningRequired = modules e-learning (+ e-test si connu) typiques du parcours TEAM-GP pour le niveau analysé. Sans nominatif."
+  },
+  "byLevel": {
+    "G4": {
+      "level": "G4",
+      "onlineAssignedTypical": 117,
+      "onlineAssignedMax": 117,
+      "onlineAssignedMin": 19,
+      "sampleSize": 30,
+      "elearningRequired": 117,
+      "elearningModulesTypical": 77,
+      "etestModulesTypical": 40
+    },
+    "G3": {
+      "level": "G3",
+      "onlineAssignedTypical": 51,
+      "onlineAssignedMax": 123,
+      "onlineAssignedMin": 43,
+      "sampleSize": 13,
+      "elearningRequired": 51,
+      "elearningModulesTypical": 18,
+      "etestModulesTypical": 33
+    },
+    "G2": {
+      "level": "G2",
+      "onlineAssignedTypical": 69,
+      "onlineAssignedMax": 97,
+      "onlineAssignedMin": 52,
+      "sampleSize": 9,
+      "elearningRequired": 69,
+      "elearningModulesTypical": 35,
+      "etestModulesTypical": 34
+    },
+    "G1": {
+      "level": "G1",
+      "onlineAssignedTypical": 55,
+      "onlineAssignedMax": 55,
+      "onlineAssignedMin": 55,
+      "sampleSize": 7,
+      "elearningRequired": 55,
+      "elearningModulesTypical": 42,
+      "etestModulesTypical": 13
+    }
+  }
+}

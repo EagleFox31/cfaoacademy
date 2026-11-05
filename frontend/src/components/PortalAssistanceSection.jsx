@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import PortalReveal from './PortalReveal.jsx'
+import PortalSectionEyebrow from './PortalSectionEyebrow.jsx'
 
 const ASSISTANCE_POINTS = [
   'assistance_point_1',
@@ -15,7 +16,11 @@ export default function PortalAssistanceSection({ t, variant = 'learner' }) {
       <div className="container" style={{ padding: '48px 32px' }}>
         <div className="portal-assistance-panel">
           <div className="portal-assistance-panel-main">
-            <p className="portal-assistance-eyebrow">{t.eyebrow_assistance}</p>
+            <PortalSectionEyebrow
+              icon="lifebuoy"
+              label={t.eyebrow_assistance}
+              className="portal-assistance-eyebrow"
+            />
             <h2 className="portal-assistance-title">{t.title_assistance}</h2>
             <p className="portal-assistance-desc">{desc}</p>
             {variant === 'learner' && (
@@ -27,7 +32,7 @@ export default function PortalAssistanceSection({ t, variant = 'learner' }) {
             )}
             <p className="portal-assistance-note">{t.assistance_note}</p>
           </div>
-          <div className="portal-assistance-panel-aside">
+          <div className="portal-assistance-panel-aside" data-portal-support>
             <Link to="/portail/assistance" className="portal-assistance-cta">
               {t.assistance_cta}
               <span className="portal-assistance-cta-arrow" aria-hidden="true">→</span>

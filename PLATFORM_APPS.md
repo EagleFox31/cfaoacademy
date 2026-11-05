@@ -236,31 +236,69 @@
 
 ---
 
+## 16 · Recueil des besoins de formation
+*Campagne annuelle : chaque filiale déclare, par marque et par trimestre, combien de collaborateurs former et où. **Module détachable** — se déploie et fonctionne seul, puis se raccorde à la plateforme. Campagne cible : exercice **2027**.*
+
+| Profil | Fonctionnalité | Accès |
+|--------|---------------|-------|
+| Chef d'équipe / Chef d'atelier | Saisir les effectifs à former par trimestre et le lieu souhaité sur ses marques, désigner les destinataires en copie, soumettre | RW |
+| DPS / DOP | Consolider et relire les besoins de son département avant soumission | R + W (département) |
+| Directeur Filiale | Relire sa filiale ; **destinataire en copie** de la confirmation | RW |
+| Admin Filiale / RH Filiale | **Saisie déléguée** au nom d'un manager, import du classeur de la filiale | RW |
+| Assistante centre | **Relire et valider les fiches**, approuver les envois, relancer, saisir à la place | RW |
+| Directeur centre | Idem + ouvrir et clôturer la campagne, arbitrer la répartition CFR / filiale | RW |
+| Admin Groupe / Directeur Groupe / RH Groupe | Vue consolidée, exports | R |
+| Super Admin | Tout, y compris import du référentiel de campagne | RW |
+
+**Fonctionnalités clés**
+
+| Domaine | Contenu |
+|---------|---------|
+| **Campagne** | Exercice, dates d'ouverture et de clôture, états `DRAFT → OPEN → CLOSED → ARBITRATED` |
+| **Référentiel** | Import par **famille** — clé `(famille, marque, code)`, **jamais `code` seul** ; familles au statut `PENDING` tant que leur catalogue n'est pas livré |
+| **Saisie** | Grille par formation : effectif **T1–T4** + lieu **CFR / Filiale** par trimestre, brouillon serveur permanent |
+| **Délégation** | Saisie et import au nom d'une filiale, acteur réel tracé |
+| **Circuit de validation** | Soumission → **résumé interne à l'équipe Academy** (+ lien) → relecture dans la plateforme → validation → **confirmation à l'auteur avec ses CC** |
+| **Emailing** | File « À envoyer » avec prévisualisation et approbation par lot, templates versionnés et localisés, journal d'envoi avec renvoi, relances J-21 / J-10 / J-3 et escalade J+1 **préparées, pas expédiées** |
+| **Consolidation** | Tableau de bord campagne, exports consolidé et par famille / marque, arbitrage CFR / filiale |
+
+> **Aucun email ne part vers une filiale sans validation de l'équipe Academy.** Le seul envoi automatique est **interne** : un résumé de la fiche et un lien profond vers la plateforme. Un type de message visant une adresse externe configuré en envoi automatique **fait échouer le démarrage**.
+
+**Familles de catalogue.** Le référentiel n'est pas une liste de marques mais une liste de **familles** : Techniques Motors, Techniques Equipment, Techniques Carrosserie, Process SAV Motors, Process Parts Motors, Process SAV Equipment, Process Parts Equipment — plus Techniques Yamaha à venir. **Les familles Process se déclinent aussi par marque** dans certains cas. Une ligne transverse a `marque = NULL`, jamais une pseudo-marque « TOUTES MARQUES ».
+
+**Marques.** Stellantis n'existe plus : les besoins se déclarent sur **CITROEN, FIAT, JEEP, PEUGEOT** séparément — 10 marques Motors, 10 marques Equipment, plus YAMAHA à venir.
+
+**Scope :** filiale × marques assignées pour les saisisseurs ; filiale entière pour le directeur ; groupe pour l'équipe Academy. Un manager habilité `peugeot` voit les lignes PEUGEOT **plus** les lignes sans marque de son pôle — filtrage par **query plan Cerbos**, jamais côté front.
+
+> Spécification : **`docs/SPEC_RECUEIL_BESOINS_2027.md`** · Stories : `backlog.md` §16 · Planification : `planning.md` §2 nœud **N**
+
+---
+
 ## Synthèse — Qui accède à quoi
 
 > Les lignes sont **cumulatives** par personne. Ex. un chef d'atelier KI Toyota : union de « Chef atelier » + « KI/PIC » + « Apprenant » (via `learner`).
 
-| | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 15 |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Candidat | R | — | — | — | — | — | — | — | RW | — | — | — | — |
-| Apprenant | R | RW | — | — | — | — | — | — | — | — | — | — | — |
-| KI / PIC *(cumule `learner`)* | R | RW | RW | RW† | RW | RW | R | R | — | — | — | — | — |
-| Chef équipe | R | — | — | — | — | — | R | W | — | R | — | — | — |
-| Chef atelier | R | — | R | — | R | — | R | W | R | R | — | — | — |
-| DPS / DOP | R | — | — | — | — | — | R | — | — | R | — | — | — |
-| Formateur | R | R | R | RW | RW | RW | R | R+W | W | R | — | — | — |
-| Assistante centre | R | R | — | RW | RW | RW | — | RW | — | — | R+W | — | — |
-| Dir. centre | R | R | R | RW | RW | RW | R | RW | — | R | RW | R | — |
-| Admin Filiale | R | R | R | R | R | R | R | RW | R | R | RW | — | — |
-| RH Filiale | R | R | — | — | — | — | R | RW | RW | R | R+W | — | — |
-| Dir. Filiale | R | R | — | — | — | — | R | R | R | R | R | — | — |
-| Dir. Régional | R | R | — | — | — | — | R | — | — | R | — | — | — |
-| Admin Groupe | R | R | — | — | — | — | R | RW | — | R | RW | RW | R |
-| RH Groupe | R | R | — | — | — | — | R | — | RW | R | R+W | — | — |
-| Dir. Groupe | R | R | — | — | — | — | R | — | — | R | — | — | R |
-| Partenaire B2B | R | RW | — | — | — | — | — | — | — | — | — | — | — |
-| Super Admin | R | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW |
-| Équipe build *(compte technique)* | — | — | — | — | — | — | — | — | — | — | — | — | RW |
+| | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 15 | 16 |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Candidat | R | — | — | — | — | — | — | — | RW | — | — | — | — | — |
+| Apprenant | R | RW | — | — | — | — | — | — | — | — | — | — | — | — |
+| KI / PIC *(cumule `learner`)* | R | RW | RW | RW† | RW | RW | R | R | — | — | — | — | — | — |
+| Chef équipe | R | — | — | — | — | — | R | W | — | R | — | — | — | **RW** |
+| Chef atelier | R | — | R | — | R | — | R | W | R | R | — | — | — | **RW** |
+| DPS / DOP | R | — | — | — | — | — | R | — | — | R | — | — | — | **R+W** |
+| Formateur | R | R | R | RW | RW | RW | R | R+W | W | R | — | — | — | — |
+| Assistante centre | R | R | — | RW | RW | RW | — | RW | — | — | R+W | — | — | **RW** |
+| Dir. centre | R | R | R | RW | RW | RW | R | RW | — | R | RW | R | — | **RW** |
+| Admin Filiale | R | R | R | R | R | R | R | RW | R | R | RW | — | — | **RW** |
+| RH Filiale | R | R | — | — | — | — | R | RW | RW | R | R+W | — | — | **RW** |
+| Dir. Filiale | R | R | — | — | — | — | R | R | R | R | R | — | — | **RW** |
+| Dir. Régional | R | R | — | — | — | — | R | — | — | R | — | — | — | **R** |
+| Admin Groupe | R | R | — | — | — | — | R | RW | — | R | RW | RW | R | **R** |
+| RH Groupe | R | R | — | — | — | — | R | — | RW | R | R+W | — | — | **R** |
+| Dir. Groupe | R | R | — | — | — | — | R | — | — | R | — | — | R | **R** |
+| Partenaire B2B | R | RW | — | — | — | — | — | — | — | — | — | — | — | — |
+| Super Admin | R | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW |
+| Équipe build *(compte technique)* | — | — | — | — | — | — | — | — | — | — | — | — | RW | — |
 
 † KI/PIC : RW app 04 limité aux **sessions internes** animées en formateur suppléant (pas l'espace formateur constructeur complet).
 

@@ -1,3 +1,4 @@
+import PortalSectionEyebrow from './PortalSectionEyebrow.jsx'
 import CardMemberTitle from './CardMemberTitle.jsx'
 import PvCard from './PvCard.jsx'
 import EvalCardMedia from './EvalCardMedia.jsx'
@@ -57,7 +58,17 @@ function PracticalTestCard({ item, t }) {
         />
       )}
       kicker={<EvalKicker e={e} t={t} />}
-      title={<CardMemberTitle name={item.memberName} />}
+      title={(
+        <CardMemberTitle
+          name={item.memberName}
+          person={{
+            nom: item.memberName,
+            brand: e.brand,
+            brands: e.brand ? [e.brand] : undefined,
+            certLevel: e.certLevel,
+          }}
+        />
+      )}
       meta={(
         <div className="portal-eval-card-meta">
           <div className="portal-eval-meta-row portal-eval-meta-row--sub">
@@ -84,7 +95,7 @@ function AlertCard({ member, t }) {
           <span className="portal-status-chip todo">{t.tm_status_inactive}</span>
         </span>
       )}
-      title={<CardMemberTitle name={member.nom} variant="alert" />}
+      title={<CardMemberTitle name={member.nom} variant="alert" person={member} />}
       meta={(
         <div className="portal-eval-card-meta">
           <div className="portal-eval-meta-row portal-eval-meta-row--sub">
@@ -111,7 +122,7 @@ export default function TeamManagerNextActions({ lms }) {
     <section id="next-actions">
       <div className="container" style={{ padding: '16px 32px' }}>
         <div className="portal-section-head">
-          <p className="portal-section-eyebrow">{t.eyebrow_next_actions}</p>
+          <PortalSectionEyebrow icon="listtodo" label={t.eyebrow_next_actions} />
           <h2 className="portal-section-title">{t.title_next_actions}</h2>
         </div>
         <div className="pv-grid cols-4 pv-grid--stretch">

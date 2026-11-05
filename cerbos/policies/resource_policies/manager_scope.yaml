@@ -1,0 +1,19 @@
+# Ressource « manager_scope » — scope équipe du chef d'équipe / d'atelier.
+# Scopée à la filiale + agence du manager. Lecture réservée aux managers
+# eux-mêmes, aux rôles DPS/DOP (vue supervision), et aux admins.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: manager_scope
+  rules:
+    - actions: ["read"]
+      effect: EFFECT_ALLOW
+      roles:
+        - team_manager
+        - workshop_manager
+        - dps
+        - dop
+        - branch_director
+        - branch_admin
+        - superadmin
+        - group_admin

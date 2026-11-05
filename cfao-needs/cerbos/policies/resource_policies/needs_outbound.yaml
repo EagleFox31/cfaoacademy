@@ -1,0 +1,29 @@
+# Ressource « needs_outbound » — la file des messages à envoyer.
+#
+# La ressource la plus sensible du module : elle décide qui peut faire sortir un
+# email vers une filiale. Réservée à l'équipe Academy, avec un DENY explicite sur
+# les rôles de filiale (test négatif obligatoire).
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: needs_outbound
+  importDerivedRoles:
+    - needs_review
+  rules:
+    - actions: ["view", "list", "approve", "reject", "send"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - academy_reviewer
+
+    - actions: ["view", "list", "approve", "reject", "send"]
+      effect: EFFECT_DENY
+      roles:
+        - team_manager
+        - workshop_manager
+        - dps
+        - dop
+        - branch_director
+        - branch_admin
+        - branch_hr
+        - learner
+        - trainer

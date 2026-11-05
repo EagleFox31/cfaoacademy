@@ -49,7 +49,7 @@ Deux services métier seulement, un PDP Cerbos partagé, un Keycloak. Le client 
 
 ---
 
-## 3. Découpage en modules (les 15 apps → 2 services)
+## 3. Découpage en modules (les 16 apps → 2 services + 1 module détachable)
 
 | Service | Module | Apps couvertes | Possède |
 |---------|--------|----------------|---------|
@@ -64,6 +64,9 @@ Deux services métier seulement, un PDP Cerbos partagé, un Keycloak. Le client 
 | | `rooms` | 05 | Réservation salles & équipements |
 | | `planning` | 04 | Planning & contenus formateurs |
 | | `tickets` | 06 | Assistance formateurs |
+| **cfao-needs** (Django, **détachable**) | `needs` | **16** | Campagnes de recueil des besoins, référentiel de campagne, soumissions par filiale, emailing de campagne |
+
+> **`cfao-needs` est un troisième déployable, pas un module de `cfao-core`.** Il embarque son propre Keycloak, son propre Cerbos et sa propre base en mode `standalone`, et bascule vers ceux de la plateforme en mode `integrated` par variables d'environnement — jamais par modification de code. Toute dépendance à la plateforme passe par une interface (`ReferentialSource`, `IdentityProvider`) à deux implémentations. Raison d'être : la campagne 2027 doit partir avant la livraison du nœud E. Détail → **`docs/SPEC_RECUEIL_BESOINS_2027.md`**, `planning.md` §2 nœud **N**.
 
 > `analytics` reste un module Django pour l'instant. Si le besoin de perf/async se fait sentir, on l'extrait en service FastAPI séparé — sans rien changer aux autres modules.
 
@@ -449,6 +452,24 @@ Services définis dans `docker-compose.yml` :
 | `worker` | build `./cfao-core` (même image) | tâches asynchrones : envoi des notifications + tâches planifiées (Django-Q2, broker = Postgres, pas de Redis au départ) |
 | `operations` | build `./cfao-operations` | service Node |
 | `ops-db` | postgres | base du service operations |
+
+### Budget de ressources — obligatoire par service
+
+Chaque service déclare `mem_limit` et `restart: unless-stopped`. Le plafond est calibré
+sur une **mesure** (`docker stats` sur la stack démarrée), pas sur une estimation, avec
+une marge de 3 à 8× la consommation observée.
+
+Pas de `cpus:` par défaut : le throttling est silencieux et se diagnostique mal. Quand la
+consommation CPU au repos est anormale, on corrige la **cause** — intervalle de
+scrutation d'un worker, nombre de processus — jamais par un plafond.
+
+**Les valeurs par défaut des composants tiers sont systématiquement remises en cause** :
+elles visent le cas d'usage du fournisseur, pas le nôtre. Keycloak réserve 524 Mio de tas
+JVM là où 256 suffisent pour quelques centaines de comptes ; Django-Q scrute toutes les
+0,2 s là où 2 s ne changent rien à l'expérience.
+
+> Règles complètes, procédure de mesure et exemples chiffrés : **`planning.md` §7**.
+> Cette norme fait partie de la Definition of Done (`planning.md` §6).
 
 Migration des comptes existants : le plugin bcrypt permet d'importer les hash actuels sans reset ; Keycloak ré-encode au format natif à la première connexion.
 

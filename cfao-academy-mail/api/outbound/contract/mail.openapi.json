@@ -1,0 +1,1147 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CFAO Academy Mail",
+    "version": "0.1.0",
+    "description": "Hub d'envoi. Les modules passent le contexte et l'adresse du bouton. Un champ requis manquant est refusé (400), le mail n'est pas envoyé."
+  },
+  "paths": {
+    "/api/v1/mail/healthz": {
+      "get": {
+        "operationId": "healthz",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Sonde.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mail/contract": {
+      "get": {
+        "operationId": "contract",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Ce document OpenAPI."
+          }
+        }
+      }
+    },
+    "/api/v1/mail/messages/enqueue": {
+      "post": {
+        "operationId": "enqueue",
+        "security": [
+          {
+            "serviceKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EnqueueNeedsSubmissionConfirmed"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueNeedsCampaignOpened"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueNeedsInternalSubmissionSummary"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueRapportsCrToDocument"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueRapportsCrStepsMissing"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueRapportsCrDraftStale"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueCoreSessionReminder"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueOpsTicketResolved"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueDeliveryWeeklyDevReminder"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message créé.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnqueueResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Déjà en file (correlation_id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnqueueResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Type inconnu ou champs requis manquants.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Clé X-Mail-Service-Key absente ou invalide.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "serviceKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Mail-Service-Key"
+      }
+    },
+    "schemas": {
+      "EmailList": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "format": "email"
+        }
+      },
+      "EnqueueResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "message",
+          "created"
+        ],
+        "properties": {
+          "created": {
+            "type": "boolean"
+          },
+          "message": {
+            "$ref": "#/components/schemas/OutboundMessage"
+          }
+        }
+      },
+      "OutboundMessage": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "source_app",
+          "source_ref",
+          "correlation_id",
+          "to",
+          "cc",
+          "reply_to",
+          "locale",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_REVIEW",
+              "APPROVED",
+              "SENT",
+              "FAILED",
+              "REJECTED"
+            ]
+          },
+          "source_app": {
+            "type": "string"
+          },
+          "source_ref": {
+            "type": "string"
+          },
+          "correlation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cc": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reply_to": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "properties": {
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "service"
+        ],
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "service": {
+            "const": "cfao-academy-mail"
+          }
+        }
+      },
+      "EnqueueNeedsSubmissionConfirmed": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "needs.submission_confirmed"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "cc": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "description": "Confirmation de fiche recueil des besoins.",
+        "x-required-context": [
+          "display_name"
+        ]
+      },
+      "EnqueueNeedsCampaignOpened": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "needs.campaign_opened"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "cc": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "description": "Ouverture de campagne recueil.",
+        "x-required-context": [
+          "display_name"
+        ]
+      },
+      "EnqueueNeedsInternalSubmissionSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "needs.internal_submission_summary"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "cc": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "description": "Résumé interne Academy — fiche soumise.",
+        "x-required-context": [
+          "display_name"
+        ]
+      },
+      "EnqueueRapportsCrToDocument": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "rapports.cr_to_document"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "cc": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name",
+              "brand",
+              "session_code",
+              "level",
+              "training_title",
+              "session_date",
+              "country",
+              "pending_count"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "brand": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "session_code": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "level": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "training_title": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "session_date": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "country": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "pending_count": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Adresse absolue du bouton, choisie par le module."
+          }
+        },
+        "description": "Rappel : comptes rendus à rédiger.",
+        "x-required-context": [
+          "display_name",
+          "brand",
+          "session_code",
+          "level",
+          "training_title",
+          "session_date",
+          "country",
+          "module_url",
+          "pending_count"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "module_url"
+            ]
+          },
+          {
+            "required": [
+              "context"
+            ],
+            "properties": {
+              "context": {
+                "required": [
+                  "module_url"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "EnqueueRapportsCrStepsMissing": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "rapports.cr_steps_missing"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "cc": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name",
+              "brand",
+              "session_code",
+              "level",
+              "training_title",
+              "session_date",
+              "country",
+              "missing_pages"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "brand": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "session_code": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "level": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "training_title": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "session_date": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "country": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "missing_pages": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Adresse absolue du bouton, choisie par le module."
+          }
+        },
+        "description": "Rappel : pages manquantes dans un brouillon.",
+        "x-required-context": [
+          "display_name",
+          "brand",
+          "session_code",
+          "level",
+          "training_title",
+          "session_date",
+          "country",
+          "module_url",
+          "missing_pages"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "module_url"
+            ]
+          },
+          {
+            "required": [
+              "context"
+            ],
+            "properties": {
+              "context": {
+                "required": [
+                  "module_url"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "EnqueueRapportsCrDraftStale": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "rapports.cr_draft_stale"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "cc": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name",
+              "brand",
+              "session_code",
+              "level",
+              "training_title",
+              "session_date",
+              "country",
+              "days_inactive"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "brand": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "session_code": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "level": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "training_title": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "session_date": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "country": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "days_inactive": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Adresse absolue du bouton, choisie par le module."
+          }
+        },
+        "description": "Brouillon sans activité depuis N jours.",
+        "x-required-context": [
+          "display_name",
+          "brand",
+          "session_code",
+          "level",
+          "training_title",
+          "session_date",
+          "country",
+          "module_url",
+          "days_inactive"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "module_url"
+            ]
+          },
+          {
+            "required": [
+              "context"
+            ],
+            "properties": {
+              "context": {
+                "required": [
+                  "module_url"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "EnqueueCoreSessionReminder": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "core.session_reminder"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "cc": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name",
+              "session_code",
+              "session_date",
+              "session_place"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "session_code": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "session_date": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "session_place": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "description": "Rappel session planifiée (J-7, etc.).",
+        "x-required-context": [
+          "display_name",
+          "session_code",
+          "session_date",
+          "session_place"
+        ]
+      },
+      "EnqueueOpsTicketResolved": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ops.ticket_resolved"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "cc": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "description": "Ticket assistance clôturé.",
+        "x-required-context": [
+          "display_name"
+        ]
+      },
+      "EnqueueDeliveryWeeklyDevReminder": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "delivery.weekly_dev_reminder"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "cc": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "description": "Rappel jeudi — statut hebdo dev.",
+        "x-required-context": [
+          "display_name"
+        ]
+      }
+    }
+  }
+}
