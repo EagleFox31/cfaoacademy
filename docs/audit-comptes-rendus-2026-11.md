@@ -30,7 +30,7 @@ Points d'attention :
 | Lot | Statut | Réalisé | Date estimée | Blocages | Preuve |
 |---|---|---|---|---|---|
 | P0 Audit et cadrage | En validation | 100 % | 06/11 | Décisions ci-dessous | Ce document |
-| P1 Référentiel et droits | Non démarré | 25 % | 20/11 | Décisions 1, 2, 9, 10 | Audit, annexe R |
+| P1 Référentiel et droits | Étude faite | 25 % | 20/11 | Décision 11 | Étude `etude-referentiel-formations.md` |
 | P1 Évaluations et progression | Non démarré | 50 % | 13/11 | Décision 3 (barème) | Audit, annexe E |
 | P2 Saisie guidée et appréciations | Non démarré | 40 % | 27/11 | Décisions 4, 7, 8 | Audit, annexe S |
 | P2 Synthèse et rapports | Non démarré | 70 % | 03/12 | Décisions 5, 6 | Audit, annexe P |
@@ -46,8 +46,22 @@ nouvelle base côté serveur, des droits et un import, qui n'existent pas aujour
 
 ## 3. Décisions attendues
 
-1. Source unique des formations et des participants : fichier « Liste des participants » importé, ou autre ?
-2. Profils habilités à créer les codes (Claudia, André Yves, Laurent Gonin) : périmètre par pays ou par marque ?
+Décisions déjà prises le 05/11 pour le référentiel (détail : `docs/etude-referentiel-formations.md`) :
+- Source : import du fichier « Liste des participants », avec correction à l'écran.
+- **Un seul administrateur** tient la base (codes, libellés, stagiaires, formateurs).
+- Claudia, André Yves et Laurent Gonin **consultent et téléchargent** tous les comptes rendus, sans modifier.
+- Le formateur ne voit que ses sessions. Plusieurs formateurs partagent **un seul compte rendu par session**,
+  avec une réservation en écriture qui se libère seule (fermeture, inactivité) : ni collision, ni blocage.
+- **Session = code + dates.** Un même code peut couvrir plusieurs sessions (groupes différents) ; un même
+  groupe sur plusieurs semaines forme une seule session.
+- Stagiaire identifié par nom, prénom et pays (pas de matricule) ; un absent est marqué, jamais retiré.
+- Un **% de complétion** est calculé et affiché sur chaque compte rendu.
+- Les comptes rendus existants sont repris dans la nouvelle base, après un essai à blanc et un rapport.
+
+Décisions encore attendues :
+
+1. ~~Source unique des formations et des participants~~ : tranchée (import du fichier).
+2. ~~Profils habilités~~ : tranchée (un administrateur ; trois lecteurs, tous périmètres).
 3. Barème et formules définitifs : notes sur 30/30/20 ? Seuil de 70 % ? Progression en points, en % ou les deux ?
    Note finale quand une épreuve manque ?
 4. Appréciations croisées : qui apprécie qui (formateur ↔ stagiaire, stagiaires entre eux) ?
@@ -56,8 +70,10 @@ nouvelle base côté serveur, des droits et un import, qui n'existent pas aujour
 7. Ordre du parcours : administration → objectifs → journées → évaluations, à la place de l'ordre actuel
    (formation → notes → pages) ?
 8. Plafond de 5 jours : les certifications sur 10 jours sont-elles exclues ?
-9. Un même code de formation peut-il couvrir plusieurs groupes ou plusieurs dates ?
-10. Identifiant des participants : un matricule existe-t-il ?
+   Le fichier compte déjà une formation sur 3 semaines (même groupe).
+9. ~~Un code, plusieurs groupes ou dates~~ : tranchée (session = code + dates).
+10. ~~Matricule~~ : tranchée (nom, prénom, pays).
+11. Pondération du % de complétion (proposition dans l'étude, § 7).
 
 ## 4. Détail par demande
 
