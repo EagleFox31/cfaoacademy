@@ -31,7 +31,7 @@ Points d'attention :
 |---|---|---|---|---|---|
 | P0 Audit et cadrage | En validation | 100 % | 06/11 | Décisions ci-dessous | Ce document |
 | P1 Référentiel et droits | Étude faite | 25 % | 20/11 | Décision 11 | Étude `etude-referentiel-formations.md` |
-| P1 Évaluations et progression | Non démarré | 50 % | 13/11 | Décision 3 (barème) | Audit, annexe E |
+| P1 Évaluations et progression | Cadré | 50 % | 13/11 | Décision 3 (barème, progression) | Audit, section E |
 | P2 Saisie guidée et appréciations | Non démarré | 40 % | 27/11 | Décisions 4, 7, 8 | Audit, annexe S |
 | P2 Synthèse et rapports | Non démarré | 70 % | 03/12 | Décisions 5, 6 | Audit, annexe P |
 | P3 Ergonomie et recette | Non démarré | 20 % | 08/12 | Retrait d'éléments après validation | Audit, annexe U |
@@ -62,8 +62,10 @@ Décisions encore attendues :
 
 1. ~~Source unique des formations et des participants~~ : tranchée (import du fichier).
 2. ~~Profils habilités~~ : tranchée (un administrateur ; trois lecteurs, tous périmètres).
-3. Barème et formules définitifs : notes sur 30/30/20 ? Seuil de 70 % ? Progression en points, en % ou les deux ?
-   Note finale quand une épreuve manque ?
+3. Barème et formules définitifs : notes sur 30/30/20 ? Seuil de 70 % ? Note finale quand une épreuve manque ?
+   **Progression, à clarifier avec les formateurs.** Aujourd'hui, elle est calculée par rapport à la note
+   d'entrée : passer de 10/30 à 20/30 donne +100 %, et rien n'est affiché si la note d'entrée vaut 0. Proposition :
+   un écart en points, rapporté au barème. Le même exemple donne alors +10 points, soit +33 %.
 4. Appréciations croisées : qui apprécie qui (formateur ↔ stagiaire, stagiaires entre eux) ?
 5. Lot de 25 rapports : un seul fichier ou 25 fichiers ?
 6. Photos repositionnables : recadrage dans la case (existe) ou placement libre sur la page ?
@@ -89,6 +91,24 @@ Décisions encore attendues :
 | Création des codes par profils habilités | Absente | Ni rôle dédié ni autorisation serveur |
 | Formation en lecture seule pour le formateur | Partielle | Lecture seule par défaut, contournable par le bouton de modification |
 
+Prévu (étude du 05/11, `etude-referentiel-formations.md`) :
+- **Une base des formations côté serveur.** Une session correspond à un code et des dates. Elle regroupe ses
+  stagiaires (nom, prénom, pays ; un absent est marqué, jamais retiré) et ses formateurs. Chaque session a
+  **un seul compte rendu**.
+- **Alimentation de la base :**
+  - import du fichier « Liste des participants » ;
+  - essai à blanc et rapport avant tout enregistrement ;
+  - regroupement proposé pour les semaines d'un même groupe ;
+  - correction à l'écran par l'administrateur.
+- **Droits contrôlés par le serveur :**
+  - l'administrateur tient la base ;
+  - le formateur ne voit que ses sessions et ne peut pas modifier le code ;
+  - les lecteurs consultent et téléchargent.
+- **Écriture à plusieurs sans conflit.** Le compte rendu est réservé pendant la saisie et libéré
+  automatiquement : à la fermeture, ou après une inactivité.
+- **Avancement.** Un % de complétion et un statut enregistré sur le serveur. Les comptes rendus existants
+  sont repris dans la nouvelle base.
+
 ### E — Évaluations et progression
 | Demande | Statut | Constat |
 |---|---|---|
@@ -100,6 +120,26 @@ Décisions encore attendues :
 | Alertes sans altérer les notes | Partielle | « 12,5 » devient « 125 » ; dépassement sans message ; note partielle non signalée ; alertes visibles seulement au survol |
 
 Hors demande, mais à prévoir : les notes ne sont pas contrôlées par le serveur.
+
+Prévu (cadrage du 05/11) :
+- **Barème.**
+  - La ligne de barème reste au-dessus du tableau, chaque case alignée sur sa colonne.
+  - Chaque en-tête rappelle son barème, mis en évidence. Exemple : « Test d'entrée **(/30)** ».
+  - Libellé : « Barème (note maximale en point ou en pourcentage) ».
+- **Saisie.**
+  - En points par défaut, en % au choix, avec un interrupteur sur la même ligne.
+  - La note saisie est gardée telle quelle : « 12,5 » reste 12,5.
+- **Erreurs.**
+  - La case en erreur est entourée de rouge, sans changer de taille.
+  - Un seul message à la fois, dans la barre d'alerte existante. Exemple : « Ligne 3, Dupont, Pratique :
+    22 dépasse le barème de 20 ». Suivi de « + N autres » s'il y en a d'autres.
+  - Un clic sur le message mène à la case. Le message change au fur et à mesure des corrections.
+  - Une note invalide n'entre pas dans les calculs.
+- **Indicateurs.**
+  - Les 4 indicateurs en bas du tableau sont retirés.
+  - Le compteur « Notes saisies » en haut de page utilise le barème du compte rendu, comme le reste.
+- **Seuil.** Chaque formation a son propre seuil, à la place du seuil de 70 % écrit en dur.
+- **Progression.** La formule change une fois validée avec les formateurs (décision 3).
 
 ### S — Saisie guidée et appréciations
 | Demande | Statut | Constat |
