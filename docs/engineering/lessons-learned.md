@@ -39,6 +39,39 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
 
+### 2026-11-06 — API reconstruite sans sa configuration OIDC : toutes les requêtes en 401 (recette cfao-planning)
+- **Contexte / symptôme** : après `docker compose up -d --build planning-api`, l'écran affiche « Le service ne répond pas ». Le journal de l'API montre `Unauthorized` sur `/access` et `/cost-keys/`.
+- **Impact** : recette bloquée quelques minutes. Rien en prod.
+- **Détection** : l'utilisateur, à l'écran. La sonde utilisée après la reconstruction (route sans jeton, 401 attendu) ne pouvait pas voir la panne.
+- **Cause racine** : le compose lit `OIDC_AUDIENCE` et `OIDC_TRUSTED_ISSUERS` dans le shell, avec une valeur vide par défaut. Le conteneur a été recréé en ne reprenant que les variables `PLANNING_*` de l'ancien.
+- **Correctif** : conteneur recréé avec les deux variables, comme dans l'en-tête de `edge/compose.dev.yml`. Vérifié avec un vrai jeton de `lecteur.planning` : `/access`, `/cost-keys/` et `/years/2026/global` en 200.
+- **Prévention** : après toute recréation d'une API, faire un smoke avec un jeton réel (200 attendu), pas une sonde anonyme. Pour recréer un conteneur, relancer la commande complète documentée, pas un sous-ensemble de variables.
+- **Leçon généralisée** : un 401 sans jeton prouve que la route existe, pas que l'authentification fonctionne. Une variable obligatoire avec un défaut vide cache son absence.
+- **Catégorie** : exploitation
+- **Récidive** : non
+
+### 2026-11-05 — Effet React relancé en boucle par un objet en dépendance (frontend, clé de répartition)
+- **Contexte / symptôme** : premier test de rendu de `CleRepartition.jsx`. Le worker vitest meurt (« Worker exited unexpectedly »).
+- **Impact** : aucun en prod (détecté avant livraison). Si `useAuth()` rendait un nouvel objet `user` à chaque rendu, l'écran aurait appelé `/access` et `/cost-keys/` sans fin.
+- **Détection** : test de rendu avec un `useAuth` simulé qui recrée l'objet à chaque appel. Le build passait.
+- **Cause racine** : `useEffect(..., [user])`. L'effet fait un `setState`, donc un rendu, donc un nouvel objet, donc l'effet repart.
+- **Correctif** : dépendance sur l'identifiant (`user?.id`), pas sur l'objet.
+- **Prévention** : `src/pages/portal/CleRepartition.test.jsx` rend la page avec des mocks et vérifie le menu par rôle et la grille.
+- **Leçon généralisée** : un effet qui charge des données dépend de valeurs primitives (id, code, mode), jamais d'un objet issu d'un hook. Tout nouvel écran qui charge des données a un test de rendu avec API simulée.
+- **Catégorie** : qualité/tests
+- **Récidive** : non
+
+### 2026-11-05 — Choix de modèle modifiés sans migration, tests verts (cfao-planning)
+- **Contexte / symptôme** : premier `docker compose up` du module sur une base vide. Le job `planning-migrate` affiche « Your models have changes that are not yet reflected in migrations ». Les choices de `origin` (ajout de `GRID_REVIEW`) sur `Session` et `Absence` n'avaient pas de migration.
+- **Impact** : nul en base, car un changement de choices ne produit pas de DDL. Mais le même oubli sur un champ ou une contrainte aurait laissé la prod en retard sans aucun signal.
+- **Détection** : smoke §7 réel (base vide, puis second démarrage), pas la suite pytest. La base de test est créée depuis les migrations, et un changement de choices n'y casse rien.
+- **Cause racine** : aucun contrôle de type `makemigrations --check` dans le module.
+- **Correctif** : `planning/migrations/0005_origin_grid_review.py`. Sur une copie de la base existante, le rejeu n'applique que la 0005, et le second démarrage fait zéro écriture (`pg_stat_database` : 2732 avant, 2732 après).
+- **Prévention** : `planning/tests/test_migrations_a_jour.py` échoue si une migration manque. Il tourne dans le job CI `planning`.
+- **Leçon généralisée** : toute API Django porte un test `makemigrations --check`. Un modèle modifié sans migration passe les tests, puis le job migrate n'a rien à appliquer.
+- **Catégorie** : release/déploiement
+- **Récidive** : non
+
 ### 2026-11-05 — Rechargement « à 20 s » mesuré par Playwright, réel à 3 s (cfao-comptes-rendus)
 - **Contexte / symptôme** : test de bascule CR v0.4.1 → passerelle v0.4.3. Un onglet devait se recharger seul à l'état `terminee` ; le script mesurait l'événement `load` à 20,7 s.
 - **Impact** : quasi-incident. On allait chercher un bug de délai dans `AnnonceMaintenance.jsx` qui n'existait pas.

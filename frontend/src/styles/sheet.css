@@ -1,0 +1,326 @@
+/* Grille type tableur (components/sheet/DataSheet.jsx).
+   Repères Excel : quadrillage fin, en-têtes gris, lettres de colonnes, numéros
+   de ligne, sélection bordée, barre de formule et barre d'état. */
+
+.sheet {
+  --sheet-line: #d9dbe3;
+  --sheet-head: #f3f4f7;
+  --sheet-head-2: #e9ebf0;
+  --sheet-sel: rgba(26, 86, 219, 0.1);
+  --sheet-sel-line: #1a56db;
+  --sheet-row-h: 30px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--sheet-line);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  color: var(--ink);
+  min-width: 0;
+}
+
+/* ── barre d'outils ── */
+.sheet-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid var(--sheet-line);
+  background: var(--paper-2, #fafafa);
+  border-radius: 8px 8px 0 0;
+}
+.sheet-search {
+  flex: 1 1 200px;
+  max-width: 280px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--sheet-line);
+  border-radius: 6px;
+  font: inherit;
+}
+.sheet-search:focus,
+.sheet-filters input:focus { outline: 2px solid var(--sheet-sel-line); outline-offset: -1px; }
+.sheet-btn {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--sheet-line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sheet-btn:hover { background: var(--sheet-head); }
+.sheet-btn:disabled { opacity: 0.55; cursor: default; }
+.sheet-btn.is-on { background: #eef3ff; border-color: var(--sheet-sel-line); color: var(--sheet-sel-line); }
+.sheet-btn:focus-visible { outline: 2px solid var(--sheet-sel-line); outline-offset: 1px; }
+.sheet-btn-ghost { border-color: transparent; background: transparent; color: var(--muted); }
+.sheet-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--sheet-sel-line);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+.sheet-toolbar-sep { flex: 1 1 auto; }
+
+.sheet-pop { position: relative; }
+.sheet-pop-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  min-width: 220px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--sheet-line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(14, 17, 38, 0.14);
+}
+.sheet-pop-actions { display: flex; justify-content: flex-end; padding: 2px 4px 6px; }
+.sheet-pop-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.sheet-pop-item:hover { background: var(--sheet-head); }
+.sheet-freeze { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-weight: 600; }
+.sheet-freeze select { height: 32px; border: 1px solid var(--sheet-line); border-radius: 6px; font: inherit; padding: 0 6px; }
+
+/* ── barre de formule ── */
+.sheet-formula {
+  display: flex;
+  align-items: stretch;
+  height: 28px;
+  border-bottom: 1px solid var(--sheet-line);
+  font-size: 12.5px;
+}
+.sheet-namebox {
+  width: 90px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--sheet-line);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--muted);
+}
+.sheet-fx {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--sheet-line);
+  font-style: italic;
+  color: var(--muted-2, #9499ab);
+}
+.sheet-formula-val {
+  flex: 1;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── zone défilante ── */
+.sheet-scroll {
+  position: relative;
+  overflow: auto;
+  max-height: min(70vh, 720px);
+  outline: none;
+}
+.sheet-scroll:focus-visible { box-shadow: inset 0 0 0 2px var(--sheet-sel-line); }
+.sheet-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
+}
+.sheet-table th,
+.sheet-table td {
+  height: var(--sheet-row-h);
+  padding: 0 8px;
+  border-right: 1px solid var(--sheet-line);
+  border-bottom: 1px solid var(--sheet-line);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #fff;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+/* en-têtes figés en haut : tout le thead colle, quelle que soit la présence
+   des lignes de groupes et de filtres */
+.sheet-table thead { position: sticky; top: 0; z-index: 4; }
+.sheet-table thead th { background: var(--sheet-head); }
+.sheet-letters th { height: 22px; }
+.sheet-groups th { height: 24px; }
+.sheet-letter,
+.sheet-corner {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: center;
+  cursor: pointer;
+}
+.sheet-letter.is-hl { background: var(--sheet-head-2); color: var(--sheet-sel-line); box-shadow: inset 0 -2px 0 var(--sheet-sel-line); }
+.sheet-group { font-size: 11.5px; font-weight: 700; text-align: center; color: var(--muted); }
+.sheet-group.has-group { background: var(--sheet-head-2); color: var(--ink); }
+.sheet-h { position: relative; padding: 0; font-weight: 700; text-align: left; }
+.sheet-h.is-num { text-align: right; }
+.sheet-h-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  padding: 0 14px 0 8px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+  text-align: inherit;
+}
+.sheet-h.is-num .sheet-h-btn { justify-content: flex-end; }
+.sheet-h-label { overflow: hidden; text-overflow: ellipsis; }
+.sheet-sort { font-size: 10px; color: var(--muted-2, #9499ab); }
+.sheet-sort.is-on { color: var(--sheet-sel-line); }
+.sheet-resize {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 2;
+}
+.sheet-resize:hover { background: var(--sheet-sel-line); opacity: 0.4; }
+.sheet-filters th { padding: 2px 4px; background: #fff; }
+.sheet-filters input {
+  width: 100%;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--sheet-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+}
+.sheet-filters input.is-on { border-color: var(--sheet-sel-line); background: #eef3ff; }
+
+/* numéros de ligne */
+.sheet-rownum,
+.sheet-rownum-h {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  width: 44px;
+  min-width: 44px;
+  padding: 0 4px !important;
+  text-align: center;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--sheet-head) !important;
+  cursor: pointer;
+}
+.sheet-table thead .sheet-rownum-h,
+.sheet-table thead .sheet-corner { position: sticky; z-index: 5; left: 0; }
+.sheet-rownum.is-hl { background: var(--sheet-head-2) !important; color: var(--sheet-sel-line); box-shadow: inset -2px 0 0 var(--sheet-sel-line); }
+
+/* cellules */
+.sheet-c { position: relative; cursor: cell; }
+.sheet-c.is-num { text-align: right; font-variant-numeric: tabular-nums; }
+.sheet-c.is-sel { background: var(--sheet-sel) !important; }
+.sheet-c.is-active { box-shadow: inset 0 0 0 2px var(--sheet-sel-line); }
+.sheet-c-txt { position: relative; z-index: 1; }
+.sheet-table tbody tr:hover td:not(.is-sel):not(.sheet-rownum) { background: #fafbfd; }
+
+/* colonnes figées (volets) */
+.sheet-table .is-frozen { position: sticky; z-index: 2; }
+.sheet-table thead .is-frozen { z-index: 4; }
+.sheet-table .is-frozen-edge { box-shadow: 3px 0 0 -1px #b9bcc8; }
+.sheet-table .is-frozen-edge.is-active { box-shadow: inset 0 0 0 2px var(--sheet-sel-line), 3px 0 0 -1px #b9bcc8; }
+
+/* mise en forme conditionnelle */
+.sheet-c.tone-low { background: #fdecee; color: #a8001a; }
+.sheet-c.tone-mid { background: #fff3cc; color: #996600; }
+.sheet-c.tone-high { background: #edfaf4; color: #127a40; }
+.sheet-c.tone-neg { color: #c40017; }
+.sheet-c.tone-pos { color: #127a40; }
+.sheet-bar {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  bottom: 5px;
+  background: rgba(26, 86, 219, 0.16);
+  border-radius: 0 3px 3px 0;
+  pointer-events: none;
+}
+.sheet-c.tone-low .sheet-bar { background: rgba(227, 0, 27, 0.18); }
+.sheet-c.tone-mid .sheet-bar { background: rgba(230, 126, 0, 0.22); }
+.sheet-c.tone-high .sheet-bar { background: rgba(26, 171, 91, 0.22); }
+.sheet-link { color: var(--sheet-sel-line); text-decoration: underline; cursor: pointer; }
+.sheet-c .portal-status-chip { font-size: 10.5px; padding: 2px 8px; }
+
+.sheet-table td.sheet-empty {
+  height: 80px;
+  text-align: center;
+  color: var(--muted);
+  white-space: normal;
+}
+
+/* totaux figés en bas */
+.sheet-table tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  background: var(--sheet-head);
+  font-weight: 700;
+  border-top: 2px solid var(--ink);
+}
+.sheet-table tfoot .is-frozen { z-index: 4; }
+.sheet-table tfoot .sheet-rownum { z-index: 5; }
+.sheet-total.is-num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── barre d'état ── */
+.sheet-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-top: 1px solid var(--sheet-line);
+  background: var(--paper-2, #fafafa);
+  border-radius: 0 0 8px 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.sheet-status-agg { display: flex; flex-wrap: wrap; gap: 4px 14px; font-variant-numeric: tabular-nums; }
+.sheet-status-agg strong { color: var(--ink); font-weight: 700; }
+
+@media (max-width: 640px) {
+  .sheet-formula { display: none; }
+  .sheet-search { max-width: none; }
+}

@@ -379,6 +379,8 @@ body {
   column-gap: 16px;
   padding: 0 clamp(16px, 2vw, 32px);
 }
+/* Écran applicatif (menu du module dans la barre) : toute la largeur disponible. */
+.nav--wide .nav-shell { max-width: none; }
 .nav--portal .nav-brand {
   grid-column: 1;
   grid-row: 1;
