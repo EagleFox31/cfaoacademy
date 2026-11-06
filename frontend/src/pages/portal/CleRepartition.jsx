@@ -1,7 +1,7 @@
 /**
  * Clé de répartition (cfao-planning) — écran applicatif sous la navbar du portail.
  *
- * Menu : 5 entrées au plus, plates, toujours visibles, un mot + une ligne d'aide
+ * Menu : 6 entrées au plus, plates, toujours visibles, un mot + une ligne d'aide
  * (publics pressés et peu techniques : pas de sous-menu, pas de menu déroulant,
  * la tâche principale du rôle en premier). Les droits viennent de /access (Cerbos).
  *
@@ -15,14 +15,20 @@ import PortalDemoBar from '../../components/PortalDemoBar'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import useAuth from '../../hooks/useAuth'
 import useLocale from '../../hooks/useLocale'
+import useMaintenance from '../../hooks/useMaintenance'
+import { isMaintenanceError } from '../../lib/api'
 import { makeFormatter } from '../../components/sheet/sheetExport'
 import { planningApi } from '../../lib/planningApi'
 import { planningMenu } from '../../utils/planningAccess'
-import { Banner, CompareView, CountryView, Segmented, TableView, ThemesView, errText } from './costKey/costKeyViews'
+import { AbcView, Banner, CountryView, Segmented, SheetSkeleton, TableView, ThemesView, errText } from './costKey/costKeyViews'
 import PrepareView from './costKey/PrepareView'
+import SettingsView from './costKey/SettingsView'
 
 const BASE = '/portail/cle-repartition'
-const MODE_VIEWS = new Set(['table', 'country'])
+/** Vues qui savent montrer « Tous pôles » d'une année. */
+const ALL_VIEWS = new Set(['table', 'country', 'abc'])
+/** Anciens liens : « Prévu / Réalisé » vit désormais dans ABC › Réalisé. */
+const VIEW_ALIASES = { compare: 'abc' }
 const POLES = ['MOTORS', 'EQUIPMENT']
 const ALL = 'ALL'
 
@@ -57,13 +63,20 @@ export default function CleRepartition() {
   const { t, locale } = useLocale('costKey')
   const fmt = useMemo(() => makeFormatter(locale), [locale])
   const navigate = useNavigate()
-  const { view: viewParam } = useParams()
+  const { view: rawView } = useParams()
+  const viewParam = VIEW_ALIASES[rawView] ?? rawView
   const [search, setSearch] = useSearchParams()
-  const mode = search.get('mode') === 'ACTUAL' ? 'ACTUAL' : 'PLANNED'
+  // La clé se lit sur le prévu ; le réalisé se consulte dans ABC › Réalisé.
+  const mode = 'PLANNED'
 
   const [boot, setBoot] = useState({ loading: true })
   const [global, setGlobal] = useState({ loading: false })
   const [reload, setReload] = useState(0)
+  // Emplacements de l'en-tête où une vue peut poser ses contrôles (filiale, export).
+  const [titleSlot, setTitleSlot] = useState(null)
+  const [toolsSlot, setToolsSlot] = useState(null)
+  const slots = useMemo(() => ({ title: titleSlot, tools: toolsSlot }), [titleSlot, toolsSlot])
+  const maintenance = useMaintenance()
 
   /* droits + clés */
   useEffect(() => {
@@ -130,12 +143,12 @@ export default function CleRepartition() {
   const itemLabel = id => (id === 'country' && global.data?.partial ? t.nav_country_scoped : t[`nav_${id}`])
 
   let body
-  if (boot.loading) body = <p className="ck-muted">{t.loading}</p>
+  if (boot.loading) body = <SheetSkeleton label={t.loading} kpis />
   else if (boot.error?.status === 403 || (boot.access && !boot.access.view)) body = <Banner tone="warn">{t.no_access}</Banner>
   else if (boot.error) {
     body = (
       <div className="ck-error">
-        <Banner tone="warn">{t.error}</Banner>
+        <Banner tone="warn">{isMaintenanceError(boot.error) ? t.err_maintenance : t.error}</Banner>
         <button type="button" className="ck-btn" onClick={() => setReload(r => r + 1)}>{t.retry}</button>
       </div>
     )
@@ -149,14 +162,18 @@ export default function CleRepartition() {
     body = <Banner tone="info">{msg.replace('{pole}', t[`pole_${pole}`] || pole).replace('{year}', year)}</Banner>
   } else if (!ckey) {
     body = <Banner tone="info">{menu.includes('prepare') ? t.no_key_manage : t.no_key}</Banner>
-  } else if (view === 'compare') body = <CompareView t={t} ckey={ckey} />
-  else if (view === 'themes') body = <ThemesView t={t} ckey={ckey} />
+  } else if (view === 'settings') {
+    body = <SettingsView t={t} fmt={fmt} ckey={ckey} onSaved={onKeyChange} />
+  } else if (view === 'abc') {
+    body = <AbcView t={t} fmt={fmt} scope={allPoles ? scope : ckey} ckey={ckey} />
+  } else if (view === 'themes') body = <ThemesView t={t} ckey={ckey} />
   else if (global.error) body = <Banner tone="warn">{errText(t, global.error)}</Banner>
-  else if (!global.data) body = <p className="ck-muted">{t.loading}</p>
+  // Pôle, année, mode : tout rechargement affiche le squelette à la place de l'ancien tableau.
+  else if (!global.data || global.loading) body = <SheetSkeleton label={t.loading} kpis />
   else if (view === 'country') {
     body = (
       <CountryView t={t} locale={locale} fmt={fmt} ckey={scope} mode={mode} global={global.data}
-        code={search.get('pays')} setCode={c => setParam('pays', c)} />
+        code={search.get('pays')} setCode={c => setParam('pays', c)} slots={slots} />
     )
   } else {
     body = (
@@ -165,12 +182,12 @@ export default function CleRepartition() {
     )
   }
 
-  // « Tous » n'a de sens que sur le Tableau et la fiche Pays ; ailleurs, une clé.
-  const allHere = allPoles && MODE_VIEWS.has(view)
-  const shownPole = pole === ALL && !MODE_VIEWS.has(view) ? ckey?.pole : pole
+  // « Tous » n'a de sens que sur les vues qui consolident l'année ; ailleurs, une clé.
+  const allHere = allPoles && ALL_VIEWS.has(view)
+  const shownPole = pole === ALL && !ALL_VIEWS.has(view) ? ckey?.pole : pole
   const status = allHere ? global.data?.status : ckey?.status
   const frozen = status === 'FROZEN'
-  const poleOptions = [...(MODE_VIEWS.has(view) ? [ALL] : []), ...POLES]
+  const poleOptions = [...(ALL_VIEWS.has(view) ? [ALL] : []), ...POLES]
     .map(p => ({ value: p, label: t[`pole_${p}`] || p }))
   // Le menu du module vit dans la navbar : la page garde toute la largeur.
   const appNav = {
@@ -189,18 +206,22 @@ export default function CleRepartition() {
             <header className="ck-topbar">
               <div className="ck-topbar-title">
                 {!simple && <p className="ck-eyebrow">{t.eyebrow}</p>}
-                <h1 id="ck-view-title">{menu.includes(view) ? itemLabel(view) : t.title}</h1>
+                <div className="ck-topbar-heading">
+                  <h1 id="ck-view-title">{menu.includes(view) ? itemLabel(view) : t.title}</h1>
+                  {/* La vue Filiale y pose son choix de filiale (portail) : une seule ligne. */}
+                  <div className="ck-topbar-slot" ref={setTitleSlot} />
+                </div>
               </div>
               {year && (
                 <div className="ck-topbar-tools">
-                  {years.length > 1 ? (
-                    <label className="ck-field ck-field--inline">
-                      <span>{t.key_label}</span>
-                      <select value={year} onChange={e => setParams({ cle: null, annee: e.target.value })}>
-                        {years.map(y => <option key={y} value={y}>{y}</option>)}
-                      </select>
-                    </label>
-                  ) : <span className="ck-key-static">{year}</span>}
+                  <div className="ck-topbar-slot" ref={setToolsSlot} />
+                  {/* L'année est un filtre, même quand une seule année existe. */}
+                  <label className="ck-pill-select">
+                    <span className="ck-sr">{t.key_label}</span>
+                    <select value={year} onChange={e => setParams({ cle: null, annee: e.target.value })}>
+                      {years.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                  </label>
                   <Segmented value={shownPole} options={poleOptions} label={t.pole_label}
                     onChange={p => setParams({ cle: null, pole: p === ALL ? null : p })} />
                   {status && (
@@ -208,21 +229,11 @@ export default function CleRepartition() {
                       {t[`status_${status}`] || status}
                     </span>
                   )}
-                  {MODE_VIEWS.has(view) && !simple && (
-                    <div className="ck-seg" role="radiogroup" aria-label={t.mode_planned}>
-                      {['PLANNED', 'ACTUAL'].map(m => (
-                        <button key={m} type="button" role="radio" aria-checked={mode === m}
-                          className={mode === m ? 'is-on' : ''}
-                          onClick={() => setParam('mode', m === 'PLANNED' ? null : m)}>
-                          {m === 'PLANNED' ? t.mode_planned : t.mode_actual}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )}
             </header>
-            {global.data?.partial && MODE_VIEWS.has(view) && <Banner tone="info">{t.partial}</Banner>}
+            {maintenance && <Banner tone="info">{t.maintenance}</Banner>}
+            {global.data?.partial && ALL_VIEWS.has(view) && <Banner tone="info">{t.partial}</Banner>}
             {frozen && !allHere && view === 'table' && ckey?.frozen_at && (
               <Banner tone="info">{t.frozen_banner.replace('{date}', new Date(ckey.frozen_at).toLocaleDateString())}</Banner>
             )}

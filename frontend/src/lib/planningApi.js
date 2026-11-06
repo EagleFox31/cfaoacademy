@@ -41,6 +41,8 @@ export const planningApi = {
   unchosen: id => http.get(`/cost-keys/${id}/unchosen-modules`),
   yearGlobal: (year, mode) => http.get(`/years/${year}/global${qs({ mode })}`),
   yearCountry: (year, code, mode) => http.get(`/years/${year}/countries/${code}${qs({ mode })}`),
+  abc: id => http.get(`/cost-keys/${id}/abc`),
+  yearAbc: year => http.get(`/years/${year}/abc`),
 
   downloadGlobal: (key, mode, lang) => download(
     `${scopePath(key)}/global.xlsx${qs({ mode, lang })}`, `cle-${key.year}-${key.pole}-global.xlsx`),

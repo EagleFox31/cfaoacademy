@@ -5,7 +5,7 @@
  * décidé par Cerbos) : le front n'invente aucun droit, il masque seulement.
  *
  * Règles de menu (publics pressés, peu à l'aise avec l'informatique) :
- *   - 5 entrées au plus, toutes visibles, sans sous-menu ni menu déroulant ;
+ *   - 6 entrées au plus (Academy), toutes visibles, sans sous-menu ni menu déroulant ;
  *   - un mot ou deux, du vocabulaire métier, et une ligne d'aide sous chaque entrée ;
  *   - toujours le même ordre : la tâche principale du rôle d'abord ;
  *   - une entrée sans droit n'est pas grisée, elle n'existe pas.
@@ -42,9 +42,10 @@ export function pageAccueil(roles = []) {
  */
 export function planningMenu(access, { scoped = false } = {}) {
   if (!access?.view) return []
-  // Une filiale vient d'abord voir SON pays ; le groupe vient voir le tableau.
-  const items = scoped ? ['country', 'table', 'compare'] : ['table', 'country', 'compare']
+  // Une filiale vient d'abord voir SA filiale ; le groupe vient voir le tableau.
+  const items = scoped ? ['country', 'table', 'abc'] : ['table', 'country', 'abc']
   if (access.gaps) items.push('themes')
+  if (access.manage) items.push('settings')
   if (access.manage || access.import || access.freeze) items.push('prepare')
-  return items.slice(0, 5)
+  return items.slice(0, 6)
 }

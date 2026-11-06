@@ -40,6 +40,39 @@ export class ApiError extends Error {
   }
 }
 
+// ── Mise à jour en cours ─────────────────────────────────────────────────────
+// cfao-edge répond 503 {"detail":"maintenance"} + Retry-After quand un module
+// est arrêté (déploiement). Une lecture (GET) attend et réessaie seule, jusqu'à
+// MAINTENANCE_MAX_MS ; une écriture n'est jamais rejouée (elle a pu passer).
+// Les écrans s'abonnent à l'état pour afficher « Mise à jour en cours ».
+export const MAINTENANCE_MAX_MS = 10 * 60 * 1000
+const DEFAULT_RETRY_S = 15
+
+let maintenance = false
+const maintenanceListeners = new Set()
+
+function setMaintenance(value) {
+  if (maintenance === value) return
+  maintenance = value
+  maintenanceListeners.forEach(fn => fn(value))
+}
+
+export const isMaintenance = () => maintenance
+
+export function subscribeMaintenance(fn) {
+  maintenanceListeners.add(fn)
+  return () => maintenanceListeners.delete(fn)
+}
+
+export const isMaintenanceError = err => err?.status === 503 && err?.code === 'maintenance'
+
+function retryDelayMs(response) {
+  const s = Number(response.headers.get('Retry-After'))
+  return Math.min(Math.max(Number.isFinite(s) && s > 0 ? s : DEFAULT_RETRY_S, 5), 60) * 1000
+}
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+
 /**
  * Émet une requête HTTP vers l'API avec gestion automatique du token.
  *
@@ -50,7 +83,7 @@ export class ApiError extends Error {
  * @param {boolean} [options._isRetry=false] — usage interne : empêche les boucles de retry
  */
 async function request(path, opts = {}) {
-  const { method = 'GET', body, form, blob = false, base = BASE, _isRetry = false } = opts
+  const { method = 'GET', body, form, blob = false, base = BASE, _isRetry = false, _waitingSince } = opts
   // ── Pré-contrôle : s'assurer d'un token frais avant d'émettre la requête ────
   const session = _isRetry ? readSession() : await ensureFreshToken()
 
@@ -74,6 +107,22 @@ async function request(path, opts = {}) {
     // refusé » à quelqu'un qui a juste perdu sa connexion.
     throw new ApiError(0, 'network')
   }
+
+  if (response.status === 503) {
+    const detail = await response.clone().json().then(p => p?.detail, () => null)
+    if (detail === 'maintenance') {
+      const since = _waitingSince ?? Date.now()
+      if (method === 'GET' && Date.now() - since < MAINTENANCE_MAX_MS) {
+        setMaintenance(true)
+        await sleep(retryDelayMs(response))
+        return request(path, { ...opts, _isRetry: false, _waitingSince: since })
+      }
+      // Plus de reprise automatique : l'écran affiche l'erreur (bouton Réessayer).
+      setMaintenance(false)
+      throw new ApiError(503, 'maintenance', { error: { code: 'maintenance' } })
+    }
+  }
+  setMaintenance(false)
 
   if (response.status === 204) return null
   if (blob && response.ok) return response.blob()

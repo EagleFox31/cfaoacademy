@@ -13,8 +13,8 @@
 .ck-page::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
 .ck-page::before {
   background: url("/assets/hero/default.jpg") center / cover no-repeat;
-  filter: blur(10px) saturate(0.9);
-  transform: scale(1.06); /* le flou ne laisse pas de bord clair */
+  filter: blur(3px) saturate(0.95);
+  transform: scale(1.02); /* le flou ne laisse pas de bord clair */
 }
 .ck-page::after { background: rgba(246, 247, 250, 0.8); }
 
@@ -61,6 +61,31 @@
 }
 .ck-topbar h1 { margin: 0; font-size: 26px; line-height: 1.15; }
 .ck-topbar-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+/* Squelette de chargement (forme du tableur) */
+.ck-skel { display: grid; gap: 14px; }
+.ck-skel-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.ck-skel-kpi {
+  display: grid; gap: 10px; padding: 14px 16px; background: #fff;
+  border: 1px solid rgba(14, 17, 38, 0.08); border-radius: 12px;
+}
+.ck-skel-sheet {
+  background: #fff; border: 1px solid rgba(14, 17, 38, 0.08); border-radius: 14px; overflow: hidden;
+  box-shadow: 0 1px 2px rgba(14, 17, 38, 0.04), 0 8px 24px rgba(14, 17, 38, 0.06);
+}
+.ck-skel-toolbar { display: flex; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #eceef3; }
+.ck-skel-search { width: 220px; height: 34px; border-radius: 10px; }
+.ck-skel-toolbar .skel--pill { height: 34px; border-radius: 10px; }
+.ck-skel-head { height: 38px; background: #0e1126; }
+.ck-skel-row {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; align-items: center; gap: 24px;
+  height: 34px; padding: 0 14px; border-bottom: 1px solid #eceef3;
+}
+.ck-skel-row:last-child { border-bottom: 0; }
+.ck-topbar-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.ck-topbar-slot { display: contents; }
+.ck-topbar-tools .ck-pill-select select { font-weight: 650; }
+/* Noms de filiales en gras dans les tableaux (le combobox garde son propre poids). */
+.sheet-c .ck-country-label { font-weight: 700; color: #0e1126; }
 
 /* ── contrôles ── */
 .ck-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
@@ -120,7 +145,55 @@
 .ck-btn--danger { background: var(--red); border-color: var(--red); color: #fff; }
 .ck-btn--danger:hover:not(:disabled) { background: #c00017; }
 .ck-btn:focus-visible { outline: 2px solid #1a56db; outline-offset: 2px; }
-.ck-xlsx { border-color: #1aab5b; color: #127a40; }
+.ck-xlsx {
+  display: inline-flex; align-items: center; gap: 7px; border: 1px solid rgba(16, 124, 65, 0.22) !important;
+  background: #fff !important; color: #0e1126 !important; font-weight: 600 !important;
+}
+.ck-xlsx:hover:not(:disabled) { background: #f1faf5 !important; border-color: rgba(16, 124, 65, 0.45) !important; }
+.ck-xlsx-icon { flex: none; }
+.ck-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Filiale : barre compacte (combobox · filtres · export) */
+.ck-countrybar { gap: 8px 10px; }
+.ck-countrybar-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.ck-countrybar-sep { flex: 1 1 auto; }
+.ck-combo { position: relative; }
+.ck-combo-btn {
+  display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px 0 10px;
+  border: 1px solid rgba(14, 17, 38, 0.1); border-radius: 12px; background: #fff; color: #0e1126;
+  font: inherit; font-size: 15px; font-weight: 650; cursor: pointer;
+  box-shadow: 0 1px 2px rgba(14, 17, 38, 0.05); transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ck-combo-btn:hover { border-color: rgba(14, 17, 38, 0.22); }
+.ck-combo-btn:focus-visible, .ck-combo-btn[aria-expanded='true'] {
+  outline: none; border-color: #1a56db; box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.18);
+}
+.ck-combo-chev { color: #6b7086; transition: transform 0.18s; }
+.ck-combo-btn[aria-expanded='true'] .ck-combo-chev { transform: rotate(180deg); }
+.ck-combo-panel {
+  position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; width: 300px; max-width: 86vw;
+  padding: 8px; background: rgba(255, 255, 255, 0.97); backdrop-filter: blur(12px);
+  border: 1px solid rgba(14, 17, 38, 0.08); border-radius: 14px; box-shadow: 0 16px 40px rgba(14, 17, 38, 0.16);
+}
+.portal-page.ck-page .ck-combo-input {
+  width: 100%; height: 34px; padding: 0 10px; border: 0; border-radius: 9px; background: #f2f3f6;
+  font: inherit; font-size: 14px; color: #0e1126; outline: none; box-shadow: none;
+}
+.portal-page.ck-page .ck-combo-input:focus { box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.18); background: #fff; }
+.ck-combo-list { list-style: none; margin: 6px 0 0; padding: 0; max-height: 280px; overflow-y: auto; }
+.ck-combo-opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 10px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #0e1126;
+}
+.ck-combo-opt.is-active { background: #eef3ff; }
+.ck-combo-opt.is-on { font-weight: 650; }
+.ck-combo-check { color: #1a56db; flex: none; }
+.ck-combo-empty { padding: 10px; color: var(--muted); font-size: 13px; }
+.ck-pill-select select {
+  height: 34px; padding: 0 28px 0 12px; border: 0; border-radius: 10px; background-color: #f2f3f6;
+  font: inherit; font-size: 13.5px; color: #0e1126; cursor: pointer;
+}
+.ck-pill-select.is-on select { background-color: #0e1126; color: #fff; }
 .ck-inline-err { font-size: 12px; color: #c40017; }
 
 /* ── contenu ── */
@@ -209,3 +282,16 @@
 @media (max-width: 900px) {
   .ck-shell { padding: 16px 16px 40px; }
 }
+
+/* Les vues sont des <section> : neutraliser le style vitrine global
+   (index.css : padding 48px + voile blanc, voile sombre + h2 blanc une section sur deux). */
+.portal-page.ck-page .ck-shell section { padding: 0; background: transparent; }
+.portal-page.ck-page .ck-shell section h2 { color: var(--ink); }
+
+/* Filiale : drapeau local + libellé (repli : code pays). */
+.ck-country { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.ck-country-label { overflow: hidden; text-overflow: ellipsis; }
+.ck-country-label:empty { display: none; }
+.ck-flag { flex: none; width: 22px; height: 15px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px rgba(14, 17, 38, .12); }
+.ck-flag-code { flex: none; min-width: 22px; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 15px; text-align: center; color: var(--muted); border: 1px solid #d9dbe3; border-radius: 2px; }
+.ck-filters { padding: 10px 12px; border: 1px solid #e3e5ec; border-radius: 10px; background: #fff; }

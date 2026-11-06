@@ -4,22 +4,25 @@ import { canSeePlanning, pageAccueil, planningMenu, PLANNING_HOME } from './plan
 const ALL = { view: true, manage: true, freeze: true, import: true, gaps: true }
 
 describe('menu de la clé de répartition par rôle', () => {
-  it('équipe Academy : 5 entrées, Préparer en dernier', () => {
-    expect(planningMenu(ALL)).toEqual(['table', 'country', 'compare', 'themes', 'prepare'])
+  it('équipe Academy : 6 entrées, Saisie puis Préparer en dernier', () => {
+    expect(planningMenu(ALL)).toEqual(['table', 'country', 'abc', 'themes', 'settings', 'prepare'])
   })
-  it('observateur (DPS/DOP) : lecture et thèmes oubliés, rien à préparer', () => {
+  it('observateur (DPS/DOP) : lecture et formations non choisies, rien à saisir ni préparer', () => {
     expect(planningMenu({ ...ALL, manage: false, freeze: false, import: false }))
-      .toEqual(['table', 'country', 'compare', 'themes'])
+      .toEqual(['table', 'country', 'abc', 'themes'])
   })
-  it('filiale : son pays d\'abord', () => {
-    expect(planningMenu({ view: true }, { scoped: true })).toEqual(['country', 'table', 'compare'])
+  it('filiale : sa filiale d\'abord', () => {
+    expect(planningMenu({ view: true }, { scoped: true })).toEqual(['country', 'table', 'abc'])
+  })
+  it('import seul : Préparer sans Saisie', () => {
+    expect(planningMenu({ view: true, import: true })).toEqual(['table', 'country', 'abc', 'prepare'])
   })
   it('sans droit de lecture : aucun menu', () => {
     expect(planningMenu({ view: false })).toEqual([])
     expect(planningMenu(null)).toEqual([])
   })
-  it('jamais plus de 5 entrées', () => {
-    expect(planningMenu(ALL, { scoped: true }).length).toBeLessThanOrEqual(5)
+  it('jamais plus de 6 entrées', () => {
+    expect(planningMenu(ALL, { scoped: true }).length).toBeLessThanOrEqual(6)
   })
   it('entrée de navbar réservée aux rôles de pilotage', () => {
     expect(canSeePlanning(['dps'])).toBe(true)

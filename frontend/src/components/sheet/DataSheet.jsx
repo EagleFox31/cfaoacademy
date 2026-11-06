@@ -12,6 +12,7 @@
  *             hidden? }
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSettle } from './useSettle'
 import useLocale from '../../hooks/useLocale'
 import { aggregate, cellAddress, colLetter, fold, inRange, normRange, parseFilter, toTSV } from './sheetMath'
 import { cellText, downloadBlob, makeFormatter, toCsv } from './sheetExport'
@@ -54,6 +55,8 @@ export default function DataSheet({
   const [focus, setFocus] = useState(null)
   const [colsOpen, setColsOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  // Recherche, filtre de colonne ou tri : bref squelette sur le corps du tableau.
+  const settling = useSettle([search, filters, sort])
   const gridRef = useRef(null)
   const searchRef = useRef(null)
   const colsRef = useRef(null)
@@ -310,11 +313,14 @@ export default function DataSheet({
   const focusText = focusCol && focusRow ? format(focusCol.value(focusRow), focusCol.type) : ''
 
   return (
-    <div className="sheet">
+    <div className={`sheet${settling ? ' is-settling' : ''}`} aria-busy={settling || undefined}>
       {/* ── barre d'outils ── */}
       <div className="sheet-toolbar" role="toolbar" aria-label={t.toolbar}>
         <label className="sheet-search">
-          <span aria-hidden="true">⌕</span>
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+            <circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M10.6 10.6L14 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
           <input ref={searchRef} type="search" value={search} placeholder={t.search_ph}
             aria-label={t.search_ph} onChange={e => setSearch(e.target.value)} />
         </label>
@@ -426,6 +432,10 @@ export default function DataSheet({
                     style={frozenStyle(i)}>
                     <button type="button" className="sheet-h-btn" onClick={e => toggleSort(e, c.id)}
                       title={t.sort_hint}>
+                      {c.icon && (
+                        <img className="sheet-h-icon" src={c.icon} alt="" aria-hidden="true"
+                          onError={e => { e.currentTarget.style.display = 'none' }} />
+                      )}
                       <span className="sheet-h-label">{c.header}</span>
                       <span className={`sheet-sort${s ? ' is-on' : ''}`} aria-hidden="true">
                         {s ? (s.desc ? '▼' : '▲') : '↕'}{order && <sup>{order}</sup>}

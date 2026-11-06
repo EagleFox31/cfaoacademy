@@ -203,6 +203,7 @@
 }
 .sheet-h.is-num .sheet-h-btn { justify-content: flex-end; }
 .sheet-h-label { overflow: hidden; text-overflow: ellipsis; }
+.sheet-h-icon { flex: none; height: 16px; max-width: 34px; object-fit: contain; }
 .sheet-sort { font-size: 10px; color: var(--muted-2, #9499ab); }
 .sheet-sort.is-on { color: var(--sheet-sel-line); }
 .sheet-resize {
@@ -323,4 +324,126 @@
 @media (max-width: 640px) {
   .sheet-formula { display: none; }
   .sheet-search { max-width: none; }
+}
+
+/* ── Thème CFAO : en-têtes bleu nuit, contrôles pilules, filets fins ───────────
+   Surcouche unique : la grille garde la mécanique tableur, l'habillage suit la marque. */
+.sheet {
+  --sheet-line: #eceef3;
+  --sheet-head: #f7f8fa;
+  --sheet-head-2: #eef0f5;
+  --sheet-navy: #0e1126;
+  --sheet-navy-2: #1a1f3c;
+  --sheet-fill: #f2f3f6;
+  border: 1px solid rgba(14, 17, 38, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(14, 17, 38, 0.04), 0 8px 24px rgba(14, 17, 38, 0.06);
+}
+.sheet-toolbar { background: #fff; padding: 10px 12px; gap: 8px; border-bottom: 1px solid var(--sheet-line); }
+.sheet-search {
+  background: var(--sheet-fill); border: 0; border-radius: 10px; color: #6b7086;
+  padding: 0 10px; height: 34px; transition: box-shadow 0.15s;
+}
+.sheet-search:focus-within { box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.18); background: #fff; }
+.sheet .sheet-search input,
+.sheet .sheet-search input:focus {
+  border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none;
+  height: 32px; padding: 0; font-size: 13.5px;
+}
+.sheet-btn {
+  height: 34px; border: 0; border-radius: 10px; background: var(--sheet-fill);
+  color: var(--sheet-navy); font-weight: 500; transition: background 0.15s, color 0.15s;
+}
+.sheet-btn:hover { background: #e7e9ef; }
+.sheet-btn.is-on { background: var(--sheet-navy); color: #fff; border: 0; }
+.sheet-btn.is-on .sheet-badge { background: #fff; color: var(--sheet-navy); }
+.sheet-btn-ghost { background: transparent; }
+.sheet-freeze select {
+  height: 34px; border: 0; border-radius: 10px; background: var(--sheet-fill); padding: 0 10px; color: var(--sheet-navy);
+}
+.sheet-pop-panel { border: 1px solid rgba(14, 17, 38, 0.08); border-radius: 12px; box-shadow: 0 12px 32px rgba(14, 17, 38, 0.14); }
+.sheet-formula { background: #fff; border-bottom: 1px solid var(--sheet-line); }
+.sheet-namebox, .sheet-formula-val { border-color: var(--sheet-line); border-radius: 6px; }
+.sheet-fx { color: #8a8fa3; font-style: italic; }
+
+/* Grille */
+.sheet-table th, .sheet-table td { border-color: var(--sheet-line); }
+.sheet-table tbody td, .sheet-table tfoot td { font-size: 14px; }
+.sheet-table tbody td { height: 34px; }
+/* Spécificité ≥ `.sheet-table thead th` (fond gris de base), sinon le bleu nuit ne s'applique pas. */
+.sheet-table thead .sheet-letters th { background: #fff; color: #b3b7c6; font-weight: 500; }
+.sheet-table thead .sheet-corner { background: #fff; }
+.sheet-table thead .sheet-groups th { background: #fff; }
+.sheet-table thead .sheet-group.has-group { background: var(--sheet-navy-2); color: #fff; letter-spacing: 0.02em; }
+.sheet-table thead .sheet-head th { background: var(--sheet-navy); color: #fff; border-color: rgba(255, 255, 255, 0.08); }
+.sheet-head .sheet-h-btn { color: #fff; }
+.sheet-head .sheet-sort { color: rgba(255, 255, 255, 0.45); }
+.sheet-head .sheet-sort.is-on { color: #fff; }
+.sheet-head .sheet-h-icon { background: #fff; border-radius: 4px; padding: 1px 3px; }
+.sheet-head .sheet-resize:hover { background: #fff; }
+.sheet-table thead .sheet-filters th { background: #fff; }
+.sheet-filters input {
+  border: 1px solid transparent; background: transparent; border-radius: 6px; height: 26px; color: var(--sheet-navy);
+}
+.sheet-filters input::placeholder { color: #b3b7c6; font-weight: 400; }
+.sheet-filters input:hover { border-color: var(--sheet-line); }
+.sheet-filters input:focus { border-color: var(--sheet-sel-line); background: #fff; outline: none; }
+.sheet-filters input.is-on { background: #eef3ff; border-color: var(--sheet-sel-line); }
+/* La base pose `background … !important` sur les numéros de ligne : même arme ici. */
+.sheet-table .sheet-rownum, .sheet-table thead .sheet-rownum-h { background: #fff !important; color: #b3b7c6; font-weight: 500; }
+.sheet-table thead .sheet-head .sheet-rownum-h { background: var(--sheet-navy) !important; }
+.sheet-table .sheet-rownum.is-hl { background: #eef3ff !important; }
+.sheet-table tbody tr:hover td:not(.is-sel):not(.sheet-rownum) { background: #f5f7fb; }
+.sheet-table .is-frozen-edge { box-shadow: 3px 0 0 -1px #dfe2ea; }
+.sheet-table tfoot td { background: #eef0f6; border-top: 2px solid var(--sheet-navy); color: var(--sheet-navy); }
+.sheet-status { background: #fff; border-top: 1px solid var(--sheet-line); }
+
+/* ── Lisibilité (retour 06/11 « on lit à peine ») ──────────────────────────────
+   Tout texte secondaire ≥ 4,5:1 sur blanc (WCAG AA) : #5b6075 ≈ 6,3:1, #6b7086 ≈ 5:1. */
+.sheet-table thead .sheet-letters th { color: #6b7086; font-size: 11px; }
+.sheet-table .sheet-rownum, .sheet-table thead .sheet-rownum-h { color: #6b7086; }
+.sheet-table thead .sheet-head th { font-size: 13.5px; font-weight: 650; }
+.sheet-head .sheet-sort { color: rgba(255, 255, 255, 0.72); }
+/* Les filtres se lisent comme des champs : filet visible, libellé lisible. */
+.sheet-filters input {
+  border: 1px solid #d5d8e1; background: #fff; height: 28px; padding: 0 8px; font-size: 13px;
+}
+.sheet-filters input::placeholder { color: #6b7086; }
+.sheet-filters input:hover { border-color: #aeb3c2; }
+.sheet-table td.sheet-empty { color: #3d4257; font-size: 14px; font-weight: 500; padding: 28px 12px; }
+.sheet-status { color: #4a4f63; font-size: 12.5px; }
+.sheet-namebox, .sheet-fx { color: #5b6075; }
+
+/* ── Taille de lecture (retour 06/11 « agrandis tes polices ») : +1 à +1,5 px partout ── */
+.sheet { font-size: 14.5px; }
+.sheet-btn, .sheet-freeze, .sheet-freeze select, .sheet .sheet-search input { font-size: 14.5px; }
+.sheet-formula { height: 32px; font-size: 14px; }
+.sheet-table tbody td, .sheet-table tfoot td { font-size: 15px; }
+.sheet-table tbody td { height: 38px; }
+.sheet-table thead .sheet-head th { font-size: 14.5px; }
+.sheet-table thead .sheet-letters th { font-size: 12px; height: 24px; }
+.sheet-table thead .sheet-group { font-size: 13px; height: 28px; }
+.sheet-table .sheet-rownum, .sheet-table thead .sheet-rownum-h { font-size: 12.5px; }
+.sheet-filters input { height: 30px; font-size: 14px; }
+.sheet-table td.sheet-empty { font-size: 15px; }
+.sheet-status { font-size: 13.5px; }
+.sheet-badge { font-size: 12px; }
+.sheet-c .portal-status-chip { font-size: 12px; }
+
+/* Recherche, filtre ou tri local : les cellules du corps deviennent des barres shimmer
+   le temps du changement (la barre d'outils et le focus restent en place). */
+.ck-sheet-busy .sheet-table tbody .sheet-c,
+.sheet.is-settling .sheet-table tbody .sheet-c { color: transparent !important; }
+.ck-sheet-busy .sheet-table tbody .sheet-c > *,
+.sheet.is-settling .sheet-table tbody .sheet-c > * { visibility: hidden; }
+.ck-sheet-busy .sheet-table tbody .sheet-c::after,
+.sheet.is-settling .sheet-table tbody .sheet-c::after {
+  content: ''; position: absolute; left: 10px; right: 10px; top: 50%; height: 11px; margin-top: -5.5px;
+  border-radius: 5px; background: linear-gradient(90deg, #e7e9f1 25%, #f4f5f9 50%, #e7e9f1 75%);
+  background-size: 200% 100%; animation: sheetSweep 1.1s linear infinite; pointer-events: none;
+}
+@keyframes sheetSweep { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ck-sheet-busy .sheet-table tbody .sheet-c::after,
+  .sheet.is-settling .sheet-table tbody .sheet-c::after { animation: none; }
 }

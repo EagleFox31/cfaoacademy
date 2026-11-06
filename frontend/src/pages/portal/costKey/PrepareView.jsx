@@ -1,8 +1,8 @@
 /**
- * « Préparer » : 3 étapes numérotées, dans l'ordre du métier.
- *   1. Régler la clé (ou la créer s'il n'y en a pas)
- *   2. Importer un fichier : Vérifier (aperçu, rien n'est écrit) puis Enregistrer
- *   3. Geler (coordonnateur / directeur du centre seulement)
+ * « Préparer » : étapes numérotées, dans l'ordre du métier.
+ *   - Créer la clé de l'année (s'il n'y en a pas) ; ses montants se règlent dans « Saisie »
+ *   - Importer un fichier : Vérifier (aperçu, rien n'est écrit) puis Enregistrer
+ *   - Geler (coordonnateur / directeur du centre seulement)
  * Seules les étapes autorisées par /access sont affichées.
  */
 import { useEffect, useMemo, useState } from 'react'
@@ -28,8 +28,6 @@ function Step({ n, title, lead, children }) {
     </section>
   )
 }
-
-const toNum = v => (v === '' || v == null ? null : Number(v))
 
 /* ── 1a. Créer une clé ── */
 function CreateKey({ t, onCreated }) {
@@ -67,54 +65,6 @@ function CreateKey({ t, onCreated }) {
       <div className="ck-form-actions">
         <button type="submit" className="ck-btn ck-btn--primary" disabled={busy}>{t.create}</button>
       </div>
-      {msg && <Banner tone={msg.tone}>{msg.text}</Banner>}
-    </form>
-  )
-}
-
-/* ── 1b. Régler la clé ── */
-function KeySettings({ t, ckey, onSaved }) {
-  const frozen = ckey.status === 'FROZEN'
-  const initial = useMemo(() => ({
-    budget: ckey.budget ?? '',
-    trainee_lodging_cost: ckey.trainee_lodging_cost ?? '',
-    trainer_lodging_cost: ckey.trainer_lodging_cost ?? '',
-    hours_per_session: ckey.hours_per_session ?? '',
-  }), [ckey])
-  const [form, setForm] = useState(initial)
-  const [msg, setMsg] = useState(null)
-  const [busy, setBusy] = useState(false)
-  useEffect(() => { setForm(initial); setMsg(null) }, [initial])
-
-  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
-  const submit = async e => {
-    e.preventDefault()
-    setBusy(true); setMsg(null)
-    try {
-      const body = Object.fromEntries(Object.entries(form).map(([k, v]) => [k, toNum(v)]))
-      onSaved(await planningApi.updateKey(ckey.id, body))
-      setMsg({ tone: 'ok', text: t.saved })
-    } catch (err) {
-      setMsg({ tone: 'warn', text: errText(t, err) })
-    } finally { setBusy(false) }
-  }
-  const fields = [
-    ['budget', t.f_budget], ['trainee_lodging_cost', t.f_trainee],
-    ['trainer_lodging_cost', t.f_trainer], ['hours_per_session', t.f_hours],
-  ]
-  return (
-    <form className="ck-form" onSubmit={submit}>
-      {frozen && <Banner tone="info">{t.locked}</Banner>}
-      {fields.map(([k, label]) => (
-        <label className="ck-field" key={k}><span>{label}</span>
-          <input type="number" min="0" step="1" value={form[k]} onChange={set(k)} disabled={frozen} />
-        </label>
-      ))}
-      {!frozen && (
-        <div className="ck-form-actions">
-          <button type="submit" className="ck-btn ck-btn--primary" disabled={busy}>{t.save}</button>
-        </div>
-      )}
       {msg && <Banner tone={msg.tone}>{msg.text}</Banner>}
     </form>
   )
@@ -281,22 +231,22 @@ function FreezeStep({ t, ckey, canFreeze, onFrozen }) {
 }
 
 export default function PrepareView({ t, fmt, access, ckey, onKeyChange, onDataChanged }) {
+  // Les montants de l'année se règlent dans « Saisie » ; ici : créer, importer, geler.
+  const create = access.manage && !ckey
   return (
     <div className="ck-view ck-steps">
-      {access.manage && (
-        <Step n={1} title={ckey ? t.step1 : t.create_title} lead={ckey ? t.step1_lead : null}>
-          {ckey
-            ? <KeySettings t={t} ckey={ckey} onSaved={onKeyChange} />
-            : <CreateKey t={t} onCreated={onKeyChange} />}
+      {create && (
+        <Step n={1} title={t.create_title}>
+          <CreateKey t={t} onCreated={onKeyChange} />
         </Step>
       )}
       {access.import && (
-        <Step n={access.manage ? 2 : 1} title={t.step2} lead={t.step2_lead}>
+        <Step n={create ? 2 : 1} title={t.step2} lead={t.step2_lead}>
           <ImportStep t={t} fmt={fmt} ckey={ckey} onApplied={onDataChanged} />
         </Step>
       )}
       {ckey && (access.freeze || access.manage) && (
-        <Step n={[access.manage, access.import].filter(Boolean).length + 1} title={t.step3} lead={t.step3_lead}>
+        <Step n={access.import ? 2 : 1} title={t.step3} lead={t.step3_lead}>
           <FreezeStep t={t} ckey={ckey} canFreeze={access.freeze} onFrozen={onKeyChange} />
         </Step>
       )}
