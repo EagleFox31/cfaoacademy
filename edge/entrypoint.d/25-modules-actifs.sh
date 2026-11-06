@@ -11,5 +11,8 @@ fi
 if [ -z "${EDGE_CR_UPSTREAM:-}" ]; then
     rm -f "$routes/cr.conf"
 fi
+if [ -z "${EDGE_PLANNING_UPSTREAM:-}" ]; then
+    rm -f "$routes/planning.conf"
+fi
 
 echo "cfao-edge: modules actifs : $(ls "$routes" 2>/dev/null | tr '\n' ' ')needs"

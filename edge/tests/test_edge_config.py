@@ -21,7 +21,7 @@ def _locations(texte):
 def test_liste_blanche_des_routes():
     # Toute nouvelle route publique doit modifier ce test, donc être relue.
     trouvees = sorted(loc for m in MODELES for loc in _locations(_texte(m)))
-    assert trouvees == sorted(["/", "/", "/auth/", "/auth", r"^/auth/(realms/cfao|resources)/", "/cr", "/cr/"])
+    assert trouvees == sorted(["/", "/", "/auth/", "/auth", r"^/auth/(realms/cfao|resources)/", "/cr", "/cr/", "/api/v1/planning/"])
 
 
 def test_needs_transparent():
@@ -89,7 +89,7 @@ def test_variables_declarees_partout():
     compose = yaml.safe_load(_texte(EDGE / "compose.prod.yml"))["services"]["edge"]["environment"]
     exemple = _texte(EDGE / ".env.prod.example")
     exiger = _texte(EDGE / "entrypoint.d" / "05-exiger-variables.sh")
-    optionnelles = {"EDGE_KEYCLOAK_UPSTREAM", "EDGE_CR_UPSTREAM"}
+    optionnelles = {"EDGE_KEYCLOAK_UPSTREAM", "EDGE_CR_UPSTREAM", "EDGE_PLANNING_UPSTREAM"}
     for v in utilisees:
         assert v in compose, v
         assert re.search(rf"^{v}=", exemple, re.M), v

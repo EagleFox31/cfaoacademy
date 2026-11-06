@@ -28,6 +28,7 @@ services:
       # Vide : module inactif, son préfixe reste servi par needs.
       EDGE_KEYCLOAK_UPSTREAM: ${EDGE_KEYCLOAK_UPSTREAM:-}
       EDGE_CR_UPSTREAM: ${EDGE_CR_UPSTREAM:-}
+      EDGE_PLANNING_UPSTREAM: ${EDGE_PLANNING_UPSTREAM:-}
       # Vide : aucune écoute directe du LAN.
       EDGE_LAN: ${EDGE_LAN:-}
     healthcheck:

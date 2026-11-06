@@ -1,9 +1,11 @@
 # Module détachable « Identification des Besoins en Formations » (app 16).
 #
-# Ce fichier monte la stack COMPLÈTE, sans rien emprunter au reste du dépôt :
+# Ce fichier monte la stack du module ; seul le PDP Cerbos est celui de la
+# plateforme (service `cerbos` du compose racine) :
+#   docker compose up -d cerbos
 #   docker compose -f cfao-needs/docker-compose.yml up
 #
-# Sept services, aucun partagé avec la plateforme. Pour rejoindre la plateforme,
+# Pour rejoindre la plateforme,
 # on ne change pas ce fichier : on passe NEEDS_DEPLOYMENT_MODE=integrated et on
 # pointe OIDC_* / CERBOS_HTTP vers le Keycloak et le Cerbos existants
 # (docs/SPEC_RECUEIL_BESOINS_2027.md §2).
@@ -72,28 +74,9 @@ services:
     ports:
       - "${KC_PORT:-8081}:8080"
 
-  needs-cerbos:
-    # PDP — mesure 51 Mio
-    mem_limit: 256m
-    restart: unless-stopped
-    image: ghcr.io/cerbos/cerbos:0.40.0
-    command: ["server", "--config=/config/config.yaml"]
-    environment:
-      # Cerbos remonte une telemetrie anonyme par defaut. Un PDP qui emet vers
-      # l'exterieur n'a pas sa place sur un reseau d'entreprise.
-      CERBOS_NO_TELEMETRY: "1"
-    volumes:
-      # Bundle commun de la plateforme.
-      - ../cerbos/policies:/policies:ro
-      - ../cerbos/config.yaml:/config/config.yaml:ro
-      # Le journal d'audit du PDP survit au redemarrage du conteneur.
-      - needs-cerbos-audit:/tmp/cerbos
-    healthcheck:
-      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/config.yaml"]
-      # 10 s -> 30 s : pics mesures jusqu'a 50 % de CPU pour une sonde.
-      interval: 30s
-      timeout: 5s
-      retries: 10
+  # Autorisation : PDP Cerbos unique de la plateforme (service `cerbos` du
+  # compose racine, port 3592 publié sur l'hôte), jamais un Cerbos de module.
+  #   docker compose up -d cerbos        (à la racine, avant ce compose)
 
   needs-db:
     # PostgreSQL metier — mesure 59 Mio, marge confortable
@@ -129,7 +112,7 @@ services:
       NEEDS_DB_NAME: ${NEEDS_DB_NAME:-needs}
       NEEDS_DB_USER: ${NEEDS_DB_USER:-needs}
       NEEDS_DB_PASSWORD: ${NEEDS_DB_PASSWORD:?}
-      CERBOS_HTTP: http://needs-cerbos:3592
+      CERBOS_HTTP: ${CERBOS_HTTP:-http://host.docker.internal:3592}
       OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://needs-keycloak:8080/realms/cfao-needs/protocol/openid-connect/certs}
       OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:${KC_PORT:-8081}/realms/cfao-needs}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-needs-web}
@@ -147,8 +130,9 @@ services:
         condition: service_healthy
       needs-migrate:
         condition: service_completed_successfully
-      needs-cerbos:
-        condition: service_started
+    # PDP commun joint par son port publié sur l'hôte.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       # Python plutot que curl : l'image n'installe aucun paquet systeme.
       # `-S` saute le chargement de site.py — mesure : la sonde faisait des pics a
@@ -183,6 +167,8 @@ services:
     # Le schéma est en place : le worker attend la fin du job needs-migrate.
     command: ["python", "manage.py", "qcluster"]
     environment: *api_env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       needs-migrate:
         condition: service_completed_successfully
@@ -212,4 +198,3 @@ services:
 volumes:
   needs-kc-db-data:
   needs-db-data:
-  needs-cerbos-audit:

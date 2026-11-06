@@ -33,23 +33,9 @@ services:
       timeout: 5s
       retries: 5
 
-  cerbos:
-    image: ghcr.io/cerbos/cerbos:0.40.0
-    restart: unless-stopped
-    logging: *journaux
-    mem_limit: 256m
-    command: ["server", "--config=/config/config.yaml"]
-    environment:
-      CERBOS_NO_TELEMETRY: "1"
-    volumes:
-      # Bundle commun de la plateforme.
-      - ../cerbos/policies:/policies:ro
-      - ../cerbos/config.yaml:/config/config.yaml:ro
-    healthcheck:
-      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/config.yaml"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
+  # Autorisation : PDP Cerbos unique de la plateforme (service `cerbos` du
+  # compose racine, port 3592 publié sur l'hôte), jamais un Cerbos de module.
+  #   docker compose up -d cerbos        (à la racine, avant ce compose)
 
   api:
     build: ./api
@@ -59,7 +45,7 @@ services:
     env_file: .env
     environment: &api_env
       DATABASE_URL: postgres://${POSTGRES_USER:-comptes_rendus}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-comptes_rendus}
-      CERBOS_HTTP: http://cerbos:3592
+      CERBOS_HTTP: ${CERBOS_HTTP:-http://host.docker.internal:3592}
       # Le module fixe son propre nom de cookie (meme hote = meme site que le portail).
       COOKIE_SESSION: ${COOKIE_SESSION:-cfao_cr_session}
       # Pages autorisees a ecrire : la passerelle, sur son port publie.
@@ -70,7 +56,9 @@ services:
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
-      cerbos: { condition: service_healthy }
+    # PDP commun joint par son port publié sur l'hôte.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:5175/apercu/sante"]
       interval: 15s

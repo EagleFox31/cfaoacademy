@@ -59,6 +59,7 @@ roles:
     - { name: trainer,           description: Formateur certifié constructeur }
     - { name: center_assistant,  description: Assistante du centre }
     - { name: training_coordinator, description: Coordinateur formation }
+    - { name: planning_viewer,   description: Lecteur de la clé de répartition (planning seul) }
     - { name: center_director,   description: Directeur du centre de formation }
     - { name: content_editor,    description: Éditeur de contenu (Wagtail) }
     - { name: branch_admin,      description: Admin Filiale }
@@ -217,6 +218,8 @@ clients:
     redirectUris:
       - "http://localhost:5173/*"
       - "http://localhost:8000/*"
+      # Pile de recette derrière cfao-edge (edge/compose.dev.yml).
+      - "http://localhost:8088/*"
       - "http://192.168.1.126:5173/*"
       - "http://192.168.1.126:8000/*"
       - "http://192.168.*:5173/*"

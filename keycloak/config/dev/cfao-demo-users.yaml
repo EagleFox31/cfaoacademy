@@ -205,3 +205,19 @@ users:
         - "groupe.afrique_centrale.cameroun.douala"
     credentials:
       - { type: password, value: demo, temporary: false }
+
+  # Planning seul : aucun rôle de portail, arrive droit sur la clé de répartition.
+  - username: lecteur.planning
+    id: "11111111-1111-1111-1111-000000000012"
+    enabled: true
+    emailVerified: true
+    email: lecteur.planning@cfao.example
+    firstName: Lecteur
+    lastName: Planning
+    realmRoles: [planning_viewer]
+    attributes:
+      scopeNode: ["groupe"]
+      orgPath:
+        - "groupe"
+    credentials:
+      - { type: password, value: demo, temporary: false }

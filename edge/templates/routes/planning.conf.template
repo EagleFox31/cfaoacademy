@@ -1,0 +1,17 @@
+# API planning sous /api/v1/planning/ : chemin conservé, l'API le sert tel quel.
+# Le jeton Bearer du realm cfao est vérifié par l'API (audience cfao-planning-api).
+
+location /api/v1/planning/ {
+    set $edge_module planning;
+    client_max_body_size 25m;
+    include /etc/nginx/snippets/proxy-commun.conf;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-Proto $edge_fwd_proto;
+    proxy_set_header X-Forwarded-Host $edge_fwd_host;
+    proxy_set_header X-Forwarded-Port $edge_fwd_port;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    # Imports xlsx et exports : plus longs qu'un appel ordinaire.
+    proxy_read_timeout 120s;
+    proxy_send_timeout 120s;
+    proxy_pass http://${EDGE_PLANNING_UPSTREAM};
+}

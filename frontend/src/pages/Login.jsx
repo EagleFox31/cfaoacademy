@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import FormAlert, { FormFieldError } from '../components/FormAlert.jsx'
@@ -9,6 +9,7 @@ import useSiteEffects from '../hooks/useSiteEffects.js'
 import useAuthForm from '../hooks/useAuthForm.js'
 import useLocale from '../hooks/useLocale.js'
 import useAuth from '../hooks/useAuth.js'
+import { connexionKeycloakSeule } from '../lib/auth.js'
 import { getPrimaryRole } from '../data/index.js'
 
 const LOGIN_BG = '/assets/hero/default.jpg'
@@ -80,6 +81,13 @@ export default function Login() {
     return window.matchMedia('(min-width: 961px)').matches
   })
 
+  // Derrière cfao-edge : la page de connexion est celle de Keycloak.
+  const keycloakSeul = connexionKeycloakSeule()
+  useEffect(() => {
+    if (keycloakSeul) connexionSso()
+    // connexionSso change à chaque rendu : seul le mode compte.
+  }, [keycloakSeul])
+
   const formErrorMessage = auth.formError ? auth.getMessage(auth.formError) : null
   const formSuccessMessage = auth.formSuccess ? auth.getMessage(auth.formSuccess) : null
 
@@ -94,6 +102,8 @@ export default function Login() {
       navigate('/portail')
     }
   }
+
+  if (keycloakSeul) return null
 
   return (
     <div className="login-page">
