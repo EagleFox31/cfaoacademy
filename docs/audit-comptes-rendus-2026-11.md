@@ -30,8 +30,8 @@ Points d'attention :
 | Lot | Statut | Réalisé | Date estimée | Blocages | Preuve |
 |---|---|---|---|---|---|
 | P0 Audit et cadrage | En validation | 100 % | 06/11 | Décisions ci-dessous | Ce document |
-| P1 Référentiel et droits | Étude faite | 25 % | 20/11 | Décision 11 | Étude `etude-referentiel-formations.md` |
-| P1 Évaluations et progression | Cadré | 50 % | 13/11 | Décision 3 (barème, progression) | Audit, section E |
+| P1 Référentiel et droits | Étude faite | 25 % | 20/11 | — | Étude `etude-referentiel-formations.md` |
+| P1 Évaluations et progression | Cadré | 50 % | 13/11 | Note manquante et progression (formateurs) | Audit, section E |
 | P2 Saisie guidée et appréciations | Cadré | 40 % | 27/11 | Validation des formulations | Audit, section S |
 | P2 Synthèse et rapports | Cadré | 70 % | 03/12 | — | Audit, section P |
 | P3 Ergonomie et recette | Cadré | 20 % | 08/12 | Formations et testeurs de recette | Audit, section U |
@@ -64,10 +64,16 @@ Décisions encore attendues :
 
 1. ~~Source unique des formations et des participants~~ : tranchée (import du fichier).
 2. ~~Profils habilités~~ : tranchée (un administrateur ; trois lecteurs, tous périmètres).
-3. Barème et formules définitifs : notes sur 30/30/20 ? Seuil de 70 % ? Note finale quand une épreuve manque ?
-   **Progression, à clarifier avec les formateurs.** Aujourd'hui, elle est calculée par rapport à la note
-   d'entrée : passer de 10/30 à 20/30 donne +100 %, et rien n'est affiché si la note d'entrée vaut 0. Proposition :
-   un écart en points, rapporté au barème. Le même exemple donne alors +10 points, soit +33 %.
+3. Barème et formules : tranché le 06/11 pour l'essentiel. **Par défaut, on reprend les classeurs Excel
+   source** : barèmes 30/30/20, seuil de 70 %, note finale = moyenne des deux épreuves de sortie. Le barème
+   reste modifiable par compte rendu, le seuil par formation. **Deux points restent à trancher avec les
+   formateurs** (questions posées par l'équipe projet) :
+   - **Note manquante.** Chaque stagiaire doit-il obligatoirement avoir les trois notes ? Si une note peut
+     manquer, que fait-on de la note finale ? Aujourd'hui, l'outil prend la seule épreuve connue, ce qui peut
+     afficher « non validé » pour un stagiaire qui n'a simplement pas passé l'épreuve.
+   - **Progression.** Aujourd'hui, elle est calculée par rapport à la note d'entrée : passer de 10/30 à 20/30
+     donne +100 %, et rien n'est affiché si la note d'entrée vaut 0. Proposition : un écart en points,
+     rapporté au barème. Le même exemple donne alors +10 points, soit +33 %.
 4. ~~Appréciations croisées~~ : tranchée le 06/11 (une seule appréciation de la formation, voir S).
 5. ~~Lot de 25 rapports~~ : tranchée le 06/11 (25 fichiers dans un .zip).
 6. ~~Photos repositionnables~~ : tranchée le 06/11 (exclues ; recadrage conservé, voir P).
@@ -75,7 +81,7 @@ Décisions encore attendues :
 8. ~~Plafond de 5 jours~~ : tranchée le 06/11 (5 jours par session, certification comprise).
 9. ~~Un code, plusieurs groupes ou dates~~ : tranchée (session = code + dates).
 10. ~~Matricule~~ : tranchée (nom, prénom, pays).
-11. Pondération du % de complétion (proposition dans l'étude, § 7).
+11. ~~Pondération du % de complétion~~ : tranchée le 06/11 (selon la charge réelle de chaque étape, étude § 7).
 
 ## 4. Détail par demande
 
@@ -141,7 +147,8 @@ Prévu (cadrage du 05/11) :
   - Les 4 indicateurs en bas du tableau sont retirés.
   - Le compteur « Notes saisies » en haut de page utilise le barème du compte rendu, comme le reste.
 - **Seuil.** Chaque formation a son propre seuil, à la place du seuil de 70 % écrit en dur.
-- **Progression.** La formule change une fois validée avec les formateurs (décision 3).
+- **Par défaut, les règles des classeurs Excel source** (barèmes, seuil, note finale), modifiables.
+- **Note manquante et progression.** Inchangées tant que les formateurs n'ont pas répondu (décision 3).
 
 ### S — Saisie guidée et appréciations
 | Demande | Statut | Constat |

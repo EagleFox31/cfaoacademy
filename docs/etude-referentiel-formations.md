@@ -114,18 +114,28 @@ Les durées (30 s, 2 min, 15 min) sont des réglages serveur, ajustables sans co
 
 ## 7. % de complétion
 
-Calculé par le serveur à chaque enregistrement, à partir du contenu :
+Calculé par le serveur à chaque enregistrement. Décidé le 06/11 : le poids de chaque étape suit **la charge
+réelle du formateur**. Chaque élément à fournir vaut un temps estimé ; le % est le temps des éléments
+remplis divisé par le temps total. Les poids s'adaptent donc au nombre de jours et de stagiaires présents.
 
-| Bloc | Poids | Complet quand |
+| Élément à fournir | Temps estimé | Compté quand |
 |---|---|---|
-| Informations de session | 10 % | Référentiel rattaché (toujours vrai après migration) |
-| Notes | 30 % | Les 3 épreuves saisies et valides pour chaque stagiaire présent |
-| Objectifs | 15 % | Texte et au moins une photo |
-| Journées | 25 % | Chaque jour : thématiques et photos |
-| Appréciations | 20 % | Commentaire pour chaque stagiaire présent et bilan général |
+| Information de session obligatoire **absente de l'import** | 1 min chacune | Renseignée (rien à compter si l'import a tout fourni) |
+| Objectifs | 10 min | Texte saisi |
+| Photos des objectifs | 3 min | Au moins une photo |
+| Chaque journée | 10 min | 4 à 5 thématiques et texte du jour |
+| Photos de chaque journée | 2 min | Au moins une photo |
+| Chaque note (3 par stagiaire présent) | 0,5 min | Saisie et valide |
+| Commentaire de chaque stagiaire présent | 2 min | Saisi ou proposition acceptée |
+| Appréciation de la formation (qualité, accueil) | 5 min | Remplie |
+| Bilan général | 10 min | Rempli |
 
-Statut : **À faire** (0 %), **En cours** (1 à 99 %), **Terminé** (100 % et validé par le formateur). Les
-absents ne comptent pas. Pondération proposée, à confirmer avec Jennifer Lawrynn.
+Exemple : 5 jours, 12 présents. Total 130 min : journées 46 %, commentaires 18 %, notes 14 %, appréciation et
+bilan 12 %, objectifs 10 %. Les temps sont à ajuster après la recette, sur des durées mesurées.
+
+Statut : **À rédiger** (session terminée, 0 %), **En cours** (1 à 99 %), **Terminé** (100 % et validé par le
+formateur). Une session dont la date de fin n'est pas passée n'est pas due : elle n'apparaît pas « À
+rédiger ». Les absents ne comptent pas.
 
 ## 8. Import du fichier « Liste des participants »
 
