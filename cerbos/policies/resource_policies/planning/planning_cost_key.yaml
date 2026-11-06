@@ -1,0 +1,25 @@
+# Ressource « planning_cost_key » — la clé annuelle d'un pôle (SPEC §8).
+# Lire : équipe Academy et directions. Amorcer / régler : équipe Academy.
+# Geler (base de la refacturation) : pilotes seulement.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: planning_cost_key
+  importDerivedRoles:
+    - planning
+  rules:
+    - actions: ["view", "list"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - planning_manager
+        - planning_reader
+
+    - actions: ["create", "update"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - planning_manager
+
+    - actions: ["freeze"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - planning_pilot

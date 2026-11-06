@@ -1,0 +1,86 @@
+"""Contrat consommateur : cfao-planning -> needs-analytics (contracts/registry.json).
+
+Chaque appel de `planning.clients.needs` est confronté à la spec publiée par
+cfao-needs ; la réponse simulée est l'exemple de cette spec. Un champ renommé
+côté needs casse ce test au lieu de donner une couverture fausse.
+"""
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "contracts"))
+
+import kit  # noqa: E402
+
+from planning.clients import needs as client  # noqa: E402
+from referential.models import Country, CountryAlias  # noqa: E402
+from referential.normalize import norm_key  # noqa: E402
+
+BASE = "http://needs.test"
+SPEC = kit.load_spec("needs-analytics")
+pytestmark = pytest.mark.django_db
+
+
+class _Response:
+    def __init__(self, payload, status_code=200):
+        self.status_code, self._payload = status_code, payload
+
+    def json(self):
+        return self._payload
+
+
+@pytest.fixture
+def calls(monkeypatch, settings):
+    settings.NEEDS_API_URL = BASE
+    settings.NEEDS_ANALYTICS_KEY = "contract-test-key"
+    seen = []
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        path = url[len(BASE):]
+        assert kit.request_errors(SPEC, path, params, headers) == []
+        seen.append(path)
+        return _Response(kit.response_example(SPEC, path))
+
+    monkeypatch.setattr(client.requests, "get", fake_get)
+    return seen
+
+
+@pytest.fixture
+def benin(referential):
+    ben = Country.objects.create(code="ben", label="Bénin", org_path=["cfao", "ben"])
+    CountryAlias.objects.create(alias_norm=norm_key("BENIN"), country=ben)
+    return ben
+
+
+def test_besoins_par_pays_et_marque(calls, benin):
+    data = client.fetch_needs(2026, "MOTORS")
+    example = kit.response_example(SPEC, client.NEEDS_BY_BRANCH_BRAND)["rows"][0]
+    assert data.available and data.source == "quota_import"
+    assert data.by_country == {"ben": example["needs"]}
+    assert data.by_cell[("ben", "toyota")] == (example["needs"], example["technicians"])
+    assert calls == [client.NEEDS_BY_BRANCH_BRAND]
+
+
+def test_libelle_inconnu_signale_jamais_compte(calls, referential):
+    data = client.fetch_needs(2026, "MOTORS")
+    assert data.by_country == {}
+    assert data.warnings == [{"code": "unknown_country", "value": "BENIN"}]
+
+
+def test_thematiques_non_choisies(calls):
+    data = client.fetch_unchosen(2027, "MOTORS")
+    example = kit.response_example(SPEC, client.UNCHOSEN_MODULES)
+    assert data["available"] and data["modules"] == example["modules"]
+
+
+def test_needs_injoignable(monkeypatch, settings, db):
+    settings.NEEDS_API_URL, settings.NEEDS_ANALYTICS_KEY = BASE, "k"
+    monkeypatch.setattr(client.requests, "get", lambda *a, **k: _Response({}, 503))
+    data = client.fetch_needs(2026, "MOTORS")
+    assert not data.available and data.warnings == [{"code": "needs_unavailable"}]
+
+
+def test_sans_configuration_aucun_appel(settings, db):
+    settings.NEEDS_API_URL = ""
+    assert client.fetch_needs(2026, "MOTORS").available is False

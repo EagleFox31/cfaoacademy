@@ -1,0 +1,211 @@
+# Tests policies cfao-planning — clé de répartition (SPEC §7).
+name: PlanningCostKeySuite
+description: Qui fabrique, gèle et lit la clé ; une filiale ne lit que ses pays
+
+principals:
+  assistante:
+    id: u_assistante
+    roles: ["center_assistant"]
+    attr:
+      scopeNodes: ["groupe"]
+  coordonnateur:
+    id: u_coord
+    roles: ["training_coordinator"]
+    attr:
+      scopeNodes: ["groupe"]
+  dps_cmr:
+    id: u_dps
+    roles: ["dps"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+  chef_atelier_civ:
+    id: u_chef
+    roles: ["workshop_manager"]
+    attr:
+      scopeNodes: ["groupe.civ"]
+  directeur_groupe:
+    id: u_dg
+    roles: ["group_director"]
+    attr:
+      scopeNodes: ["groupe"]
+  apprenant:
+    id: u_learner
+    roles: ["learner"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+  formateur:
+    id: u_trainer
+    roles: ["trainer"]
+    attr:
+      scopeNodes: ["groupe"]
+
+resources:
+  cle_2026:
+    kind: planning_cost_key
+    id: k_2026
+    attr:
+      orgPath: ["groupe"]
+      year: 2026
+      pole: "MOTORS"
+      status: "DRAFT"
+  fiche_cmr:
+    kind: planning_country_sheet
+    id: cmr
+    attr:
+      orgPath: ["groupe", "groupe.cmr"]
+  import_prevu:
+    kind: planning_import
+    id: "*"
+    attr:
+      kind: "seat_allocations"
+  thematiques:
+    kind: planning_catalog_gap
+    id: k_2026
+    attr:
+      orgPath: ["groupe"]
+
+tests:
+  - name: l equipe Academy fabrique la cle, seuls les pilotes la gelent
+    input:
+      principals: ["assistante", "coordonnateur"]
+      resources: ["cle_2026"]
+      actions: ["view", "list", "create", "update", "freeze"]
+    expected:
+      - principal: assistante
+        resource: cle_2026
+        actions:
+          view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+          create: EFFECT_ALLOW
+          update: EFFECT_ALLOW
+          freeze: EFFECT_DENY
+      - principal: coordonnateur
+        resource: cle_2026
+        actions:
+          view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+          create: EFFECT_ALLOW
+          update: EFFECT_ALLOW
+          freeze: EFFECT_ALLOW
+
+  - name: les directions lisent la cle sans pouvoir la modifier
+    input:
+      principals: ["dps_cmr", "chef_atelier_civ", "directeur_groupe"]
+      resources: ["cle_2026"]
+      actions: ["view", "create", "update", "freeze"]
+    expected:
+      - principal: dps_cmr
+        resource: cle_2026
+        actions:
+          view: EFFECT_ALLOW
+          create: EFFECT_DENY
+          update: EFFECT_DENY
+          freeze: EFFECT_DENY
+      - principal: chef_atelier_civ
+        resource: cle_2026
+        actions:
+          view: EFFECT_ALLOW
+          create: EFFECT_DENY
+          update: EFFECT_DENY
+          freeze: EFFECT_DENY
+      - principal: directeur_groupe
+        resource: cle_2026
+        actions:
+          view: EFFECT_ALLOW
+          create: EFFECT_DENY
+          update: EFFECT_DENY
+          freeze: EFFECT_DENY
+
+  - name: hors personnel de pilotage aucun acces
+    input:
+      principals: ["apprenant", "formateur"]
+      resources: ["cle_2026", "fiche_cmr", "import_prevu", "thematiques"]
+      actions: ["view"]
+    expected:
+      - principal: apprenant
+        resource: cle_2026
+        actions: {view: EFFECT_DENY}
+      - principal: apprenant
+        resource: fiche_cmr
+        actions: {view: EFFECT_DENY}
+      - principal: apprenant
+        resource: import_prevu
+        actions: {view: EFFECT_DENY}
+      - principal: apprenant
+        resource: thematiques
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: cle_2026
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: fiche_cmr
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: import_prevu
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: thematiques
+        actions: {view: EFFECT_DENY}
+
+  - name: une filiale ne lit que la fiche de ses pays
+    input:
+      principals: ["dps_cmr", "chef_atelier_civ", "directeur_groupe", "assistante"]
+      resources: ["fiche_cmr"]
+      actions: ["view"]
+    expected:
+      - principal: dps_cmr
+        resource: fiche_cmr
+        actions: {view: EFFECT_ALLOW}
+      - principal: chef_atelier_civ
+        resource: fiche_cmr
+        actions: {view: EFFECT_DENY}
+      - principal: directeur_groupe
+        resource: fiche_cmr
+        actions: {view: EFFECT_ALLOW}
+      - principal: assistante
+        resource: fiche_cmr
+        actions: {view: EFFECT_ALLOW}
+
+  - name: imports reserves a l equipe Academy
+    input:
+      principals: ["assistante", "dps_cmr", "directeur_groupe"]
+      resources: ["import_prevu"]
+      actions: ["template", "preview", "apply", "list"]
+    expected:
+      - principal: assistante
+        resource: import_prevu
+        actions:
+          template: EFFECT_ALLOW
+          preview: EFFECT_ALLOW
+          apply: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+      - principal: dps_cmr
+        resource: import_prevu
+        actions:
+          template: EFFECT_DENY
+          preview: EFFECT_DENY
+          apply: EFFECT_DENY
+          list: EFFECT_DENY
+      - principal: directeur_groupe
+        resource: import_prevu
+        actions:
+          template: EFFECT_DENY
+          preview: EFFECT_DENY
+          apply: EFFECT_DENY
+          list: EFFECT_DENY
+
+  - name: thematiques non choisies pour l Academy et les observateurs
+    input:
+      principals: ["assistante", "dps_cmr", "chef_atelier_civ"]
+      resources: ["thematiques"]
+      actions: ["view"]
+    expected:
+      - principal: assistante
+        resource: thematiques
+        actions: {view: EFFECT_ALLOW}
+      - principal: dps_cmr
+        resource: thematiques
+        actions: {view: EFFECT_ALLOW}
+      - principal: chef_atelier_civ
+        resource: thematiques
+        actions: {view: EFFECT_DENY}

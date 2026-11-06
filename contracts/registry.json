@@ -12,6 +12,10 @@
     "cfao-needs": {
       "dockerfile": "cfao-needs/api/Dockerfile",
       "images": ["antifragile237/cfao-needs-api"]
+    },
+    "cfao-planning": {
+      "dockerfile": "cfao-planning/api/Dockerfile",
+      "images": []
     }
   },
   "contracts": [
@@ -33,6 +37,12 @@
           "range": "^1",
           "client_files": ["cfao-core/analytics/services.py"],
           "tests": ["cfao-core/analytics/tests/test_needs_analytics_consumer.py"]
+        },
+        {
+          "module": "cfao-planning",
+          "range": "^1.1",
+          "client_files": ["cfao-planning/api/planning/clients/needs.py"],
+          "tests": ["cfao-planning/api/planning/tests/test_needs_consumer.py"]
         }
       ]
     }

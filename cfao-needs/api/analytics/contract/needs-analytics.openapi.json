@@ -80,6 +80,82 @@
         ],
         "type": "object"
       },
+      "NeedsByBranchBrand": {
+        "examples": [
+          {
+            "pole": "motors",
+            "rows": [
+              {
+                "brand": "TOYOTA",
+                "country": "BENIN",
+                "needs": 34,
+                "technicians": 22
+              }
+            ],
+            "source": "quota_import",
+            "year": 2026
+          }
+        ],
+        "properties": {
+          "pole": {
+            "enum": [
+              "motors",
+              "equipment",
+              "all"
+            ],
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "properties": {
+                "brand": {
+                  "type": "string"
+                },
+                "country": {
+                  "type": "string"
+                },
+                "needs": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "technicians": {
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "country",
+                "brand",
+                "needs",
+                "technicians"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "submissions",
+              "quota_import",
+              "none"
+            ],
+            "type": "string"
+          },
+          "year": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "pole",
+          "source",
+          "rows"
+        ],
+        "type": "object"
+      },
       "ScheduledTrainings": {
         "examples": [
           {
@@ -133,6 +209,89 @@
           "count"
         ],
         "type": "object"
+      },
+      "UnchosenModules": {
+        "examples": [
+          {
+            "catalog_available": true,
+            "modules": [
+              {
+                "brand": "Toyota",
+                "code": "TS14-G1",
+                "pole": "MOBILITY",
+                "tier": "EXPERT",
+                "title": "Diagnostic"
+              }
+            ],
+            "pole": "motors",
+            "year": 2027
+          }
+        ],
+        "properties": {
+          "catalog_available": {
+            "type": "boolean"
+          },
+          "modules": {
+            "items": {
+              "properties": {
+                "brand": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "code": {
+                  "type": "string"
+                },
+                "pole": {
+                  "type": "string"
+                },
+                "tier": {
+                  "enum": [
+                    "JUNIOR",
+                    "SENIOR",
+                    "EXPERT",
+                    null
+                  ],
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pole",
+                "brand",
+                "tier",
+                "code",
+                "title"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "pole": {
+            "enum": [
+              "motors",
+              "equipment",
+              "all"
+            ],
+            "type": "string"
+          },
+          "year": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "pole",
+          "catalog_available",
+          "modules"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -144,9 +303,9 @@
     }
   },
   "info": {
-    "description": "Agrégats de service à service lus par cfao-core (tableau de bord super admin).",
+    "description": "Agrégats de service à service lus par cfao-core (tableau de bord super admin) et cfao-planning (clé de répartition).",
     "title": "CFAO Needs Analytics",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -197,6 +356,69 @@
           }
         },
         "summary": "Places allouées par pays."
+      }
+    },
+    "/api/v1/needs/analytics/needs-by-branch-brand": {
+      "get": {
+        "operationId": "needsByBranchBrand",
+        "parameters": [
+          {
+            "description": "Pôle. Valeur inconnue traitée comme `all`.",
+            "in": "query",
+            "name": "pole",
+            "required": false,
+            "schema": {
+              "enum": [
+                "equipment",
+                "motors",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Année de campagne. Défaut : année en cours.",
+            "in": "query",
+            "name": "year",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeedsByBranchBrand"
+                }
+              }
+            },
+            "description": "Agrégat."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "`year` n'est pas un entier."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Clé `X-Analytics-Key` absente ou invalide (DRF sans authentificateur : 403)."
+          }
+        },
+        "summary": "Besoins et techniciens par pays et marque (cfao-planning)."
       }
     },
     "/api/v1/needs/analytics/scheduled-trainings": {
@@ -309,6 +531,69 @@
           }
         },
         "summary": "Techniciens par pôle (Clé de Répartition)."
+      }
+    },
+    "/api/v1/needs/analytics/unchosen-modules": {
+      "get": {
+        "operationId": "unchosenModules",
+        "parameters": [
+          {
+            "description": "Pôle. Valeur inconnue traitée comme `all`.",
+            "in": "query",
+            "name": "pole",
+            "required": false,
+            "schema": {
+              "enum": [
+                "equipment",
+                "motors",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Année de campagne. Défaut : année en cours.",
+            "in": "query",
+            "name": "year",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnchosenModules"
+                }
+              }
+            },
+            "description": "Agrégat."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "`year` n'est pas un entier."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Clé `X-Analytics-Key` absente ou invalide (DRF sans authentificateur : 403)."
+          }
+        },
+        "summary": "Modules du catalogue sans aucune demande validée (cfao-planning)."
       }
     }
   },

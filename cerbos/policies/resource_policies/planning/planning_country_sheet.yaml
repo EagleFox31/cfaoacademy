@@ -1,0 +1,15 @@
+# Ressource « planning_country_sheet » — les chiffres d'UN pays dans la clé
+# (places, part, facture). orgPath = chemin org du pays. Une filiale ne voit
+# que ses pays ; l'équipe Academy les voit tous.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: planning_country_sheet
+  importDerivedRoles:
+    - planning
+  rules:
+    - actions: ["view"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - planning_manager
+        - planning_scoped_reader

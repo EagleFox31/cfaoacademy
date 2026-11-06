@@ -1,0 +1,15 @@
+# Ressource « planning_catalog_gap » — modules du catalogue qu'aucune filiale n'a
+# demandés (lus dans cfao-needs). Pilotage de l'offre : équipe Academy et
+# observateurs de pôle.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: planning_catalog_gap
+  importDerivedRoles:
+    - planning
+  rules:
+    - actions: ["view"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - planning_manager
+        - planning_observer
