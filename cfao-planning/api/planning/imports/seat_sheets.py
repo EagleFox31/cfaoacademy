@@ -5,7 +5,9 @@ lignes sont du prévisionnel : elles alimentent `PlannedSession` et
 `PlannedAllocation`, jamais `Session`. Une session prévue a pour identité (clé de
 l'année, marque, code, date de début, pays hôte) ; le pays hôte se déduit du lieu,
 ou de la feuille quand le lieu est vide. La même session revient sur la feuille de
-chaque pays qui y a des places : ces copies doivent concorder.
+chaque pays qui y a des places : ces copies doivent concorder. Une ligne sans
+aucune date est une session « à dater » (début vide) : ses places comptent dans la
+clé de l'année lue dans l'en-tête « Places Attribués AAAA ».
 
 Une clé gelée n'accepte qu'un fichier identique à son prévu (no-op) ; tout écart
 rejette l'import sans écriture, diff à l'appui.
@@ -20,7 +22,9 @@ from typing import BinaryIO
 
 from django.conf import settings
 
-from core.imports.base import ParseResult, RowError, RowRejected, TabularImporter, TooManyRows
+from core.imports.base import (
+    Normalization, ParseResult, RowError, RowRejected, TabularImporter, TooManyRows,
+)
 from core.imports.columns import Column, ColumnSpec, MissingColumns
 from referential.models import Country
 from referential.normalize import norm_code, norm_key
@@ -138,7 +142,11 @@ class SeatSheetsImporter(TabularImporter):
 
     def _parse_sheet(self, ws, country, result: ParseResult, seen: dict, planned: dict) -> None:
         rows = ws.iter_rows(values_only=True)
-        headers = [_TRAILING_YEAR.sub("", self._text(c)) for c in next(rows, ()) or ()]
+        raw_headers = [self._text(c) for c in next(rows, ()) or ()]
+        headers = [_TRAILING_YEAR.sub("", h) for h in raw_headers]
+        # « Places Attribués 2026 » : l'année de la clé pour une session encore à dater.
+        years = [int(m.group().strip()) for h in raw_headers if (m := _TRAILING_YEAR.search(h))]
+        self._sheet_year = years[0] if years else None
         try:
             mapping, unknown = self.columns.resolve(headers)
         except MissingColumns as exc:
@@ -177,6 +185,9 @@ class SeatSheetsImporter(TabularImporter):
                 continue  # créneau sans place pour ce pays
             cleaned.update(sheet=ws.title, line=line, country_id=country.pk,
                            country_code=country.code)
+            if cleaned["start_date"] is None:
+                result.normalizations.append(Normalization(
+                    line, f"{ws.title} · Date début", None, "à dater", "undated_session"))
             summary["seats"] += cleaned["seats"]
 
             identity = cleaned["identity"]
@@ -234,8 +245,15 @@ class SeatSheetsImporter(TabularImporter):
         code_norm = norm_code(code_raw)
         if not code_norm:
             raise RowRejected("Code", code_raw, "REQUIRED", "Code module obligatoire.")
-        start = parse_date("Date début", values.get("start_date"))
-        end = parse_date("Date fin", values["end_date"]) if _text(values.get("end_date")) else None
+        # Ni début ni fin : session prévue « à dater » (le calendrier annuel la placera),
+        # rattachée à la clé de l'année portée par l'en-tête des places.
+        undated = not _text(values.get("start_date")) and not _text(values.get("end_date"))
+        sheet_year = getattr(self, "_sheet_year", None)
+        if undated and sheet_year:
+            start = end = None
+        else:
+            start = parse_date("Date début", values.get("start_date"))
+            end = parse_date("Date fin", values["end_date"]) if _text(values.get("end_date")) else None
         if end and end < start:
             raise RowRejected("Date fin", end.isoformat(), "END_BEFORE_START",
                               "La fin précède le début.")
@@ -265,10 +283,11 @@ class SeatSheetsImporter(TabularImporter):
             if trainer.obj.pk not in trainer_ids:
                 trainer_ids.append(trainer.obj.pk)
 
-        key = self._key(start.year, brand.pole)
+        year = start.year if start else sheet_year
+        key = self._key(year, brand.pole)
         if key is None:
-            raise RowRejected("Date début", start.isoformat(), "NO_COST_KEY",
-                              f"Aucune clé de répartition {start.year} {brand.pole}.")
+            raise RowRejected("Date début", start.isoformat() if start else year, "NO_COST_KEY",
+                              f"Aucune clé de répartition {year} {brand.pole}.")
         return {
             "identity": (key.pk, brand.pk, code_norm, start, host.pk),
             "code_norm": code_norm,

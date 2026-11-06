@@ -10,9 +10,11 @@ from __future__ import annotations
 from collections import defaultdict
 from decimal import Decimal
 
+from django.conf import settings
+
 from ..clients.needs import NeedsData
 from ..models import INACTIVE_STATUSES, CostKeyYear, PlannedAllocation, SeatAllocation
-from .cost_key import CostKeyReport, Mode, compute
+from .cost_key import CostKeyReport, Mode, compute, is_academy_site, needs_trainer_lodging
 
 
 def _num(value):
@@ -105,6 +107,7 @@ def global_table(key: CostKeyYear, mode: Mode, needs: NeedsData,
         "year": key.year, "pole": key.pole, "mode": str(mode), "status": key.status,
         "budget": _num(key.budget), "total_seats": report.total_seats,
         "hourly_cost": None if report.hourly_cost is None else round(float(report.hourly_cost), 2),
+        "hourly_rate": _num(key.hourly_rate),
         "needs_source": needs.source, "warnings": needs.warnings,
         "brands": [{"code": b, "label": brands[b]} for b in brand_order],
         "brand_totals": brand_totals, "rows": rows, "partial": visible is not None,
@@ -185,6 +188,7 @@ def consolidate(tables: list[dict], visible: set[str] | None = None) -> dict:
         "status": "FROZEN" if all(t["status"] == "FROZEN" for t in tables) else "DRAFT",
         "budget": sum(t["budget"] or 0 for t in tables),
         "total_seats": sum(t["total_seats"] for t in tables), "hourly_cost": None,
+        "hourly_rate": None,
         "needs_source": sources.pop() if len(sources) == 1 else "mixed",
         "warnings": [w for t in tables for w in t["warnings"]],
         "brands": [{"code": b, "label": brands[b]} for b in brand_order],
@@ -227,13 +231,22 @@ def country_sheet(key: CostKeyYear, mode: Mode, country_code: str,
     sessions = []
     for a in allocations:
         s = getattr(a, parent)
-        trainers = ([t.full_name for t in s.trainers.all()] if mode == Mode.PLANNED
-                    else [x.trainer.full_name for x in s.assignments.all()])
+        people = (list(s.trainers.all()) if mode == Mode.PLANNED
+                  else [x.trainer for x in s.assignments.all()])
+        # Même règle que `compute`, ligne par ligne : une somme filtrée reste juste.
+        academy = is_academy_site(s)
+        trainee = (a.seats * key.trainee_lodging_cost
+                   if academy and country_code != settings.ACADEMY_COUNTRY_CODE else Decimal(0))
+        trainer = (key.trainer_lodging_cost
+                   if not academy and s.country.code == country_code
+                   and any(needs_trainer_lodging(t, s) for t in people) else Decimal(0))
         sessions.append({
             "brand": s.brand.label if s.brand else "", "code": s.code_raw or s.code_norm,
             "title": s.title, "start_date": s.start_date, "end_date": s.end_date,
-            "trainers": ", ".join(trainers), "location": s.location or s.country.label,
+            "trainers": ", ".join(t.full_name for t in people),
+            "location": s.location or s.country.label,
             "host": s.country.code, "seats": a.seats,
+            "trainee_lodging": _num(trainee), "trainer_lodging": _num(trainer),
         })
     sessions.sort(key=lambda r: (r["brand"], r["code"], str(r["start_date"] or "")))
     return {

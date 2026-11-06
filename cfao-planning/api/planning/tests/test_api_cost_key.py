@@ -219,6 +219,29 @@ def test_tous_poles_perimetre_et_droits(key, equipment):
     assert client_for("dps").get("/api/v1/planning/years/2026/countries/zz").status_code == 404
 
 
+def test_saisie_du_taux_horaire(key):
+    c = client_for("center_assistant")
+    r = c.patch(url(key), {"hourly_rate": 2500}, format="json")
+    assert r.status_code == 200 and r.json()["hourly_rate"] == 2500
+    assert c.patch(url(key), {"hourly_rate": -1}, format="json").status_code == 400
+    assert c.patch(url(key), {"hourly_rate": None}, format="json").json()["hourly_rate"] is None
+    assert client_for("dps").patch(url(key), {"hourly_rate": 1}, format="json").status_code == 403
+
+
+def test_abc_droits_et_perimetre(key, equipment):
+    table = client_for("dps").get(url(key, "/abc")).json()
+    cm = next(r for r in table["rows"] if r["country"] == "cm")
+    assert (cm["a"], cm["b"], cm["c"]) == (6, 10, 7)
+    assert sum(r["amount_a"] for r in table["rows"]) == 1000
+    scoped = client_for("workshop_manager", scope="ci").get(url(key, "/abc")).json()
+    assert [r["country"] for r in scoped["rows"]] == ["ci"] and scoped["partial"]
+    year = client_for("dps").get("/api/v1/planning/years/2026/abc").json()
+    assert year["pole"] == "ALL" and year["budget"] == 1500
+    assert next(r for r in year["rows"] if r["country"] == "cm")["a"] == 11
+    assert client_for("learner").get(url(key, "/abc")).status_code == 403
+    assert client_for("learner").get("/api/v1/planning/years/2026/abc").status_code == 403
+
+
 def test_thematiques_non_choisies(key):
     r = client_for("dps").get(url(key, "/unchosen-modules"))
     assert r.status_code == 200 and r.json()["modules"][0]["code"] == "TS14"

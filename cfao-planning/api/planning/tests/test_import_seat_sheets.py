@@ -143,7 +143,7 @@ def test_meme_session_deux_fois_pour_un_pays_refusee(world):
 def test_lignes_refusees_avec_motif(world):
     result, log = run({"RCI": [
         ["PEUGEOT", "P01", "", MAR2, None, "", "", 1],
-        ["TOYOTA", "TS03-G3", "", None, None, "", "", 1],          # MAROC ligne 2 : sans date
+        ["TOYOTA", "TS03-G3", "", None, MAR9, "", "", 1],          # fin sans début
         ["TOYOTA", "TS04", "", MAR2, None, "", "Douala Bassa", 1],
         ["TOYOTA", "TS05", "", MAR2, None, "INCONNU", "", 1],
         ["TOYOTA", "TS06", "", dt.datetime(2027, 3, 1), None, "", "", 1],
@@ -156,6 +156,24 @@ def test_lignes_refusees_avec_motif(world):
     assert "DOUALA" in result.errors[2].message  # suggestion
     assert log.status == "REJECTED"
     assert not PlannedSession.objects.exists()
+
+
+def test_ligne_sans_aucune_date_session_a_dater_sur_la_cle_de_l_en_tete(world):
+    # MAROC ligne 2 du classeur : ni début ni fin, le calendrier annuel la placera.
+    sans_date = ["TOYOTA", "TS08", "Électrique", None, None, "EUGENE", "", 5]
+    result, log = run({"RCI": [TS03, sans_date]})
+
+    assert result.ok, result.as_report()
+    assert [(n.column, n.rule) for n in result.normalizations] == [
+        ("RCI · Date début", "undated_session")]
+    planned = PlannedSession.objects.get(code_norm="TS08")
+    assert (planned.cost_key, planned.start_date, planned.end_date) == (world["key"], None, None)
+    assert str(planned).startswith("TS08 sans date")
+    assert seats() == {("TS03-G3", "ci"): 3, ("TS08", "ci"): 5}
+
+    _, again = run({"RCI": [TS03, sans_date]})
+    assert (again.report["created"], again.report["updated"]) == (0, 0)
+    assert PlannedSession.objects.count() == 2
 
 
 def test_copies_discordantes_entre_feuilles_refusees(world):

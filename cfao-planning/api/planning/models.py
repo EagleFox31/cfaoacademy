@@ -185,7 +185,7 @@ class CostKeyYear(UUIDModel, TimeStampedModel):
     """
 
     FROZEN_FIELDS = ("year", "pole", "budget", "trainee_lodging_cost", "trainer_lodging_cost",
-                     "hours_per_session", "status")
+                     "hours_per_session", "hourly_rate", "status")
 
     year = models.PositiveSmallIntegerField()
     pole = models.CharField(max_length=16, choices=Pole.choices)
@@ -193,6 +193,9 @@ class CostKeyYear(UUIDModel, TimeStampedModel):
     trainee_lodging_cost = models.DecimalField(max_digits=12, decimal_places=0, default=0)
     trainer_lodging_cost = models.DecimalField(max_digits=12, decimal_places=0, default=0)
     hours_per_session = models.PositiveSmallIntegerField(default=40)
+    # Taux horaire de formation saisi (par technicien et par heure). Affiché à côté
+    # du coût horaire calculé (budget / (places × heures)) : il n'entre pas dans la part.
+    hourly_rate = models.DecimalField(max_digits=12, decimal_places=0, null=True, blank=True)
     enrolled_countries = models.ManyToManyField(Country, related_name="cost_key_years")
     status = models.CharField(max_length=8, choices=CostKeyStatus.choices,
                               default=CostKeyStatus.DRAFT)

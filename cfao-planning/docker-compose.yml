@@ -47,7 +47,8 @@ services:
       CERBOS_HTTP: ${CERBOS_HTTP:-http://host.docker.internal:3592}
       OIDC_JWKS_URL: ${OIDC_JWKS_URL:-}
       OIDC_ISSUER: ${OIDC_ISSUER:-}
-      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-}
+      # Vides : l'API et ce job refusent de démarrer (config/settings/dev.py).
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-cfao-planning-api}
       OIDC_TRUSTED_ISSUERS: ${OIDC_TRUSTED_ISSUERS:-}
       NEEDS_API_URL: ${NEEDS_API_URL:-}
       NEEDS_ANALYTICS_KEY: ${NEEDS_ANALYTICS_KEY:-}

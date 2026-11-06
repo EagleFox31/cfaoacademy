@@ -14,7 +14,10 @@ from referential.models import Country
 
 from ..models import CostKeyYear, FrozenKeyError
 
-PARAMS = ("budget", "trainee_lodging_cost", "trainer_lodging_cost", "hours_per_session")
+PARAMS = ("budget", "trainee_lodging_cost", "trainer_lodging_cost", "hours_per_session",
+          "hourly_rate")
+# Paramètres facultatifs : null explicite = effacer la valeur saisie.
+NULLABLE = ("hourly_rate",)
 
 
 class SetupError(ValueError):
@@ -26,7 +29,11 @@ class SetupError(ValueError):
 def _clean(data: dict) -> dict:
     cleaned = {}
     for name in PARAMS:
-        if name not in data or data[name] in (None, ""):
+        if name not in data:
+            continue
+        if data[name] in (None, ""):
+            if name in NULLABLE:
+                cleaned[name] = None
             continue
         try:
             value = Decimal(str(data[name]))

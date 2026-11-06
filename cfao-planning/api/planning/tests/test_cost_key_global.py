@@ -9,7 +9,8 @@ from planning.clients.needs import NeedsData
 from planning.exports import xlsx
 from planning.models import CostKeyYear, PlannedAllocation, PlannedSession
 from planning.services.cost_key import Mode
-from planning.services.cost_key_freeze import freeze
+from planning.services.cost_key_abc import abc_table, consolidate_abc
+from planning.services.cost_key_freeze import freeze, inputs_sha256
 from planning.services.cost_key_global import country_sheet, global_table
 from planning.services.cost_key_setup import SetupError, bootstrap, update
 from planning.models import FrozenKeyError
@@ -123,6 +124,75 @@ def test_amorcer_sans_precedent_exige_le_budget(db):
     with pytest.raises(SetupError) as exc:
         bootstrap(2026, "EQUIPMENT")
     assert exc.value.code == "BUDGET_REQUIRED"
+
+
+def test_fiche_pays_hebergements_par_ligne(world):
+    sheet = country_sheet(world["key"], Mode.PLANNED, "ci")
+    lines = {s["code"]: s for s in sheet["sessions"]}
+    assert lines["TS01"]["trainee_lodging"] == 200 and lines["OM01"]["trainee_lodging"] == 0
+    for name in ("trainee_lodging", "trainer_lodging"):
+        assert sum(s[name] for s in sheet["sessions"]) == sheet["footer"][name]
+
+
+def test_abc_trois_bases(world):
+    table = abc_table(world["key"], needs())
+    rows = {r["country"]: r for r in table["rows"]}
+    assert (rows["cm"]["a"], rows["cm"]["b"], rows["cm"]["c"]) == (6, 12, 9)
+    assert (rows["ci"]["a"], rows["ci"]["b"], rows["ci"]["c"]) == (4, 8, 3)
+    assert rows["cm"]["cells"]["toyota"] == {"a": 6, "b": 12, "c": 9, "a_b": 0.5,
+                                             "a_c": 0.6667}
+    for base in ("a", "b", "c"):
+        assert sum(r[f"amount_{base}"] for r in table["rows"]) == 1000
+    assert (rows["cm"]["amount_a"], rows["cm"]["amount_c"]) == (600, 750)
+    assert table["totals"] == {"a": 10, "b": 20, "c": 12}
+
+
+def test_abc_sans_besoins_ni_zero(world):
+    table = abc_table(world["key"], NeedsData(warnings=[{"code": "needs_unavailable"}]))
+    row = next(r for r in table["rows"] if r["country"] == "cm")
+    assert row["a"] == 6 and row["b"] is None and row["c"] is None
+    assert row["amount_b"] is None and row["amount_a"] == 600
+    assert table["warnings"] == [{"code": "needs_unavailable"}]
+
+
+def test_abc_filtre_mais_garde_les_vraies_parts(world):
+    table = abc_table(world["key"], needs(), visible={"ci"})
+    assert [r["country"] for r in table["rows"]] == ["ci"] and table["partial"]
+    assert table["rows"][0]["amount_a"] == 400
+
+
+def test_abc_tous_poles(world):
+    one = abc_table(world["key"], needs())
+    merged = consolidate_abc([one, one])
+    cm = next(r for r in merged["rows"] if r["country"] == "cm")
+    assert cm["a"] == 12 and cm["amount_a"] == 1200 and cm["share_a"] == 0.6
+    assert merged["pole"] == "ALL" and merged["budget"] == 2000
+
+
+def test_taux_horaire_saisi(world):
+    key = update(world["key"], {"hourly_rate": "2500"})
+    assert key.hourly_rate == 2500
+    assert global_table(key, Mode.PLANNED, needs())["hourly_rate"] == 2500
+    nxt, _ = bootstrap(2027, "MOTORS")
+    assert nxt.hourly_rate == 2500  # repris de l'année précédente
+    assert update(key, {"hourly_rate": None}).hourly_rate is None  # null efface
+    assert update(key, {"budget": 1000}).hourly_rate is None  # absent : inchangé
+    with pytest.raises(SetupError):
+        update(key, {"hourly_rate": "1.5"})
+
+
+def test_taux_horaire_hors_empreinte_et_verrouille_au_gel(world):
+    key = world["key"]
+    before = inputs_sha256(key)
+    update(key, {"hourly_rate": 3000})
+    assert inputs_sha256(key) == before  # le taux n'entre pas dans le calcul
+    freeze(key, "dg")
+    key.refresh_from_db()
+    with pytest.raises(FrozenKeyError):
+        update(key, {"hourly_rate": 1})
+    key.hourly_rate = 1
+    with pytest.raises(FrozenKeyError):
+        key.save()
 
 
 def test_regler_une_cle_gelee_refuse(world):

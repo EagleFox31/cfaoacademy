@@ -39,13 +39,30 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
 
+### 2026-11-06 — « Fait » annoncé avec une API de recette sans les nouvelles routes : ABC en HTTP 404 (cfao-planning)
+- **Contexte / symptôme** : le menu ABC affiche « HTTP 404 ». La vue Filiale montre aussi un grand bloc blanc derrière le tableau.
+- **Impact** : écran ABC inutilisable en recette. Rien en prod.
+- **Détection** : l'utilisateur, à l'écran, juste après l'annonce « appliqué ».
+- **Cause racine** :
+  - 404 : les preuves (pytest, vitest avec API simulée, build) ne touchaient jamais la pile qui tourne. L'image `planning-api` datait d'avant les routes `/abc` et la migration 0006.
+  - Bloc blanc : la règle vitrine globale `section { padding: 48px 0; background: … }` (`index.css`) s'appliquait aux vues `<section class="ck-view">`.
+- **Correctif** :
+  - Image reconstruite avec l'environnement complet de l'ancien conteneur. Le job migrate applique 0006. Smoke PKCE `lecteur.planning` via cfao-edge : `/access`, `/years/2026/abc` et `/cost-keys/<id>/abc` en 200.
+  - `costkey.css` neutralise le style `section` sous `.ck-shell`.
+- **Prévention** :
+  - Tout changement de route ou de modèle back se termine par la reconstruction de la pile de recette et un smoke avec jeton réel sur la route nouvelle, avant d'annoncer « fait ».
+  - Les vues applicatives n'héritent pas des styles vitrine : ce qui est sous `.ck-shell` neutralise `section`.
+- **Leçon généralisée** : des tests verts avec l'API simulée ne prouvent pas que l'écran marche. La preuve doit passer par la même pile que celle de l'utilisateur. Un sélecteur d'élément global (`section`, `h2`) fuit dans toute page applicative.
+- **Catégorie** : release/déploiement
+- **Récidive** : oui, pour le volet « smoke sur la pile réelle » ([entrée du 2026-10-22](#2026-10-22--aucun-consommateur-pour-la-file-django-q-cfao-academy-mail)). Contrôle renforcé : smoke jeton réel sur chaque route ajoutée.
+
 ### 2026-11-06 — API reconstruite sans sa configuration OIDC : toutes les requêtes en 401 (recette cfao-planning)
 - **Contexte / symptôme** : après `docker compose up -d --build planning-api`, l'écran affiche « Le service ne répond pas ». Le journal de l'API montre `Unauthorized` sur `/access` et `/cost-keys/`.
 - **Impact** : recette bloquée quelques minutes. Rien en prod.
 - **Détection** : l'utilisateur, à l'écran. La sonde utilisée après la reconstruction (route sans jeton, 401 attendu) ne pouvait pas voir la panne.
 - **Cause racine** : le compose lit `OIDC_AUDIENCE` et `OIDC_TRUSTED_ISSUERS` dans le shell, avec une valeur vide par défaut. Le conteneur a été recréé en ne reprenant que les variables `PLANNING_*` de l'ancien.
 - **Correctif** : conteneur recréé avec les deux variables, comme dans l'en-tête de `edge/compose.dev.yml`. Vérifié avec un vrai jeton de `lecteur.planning` : `/access`, `/cost-keys/` et `/years/2026/global` en 200.
-- **Prévention** : après toute recréation d'une API, faire un smoke avec un jeton réel (200 attendu), pas une sonde anonyme. Pour recréer un conteneur, relancer la commande complète documentée, pas un sous-ensemble de variables.
+- **Prévention** : après toute recréation d'une API, faire un smoke avec un jeton réel (200 attendu), pas une sonde anonyme. Pour recréer un conteneur, relancer la commande complète documentée, pas un sous-ensemble de variables. Contrôle automatique : `config/settings/dev.py` lève `ImproperlyConfigured` si l'audience ou les émetteurs de confiance sont vides ; l'API et `planning-migrate` refusent alors de démarrer (test `core/tests/test_demarrage_oidc.py`). L'audience a désormais `cfao-planning-api` pour défaut dans le compose.
 - **Leçon généralisée** : un 401 sans jeton prouve que la route existe, pas que l'authentification fonctionne. Une variable obligatoire avec un défaut vide cache son absence.
 - **Catégorie** : exploitation
 - **Récidive** : non

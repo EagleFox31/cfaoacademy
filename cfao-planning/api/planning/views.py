@@ -34,6 +34,7 @@ from .imports.data_sheet import COLUMNS as DATA_COLUMNS, DataSheetImporter
 from .imports.seat_sheets import COLUMNS as SEAT_COLUMNS, SeatSheetsImporter
 from .models import CostKeyYear, FrozenKeyError
 from .services.cost_key import Mode, compare
+from .services.cost_key_abc import abc_table, consolidate_abc
 from .services.cost_key_freeze import FreezeRefused, freeze
 from .services.cost_key_global import (
     consolidate, consolidate_sheet, country_sheet, global_table, report_for,
@@ -99,6 +100,7 @@ def _key_json(key: CostKeyYear) -> dict:
         "budget": _n(key.budget), "trainee_lodging_cost": _n(key.trainee_lodging_cost),
         "trainer_lodging_cost": _n(key.trainer_lodging_cost),
         "hours_per_session": key.hours_per_session,
+        "hourly_rate": _n(key.hourly_rate),
         "enrolled": sorted(key.enrolled_countries.values_list("code", flat=True)),
         "planned_sessions": key.planned_sessions.count(),
         "frozen_at": key.frozen_at, "frozen_by": key.frozen_by,
@@ -298,6 +300,22 @@ class CostKeyGlobalView(APIView):
         key = _get_key(request, pk)
         table, _ = _global(request, key)
         return Response(table)
+
+
+class CostKeyAbcView(APIView):
+    """Vue ABC : Attribué (prévu de la clé), Besoin et Contractuel (cfao-needs)."""
+
+    def get(self, request, pk):
+        key = _get_key(request, pk)
+        return Response(abc_table(key, fetch_needs(key.year, key.pole),
+                                  visible_countries(request, key)))
+
+
+class YearAbcView(APIView):
+    def get(self, request, year):
+        keys = _year_keys(request, year)
+        tables = [abc_table(k, fetch_needs(k.year, k.pole)) for k in keys]
+        return Response(consolidate_abc(tables, _year_visible(request, keys)))
 
 
 class CostKeyGlobalXlsxView(APIView):
