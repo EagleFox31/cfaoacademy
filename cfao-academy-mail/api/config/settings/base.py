@@ -65,8 +65,10 @@ SMTP_PASSWORD = env("MAIL_SMTP_PASSWORD", default="")
 SMTP_USE_TLS = env.bool("MAIL_SMTP_USE_TLS", default=False)
 SMTP_TIMEOUT = env.int("MAIL_SMTP_TIMEOUT", default=15)
 
-PUBLIC_BASE_URL = env("MAIL_PUBLIC_BASE_URL", default="http://localhost:8080")
-# Vide = pas de liste blanche. Renseignée, seul ces hôtes sont acceptés dans module_url.
+# URL publique de la plateforme (calculée par deploy.ps1 si absente) : son hôte est
+# toujours autorisé dans module_url, et http n'est admis que pour cette origine exacte.
+PUBLIC_BASE_URL = env("MAIL_PUBLIC_BASE_URL", default="")
+# Hôtes supplémentaires (autres producteurs). Les deux vides = tout lien refusé hors DEBUG.
 MAIL_ALLOWED_LINK_HOSTS = env.list("MAIL_ALLOWED_LINK_HOSTS", default=[])
 
 Q_CLUSTER = {

@@ -71,6 +71,39 @@ def test_empty_allowlist_rejects_links_outside_debug(client, settings):
 
 
 @pytest.mark.django_db
+def test_public_base_url_host_is_allowed_without_list(client, settings):
+    settings.MAIL_ALLOWED_LINK_HOSTS = []
+    settings.PUBLIC_BASE_URL = "https://plateforme.example"
+    ok = client.post("/api/v1/mail/messages/enqueue", _rapport(module_url="https://plateforme.example/x"), format="json")
+    ko = client.post("/api/v1/mail/messages/enqueue", _rapport(module_url="https://evil.example/x"), format="json")
+    assert ok.status_code == 201
+    assert ko.status_code == 400
+
+
+@pytest.mark.django_db
+def test_http_allowed_only_for_exact_http_public_origin(client, settings):
+    settings.MAIL_ALLOWED_LINK_HOSTS = ["academy.example"]
+    settings.PUBLIC_BASE_URL = "http://10.0.0.5:8080"
+
+    def post(url):
+        return client.post("/api/v1/mail/messages/enqueue", _rapport(module_url=url), format="json").status_code
+
+    assert post("http://10.0.0.5:8080/portail") == 201
+    assert post("http://10.0.0.5:9999/portail") == 400  # autre port
+    assert post("http://10.0.0.5/portail") == 400  # port implicite différent
+    assert post("http://academy.example/portail") == 400  # extra : https seulement
+
+
+@pytest.mark.django_db
+def test_https_public_origin_does_not_open_http(client, settings):
+    settings.PUBLIC_BASE_URL = "https://plateforme.example"
+    response = client.post(
+        "/api/v1/mail/messages/enqueue", _rapport(module_url="http://plateforme.example/x"), format="json"
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
 def test_https_module_url_is_accepted(client):
     response = client.post(
         "/api/v1/mail/messages/enqueue",

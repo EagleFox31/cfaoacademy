@@ -23,20 +23,50 @@ def _present(value) -> bool:
     return True
 
 
+def _public_origin():
+    """(schéma, hôte, port) de MAIL_PUBLIC_BASE_URL, ou None s'il n'est pas renseigné."""
+    base = (getattr(settings, "PUBLIC_BASE_URL", "") or "").strip()
+    if not base:
+        return None
+    parsed = urlparse(base)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        return None
+    return parsed.scheme, parsed.hostname.lower(), parsed.port
+
+
+def allowed_link_hosts() -> set[str]:
+    """Hôte de l'URL publique + extras. Aucun domaine codé en dur : tout vient du déploiement."""
+    hosts = {host.lower().strip() for host in getattr(settings, "MAIL_ALLOWED_LINK_HOSTS", []) if host.strip()}
+    origin = _public_origin()
+    if origin:
+        hosts.add(origin[1])
+    return hosts
+
+
 def validate_module_url(destination: str) -> None:
     """Valide l'adresse du bouton, qu'elle vienne du champ ou du contexte."""
-    schemes = ["http", "https"] if settings.DEBUG else ["https"]
+    parsed = urlparse(destination)
+    origin = _public_origin()
+    # http n'est admis hors DEBUG que pour l'origine exacte de la plateforme servie en http (LAN).
+    same_http_origin = (
+        origin is not None
+        and origin[0] == "http"
+        and parsed.scheme == "http"
+        and (parsed.hostname or "").lower() == origin[1]
+        and parsed.port == origin[2]
+    )
+    schemes = ["http", "https"] if settings.DEBUG or same_http_origin else ["https"]
     try:
         URLValidator(schemes=schemes)(destination)
     except ValidationError as exc:
         raise ForbiddenSend("module_url invalide.") from exc
-    allowed = [host.lower().strip() for host in getattr(settings, "MAIL_ALLOWED_LINK_HOSTS", []) if host.strip()]
+    allowed = allowed_link_hosts()
     if not allowed:
         # Default-deny hors DEBUG : sans liste, le hub signerait un lien vers n'importe quel site.
         if settings.DEBUG:
             return
-        raise ForbiddenSend("module_url : MAIL_ALLOWED_LINK_HOSTS n'est pas configuré.")
-    host = (urlparse(destination).hostname or "").lower()
+        raise ForbiddenSend("module_url : ni MAIL_PUBLIC_BASE_URL ni MAIL_ALLOWED_LINK_HOSTS n'est configuré.")
+    host = (parsed.hostname or "").lower()
     if host not in allowed:
         raise ForbiddenSend(f"module_url : hôte « {host} » non autorisé.")
 

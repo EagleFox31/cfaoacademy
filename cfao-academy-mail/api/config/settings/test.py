@@ -16,5 +16,6 @@ DATABASES = {
     }
 }
 EMAIL_BACKEND_KIND = "locmem"
+PUBLIC_BASE_URL = ""
 MAIL_ALLOWED_LINK_HOSTS = ["academy.example", "cr.example", "cr.filiale.example"]
 Q_CLUSTER = {**Q_CLUSTER, "sync": True}
