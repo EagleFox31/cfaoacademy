@@ -967,18 +967,16 @@
   column-gap: 18px;
 }
 .cr-entete-assistant .cr-retour { margin-bottom: 0; }
-/* L'heure d'enregistrement suit le titre sur sa ligne, posee sur la meme
-   ligne de base que lui. */
-.cr-entete-assistant:has(.cr-enregistre) { grid-template-columns: auto minmax(0, max-content) 1fr; }
-.cr-entete-assistant:has(.cr-enregistre) .cr-home-title--sm { align-self: last baseline; }
-.cr-entete-assistant .cr-enregistre {
-  grid-column: 3;
-  grid-row: 1;
-  align-self: last baseline;
-  margin: 0;
-  white-space: nowrap;
+/* Les phases et, a leur droite, l'heure d'enregistrement : une seule ligne. */
+.cr-entete-assistant .cr-phases-ligne {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: clamp(8px, 2vh, 18px);
 }
-.cr-entete-assistant .cr-phases { grid-column: 1 / -1; margin-top: clamp(8px, 2vh, 18px); }
+.cr-entete-assistant .cr-enregistre { margin: 0 0 0 auto; align-self: flex-end; white-space: nowrap; }
 .cr-entete-assistant .cr-home-title--sm {
   margin-bottom: 0;
   white-space: nowrap;
@@ -1465,6 +1463,16 @@
 }
 .cr-assistant .cr-scene-tete { flex: none; }
 .cr-assistant .cr-scene .cr-edition { flex: 1; }
+/* La zone a remplir est un cadre net, distinct de la consigne au-dessus
+   et de la barre d'actions en dessous. */
+.cr-assistant .cr-scene .cr-edition {
+  margin-top: 4px;
+  padding: 20px 24px;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16, 20, 48, 0.04);
+}
 
 /* La diapositive garde son rapport 16:9 mais se contente de la place
    disponible : à hauteur libre, elle poussait la barre d'actions — donc
@@ -2623,6 +2631,17 @@
 }
 .cr-fiche-appreciation { flex: 1; min-height: 0; }
 .cr-fiche-appreciation .cr-res-texte { flex: 1; min-height: 72px; }
+/* La photo du stagiaire, carree, a droite de l'appreciation et a sa hauteur. */
+.cr-fiche-zone { display: flex; gap: 10px; flex: 1; min-height: 0; }
+.cr-fiche-zone .cr-res-texte { min-width: 0; }
+.cr-groupe.cr-photo-stagiaire {
+  flex: none;
+  align-self: stretch;
+  width: auto;
+  height: auto;
+  min-width: 72px;
+  aspect-ratio: 1;
+}
 
 /* La marge de numerotation des objectifs : elle suit le defilement de
    la zone et reprend exactement sa hauteur de ligne. */
@@ -2714,6 +2733,9 @@
 /* Le bouton de proposition se tient a droite du libelle, discret :
    c'est une aide, pas l'action principale. */
 .cr-redac {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   margin-left: auto;
   padding: 3px 9px;
   font-size: 0.72rem;
@@ -3616,3 +3638,39 @@
 .cr-journal .cr-journal-choix { width: 28px; }
 .cr-journal-actions { display: flex; justify-content: flex-end; margin-bottom: 8px; }
 .cr-journal pre { max-height: 320px; overflow: auto; white-space: pre-wrap; font-size: 0.75rem; background: var(--paper); padding: 8px; }
+
+/* Preparation du PowerPoint : une roue dans le bouton, de la couleur de son texte. */
+.cr-btn-roue {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: cr-tourne 0.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cr-btn-roue { animation-duration: 2.4s; }
+}
+
+/* Fin du compte rendu : consigne, fichier, proposition ; les deux suites en bas a droite. */
+.cr-fin { display: flex; flex-direction: column; }
+/* La page de fin prend la hauteur de son contenu, pas celle de l'ecran. */
+.cr-assistant .cr-panel.cr-fin { flex: 0 1 auto; }
+.cr-fin-fichier { margin: 20px 0 0; font-size: 14px; line-height: 1.55; color: var(--ink); overflow-wrap: anywhere; }
+.cr-fin .cr-proposition { max-width: 520px; margin: 20px 0 0; }
+.cr-fin > :nth-last-child(2) { margin-bottom: 26px; }
+.cr-fin .cr-fin-actions { margin-top: auto; justify-content: flex-end; }
+
+/* Texte ecrit sur d'anciennes notes : prevenir, proposer de reecrire */
+.cr-redac-perime {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--warn-ink);
+  background: var(--warn-bg);
+  font-size: 0.8rem;
+  color: var(--warn-ink);
+}
+.cr-redac-perime-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }

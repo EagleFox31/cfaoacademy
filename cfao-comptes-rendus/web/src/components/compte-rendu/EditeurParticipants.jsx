@@ -16,7 +16,7 @@
  * le modele lui reserve a droite du tableau.
  */
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import ImageCadree, { BoutonRecadrer } from './ImageCadree'
 import { srcPhoto } from '../../utils/photosService'
 
@@ -222,6 +222,63 @@ function TableauStagiaires({ stagiaires }) {
 }
 
 /** La photo de groupe, dans le cadre que le modele lui reserve. */
+/**
+ * La photo carree d'un stagiaire, a droite de son appreciation sur la
+ * fiche : ajout, recadrage, retrait, comme la photo de groupe.
+ */
+export function PhotoStagiaire({ stagiaire, onPhoto }) {
+  const [survol, setSurvol] = useState(false)
+  const [cadrage, setCadrage] = useState(false)
+  const choix = useRef(null)
+  const photo = stagiaire.photo
+  const nom = `${stagiaire.prenom || ''} ${stagiaire.nom || ''}`.trim()
+
+  function poser(fichiers) {
+    const image = Array.from(fichiers).find(f => f.type.startsWith('image/'))
+    if (!image) return
+    if (photo?.apercu) URL.revokeObjectURL(photo.apercu)
+    onPhoto({ id: `stagiaire-${stagiaire.id}-${Date.now()}`, nom: image.name, apercu: URL.createObjectURL(image) })
+  }
+
+  return (
+    <div className={`cr-groupe cr-photo-stagiaire${survol ? ' cr-groupe--over' : ''}`
+      + `${photo ? ' cr-groupe--pose' : ''}`
+      + `${cadrage ? ' cr-groupe--cadrage' : ''}`}
+      onClick={() => choix.current?.click()}
+      onDragOver={e => { e.preventDefault(); setSurvol(true) }}
+      onDragLeave={() => setSurvol(false)}
+      onDrop={e => { e.preventDefault(); setSurvol(false); poser(e.dataTransfer.files) }}
+      role="button" tabIndex={0}
+      aria-label={photo ? `Remplacer la photo de ${nom}` : `Ajouter une photo de ${nom}`}
+      onKeyDown={e => { if (e.key === 'Enter') choix.current?.click() }}>
+      {photo ? (
+        <>
+          <ImageCadree src={srcPhoto(photo)} cadrage={photo.cadrage}
+            actif={cadrage}
+            onCadrer={c => onPhoto({ ...photo, cadrage: c })} />
+          <BoutonRecadrer actif={cadrage} rang={`de ${nom}`}
+            onBasculer={() => setCadrage(!cadrage)} />
+          <button type="button" className="cr-case-retirer"
+            onClick={e => {
+              e.stopPropagation()
+              URL.revokeObjectURL(photo.apercu)
+              onPhoto(null)
+            }}
+            aria-label={`Retirer la photo de ${nom}`}>×</button>
+        </>
+      ) : (
+        <>
+          <span className="cr-drop-title">Photo</span>
+          <span className="cr-drop-hint">facultative, carrée</span>
+        </>
+      )}
+      <input ref={choix} type="file" accept="image/*" hidden
+        onClick={e => e.stopPropagation()}
+        onChange={e => { poser(e.target.files); e.target.value = '' }} />
+    </div>
+  )
+}
+
 function CadreGroupe({ photo, onPhoto }) {
   const [survol, setSurvol] = useState(false)
   const [cadrage, setCadrage] = useState(false)

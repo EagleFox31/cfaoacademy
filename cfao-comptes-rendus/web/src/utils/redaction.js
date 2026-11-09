@@ -12,7 +12,7 @@ import { adresse } from '../lib/adresse'
  */
 
 /** Les chiffres d'un stagiaire, dans la forme qu'attend le moteur. */
-export function participantPourMoteur(p, calcul, satisfaction, accueil) {
+export function participantPourMoteur(p, calcul, satisfaction, accueil, seuil) {
   const nombre = v => (v == null || v === '' ? undefined : Math.round(Number(v)))
   return {
     nom: p.nom || '',
@@ -26,6 +26,7 @@ export function participantPourMoteur(p, calcul, satisfaction, accueil) {
     taux_progression: nombre(calcul?.progression),
     satisfaction: nombre(satisfaction),
     sat_accueil: nombre(accueil),
+    seuil: nombre(seuil),
   }
 }
 

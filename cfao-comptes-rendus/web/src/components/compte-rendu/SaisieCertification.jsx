@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { SEUIL } from '../../utils/baremeCfao'
+import { seuilDe, lireNote, nettoyerNote } from '../../utils/baremeCfao'
 import {
   calculerCertification, moduleVide, STATUTS_ELEARNING, CERTIFIE, VALIDE,
 } from '../../utils/certification'
@@ -21,6 +21,7 @@ import {
 export default function SaisieCertification({ brouillon, maj, onEffacer }) {
   const table = useRef(null)
   const modules = brouillon.modules || []
+  const seuil = seuilDe(brouillon)
   const candidats = (brouillon.participants || []).filter(p => p.present !== false)
 
   function majModule(id, champ, valeur) {
@@ -49,7 +50,7 @@ export default function SaisieCertification({ brouillon, maj, onEffacer }) {
   function noter(idCandidat, idModule, valeur) {
     maj(b => ({
       participants: b.participants.map(p => (p.id === idCandidat
-        ? { ...p, notesModules: { ...(p.notesModules || {}), [idModule]: nettoyer(valeur) } }
+        ? { ...p, notesModules: { ...(p.notesModules || {}), [idModule]: nettoyerNote(valeur) } }
         : p)),
     }))
   }
@@ -85,14 +86,14 @@ export default function SaisieCertification({ brouillon, maj, onEffacer }) {
           const p = presents[colonne + dc]
           if (!p) return
           const courant = suite[p.id]
-          suite[p.id] = { ...courant, notesModules: { ...(courant.notesModules || {}), [m.id]: nettoyer(v) } }
+          suite[p.id] = { ...courant, notesModules: { ...(courant.notesModules || {}), [m.id]: nettoyerNote(v) } }
         })
       })
       return { participants: (b.participants || []).map(p => suite[p.id]) }
     })
   }
 
-  const calculs = Object.fromEntries(candidats.map(p => [p.id, calculerCertification(p, modules)]))
+  const calculs = Object.fromEntries(candidats.map(p => [p.id, calculerCertification(p, modules, seuil)]))
   const colonnes = candidats.length
 
   return (
@@ -140,14 +141,14 @@ export default function SaisieCertification({ brouillon, maj, onEffacer }) {
               </th>
               {candidats.map((p, j) => {
                 const v = p.notesModules?.[m.id] ?? ''
-                const n = v === '' ? null : Number(v)
+                const n = lireNote(v)
                 return (
                   <td key={p.id}>
                     <input
                       className={`cr-num cr-certif-note${n != null && n > 100 ? ' cr-num--erreur'
-                        : n != null && n < SEUIL ? ' cr-certif-note--bas' : ''}`}
+                        : n != null && n < seuil ? ' cr-certif-note--bas' : ''}`}
                       data-note={`${i}:${j}`}
-                      type="text" inputMode="numeric" value={v} placeholder="—"
+                      type="text" inputMode="decimal" value={v} placeholder="—"
                       onChange={e => noter(p.id, m.id, e.target.value)}
                       onKeyDown={e => suivant(e, i, j)}
                       onPaste={e => coller(e, i, j)}
@@ -182,13 +183,13 @@ export default function SaisieCertification({ brouillon, maj, onEffacer }) {
               const c = calculs[p.id]
               return (
                 <span className={`cr-calc${c.pourcentage == null ? ' cr-calc--vide'
-                  : c.pourcentage >= SEUIL ? ' cr-calc--ok' : ' cr-calc--ko'}`}>
+                  : c.pourcentage >= seuil ? ' cr-calc--ok' : ' cr-calc--ko'}`}>
                   {c.pourcentage == null ? '—' : `${c.pourcentage} %`}
                 </span>
               )
             }}
           </Ligne>
-          <Ligne titre="Partie pratique" sousTitre={`validée à ${SEUIL} %`} candidats={candidats}>
+          <Ligne titre="Partie pratique" sousTitre={`validée à ${seuil} %`} candidats={candidats}>
             {p => <Statut valeur={calculs[p.id].pratique} bon={VALIDE} />}
           </Ligne>
         </tbody>

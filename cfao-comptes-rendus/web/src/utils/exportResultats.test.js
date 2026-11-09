@@ -89,4 +89,11 @@ describe('import du classeur Résultats', () => {
     expect(stagiaires[0].pratique).toBeCloseTo(15 / 20)
     expect(stagiaires[1].pratique).toBeNull()
   })
+  it('reprend le barème du compte rendu dans les en-têtes', async () => {
+    const ws = await lire(3, { baremes: { entreeTheorique: 40, sortieTheorique: 40, sortiePratique: 25 } })
+    expect(ws.getCell('E4').value).toBe("Test d'entrée theorique/40")
+    expect(ws.getCell('G4').value).toBe('Test de sortie théorique /40')
+    expect(ws.getCell('I4').value).toBe('Test de sortie pratique /25 ')
+    expect(ws.getCell('F5').value.formula).toContain('/40')
+  })
 })

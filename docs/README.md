@@ -50,6 +50,11 @@ Point d'entrée pour la documentation du dépôt. Les fichiers listés ci-dessou
 | [MISE_A_JOUR.md](../cfao-comptes-rendus/MISE_A_JOUR.md) | Mettre à jour le module des comptes rendus en production (images Docker Hub, `CR_VERSION`) : sauvegarde, annonce aux utilisateurs, retour arrière |
 | [etude-journal-erreurs.md](./etude-journal-erreurs.md) | Étude : journal des erreurs des comptes rendus consultable par l’équipe technique |
 | [etude-polices-rendu.md](./etude-polices-rendu.md) | Étude : polices du PowerPoint, écarts de rendu Docker / Windows et options |
+| [etude-photo-individuelle.md](./etude-photo-individuelle.md) | Étude : photo facultative du stagiaire sur sa fiche individuelle |
+| [etude-fiche-anneau-jours.md](./etude-fiche-anneau-jours.md) | Étude : anneau seul et position de l’objet sur la fiche individuelle, jours ouvrés |
+| [etude-referentiel-formations.md](./etude-referentiel-formations.md) | Étude : référentiel des formations, profils, édition partagée, import Excel et reprise des comptes rendus |
+| [etude-evaluations-l0.md](./etude-evaluations-l0.md) | Étude : corrections des évaluations (lot L0) — saisie décimale, notes hors barème, seuil réglable |
+| [audit-comptes-rendus-2026-11.md](./audit-comptes-rendus-2026-11.md) | État des lieux des comptes rendus face au plan d’amélioration du 03/11/2026 |
 | [PORTAL_PROFILES.md](../PORTAL_PROFILES.md) | Profils & données mock portail |
 
 ## Gouvernance dépôt

@@ -91,18 +91,20 @@ const rempli = v => (Array.isArray(v) ? v.length > 0
  * brouillon, et une carte « Saisie interrompue » sur un formulaire vide
  * ne reprend rien. Compte ce qui ne s'invente pas : les notes, la
  * satisfaction, les textes, les photos, les journees, les objectifs —
- * et pour une saisie libre, l'intitule, le code ou un nom de stagiaire.
+ * et pour une saisie libre, l'intitule, le code, le lieu ou un nom de stagiaire.
  */
 export function aDuContenu(b) {
   if (!b) return false
   const notes = (b.participants || []).some(p => aDesNotes(p) || rempli(p.elearning))
-  const saisieLibre = b.manuel && (rempli(b.intitule) || rempli(b.codeFormation)
+  const saisieLibre = b.manuel && (rempli(b.intitule) || rempli(b.codeFormation) || rempli(b.lieu)
     || (b.participants || []).some(p => rempli(p.nom) || rempli(p.prenom)))
   return notes || saisieLibre
     || rempli(b.satisfaction) || rempli(b.textes) || rempli(b.photos)
     || rempli(b.photoGroupe) || rempli(b.jours) || rempli(b.objectifs)
     || rempli(b.legendes)
-    || b.infosModifiees === true
+    // Pour une saisie libre, toucher un champ sans rien y ecrire marquait
+    // les infos modifiees : un compte rendu vide restait alors en cours.
+    || (!b.manuel && b.infosModifiees === true)
     // Des notes effacees a dessein : le brouillon doit s'enregistrer
     // quand meme, sinon l'ancienne version reviendrait au chargement.
     || rempli(b.reinitialiseLe)
@@ -436,8 +438,12 @@ export function sessionDuBrouillon(b) {
 /** Un compte rendu termine quitte les saisies en cours pour l'archive. */
 export const estTermine = b => !!b?.termine
 
-/** Les saisies en cours, sans les comptes rendus termines. */
-export const brouillonsEnCours = (liste = brouillonsEnregistres()) => liste.filter(b => !estTermine(b))
+/**
+ * Les saisies en cours, sans les comptes rendus termines ni ceux
+ * enregistres vides par une version precedente.
+ */
+export const brouillonsEnCours = (liste = brouillonsEnregistres()) => liste
+  .filter(b => !estTermine(b) && aDuContenu(b))
 
 /** Les comptes rendus termines, du plus recent au plus ancien. */
 export const brouillonsTermines = (liste = brouillonsEnregistres()) => liste

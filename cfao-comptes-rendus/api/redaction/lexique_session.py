@@ -20,7 +20,7 @@ Les registres suivent les chiffres ; aucun qualificatif n'est choisi
 contre la valeur qu'il qualifie.
 """
 
-SEUIL = 70
+from regles import SEUIL_DEFAUT as SEUIL  # noqa: E402
 
 # ── Designations, pour ne pas repeter « participants » ─────────────────
 GROUPE = "[le groupe|la promotion|l’ensemble des participants|l’ensemble du groupe]"
@@ -169,9 +169,7 @@ REGRESSIONS = [
 ]
 
 # ── Acquisition ─────────────────────────────────────────────────────────
-PALIERS_TAUX = [(90, "excellent"), (80, "bon"), (70, "correct"), (55, "limite"),
-                (0, "faible")]
-
+# Le registre d'un taux : `regles.palier_au_seuil`, accorde au seuil choisi.
 QUALIFICATIF = {
     "excellent": ["[excellent|remarquable|exemplaire]",
                   "[très solide|de premier ordre]"],

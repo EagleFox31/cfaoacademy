@@ -7,6 +7,7 @@ import { sessionsDuFormateur } from '../data/mock_sessions_formateur'
 import CarteCompteRendu, {
   BadgeCompteRendu, carteDeBrouillon, carteDeSession,
 } from '../components/compte-rendu/CarteCompteRendu'
+import ListeVide from '../components/compte-rendu/ListeVide'
 import { brouillonsEnregistres, oublier, synchroniser } from '../utils/brouillonsCompteRendu'
 import { aDocumenter } from '../utils/planningFormateur.js'
 import '../styles/compte-rendu.css'
@@ -27,7 +28,7 @@ import '../styles/compte-rendu.css'
  * groupe, sous un seul titre.
  */
 export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
-  useEnHautDePage('Comptes rendus en cours')
+  useEnHautDePage('Comptes rendus non terminés')
   useSiteEffects()
   const naviguer = useNavigate()
   const { user } = useAuth()
@@ -44,15 +45,15 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
   const total = brouillons.length + (aDocumenterAussi ? aCommencer.length : 0)
   const indication = aDocumenterAussi
     ? (total
-      ? 'Les comptes rendus commencés, puis les sessions de formation passées qui attendent encore le leur.'
+      ? 'Les comptes rendus non terminés, puis les sessions de formation passées qui attendent encore le leur.'
       : 'Tous vos comptes rendus sont à jour.')
     : (total
-      ? 'Les comptes rendus commencés, du plus récent au plus ancien.'
-      : 'Aucun compte rendu en cours.')
+      ? 'Les comptes rendus non terminés, du plus récent au plus ancien.'
+      : 'Aucun compte rendu non terminé.')
   // Le bouton retour de l'assistant ramene a cette liste.
   const depuis = {
     chemin: useLocation().pathname,
-    libelle: aDocumenterAussi ? 'Comptes rendus à documenter' : 'Comptes rendus en cours',
+    libelle: aDocumenterAussi ? 'Comptes rendus à rédiger' : 'Comptes rendus non terminés',
   }
   const commencer = s => naviguer(`/portail/compte-rendu/nouveau?session=${s.id}`, { state: { depuis } })
 
@@ -76,7 +77,7 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
               ← Mes comptes rendus
             </button>
             <h1 className="cr-home-title cr-home-title--sm">
-              {aDocumenterAussi ? 'Comptes rendus à documenter' : 'Comptes rendus en cours'}
+              {aDocumenterAussi ? 'Comptes rendus à rédiger' : 'Comptes rendus non terminés'}
             </h1>
           </div>
         </header>
@@ -88,7 +89,7 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
               <div className="cr-groupes">
                 <div className="cr-panel-head">
                   <h2 className="cr-panel-title">
-                    {aDocumenterAussi ? `À documenter (${total})` : 'Reprendre une saisie'}
+                    {aDocumenterAussi ? `À rédiger (${total})` : 'Reprendre un compte rendu'}
                   </h2>
                   <p className="cr-panel-hint">{indication}</p>
                 </div>
@@ -107,10 +108,11 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
                     ))}
                   </div>
                 )}
+                {total === 0 && <ListeVide />}
               </div>
 
               <div className="cr-echappee">
-                <span className="cr-echappee-texte">Une autre formation à documenter ?</span>
+                <span className="cr-echappee-texte">Un autre compte rendu à rédiger ?</span>
                 <button type="button" className="cr-echappee-lien"
                   onClick={() => naviguer('/portail/compte-rendu/nouveau')}>
                   Nouveau compte rendu →

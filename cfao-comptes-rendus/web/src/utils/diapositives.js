@@ -10,7 +10,7 @@ import {
   CERTIFIE, ECHOUE, NON_CERTIFIE, NON_FINALISE, VALIDE,
   calculerCertification, estCertification, niveauDe,
 } from './certification'
-import { SEUIL } from './baremeCfao'
+import { seuilDe } from './baremeCfao'
 import { formateurInitial } from './formateurParDefaut'
 
 /**
@@ -163,7 +163,23 @@ function photosDesDiapos(b, refsPhotos, page) {
     const photos = photosPosees(b, page.cle, refsPhotos)
     if (photos) poses[diapoJour(jour)] = photos
   }
+  const fiche = photoDeFiche(b, refsPhotos, page)
+  if (fiche) poses[DIAPO_PAR_PAGE.fiches] = fiche
   return poses
+}
+
+/**
+ * La photo du stagiaire de la fiche, posee a droite de son appreciation
+ * (qui se retrecit d'autant). Sans photo, la fiche reste telle quelle.
+ */
+function photoDeFiche(b, refsPhotos, page) {
+  const cle = page?.cle || ''
+  if (!cle.startsWith('fiche-') || estCertification(b)) return null
+  const id = cle.slice('fiche-'.length)
+  const photo = (b.participants || []).find(x => String(x.id) === id)?.photo
+  const ref = photo && refsPhotos?.[photo.id]
+  if (!ref) return null
+  return { 'ZoneTexte 9': { id: ref, cote: 'droite', ...(photo.cadrage ? { cadrage: photo.cadrage } : {}) } }
 }
 
 /** La disposition retenue pour une rubrique, ou la premiere possible. */
@@ -407,7 +423,8 @@ function drapeauxDeFicheCertification(b, page) {
   const id = cle.slice('fiche-'.length)
   const p = (b.participants || []).find(x => String(x.id) === id)
   if (!p) return {}
-  const c = calculerCertification(p, b.modules)
+  const seuil = seuilDe(b)
+  const c = calculerCertification(p, b.modules, seuil)
   const e = c.elearning
   const texte = v => (v == null ? '' : String(v))
   const niveau = niveauDe(b)
@@ -442,7 +459,7 @@ function drapeauxDeFicheCertification(b, page) {
         '{code_module_1}': m.code || '',
         '{intitule_module_1}': m.intitule || '',
         '{note_1}': texte(c.notes[i]),
-        '@couleurs': c.notes[i] != null && c.notes[i] < SEUIL ? { '{note_1}': 'alerte' } : {},
+        '@couleurs': c.notes[i] != null && c.notes[i] < seuil ? { '{note_1}': 'alerte' } : {},
       })),
     },
   }

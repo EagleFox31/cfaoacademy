@@ -4,7 +4,7 @@ import useEnHautDePage from '../hooks/useEnHautDePage'
 import useSiteEffects from '../hooks/useSiteEffects'
 import { useAuth } from '../lib/auth'
 import { sessionsDuFormateur } from '../data/mock_sessions_formateur'
-import { syntheseGroupe } from '../utils/baremeCfao'
+import { syntheseGroupe, seuilDe } from '../utils/baremeCfao'
 import { estCertification, syntheseCertification, typeDepuisCode } from '../utils/certification'
 import {
   adopter, enregistrer, garder, recuperer, recupererDuServeur, surveiller,
@@ -92,6 +92,21 @@ export default function TrainerReportNew() {
   })
   const [phase, setPhase] = useState(brouillon.phase || 0)
   const haut = useRef(null)
+
+  // Sans formation a proposer, la saisie s'ouvre d'elle-meme : revenir
+  // au choix n'aurait plus de sens, le retour ramene donc au tableau de bord.
+  const [sansListe, setSansListe] = useState(false)
+  const saisieManuelle = useCallback(() => setBrouillon({
+    ...brouillonVide(), manuel: true, participants: [],
+    // Un id propre a cette saisie : sans lui, toutes les
+    // saisies manuelles partageaient la cle 'manuel' et
+    // s'ecrasaient l'une l'autre dans le stockage local.
+    sessionId: `manuel-${Date.now()}`,
+  }), [])
+  const listeVide = useCallback(() => {
+    setSansListe(true)
+    saisieManuelle()
+  }, [saisieManuelle])
 
   // Le brouillon a peut-etre avance sur un autre poste : on demande au
   // serveur sa version avant tout enregistrement — sinon la copie de ce
@@ -201,9 +216,9 @@ export default function TrainerReportNew() {
   const certification = estCertification(brouillon)
   const synthese = useMemo(
     () => (certification
-      ? syntheseCertification(brouillon.participants, brouillon.modules)
-      : syntheseGroupe(brouillon.participants)),
-    [certification, brouillon.participants, brouillon.modules],
+      ? syntheseCertification(brouillon.participants, brouillon.modules, seuilDe(brouillon))
+      : syntheseGroupe(brouillon.participants, brouillon.baremes, seuilDe(brouillon))),
+    [certification, brouillon.participants, brouillon.modules, brouillon.baremes, brouillon.seuil],
   )
 
   // Un patch, ou une fonction de l'etat courant quand la modification
@@ -253,7 +268,7 @@ export default function TrainerReportNew() {
   // Le retour suit la profondeur reelle : a la premiere phase, une
   // session engagee se quitte d'abord vers la liste, et seule la liste
   // vide ramene au tableau de bord.
-  const engage = Boolean(brouillon.sessionId || brouillon.manuel)
+  const engage = Boolean(brouillon.sessionId || brouillon.manuel) && !sansListe
   const libelleRetour = phase > 0 ? 'Retour'
     : engage ? 'Changer de formation' : 'Annuler'
 
@@ -275,28 +290,30 @@ export default function TrainerReportNew() {
             <h1 className="cr-home-title cr-home-title--sm">
               {session?.moduleFormation || 'Nouveau compte rendu'}
             </h1>
-            {enregistreA && !conflit && (
-              <p className="cr-enregistre" role="status">
-                ✓ Enregistré à {enregistreA.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}
-              </p>
-            )}
-            <div className="cr-phases" role="tablist" aria-label="Phases">
-              {PHASES.map((p, i) => (
-                <button key={p.cle} type="button" role="tab"
-                  aria-selected={i === phase}
-                  className={`cr-phase${i === phase ? ' cr-phase--on' : ''}`
-                    + `${i < phase ? ' cr-phase--done' : ''}`}
-                  onClick={() => i <= phase && aller(i)}
-                  disabled={i > phase && !pret}>
-                  <span className="cr-phase-num">{i < phase ? '✓' : i + 1}</span>
-                  <span className="cr-phase-texte">
-                    <span className="cr-phase-titre">{p.titre}</span>
-                    <span className="cr-phase-resume">
-                      {certification && p.cle === 'resultats' ? 'Modules et satisfaction' : p.resume}
+            <div className="cr-phases-ligne">
+              <div className="cr-phases" role="tablist" aria-label="Phases">
+                {PHASES.map((p, i) => (
+                  <button key={p.cle} type="button" role="tab"
+                    aria-selected={i === phase}
+                    className={`cr-phase${i === phase ? ' cr-phase--on' : ''}`
+                      + `${i < phase ? ' cr-phase--done' : ''}`}
+                    onClick={() => i <= phase && aller(i)}
+                    disabled={i > phase && !pret}>
+                    <span className="cr-phase-num">{i < phase ? '✓' : i + 1}</span>
+                    <span className="cr-phase-texte">
+                      <span className="cr-phase-titre">{p.titre}</span>
+                      <span className="cr-phase-resume">
+                        {certification && p.cle === 'resultats' ? 'Modules et satisfaction' : p.resume}
+                      </span>
                     </span>
-                  </span>
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
+              {enregistreA && !conflit && (
+                <p className="cr-enregistre" role="status">
+                  ✓ Enregistré à {enregistreA.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}
+                </p>
+              )}
             </div>
           </div>
         </header>
@@ -329,15 +346,8 @@ export default function TrainerReportNew() {
                 brouillon={brouillon} maj={maj}
                 sessions={sessions}
                 onChoisirSession={reprendreOuCommencer}
-                onSaisieManuelle={(depart = {}) => setBrouillon({
-                  ...brouillonVide(), manuel: true, participants: [],
-                  // Un id propre a cette saisie : sans lui, toutes les
-                  // saisies manuelles partageaient la cle 'manuel' et
-                  // s'ecrasaient l'une l'autre dans le stockage local.
-                  sessionId: `manuel-${Date.now()}`,
-                  // Ce qu'un classeur d'evaluation importe a deja rempli.
-                  ...depart,
-                })}
+                onSaisieManuelle={saisieManuelle}
+                onListeVide={listeVide}
               />
             )}
             {phase === 1 && (

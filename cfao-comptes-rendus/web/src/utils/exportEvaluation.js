@@ -1,4 +1,4 @@
-import { BAREMES } from './baremeCfao'
+import { BAREMES, lireNote, reglesAuSeuil, seuilDe } from './baremeCfao'
 import { MENTIONS, CRITERES_FORMATION, CRITERES_ACCUEIL } from './satisfactionCfao'
 import { estCertification, niveauDe } from './certification'
 import { adresse } from '../lib/adresse'
@@ -165,7 +165,12 @@ function remplirDonnees(ws, stagiaires, brouillon, session, D, modules = []) {
   if (modules.length === 1) ws.getCell(D.tp + 1, 1).value = null
 
   const baremes = brouillon.baremes || BAREMES
-  const taux = (v, sur) => (v === '' || v == null || !sur ? null : Number(v) / sur)
+  // La note telle que saisie, meme hors bareme : le classeur garde la
+  // trace de l'erreur au lieu d'une case vide.
+  const taux = (v, sur) => {
+    const n = lireNote(v)
+    return n == null || !sur ? null : n / sur
+  }
   const reponses = brouillon.satisfaction || {}
   const liste = `"${MENTIONS.map(m => m.libelle).join(',')}"`
   const DERNIERE = lettre(n + 1)
@@ -182,11 +187,11 @@ function remplirDonnees(ws, stagiaires, brouillon, session, D, modules = []) {
       modules.forEach((m, j) => {
         const cell = ws.getCell(`${c}${D.tp + j}`)
         const v = p.notesModules?.[m.id]
-        cell.value = v === '' || v == null ? null : Number(v)
-        cell.numFmt = '0'
+        cell.value = lireNote(v)
+        cell.numFmt = 'General'
         cell.dataValidation = {
-          type: 'whole', operator: 'between', allowBlank: true, showErrorMessage: true,
-          formulae: [0, 100], errorTitle: 'Note', error: 'Une note entière de 0 à 100.',
+          type: 'decimal', operator: 'between', allowBlank: true, showErrorMessage: true,
+          formulae: [0, 100], errorTitle: 'Note', error: 'Une note de 0 à 100.',
         }
       })
       const tps = `${c}${D.tp}:${c}${D.tp + modules.length - 1}`
@@ -206,7 +211,7 @@ function remplirDonnees(ws, stagiaires, brouillon, session, D, modules = []) {
     })
   })
 
-  // Mise en forme conditionnelle du modele (vert >= 70 %, rouge sinon),
+  // Mise en forme conditionnelle du modele (vert au seuil, rouge sinon),
   // etendue aux colonnes reelles.
   ws.conditionalFormattings?.forEach(cf => {
     // Pas de test theorique en certification : sa ligne vide passerait
@@ -385,5 +390,7 @@ export async function construireClasseur(ExcelJS, modele, brouillon, session) {
   // Excel recalcule a l'ouverture : les valeurs s'affichent sans
   // qu'on ait a appuyer sur F9.
   wb.calcProperties = { fullCalcOnLoad: true }
+  const seuil = seuilDe(brouillon)
+  wb.eachSheet(ws => ws.conditionalFormattings?.forEach(cf => { cf.rules = reglesAuSeuil(cf.rules, seuil) }))
   return wb
 }

@@ -1,4 +1,4 @@
-import { calculer, syntheseGroupe, SEUIL } from './baremeCfao'
+import { calculer, syntheseGroupe, seuilDe } from './baremeCfao'
 import { satisfactionStagiaire, detailParCritere, CRITERES_FORMATION, CRITERES_ACCUEIL }
   from './satisfactionCfao'
 import { periodeLongue } from './compteRendu'
@@ -49,7 +49,7 @@ export function satisfactionPresents(b) {
 
 /** Les chiffres de la session, calcules une fois pour tous. */
 export function chiffresSession(b) {
-  const s = syntheseGroupe(b?.participants, b?.baremes)
+  const s = syntheseGroupe(b?.participants, b?.baremes, seuilDe(b))
   const reponses = satisfactionPresents(b)
   const sat = Object.values(reponses).map(satisfactionStagiaire)
   const moyenne = champ => {
@@ -75,7 +75,7 @@ export function donneesSession(b, session) {
     intitule,
     periode: periodeLongue(b?.debut, b?.fin),
     lieu: t['couverture.lieu'] || b?.lieu || session?.lieu || '',
-    seuil: SEUIL,
+    seuil: seuilDe(b),
     effectif: c.saisis || null,
     reussis: c.saisis ? c.reussis : null,
     entree: entier(c.entree),
@@ -87,7 +87,7 @@ export function donneesSession(b, session) {
     sat_formation: entier(c.satFormation),
     sat_accueil: entier(c.satAccueil),
     participants: presents(b).map(p => {
-      const k = calculer(p, b?.baremes)
+      const k = calculer(p, b?.baremes, seuilDe(b))
       return {
         nom: [p.prenom, p.nom].filter(Boolean).join(' '),
         score: k.scoreFinal,
@@ -140,7 +140,7 @@ export function rubriquesBilan(b) {
     ? (s.enRetrait === 0
       ? 'L’ensemble des participants atteint le seuil de validation.'
       : `${s.enRetrait} participant${s.enRetrait > 1 ? 's' : ''} sur ${s.saisis} `
-        + `rest${s.enRetrait > 1 ? 'ent' : 'e'} sous le seuil de ${SEUIL} %.`)
+        + `rest${s.enRetrait > 1 ? 'ent' : 'e'} sous le seuil de ${seuilDe(b)} %.`)
     : ''
   const suites = s.enRetrait > 0
     ? 'La reprise des modules e-learning est recommandée pour les participants en retrait.'

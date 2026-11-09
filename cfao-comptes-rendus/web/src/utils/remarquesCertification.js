@@ -1,5 +1,5 @@
 import { periodeLongue } from './compteRendu'
-import { SEUIL } from './baremeCfao'
+import { seuilDe } from './baremeCfao'
 import {
   calculerCertification, syntheseCertification, niveauDe, NON_FINALISE, VALIDE,
 } from './certification'
@@ -26,14 +26,15 @@ function modulesClasses(s) {
 
 /** Ce qu'un candidat donne au moteur : ses notes, jamais un texte a reprendre. */
 export function candidatPourMoteur(p, b) {
-  const c = calculerCertification(p, b?.modules)
+  const seuil = seuilDe(b)
+  const c = calculerCertification(p, b?.modules, seuil)
   return {
     nom: p.nom || '',
     prenom: p.prenom || '',
     genre: p.genre || undefined,
     filiale: p.pays || '',
     niveau: niveauDe(b),
-    seuil: SEUIL,
+    seuil,
     pourcentage: entier(c.pourcentage),
     pratique: c.pratique,
     final: c.final,
@@ -46,7 +47,8 @@ export function candidatPourMoteur(p, b) {
 
 /** Ce que le moteur recoit pour le bilan de la certification. */
 export function donneesCertification(b, session) {
-  const s = syntheseCertification(b?.participants, b?.modules)
+  const seuil = seuilDe(b)
+  const s = syntheseCertification(b?.participants, b?.modules, seuil)
   const t = b?.textes || {}
   const classes = modulesClasses(s)
   return {
@@ -55,7 +57,7 @@ export function donneesCertification(b, session) {
     periode: periodeLongue(b?.debut, b?.fin),
     lieu: t['couverture.lieu'] || b?.lieu || session?.lieu || '',
     pays: b?.pays || '',
-    seuil: SEUIL,
+    seuil,
     effectif: s.saisis || null,
     reussis: s.saisis ? s.reussis : null,
     taux_reussite: s.tauxReussite,
@@ -63,12 +65,12 @@ export function donneesCertification(b, session) {
     certifies: s.certifies,
     elearning_a_finir: s.elearningAFinir,
     candidats: presents(b).map(p => {
-      const c = calculerCertification(p, b?.modules)
+      const c = calculerCertification(p, b?.modules, seuil)
       return { nom: nomDe(p), pourcentage: entier(c.pourcentage), pratique: c.pratique, final: c.final }
     }).filter(c => c.pourcentage != null),
     modules_forts: classes.slice(0, 3).filter(m => m.moyenne >= 85)
       .map(m => ({ intitule: m.module.intitule, moyenne: entier(m.moyenne) })),
-    modules_faibles: classes.slice(-3).reverse().filter(m => m.moyenne < SEUIL + 10)
+    modules_faibles: classes.slice(-3).reverse().filter(m => m.moyenne < seuil + 10)
       .map(m => ({ intitule: m.module.intitule, moyenne: entier(m.moyenne), sous_seuil: m.sousSeuil })),
   }
 }
@@ -84,7 +86,8 @@ function enumerer(v) {
  * C'est ce que la page montre tant que rien n'est ecrit ni redige.
  */
 export function rubriquesBilanCertification(b) {
-  const s = syntheseCertification(b?.participants, b?.modules)
+  const seuil = seuilDe(b)
+  const s = syntheseCertification(b?.participants, b?.modules, seuil)
   const d = donneesCertification(b)
   const periode = periodeLongue(b?.debut, b?.fin)
   const lieu = b?.pays ? ` au Centre CFAO ${b.pays}` : ''
@@ -101,12 +104,12 @@ export function rubriquesBilanCertification(b) {
         ? ` Le groupe réussit particulièrement les modules ${enumerer(d.modules_forts.map(m => `« ${m.intitule} »`))}.`
         : '')
     : ''
-  const faibles = d.modules_faibles.filter(m => m.moyenne < SEUIL)
+  const faibles = d.modules_faibles.filter(m => m.moyenne < seuil)
   const vigilance = s.saisis
     ? [
       s.enRetrait
         ? `${s.enRetrait} candidat${s.enRetrait > 1 ? 's' : ''} reste${s.enRetrait > 1 ? 'nt' : ''} `
-          + `sous le seuil de ${SEUIL} %.`
+          + `sous le seuil de ${seuil} %.`
         : 'L’ensemble des candidats atteint le seuil de validation.',
       faibles.length
         ? `Les modules les moins réussis : ${enumerer(faibles.map(m => `« ${m.intitule} »`))}.`
