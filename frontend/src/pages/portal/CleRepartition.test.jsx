@@ -2,6 +2,7 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getCopy } from '../../i18n/index.js'
 
@@ -85,12 +86,12 @@ beforeEach(() => {
 afterEach(() => { act(() => root.unmount()); host.remove() })
 
 describe('Clé de répartition : menu par rôle et vue tableur', () => {
-  it('équipe Academy : navbar du portail, 6 entrées, tableau des filiales avec totaux', async () => {
+  it('équipe Academy : navbar du portail, 5 entrées, tableau des filiales avec totaux', async () => {
     planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
     await show('/portail/cle-repartition')
 
     expect(host.querySelector('[data-testid="portal-nav"]')).not.toBeNull()
-    expect(menuLabels()).toEqual([T.nav_table, T.nav_country, T.nav_abc, T.nav_themes, T.nav_settings, T.nav_prepare])
+    expect(menuLabels()).toEqual([T.nav_table, T.nav_country, T.nav_themes, T.nav_settings, T.nav_prepare])
     // drapeau local devant chaque filiale (jamais de CDN), plus de bascule Prévu / Réalisé
     const flags = [...host.querySelectorAll('.sheet-table tbody img.ck-flag')].map(i => i.getAttribute('src'))
     expect(flags).toEqual(['/assets/flags/cameroon.svg', '/assets/flags/ivory-coast.svg'])
@@ -100,9 +101,14 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
     expect(body).toContain('Côte d’Ivoire')
     // total des places dans le pied, marque vide (Fuso) masquée
     expect(host.querySelector('.sheet-table tfoot').textContent).toContain('30')
-    const headers = host.querySelector('.sheet-head').textContent
-    expect(headers).toContain('Toyota')
-    expect(headers).not.toContain('Fuso')
+    // une marque = un en-tête sur 3 colonnes : besoin, contractuel, attribué
+    const brandHead = [...host.querySelectorAll('.sheet-group.has-group')]
+    expect(brandHead.map(th => [th.textContent, th.colSpan])).toEqual([[T.group_all_brands, 1], ['Toyota', 3], [T.group_totals, 8]])
+    const headers = [...host.querySelectorAll('.sheet-head .sheet-h-label')].map(s => s.textContent)
+    expect(headers.filter(h => [T.col_needs, T.col_allocated].includes(h)))
+      .toEqual([T.col_needs, T.col_allocated, T.col_needs])
+    expect(headers.filter(h => h === T.col_contractual)).toHaveLength(2)
+    expect(host.querySelector('.ck-view .ck-seg')).toBeNull()
     expect(host.textContent).toContain(T.xlsx_table)
   })
 
@@ -110,14 +116,14 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
     planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: false, freeze: false, import: false, gaps: true })
     await show('/portail/cle-repartition')
     expect(menuLabels()).not.toContain(T.nav_prepare)
-    expect(menuLabels()).toHaveLength(4)
+    expect(menuLabels()).toHaveLength(3)
   })
 
   it('filiale : « Mon pays » d’abord, ouvert d’office sur sa fiche', async () => {
     planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: false, freeze: false, import: false, gaps: false })
     planningApi.global = vi.fn().mockResolvedValue(GLOBAL(true))
     await show('/portail/cle-repartition')
-    expect(menuLabels()).toEqual([T.nav_country_scoped, T.nav_table, T.nav_abc])
+    expect(menuLabels()).toEqual([T.nav_country_scoped, T.nav_table])
     expect(host.textContent).toContain(T.partial)
     expect(planningApi.country).toHaveBeenCalledWith(7, 'CM', 'PLANNED')
     expect(host.querySelector('.sheet-table tbody').textContent).toContain('Moteur')
@@ -145,14 +151,51 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
     expect(host.querySelector('.ck-xlsx').textContent).toContain(T.export)
   })
 
-  it('ABC : trois bases, et un ancien lien « Prévu / Réalisé » y mène', async () => {
+  it('lecteur : la colonne Contractuel reste affichée quand l’effectif n’est pas connu', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: false, freeze: false, import: false, gaps: false })
+    const g = GLOBAL()
+    planningApi.global = vi.fn().mockResolvedValue({
+      ...g,
+      rows: g.rows.map(r => ({ ...r, technicians: null, cells: { TOYOTA: { ...r.cells.TOYOTA, technicians: null } } })),
+    })
+    await show('/portail/cle-repartition')
+    const headers = [...host.querySelectorAll('.sheet-head .sheet-h-label')].map(s => s.textContent)
+    expect(headers.filter(h => h === T.col_contractual)).toHaveLength(2)
+  })
+
+  it('une filiale avec des besoins ou des places a sa ligne marquée, pas celle qui n’a qu’un effectif', async () => {
+    const g = GLOBAL()
+    const rempli = { ...g.rows[0], needs: 4, seats: 0 }
+    const vide = { ...g.rows[0], country: 'ZZ', needs: 0, seats: 0, technicians: 12 }
+    planningApi.global = vi.fn().mockResolvedValue({ ...g, rows: [rempli, vide] })
+    await show('/portail/cle-repartition')
+    const lignes = [...host.querySelectorAll('.sheet-table tbody tr')]
+    expect(lignes.map(tr => tr.classList.contains('is-filled'))).toEqual([true, false])
+  })
+
+  it('panneau Colonnes : cases Besoins, Contractuel, Attribué sous chaque marque, plus de bouton Filtres', async () => {
+    await show('/portail/cle-repartition')
+    const boutons = [...host.querySelectorAll('.sheet-toolbar button')]
+    expect(boutons.map(b => b.textContent.trim())).not.toContain('Filtres')
+    await act(async () => { boutons.find(b => b.textContent.includes('Colonnes')).click() })
+    const toyota = host.querySelector('.sheet-pop-panel [role="group"][aria-label="Toyota"]')
+    expect([...toyota.querySelectorAll('label')].map(l => l.textContent))
+      .toEqual([T.col_needs, T.col_contractual, T.col_allocated])
+    expect(host.querySelector('.sheet-pop-panel').textContent).not.toContain('·')
+    await act(async () => { toyota.querySelectorAll('input')[1].click() })
+    const marque = [...host.querySelectorAll('.sheet-group.has-group')].find(th => th.textContent === 'Toyota')
+    expect(marque.colSpan).toBe(2)
+  })
+
+  it('la feuille de style ne fige pas la position des en-têtes (sinon « Filiale » se décale)', () => {
+    expect(readFileSync('src/styles/sheet.css', 'utf8')).not.toMatch(/th\.sheet-h\s*\{[^}]*position/)
+  })
+
+  it('ABC masqué : un ancien lien retombe sur le tableau, sans charger la vue', async () => {
     planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: false, freeze: false, import: false, gaps: false })
     await show('/portail/cle-repartition/compare?pole=MOTORS')
-    expect(host.querySelector('h1').textContent).toBe(T.nav_abc)
-    expect(planningApi.abc).toHaveBeenCalledWith(7)
-    const seg = [...host.querySelectorAll('.ck-view .ck-seg button')].map(b => b.textContent)
-    expect(seg).toEqual([T.abc_a, T.abc_b, T.abc_c, T.abc_actual])
-    expect(host.querySelector('.sheet-head').textContent).toContain(T.col_c)
+    expect(host.querySelector('h1').textContent).toBe(T.nav_table)
+    expect(planningApi.abc).not.toHaveBeenCalled()
   })
 
   it('Saisie : le taux horaire se saisit à côté du coût calculé', async () => {

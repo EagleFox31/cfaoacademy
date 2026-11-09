@@ -224,59 +224,61 @@ export function Segmented({ value, options, onChange, label }) {
 /* ─────────────────────────── Tableau (tous pays × marques) ─────────────────────────── */
 
 export function TableView({ t, locale, fmt, ckey, mode, global, openCountry, simple = false }) {
-  const [metric, setMetric] = useState('seats')
   const rows = global.rows
+  const needsMissing = global.needs_source === 'none' || (global.warnings || []).length > 0
+  const hideNeeds = simple && needsMissing
 
   const columns = useMemo(() => {
     const brands = global.brands.filter(b => {
       const tot = global.brand_totals[b.code] || {}
       return (tot.seats || 0) > 0 || (tot.needs || 0) > 0 || (tot.technicians || 0) > 0
     })
-    const metricLabel = {
-      seats: t.abc_a, needs: t.abc_b, technicians: t.abc_c, coverage: t.col_coverage,
-    }[metric]
-    const brandCols = brands.map(b => ({
-      id: `b_${b.code}`, header: b.label, icon: brandLogo(b), group: metricLabel, width: 104,
-      type: metric === 'coverage' ? 'percent' : 'int',
-      value: r => {
-        const cell = r.cells?.[b.code]
-        if (!cell) return null
-        return cell[metric] ?? null
-      },
-      total: metric === 'coverage'
-        ? rs => ratio(sumOf(rs, r => r.cells?.[b.code]?.seats), sumOf(rs, r => r.cells?.[b.code]?.needs))
-        : 'sum',
-      tone: metric === 'coverage' ? v => coverageTone(v) : undefined,
-    }))
+    // Largeurs calées sur le libellé complet, flèche de tri comprise.
+    const brandCols = brands.flatMap(b => {
+      const sub = (field, header, width) => ({
+        id: `b_${b.code}_${field}`, header, group: b.label, groupIcon: brandLogo(b), width, type: 'int',
+        value: r => r.cells?.[b.code]?.[field] ?? null, total: 'sum', keepEmpty: field === 'technicians',
+      })
+      return [
+        ...(hideNeeds ? [] : [sub('needs', t.col_needs, 96)]),
+        sub('technicians', t.col_contractual, 124),
+        sub('seats', t.col_allocated, 104),
+      ]
+    })
+    // Même ordre que l'onglet « TOUS LES PAYS » du classeur : pays et techniciens, marques
+    // (besoin, contractuel, attribué), totaux de places, part de la clé, puis l'argent en dernier.
     return [
       countryColumn(t),
       { id: 'enrolled', header: t.col_enrolled, type: 'text', width: 70, hidden: true,
         value: r => (r.enrolled ? t.yes : t.no) },
-      { id: 'technicians', header: t.col_contractual, type: 'int', total: 'sum', value: r => r.technicians },
-      { id: 'needs', header: t.col_needs, type: 'int', total: 'sum', value: r => r.needs },
-      { id: 'seats', header: t.col_seats, type: 'int', total: 'sum', value: r => r.seats },
-      { id: 'coverage', header: t.col_coverage, type: 'percent', width: 110, bar: true,
-        value: r => r.coverage, tone: v => coverageTone(v),
-        total: rs => ratio(sumOf(rs, r => r.seats), sumOf(rs, r => r.needs)) },
-      { id: 'share', header: t.col_share, type: 'percent', total: 'sum', value: r => r.share },
-      { id: 'key_cost', header: t.col_key_cost, type: 'money', width: 130, total: 'sum', value: r => r.key_cost },
-      { id: 'trainee_lodging', header: t.col_trainee_lodging, type: 'money', width: 130, total: 'sum',
-        value: r => r.trainee_lodging },
-      { id: 'trainer_lodging', header: t.col_trainer_lodging, type: 'money', width: 130, total: 'sum',
-        value: r => r.trainer_lodging },
-      { id: 'total', header: t.col_total, type: 'money', width: 140, total: 'sum', value: r => r.total },
+      { id: 'technicians', header: t.col_contractual, group: t.group_all_brands, type: 'int', total: 'sum',
+        keepEmpty: true, width: 148, value: r => r.technicians },
       ...brandCols,
+      ...[
+        { id: 'needs', header: t.col_needs, type: 'int', total: 'sum', value: r => r.needs },
+        { id: 'seats', header: t.col_seats, type: 'int', total: 'sum', value: r => r.seats },
+        { id: 'coverage', header: t.col_coverage, type: 'percent', width: 128, bar: true,
+          value: r => r.coverage, tone: v => coverageTone(v),
+          total: rs => ratio(sumOf(rs, r => r.seats), sumOf(rs, r => r.needs)) },
+        { id: 'share', header: t.col_share, type: 'percent', total: 'sum', value: r => r.share },
+        { id: 'key_cost', header: t.col_key_cost, type: 'money', width: 130, total: 'sum', value: r => r.key_cost },
+        { id: 'trainee_lodging', header: t.col_trainee_lodging, type: 'money', width: 180, total: 'sum',
+          value: r => r.trainee_lodging },
+        { id: 'trainer_lodging', header: t.col_trainer_lodging, type: 'money', width: 180, total: 'sum',
+          value: r => r.trainer_lodging },
+        { id: 'total', header: t.col_total, type: 'money', width: 140, total: 'sum', value: r => r.total },
+      ].map(c => ({ ...c, group: t.group_totals })),
     ]
-  }, [global, metric, t])
+  }, [global, hideNeeds, t])
 
   const totalNeeds = sumOf(rows, r => r.needs)
   const totalSeats = sumOf(rows, r => r.seats)
-  const needsMissing = global.needs_source === 'none' || (global.warnings || []).length > 0
 
   // Lecteur pressé : rien qui ne porte une valeur. Une colonne, un indicateur ou
   // un choix sans donnée disparaît au lieu d'afficher « — » ou un champ vide.
+  // Exception (keepEmpty) : l'effectif contractuel, attendu même s'il n'est pas encore connu.
   const shownColumns = useMemo(() => (simple
-    ? columns.filter(c => c.id === 'country' || rows.some(r => c.value(r) != null && c.value(r) !== ''))
+    ? columns.filter(c => c.keepEmpty || c.id === 'country' || rows.some(r => c.value(r) != null && c.value(r) !== ''))
     : columns), [simple, columns, rows])
   const kpis = [
     { label: t.kpi_budget, value: global.budget ? fmt(global.budget, 'money') : null },
@@ -289,29 +291,17 @@ export function TableView({ t, locale, fmt, ckey, mode, global, openCountry, sim
     { label: t.kpi_countries, value: fmt(rows.length, 'int') },
   ].map(k => ({ ...k, value: k.value || (simple ? null : '—') }))
     .filter(k => k.value != null)
-  const metricOptions = [
-    { value: 'seats', label: t.abc_a },
-    ...(simple && needsMissing ? [] : [
-      { value: 'needs', label: t.abc_b },
-      { value: 'technicians', label: t.abc_c },
-      { value: 'coverage', label: t.col_coverage },
-    ]),
-  ]
 
   return (
     <section className="ck-view" aria-labelledby="ck-view-title">
       <Kpis items={kpis} />
       {needsMissing && !simple && <Banner tone="warn">{t.needs_missing}</Banner>}
-      {metricOptions.length > 1 && (
-        <div className="ck-viewbar">
-          <span className="ck-viewbar-label">{t.brand_metric}</span>
-          <Segmented value={metric} onChange={setMetric} label={t.brand_metric} options={metricOptions} />
-        </div>
-      )}
       <DataSheet
         id="ck-global" columns={shownColumns} rows={rows} rowKey={r => r.country} frozen={1} simple={simple}
         exportName={`cle-${ckey.year}-${ckey.pole}-${mode.toLowerCase()}`}
         onRowOpen={r => openCountry(r.country)} openHint={t.open_hint}
+        // Besoins ou places : ce qui a été saisi. L'effectif contractuel est un référentiel, il ne compte pas.
+        rowClass={r => ((r.needs || 0) > 0 || (r.seats || 0) > 0 ? 'is-filled' : '')}
         actions={global.partial ? null : (
           <>
             <XlsxButton t={t} label={t.xlsx_table} text={t.xlsx_table}
@@ -361,9 +351,9 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
       value: s => (Array.isArray(s.trainers) ? s.trainers.join(', ') : s.trainers) },
     { id: 'location', header: t.col_location, type: 'text', width: 120, value: s => s.location },
     { id: 'seats', header: t.col_seats, type: 'int', total: 'sum', value: s => s.seats },
-    { id: 'trainee_lodging', header: t.col_trainee_lodging, type: 'money', width: 130, total: 'sum',
+    { id: 'trainee_lodging', header: t.col_trainee_lodging, type: 'money', width: 180, total: 'sum',
       value: s => s.trainee_lodging },
-    { id: 'trainer_lodging', header: t.col_trainer_lodging, type: 'money', width: 130, total: 'sum',
+    { id: 'trainer_lodging', header: t.col_trainer_lodging, type: 'money', width: 180, total: 'sum',
       value: s => s.trainer_lodging },
   ], [t])
 

@@ -43,7 +43,8 @@ export function pageAccueil(roles = []) {
 export function planningMenu(access, { scoped = false } = {}) {
   if (!access?.view) return []
   // Une filiale vient d'abord voir SA filiale ; le groupe vient voir le tableau.
-  const items = scoped ? ['country', 'table', 'abc'] : ['table', 'country', 'abc']
+  // La vue « abc » existe toujours (AbcView) : retirée du menu pour l'instant, à la demande du métier.
+  const items = scoped ? ['country', 'table'] : ['table', 'country']
   if (access.gaps) items.push('themes')
   if (access.manage) items.push('settings')
   if (access.manage || access.import || access.freeze) items.push('prepare')

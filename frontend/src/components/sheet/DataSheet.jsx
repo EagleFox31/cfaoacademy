@@ -7,7 +7,7 @@
  *   (Maj+flèches, Ctrl+flèches, Ctrl+A), barre d'état Moyenne / Nombre / Somme / Min / Max,
  *   copie Ctrl+C collable dans Excel, export CSV, mise en forme conditionnelle.
  *
- * Colonne : { id, header, group?, type: text|int|money|percent|date, value(row),
+ * Colonne : { id, header, group?, groupIcon?, type: text|int|money|percent|date, value(row),
  *             width?, total?: 'sum' | (rows) => valeur, tone?(v, row), bar?, render?(v, row),
  *             hidden? }
  */
@@ -35,7 +35,7 @@ function compareValues(a, b, locale) {
 
 export default function DataSheet({
   id, columns, rows, rowKey, frozen: frozenDefault = 1, onRowOpen, actions,
-  exportName = 'export', emptyText, openHint, simple = false,
+  exportName = 'export', emptyText, openHint, simple = false, rowClass,
 }) {
   // simple : lecteur pressé. Ni barre de formule, ni lettres de colonnes, ni
   // réglages de tableur ; la ligne de filtres reste à ouvrir à la demande.
@@ -47,7 +47,7 @@ export default function DataSheet({
     () => new Set(prefs0.hidden ?? columns.filter(c => c.hidden).map(c => c.id)))
   const [widths, setWidths] = useState(prefs0.widths ?? {})
   const [frozen, setFrozen] = useState(prefs0.frozen ?? frozenDefault)
-  const [showFilters, setShowFilters] = useState(simple ? false : (prefs0.showFilters ?? true))
+  const showFilters = !simple
   const [sort, setSort] = useState([])
   const [filters, setFilters] = useState({})
   const [search, setSearch] = useState('')
@@ -63,8 +63,19 @@ export default function DataSheet({
   const dragging = useRef(false)
 
   useEffect(() => {
-    savePrefs(id, { hidden: [...hidden], widths, frozen, showFilters })
-  }, [id, hidden, widths, frozen, showFilters])
+    savePrefs(id, { hidden: [...hidden], widths, frozen })
+  }, [id, hidden, widths, frozen])
+
+  // Panneau Colonnes : colonnes adjacentes de même groupe réunies sous le nom du groupe.
+  const colSections = useMemo(() => {
+    const out = []
+    for (const c of columns) {
+      const last = out[out.length - 1]
+      if (last && last.group === (c.group ?? '')) last.cols.push(c)
+      else out.push({ group: c.group ?? '', icon: c.groupIcon, cols: [c] })
+    }
+    return out
+  }, [columns])
 
   const cols = useMemo(() => columns.filter(c => !hidden.has(c.id)), [columns, hidden])
   const width = c => widths[c.id] ?? c.width ?? DEFAULT_W[c.type ?? 'text'] ?? 120
@@ -291,10 +302,14 @@ export default function DataSheet({
     cols.forEach((c, i) => {
       const last = segs[segs.length - 1]
       if (c.group && last && last.group === c.group && i >= frozen) last.span += 1
-      else segs.push({ group: c.group ?? '', span: 1, start: i })
+      else segs.push({ group: c.group ?? '', icon: c.groupIcon, span: 1, start: i })
     })
     return segs
   }, [cols, frozen])
+  // Trait vertical à chaque début de groupe, et à la première colonne qui suit le dernier.
+  const groupStarts = useMemo(() => new Set((groups ?? [])
+    .filter((g, i) => g.group || groups[i - 1]?.group).map(g => g.start)), [groups])
+  const groupCls = i => (groupStarts.has(i) ? ' is-group-start' : '')
 
   const fmtAgg = (v, kind) => {
     if (v == null) return ''
@@ -324,10 +339,6 @@ export default function DataSheet({
           <input ref={searchRef} type="search" value={search} placeholder={t.search_ph}
             aria-label={t.search_ph} onChange={e => setSearch(e.target.value)} />
         </label>
-        <button type="button" className={`sheet-btn${showFilters ? ' is-on' : ''}`}
-          aria-pressed={showFilters} onClick={() => setShowFilters(v => !v)}>
-          {t.filters}
-        </button>
         <div className="sheet-pop" ref={colsRef}>
           <button type="button" className="sheet-btn" aria-expanded={colsOpen}
             onClick={() => setColsOpen(v => !v)}>
@@ -338,18 +349,33 @@ export default function DataSheet({
               <div className="sheet-pop-actions">
                 <button type="button" onClick={() => setHidden(new Set())}>{t.show_all}</button>
               </div>
-              {columns.map(c => (
-                <label key={c.id} className="sheet-pop-item">
-                  <input type="checkbox" checked={!hidden.has(c.id)}
-                    onChange={() => setHidden(h => {
-                      const n = new Set(h)
-                      if (n.has(c.id)) n.delete(c.id)
-                      else n.add(c.id)
-                      return n
-                    })} />
-                  {c.group ? `${c.group} · ${c.header}` : c.header}
-                </label>
-              ))}
+              {colSections.map(s => {
+                const items = s.cols.map(c => (
+                  <label key={c.id} className="sheet-pop-item">
+                    <input type="checkbox" checked={!hidden.has(c.id)}
+                      onChange={() => setHidden(h => {
+                        const n = new Set(h)
+                        if (n.has(c.id)) n.delete(c.id)
+                        else n.add(c.id)
+                        return n
+                      })} />
+                    {c.header}
+                  </label>
+                ))
+                if (!s.group) return items
+                return (
+                  <div key={s.cols[0].id} className="sheet-pop-group" role="group" aria-label={s.group}>
+                    <div className="sheet-pop-title">
+                      {s.icon && (
+                        <img className="sheet-h-icon" src={s.icon} alt="" aria-hidden="true"
+                          onError={e => { e.currentTarget.style.display = 'none' }} />
+                      )}
+                      {s.group}
+                    </div>
+                    <div className="sheet-pop-row">{items}</div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
@@ -413,9 +439,15 @@ export default function DataSheet({
                 <th className="sheet-rownum-h" />
                 {groups.map(g => (
                   <th key={`${g.start}-${g.group}`} colSpan={g.span}
-                    className={`sheet-group${g.group ? ' has-group' : ''}${g.span === 1 ? frozenCls(g.start) : ''}`}
+                    className={`sheet-group${g.group ? ' has-group' : ''}${groupCls(g.start)}${g.span === 1 ? frozenCls(g.start) : ''}`}
                     style={g.span === 1 ? frozenStyle(g.start) : undefined}>
-                    {g.group}
+                    {g.icon ? (
+                      <span className="sheet-group-in">
+                        <img className="sheet-h-icon" src={g.icon} alt="" aria-hidden="true"
+                          onError={e => { e.currentTarget.style.display = 'none' }} />
+                        {g.group}
+                      </span>
+                    ) : g.group}
                   </th>
                 ))}
               </tr>
@@ -428,7 +460,7 @@ export default function DataSheet({
                 return (
                   <th key={c.id} scope="col"
                     aria-sort={s ? (s.desc ? 'descending' : 'ascending') : 'none'}
-                    className={`sheet-h${NUMERIC.has(c.type) ? ' is-num' : ''}${frozenCls(i)}`}
+                    className={`sheet-h${NUMERIC.has(c.type) ? ' is-num' : ''}${groupCls(i)}${frozenCls(i)}`}
                     style={frozenStyle(i)}>
                     <button type="button" className="sheet-h-btn" onClick={e => toggleSort(e, c.id)}
                       title={t.sort_hint}>
@@ -476,7 +508,7 @@ export default function DataSheet({
             {view.map((row, ri) => {
               const rowSel = range && ri >= range.r0 && ri <= range.r1
               return (
-                <tr key={rowKey ? rowKey(row, ri) : ri}>
+                <tr key={rowKey ? rowKey(row, ri) : ri} className={rowClass?.(row) || undefined}>
                   <th scope="row" className={`sheet-rownum${rowSel ? ' is-hl' : ''}`}
                     onMouseDown={e => selectRow(e, ri)}>{ri + 1}</th>
                   {cols.map((c, ci) => {
@@ -485,7 +517,7 @@ export default function DataSheet({
                     const sel = inRange(range, ri, ci)
                     const active = focus && focus.row === ri && focus.col === ci
                     const tone = c.tone ? c.tone(v, row) : null
-                    const cls = `sheet-c${NUMERIC.has(c.type) ? ' is-num' : ''}${tone ? ` tone-${tone}` : ''}`
+                    const cls = `sheet-c${NUMERIC.has(c.type) ? ' is-num' : ''}${groupCls(ci)}${tone ? ` tone-${tone}` : ''}`
                       + `${sel ? ' is-sel' : ''}${active ? ' is-active' : ''}${frozenCls(ci)}`
                     return (
                       <td key={c.id} data-cell={`${ri}:${ci}`} role="gridcell" aria-selected={sel || undefined}
@@ -508,7 +540,7 @@ export default function DataSheet({
               <tr>
                 <th className="sheet-rownum">Σ</th>
                 {cols.map((c, i) => (
-                  <td key={c.id} className={`sheet-total${NUMERIC.has(c.type) ? ' is-num' : ''}${frozenCls(i)}`}
+                  <td key={c.id} className={`sheet-total${NUMERIC.has(c.type) ? ' is-num' : ''}${groupCls(i)}${frozenCls(i)}`}
                     style={frozenStyle(i)}>
                     {i === 0 && totals[0] == null ? t.total : format(totals[i], c.type)}
                   </td>
