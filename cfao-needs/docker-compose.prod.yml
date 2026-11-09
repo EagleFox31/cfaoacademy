@@ -66,7 +66,8 @@ services:
       NEEDS_TEAM_RECIPIENTS: ${NEEDS_TEAM_RECIPIENTS:-academy@cfao.com}
       NEEDS_EMAIL_BACKEND: ${NEEDS_EMAIL_BACKEND:-console}
       NEEDS_SMTP_HOST: ${NEEDS_SMTP_HOST:-}
-    networks: [default, identite]
+    # cfao-maillage : lu par planning-api (GET analytics, clé partagée).
+    networks: [default, identite, cfao-maillage]
     depends_on:
       needs-db:
         condition: service_healthy
@@ -122,6 +123,13 @@ services:
         condition: service_started
 
 networks:
+  # Réseau de maillage inter-modules : seules les API qui s'appellent entre elles
+  # le rejoignent, les bases restent sur le réseau privé de leur module.
+  # Volontairement PAS `external` : le premier module démarré le crée, aucune
+  # commande préalable (AGENTS.md §7). Clé et nom identiques dans chaque compose
+  # (edge/tests/test_edge_config.py le vérifie).
+  cfao-maillage:
+    name: cfao-maillage
   # Réseau du Keycloak commun (projet compose cfao-identity), créé par lui.
   identite:
     name: ${IDENTITY_NETWORK:-cfao-identity_default}

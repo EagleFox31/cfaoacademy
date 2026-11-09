@@ -63,6 +63,8 @@ services:
     restart: unless-stopped
     build: ./api
     environment: *api_env
+    # cfao-maillage : joint needs-api (besoins validés de la clé de répartition).
+    networks: [default, cfao-maillage]
     # PDP et Keycloak joints par leurs ports publiés sur l'hôte.
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -78,6 +80,15 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+networks:
+  # Réseau de maillage inter-modules : seules les API qui s'appellent entre elles
+  # le rejoignent, les bases restent sur le réseau privé de leur module.
+  # Volontairement PAS `external` : le premier module démarré le crée, aucune
+  # commande préalable (AGENTS.md §7). Clé et nom identiques dans chaque compose
+  # (edge/tests/test_edge_config.py le vérifie).
+  cfao-maillage:
+    name: cfao-maillage
 
 volumes:
   planning-db-data:

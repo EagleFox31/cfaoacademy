@@ -3,6 +3,7 @@ import re
 import subprocess
 from pathlib import Path
 
+import pytest
 import yaml
 
 RACINE = Path(__file__).resolve().parents[2]
@@ -135,3 +136,65 @@ def test_job_ci_edge_filtre_sur_ses_chemins():
     job = ci.split("\n  edge:\n", 1)[1].split("\n  core:\n", 1)[0]
     assert "needs.changes.outputs.edge == 'true'" in job
     assert "smoke_edge.py" in job and "nginx -t" in job
+
+
+MAILLAGE = "cfao-maillage"
+
+
+def _composes_du_maillage():
+    # Fichiers suivis et nouveaux : un module en cours de création est contrôlé aussi.
+    sortie = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "*compose*.yml", "*compose*.yaml"],
+        cwd=RACINE, capture_output=True, text=True, check=True).stdout
+    chemins = [f for f in sortie.splitlines() if (RACINE / f).is_file()]
+    return {f: texte for f in chemins if "maillage" in (texte := _texte(RACINE / f))}
+
+
+def _ecarts_maillage(composes):
+    ecarts, modules_par_nom = [], {}
+    for fichier, texte in composes.items():
+        compose = yaml.safe_load(texte) or {}
+        for cle, reseau in (compose.get("networks") or {}).items():
+            # Nom différent = deux réseaux disjoints sans aucune erreur ;
+            # `external` = un module ne démarre plus seul.
+            if "maillage" in f"{cle} {(reseau or {}).get('name', '')}" and (cle, reseau) != (MAILLAGE, {"name": MAILLAGE}):
+                ecarts.append(f"{fichier} : réseau {cle} = {reseau}")
+        for nom, service in (compose.get("services") or {}).items():
+            reseaux = service.get("networks") or []
+            if MAILLAGE not in reseaux:
+                continue
+            if not nom.endswith("-api"):
+                ecarts.append(f"{fichier} : {nom} n'est pas une API, il reste hors du maillage")
+            options = reseaux[MAILLAGE] if isinstance(reseaux, dict) else None
+            for joignable in [nom, *((options or {}).get("aliases") or [])]:
+                modules_par_nom.setdefault(joignable, set()).add(str(Path(fichier).parent))
+    # Deux modules sous un même nom : la résolution DNS tomberait au hasard sur l'un ou l'autre.
+    ecarts += [f"{n} porté par plusieurs modules : {sorted(m)}" for n, m in modules_par_nom.items() if len(m) > 1]
+    return ecarts
+
+
+def _compose(service="a-api", cle=MAILLAGE, reseau=None):
+    return yaml.safe_dump({"services": {service: {"networks": ["default", cle]}},
+                           "networks": {cle: reseau or {"name": MAILLAGE}}})
+
+
+def test_maillage_inter_modules():
+    composes = _composes_du_maillage()
+    assert {"cfao-planning/docker-compose.yml", "cfao-needs/docker-compose.yml",
+            "cfao-needs/docker-compose.prod.yml", "template-service/docker-compose.yml"} <= set(composes)
+    assert _ecarts_maillage(composes) == []
+
+
+@pytest.mark.parametrize("composes", [
+    {"a/c.yml": _compose(reseau={"name": MAILLAGE, "external": True})},
+    {"a/c.yml": _compose(reseau={"name": "cfao-maillage-2"})},
+    {"a/c.yml": _compose(cle="maillage")},
+    {"a/c.yml": _compose(service="a-db")},
+    {"a/c.yml": _compose(), "b/c.yml": _compose()},
+], ids=["external", "autre-nom", "autre-cle", "base-sur-le-reseau", "nom-en-double"])
+def test_maillage_refuse_les_ecarts(composes):
+    assert _ecarts_maillage(composes)
+
+
+def test_maillage_accepte_dev_et_prod_d_un_meme_module():
+    assert _ecarts_maillage({"a/docker-compose.yml": _compose(), "a/docker-compose.prod.yml": _compose()}) == []

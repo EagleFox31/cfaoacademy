@@ -45,6 +45,10 @@ services:
     environment: &api_env
       DATABASE_URL: postgres://${DB_USER:-service_user}:${DB_PASSWORD}@service-db:5432/${DB_NAME:-service_db}
       CERBOS_HTTP: http://service-cerbos:3592
+    # cfao-maillage : appels d'API entre modules. Renommer service-api en
+    # <module>-api (nom unique sur ce reseau). A retirer si le module n'appelle
+    # aucun autre module et n'est appele par aucun.
+    networks: [default, cfao-maillage]
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
@@ -76,6 +80,14 @@ services:
     depends_on:
       service-db:
         condition: service_healthy
+
+networks:
+  # Reseau de maillage inter-modules : seules les API le rejoignent, les bases
+  # restent sur le reseau prive du module. Volontairement PAS `external` : le
+  # premier module demarre le cree, aucune commande prealable (AGENTS.md section 7).
+  # Cle et nom identiques partout (edge/tests/test_edge_config.py le verifie).
+  cfao-maillage:
+    name: cfao-maillage
 
 volumes:
   service-db-data:

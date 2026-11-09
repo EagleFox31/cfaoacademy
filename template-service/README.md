@@ -91,6 +91,17 @@ Pour basculer d'un mode à l'autre, **aucune ligne de code n'est modifiée** :
 * En local : `DEPLOYMENT_MODE=standalone`
 * En intégration plateforme : `DEPLOYMENT_MODE=integrated`
 
+### Joindre l'API d'un autre module (réseau `cfao-maillage`)
+
+Le compose du gabarit place déjà l'API sur `cfao-maillage`, un réseau commun créé par le premier module démarré, sans commande préalable.
+
+1. Renommez `service-api` en `<module>-api` : le nom doit être unique sur ce réseau.
+2. Appelez l'autre module par son nom de service, par exemple `http://needs-api:8000`. L'URL et la clé viennent de variables d'environnement.
+3. Ne passez pas ce réseau en `external` : le module ne démarrerait plus seul. Compose affiche un avertissement au démarrage du second module, il est normal.
+4. N'y mettez jamais une base ni un worker. Si le module n'échange avec aucun autre, retirez le réseau.
+
+Ce réseau ne protège rien à lui seul : chaque route reste authentifiée.
+
 ---
 
 ## 5. Tests & Validation

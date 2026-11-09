@@ -125,6 +125,8 @@ services:
       # Shared key attendue par /api/v1/needs/analytics/* (appels service-to-service
       # depuis cfao-core). Absente = 401 sur tous ces endpoints.
       NEEDS_ANALYTICS_INBOUND_KEY: ${NEEDS_ANALYTICS_INBOUND_KEY:-dev-analytics-shared-secret}
+    # cfao-maillage : lu par planning-api (GET analytics, clé partagée).
+    networks: [default, cfao-maillage]
     depends_on:
       needs-db:
         condition: service_healthy
@@ -194,6 +196,15 @@ services:
     depends_on:
       needs-api:
         condition: service_started
+
+networks:
+  # Réseau de maillage inter-modules : seules les API qui s'appellent entre elles
+  # le rejoignent, les bases restent sur le réseau privé de leur module.
+  # Volontairement PAS `external` : le premier module démarré le crée, aucune
+  # commande préalable (AGENTS.md §7). Clé et nom identiques dans chaque compose
+  # (edge/tests/test_edge_config.py le vérifie).
+  cfao-maillage:
+    name: cfao-maillage
 
 volumes:
   needs-kc-db-data:
