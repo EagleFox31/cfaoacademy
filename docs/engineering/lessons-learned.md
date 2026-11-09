@@ -34,10 +34,58 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Une table lue par une application est portée par son modèle et sa migration, jamais par un script hors bande seul | D, R | test sur données réelles + migration qui adopte une table préexistante, rejouée sur Postgres |
 | Un relais public vers un service multi-tenant nomme le tenant exposé (liste blanche), jamais une famille de chemins | E (moindre privilège) | `edge/tests/smoke_edge.py` : `/auth/realms/master/…` et tout autre realm en 404 |
 | La base d'un module se crée et se met à jour seule à chaque `up` (job `migrate` dédié), en no-op si elle est à jour, sans écraser les données de prod | A, I, R | smoke sur base vide + second démarrage sans écriture + rejeu sur copie de base existante (AGENTS.md §7) |
+| Un lien entre deux modules se déclare dans leurs fichiers compose : `docker network connect` disparaît à la recréation du conteneur, et `external` impose une commande préalable | D, A, I | `test_maillage_inter_modules` + smoke jeton réel après recréation de chaque module, dans les deux ordres |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-11-09 — Titre de groupe tronqué, non détecté par la mesure automatique (near miss, Vue globale de la clé de répartition)
+
+- **Contexte / symptôme** : « Toutes marques » s'affichait « Toutes marqu… » alors que le contrôle headless rendait `groupes_coupes: []`.
+- **Impact** : défaut visible livré, repéré à la relecture de la capture demandée par l'utilisateur.
+- **Détection** : lecture de la capture, pas la mesure.
+- **Cause racine** : le contrôle comparait `scrollWidth` et `clientWidth` sur une cellule de tableau, or une cellule s'élargit ou s'ellipse sans que cet écart reflète le texte coupé. Le résultat vide a été pris pour une preuve, sans regarder l'image.
+- **Correctif** : colonne élargie à 148 px, contrôle remplacé par la largeur réelle du texte (`Range.getBoundingClientRect`) rapportée à la largeur utile.
+- **Prévention** : tout contrôle de rendu se termine par la lecture d'une capture recadrée, début et fin de la zone défilante. Attendre `img.complete` avant de capturer, sinon les images semblent absentes.
+- **Leçon généralisée** : une mesure qui ne remonte rien n'a de valeur que si elle sait échouer. Une mesure automatique complète l'œil, elle ne le remplace pas.
+- **Catégorie** : test/frontend
+- **Récidive** : non
+
+### 2026-11-09 — En-tête figé décalé par un sélecteur CSS trop large, livré sans contrôle à l'écran (erreur, Vue globale de la clé de répartition)
+
+- **Contexte / symptôme** : pour annuler le padding de `.sheet-table th`, tout le bloc `.sheet-h` a été monté en `.sheet-table th.sheet-h`, y compris `position: relative`. La colonne « Filiale » s'est retrouvée décalée de 44 px au-dessus de « Besoins ».
+- **Impact** : régression visible par l'utilisateur sur la première colonne du tableau, annoncée comme terminée.
+- **Détection** : capture de l'utilisateur. Vitest et le build passaient, jsdom ne calcule ni la mise en page ni le `sticky`.
+- **Cause racine** : le sélecteur renforcé battait `.is-frozen { position: sticky }`, ce qui annulait le figement. La mise en page n'a été contrôlée que par des tests qui ne peuvent pas la voir.
+- **Correctif** : seul `padding: 0` reste dans `.sheet-table th.sheet-h`, `position: relative` retourne sur `.sheet-h`.
+- **Prévention** : test statique dans `CleRepartition.test.jsx` (aucun `position` sous `th.sheet-h`). Mesure Chromium headless de la Vue globale : position du th et du td figés avant et après défilement, titres coupés, colspan par marque.
+- **Leçon généralisée** : monter la spécificité d'une seule propriété, jamais d'un bloc. Une modification de mise en page se prouve par une mesure dans un vrai moteur de rendu avant de la dire terminée, les tests jsdom n'en disent rien.
+- **Catégorie** : frontend/CSS
+- **Récidive** : non
+
+### 2026-11-09 — Lien réseau planning ↔ needs posé à la main : perdu à la recréation du conteneur (near miss, recette cfao-planning)
+
+- **Contexte / symptôme** : pour afficher les besoins 2027 dans cfao-planning, l'API a été reliée au réseau de cfao-needs avec `docker network connect`. Le smoke passait, mais le lien n'existait que sur le conteneur vivant.
+- **Impact** : évité. Au prochain `up --build`, les besoins auraient disparu de l'écran sans erreur, en mode « besoins indisponibles ».
+- **Détection** : signalé dans la passation au moment de la livraison, puis remarque de l'utilisateur.
+- **Cause racine** : `docker network connect` modifie le conteneur, pas sa définition compose. Chaque projet compose a son réseau privé, rien ne déclarait le lien entre les deux.
+- **Correctif** : réseau `cfao-maillage` déclaré non-external, avec la même clé et le même nom, dans les compose de planning et de needs (dev et prod). Le premier module démarré le crée. Seules les API le rejoignent, les bases restent privées.
+- **Prévention** : `test_maillage_inter_modules` (`edge/tests/test_edge_config.py`, en CI) vérifie clé, nom, absence d'`external` et liste des membres.
+- **Leçon généralisée** : une correction d'infrastructure n'est livrée que si elle survit à une recréation. Tester la recréation fait partie de la preuve. Compose accepte un même réseau nommé dans plusieurs projets si la clé est identique ; une clé différente est refusée, un nom différent crée deux réseaux sans erreur.
+- **Catégorie** : déploiement/réseau
+- **Récidive** : non
+
+### 2026-11-06 — Classeurs source : feuille pays perdue, hébergement compté deux fois, codes hors catalogue (near miss, imports Equipment 2026 et besoins 2027)
+- **Contexte / symptôme** : clé Equipment 2026. La RDC a deux feuilles (Kinshasa, Lubumbashi) et le lieu « RDC Lubumbashi ». Sans alias, ces lignes auraient été ignorées ou refusées. Le classeur compte aussi deux fois l'hébergement des formateurs de LVL14 et LVL17 (une fois par feuille). Fiches 2027 : 84 personnes sur 452 portent des codes absents du catalogue 2027. Certaines fiches ont été traduites automatiquement (« ARGENT », « SUBSIDIARY », « GENTIL »).
+- **Impact** : évité. Sans rapport, une partie des places et des besoins aurait disparu sans bruit, et l'écart d'hébergement aurait été pris pour un bogue de l'app.
+- **Détection** : aperçu de l'import (`UNKNOWN_LOCATION`) ; rapprochement des totaux de l'app avec le classeur, pays par pays ; rapport « inconnus » du chargeur à blanc.
+- **Cause racine** : les classeurs sont saisis à la main, par site ou par filiale, sans référentiel commun (pays, codes, lieux). Le total d'un classeur n'est pas une vérité.
+- **Correctif** : alias RDC dans `seed_referential` (planning). Classeur d'import dérivé, avec RDC fusionnée. Chargeur 2027 qui signale codes inconnus, textes et lieux, au lieu de les compter à 0 ou de deviner.
+- **Prévention** : tout import passe par un aperçu à blanc, dont on lit `ignored_sheets` et les inconnus ; les totaux sont comparés à la source avant l'apply. Chaque écart est expliqué ligne à ligne, ou corrigé dans un dérivé, jamais dans l'original.
+- **Leçon généralisée** : réconcilier une source humaine veut dire expliquer chaque écart, pas l'aligner. Un import qui ne sait pas rapprocher une ligne la montre ; il ne l'avale pas.
+- **Catégorie** : données/import
+- **Récidive** : non
 
 ### 2026-11-06 — « Fait » annoncé avec une API de recette sans les nouvelles routes : ABC en HTTP 404 (cfao-planning)
 - **Contexte / symptôme** : le menu ABC affiche « HTTP 404 ». La vue Filiale montre aussi un grand bloc blanc derrière le tableau.
