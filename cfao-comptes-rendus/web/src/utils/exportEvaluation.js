@@ -1,4 +1,4 @@
-import { BAREMES } from './baremeCfao'
+import { BAREMES, enPourcentage, lireNote } from './baremeCfao'
 import { MENTIONS, CRITERES_FORMATION, CRITERES_ACCUEIL } from './satisfactionCfao'
 import { estCertification, niveauDe } from './certification'
 
@@ -164,7 +164,10 @@ function remplirDonnees(ws, stagiaires, brouillon, session, D, modules = []) {
   if (modules.length === 1) ws.getCell(D.tp + 1, 1).value = null
 
   const baremes = brouillon.baremes || BAREMES
-  const taux = (v, sur) => (v === '' || v == null || !sur ? null : Number(v) / sur)
+  const taux = (v, sur) => {
+    const pct = enPourcentage(v, sur)
+    return pct == null ? null : pct / 100
+  }
   const reponses = brouillon.satisfaction || {}
   const liste = `"${MENTIONS.map(m => m.libelle).join(',')}"`
   const DERNIERE = lettre(n + 1)
@@ -181,11 +184,11 @@ function remplirDonnees(ws, stagiaires, brouillon, session, D, modules = []) {
       modules.forEach((m, j) => {
         const cell = ws.getCell(`${c}${D.tp + j}`)
         const v = p.notesModules?.[m.id]
-        cell.value = v === '' || v == null ? null : Number(v)
-        cell.numFmt = '0'
+        cell.value = lireNote(v)
+        cell.numFmt = 'General'
         cell.dataValidation = {
-          type: 'whole', operator: 'between', allowBlank: true, showErrorMessage: true,
-          formulae: [0, 100], errorTitle: 'Note', error: 'Une note entière de 0 à 100.',
+          type: 'decimal', operator: 'between', allowBlank: true, showErrorMessage: true,
+          formulae: [0, 100], errorTitle: 'Note', error: 'Une note de 0 à 100.',
         }
       })
       const tps = `${c}${D.tp}:${c}${D.tp + modules.length - 1}`

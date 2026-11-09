@@ -32,15 +32,40 @@ export const BAREMES = {
 /** Le seuil de validation CFAO, present dans tous les comptes rendus. */
 export const SEUIL = 70
 
+/** Une note saisie lue comme nombre, virgule comprise ; `null` si vide
+ * ou illisible.
+ */
+export function lireNote(brut) {
+  if (brut == null) return null
+  const s = String(brut).trim().replace(',', '.')
+  if (s === '') return null
+  const n = Number(s)
+  return Number.isFinite(n) ? n : null
+}
+
+/** La saisie d'une note, filtree a la frappe : des chiffres, un seul
+ * separateur (virgule ou point) et une decimale. Le texte garde la
+ * virgule du formateur ; seule la lecture la convertit.
+ */
+export function nettoyerNote(valeur) {
+  const s = String(valeur ?? '').replace(/[^\d.,]/g, '')
+  const i = s.search(/[.,]/)
+  if (i < 0) return s.slice(0, 3)
+  const entier = s.slice(0, i).slice(0, 3)
+  const decimale = s.slice(i + 1).replace(/[.,]/g, '').slice(0, 1)
+  return `${entier}${s[i]}${decimale}`
+}
+
 /** Une note brute ramenee en pourcentage, ou `null` si absente.
  *
  * Le classeur traite « - » comme zero ; ici un champ vide reste `null`,
- * pour distinguer « pas encore saisi » de « a eu zero ».
+ * pour distinguer « pas encore saisi » de « a eu zero ». Une note
+ * negative ou au-dessus du bareme est aussi `null` : elle est signalee
+ * par `anomalies` et n'entre dans aucun calcul.
  */
 export function enPourcentage(brut, bareme) {
-  if (brut === '' || brut == null) return null
-  const n = Number(brut)
-  if (Number.isNaN(n) || !bareme) return null
+  const n = lireNote(brut)
+  if (n == null || !bareme || n < 0 || n > bareme) return null
   return (n / bareme) * 100
 }
 
@@ -124,9 +149,9 @@ export function anomalies(p, baremes = BAREMES) {
   ]
   for (const [cle, max, libelle] of champs) {
     const v = p?.[cle]
-    if (v === '' || v == null) continue
-    const n = Number(v)
-    if (Number.isNaN(n)) {
+    if (String(v ?? '').trim() === '') continue
+    const n = lireNote(v)
+    if (n == null) {
       out.push({ champ: cle, niveau: 'erreur', message: `${libelle} : valeur non numérique` })
     } else if (n < 0) {
       out.push({ champ: cle, niveau: 'erreur', message: `${libelle} : valeur négative` })

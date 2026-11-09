@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { BAREMES, SEUIL, calculer, anomalies, afficher } from '../../utils/baremeCfao'
+import { BAREMES, SEUIL, calculer, anomalies, afficher, nettoyerNote } from '../../utils/baremeCfao'
 import {
   MENTIONS,
   CRITERES_FORMATION,
@@ -97,7 +97,7 @@ export default function PhaseResultats({
   function modifier(id, champ, valeur) {
     // On garde la chaine vide : un champ vide et un zero ne disent pas
     // la meme chose dans un compte rendu.
-    const v = valeur === '' ? '' : valeur.replace(/[^\d]/g, '').slice(0, 3)
+    const v = nettoyerNote(valeur)
     maj({
       participants: brouillon.participants.map(p =>
         p.id === id ? { ...p, [champ]: v } : p),
@@ -448,12 +448,11 @@ export default function PhaseResultats({
                         ['entreeBrut', 'entrée', 'entreeTheorique'],
                         ['sortieTheoBrut', 'théorie', 'sortieTheorique'],
                         ['sortiePratBrut', 'pratique', 'sortiePratique'],
-                      ].map(([champ, nom, bareme]) => (
+                      ].map(([champ, nom]) => (
                         <td key={champ}>
                           <input
                             className={`cr-num${erreurs.has(champ) ? ' cr-num--erreur' : ''}`}
-                            type="number" min="0" max={baremes[bareme]}
-                            inputMode="numeric" value={p[champ] ?? ''}
+                            type="text" inputMode="decimal" value={p[champ] ?? ''}
                             onChange={e => modifier(p.id, champ, e.target.value)}
                             placeholder="—"
                             aria-label={`Note ${nom} de ${p.prenom} ${p.nom}`} />

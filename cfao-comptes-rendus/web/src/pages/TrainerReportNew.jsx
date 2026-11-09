@@ -217,8 +217,8 @@ export default function TrainerReportNew() {
   const synthese = useMemo(
     () => (certification
       ? syntheseCertification(brouillon.participants, brouillon.modules)
-      : syntheseGroupe(brouillon.participants)),
-    [certification, brouillon.participants, brouillon.modules],
+      : syntheseGroupe(brouillon.participants, brouillon.baremes)),
+    [certification, brouillon.participants, brouillon.modules, brouillon.baremes],
   )
 
   // Un patch, ou une fonction de l'etat courant quand la modification

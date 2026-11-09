@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { SEUIL } from '../../utils/baremeCfao'
+import { SEUIL, lireNote, nettoyerNote } from '../../utils/baremeCfao'
 import {
   calculerCertification, moduleVide, STATUTS_ELEARNING, CERTIFIE, VALIDE,
 } from '../../utils/certification'
@@ -49,7 +49,7 @@ export default function SaisieCertification({ brouillon, maj, onEffacer }) {
   function noter(idCandidat, idModule, valeur) {
     maj(b => ({
       participants: b.participants.map(p => (p.id === idCandidat
-        ? { ...p, notesModules: { ...(p.notesModules || {}), [idModule]: nettoyer(valeur) } }
+        ? { ...p, notesModules: { ...(p.notesModules || {}), [idModule]: nettoyerNote(valeur) } }
         : p)),
     }))
   }
@@ -85,7 +85,7 @@ export default function SaisieCertification({ brouillon, maj, onEffacer }) {
           const p = presents[colonne + dc]
           if (!p) return
           const courant = suite[p.id]
-          suite[p.id] = { ...courant, notesModules: { ...(courant.notesModules || {}), [m.id]: nettoyer(v) } }
+          suite[p.id] = { ...courant, notesModules: { ...(courant.notesModules || {}), [m.id]: nettoyerNote(v) } }
         })
       })
       return { participants: (b.participants || []).map(p => suite[p.id]) }
@@ -140,14 +140,14 @@ export default function SaisieCertification({ brouillon, maj, onEffacer }) {
               </th>
               {candidats.map((p, j) => {
                 const v = p.notesModules?.[m.id] ?? ''
-                const n = v === '' ? null : Number(v)
+                const n = lireNote(v)
                 return (
                   <td key={p.id}>
                     <input
                       className={`cr-num cr-certif-note${n != null && n > 100 ? ' cr-num--erreur'
                         : n != null && n < SEUIL ? ' cr-certif-note--bas' : ''}`}
                       data-note={`${i}:${j}`}
-                      type="text" inputMode="numeric" value={v} placeholder="—"
+                      type="text" inputMode="decimal" value={v} placeholder="—"
                       onChange={e => noter(p.id, m.id, e.target.value)}
                       onKeyDown={e => suivant(e, i, j)}
                       onPaste={e => coller(e, i, j)}
