@@ -7,6 +7,7 @@ import useNavScrollSpy from '../hooks/useNavScrollSpy.js'
 import useLocale from '../hooks/useLocale.js'
 import LocaleSwitch from './LocaleSwitch.jsx'
 import useAuth from '../hooks/useAuth.js'
+import { canSeePlanning } from '../utils/planningAccess.js'
 import { usePortalOnboarding } from '../context/PortalOnboardingContext.jsx'
 import PortalHelpMenu from './PortalHelpMenu.jsx'
 import PortalNotificationsBell from './PortalNotificationsBell.jsx'
@@ -20,6 +21,7 @@ import {
   LogOutIcon,
   MilestoneIcon,
   LifeBuoyIcon,
+  GlobeIcon,
 } from './portalSectionIcons.jsx'
 import ProfileAvatar from './ProfileAvatar.jsx'
 
@@ -135,6 +137,19 @@ function UserMenu({ user, onLogout, t, onPortal = false }) {
               <span className="nav-user-dropdown-arrow">→</span>
             </Link>
 
+            {canSeePlanning(user.roles ?? []) && (
+              <Link
+                to="/portail/cle-repartition"
+                className="nav-user-dropdown-item"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+              >
+                <GlobeIcon size={16} className="nav-user-dropdown-item-icon" />
+                <span className="nav-user-dropdown-item-label">{t.nav_cost_key}</span>
+                <span className="nav-user-dropdown-arrow">→</span>
+              </Link>
+            )}
+
             {(user.roles ?? []).includes('superadmin') && (
               <Link
                 to="/portail/journal-erreurs"
@@ -177,6 +192,7 @@ function NavLinkList({
   handlePortalNavClick,
   handleNavClick,
   onItemActivate,
+  appNav,
 }) {
   const listClass = [
     variant === 'mobile' ? 'nav-mobile-links' : 'nav-links',
@@ -190,7 +206,25 @@ function NavLinkList({
 
   return (
     <ul className={listClass}>
-      {onPortal && user ? (
+      {appNav ? (
+        // Écran applicatif : son propre menu remplace les sections du portail.
+        appNav.items.map((n) => {
+          const active = n.key === appNav.activeKey
+          return (
+            <li key={n.key}>
+              <Link
+                to={n.to}
+                className={[itemClass(active), variant === 'mobile' ? 'nav-mobile-link' : ''].filter(Boolean).join(' ')}
+                aria-current={active ? 'page' : undefined}
+                title={n.hint}
+                onClick={() => onItemActivate?.()}
+              >
+                <span className="nav-portal-pill-label">{n.label}</span>
+              </Link>
+            </li>
+          )
+        })
+      ) : onPortal && user ? (
         portalSections.map((s) => {
           const label = portalT[s.labelKey] ?? s.key
           const display = s.key === 'planning'
@@ -244,7 +278,11 @@ function NavLinkList({
   )
 }
 
-export default function Nav({ user: propUser, active: pageActive, notifications }) {
+/**
+ * appNav (facultatif) : menu d'un écran applicatif, { items: [{ key, to, label }], activeKey }.
+ * Il remplace les sections du portail et la barre prend toute la largeur.
+ */
+export default function Nav({ user: propUser, active: pageActive, notifications, appNav }) {
   const { pathname, hash } = useLocation()
   const navigate = useNavigate()
   const onHome    = pathname === '/'
@@ -374,6 +412,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications 
     isActive,
     handlePortalNavClick,
     handleNavClick,
+    appNav,
   }
 
   const { t: heroT } = useLocale('hero')
@@ -395,7 +434,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications 
 
   return (
     <nav
-      className={`nav${onHome ? ' nav--home' : ''}${onLogin ? ' nav--login' : ''}${onPortal ? ' nav--portal' : ''}${menuOpen ? ' nav--menu-open' : ''}`}
+      className={`nav${onHome ? ' nav--home' : ''}${onLogin ? ' nav--login' : ''}${onPortal ? ' nav--portal' : ''}${appNav ? ' nav--wide' : ''}${menuOpen ? ' nav--menu-open' : ''}`}
       aria-label={commonT.mainNavAria}
     >
       <div className="nav-shell">

@@ -9,8 +9,9 @@ import useAuthForm from '../hooks/useAuthForm'
 import useEnHautDePage from '../hooks/useEnHautDePage'
 import useSiteEffects from '../hooks/useSiteEffects'
 import { useAuth } from '../lib/auth'
+import { adresse } from '../lib/adresse'
 
-const LOGIN_BG = '/assets/hero/default.jpg'
+const LOGIN_BG = adresse('/assets/hero/default.jpg')
 
 function EyeIcon({ open }) {
   if (open) {
@@ -120,7 +121,7 @@ export default function Connexion() {
             <div className="login-card login-card--glass">
               <div className="login-card-brand">
                 <img
-                  src="/assets/logo-cfao-mobility.jpg"
+                  src={adresse('/assets/logo-cfao-mobility.jpg')}
                   alt="CFAO Academy"
                   className="login-card-logo"
                 />

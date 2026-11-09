@@ -1,29 +1,30 @@
+import { adresse } from '../lib/adresse'
 /**
  * Marque d'une carte de session : logo, ou à défaut un libellé texte.
  * Même table et mêmes règles que le portail (`cardBrandBadge.js`), réduite
  * à ce qu'affichent les cartes du formateur.
  */
 const LOGOS_MARQUES = [
-  ['Toyota', '/assets/logos/toyota.png'],
-  ['Mercedes-Benz', '/assets/logos/mercedes.png'],
-  ['Suzuki', '/assets/logos/suzuki.png'],
-  ['BYD', '/assets/logos/byd.png'],
-  ['Mitsubishi', '/assets/logos/mitsubishi.png'],
-  ['Omoda & Jaecoo', '/assets/logos/omoda.png'],
-  ['Stellantis', '/assets/logos/stellantis.png'],
-  ['Citroën', '/assets/logos/citroen.png'],
-  ['Yamaha', '/assets/logos/yamaha.png'],
-  ['Renault Trucks', '/assets/logos/renault-trucks.png'],
-  ['Hino', '/assets/logos/hino.png'],
-  ['Fuso', '/assets/logos/fuso.png'],
-  ['Sinotruk', '/assets/logos/sinotruk.png'],
-  ['Shacman', '/assets/logos/shacman.png'],
-  ['Mercedes Trucks', '/assets/logos/mercedes.png'],
-  ['King Long', '/assets/logos/kinglong.png'],
-  ['BT', '/assets/logos/bt.png'],
-  ['Toyota Material', '/assets/logos/toyota-forklift.png'],
-  ['JCB', '/assets/logos/jcb.png'],
-  ['Lovol', '/assets/logos/lovol.png'],
+  ['Toyota', adresse('/assets/logos/toyota.png')],
+  ['Mercedes-Benz', adresse('/assets/logos/mercedes.png')],
+  ['Suzuki', adresse('/assets/logos/suzuki.png')],
+  ['BYD', adresse('/assets/logos/byd.png')],
+  ['Mitsubishi', adresse('/assets/logos/mitsubishi.png')],
+  ['Omoda & Jaecoo', adresse('/assets/logos/omoda.png')],
+  ['Stellantis', adresse('/assets/logos/stellantis.png')],
+  ['Citroën', adresse('/assets/logos/citroen.png')],
+  ['Yamaha', adresse('/assets/logos/yamaha.png')],
+  ['Renault Trucks', adresse('/assets/logos/renault-trucks.png')],
+  ['Hino', adresse('/assets/logos/hino.png')],
+  ['Fuso', adresse('/assets/logos/fuso.png')],
+  ['Sinotruk', adresse('/assets/logos/sinotruk.png')],
+  ['Shacman', adresse('/assets/logos/shacman.png')],
+  ['Mercedes Trucks', adresse('/assets/logos/mercedes.png')],
+  ['King Long', adresse('/assets/logos/kinglong.png')],
+  ['BT', adresse('/assets/logos/bt.png')],
+  ['Toyota Material', adresse('/assets/logos/toyota-forklift.png')],
+  ['JCB', adresse('/assets/logos/jcb.png')],
+  ['Lovol', adresse('/assets/logos/lovol.png')],
 ]
 
 const LOGOS = Object.fromEntries(LOGOS_MARQUES.map(([nom, logo]) => [nom.toUpperCase(), logo]))

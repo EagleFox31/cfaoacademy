@@ -22,6 +22,8 @@ import { LOGIN_COPY } from './login.js'
 import { MARQUEE_COPY } from './marquee.js'
 import { PORTAL_COPY } from './portal.js'
 import { DELIVERY_COPY } from './delivery.js'
+import { COST_KEY_COPY } from './costKey.js'
+import { SHEET_COPY } from './sheet.js'
 import { NAV_COPY } from './nav.js'
 import { OFFERS_COPY } from './offers.js'
 import { LEGAL_COPY } from './legal.js'
@@ -69,6 +71,8 @@ const SECTIONS = {
   marquee: MARQUEE_COPY,
   portal: PORTAL_COPY,
   delivery: DELIVERY_COPY,
+  costKey: COST_KEY_COPY,
+  sheet: SHEET_COPY,
   notFound: NOT_FOUND_COPY,
 }
 

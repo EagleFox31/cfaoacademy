@@ -7,46 +7,31 @@ from __future__ import annotations
 
 import logging
 
-import jwt
 from django.conf import settings
 from rest_framework import authentication, exceptions
 
+from . import jwt_verifier
 from .identity import get_identity_provider
 from .principal import construire_principal
 
 journal = logging.getLogger(__name__)
-
-_jwk_client: jwt.PyJWKClient | None = None
-
-
-def _client() -> jwt.PyJWKClient:
-    global _jwk_client
-    if _jwk_client is None:
-        if not settings.OIDC_JWKS_URL:
-            raise exceptions.AuthenticationFailed("OIDC_JWKS_URL non configure.")
-        _jwk_client = jwt.PyJWKClient(settings.OIDC_JWKS_URL)
-    return _jwk_client
 
 
 def verifier_jeton(token: str) -> dict:
     """Les claims d'un jeton valide ; leve AuthenticationFailed sinon."""
     # L'audience est toujours verifiee : sans elle, un jeton emis par le
     # meme royaume pour une autre application serait accepte.
-    if not settings.OIDC_AUDIENCE:
+    audiences = jwt_verifier.audiences(settings.OIDC_AUDIENCE)
+    if not audiences:
         raise exceptions.AuthenticationFailed("OIDC_AUDIENCE non configuree.")
-    options = {"require": ["exp", "sub", "aud"]}
-    audience = settings.OIDC_AUDIENCE
     try:
-        signing_key = _client().get_signing_key_from_jwt(token)
-        return jwt.decode(
+        return jwt_verifier.verify(
             token,
-            signing_key.key,
-            algorithms=["RS256"],
-            audience=audience,
-            issuer=settings.OIDC_ISSUER or None,
-            options=options,
+            jwt_verifier.trusted_issuers(
+                settings.OIDC_TRUSTED_ISSUERS, settings.OIDC_ISSUER, settings.OIDC_JWKS_URL),
+            audiences,
         )
-    except jwt.PyJWTError as exc:  # signature, expiration, audience, emetteur...
+    except jwt_verifier.TokenRejected as exc:  # signature, expiration, audience, emetteur...
         journal.info("jeton refuse : %s", exc)
         raise exceptions.AuthenticationFailed("Jeton invalide.") from exc
 

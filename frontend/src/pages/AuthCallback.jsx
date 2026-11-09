@@ -15,6 +15,7 @@ import useAuth from '../hooks/useAuth'
 import useLocale from '../hooks/useLocale'
 import PortalLoader from '../components/PortalLoader'
 import { consumeAuthReturnPath, handleCallback } from '../lib/auth'
+import { pageAccueil } from '../utils/planningAccess'
 
 // Le code d'autorisation ne s'échange qu'une fois : le double montage de
 // StrictMode doit reprendre le même échange, pas en relancer un second.
@@ -40,11 +41,11 @@ export default function AuthCallback() {
     let vivant = true
     echanger()
       .then((session) => adoptSession(session))
-      .then(() => {
+      .then((profil) => {
         if (!vivant) return
         const returnPath = consumeAuthReturnPath()
         const target = (!returnPath || returnPath === '/' || returnPath.startsWith('/callback'))
-          ? '/portail'
+          ? pageAccueil(profil?.roles)
           : returnPath
         navigate(target, { replace: true })
       })

@@ -47,8 +47,11 @@ fenêtre demande d'enregistrer le travail en cours.
 
 ```sh
 ID=maj-$(date +%Y%m%d-%H%M)
-echo "{\"id\": \"$ID\", \"etat\": \"compte\"}" | dc exec -T gateway sh -c 'cat > /usr/share/nginx/html/maintenance.json'
+echo "{\"id\": \"$ID\", \"etat\": \"compte\"}" | dc exec -T gateway sh -c 'cat > /usr/share/nginx/html/cr/maintenance.json'
 ```
+
+Depuis la v0.4.2, l'interface est servie sous `/cr/` : le fichier est dans `html/cr/`.
+Passerelle encore en v0.4.1 ou avant : `html/maintenance.json`.
 
 Garder la même valeur `ID` jusqu'à l'étape 6.
 
@@ -130,11 +133,20 @@ cat > /tmp/fin.json <<EOF
   {"texte": "L'équipe technique voit tous les comptes rendus.", "pour": ["superadmin"]}
  ]}
 EOF
-dc exec -T gateway sh -c 'cat > /usr/share/nginx/html/maintenance.json' < /tmp/fin.json
+dc exec -T gateway sh -c 'cat > /usr/share/nginx/html/cr/maintenance.json' < /tmp/fin.json
 ```
 
 La fenêtre « Mise à jour terminée » reste ouverte tant qu'il y a des nouveautés à lire ;
-chaque utilisateur clique sur « Compris ». Le fichier repart à
+chaque utilisateur clique sur « Compris ». Personne n'a à recharger la page :
+
+- depuis la v0.4.3, à l'état `terminee`, chaque onglet qui a vu le compte à rebours
+  enregistre et se recharge seul, une fois, sur la nouvelle version ;
+- un onglet resté sur une version précédente (v0.4.2 ou avant, sans ce code) continue de
+  fonctionner : ses appels suivent les redirections, et s'il demande un morceau de
+  l'ancienne interface (export Excel), la passerelle lui renvoie de quoi se recharger
+  sur la nouvelle version.
+
+Le fichier repart à
 `{"id": null, "etat": "aucune"}` au prochain redémarrage de la passerelle.
 
 ## Revenir à la version précédente

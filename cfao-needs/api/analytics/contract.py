@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 CONTRACT_ID = "needs-analytics"
-CONTRACT_VERSION = "1.0.0"
+CONTRACT_VERSION = "1.1.0"
 CONTRACT_PATH = Path(__file__).resolve().parent / "contract" / "needs-analytics.openapi.json"
 
 _YEAR = {
@@ -90,6 +90,56 @@ def openapi_document() -> dict:
             },
             "examples": [{"year": 2026, "count": 180}],
         },
+        "NeedsByBranchBrand": {
+            "type": "object",
+            "required": ["year", "pole", "source", "rows"],
+            "properties": {
+                "year": {"type": "integer"},
+                "pole": {"type": "string", "enum": ["motors", "equipment", "all"]},
+                "source": {"type": "string", "enum": ["submissions", "quota_import", "none"]},
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["country", "brand", "needs", "technicians"],
+                        "properties": {
+                            "country": {"type": "string"},
+                            "brand": {"type": "string"},
+                            "needs": {"type": "integer", "minimum": 0},
+                            "technicians": {"type": ["integer", "null"], "minimum": 0},
+                        },
+                    },
+                },
+            },
+            "examples": [{"year": 2026, "pole": "motors", "source": "quota_import", "rows": [
+                {"country": "BENIN", "brand": "TOYOTA", "needs": 34, "technicians": 22}]}],
+        },
+        "UnchosenModules": {
+            "type": "object",
+            "required": ["year", "pole", "catalog_available", "modules"],
+            "properties": {
+                "year": {"type": "integer"},
+                "pole": {"type": "string", "enum": ["motors", "equipment", "all"]},
+                "catalog_available": {"type": "boolean"},
+                "modules": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["pole", "brand", "tier", "code", "title"],
+                        "properties": {
+                            "pole": {"type": "string"},
+                            "brand": {"type": ["string", "null"]},
+                            "tier": {"type": ["string", "null"], "enum": ["JUNIOR", "SENIOR", "EXPERT", None]},
+                            "code": {"type": "string"},
+                            "title": {"type": "string"},
+                        },
+                    },
+                },
+            },
+            "examples": [{"year": 2027, "pole": "motors", "catalog_available": True, "modules": [
+                {"pole": "MOBILITY", "brand": "Toyota", "tier": "EXPERT", "code": "TS14-G1",
+                 "title": "Diagnostic"}]}],
+        },
         "Error": {
             "type": "object",
             "required": ["detail"],
@@ -118,12 +168,14 @@ def openapi_document() -> dict:
         "description": "Pôle. Valeur inconnue traitée comme `all`.",
         "schema": {"type": "string", "enum": ["equipment", "motors", "all"]},
     }
+    pole = {**bu, "name": "pole"}
     return {
         "openapi": "3.1.0",
         "info": {
             "title": "CFAO Needs Analytics",
             "version": CONTRACT_VERSION,
-            "description": "Agrégats de service à service lus par cfao-core (tableau de bord super admin).",
+            "description": "Agrégats de service à service lus par cfao-core (tableau de bord super admin) "
+                           "et cfao-planning (clé de répartition).",
         },
         "security": [{"AnalyticsKey": []}],
         "paths": {
@@ -135,6 +187,14 @@ def openapi_document() -> dict:
             ),
             "/api/v1/needs/analytics/scheduled-trainings": _operation(
                 "scheduledTrainings", "Sessions programmées.", [_YEAR], "ScheduledTrainings"
+            ),
+            "/api/v1/needs/analytics/needs-by-branch-brand": _operation(
+                "needsByBranchBrand", "Besoins et techniciens par pays et marque (cfao-planning).",
+                [pole, _YEAR], "NeedsByBranchBrand"
+            ),
+            "/api/v1/needs/analytics/unchosen-modules": _operation(
+                "unchosenModules", "Modules du catalogue sans aucune demande validée (cfao-planning).",
+                [pole, _YEAR], "UnchosenModules"
             ),
         },
         "components": {

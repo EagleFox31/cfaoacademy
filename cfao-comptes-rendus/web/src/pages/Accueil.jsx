@@ -23,6 +23,7 @@ import { lireErreurs } from '../utils/journalErreurs'
 import { aDocumenter, sessionsAVenir } from '../utils/planningFormateur.js'
 import { resolvePortalCardBrand } from '../utils/portalCardMedia.js'
 import { scrollToPortalSection } from '../utils/portalScroll.js'
+import { adresse } from '../lib/adresse'
 
 /** Visuel des cartes de session, par pole — meme table que `SessionCard`.
  *
@@ -31,23 +32,23 @@ import { scrollToPortalSection } from '../utils/portalScroll.js'
  * et hors sujet en vignette de carte. Les `*-carte.jpg` sont les visuels
  * des publics sans leur cadre blanc : la photo couvre toute la vignette. */
 const VISUEL_POLE = {
-  Motors: '/assets/img_cards/techniciens-carte.jpg',
-  Equipment: '/assets/img_cards/techniciens-carte.jpg',
-  Carrosserie: '/assets/publics/carrossiers.jpg',
+  Motors: adresse('/assets/img_cards/techniciens-carte.jpg'),
+  Equipment: adresse('/assets/img_cards/techniciens-carte.jpg'),
+  Carrosserie: adresse('/assets/publics/carrossiers.jpg'),
 }
 
 /** Visuel des cartes de priorite, une par zone du portail. */
 const VISUEL_PRIORITE = {
-  comptesRendus: '/assets/img_cards/test_theorie_senior.jpg',
-  sessions: '/assets/img_cards/clients-carte.jpg',
-  journal: '/assets/img_cards/process_sav_equipment.png',
+  comptesRendus: adresse('/assets/img_cards/test_theorie_senior.jpg'),
+  sessions: adresse('/assets/img_cards/clients-carte.jpg'),
+  journal: adresse('/assets/img_cards/process_sav_equipment.png'),
 }
 
 /** Visuel des cartes d'entree du module. */
 const VISUEL_ENTREE = {
-  nouveau: '/assets/publics/process-sav.jpg',
-  archive: '/assets/img_cards/certification.jpg',
-  brouillon: '/assets/publics/process-sav.jpg',
+  nouveau: adresse('/assets/publics/process-sav.jpg'),
+  archive: adresse('/assets/img_cards/certification.jpg'),
+  brouillon: adresse('/assets/publics/process-sav.jpg'),
 }
 
 /** « il y a 2 jours », pour situer une reprise sans afficher une date brute. */
@@ -62,7 +63,7 @@ function venuDe(iso) {
 function visuelSession(session) {
   const { logo, label } = resolvePortalCardBrand(session.marque)
   return {
-    img: VISUEL_POLE[session.pole] ?? '/assets/img_cards/techniciens-carte.jpg',
+    img: VISUEL_POLE[session.pole] ?? adresse('/assets/img_cards/techniciens-carte.jpg'),
     logo,
     brandLabel: logo ? undefined : label,
   }

@@ -6,6 +6,17 @@ import useLocale from '../hooks/useLocale.js'
 /** Routes dont la page est elle-même un loader plein écran (pas de double intro). */
 const SKIP_ROUTE_LOADER = new Set(['/portail/medacap-launch'])
 
+/**
+ * Écrans applicatifs : passer d'une vue à l'autre (sous-chemin) reste dans l'app,
+ * sans loader plein écran ni remontage. L'app anime elle-même ses vues.
+ */
+export const APP_SCOPES = ['/portail/cle-repartition']
+
+/** Clé de transition : le préfixe d'app si le chemin en relève, sinon le chemin. */
+export function routeScope(pathname) {
+  return APP_SCOPES.find(p => pathname === p || pathname.startsWith(`${p}/`)) ?? pathname
+}
+
 function getRouteLoaderTiming() {
   const reduce = typeof window !== 'undefined'
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -18,7 +29,8 @@ function getRouteLoaderTiming() {
  * (landing ↔ login, portail, formations…). Crossfade contenu via `.route-motion`.
  */
 export default function RouteMotion({ children }) {
-  const { pathname } = useLocation()
+  const { pathname: rawPath } = useLocation()
+  const pathname = routeScope(rawPath)
   const { t } = useLocale('common')
   const skipFirst = useRef(true)
   const [phase, setPhase] = useState('done')

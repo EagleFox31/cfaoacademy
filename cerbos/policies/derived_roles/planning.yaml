@@ -1,0 +1,71 @@
+# Rôles dérivés de cfao-planning — clé de répartition (SPEC §7).
+#
+# Trois cercles :
+#   - l'équipe Academy fabrique la clé (planning_manager) ; seuls les pilotes la
+#     gèlent, car le gel engage la refacturation des filiales (planning_pilot) ;
+#   - les directions et managers la LISENT (planning_reader), mais ne voient les
+#     chiffres d'un pays que dans leur périmètre (planning_scoped_reader) ;
+#   - les observateurs de pôle suivent aussi les thématiques non choisies.
+apiVersion: api.cerbos.dev/v1
+derivedRoles:
+  name: planning
+  definitions:
+    - name: planning_manager
+      parentRoles:
+        - center_assistant
+        - training_coordinator
+        - center_director
+        - superadmin
+      condition:
+        match:
+          expr: "true"
+
+    - name: planning_pilot
+      parentRoles:
+        - training_coordinator
+        - center_director
+        - superadmin
+      condition:
+        match:
+          expr: "true"
+
+    # Peut ouvrir la clé ; la ventilation par pays est filtrée par planning_scoped_reader.
+    - name: planning_reader
+      parentRoles:
+        - planning_viewer
+        - dps
+        - dop
+        - workshop_manager
+        - branch_director
+        - branch_admin
+        - regional_director
+        - group_director
+        - group_admin
+      condition:
+        match:
+          expr: "true"
+
+    # Même liste que planning_reader : à garder alignée.
+    - name: planning_scoped_reader
+      parentRoles:
+        - planning_viewer
+        - dps
+        - dop
+        - workshop_manager
+        - branch_director
+        - branch_admin
+        - regional_director
+        - group_director
+        - group_admin
+      condition:
+        match:
+          expr: request.principal.attr.scopeNodes.exists(s, s in request.resource.attr.orgPath)
+
+    - name: planning_observer
+      parentRoles:
+        - dps
+        - dop
+        - group_director
+      condition:
+        match:
+          expr: "true"

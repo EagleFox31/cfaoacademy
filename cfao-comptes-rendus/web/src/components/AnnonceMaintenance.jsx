@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import '../styles/annonce-maintenance.css'
 import { changementsVisibles } from '../utils/changementsMaintenance'
+import { adresse } from '../lib/adresse'
 
-const SOURCE = '/maintenance.json'
+const SOURCE = adresse('/maintenance.json')
 const DUREE = 10
 const DEJA_VUES = 'cfao.maintenances-vues'
 const CLOSES = 'cfao.maintenances-closes'
@@ -37,24 +38,21 @@ function ajouter(cle, id) {
  * - `compte`   : compte a rebours de 10 s ; le travail est enregistre des
  *                le debut, puis a 3 s pour les dernieres frappes, et la
  *                saisie est bloquee jusqu'a la fin ;
- * - `terminee` : la mise a jour est faite, on reprend ou l'on en etait ;
- *                `message`, s'il est donne, dit ce qu'elle apporte, et
+ * - `terminee` : la mise a jour est faite ; l'onglet qui a vu le compte a
+ *                rebours enregistre et se recharge seul (une fois), pour
+ *                tourner sur la nouvelle version, puis on reprend ou l'on
+ *                en etait ; `message`, s'il est donne, dit ce qu'elle apporte, et
  *                `changements` la liste de ses nouveautes, chacune pour
  *                tous ou pour certains roles seulement (`pour`) : chacun
  *                ne voit que celles qui le concernent.
  * Une annonce deja vue dans cet onglet ne rejoue pas apres rechargement.
- * L'onglet qui a vu le compte a rebours se recharge de lui-meme a
- * `terminee` (nouvelle version de l'interface), puis retrouve l'annonce
- * jusqu'a ce que le message de fin s'efface.
- * Le script `demarrer-module.ps1` ecrit ces deux etats a chaque deploiement.
+ * Mais la mise a jour elle-meme peut recharger la page : l'onglet qui
+ * a vu le compte a rebours retrouve alors l'annonce ou elle en etait
+ * (en cours, puis terminee) jusqu'a ce que le message de fin s'efface.
  */
 export default function AnnonceMaintenance({ roles }) {
   const [annonce, setAnnonce] = useState(null) // { id, reste, phase }
   const courante = useRef(null)
-  // Annonce en place a l'ouverture de l'onglet ('' si aucune) : une autre,
-  // terminee, veut dire que l'onglet a manque le compte a rebours (onglet en
-  // arriere-plan, lu une fois par minute par le navigateur).
-  const initiale = useRef(null)
 
   useEffect(() => {
     let actif = true
@@ -63,13 +61,7 @@ export default function AnnonceMaintenance({ roles }) {
         const r = await fetch(`${SOURCE}?t=${Date.now()}`, { cache: 'no-store' })
         if (!r.ok) return
         const m = await r.json()
-        if (!actif) return
-        if (initiale.current === null) initiale.current = m?.id || ''
-        if (!m?.id) return
-        if (m.etat === 'terminee' && m.id !== initiale.current && !liste(DEJA_VUES).includes(m.id)) {
-          ajouter(DEJA_VUES, m.id)
-          initiale.current = m.id
-        }
+        if (!actif || !m?.id) return
         const vue = liste(DEJA_VUES).includes(m.id)
         const suivie = courante.current === m.id
           || (vue && !courante.current && !liste(CLOSES).includes(m.id))
@@ -83,10 +75,11 @@ export default function AnnonceMaintenance({ roles }) {
           courante.current = m.id
           setAnnonce({ id: m.id, reste: 0, phase: 'en_cours' })
         } else if (m.etat === 'terminee' && suivie) {
-          // L'onglet tourne encore sur l'ancienne version : il charge la
-          // nouvelle (une seule fois), puis affiche le message de fin.
+          // L'onglet tourne encore sur l'ancienne version : il se recharge
+          // une fois, seul, puis affiche le message de fin.
           if (!liste(RECHARGEES).includes(m.id)) {
             ajouter(RECHARGEES, m.id)
+            toutEnregistrer()
             window.location.reload()
             return
           }

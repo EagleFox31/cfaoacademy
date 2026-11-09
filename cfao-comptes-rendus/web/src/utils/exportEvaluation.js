@@ -1,6 +1,7 @@
 import { BAREMES, lireNote, reglesAuSeuil, seuilDe } from './baremeCfao'
 import { MENTIONS, CRITERES_FORMATION, CRITERES_ACCUEIL } from './satisfactionCfao'
 import { estCertification, niveauDe } from './certification'
+import { adresse } from '../lib/adresse'
 
 /**
  * Le classeur d'evaluation d'une session, rempli dans le modele du
@@ -21,7 +22,7 @@ import { estCertification, niveauDe } from './certification'
  * progressions de chacun, comme dans le compte rendu.
  */
 
-export const MODELE_EVALUATION = '/modeles/evaluation.xlsx'
+export const MODELE_EVALUATION = adresse('/modeles/evaluation.xlsx')
 
 const DONNEES = 'Données Stagiaires'
 const SYNTHESE = 'Satisfaction Stagiaires'

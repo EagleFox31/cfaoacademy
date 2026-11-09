@@ -83,13 +83,22 @@ export default defineConfig(({ mode }) => ({
     host: '0.0.0.0',
     port: 5173,
     fs: { allow: ['..'] },
+    // Dans Docker sous Windows, le montage ne remonte pas les événements fichiers :
+    // VITE_POLLING=1 active la scrutation pour garder le HMR.
+    watch: process.env.VITE_POLLING ? { usePolling: true, interval: 300 } : undefined,
+    // Cibles surchargeables : en conteneur, localhost désigne le conteneur lui-même.
     proxy: {
+      // Avant '/api/v1' : vite prend la première règle qui correspond.
+      '/api/v1/planning': {
+        target: process.env.PLANNING_SERVICE || 'http://localhost:8005',
+        changeOrigin: true,
+      },
       '/api/v1': {
-        target: 'http://localhost:8000',
+        target: process.env.GATEWAY_SERVICE || 'http://localhost:8000',
         changeOrigin: true,
       },
       '/realms': {
-        target: 'http://localhost:8080',
+        target: process.env.KEYCLOAK_SERVICE || 'http://localhost:8080',
         changeOrigin: true,
       },
       // La session du formateur (connexion par compte), tenue par le service
@@ -100,7 +109,7 @@ export default defineConfig(({ mode }) => ({
         changeOrigin: true,
       },
       '/medacap-api': {
-        target: 'http://localhost',
+        target: process.env.MEDACAP_SERVICE || 'http://localhost',
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/medacap-api/, '/medacap'),
       },

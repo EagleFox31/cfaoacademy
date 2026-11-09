@@ -79,3 +79,67 @@ def test_migration_adopts_tables_already_created_by_ingestion():
         migration.adopt_or_create(apps, editor)  # tables présentes : aucune création, aucune erreur
     assert {"campaigns_branchbrandquota", "campaigns_courseallocation", "campaigns_trainingsession"} <= set(
         connection.introspection.table_names())
+
+
+# ── Clé de répartition (cfao-planning) ─────────────────────────────────────────
+
+from campaigns.models import CatalogLine, NeedLine, Submission  # noqa: E402
+from referential.models import Brand, CatalogFamily, OrgUnitRef  # noqa: E402
+
+
+def _catalog(campaign, code, brand=None, pole="MOBILITY"):
+    family, _ = CatalogFamily.objects.get_or_create(key=f"f-{pole}", defaults={"label": pole, "pole": pole})
+    return CatalogLine.objects.create(campaign=campaign, family=family, brand=brand, code=code, title=code)
+
+
+def _submission(campaign, country, status=Submission.Status.VALIDATED):
+    unit, _ = OrgUnitRef.objects.get_or_create(code=f"ou-{country.lower()}", defaults={"label": country})
+    return Submission.objects.create(campaign=campaign, org_unit=unit, country=country, status=status)
+
+
+def test_needs_fall_back_to_quota_import(client, campaign):
+    BranchBrandQuota.objects.create(campaign=campaign, pole="MOTORS", country="BENIN", brand="TOYOTA",
+                                    brand_tech_count=22, requested_needs=34)
+    BranchBrandQuota.objects.create(campaign=campaign, pole="EQUIPMENT", country="BENIN", brand="CAT",
+                                    brand_tech_count=5, requested_needs=9)
+    body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2026, "pole": "motors"}).json()
+    assert body["source"] == "quota_import"
+    assert body["rows"] == [{"country": "BENIN", "brand": "TOYOTA", "needs": 34, "technicians": 22}]
+
+
+def test_validated_submissions_replace_imported_needs(client, campaign):
+    BranchBrandQuota.objects.create(campaign=campaign, pole="MOTORS", country="BENIN", brand="Toyota",
+                                    brand_tech_count=22, requested_needs=34)
+    toyota = Brand.objects.create(code="toyota", label="Toyota", pole="MOBILITY")
+    line = _catalog(campaign, "TS01", toyota)
+    NeedLine.objects.create(submission=_submission(campaign, "BENIN"), catalog_line=line, q1=3, q3=2)
+    # Une fiche non validée ne compte pas.
+    NeedLine.objects.create(submission=_submission(campaign, "TOGO", Submission.Status.SUBMITTED),
+                            catalog_line=line, q1=50)
+    body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2026}).json()
+    assert body["source"] == "submissions"
+    assert body["rows"] == [{"country": "BENIN", "brand": "Toyota", "needs": 5, "technicians": 22}]
+
+
+def test_needs_empty_year_says_none(client, campaign):
+    body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2030}).json()
+    assert body == {"year": 2030, "pole": "all", "source": "none", "rows": []}
+
+
+def test_unchosen_modules_lists_catalog_without_validated_demand(client, campaign):
+    toyota = Brand.objects.create(code="toyota", label="Toyota", pole="MOBILITY")
+    chosen, idle, zero = (_catalog(campaign, c, toyota) for c in ("TS01", "TS02", "TS03"))
+    _catalog(campaign, "EQ01", pole="EQUIPMENT")
+    sub = _submission(campaign, "BENIN")
+    NeedLine.objects.create(submission=sub, catalog_line=chosen, q2=1)
+    NeedLine.objects.create(submission=sub, catalog_line=zero)  # ligne à 0 : non choisie
+    body = client.get("/api/v1/needs/analytics/unchosen-modules", {"year": 2026, "pole": "motors"}).json()
+    assert body["catalog_available"] is True
+    assert [m["code"] for m in body["modules"]] == ["TS02", "TS03"]
+    assert body["modules"][0] == {"pole": "MOBILITY", "brand": "Toyota", "tier": None, "code": "TS02",
+                                  "title": "TS02"}
+
+
+def test_unchosen_modules_without_catalog(client, campaign):
+    body = client.get("/api/v1/needs/analytics/unchosen-modules", {"year": 2026}).json()
+    assert body["catalog_available"] is False and body["modules"] == []

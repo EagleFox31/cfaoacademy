@@ -1,0 +1,33 @@
+# Keycloak commun, servi sous /auth comme son URL publique : le préfixe n'est
+# jamais retiré (Keycloak calcule ses URL depuis le chemin reçu).
+# Seuls les chemins publics sont relayés ; console, métriques, santé : 404.
+# Le realm master (jetons d'administration) n'est jamais exposé : seul le realm
+# cfao est relayé, tout autre realm tombe sur le 404 de /auth/.
+
+location /auth/ {
+    set $edge_module auth;
+    return 404;
+}
+
+location = /auth {
+    set $edge_module auth;
+    return 404;
+}
+
+location ~ ^/auth/(realms/cfao|resources)/ {
+    set $edge_module auth;
+    client_max_body_size 1m;
+    include /etc/nginx/snippets/proxy-commun.conf;
+    # L'émetteur n'est jamais déduit du Host reçu : hôte public imposé.
+    proxy_set_header Host ${EDGE_PUBLIC_HOST}:${EDGE_PUBLIC_PORT};
+    proxy_set_header X-Forwarded-Host ${EDGE_PUBLIC_HOST};
+    proxy_set_header X-Forwarded-Port ${EDGE_PUBLIC_PORT};
+    # Sans lui, le realm (sslRequired external) répond « HTTPS required ».
+    proxy_set_header X-Forwarded-Proto ${EDGE_PUBLIC_PROTO};
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    # En-têtes Keycloak volumineux (jetons, cookies de session).
+    proxy_buffer_size 128k;
+    proxy_buffers 4 256k;
+    proxy_busy_buffers_size 256k;
+    proxy_pass http://${EDGE_KEYCLOAK_UPSTREAM};
+}

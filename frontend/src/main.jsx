@@ -10,6 +10,8 @@ import './styles/delivery.css'
 import './styles/bulletin.css'
 import './styles/motion.css'
 import './styles/medacap.css'
+import './styles/sheet.css'
+import './styles/costkey.css'
 
 suivreEchelle()
 

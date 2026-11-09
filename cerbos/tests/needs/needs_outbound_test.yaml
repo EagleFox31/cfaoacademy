@@ -1,0 +1,170 @@
+# Tests policy needs_outbound — qui peut faire sortir un email vers une filiale.
+# Traduction en policy du principe « rien ne sort sans relecture » (spec §7.0).
+name: NeedsOutboundSuite
+description: La file d'envoi est réservée à l'équipe Academy
+
+principals:
+  assistante_academy:
+    id: u_assistante
+    roles: ["center_assistant"]
+    attr:
+      scopeNodes: ["groupe"]
+  coordonnateur:
+    id: u_coord
+    roles: ["training_coordinator"]
+    attr:
+      scopeNodes: ["groupe"]
+      brands: []
+  directeur_centre:
+    id: u_dircentre
+    roles: ["center_director"]
+    attr:
+      scopeNodes: ["groupe"]
+  superadmin:
+    id: u_root
+    roles: ["superadmin"]
+    attr:
+      scopeNodes: ["groupe"]
+  directeur_filiale:
+    id: u_dirfil
+    roles: ["branch_director"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+  admin_filiale:
+    id: u_adminfil
+    roles: ["branch_admin"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+  chef_atelier:
+    id: u_manager
+    roles: ["workshop_manager"]
+    attr:
+      scopeNodes: ["groupe.cmr.douala"]
+  admin_groupe:
+    id: u_admingroupe
+    roles: ["group_admin"]
+    attr:
+      scopeNodes: ["groupe"]
+  # Realm commun : rôles cumulés.
+  assistante_et_formatrice:
+    id: u_cumul
+    roles: ["center_assistant", "trainer"]
+    attr:
+      scopeNodes: ["groupe"]
+  directeur_filiale_et_apprenant:
+    id: u_cumul_fil
+    roles: ["branch_director", "learner"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+
+resources:
+  confirmation_en_attente:
+    kind: needs_outbound
+    id: m_1
+    attr:
+      kind: "submission_confirmed"
+      status: "PENDING_REVIEW"
+
+tests:
+  - name: l equipe Academy relit approuve et envoie
+    input:
+      principals: ["assistante_academy", "directeur_centre", "superadmin"]
+      resources: ["confirmation_en_attente"]
+      actions: ["view", "list", "approve", "reject", "send"]
+    expected:
+      - principal: assistante_academy
+        resource: confirmation_en_attente
+        actions:
+          view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+          approve: EFFECT_ALLOW
+          reject: EFFECT_ALLOW
+          send: EFFECT_ALLOW
+      - principal: directeur_centre
+        resource: confirmation_en_attente
+        actions:
+          view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+          approve: EFFECT_ALLOW
+          reject: EFFECT_ALLOW
+          send: EFFECT_ALLOW
+      - principal: superadmin
+        resource: confirmation_en_attente
+        actions:
+          view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+          approve: EFFECT_ALLOW
+          reject: EFFECT_ALLOW
+          send: EFFECT_ALLOW
+
+  - name: le coordonnateur des formations approuve et envoie
+    input:
+      principals: ["coordonnateur"]
+      resources: ["confirmation_en_attente"]
+      actions: ["view", "list", "approve", "reject", "send"]
+    expected:
+      - principal: coordonnateur
+        resource: confirmation_en_attente
+        actions:
+          view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+          approve: EFFECT_ALLOW
+          reject: EFFECT_ALLOW
+          send: EFFECT_ALLOW
+
+  - name: NEGATIF aucun role de filiale ne peut envoyer
+    input:
+      principals: ["directeur_filiale", "admin_filiale", "chef_atelier"]
+      resources: ["confirmation_en_attente"]
+      actions: ["view", "approve", "send"]
+    expected:
+      - principal: directeur_filiale
+        resource: confirmation_en_attente
+        actions:
+          view: EFFECT_DENY
+          approve: EFFECT_DENY
+          send: EFFECT_DENY
+      - principal: admin_filiale
+        resource: confirmation_en_attente
+        actions:
+          view: EFFECT_DENY
+          approve: EFFECT_DENY
+          send: EFFECT_DENY
+      - principal: chef_atelier
+        resource: confirmation_en_attente
+        actions:
+          view: EFFECT_DENY
+          approve: EFFECT_DENY
+          send: EFFECT_DENY
+
+  - name: un role Academy cumule avec formateur garde l envoi
+    input:
+      principals: ["assistante_et_formatrice"]
+      resources: ["confirmation_en_attente"]
+      actions: ["approve", "send"]
+    expected:
+      - principal: assistante_et_formatrice
+        resource: confirmation_en_attente
+        actions: { approve: EFFECT_ALLOW, send: EFFECT_ALLOW }
+
+  - name: NEGATIF deux roles hors Academy cumules n envoient pas
+    input:
+      principals: ["directeur_filiale_et_apprenant"]
+      resources: ["confirmation_en_attente"]
+      actions: ["view", "approve", "send"]
+    expected:
+      - principal: directeur_filiale_et_apprenant
+        resource: confirmation_en_attente
+        actions: { view: EFFECT_DENY, approve: EFFECT_DENY, send: EFFECT_DENY }
+
+  - name: NEGATIF meme l admin groupe ne fait pas partir un email de campagne
+    input:
+      principals: ["admin_groupe"]
+      resources: ["confirmation_en_attente"]
+      actions: ["send", "approve"]
+    expected:
+      - principal: admin_groupe
+        resource: confirmation_en_attente
+        actions:
+          send: EFFECT_DENY
+          approve: EFFECT_DENY

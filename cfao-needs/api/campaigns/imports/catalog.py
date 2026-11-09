@@ -98,8 +98,11 @@ class CatalogImporter(TabularImporter):
     columns = COLUMNS
     natural_key = ("family_key", "brand_code", "code")
 
-    def __init__(self, campaign):
+    def __init__(self, campaign, replace: bool = True):
         self.campaign = campaign
+        # replace=True : l'import remplace le catalogue (geste d'administration).
+        # replace=False : ajout pur, les lignes existantes gardent leur PK (seed).
+        self.replace = replace
         self._families = {f.key: f for f in CatalogFamily.objects.all()}
         self._brands = {b.code.upper(): b for b in Brand.objects.all()}
         self._brand_labels = {b.label.upper(): b for b in Brand.objects.all()}
@@ -249,9 +252,17 @@ class CatalogImporter(TabularImporter):
 
     # ── écriture ─────────────────────────────────────────────────────────────
     def write(self, rows: list[dict]) -> int:
+        from django.db.models import Max
+
         from campaigns.models import CatalogLine
 
-        CatalogLine.objects.filter(campaign=self.campaign).delete()
+        lines = CatalogLine.objects.filter(campaign=self.campaign)
+        offset = 0
+        if self.replace:
+            lines.delete()
+        else:
+            last = lines.aggregate(m=Max("sort_order"))["m"]
+            offset = 0 if last is None else last + 1
         CatalogLine.objects.bulk_create(
             [
                 CatalogLine(
@@ -264,7 +275,7 @@ class CatalogImporter(TabularImporter):
                     level_label=row["level_label"],
                     tier=row["tier"],
                     populations=row["populations"],
-                    sort_order=index,
+                    sort_order=offset + index,
                 )
                 for index, row in enumerate(rows)
             ]

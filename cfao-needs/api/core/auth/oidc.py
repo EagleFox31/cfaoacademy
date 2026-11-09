@@ -2,7 +2,8 @@
 
 Reprend le patron de `cfao-core` (architecture.md §6) avec une seule différence :
 la résolution du périmètre passe par `IdentityProvider` (identity.py), qui a deux
-implémentations selon le mode de déploiement.
+implémentations selon le mode de déploiement. La vérification elle-même est la
+copie commune `jwt_verifier.py` (émetteurs exacts, audiences listées).
 
 **Interdit n° 7 de l'audit** : un seul chemin d'authentification, un seul code
 d'erreur. Academix avait deux `get_current_user` divergents — l'un renvoyait 401,
@@ -11,23 +12,16 @@ comptes. Ici toute cause d'échec produit un 401 indifférencié.
 """
 from __future__ import annotations
 
-import jwt
+import logging
+
 from django.conf import settings
 from rest_framework import authentication, exceptions
 
+from . import jwt_verifier
 from .identity import get_identity_provider
 from .principal import build_principal
 
-_jwk_client: jwt.PyJWKClient | None = None
-
-
-def _client() -> jwt.PyJWKClient:
-    global _jwk_client
-    if _jwk_client is None:
-        if not settings.OIDC_JWKS_URL:
-            raise exceptions.AuthenticationFailed("Authentification indisponible.")
-        _jwk_client = jwt.PyJWKClient(settings.OIDC_JWKS_URL)
-    return _jwk_client
+logger = logging.getLogger(__name__)
 
 
 class KeycloakJWTAuthentication(authentication.BaseAuthentication):
@@ -41,29 +35,16 @@ class KeycloakJWTAuthentication(authentication.BaseAuthentication):
             return None
         token = header[len(self.keyword) + 1 :].strip()
 
-        options = {"require": ["exp", "sub"]}
-        audience = settings.OIDC_AUDIENCE or None
-        if audience is None:
-            options["verify_aud"] = False
-
         try:
-            signing_key = _client().get_signing_key_from_jwt(token)
-            unverified_claims = jwt.decode(token, options={"verify_signature": False})
-            token_iss = unverified_claims.get("iss", "")
-            if not (token_iss.endswith("/realms/cfao-needs") or (settings.OIDC_ISSUER and token_iss == settings.OIDC_ISSUER)):
-                print(f"[OIDC DEBUG] Invalid issuer: token_iss={token_iss}, OIDC_ISSUER={settings.OIDC_ISSUER}", flush=True)
-                raise jwt.InvalidIssuerError("Invalid issuer")
-
-            claims = jwt.decode(
+            claims = jwt_verifier.verify(
                 token,
-                signing_key.key,
-                algorithms=["RS256"],
-                audience=audience,
-                issuer=token_iss,
-                options=options,
+                jwt_verifier.trusted_issuers(
+                    settings.OIDC_TRUSTED_ISSUERS, settings.OIDC_ISSUER, settings.OIDC_JWKS_URL
+                ),
+                jwt_verifier.audiences(settings.OIDC_AUDIENCE),
             )
-        except Exception as e:
-            print(f"[OIDC DEBUG] Auth failed: {type(e).__name__}: {e}", flush=True)
+        except jwt_verifier.TokenRejected as exc:
+            logger.info("JWT refusé : %s", exc)
             raise exceptions.AuthenticationFailed("Authentification refusée.")
 
         principal = build_principal(claims)

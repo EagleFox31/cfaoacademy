@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import PortalGreetingBlock from './PortalGreetingBlock.jsx'
+import { adresse } from '../../lib/adresse'
 
 /* ─── Salutation ───────────────────────────────────────────────── */
 
@@ -35,19 +36,19 @@ function computeGreetingKey() {
 /* ─── Marques ──────────────────────────────────────────────────── */
 
 const BRAND_LOGOS = {
-  toyota:    '/assets/logos/toyota.png',
-  mercedes:  '/assets/logos/mercedes.png',
-  suzuki:    '/assets/logos/suzuki.png',
-  mitsubishi:'/assets/logos/mitsubishi.png',
-  byd:       '/assets/logos/byd.png',
-  citroen:   '/assets/logos/citroen.png',
-  yamaha:    '/assets/logos/yamaha.png',
-  fuso:      '/assets/logos/fuso.png',
-  hino:      '/assets/logos/hino.png',
-  jcb:       '/assets/logos/jcb.png',
-  lovol:     '/assets/logos/lovol.png',
-  'renault-trucks': '/assets/logos/renault-trucks.png',
-  'king-long': '/assets/logos/kinglong.png',
+  toyota:    adresse('/assets/logos/toyota.png'),
+  mercedes:  adresse('/assets/logos/mercedes.png'),
+  suzuki:    adresse('/assets/logos/suzuki.png'),
+  mitsubishi:adresse('/assets/logos/mitsubishi.png'),
+  byd:       adresse('/assets/logos/byd.png'),
+  citroen:   adresse('/assets/logos/citroen.png'),
+  yamaha:    adresse('/assets/logos/yamaha.png'),
+  fuso:      adresse('/assets/logos/fuso.png'),
+  hino:      adresse('/assets/logos/hino.png'),
+  jcb:       adresse('/assets/logos/jcb.png'),
+  lovol:     adresse('/assets/logos/lovol.png'),
+  'renault-trucks': adresse('/assets/logos/renault-trucks.png'),
+  'king-long': adresse('/assets/logos/kinglong.png'),
 }
 
 function BrandLogo({ brand }) {

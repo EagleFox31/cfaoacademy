@@ -1,3 +1,4 @@
+import { adresse } from '../lib/adresse'
 /**
  * La redaction assistee des appreciations.
  *
@@ -37,7 +38,7 @@ export function participantPourMoteur(p, calcul, satisfaction, accueil, seuil) {
  */
 export async function proposerTexte(participant, type = 'accueil') {
   try {
-    const reponse = await fetch('/apercu/redaction', {
+    const reponse = await fetch(adresse('/apercu/redaction'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // Une graine par clic : « Autre proposition » change de tournure.

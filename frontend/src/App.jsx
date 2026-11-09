@@ -3,6 +3,7 @@ import { LocaleProvider } from './context/LocaleProvider.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import Portal from './pages/portal/Portal.jsx'
 import Assistance from './pages/portal/Assistance.jsx'
+import CleRepartition from './pages/portal/CleRepartition.jsx'
 import CompetencyBulletin from './pages/portal/CompetencyBulletin.jsx'
 import DpsBrandCompetencyDetail from './pages/portal/DpsBrandCompetencyDetail.jsx'
 import DpsTierCompetencyDetail from './pages/portal/DpsTierCompetencyDetail.jsx'
@@ -74,6 +75,8 @@ export default function App() {
           <Route path="/portail/teamgp" element={<KiTeamgpDetail />} />
           <Route path="/portail/technicien/:technicianId/pif" element={<DpsTechnicianPifDetail />} />
           <Route path="/portail/assistance" element={<Assistance />} />
+          <Route path="/portail/cle-repartition" element={<CleRepartition />} />
+          <Route path="/portail/cle-repartition/:view" element={<CleRepartition />} />
           <Route path="/portail/resultats" element={<CompetencyBulletin />} />
           <Route path="/portail/resultats/:evalId" element={<CompetencyBulletin />} />
           <Route path="/portail/delivery" element={<Delivery />} />

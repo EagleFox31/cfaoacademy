@@ -1,0 +1,10 @@
+# needs à la racine : identique au partage zrok en direct. Host et X-Forwarded-*
+# reçus transmis tels quels (rétroactif). Inclus par l'écoute publique et LAN.
+location / {
+    set $edge_module needs;
+    client_max_body_size 12m;   # aligné sur NEEDS_IMPORT_MAX_FILE_MB
+    include /etc/nginx/snippets/proxy-commun.conf;
+    proxy_set_header Host $http_host;
+    proxy_read_timeout 120s;    # imports needs
+    proxy_pass http://${EDGE_NEEDS_UPSTREAM};
+}

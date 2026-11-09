@@ -1,0 +1,94 @@
+# Module « Planning des formateurs & clé de répartition » (app 05).
+#
+#   docker compose -f cfao-planning/docker-compose.yml up
+#
+# Base vide -> application utilisable sans commande manuelle : le job
+# planning-migrate applique les migrations puis charge le référentiel et les
+# paramètres de clé en créer-seulement (AGENTS.md §7). Sur une base à jour,
+# il ne fait aucune écriture ; une donnée modifiée en prod n'est jamais écrasée.
+# Autorisation : le PDP Cerbos unique de la plateforme (service `cerbos` du
+# compose racine, port 3592 publié sur l'hôte), jamais un Cerbos propre au module.
+#   docker compose up -d cerbos        (à la racine, avant ce compose)
+
+name: cfao-planning
+
+services:
+  planning-db:
+    mem_limit: 512m
+    restart: unless-stopped
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${PLANNING_DB_NAME:-planning}
+      POSTGRES_USER: ${PLANNING_DB_USER:-planning}
+      POSTGRES_PASSWORD: ${PLANNING_DB_PASSWORD:?PLANNING_DB_PASSWORD est obligatoire}
+    volumes:
+      - planning-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PLANNING_DB_USER:-planning}"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+
+  planning-migrate:
+    # Job ponctuel sur l'image de l'API ; jamais dans l'entrypoint (répliques concurrentes).
+    mem_limit: 384m
+    restart: "no"
+    build: ./api
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_referential && python manage.py seed_cost_key"]
+    environment: &api_env
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
+      PLANNING_SECRET_KEY: ${PLANNING_SECRET_KEY:?PLANNING_SECRET_KEY est obligatoire}
+      PLANNING_DEPLOYMENT_MODE: ${PLANNING_DEPLOYMENT_MODE:-standalone}
+      PLANNING_DB_HOST: planning-db
+      PLANNING_DB_NAME: ${PLANNING_DB_NAME:-planning}
+      PLANNING_DB_USER: ${PLANNING_DB_USER:-planning}
+      PLANNING_DB_PASSWORD: ${PLANNING_DB_PASSWORD:?}
+      CERBOS_HTTP: ${CERBOS_HTTP:-http://host.docker.internal:3592}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-}
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      # Vides : l'API et ce job refusent de démarrer (config/settings/dev.py).
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-cfao-planning-api}
+      OIDC_TRUSTED_ISSUERS: ${OIDC_TRUSTED_ISSUERS:-}
+      NEEDS_API_URL: ${NEEDS_API_URL:-}
+      NEEDS_ANALYTICS_KEY: ${NEEDS_ANALYTICS_KEY:-}
+      PLANNING_ACADEMY_SITE: ${PLANNING_ACADEMY_SITE:-DOUALA}
+      PLANNING_ACADEMY_COUNTRY: ${PLANNING_ACADEMY_COUNTRY:-cmr}
+    depends_on:
+      planning-db:
+        condition: service_healthy
+
+  planning-api:
+    mem_limit: 512m
+    restart: unless-stopped
+    build: ./api
+    environment: *api_env
+    # cfao-maillage : joint needs-api (besoins validés de la clé de répartition).
+    networks: [default, cfao-maillage]
+    # PDP et Keycloak joints par leurs ports publiés sur l'hôte.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      planning-migrate:
+        condition: service_completed_successfully
+    ports:
+      - "${PLANNING_PORT:-8005}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-S", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/planning/healthz', timeout=5).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  # Réseau de maillage inter-modules : seules les API qui s'appellent entre elles
+  # le rejoignent, les bases restent sur le réseau privé de leur module.
+  # Volontairement PAS `external` : le premier module démarré le crée, aucune
+  # commande préalable (AGENTS.md §7). Clé et nom identiques dans chaque compose
+  # (edge/tests/test_edge_config.py le vérifie).
+  cfao-maillage:
+    name: cfao-maillage
+
+volumes:
+  planning-db-data:

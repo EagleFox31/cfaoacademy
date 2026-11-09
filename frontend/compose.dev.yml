@@ -1,0 +1,45 @@
+# Front du portail en développement, dans Docker (vite + HMR).
+#
+#   docker compose -f frontend/compose.dev.yml up -d
+#   -> http://localhost:5173
+#
+# Les sources sont montées depuis le poste : une modification est rechargée à chaud.
+# node_modules vit dans un volume (binaires Linux, pas ceux du poste Windows).
+# Les autres modules sont joints par leurs ports publiés sur l'hôte
+# (host.docker.internal) : aucun réseau partagé à créer, chaque pile reste autonome.
+
+name: cfao-front
+
+services:
+  front:
+    image: node:22.23.4-alpine
+    working_dir: /repo/frontend
+    # npm ci seulement si le lockfile a changé depuis la dernière installation.
+    command: ["sh", "-c", "cmp -s package-lock.json node_modules/.lock-installe || { npm ci --no-audit --no-fund && cp package-lock.json node_modules/.lock-installe; }; exec npm run dev"]
+    mem_limit: 1g
+    restart: unless-stopped
+    environment:
+      VITE_POLLING: "1"
+      # Prime sur frontend/.env. Recette derrière edge : http://localhost:8088/auth/realms/cfao.
+      VITE_OIDC_ISSUER: ${VITE_OIDC_ISSUER:-http://localhost:8080/realms/cfao}
+      # host.docker.internal a aussi une adresse IPv6 injoignable : sans cela, le proxy expire au hasard.
+      NODE_OPTIONS: --dns-result-order=ipv4first
+      GATEWAY_SERVICE: http://host.docker.internal:8000
+      KEYCLOAK_SERVICE: http://host.docker.internal:8080
+      PLANNING_SERVICE: http://host.docker.internal:8005
+      CR_SERVICE: http://host.docker.internal:5175
+      MEDACAP_SERVICE: http://host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${FRONT_PORT:-5173}:5173"
+    volumes:
+      # Le dépôt entier : vite sert aussi ../catalogues et ../assets.
+      - ..:/repo
+      # public/assets est une jonction Windows vers un chemin absolu du poste,
+      # cassée dans le conteneur : montée ici. (catalogues : repli dans vite.config.)
+      - ../assets:/repo/frontend/public/assets:ro
+      - front-node-modules:/repo/frontend/node_modules
+
+volumes:
+  front-node-modules:

@@ -1,7 +1,9 @@
-# Realm CFAO Academy — config-as-code (story 00-6).
+# Realm CFAO Academy v2 — config-as-code (story 00-6, fédération L3).
+# Realm commun à tous les modules (core, needs, comptes rendus, planning).
 # Appliqué par keycloak-config-cli (idempotent, sans redémarrage, détection de dérive).
-# DEV : valeurs littérales non sensibles ci-dessous (secret BFF de dev, IdP placeholders).
-# PROD : remplacer ces littéraux par l'injection de secrets de l'environnement (Azure Key Vault).
+# Substitution activée : $(env:NOM:-défaut). Le défaut est la valeur de dev ;
+# en prod, l'environnement fournit les secrets (Key Vault) et CFAO_SPA_ENABLED=false.
+# Contrôlé par keycloak/tests (cohérence statique + smoke sur un vrai Keycloak).
 realm: cfao
 enabled: true
 displayName: CFAO Academy
@@ -10,19 +12,18 @@ registrationAllowed: false
 loginWithEmailAllowed: true
 duplicateEmailsAllowed: false
 resetPasswordAllowed: true
-# ── Durées de session (Phase 3 — Auth & Sessions) ──
+bruteForceProtected: true
+# ── Durées de session (décision fédération : session de 8 h) ──
 # JWT court : 15 minutes. La continuité est assurée par le Silent Refresh côté SPA.
 accessTokenLifespan: 900
-# SSO Session standard (journée de travail) :
-ssoSessionIdleTimeout: 28800          # 8 heures
-ssoSessionMaxLifespan: 86400          # 24 heures
-# "Se souvenir de moi" natif Keycloak (postes personnels, pas les ateliers) :
-rememberMe: true
-ssoSessionIdleTimeoutRememberMe: 604800   # 7 jours
-ssoSessionMaxLifespanRememberMe: 604800   # 7 jours
-# Client session alignée sur la session SSO :
-clientSessionIdleTimeout: 28800
-clientSessionMaxLifespan: 86400
+# OWASP ASVS niveau 2 (3.3.2) : 8 h au plus, coupée après 30 min d'inactivité ;
+# le silent refresh garde la session tant que l'utilisateur travaille.
+# Pas de « se souvenir de moi » (postes partagés en atelier).
+ssoSessionIdleTimeout: 1800           # 30 minutes
+ssoSessionMaxLifespan: 28800          # 8 heures
+rememberMe: false
+clientSessionIdleTimeout: 1800
+clientSessionMaxLifespan: 28800
 loginTheme: cfao-academy
 internationalizationEnabled: true
 supportedLocales:
@@ -57,6 +58,8 @@ roles:
     - { name: group_director,    description: Directeur Groupe }
     - { name: trainer,           description: Formateur certifié constructeur }
     - { name: center_assistant,  description: Assistante du centre }
+    - { name: training_coordinator, description: Coordinateur formation }
+    - { name: planning_viewer,   description: Lecteur de la clé de répartition (planning seul) }
     - { name: center_director,   description: Directeur du centre de formation }
     - { name: content_editor,    description: Éditeur de contenu (Wagtail) }
     - { name: branch_admin,      description: Admin Filiale }
@@ -123,7 +126,58 @@ clientScopes:
           access.token.claim: "true"
           userinfo.token.claim: "true"
 
+  # ── Audiences : un scope par API. Le client qui appelle une API le porte en
+  # scope par défaut ; l'API n'accepte que les jetons dont `aud` la nomme.
+  - name: aud-cfao-core-api
+    description: Audience de l'API cfao-core
+    protocol: openid-connect
+    attributes: { include.in.token.scope: "false", display.on.consent.screen: "false" }
+    protocolMappers:
+      - name: aud-cfao-core-api
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config: { included.client.audience: cfao-core-api, access.token.claim: "true", id.token.claim: "false", introspection.token.claim: "true" }
+  - name: aud-cfao-needs-api
+    description: Audience de l'API cfao-needs
+    protocol: openid-connect
+    attributes: { include.in.token.scope: "false", display.on.consent.screen: "false" }
+    protocolMappers:
+      - name: aud-cfao-needs-api
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config: { included.client.audience: cfao-needs-api, access.token.claim: "true", id.token.claim: "false", introspection.token.claim: "true" }
+  - name: aud-cfao-cr-api
+    description: Audience de l'API des comptes rendus
+    protocol: openid-connect
+    attributes: { include.in.token.scope: "false", display.on.consent.screen: "false" }
+    protocolMappers:
+      - name: aud-cfao-cr-api
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config: { included.client.audience: cfao-cr-api, access.token.claim: "true", id.token.claim: "false", introspection.token.claim: "true" }
+  - name: aud-cfao-planning-api
+    description: Audience de l'API cfao-planning
+    protocol: openid-connect
+    attributes: { include.in.token.scope: "false", display.on.consent.screen: "false" }
+    protocolMappers:
+      - name: aud-cfao-planning-api
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config: { included.client.audience: cfao-planning-api, access.token.claim: "true", id.token.claim: "false", introspection.token.claim: "true" }
+  - name: aud-cfao-operations-api
+    description: Audience de l'API cfao-operations (Node)
+    protocol: openid-connect
+    attributes: { include.in.token.scope: "false", display.on.consent.screen: "false" }
+    protocolMappers:
+      - name: aud-cfao-operations-api
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config: { included.client.audience: cfao-operations-api, access.token.claim: "true", id.token.claim: "false", introspection.token.claim: "true" }
+
 # ── Clients OAuth ──
+# Convention : cfao-<module>-web (interface qui obtient le jeton) et
+# cfao-<module>-api (API qui le vérifie : bearer-only, aucun flux, sert de cible d'audience).
+# Le portail (BFF) et la SPA de dev servent core, comptes rendus, planning et operations.
 clients:
   # BFF (oauth2-proxy) — confidentiel. La SPA passe par lui ; elle ne voit jamais le JWT.
   - clientId: cfao-portal
@@ -134,11 +188,12 @@ clients:
     standardFlowEnabled: true
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
-    secret: "dev-portal-secret"  # DEV uniquement — prod via Key Vault
-    redirectUris:
-      - "http://localhost:8000/oauth2/callback"
+    secret: "$(env:CFAO_PORTAL_SECRET:-dev-portal-secret)"  # défaut = dev ; prod via Key Vault
+    # Hôtes fournis par l'environnement (liste JSON) : plusieurs URL coexistent
+    # pendant un changement d'hôte. Origines CORS déduites des redirections (`+`).
+    redirectUris: $(env:CFAO_PORTAL_REDIRECT_URIS:-["http://localhost:8000/oauth2/callback"])
     webOrigins:
-      - "http://localhost:8000"
+      - "+"
     defaultClientScopes:
       - basic
       - web-origins
@@ -146,11 +201,16 @@ clients:
       - roles
       - email
       - cfao-scope
+      - aud-cfao-core-api
+      - aud-cfao-cr-api
+      - aud-cfao-planning-api
+      - aud-cfao-operations-api
 
   # SPA dev (PKCE public) — pour obtenir un token côté dev et tester /me sans le BFF complet.
+  # Désactivée en prod (CFAO_SPA_ENABLED=false) : grant password et redirections larges.
   - clientId: cfao-spa
     name: CFAO Academy — SPA (dev, PKCE)
-    enabled: true
+    enabled: $(env:CFAO_SPA_ENABLED:-true)
     protocol: openid-connect
     publicClient: true
     standardFlowEnabled: true
@@ -158,6 +218,8 @@ clients:
     redirectUris:
       - "http://localhost:5173/*"
       - "http://localhost:8000/*"
+      # Pile de recette derrière cfao-edge (edge/compose.dev.yml).
+      - "http://localhost:8088/*"
       - "http://192.168.1.126:5173/*"
       - "http://192.168.1.126:8000/*"
       - "http://192.168.*:5173/*"
@@ -173,6 +235,85 @@ clients:
       - roles
       - email
       - cfao-scope
+      - aud-cfao-core-api
+      - aud-cfao-cr-api
+      - aud-cfao-planning-api
+      - aud-cfao-operations-api
+
+  # SPA needs (PKCE public), successeur de `needs-web` du realm cfao-needs.
+  - clientId: cfao-needs-web
+    name: CFAO Needs — SPA (PKCE)
+    enabled: true
+    protocol: openid-connect
+    publicClient: true
+    standardFlowEnabled: true
+    directAccessGrantsEnabled: false
+    redirectUris: $(env:CFAO_NEEDS_REDIRECT_URIS:-["http://localhost:8082/*","http://localhost:5174/*","http://127.0.0.1:8082/*"])
+    webOrigins:
+      - "+"
+    attributes:
+      pkce.code.challenge.method: S256
+      post.logout.redirect.uris: "+"
+    defaultClientScopes:
+      - basic
+      - web-origins
+      - profile
+      - roles
+      - email
+      - cfao-scope
+      - aud-cfao-needs-api
+
+  # APIs : bearer-only. Aucun flux, aucun secret : elles ne demandent jamais de jeton.
+  - clientId: cfao-core-api
+    name: CFAO Academy — API core
+    enabled: true
+    protocol: openid-connect
+    bearerOnly: true
+    publicClient: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+  - clientId: cfao-needs-api
+    name: CFAO Needs — API
+    enabled: true
+    protocol: openid-connect
+    bearerOnly: true
+    publicClient: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+  - clientId: cfao-cr-api
+    name: CFAO Comptes rendus — API
+    enabled: true
+    protocol: openid-connect
+    bearerOnly: true
+    publicClient: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+  - clientId: cfao-planning-api
+    name: CFAO Planning — API
+    enabled: true
+    protocol: openid-connect
+    bearerOnly: true
+    publicClient: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+  - clientId: cfao-operations-api
+    name: CFAO Operations — API
+    enabled: true
+    protocol: openid-connect
+    bearerOnly: true
+    publicClient: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
 
 # ── Identity providers upstream (MS / Google) — désactivés tant que les secrets ne sont pas fournis ──
 identityProviders:
@@ -194,208 +335,3 @@ identityProviders:
       authorizationUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
       tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token"
       defaultScope: "openid email profile"
-
-# ── Utilisateurs de démo (DEV uniquement) — alignés sur les personas du front ──
-users:
-  - username: kouame.assi
-    id: "11111111-1111-1111-1111-000000000001"
-    enabled: true
-    emailVerified: true
-    email: kouame.assi@cfao.example
-    firstName: Kouamé
-    lastName: Assi
-    realmRoles: [learner]
-    attributes:
-      scopeNode: ["groupe.afrique_ouest.cote_divoire.abidjan_plateau"]
-      departments: ["motors"]
-      brands: ["toyota"]
-      orgPath:
-        - "groupe"
-        - "groupe.afrique_ouest"
-        - "groupe.afrique_ouest.cote_divoire"
-        - "groupe.afrique_ouest.cote_divoire.abidjan_plateau"
-    credentials:
-      - { type: password, value: demo, temporary: false }
-
-  - username: brahim.tahir
-    id: "11111111-1111-1111-1111-000000000002"
-    enabled: true
-    emailVerified: true
-    email: brahim.tahir@cfao.example
-    firstName: Brahim
-    lastName: Tahir
-    realmRoles: [learner, ki]
-    attributes:
-      scopeNode: ["groupe.afrique_nord.maroc.casablanca"]
-      departments: ["motors"]
-      brands: ["toyota"]
-      orgPath:
-        - "groupe"
-        - "groupe.afrique_nord"
-        - "groupe.afrique_nord.maroc"
-        - "groupe.afrique_nord.maroc.casablanca"
-    credentials:
-      - { type: password, value: demo, temporary: false }
-
-  - username: moa.pilotage
-    id: "11111111-1111-1111-1111-000000000003"
-    enabled: true
-    emailVerified: true
-    email: moa@cfao.example
-    firstName: MOA
-    lastName: Pilotage
-    realmRoles: [group_admin]
-    attributes:
-      scopeNode: ["groupe"]
-      orgPath: ["groupe"]
-    credentials:
-      - { type: password, value: demo, temporary: false }
-
-  - username: tech.lead
-    id: "11111111-1111-1111-1111-000000000004"
-    enabled: true
-    emailVerified: true
-    email: techlead@cfao.example
-    firstName: Tech
-    lastName: Lead
-    realmRoles: [build_team]
-    attributes:
-      scopeNode: ["groupe"]
-      orgPath: ["groupe"]
-    credentials:
-      - { type: password, value: demo, temporary: false }
-
-  - username: admin.groupe
-    id: "11111111-1111-1111-1111-000000000005"
-    enabled: true
-    emailVerified: true
-    email: admin@cfao.example
-    firstName: Admin
-    lastName: Groupe
-    realmRoles: [superadmin]
-    attributes:
-      scopeNode: ["groupe"]
-      orgPath: ["groupe"]
-    credentials:
-      - { type: password, value: demo, temporary: false }
-
-  - username: seydou.diallo
-    id: "11111111-1111-1111-1111-000000000006"
-    enabled: true
-    emailVerified: true
-    email: seydou.diallo@cfao.example
-    firstName: Seydou
-    lastName: Diallo
-    realmRoles: [team_manager]
-    attributes:
-      scopeNode: ["groupe.afrique_ouest.senegal.dakar_nord"]
-      departments: ["motors"]
-      brands: ["toyota", "suzuki"]
-      orgPath:
-        - "groupe"
-        - "groupe.afrique_ouest"
-        - "groupe.afrique_ouest.senegal"
-        - "groupe.afrique_ouest.senegal.dakar_nord"
-    credentials:
-      - { type: password, value: demo, temporary: false }
-
-  - username: fatou.mbaye
-    id: "11111111-1111-1111-1111-000000000007"
-    enabled: true
-    emailVerified: true
-    email: fatou.mbaye@cfao.example
-    firstName: Fatou
-    lastName: Mbaye
-    realmRoles: [workshop_manager]
-    attributes:
-      scopeNode: ["groupe.afrique_ouest.senegal.dakar_nord"]
-      departments: ["motors"]
-      brands: ["toyota", "suzuki", "fuso"]
-      orgPath:
-        - "groupe"
-        - "groupe.afrique_ouest"
-        - "groupe.afrique_ouest.senegal"
-        - "groupe.afrique_ouest.senegal.dakar_nord"
-    credentials:
-      - { type: password, value: demo, temporary: false }
-
-  - username: aminata.kone
-    id: "11111111-1111-1111-1111-000000000008"
-    enabled: true
-    emailVerified: true
-    email: aminata.kone@cfao.example
-    firstName: Aminata
-    lastName: Koné
-    realmRoles: [branch_hr]
-    attributes:
-      scopeNode: ["groupe.afrique_ouest.cote_divoire"]
-      departments: ["motors"]
-      orgPath:
-        - "groupe"
-        - "groupe.afrique_ouest"
-        - "groupe.afrique_ouest.cote_divoire"
-    credentials:
-      - { type: password, value: demo, temporary: false }
-
-  # u9 — apprenant Equipment / PL (Cameroun). Couvre la règle « PL/engins = département Equipment ».
-  - username: loic.traore
-    id: "11111111-1111-1111-1111-000000000009"
-    enabled: true
-    emailVerified: true
-    email: loic.traore@cfao.example
-    firstName: Loïc
-    lastName: Traoré
-    realmRoles: [learner]
-    attributes:
-      scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
-      departments: ["equipment"]
-      brands: ["fuso", "renault-trucks", "king-long", "jcb", "lovol"]
-      orgPath:
-        - "groupe"
-        - "groupe.afrique_centrale"
-        - "groupe.afrique_centrale.cameroun"
-        - "groupe.afrique_centrale.cameroun.douala"
-    credentials:
-      - { type: password, value: demo, temporary: false }
-
-  # Cameroun — profils MEDACAP. Sans eux, les tableaux de bord DPS et KI n'ont
-  # aucun compte reel derriere leur maquette.
-  - username: jacques.robin
-    id: "11111111-1111-1111-1111-000000000010"
-    enabled: true
-    emailVerified: true
-    email: jacques.robin@cfao.example
-    firstName: Jacques
-    lastName: Robin
-    realmRoles: [dps]
-    attributes:
-      scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
-      departments: ["equipment"]
-      brands: ["sinotruk", "renault-trucks", "king-long", "hino", "jcb", "toyota-forklift", "bt", "lovol"]
-      orgPath:
-        - "groupe"
-        - "groupe.afrique_centrale"
-        - "groupe.afrique_centrale.cameroun"
-        - "groupe.afrique_centrale.cameroun.douala"
-    credentials:
-      - { type: password, value: demo, temporary: false }
-
-  - username: andre.yogba
-    id: "11111111-1111-1111-1111-000000000011"
-    enabled: true
-    emailVerified: true
-    email: andre.yogba@cfao.example
-    firstName: Andre
-    lastName: Yogba
-    realmRoles: [learner, ki]
-    attributes:
-      scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
-      departments: ["motors"]
-      brands: ["toyota"]
-      orgPath:
-        - "groupe"
-        - "groupe.afrique_centrale"
-        - "groupe.afrique_centrale.cameroun"
-        - "groupe.afrique_centrale.cameroun.douala"
-    credentials:
-      - { type: password, value: demo, temporary: false }

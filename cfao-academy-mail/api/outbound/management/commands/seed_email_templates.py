@@ -60,7 +60,7 @@ class Command(BaseCommand):
             key = message_type.subject_key
             stub = STUBS.get(key)
             for locale in LOCALES:
-                if EmailTemplate.objects.filter(key=key, locale=locale, is_active=True).exists():
+                if EmailTemplate.objects.filter(key=key, locale=locale).exists():
                     continue
                 if stub:
                     subject, body = stub[locale]

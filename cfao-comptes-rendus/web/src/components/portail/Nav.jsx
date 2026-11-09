@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/auth'
 import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
 import { sessionsAVenir } from '../../utils/planningFormateur.js'
 import { scrollToPortalSection } from '../../utils/portalScroll.js'
+import { adresse } from '../../lib/adresse'
 
 // Adresse du portail, quand le module en est un satellite : le bouton
 // « Retour au site » n'existe que si elle est renseignée.
@@ -252,7 +253,7 @@ export default function Nav({ sansPriorites = false }) {
     >
       <div className="nav-shell">
         <Link to="/" className="brand nav-brand" style={{ textDecoration: 'none' }} onClick={brandClick}>
-          <img src="/assets/logo-cfao-mobility.jpg" alt="cfao mobility" className="brand-mark" />
+          <img src={adresse('/assets/logo-cfao-mobility.jpg')} alt="cfao mobility" className="brand-mark" />
           <div className="brand-label">Academy<span>.</span></div>
         </Link>
 

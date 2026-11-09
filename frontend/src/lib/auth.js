@@ -27,6 +27,16 @@
  */
 export const OIDC_ACTIF = Boolean((import.meta.env.VITE_OIDC_ISSUER || '').trim())
 
+/**
+ * Portail servi derrière cfao-edge : Keycloak est sur la même origine, sous
+ * /auth/. La connexion passe alors uniquement par la page Keycloak (pas de
+ * modale du portail, ni comptes CR, ni « se souvenir de moi »).
+ */
+export function connexionKeycloakSeule() {
+  if (!OIDC_ACTIF || typeof window === 'undefined') return false
+  return resolveIssuer().startsWith(`${window.location.origin}/auth/`)
+}
+
 function resolveIssuer() {
   const envIssuer = (import.meta.env.VITE_OIDC_ISSUER || '').trim()
   if (!envIssuer) return ''

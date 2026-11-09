@@ -19,4 +19,5 @@ ENV PATH=/opt/venv/bin:$PATH \
     DJANGO_SETTINGS_MODULE=config.settings.base
 USER service
 EXPOSE 5180
-CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:5180 --workers 1 --threads 4 --timeout 60 --access-logfile -"]
+# Le schéma est posé par le job mail-migrate du compose (AGENTS.md §7), jamais ici.
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:5180", "--workers", "1", "--threads", "4", "--timeout", "60", "--access-logfile", "-"]

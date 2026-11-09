@@ -55,5 +55,6 @@ EXPOSE 5175
 
 # Un seul processus : le verrou LibreOffice et les taches de fond vivent en
 # memoire. Les fils absorbent les requetes simultanees ; le long delai couvre
-# un rapport complet produit sans tache de fond.
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py compte_technique && exec gunicorn config.wsgi:application --bind 0.0.0.0:5175 --workers 1 --threads 8 --timeout 300 --access-logfile -"]
+# un rapport complet produit sans tache de fond. Schema et compte technique :
+# job `migrate` du compose (AGENTS.md section 7), jamais au demarrage de l'API.
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:5175", "--workers", "1", "--threads", "8", "--timeout", "300", "--access-logfile", "-"]

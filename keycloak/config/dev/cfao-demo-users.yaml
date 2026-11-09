@@ -1,0 +1,223 @@
+# Comptes de démo du realm `cfao` (DEV uniquement, mot de passe « demo »), alignés sur les personas du front.
+# Importés par keycloak-config-cli seulement si `/config/dev/*.yaml` figure dans IMPORT_FILES_LOCATIONS :
+# jamais en prod, où les comptes viennent de la migration (keycloak/migration/).
+realm: cfao
+users:
+  - username: kouame.assi
+    id: "11111111-1111-1111-1111-000000000001"
+    enabled: true
+    emailVerified: true
+    email: kouame.assi@cfao.example
+    firstName: Kouamé
+    lastName: Assi
+    realmRoles: [learner]
+    attributes:
+      scopeNode: ["groupe.afrique_ouest.cote_divoire.abidjan_plateau"]
+      departments: ["motors"]
+      brands: ["toyota"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_ouest"
+        - "groupe.afrique_ouest.cote_divoire"
+        - "groupe.afrique_ouest.cote_divoire.abidjan_plateau"
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: brahim.tahir
+    id: "11111111-1111-1111-1111-000000000002"
+    enabled: true
+    emailVerified: true
+    email: brahim.tahir@cfao.example
+    firstName: Brahim
+    lastName: Tahir
+    realmRoles: [learner, ki]
+    attributes:
+      scopeNode: ["groupe.afrique_nord.maroc.casablanca"]
+      departments: ["motors"]
+      brands: ["toyota"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_nord"
+        - "groupe.afrique_nord.maroc"
+        - "groupe.afrique_nord.maroc.casablanca"
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: moa.pilotage
+    id: "11111111-1111-1111-1111-000000000003"
+    enabled: true
+    emailVerified: true
+    email: moa@cfao.example
+    firstName: MOA
+    lastName: Pilotage
+    realmRoles: [group_admin]
+    attributes:
+      scopeNode: ["groupe"]
+      orgPath: ["groupe"]
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: tech.lead
+    id: "11111111-1111-1111-1111-000000000004"
+    enabled: true
+    emailVerified: true
+    email: techlead@cfao.example
+    firstName: Tech
+    lastName: Lead
+    realmRoles: [build_team]
+    attributes:
+      scopeNode: ["groupe"]
+      orgPath: ["groupe"]
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: admin.groupe
+    id: "11111111-1111-1111-1111-000000000005"
+    enabled: true
+    emailVerified: true
+    email: admin@cfao.example
+    firstName: Admin
+    lastName: Groupe
+    realmRoles: [superadmin]
+    attributes:
+      scopeNode: ["groupe"]
+      orgPath: ["groupe"]
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: seydou.diallo
+    id: "11111111-1111-1111-1111-000000000006"
+    enabled: true
+    emailVerified: true
+    email: seydou.diallo@cfao.example
+    firstName: Seydou
+    lastName: Diallo
+    realmRoles: [team_manager]
+    attributes:
+      scopeNode: ["groupe.afrique_ouest.senegal.dakar_nord"]
+      departments: ["motors"]
+      brands: ["toyota", "suzuki"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_ouest"
+        - "groupe.afrique_ouest.senegal"
+        - "groupe.afrique_ouest.senegal.dakar_nord"
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: fatou.mbaye
+    id: "11111111-1111-1111-1111-000000000007"
+    enabled: true
+    emailVerified: true
+    email: fatou.mbaye@cfao.example
+    firstName: Fatou
+    lastName: Mbaye
+    realmRoles: [workshop_manager]
+    attributes:
+      scopeNode: ["groupe.afrique_ouest.senegal.dakar_nord"]
+      departments: ["motors"]
+      brands: ["toyota", "suzuki", "fuso"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_ouest"
+        - "groupe.afrique_ouest.senegal"
+        - "groupe.afrique_ouest.senegal.dakar_nord"
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: aminata.kone
+    id: "11111111-1111-1111-1111-000000000008"
+    enabled: true
+    emailVerified: true
+    email: aminata.kone@cfao.example
+    firstName: Aminata
+    lastName: Koné
+    realmRoles: [branch_hr]
+    attributes:
+      scopeNode: ["groupe.afrique_ouest.cote_divoire"]
+      departments: ["motors"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_ouest"
+        - "groupe.afrique_ouest.cote_divoire"
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  # u9 — apprenant Equipment / PL (Cameroun). Couvre la règle « PL/engins = département Equipment ».
+  - username: loic.traore
+    id: "11111111-1111-1111-1111-000000000009"
+    enabled: true
+    emailVerified: true
+    email: loic.traore@cfao.example
+    firstName: Loïc
+    lastName: Traoré
+    realmRoles: [learner]
+    attributes:
+      scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
+      departments: ["equipment"]
+      brands: ["fuso", "renault-trucks", "king-long", "jcb", "lovol"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_centrale"
+        - "groupe.afrique_centrale.cameroun"
+        - "groupe.afrique_centrale.cameroun.douala"
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  # Cameroun — profils MEDACAP. Sans eux, les tableaux de bord DPS et KI n'ont
+  # aucun compte reel derriere leur maquette.
+  - username: jacques.robin
+    id: "11111111-1111-1111-1111-000000000010"
+    enabled: true
+    emailVerified: true
+    email: jacques.robin@cfao.example
+    firstName: Jacques
+    lastName: Robin
+    realmRoles: [dps]
+    attributes:
+      scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
+      departments: ["equipment"]
+      brands: ["sinotruk", "renault-trucks", "king-long", "hino", "jcb", "toyota-forklift", "bt", "lovol"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_centrale"
+        - "groupe.afrique_centrale.cameroun"
+        - "groupe.afrique_centrale.cameroun.douala"
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: andre.yogba
+    id: "11111111-1111-1111-1111-000000000011"
+    enabled: true
+    emailVerified: true
+    email: andre.yogba@cfao.example
+    firstName: Andre
+    lastName: Yogba
+    realmRoles: [learner, ki]
+    attributes:
+      scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
+      departments: ["motors"]
+      brands: ["toyota"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_centrale"
+        - "groupe.afrique_centrale.cameroun"
+        - "groupe.afrique_centrale.cameroun.douala"
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  # Planning seul : aucun rôle de portail, arrive droit sur la clé de répartition.
+  - username: lecteur.planning
+    id: "11111111-1111-1111-1111-000000000012"
+    enabled: true
+    emailVerified: true
+    email: lecteur.planning@cfao.example
+    firstName: Lecteur
+    lastName: Planning
+    realmRoles: [planning_viewer]
+    attributes:
+      scopeNode: ["groupe"]
+      orgPath:
+        - "groupe"
+    credentials:
+      - { type: password, value: demo, temporary: false }

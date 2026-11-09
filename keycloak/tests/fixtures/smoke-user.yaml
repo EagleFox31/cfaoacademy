@@ -1,0 +1,22 @@
+# Compte unique du smoke en mode prod : le realm est chargé sans les comptes de démo.
+realm: cfao
+users:
+  - username: kouame.assi
+    id: "11111111-1111-1111-1111-000000000001"
+    enabled: true
+    emailVerified: true
+    email: kouame.assi@cfao.example
+    firstName: Kouamé
+    lastName: Assi
+    realmRoles: [learner]
+    attributes:
+      scopeNode: ["groupe.afrique_ouest.cote_divoire.abidjan_plateau"]
+      departments: ["motors"]
+      brands: ["toyota"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_ouest"
+        - "groupe.afrique_ouest.cote_divoire"
+        - "groupe.afrique_ouest.cote_divoire.abidjan_plateau"
+    credentials:
+      - { type: password, value: demo, temporary: false }

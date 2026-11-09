@@ -13,7 +13,7 @@ from django.core.cache import cache
 from rest_framework.test import APIClient
 from rest_framework.views import APIView
 
-from core.auth import identity, oidc
+from core.auth import identity, jwt_verifier, oidc
 
 EMETTEUR = "http://keycloak.invalid/realms/cfao"
 CLE = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -49,7 +49,8 @@ def integre(settings, monkeypatch):
     settings.OIDC_ISSUER = EMETTEUR
     settings.OIDC_AUDIENCE = AUDIENCE
     settings.OIDC_JWKS_URL = "http://keycloak.invalid/certs"
-    monkeypatch.setattr(oidc, "_jwk_client", SimpleNamespace(
+    settings.OIDC_TRUSTED_ISSUERS = ""
+    monkeypatch.setattr(jwt_verifier, "_client", lambda _url: SimpleNamespace(
         get_signing_key_from_jwt=lambda _t: SimpleNamespace(key=CLE.public_key())))
     # Les vues prennent l'authentification du mode integre.
     monkeypatch.setattr(APIView, "authentication_classes", [oidc.KeycloakJWTAuthentication])

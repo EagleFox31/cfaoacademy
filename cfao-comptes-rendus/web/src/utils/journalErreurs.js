@@ -1,3 +1,4 @@
+import { adresse } from '../lib/adresse'
 /**
  * Le journal des erreurs du service des comptes rendus.
  *
@@ -7,7 +8,7 @@
  * `/portail/journal-erreurs`. Le signalement ne doit jamais gêner la
  * saisie : il part sans attendre et ses échecs sont ignorés.
  */
-const ROUTE = '/cr-donnees/erreurs'
+const ROUTE = adresse('/cr-donnees/erreurs')
 
 export function signalerErreur(action, erreur, contexte = {}) {
   try {

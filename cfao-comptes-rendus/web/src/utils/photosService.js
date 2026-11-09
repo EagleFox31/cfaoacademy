@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { adresse } from '../lib/adresse'
 
 /**
  * Les photos du brouillon, telles que le service d'apercu les connait.
@@ -32,7 +33,7 @@ export function useRefsPhotos(photosParRubrique) {
       envoyees.current.add(p.id)
       try {
         const image = await (await fetch(p.apercu)).blob()
-        const r = await fetch('/apercu/photo', { method: 'POST', body: image })
+        const r = await fetch(adresse('/apercu/photo'), { method: 'POST', body: image })
         if (!r.ok) throw new Error(String(r.status))
         const { id } = await r.json()
         setRefs(avant => ({ ...avant, [p.id]: id }))
@@ -54,7 +55,7 @@ export function useRefsPhotos(photosParRubrique) {
  * navigateur alors que le serveur la servait vide ; reparee depuis, la
  * photo restait blanche. La nouvelle adresse ignore ces copies.
  */
-export const adressePhoto = ref => `/cr-donnees/photos/${ref}.jpg?v=2`
+export const adressePhoto = ref => adresse(`/cr-donnees/photos/${ref}.jpg?v=2`)
 
 /**
  * L'adresse a afficher pour une photo du brouillon : celle du serveur des

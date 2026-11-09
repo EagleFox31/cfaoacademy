@@ -291,20 +291,23 @@ class Command(BaseCommand):
                 "Types de message sans modèle : " + ", ".join(missing)
             ))
 
+        # Créer seulement (AGENTS.md §7) : un modèle présent, quelle que soit sa
+        # version ou son état, est laissé tel quel. Réécrire la v1 la réactiverait
+        # à côté d'une v2 et rendrait `resolve_template` ambigu.
         created = 0
         for key, per_locale in TEMPLATES.items():
             for locale in LOCALES:
+                if EmailTemplate.objects.filter(key=key, locale=locale).exists():
+                    continue
                 subject, body = per_locale[locale]
-                _, made = EmailTemplate.objects.update_or_create(
+                EmailTemplate.objects.create(
                     key=key, locale=locale, version=1,
-                    defaults={
-                        "subject": subject,
-                        "body_text": body,
-                        "placeholders": self._placeholders(subject, body),
-                        "is_active": True,
-                    },
+                    subject=subject,
+                    body_text=body,
+                    placeholders=self._placeholders(subject, body),
+                    is_active=True,
                 )
-                created += int(made)
+                created += 1
 
         total = len(TEMPLATES) * len(LOCALES)
         self.stdout.write(self.style.SUCCESS(

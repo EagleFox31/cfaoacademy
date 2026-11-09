@@ -26,6 +26,7 @@ import { formateurInitial, nouveautes, retenir } from '../../utils/formateurParD
 import { estCertification, calculerCertification, libelleModule } from '../../utils/certification'
 import { candidatPourMoteur, donneesCertification, statutElearning }
   from '../../utils/remarquesCertification'
+import { adresse } from '../../lib/adresse'
 
 /**
  * Phase 4 — l'edition du rapport.
@@ -368,7 +369,7 @@ export default function PhaseVerification({
    */
   async function rapportProduit(corps) {
     const json = { 'Content-Type': 'application/json' }
-    const lancement = await fetch('/apercu/rapports', { method: 'POST', headers: json, body: JSON.stringify(corps) })
+    const lancement = await fetch(adresse('/apercu/rapports'), { method: 'POST', headers: json, body: JSON.stringify(corps) })
     if (!lancement.ok) throw new Error(String(lancement.status))
     const { id } = await lancement.json()
     const limite = Date.now() + 10 * 60_000
@@ -378,7 +379,7 @@ export default function PhaseVerification({
       if (Date.now() > limite) throw new Error('delai')
       let etat
       try {
-        const r = await fetch(`/apercu/rapports/${id}`)
+        const r = await fetch(adresse(`/apercu/rapports/${id}`))
         if (!r.ok) throw new Error(String(r.status))
         ;({ etat } = await r.json())
         coupures = 0
@@ -389,7 +390,7 @@ export default function PhaseVerification({
       if (etat === 'pret') break
       if (etat === 'echec') throw new Error('echec')
     }
-    return `/apercu/rapports/${id}/fichier?nom=${encodeURIComponent(nomCompteRendu(brouillon, session))}`
+    return adresse(`/apercu/rapports/${id}/fichier?nom=${encodeURIComponent(nomCompteRendu(brouillon, session))}`)
   }
 
   // Le document final reprend page par page ce que montrent les
