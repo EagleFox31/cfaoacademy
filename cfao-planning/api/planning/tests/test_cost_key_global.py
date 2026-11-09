@@ -4,6 +4,7 @@ from decimal import Decimal
 
 import pytest
 from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 
 from planning.clients.needs import NeedsData
 from planning.exports import xlsx
@@ -107,7 +108,12 @@ def test_classeur_complet(world):
     assert ws.freeze_panes == "B3" and ws.auto_filter.ref
     last = ws.max_row
     assert ws.cell(row=last, column=1).value == "TOTAL"
-    assert ws.cell(row=last, column=7).value == f"=SUM(G3:G{last - 1})"
+    heads = [c.value for c in ws[2]]
+    # Ordre de « TOUS LES PAYS » : marques juste après les techniciens, l'argent en dernier.
+    assert heads[:2] == ["Pays", "Techniciens"] and heads[-1] == "Total à payer"
+    assert heads.index("Coût clé") > max(i for i, h in enumerate(heads) if "·" in h)
+    col = get_column_letter(heads.index("Coût clé") + 1)
+    assert ws[f"{col}{last}"].value == f"=SUM({col}3:{col}{last - 1})"
     en = load_workbook(io.BytesIO(xlsx.global_workbook(table, "en")))["GLOBAL"]
     assert en.cell(row=2, column=1).value == "Country"
 
@@ -181,11 +187,28 @@ def test_taux_horaire_saisi(world):
         update(key, {"hourly_rate": "1.5"})
 
 
-def test_taux_horaire_hors_empreinte_et_verrouille_au_gel(world):
+def test_cle_tarifee_paie_places_x_heures_x_taux(world):
+    """Tarif 2027 : 10 000 par technicien et par heure, 40 h → 400 000 la place."""
+    key = update(world["key"], {"hourly_rate": 10000, "hours_per_session": 40})
+    table = global_table(key, Mode.PLANNED, needs())
+    rows = {r["country"]: r for r in table["rows"]}
+    assert rows["cm"]["key_cost"] == 6 * 400_000 and rows["ci"]["key_cost"] == 4 * 400_000
+    assert table["budget"] == 10 * 400_000  # le budget découle des places
+    assert table["hourly_cost"] == 10000
+    abc = abc_table(key, needs())
+    assert {r["country"]: r["amount_a"] for r in abc["rows"]} == {"cm": 2_400_000,
+                                                                   "ci": 1_600_000}
+    assert abc["budget"] == 4_000_000
+    freeze(key, "dg")  # le réparti égale le budget effectif
+
+
+def test_taux_horaire_dans_l_empreinte_seulement_s_il_est_saisi(world):
     key = world["key"]
     before = inputs_sha256(key)
+    update(key, {"hourly_rate": None})
+    assert inputs_sha256(key) == before  # clé à budget : empreinte inchangée
     update(key, {"hourly_rate": 3000})
-    assert inputs_sha256(key) == before  # le taux n'entre pas dans le calcul
+    assert inputs_sha256(key) != before  # clé tarifée : le taux fixe les montants
     freeze(key, "dg")
     key.refresh_from_db()
     with pytest.raises(FrozenKeyError):

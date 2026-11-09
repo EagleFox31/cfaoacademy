@@ -16,7 +16,7 @@ from referential.models import Brand, Country
 
 from ..clients.needs import NeedsData
 from ..models import CostKeyYear
-from .cost_key import Mode, _split_budget
+from .cost_key import Mode, allocate
 from .cost_key_global import seats_by_cell
 
 BASES = ("a", "b", "c")
@@ -32,8 +32,10 @@ def _ratio(x, y):
     return round(x / y, 4) if x is not None and y else None
 
 
-def _finish(rows: list[dict], budget: Decimal, enrolled: set[str], available: bool) -> None:
-    """Parts et montants de chaque base, sur les pays enrôlés."""
+def _finish(rows: list[dict], key: CostKeyYear, enrolled: set[str], available: bool) -> Decimal:
+    """Parts et montants de chaque base, sur les pays enrôlés. Renvoie le budget
+    effectif de la base A (celui de la clé, ou places × prix si elle est tarifée)."""
+    budget_a = key.budget
     for base in BASES:
         if base != "a" and not available:
             for r in rows:
@@ -41,11 +43,14 @@ def _finish(rows: list[dict], budget: Decimal, enrolled: set[str], available: bo
             continue
         weights = {r["country"]: r[base] or 0 for r in rows if r["country"] in enrolled}
         total = sum(weights.values())
-        amounts = _split_budget(budget, weights)
+        amounts, budget = allocate(key, weights)
+        if base == "a":
+            budget_a = budget
         for r in rows:
             w = weights.get(r["country"])
             r[f"share_{base}"] = round(w / total, 6) if w is not None and total else 0.0
             r[f"amount_{base}"] = _num(amounts.get(r["country"], Decimal(0)))
+    return budget_a
 
 
 def abc_table(key: CostKeyYear, needs: NeedsData, visible: set[str] | None = None) -> dict:
@@ -78,12 +83,12 @@ def abc_table(key: CostKeyYear, needs: NeedsData, visible: set[str] | None = Non
                      "enrolled": code in enrolled, "a": a, "b": b, "c": c,
                      "a_b": _ratio(a, b), "a_c": _ratio(a, c), "cells": row_cells})
     rows.sort(key=lambda r: (not r["enrolled"], r["label"]))
-    _finish(rows, key.budget, enrolled, needs.available)
+    budget = _finish(rows, key, enrolled, needs.available)
 
     shown = [r for r in rows if visible is None or r["country"] in visible]
     totals = {base: sum(r[base] or 0 for r in shown) for base in BASES}
     return {
-        "year": key.year, "pole": key.pole, "status": key.status, "budget": _num(key.budget),
+        "year": key.year, "pole": key.pole, "status": key.status, "budget": _num(budget),
         "needs_source": needs.source, "warnings": needs.warnings,
         "brands": [{"code": b, "label": brands.get(b, b.upper())} for b in brand_order],
         "totals": totals, "rows": shown, "partial": visible is not None,

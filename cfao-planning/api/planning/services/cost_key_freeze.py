@@ -35,6 +35,10 @@ def inputs_sha256(key: CostKeyYear) -> str:
     params = [str(key.budget), str(key.trainee_lodging_cost), str(key.trainer_lodging_cost),
               key.hours_per_session,
               sorted(str(pk) for pk in key.enrolled_countries.values_list("pk", flat=True))]
+    if key.hourly_rate is not None:
+        # Clé tarifée : le taux fixe les montants. Ajouté seulement s'il est saisi,
+        # pour que l'empreinte des clés à budget déjà gelées reste la même.
+        params.append(["hourly_rate", str(key.hourly_rate)])
     payload = json.dumps([key.year, key.pole, params, sessions], ensure_ascii=False)
     return hashlib.sha256(payload.encode()).hexdigest()
 
@@ -53,9 +57,9 @@ def freeze(key: CostKeyYear, actor: str, needs: Mapping[str, int] | None = None
             raise FreezeRefused(f"{key} : aucune session prévue, rien à geler.")
         report = compute(key, needs, mode=Mode.PLANNED)
         distributed = sum(line.key_cost for line in report.lines)
-        if distributed != key.budget:
+        if distributed != report.budget:
             raise FreezeRefused(
-                f"{key} : {distributed} réparti sur un budget de {key.budget}.")
+                f"{key} : {distributed} réparti sur un budget de {report.budget}.")
         snapshot = CostKeySnapshot.objects.create(
             cost_key=key, report=report.to_dict(), needs=dict(needs or {}),
             inputs_sha256=sha, engine_version=COST_KEY_ENGINE, created_by=actor,

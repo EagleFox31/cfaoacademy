@@ -90,32 +90,42 @@ def _heading(table: dict, t: dict) -> str:
 def write_global(ws, table: dict, lang: str = "fr") -> None:
     t = _labels(lang)
     brands = table["brands"]
-    fixed = ["country", "technicians", "needs", "seats", "coverage", "share", "key_cost",
-             "trainee_lodging", "trainer_lodging", "total"]
-    headers = [t[k] for k in fixed] + [f"{b['label']} · {t['seats']}" for b in brands]
+    # Même ordre que l'onglet « TOUS LES PAYS » du classeur source et que l'écran :
+    # pays et techniciens, marques, totaux de places, part, puis l'argent en dernier.
+    # (en-tête, valeur, format, sommé en pied, largeur)
+    cols = [
+        (t["country"], lambda r: r["label"], None, False, 24),
+        (t["technicians"], lambda r: r["technicians"], INT, True, 12),
+        *[(f"{b['label']} · {t['seats']}", lambda r, c=b["code"]: r["cells"][c]["seats"], INT, True, 14)
+          for b in brands],
+        (t["needs"], lambda r: r["needs"], INT, True, 10),
+        (t["seats"], lambda r: r["seats"], INT, True, 10),
+        (t["coverage"], lambda r: r["coverage"], PCT, False, 12),
+        (t["share"], lambda r: r["share"], PCT, True, 10),
+        (t["key_cost"], lambda r: r["key_cost"], MONEY, True, 16),
+        (t["trainee_lodging"], lambda r: r["trainee_lodging"], MONEY, True, 16),
+        (t["trainer_lodging"], lambda r: r["trainer_lodging"], MONEY, True, 16),
+        (t["total"], lambda r: r["total"], MONEY, True, 16),
+    ]
     ws.title = t["global"]
-    _title_row(ws, f"{t['global']} {_heading(table, t)}", len(headers))
-    _header(ws, 2, headers)
+    _title_row(ws, f"{t['global']} {_heading(table, t)}", len(cols))
+    _header(ws, 2, [c[0] for c in cols])
     first = 3
     for row in table["rows"]:
-        values = [row["label"], row["technicians"], row["needs"], row["seats"], row["coverage"],
-                  row["share"], row["key_cost"], row["trainee_lodging"], row["trainer_lodging"],
-                  row["total"]] + [row["cells"][b["code"]]["seats"] for b in brands]
-        ws.append(values)
+        ws.append([c[1](row) for c in cols])
     last = ws.max_row
-    formats = {2: INT, 3: INT, 4: INT, 5: PCT, 6: PCT, 7: MONEY, 8: MONEY, 9: MONEY, 10: MONEY}
     for r in range(first, last + 1):
-        for col in range(1, len(headers) + 1):
-            cell = ws.cell(row=r, column=col)
+        for i, (_, _, fmt, _, _) in enumerate(cols, 1):
+            cell = ws.cell(row=r, column=i)
             cell.border = _BORDER
-            cell.number_format = formats.get(col, INT)
-    sums = {c: formats.get(c, INT) for c in (2, 3, 4, 6, 7, 8, 9, 10)}
-    sums.update({c: INT for c in range(11, len(headers) + 1)})
+            if fmt:
+                cell.number_format = fmt
+    sums = {i: c[2] for i, c in enumerate(cols, 1) if c[3]}
     _totals(ws, last + 1, first, last, sums, t["totals"])
     ws.freeze_panes = "B3"
     if last >= first:
-        ws.auto_filter.ref = f"A2:{get_column_letter(len(headers))}{last}"
-    _widths(ws, [24, 12, 10, 10, 12, 10, 16, 16, 16, 16] + [14] * len(brands))
+        ws.auto_filter.ref = f"A2:{get_column_letter(len(cols))}{last}"
+    _widths(ws, [c[4] for c in cols])
 
 
 def write_country(ws, sheet: dict, lang: str = "fr") -> None:

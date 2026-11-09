@@ -35,7 +35,8 @@ COUNTRIES = [
     ("cmr", "Cameroun", ["CFR", "CAMEROUN", "DOUALA"]),
     ("civ", "Côte d'Ivoire", ["RCI", "COTE D IVOIRE"]),
     ("sen", "Sénégal", []),
-    ("cod", "RD Congo", ["RDC"]),
+    # Equipment 2026 : une feuille par site (Kinshasa, Lubumbashi) et le lieu « RDC Lubumbashi ».
+    ("cod", "RD Congo", ["RDC", "RDC-KINSHASA", "RDC-LUBUMBASHI", "KINSHASA", "LUBUMBASHI"]),
     ("cog", "Congo", ["CONGO BRAZZAVILLE"]),
     ("gab", "Gabon", []),
     ("ben", "Bénin", []),

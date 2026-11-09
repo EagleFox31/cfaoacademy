@@ -122,6 +122,27 @@ def _split_budget(budget: Decimal, weights: dict[str, int]) -> dict[str, Decimal
     return floors
 
 
+def seat_price(key: CostKeyYear) -> Decimal | None:
+    """Prix d'une place quand la clé est tarifée (taux horaire par technicien
+    × heures de session) ; None = la clé partage un budget fixe."""
+    if key.hourly_rate is None:
+        return None
+    return Decimal(key.hourly_rate) * key.hours_per_session
+
+
+def allocate(key: CostKeyYear, weights: dict[str, int]) -> tuple[dict[str, Decimal], Decimal]:
+    """(montant par pays, budget effectif). Clé tarifée : chaque pays paie ses
+    places au prix unitaire et le budget en découle. Sinon : partage du budget
+    au prorata des places, au franc près."""
+    price = seat_price(key)
+    if price is None:
+        return _split_budget(key.budget, weights), key.budget
+    if not sum(weights.values()):
+        return {}, Decimal(0)
+    amounts = {k: price * w for k, w in weights.items()}
+    return amounts, sum(amounts.values(), Decimal(0))
+
+
 def _units(key: CostKeyYear, mode: Mode):
     """(session, formateurs, [(pays, places)]) de chaque session du mode. Une session
     prévue a les mêmes `location` et `country` qu'une réalisée : le calcul est commun."""
@@ -170,7 +191,7 @@ def compute(key: CostKeyYear, needs: Mapping[str, int] | None = None, *,
 
     weights = {code: lines[code].seats for code in enrolled}
     total_seats = sum(weights.values())
-    shares = _split_budget(key.budget, weights)
+    shares, budget = allocate(key, weights)
     for current in lines.values():
         if current.enrolled and total_seats:
             current.share = Decimal(current.seats) / total_seats
@@ -183,9 +204,9 @@ def compute(key: CostKeyYear, needs: Mapping[str, int] | None = None, *,
 
     hourly = None
     if total_seats:
-        hourly = key.budget / (total_seats * key.hours_per_session)
+        hourly = budget / (total_seats * key.hours_per_session)
     return CostKeyReport(
-        year=key.year, pole=key.pole, budget=key.budget, total_seats=total_seats,
+        year=key.year, pole=key.pole, budget=budget, total_seats=total_seats,
         hourly_cost=hourly, lines=sorted(lines.values(), key=lambda l: (not l.enrolled, l.code)),
         mode=mode,
     )

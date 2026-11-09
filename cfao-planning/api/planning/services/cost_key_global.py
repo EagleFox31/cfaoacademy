@@ -105,7 +105,7 @@ def global_table(key: CostKeyYear, mode: Mode, needs: NeedsData,
 
     return {
         "year": key.year, "pole": key.pole, "mode": str(mode), "status": key.status,
-        "budget": _num(key.budget), "total_seats": report.total_seats,
+        "budget": _num(report.budget), "total_seats": report.total_seats,
         "hourly_cost": None if report.hourly_cost is None else round(float(report.hourly_cost), 2),
         "hourly_rate": _num(key.hourly_rate),
         "needs_source": needs.source, "warnings": needs.warnings,
