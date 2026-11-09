@@ -34,7 +34,7 @@ Regles tenues par le code :
 import hashlib
 import random
 
-from regles import SEUIL_DEFAUT as SEUIL, seuil_de  # noqa: E402
+from regles import SEUIL_DEFAUT as SEUIL, palier_au_seuil, seuil_de  # noqa: E402
 PCT = ' %'          # l'espace insecable tient le nombre et son signe
 
 
@@ -43,10 +43,7 @@ def _pct(v):
 
 
 def _palier(v, seuil=SEUIL):
-    # Sous le seuil choisi, jamais un palier qui dirait la validation acquise.
-    if v < seuil:
-        return 'limite' if v >= 55 else 'faible'
-    return 'excellent' if v >= 90 else 'bon' if v >= 80 else 'correct'
+    return palier_au_seuil(v, seuil)
 
 
 def _nom(p):

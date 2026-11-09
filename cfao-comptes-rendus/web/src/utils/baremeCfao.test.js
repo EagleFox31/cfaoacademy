@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   lireNote, nettoyerNote, enPourcentage, calculer, syntheseGroupe, anomalies, seuilDe, SEUIL_DEFAUT,
+  reglesAuSeuil,
 } from './baremeCfao'
 
 describe('nettoyerNote', () => {
@@ -53,7 +54,7 @@ describe('note invalide', () => {
     const c = calculer(p)
     expect(c.sortieTheorique).toBeNull()
     expect(c.progression).toBeNull()
-    expect(c.scoreFinal).toBe(80)
+    expect(c.scoreFinal).toBeNull()
     expect(c.complet).toBe(false)
   })
   it('reste signalée en erreur', () => {
@@ -101,5 +102,23 @@ describe('seuil de validation du compte rendu', () => {
     expect(syntheseGroupe(groupe, sur100).enRetrait).toBe(0)
     expect(syntheseGroupe(groupe, sur100, 80).enRetrait).toBe(1)
     expect(syntheseGroupe(groupe, sur100, 95).enRetrait).toBe(2)
+  })
+})
+
+describe('corrections de la revue L0', () => {
+  it('une note de sortie hors barème bloque le score final', () => {
+    const c = calculer({ sortieTheoBrut: "24", sortiePratBrut: "25" }, undefined, 70)
+    expect(c.scoreFinal).toBeNull()
+    expect(c.valide).toBeNull()
+  })
+
+  it('les règles du modèle suivent le seuil', () => {
+    const r = reglesAuSeuil([
+      { type: 'cellIs', operator: 'between', formulae: ['70%', '100%'] },
+      { type: 'cellIs', operator: 'between', formulae: ['0%', '69.99%'] },
+      { type: 'cellIs', operator: 'greaterThanOrEqual', formulae: ['0.7'] },
+      { type: 'cellIs', operator: 'between', formulae: ['0.001', '0.699'] },
+    ], 80)
+    expect(r.map(x => x.formulae)).toEqual([['80%', '100%'], ['0%', '79.99%'], ['0.8'], ['0.001', '0.799']])
   })
 })

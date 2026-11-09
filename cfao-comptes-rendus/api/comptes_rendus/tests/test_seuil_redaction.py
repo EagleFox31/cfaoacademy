@@ -100,3 +100,12 @@ def test_acquisition_session_sous_le_seuil_ne_dit_pas_le_seuil_franchi():
         texte = rediger_acquisition(session, graine=graine) or ''
         assert 'seuil est franchi' not in texte
         assert 'niveau requis est atteint' not in texte
+
+
+def test_palier_au_seuil_suit_le_seuil_dans_les_deux_sens():
+    from regles import palier_au_seuil
+    assert palier_au_seuil(75, 80) == 'limite'
+    assert palier_au_seuil(60, 50) == 'correct'
+    assert palier_au_seuil(92, 70) == 'excellent'
+    assert palier_au_seuil(40, 70) == 'faible'
+    assert palier_au_seuil(None) is None

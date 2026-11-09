@@ -169,9 +169,7 @@ REGRESSIONS = [
 ]
 
 # ── Acquisition ─────────────────────────────────────────────────────────
-PALIERS_TAUX = [(90, "excellent"), (80, "bon"), (70, "correct"), (55, "limite"),
-                (0, "faible")]
-
+# Le registre d'un taux : `regles.palier_au_seuil`, accorde au seuil choisi.
 QUALIFICATIF = {
     "excellent": ["[excellent|remarquable|exemplaire]",
                   "[très solide|de premier ordre]"],

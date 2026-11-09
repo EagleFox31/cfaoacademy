@@ -1,5 +1,5 @@
 import { certificationDe } from '../data/certifications'
-import { SEUIL_DEFAUT } from './baremeCfao'
+import { SEUIL_DEFAUT, lireNote } from './baremeCfao'
 
 /**
  * Les comptes rendus de certification pratique.
@@ -79,10 +79,11 @@ export function libelleModule(m) {
   return [m?.code, m?.intitule].map(v => String(v || '').trim()).filter(Boolean).join(' : ')
 }
 
-const nombre = v => {
-  if (v === '' || v == null) return null
-  const n = Number(String(v).replace(',', '.'))
-  return Number.isNaN(n) ? null : n
+// Une note de module est sur 100 : hors de 0-100, elle est signalee et
+// n'entre pas dans le total (le pourcentage attend alors sa correction).
+const noteModule = v => {
+  const n = lireNote(v)
+  return n != null && n >= 0 && n <= 100 ? n : null
 }
 const arrondi = v => (v == null ? null : Math.round(v * 10) / 10)
 
@@ -95,7 +96,7 @@ const arrondi = v => (v == null ? null : Math.round(v * 10) / 10)
  */
 export function calculerCertification(p, modules, seuil = SEUIL_DEFAUT) {
   const liste = modules || []
-  const notes = liste.map(m => nombre(p?.notesModules?.[m.id]))
+  const notes = liste.map(m => noteModule(p?.notesModules?.[m.id]))
   const saisies = notes.filter(n => n != null).length
   const complet = liste.length > 0 && saisies === liste.length
   const total = notes.reduce((t, n) => t + (n ?? 0), 0)
@@ -103,8 +104,8 @@ export function calculerCertification(p, modules, seuil = SEUIL_DEFAUT) {
   const pratique = pourcentage == null ? null : pourcentage >= seuil ? VALIDE : ECHOUE
 
   const e = p?.elearning || {}
-  const requis = nombre(e.requis)
-  const valides = nombre(e.valides)
+  const requis = lireNote(e.requis)
+  const valides = lireNote(e.valides)
   const taux = requis ? Math.round((100 * (valides ?? 0)) / requis) : null
   const statut = STATUTS_ELEARNING.includes(e.statut) ? e.statut : null
 

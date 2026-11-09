@@ -25,11 +25,11 @@ import re
 from lexique_session import (
     AMELIORATIONS, CLIMAT, CONCLUSION_ACQUISITION, CONSTATER, CONTEXTE,
     ENTREE, EQUILIBRE, EVOLUTION, GROUPE, LECTURE, LIAISON, MEILLEURE_PROGRESSION,
-    NIVEAU_ENTREE, PALIERS_GROUPE, PALIERS_PROGRESSION, PALIERS_TAUX,
+    NIVEAU_ENTREE, PALIERS_GROUPE, PALIERS_PROGRESSION,
     PARTICIPANTS, POINTS_FORTS, PRATIQUE_EN_RETRAIT, QUALIFICATIF, REGRESSIONS,
     RESULTATS, RESULTATS_TAUX, RETRAIT_NOMME, REUSSITE, SATISFACTION, SESSION,
     SUITE_PRATIQUE, SUITES, TAUX, THEMATIQUES, VIGILANCE, en_mots, palier)
-from regles import seuil_de
+from regles import palier_au_seuil, seuil_de
 
 FRAGMENTS = {
     'groupe': GROUPE, 'session': SESSION, 'participants': PARTICIPANTS,
@@ -225,10 +225,8 @@ def rediger_acquisition(session, graine=None):
     if d['taux'] is None or d['effectif'] in (None, 0) or d['reussis'] is None:
         return None
     t = Tirage(graine)
-    rang = palier(d['taux'], PALIERS_TAUX)
-    # Sous le seuil choisi, le texte ne peut pas dire le niveau atteint.
-    if d['taux'] is not None and d['taux'] < d['seuil'] and rang in ('excellent', 'bon', 'correct'):
-        rang = 'limite'
+    # Le registre suit le seuil choisi, dans les deux sens.
+    rang = palier_au_seuil(d['taux'], d['seuil'])
     d['qualificatif'] = _developper(t.un(QUALIFICATIF[rang]), d, t).rstrip('.')
     d['qualificatif'] = d['qualificatif'][0].lower() + d['qualificatif'][1:]
     cas = ('tous' if d['reussis'] == d['effectif'] else

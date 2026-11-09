@@ -1,4 +1,4 @@
-import { BAREMES } from './baremeCfao'
+import { BAREMES, reglesAuSeuil, seuilDe } from './baremeCfao'
 import { periodeCourte } from './exportEvaluation'
 
 /**
@@ -81,10 +81,12 @@ function deplacerBas(ws, ecart) {
   ws.mergeCells(`B${m}:D${m}`)
 }
 
-/** Les mises en forme conditionnelles du modèle, sur les lignes posées. */
-function etendreRegles(ws, derniere) {
+/** Les mises en forme conditionnelles du modèle, sur les lignes posées
+ * et au seuil du compte rendu. */
+function etendreRegles(ws, derniere, seuil) {
   ws.conditionalFormattings = (ws.conditionalFormattings || []).map(cf => ({
     ...cf,
+    rules: reglesAuSeuil(cf.rules, seuil),
     ref: cf.ref.replace(/\d+/g, m => (Number(m) === PREMIERE + LIGNES_MODELE - 1 ? String(derniere) : m)),
   }))
 }
@@ -152,7 +154,7 @@ export async function construireClasseurResultats(ExcelJS, modele, brouillon, se
     ws.getCell(`${col}${moyenne}`).value = { formula: `AVERAGE(${plage(col)})` }
   }
   ws.getCell(`K${moyenne}`).value = { formula: `IFERROR((H${moyenne}-F${moyenne})/F${moyenne},"")` }
-  etendreRegles(ws, derniere)
+  etendreRegles(ws, derniere, seuilDe(brouillon))
 
   wb.calcProperties = { fullCalcOnLoad: true }
   return wb

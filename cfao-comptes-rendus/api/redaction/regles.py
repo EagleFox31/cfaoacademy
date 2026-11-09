@@ -26,3 +26,17 @@ def seuil_de(valeur):
         return SEUIL_DEFAUT
     n = int(round(n))
     return n if 1 <= n <= 100 else SEUIL_DEFAUT
+
+
+def palier_au_seuil(v, seuil=SEUIL_DEFAUT):
+    """Le registre d'un taux sur 100, accorde au seuil de validation.
+
+    Sous le seuil, jamais un registre qui dirait la validation acquise ;
+    au seuil ou au-dessus, jamais un registre d'echec, meme si le seuil
+    choisi est bas. Les bornes 90 / 80 / 55 sont celles des lexiques.
+    """
+    if v is None:
+        return None
+    if v < seuil:
+        return 'limite' if v >= 55 else 'faible'
+    return 'excellent' if v >= 90 else 'bon' if v >= 80 else 'correct'

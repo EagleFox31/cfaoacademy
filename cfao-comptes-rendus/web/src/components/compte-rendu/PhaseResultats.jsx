@@ -291,13 +291,6 @@ export default function PhaseResultats({
   const aDesReponses = criteres => participants.some(p =>
     criteres.some(c => reponses[p.id]?.[c.cle]))
 
-  // Le seuil se saisit au clavier : on garde les chiffres, borne a 1-100.
-  // Un champ vide reste tolere pendant la frappe (seuilDe retombe sur 70).
-  function majSeuil(valeur) {
-    const chiffres = String(valeur).replace(/\D/g, '').slice(0, 3)
-    if (chiffres === '') return maj({ seuil: '' })
-    maj({ seuil: Math.min(100, Math.max(1, Number(chiffres))) })
-  }
 
   function majBareme(cle, valeur) {
     const n = Number(valeur)
@@ -369,13 +362,7 @@ export default function PhaseResultats({
             </OutilsVolet>
             <div className="cr-baremes">
               <span className="cr-baremes-label">Seuil</span>
-              <label className="cr-bareme">
-                Validé à
-                <input className="cr-num cr-num--court" type="text" inputMode="numeric"
-                  value={brouillon.seuil ?? 70} onChange={e => majSeuil(e.target.value)}
-                  aria-label="Seuil de validation" />
-                %
-              </label>
+              <ChampSeuil seuil={seuil} maj={maj} />
             </div>
             <SaisieCertification brouillon={brouillon} maj={maj} onEffacer={effacerNotes} />
             {synthese.saisis > 0 && (
@@ -415,13 +402,7 @@ export default function PhaseResultats({
                   aria-label={`Barème ${libelle}`} />
               </label>
             ))}
-            <label className="cr-bareme">
-              Validé à
-              <input className="cr-num cr-num--court" type="text" inputMode="numeric"
-                value={brouillon.seuil ?? 70} onChange={e => majSeuil(e.target.value)}
-                aria-label="Seuil de validation" />
-              %
-            </label>
+            <ChampSeuil seuil={seuil} maj={maj} />
             <BoutonEffacer disabled={!aDesNotes} onClick={() => effacerNotes(null)}>
               Effacer toutes les notes
             </BoutonEffacer>
@@ -561,6 +542,33 @@ export default function PhaseResultats({
 }
 
 /** Le passage au volet suivant, la ou l'on arrive en finissant celui-ci. */
+/** Le seuil de validation, saisi au clavier. Il n'est retenu qu'en
+ * quittant le champ (ou sur Entree) : une valeur en cours de frappe
+ * (« 8 » pour 85) ne recalcule pas le compte rendu. Hors 1-100 ou vide,
+ * le champ reprend le seuil en vigueur.
+ */
+function ChampSeuil({ seuil, maj }) {
+  const [texte, setTexte] = useState(null)
+  function valider() {
+    if (texte == null) return
+    const n = Number(texte)
+    if (texte !== '' && n >= 1 && n <= 100 && n !== seuil) maj({ seuil: n })
+    setTexte(null)
+  }
+  return (
+    <label className="cr-bareme">
+      Validé à
+      <input className="cr-num cr-num--court" type="text" inputMode="numeric"
+        value={texte ?? String(seuil)}
+        onChange={e => setTexte(e.target.value.replace(/\D/g, '').slice(0, 3))}
+        onBlur={valider}
+        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
+        aria-label="Seuil de validation" />
+      %
+    </label>
+  )
+}
+
 function SuiteVolet({ onClick, children }) {
   return (
     <div className="cr-suite-volet">

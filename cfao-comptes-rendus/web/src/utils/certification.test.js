@@ -65,3 +65,11 @@ describe('seuil de validation', () => {
     expect(calculerCertification(candidat([75, 75, 75]), modules, 75).pratique).toBe(VALIDE)
   })
 })
+
+describe('note de module hors barème', () => {
+  it('une note au-dessus de 100 n\'entre pas dans le pourcentage', () => {
+    const c = calculerCertification(candidat([150, 70, 70]), modules)
+    expect(c.pourcentage).toBeNull()
+    expect(c.pratique).toBeNull()
+  })
+})

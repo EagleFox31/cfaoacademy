@@ -83,6 +83,27 @@ export function enPourcentage(brut, bareme) {
   return (n / bareme) * 100
 }
 
+/** Une note saisie mais hors bareme (negative ou au-dessus). */
+export function horsBareme(brut, bareme) {
+  return lireNote(brut) != null && enPourcentage(brut, bareme) == null
+}
+
+/** Les regles de mise en forme d'un modele Excel, ramenees au seuil.
+ *
+ * Les modeles portent le seuil CFAO en dur (« 70% », « 69.99% »,
+ * 0.7, 0.699) : ces seules valeurs suivent le seuil du compte rendu.
+ */
+export function reglesAuSeuil(regles, seuil = SEUIL_DEFAUT) {
+  const s = seuil / 100
+  const valeurs = {
+    '70%': `${seuil}%`, '69.99%': `${seuil - 0.01}%`,
+    '0.7': String(s), '0.699': String(Math.round((s - 0.001) * 1000) / 1000),
+  }
+  return (regles || []).map(r => (r.formulae
+    ? { ...r, formulae: r.formulae.map(v => valeurs[String(v)] ?? v) }
+    : r))
+}
+
 /** Les resultats calcules d'un participant, depuis ses notes brutes. */
 export function calculer(p, baremes = BAREMES, seuil = SEUIL_DEFAUT) {
   const entree = enPourcentage(p?.entreeBrut, baremes.entreeTheorique)
@@ -97,9 +118,15 @@ export function calculer(p, baremes = BAREMES, seuil = SEUIL_DEFAUT) {
   }
 
   // Le score final est la moyenne des deux epreuves de sortie ; si une
-  // seule est connue, on ne moyenne pas sur du vide.
+  // seule est connue, on ne moyenne pas sur du vide. Une note de sortie
+  // hors bareme bloque le score : la note restante seule passerait pour
+  // un resultat plausible.
+  const sortieFausse = horsBareme(p?.sortieTheoBrut, baremes.sortieTheorique)
+    || horsBareme(p?.sortiePratBrut, baremes.sortiePratique)
   let scoreFinal = null
-  if (sortieTh != null && sortiePr != null) {
+  if (sortieFausse) {
+    scoreFinal = null
+  } else if (sortieTh != null && sortiePr != null) {
     scoreFinal = (sortieTh + sortiePr) / 2
   } else if (sortieTh != null || sortiePr != null) {
     scoreFinal = sortieTh ?? sortiePr

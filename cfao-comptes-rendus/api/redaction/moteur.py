@@ -32,8 +32,8 @@ import random
 
 from lexique import (ACCUEIL, CLOTURES, CONSTATS, ELEARNING, NUANCES,
                      OUVERTURES, PROGRESSION, QUALIFICATIF,
-                     palier, palier_progression)
-from regles import seuil_de
+                     palier_progression)
+from regles import palier_au_seuil, seuil_de
 
 
 class Tirage:
@@ -164,7 +164,7 @@ def rediger(participant, longueur="standard"):
     nom = _nom_usage(p)
 
     acquisition = p.get("acquisition")
-    reg = palier(acquisition) or "correct"
+    reg = palier_au_seuil(acquisition, seuil_de(p.get("seuil"))) or "correct"
     phrases, appuis = [], []
 
     # ── ouverture
