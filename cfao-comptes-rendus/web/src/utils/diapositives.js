@@ -10,7 +10,7 @@ import {
   CERTIFIE, ECHOUE, NON_CERTIFIE, NON_FINALISE, VALIDE,
   calculerCertification, estCertification, niveauDe,
 } from './certification'
-import { SEUIL } from './baremeCfao'
+import { seuilDe } from './baremeCfao'
 import { formateurInitial } from './formateurParDefaut'
 
 /**
@@ -423,7 +423,8 @@ function drapeauxDeFicheCertification(b, page) {
   const id = cle.slice('fiche-'.length)
   const p = (b.participants || []).find(x => String(x.id) === id)
   if (!p) return {}
-  const c = calculerCertification(p, b.modules)
+  const seuil = seuilDe(b)
+  const c = calculerCertification(p, b.modules, seuil)
   const e = c.elearning
   const texte = v => (v == null ? '' : String(v))
   const niveau = niveauDe(b)
@@ -458,7 +459,7 @@ function drapeauxDeFicheCertification(b, page) {
         '{code_module_1}': m.code || '',
         '{intitule_module_1}': m.intitule || '',
         '{note_1}': texte(c.notes[i]),
-        '@couleurs': c.notes[i] != null && c.notes[i] < SEUIL ? { '{note_1}': 'alerte' } : {},
+        '@couleurs': c.notes[i] != null && c.notes[i] < seuil ? { '{note_1}': 'alerte' } : {},
       })),
     },
   }

@@ -1,4 +1,4 @@
-import { SEUIL } from './baremeCfao'
+import { SEUIL_DEFAUT, seuilDe } from './baremeCfao'
 import { STATUTS_ELEARNING, VALIDE, NON_FINALISE, libelleModule, moduleVide, niveauDe } from './certification'
 import { periodeLongue } from './compteRendu'
 import { periodeCourte } from './exportEvaluation'
@@ -31,7 +31,7 @@ import { normaliser, paysDe, reconnaitre, valeurDe } from './importEvaluation'
  */
 
 // Les couleurs du modele : titre en vert d'accent eclairci, seuil de
-// 70 % en vert ou orange, note ou resultat insuffisant en rouge.
+// validation en vert ou orange, note ou resultat insuffisant en rouge.
 const TITRE = 'FFA9D08E'
 const BON = 'FF92D050'
 const BAS = 'FFED7D31'
@@ -120,16 +120,16 @@ function regle(ws, ref, expression, argb, priority) {
 }
 
 /** Le pourcentage en vert au-dessus du seuil, en orange en dessous. */
-function couleurSeuil(ws, ref) {
+function couleurSeuil(ws, ref, seuil = SEUIL_DEFAUT) {
   const haut = ref.split(':')[0]
-  regle(ws, ref, `AND(ISNUMBER(${haut}),${haut}>=${SEUIL})`, BON, 1)
-  regle(ws, ref, `AND(ISNUMBER(${haut}),${haut}<${SEUIL})`, BAS, 2)
+  regle(ws, ref, `AND(ISNUMBER(${haut}),${haut}>=${seuil})`, BON, 1)
+  regle(ws, ref, `AND(ISNUMBER(${haut}),${haut}<${seuil})`, BAS, 2)
 }
 
 /** Une note sous le seuil, en rouge comme dans le modele. */
-function couleurNotes(ws, ref) {
+function couleurNotes(ws, ref, seuil = SEUIL_DEFAUT) {
   const haut = ref.split(':')[0]
-  regle(ws, ref, `AND(ISNUMBER(${haut}),${haut}<${SEUIL})`, ROUGE, 3)
+  regle(ws, ref, `AND(ISNUMBER(${haut}),${haut}<${seuil})`, ROUGE, 3)
 }
 
 /** Un resultat en toutes lettres : rouge s'il est mauvais, vert s'il est bon. */
@@ -168,6 +168,7 @@ const nombre0 = v => (v === '' || v == null ? null : Number(v))
 /** La feuille globale : la seule ou l'on saisit. */
 function feuilleGlobale(wb, nom, brouillon, session, candidats, feuilles) {
   const modules = brouillon.modules?.length ? brouillon.modules : [moduleVide()]
+  const seuil = seuilDe(brouillon)
   const n = modules.length
   const g = geometrie(n)
   const derniere = 2 + Math.max(candidats.length, 1)
@@ -243,7 +244,7 @@ function feuilleGlobale(wb, nom, brouillon, session, candidats, feuilles) {
     const res = `${c}${g.pratique}`
     calcul(ws.getCell(tot), `IF(COUNT(${plage})=0,"",SUM(${plage}))`)
     calcul(ws.getCell(pct), `IF(COUNT(${plage})<${n},"",(${tot}/${100 * n})*100)`, { format: '0' })
-    calcul(ws.getCell(res), `IF(${pct}="","",IF(${pct}>=${SEUIL},"${VALIDE}","${ECHOUE}"))`,
+    calcul(ws.getCell(res), `IF(${pct}="","",IF(${pct}>=${seuil},"${VALIDE}","${ECHOUE}"))`,
       { police: calibri(16), bordure: tout })
 
     const e = p.elearning || {}
@@ -272,16 +273,16 @@ function feuilleGlobale(wb, nom, brouillon, session, candidats, feuilles) {
 
   if (candidats.length) {
     const d = lettre(2 + candidats.length)
-    couleurNotes(ws, `C${g.premier}:${d}${g.dernier}`)
-    couleurSeuil(ws, `C${g.pourcentage}:${d}${g.pourcentage}`)
+    couleurNotes(ws, `C${g.premier}:${d}${g.dernier}`, seuil)
+    couleurSeuil(ws, `C${g.pourcentage}:${d}${g.pourcentage}`, seuil)
     couleurResultat(ws, `C${g.pratique}:${d}${g.pratique}`, null, ECHOUE)
     couleurResultat(ws, `C${g.final}:${d}${g.final}`, CERTIFIE, NON_CERTIFIE)
   }
 
   // La legende du modele : un carre de couleur, puis sa signification.
   ;[
-    [BON, `Bon résultat ( ≥ ${SEUIL} % ) : A de bonnes aptitudes sur les thèmes abordés durant cette formation pratique.`],
-    [ROUGE, `Résultat insuffisant (< ${SEUIL} %) : Il doit fournir des efforts pour développer ses aptitudes pratiques (e-learning Team GP, coaching, formation…).`],
+    [BON, `Bon résultat ( ≥ ${seuil} % ) : A de bonnes aptitudes sur les thèmes abordés durant cette formation pratique.`],
+    [ROUGE, `Résultat insuffisant (< ${seuil} %) : Il doit fournir des efforts pour développer ses aptitudes pratiques (e-learning Team GP, coaching, formation…).`],
   ].forEach(([couleur, texte], i) => {
     const r = g.legende + 2 * i
     ws.getCell(r, 3).fill = plein(couleur)
@@ -295,7 +296,7 @@ function feuilleGlobale(wb, nom, brouillon, session, candidats, feuilles) {
 }
 
 /** La fiche d'un candidat : le bloc du modele, tout par formules. */
-function feuilleCandidat(wb, nomFeuille, global, col, g, modules) {
+function feuilleCandidat(wb, nomFeuille, global, col, g, modules, seuil = SEUIL_DEFAUT) {
   const ws = wb.addWorksheet(nomFeuille, { views: [{ zoomScale: 60 }] })
   const ref = `'${global}'!`
   ws.getColumn(2).width = LARGEUR_LIBELLES
@@ -346,8 +347,8 @@ function feuilleCandidat(wb, nomFeuille, global, col, g, modules) {
   r++
   const resultat = ligne('Résultat final', g.final, { police: calibri(16), bordure: tout, hauteur: 29.25 })
 
-  couleurNotes(ws, `C8:C${7 + n}`)
-  couleurSeuil(ws, `C${pct}`)
+  couleurNotes(ws, `C8:C${7 + n}`, seuil)
+  couleurSeuil(ws, `C${pct}`, seuil)
   couleurResultat(ws, `C${prat}`, null, ECHOUE)
   couleurResultat(ws, `C${resultat}`, CERTIFIE, NON_CERTIFIE)
   return ws
@@ -363,7 +364,7 @@ export async function construireClasseurCertification(ExcelJS, brouillon, sessio
   const feuilles = candidats.map(p => nomDeFeuille(p, pris))
   const { ws, g, modules } = feuilleGlobale(wb, global, brouillon, session, candidats, feuilles)
   const fiches = candidats.map((_, i) =>
-    feuilleCandidat(wb, feuilles[i], global, lettre(3 + i), g, modules))
+    feuilleCandidat(wb, feuilles[i], global, lettre(3 + i), g, modules, seuilDe(brouillon)))
   // Seules les cases blanches de la feuille globale se modifient ; les
   // fiches, toutes en formules, se lisent.
   await ws.protect('', { selectLockedCells: true, selectUnlockedCells: true, formatColumns: true, formatRows: true })

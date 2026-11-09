@@ -29,8 +29,22 @@ export const BAREMES = {
   sortiePratique: 20,
 }
 
-/** Le seuil de validation CFAO, present dans tous les comptes rendus. */
-export const SEUIL = 70
+/** Le seuil de validation CFAO par defaut. Chaque compte rendu peut porter
+ * le sien (`brouillon.seuil`) ; sans lui, c'est celui-ci.
+ */
+export const SEUIL_DEFAUT = 70
+
+/** Le seuil de validation d'un compte rendu : un entier de 1 a 100, sinon
+ * le seuil par defaut. Accepte le texte saisi (« 80 ») ou un nombre.
+ */
+export function seuilDe(brouillon) {
+  const brut = brouillon?.seuil
+  if (brut == null || brut === '' || typeof brut === 'boolean') return SEUIL_DEFAUT
+  const n = Number(String(brut).trim().replace(',', '.'))
+  if (!Number.isFinite(n)) return SEUIL_DEFAUT
+  const entier = Math.round(n)
+  return entier >= 1 && entier <= 100 ? entier : SEUIL_DEFAUT
+}
 
 /** Une note saisie lue comme nombre, virgule comprise ; `null` si vide
  * ou illisible.
@@ -70,7 +84,7 @@ export function enPourcentage(brut, bareme) {
 }
 
 /** Les resultats calcules d'un participant, depuis ses notes brutes. */
-export function calculer(p, baremes = BAREMES) {
+export function calculer(p, baremes = BAREMES, seuil = SEUIL_DEFAUT) {
   const entree = enPourcentage(p?.entreeBrut, baremes.entreeTheorique)
   const sortieTh = enPourcentage(p?.sortieTheoBrut, baremes.sortieTheorique)
   const sortiePr = enPourcentage(p?.sortiePratBrut, baremes.sortiePratique)
@@ -97,7 +111,7 @@ export function calculer(p, baremes = BAREMES) {
     sortiePratique: arrondi(sortiePr),
     progression: arrondi(progression),
     scoreFinal: arrondi(scoreFinal),
-    valide: scoreFinal == null ? null : scoreFinal >= SEUIL,
+    valide: scoreFinal == null ? null : scoreFinal >= seuil,
     // Ce qui manque encore, pour l'afficher sans le deviner.
     complet: sortieTh != null && sortiePr != null,
   }
@@ -108,15 +122,15 @@ function arrondi(v) {
 }
 
 /** La synthese d'une session : moyennes du groupe et effectifs. */
-export function syntheseGroupe(participants, baremes = BAREMES) {
+export function syntheseGroupe(participants, baremes = BAREMES, seuil = SEUIL_DEFAUT) {
   const presents = (participants || []).filter(p => p.present !== false)
-  const calculs = presents.map(p => calculer(p, baremes))
+  const calculs = presents.map(p => calculer(p, baremes, seuil))
   const moy = liste => {
     const v = liste.filter(x => x != null)
     return v.length ? arrondi(v.reduce((a, b) => a + b, 0) / v.length) : null
   }
   const scores = calculs.map(c => c.scoreFinal).filter(v => v != null)
-  const enRetrait = scores.filter(v => v < SEUIL).length
+  const enRetrait = scores.filter(v => v < seuil).length
 
   return {
     effectif: presents.length,

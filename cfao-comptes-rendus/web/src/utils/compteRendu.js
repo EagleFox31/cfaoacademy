@@ -10,7 +10,9 @@
  * theorie et de la pratique sauf indication contraire de la session.
  */
 
-export const SEUIL_DEFAUT = 70
+import { SEUIL_DEFAUT, seuilDe } from './baremeCfao'
+
+export { SEUIL_DEFAUT }
 
 /** Le taux d'acquisition d'un participant, a partir de ses deux notes.
  *
@@ -185,7 +187,7 @@ export function etatEtape(id, brouillon, session) {
       return nb > 0 ? 'complet' : 'vide'
     }
     case 'notes': {
-      const s = syntheseSession(d.participants, session?.seuil)
+      const s = syntheseSession(d.participants, seuilDe(d))
       if (s.complet) return 'complet'
       return s.notesSaisies > 0 ? 'partiel' : 'vide'
     }
@@ -218,7 +220,7 @@ export function etatEtape(id, brouillon, session) {
  * moteur, pas celles de l'interface.
  */
 export function dossierSession(brouillon, session) {
-  const seuil = session?.seuil ?? SEUIL_DEFAUT
+  const seuil = seuilDe(brouillon)
   const presents = (brouillon.participants || []).filter(p => p.present !== false)
   const s = syntheseSession(presents, seuil)
 

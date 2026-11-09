@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { dispositionsPour, partieRetenue } from '../../data/mock_sessions_formateur'
 import { idDisposition, modeLegende } from '../../data/dispositions_photos'
-import { calculer, afficher } from '../../utils/baremeCfao'
+import { calculer, afficher, seuilDe } from '../../utils/baremeCfao'
 import { periodeLongue, nombreDeJours, titreDeCouverture }
   from '../../utils/compteRendu'
 import { syntheseSatisfaction, satisfactionStagiaire, afficherTaux, detailParCritere,
@@ -62,7 +62,7 @@ function entreeMoteur(b, session, cle) {
     if (!p) return null
     if (certif) return candidatPourMoteur(p, b)
     const propre = satisfactionStagiaire(b.satisfaction?.[p.id] || {})
-    return participantPourMoteur(p, calculer(p, b.baremes), propre?.formation, propre?.accueil)
+    return participantPourMoteur(p, calculer(p, b.baremes, seuilDe(b)), propre?.formation, propre?.accueil, seuilDe(b))
   }
   const d = certif ? donneesCertification(b, session) : donneesSession(b, session)
   if (!cle.startsWith('resultats.')) return d
@@ -213,7 +213,8 @@ export default function PhaseVerification({
     const travaux = []
     ;(brouillon.participants || []).filter(p => p.present !== false).forEach(p => {
       const k = `fiche-${p.id}.appreciation`
-      const c = certif ? calculerCertification(p, brouillon.modules) : calculer(p, brouillon.baremes)
+      const c = certif ? calculerCertification(p, brouillon.modules, seuilDe(brouillon))
+        : calculer(p, brouillon.baremes, seuilDe(brouillon))
       if (!absent(k) || p.appreciation || !chiffresSuffisants(c)) return
       travaux.push(proposerTexte(entreeMoteur(brouillon, session, k), certif ? 'certification' : 'accueil')
         .then(redige(k)))
@@ -1413,7 +1414,7 @@ function Vignette({ disposition: d }) {
  * le reste vient de l'etape 2.
  */
 function ficheCertification(b, p) {
-  const c = calculerCertification(p, b.modules)
+  const c = calculerCertification(p, b.modules, seuilDe(b))
   const pc = v => (v == null ? '—' : `${Math.round(v)} %`)
   const e = c.elearning
   return {
@@ -1615,7 +1616,7 @@ function composerPages(b, session, s) {
     })
     if (certif) participants.forEach(p => pages.push(ficheCertification(b, p)))
     else participants.forEach(p => {
-      const c = calculer(p, b.baremes)
+      const c = calculer(p, b.baremes, seuilDe(b))
       // Les reponses du seul stagiaire : la fiche est la sienne.
       const siennes = b.satisfaction?.[p.id] ? { [p.id]: b.satisfaction[p.id] } : {}
       const satPropre = syntheseSatisfaction(siennes)

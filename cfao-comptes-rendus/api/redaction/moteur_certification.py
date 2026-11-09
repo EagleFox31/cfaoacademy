@@ -15,8 +15,7 @@ et le texte est une proposition que le formateur reprend.
 import random
 
 from moteur_session import _finir, _liste
-
-SEUIL = 70
+from regles import SEUIL_DEFAUT as SEUIL, seuil_de  # noqa: E402
 
 
 def _nombre(v):
@@ -62,6 +61,7 @@ def rediger_appreciation_certification(candidat, graine=None):
     if pct is None:
         return {'texte': '', 'relecture_requise': True}
     pct = int(round(pct))
+    seuil = seuil_de(c.get('seuil'))
     nom = ' '.join(x for x in (c.get('prenom'), c.get('nom')) if x).strip() or 'Le candidat'
     prenom = (c.get('prenom') or '').strip() or nom
     niveau = (c.get('niveau') or '').strip()
@@ -69,36 +69,36 @@ def rediger_appreciation_certification(candidat, graine=None):
     filiale = (c.get('filiale') or '').strip()
     modules = _modules(c)
     forts = [i for i, n in modules if n >= 90][:3] or [i for i, n in modules if n >= 85][:2]
-    faibles = [i for i, n in reversed(modules) if n < SEUIL][:3]
+    faibles = [i for i, n in reversed(modules) if n < seuil][:3]
     ecart = modules[0][1] - modules[-1][1] if len(modules) > 1 else 0
     e = c.get('elearning') or {}
     statut = e.get('statut')
     phrases = []
 
     # Le profil, d'apres le pourcentage.
-    if pct >= 90:
+    if pct >= 90 and pct >= seuil:
         phrases.append(t.un(
             f'{nom} réalise une excellente session pratique, avec {pct} % sur l’ensemble des modules de {certif}.',
             f'Avec {pct} %, {nom} livre une performance pratique remarquable lors de {certif}, '
             'témoignant d’une vraie maturité technique.'))
-    elif pct >= 80:
+    elif pct >= 80 and pct >= seuil:
         phrases.append(t.un(
             f'{nom} a démontré de bonnes aptitudes pratiques sur l’ensemble des modules de {certif}, avec {pct} %.',
             f'Avec {pct} %, {nom} valide la session pratique de {certif} avec un bon niveau de maîtrise.'))
-    elif pct >= SEUIL:
+    elif pct >= seuil:
         phrases.append(t.un(
             f'{nom} valide la session pratique de {certif} avec {pct} %, un résultat satisfaisant.',
             f'Avec {pct} %, {nom} atteint le seuil de validation de {certif}.'))
     elif pct >= 60:
         phrases.append(t.un(
-            f'{nom} n’atteint pas le seuil de {SEUIL} % de {certif} ({pct} %), '
+            f'{nom} n’atteint pas le seuil de {seuil} % de {certif} ({pct} %), '
             'malgré des compétences réelles sur plusieurs modules.',
             f'Avec {pct} %, {nom} reste en dessous du seuil de validation de {certif}.'))
     else:
         phrases.append(t.un(
             f'{nom} n’a pas atteint le seuil de validation de {certif} ({pct} %) : '
             'les lacunes constatées touchent plusieurs fondamentaux du niveau.',
-            f'Avec {pct} %, {nom} reste nettement en dessous du seuil de {SEUIL} % de {certif}.'))
+            f'Avec {pct} %, {nom} reste nettement en dessous du seuil de {seuil} % de {certif}.'))
 
     # Ce qui est maitrise, ce qui manque.
     if forts:
@@ -106,7 +106,7 @@ def rediger_appreciation_certification(candidat, graine=None):
             f'Ses meilleurs résultats portent sur les modules {_modules_cites(forts)}.',
             f'La maîtrise est particulièrement nette sur les modules {_modules_cites(forts)}.'))
     if faibles:
-        if pct >= SEUIL:
+        if pct >= seuil:
             phrases.append(t.un(
                 f'Les lacunes observées sur les modules {_modules_cites(faibles)} pourront être comblées '
                 'par un complément de pratique (coaching terrain ou e-learning Team GP).',
@@ -154,6 +154,7 @@ def rediger_bilan_certification(session, graine=None, rubrique=None):
     [{intitule, moyenne}]. Avec `rubrique`, seule celle-ci est redigee.
     """
     s = dict(session or {})
+    seuil = seuil_de(s.get('seuil'))
     t = _Tirage(graine if graine is not None else random.randrange(2 ** 31))
     effectif = s.get('effectif') or 0
     reussis = s.get('reussis') or 0
@@ -162,7 +163,7 @@ def rediger_bilan_certification(session, graine=None, rubrique=None):
     candidats = s.get('candidats') or []
     en_retrait = [c['nom'] for c in candidats if c.get('pratique') == 'Échoué']
     forts = [m['intitule'] for m in s.get('modules_forts') or []]
-    faibles = [m['intitule'] for m in s.get('modules_faibles') or [] if (m.get('moyenne') or 0) < SEUIL]
+    faibles = [m['intitule'] for m in s.get('modules_faibles') or [] if (m.get('moyenne') or 0) < seuil]
 
     r = {}
     lieu = f' au Centre CFAO {s["pays"]}' if s.get('pays') else ''
@@ -189,7 +190,7 @@ def rediger_bilan_certification(session, graine=None, rubrique=None):
         if en_retrait:
             vig.append(t.un(
                 f'{_liste(en_retrait, maximum=6, minuscule=False)} '
-                f'{"restent" if len(en_retrait) > 1 else "reste"} sous le seuil de {SEUIL} %.',
+                f'{"restent" if len(en_retrait) > 1 else "reste"} sous le seuil de {seuil} %.',
                 f'{len(en_retrait)} candidat{"s" if len(en_retrait) > 1 else ""} '
                 f'n’attei{"gnent" if len(en_retrait) > 1 else "nt"} pas le seuil de validation.'))
         else:

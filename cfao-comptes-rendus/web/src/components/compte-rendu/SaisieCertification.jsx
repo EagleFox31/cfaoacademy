@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { SEUIL, lireNote, nettoyerNote } from '../../utils/baremeCfao'
+import { seuilDe, lireNote, nettoyerNote } from '../../utils/baremeCfao'
 import {
   calculerCertification, moduleVide, STATUTS_ELEARNING, CERTIFIE, VALIDE,
 } from '../../utils/certification'
@@ -21,6 +21,7 @@ import {
 export default function SaisieCertification({ brouillon, maj, onEffacer }) {
   const table = useRef(null)
   const modules = brouillon.modules || []
+  const seuil = seuilDe(brouillon)
   const candidats = (brouillon.participants || []).filter(p => p.present !== false)
 
   function majModule(id, champ, valeur) {
@@ -92,7 +93,7 @@ export default function SaisieCertification({ brouillon, maj, onEffacer }) {
     })
   }
 
-  const calculs = Object.fromEntries(candidats.map(p => [p.id, calculerCertification(p, modules)]))
+  const calculs = Object.fromEntries(candidats.map(p => [p.id, calculerCertification(p, modules, seuil)]))
   const colonnes = candidats.length
 
   return (
@@ -145,7 +146,7 @@ export default function SaisieCertification({ brouillon, maj, onEffacer }) {
                   <td key={p.id}>
                     <input
                       className={`cr-num cr-certif-note${n != null && n > 100 ? ' cr-num--erreur'
-                        : n != null && n < SEUIL ? ' cr-certif-note--bas' : ''}`}
+                        : n != null && n < seuil ? ' cr-certif-note--bas' : ''}`}
                       data-note={`${i}:${j}`}
                       type="text" inputMode="decimal" value={v} placeholder="—"
                       onChange={e => noter(p.id, m.id, e.target.value)}
@@ -182,13 +183,13 @@ export default function SaisieCertification({ brouillon, maj, onEffacer }) {
               const c = calculs[p.id]
               return (
                 <span className={`cr-calc${c.pourcentage == null ? ' cr-calc--vide'
-                  : c.pourcentage >= SEUIL ? ' cr-calc--ok' : ' cr-calc--ko'}`}>
+                  : c.pourcentage >= seuil ? ' cr-calc--ok' : ' cr-calc--ko'}`}>
                   {c.pourcentage == null ? '—' : `${c.pourcentage} %`}
                 </span>
               )
             }}
           </Ligne>
-          <Ligne titre="Partie pratique" sousTitre={`validée à ${SEUIL} %`} candidats={candidats}>
+          <Ligne titre="Partie pratique" sousTitre={`validée à ${seuil} %`} candidats={candidats}>
             {p => <Statut valeur={calculs[p.id].pratique} bon={VALIDE} />}
           </Ligne>
         </tbody>

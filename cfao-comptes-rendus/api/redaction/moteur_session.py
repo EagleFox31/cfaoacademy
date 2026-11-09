@@ -27,8 +27,9 @@ from lexique_session import (
     ENTREE, EQUILIBRE, EVOLUTION, GROUPE, LECTURE, LIAISON, MEILLEURE_PROGRESSION,
     NIVEAU_ENTREE, PALIERS_GROUPE, PALIERS_PROGRESSION, PALIERS_TAUX,
     PARTICIPANTS, POINTS_FORTS, PRATIQUE_EN_RETRAIT, QUALIFICATIF, REGRESSIONS,
-    RESULTATS, RESULTATS_TAUX, RETRAIT_NOMME, REUSSITE, SATISFACTION, SESSION, SEUIL,
+    RESULTATS, RESULTATS_TAUX, RETRAIT_NOMME, REUSSITE, SATISFACTION, SESSION,
     SUITE_PRATIQUE, SUITES, TAUX, THEMATIQUES, VIGILANCE, en_mots, palier)
+from regles import seuil_de
 
 FRAGMENTS = {
     'groupe': GROUPE, 'session': SESSION, 'participants': PARTICIPANTS,
@@ -140,7 +141,7 @@ def _entier(v):
 def _donnees(session):
     """Les champs des modeles, tires de la session et completes."""
     s = dict(session or {})
-    d = {'seuil': _entier(s.get('seuil')) or SEUIL}
+    d = {'seuil': seuil_de(s.get('seuil'))}
     for champ in ('entree', 'sortie', 'progression', 'taux', 'theorie', 'pratique',
                   'effectif', 'reussis', 'sat_formation', 'sat_accueil'):
         d[champ] = _entier(s.get(champ))
@@ -225,6 +226,9 @@ def rediger_acquisition(session, graine=None):
         return None
     t = Tirage(graine)
     rang = palier(d['taux'], PALIERS_TAUX)
+    # Sous le seuil choisi, le texte ne peut pas dire le niveau atteint.
+    if d['taux'] is not None and d['taux'] < d['seuil'] and rang in ('excellent', 'bon', 'correct'):
+        rang = 'limite'
     d['qualificatif'] = _developper(t.un(QUALIFICATIF[rang]), d, t).rstrip('.')
     d['qualificatif'] = d['qualificatif'][0].lower() + d['qualificatif'][1:]
     cas = ('tous' if d['reussis'] == d['effectif'] else

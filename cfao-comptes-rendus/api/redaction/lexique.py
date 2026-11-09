@@ -18,8 +18,8 @@ Chaque entree est une liste : le moteur y puise sans jamais reprendre deux
 fois la meme formule dans un meme texte.
 """
 
-# Seuil de validation CFAO, present dans tous les comptes rendus source.
-SEUIL = 70
+# Seuil de validation CFAO par defaut ; chaque compte rendu peut porter le sien.
+from regles import SEUIL_DEFAUT as SEUIL  # noqa: E402
 
 PALIERS = [(90, "excellent"), (80, "bon"), (70, "correct"),
            (55, "limite"), (0, "faible")]

@@ -4,7 +4,7 @@ import useEnHautDePage from '../hooks/useEnHautDePage'
 import useSiteEffects from '../hooks/useSiteEffects'
 import { useAuth } from '../lib/auth'
 import { sessionsDuFormateur } from '../data/mock_sessions_formateur'
-import { syntheseGroupe } from '../utils/baremeCfao'
+import { syntheseGroupe, seuilDe } from '../utils/baremeCfao'
 import { estCertification, syntheseCertification, typeDepuisCode } from '../utils/certification'
 import {
   adopter, enregistrer, garder, recuperer, recupererDuServeur, surveiller,
@@ -216,9 +216,9 @@ export default function TrainerReportNew() {
   const certification = estCertification(brouillon)
   const synthese = useMemo(
     () => (certification
-      ? syntheseCertification(brouillon.participants, brouillon.modules)
-      : syntheseGroupe(brouillon.participants, brouillon.baremes)),
-    [certification, brouillon.participants, brouillon.modules, brouillon.baremes],
+      ? syntheseCertification(brouillon.participants, brouillon.modules, seuilDe(brouillon))
+      : syntheseGroupe(brouillon.participants, brouillon.baremes, seuilDe(brouillon))),
+    [certification, brouillon.participants, brouillon.modules, brouillon.baremes, brouillon.seuil],
   )
 
   // Un patch, ou une fonction de l'etat courant quand la modification

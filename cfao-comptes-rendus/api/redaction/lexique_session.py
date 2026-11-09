@@ -20,7 +20,7 @@ Les registres suivent les chiffres ; aucun qualificatif n'est choisi
 contre la valeur qu'il qualifie.
 """
 
-SEUIL = 70
+from regles import SEUIL_DEFAUT as SEUIL  # noqa: E402
 
 # ── Designations, pour ne pas repeter « participants » ─────────────────
 GROUPE = "[le groupe|la promotion|l’ensemble des participants|l’ensemble du groupe]"

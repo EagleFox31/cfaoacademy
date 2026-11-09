@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  lireNote, nettoyerNote, enPourcentage, calculer, syntheseGroupe, anomalies,
+  lireNote, nettoyerNote, enPourcentage, calculer, syntheseGroupe, anomalies, seuilDe, SEUIL_DEFAUT,
 } from './baremeCfao'
 
 describe('nettoyerNote', () => {
@@ -72,5 +72,34 @@ describe('syntheseGroupe', () => {
     const baremes = { entreeTheorique: 20, sortieTheorique: 20, sortiePratique: 20 }
     expect(syntheseGroupe(participants).scoreFinal).toBeCloseTo(83.3, 1)
     expect(syntheseGroupe(participants, baremes).scoreFinal).toBe(100)
+  })
+})
+
+describe('seuil de validation du compte rendu', () => {
+  it('seuilDe : 70 par defaut, valeur du brouillon sinon', () => {
+    expect(SEUIL_DEFAUT).toBe(70)
+    expect(seuilDe({})).toBe(70)
+    expect(seuilDe(undefined)).toBe(70)
+    expect(seuilDe({ seuil: '' })).toBe(70)
+    expect(seuilDe({ seuil: 0 })).toBe(70)
+    expect(seuilDe({ seuil: 150 })).toBe(70)
+    expect(seuilDe({ seuil: '80' })).toBe(80)
+    expect(seuilDe({ seuil: 65 })).toBe(65)
+  })
+
+  const sur100 = { entreeTheorique: 100, sortieTheorique: 100, sortiePratique: 100 }
+  const p = { entreeBrut: '', sortieTheoBrut: '75', sortiePratBrut: '75' }
+
+  it('calculer : valide a 70 par defaut, refuse 75 avec un seuil de 80', () => {
+    expect(calculer(p, sur100).valide).toBe(true)
+    expect(calculer(p, sur100, 80).valide).toBe(false)
+    expect(calculer(p, sur100, 75).valide).toBe(true)
+  })
+
+  it('syntheseGroupe : le nombre en retrait suit le seuil', () => {
+    const groupe = [p, { ...p, sortieTheoBrut: '90', sortiePratBrut: '90' }]
+    expect(syntheseGroupe(groupe, sur100).enRetrait).toBe(0)
+    expect(syntheseGroupe(groupe, sur100, 80).enRetrait).toBe(1)
+    expect(syntheseGroupe(groupe, sur100, 95).enRetrait).toBe(2)
   })
 })

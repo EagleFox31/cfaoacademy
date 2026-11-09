@@ -57,3 +57,11 @@ describe('niveauDe', () => {
     expect(niveauDe({ codeFormation: '' })).toBe('')
   })
 })
+
+describe('seuil de validation', () => {
+  it('suit le seuil passe, 70 % sans seuil', () => {
+    expect(calculerCertification(candidat([75, 75, 75]), modules).pratique).toBe(VALIDE)
+    expect(calculerCertification(candidat([75, 75, 75]), modules, 80).pratique).toBe(ECHOUE)
+    expect(calculerCertification(candidat([75, 75, 75]), modules, 75).pratique).toBe(VALIDE)
+  })
+})
