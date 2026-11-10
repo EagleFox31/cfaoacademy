@@ -21,6 +21,15 @@ class Echo(BaseHTTPRequestHandler):
             self.send_header("Content-Length", "0")
             self.end_headers()
             return
+        if "/statut/" in self.path:  # code imposé : /statut/404, /cr/statut/503…
+            code = int(self.path.rsplit("/statut/", 1)[1][:3])
+            corps = json.dumps({"module": NOM, "statut": code}).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(corps)))
+            self.end_headers()
+            self.wfile.write(corps)
+            return
         corps = json.dumps({"module": NOM, "methode": self.command, "chemin": self.path,
                             "en_tetes": {k.lower(): v for k, v in self.headers.items()}}).encode()
         self.send_response(200)

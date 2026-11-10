@@ -18,6 +18,7 @@ for module in $(for e in $entrees; do echo "${e%%@*}"; done | sort -u); do
         echo "    server_name _;"
         echo "    absolute_redirect off;"
         echo "    set \$edge_module edge;"
+        echo "    include /etc/nginx/snippets/attente.conf;"
         echo "    include $NGINX_ENVSUBST_OUTPUT_DIR/lan/$module.conf;"
         echo "}"
     } >> "$sortie"

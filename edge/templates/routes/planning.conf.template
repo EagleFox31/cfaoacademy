@@ -13,5 +13,7 @@ location /api/v1/planning/ {
     # Imports xlsx et exports : plus longs qu'un appel ordinaire.
     proxy_read_timeout 120s;
     proxy_send_timeout 120s;
+    # Pas de proxy_intercept_errors : un 503 de l'API garde son corps. Seules les
+    # erreurs de la passerelle (API arrêtée) deviennent {"detail":"maintenance"}.
     proxy_pass http://${EDGE_PLANNING_UPSTREAM};
 }

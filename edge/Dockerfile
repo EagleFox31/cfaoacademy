@@ -16,5 +16,6 @@ ENV NGINX_ENVSUBST_OUTPUT_DIR=/tmp/conf.d NGINX_ENVSUBST_FILTER=^EDGE_
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY snippets/ /etc/nginx/snippets/
 COPY templates/ /etc/nginx/templates/
+COPY pages/ /usr/share/nginx/edge/
 # Le bit exécutable ne survit pas à un poste Windows : il est posé ici.
 COPY --chmod=0755 entrypoint.d/ /docker-entrypoint.d/

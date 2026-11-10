@@ -61,6 +61,30 @@ def test_chaque_proxy_pass_inclut_le_snippet_commun():
                 assert "snippets/proxy-commun.conf" in bloc, m.name
 
 
+def test_page_d_attente_dans_chaque_bloc_server():
+    inclusion = "include /etc/nginx/snippets/attente.conf;"
+    assert inclusion in _texte(EDGE / "templates" / "edge.conf.template")
+    assert inclusion in _texte(EDGE / "entrypoint.d" / "26-ecoutes-lan.sh")
+    attente = _texte(EDGE / "snippets" / "attente.conf")
+    # Seules les erreurs de passerelle : un 4xx du module n'est jamais masqué.
+    assert re.search(r"^error_page 502 503 504 =503 /_edge/attente\.\$edge_attente;$", attente, re.M)
+    assert sorted(_locations(attente)) == ["/_edge/attente.html", "/_edge/attente.json"]
+    assert attente.count("internal;") == 2
+    assert "COPY pages/ /usr/share/nginx/edge/" in _texte(EDGE / "Dockerfile")
+    page = _texte(EDGE / "pages" / "attente.html")
+    assert '<meta http-equiv="refresh" content="15">' in page and 'lang="en"' in page
+    assert "http" not in page.split("<style>", 1)[1].split("</style>", 1)[0], "page autonome"
+
+
+def test_api_garde_ses_propres_erreurs():
+    # Un 503 de l'API garde son corps ; les routes HTML relaient la page d'attente.
+    assert "proxy_intercept_errors" not in "\n".join(
+        ligne for ligne in _texte(EDGE / "templates" / "routes" / "planning.conf.template").splitlines()
+        if not ligne.lstrip().startswith("#"))
+    for modele in ("routes/cr.conf.template", "routes/auth.conf.template", "racine/needs.conf.template"):
+        assert "proxy_intercept_errors on;" in _texte(EDGE / "templates" / modele), modele
+
+
 def test_keycloak_n_utilise_jamais_le_host_recu():
     auth = _texte(EDGE / "templates" / "routes" / "auth.conf.template")
     assert "$http_host" not in auth and "$host" not in auth

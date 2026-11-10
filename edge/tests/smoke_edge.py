@@ -5,7 +5,8 @@ Variables : EDGE_URL (passerelle complète, proto http), EDGE_HTTPS_URL (instanc
 en proto https sans Keycloak ni CR), KC_INTERNE (Keycloak en direct, avec /auth),
 EMETTEUR_ATTENDU, EDGE_CONTENEUR_HTTPS (nom du conteneur de l'instance https,
 pour les journaux), EDGE_LAN_NEEDS_URL et EDGE_LAN_CR_URL (écoutes LAN de la
-passerelle complète), EDGE_IMAGE (refus au démarrage).
+passerelle complète), EDGE_IMAGE (refus au démarrage), EDGE_ATTENTE_URL
+(instance dont les modules sont arrêtés : page d'attente).
 """
 import base64
 import hashlib
@@ -26,6 +27,8 @@ EMETTEUR = os.environ["EMETTEUR_ATTENDU"]
 LAN_NEEDS = os.environ["EDGE_LAN_NEEDS_URL"].rstrip("/")
 LAN_CR = os.environ["EDGE_LAN_CR_URL"].rstrip("/")
 IMAGE = os.environ.get("EDGE_IMAGE", "antifragile237/cfao-edge:smoke")
+# Instance dont needs et planning ne répondent pas (aucun service sur le port).
+ATTENTE = os.environ["EDGE_ATTENTE_URL"].rstrip("/")
 
 # Les helpers du smoke du realm lisent KC_URL à l'import : on le pose avant.
 os.environ["KC_URL"] = f"{EDGE_URL}/auth"
@@ -187,6 +190,50 @@ def test_limites_de_taille():
 def test_modules_inactifs_retombent_sur_needs():
     for chemin in ("/cr/x", "/auth/realms/x"):
         assert _vu(requests.get(f"{EDGE_HTTPS_URL}{chemin}"))["module"] == "needs"
+
+
+NAVIGATEUR = {"Accept": "text/html,application/xhtml+xml,*/*;q=0.8"}
+
+
+def _attente(r, type_):
+    assert r.status_code == 503, r.text[:200]
+    assert r.headers["Retry-After"] == "15" and r.headers["Cache-Control"] == "no-store"
+    assert r.headers["Content-Type"].startswith(type_)
+
+
+@pytest.mark.parametrize("chemin", ["/", "/portail/cle-repartition"])
+def test_module_arrete_page_d_attente_pour_le_navigateur(chemin):
+    r = requests.get(f"{ATTENTE}{chemin}", headers=NAVIGATEUR)
+    _attente(r, "text/html")
+    assert "Mise à jour en cours" in r.text and 'http-equiv="refresh"' in r.text
+
+
+@pytest.mark.parametrize("methode, chemin, en_tetes", [
+    ("GET", "/api/v1/planning/access", NAVIGATEUR),   # /api/ : toujours du JSON
+    ("GET", "/x", {"Accept": "application/json"}),
+    ("POST", "/x", {}),
+])
+def test_module_arrete_json_pour_les_api(methode, chemin, en_tetes):
+    r = requests.request(methode, f"{ATTENTE}{chemin}", headers=en_tetes)
+    _attente(r, "application/json")
+    assert r.json() == {"detail": "maintenance"}
+
+
+def test_erreur_502_du_module_devient_page_d_attente():
+    _attente(requests.get(f"{EDGE_URL}/cr/statut/502", headers=NAVIGATEUR), "text/html")
+    _attente(requests.get(f"{LAN_CR}/cr/statut/503"), "application/json")
+
+
+@pytest.mark.parametrize("chemin, code", [("/statut/404", 404), ("/statut/500", 500), ("/cr/statut/403", 403)])
+def test_autres_erreurs_du_module_intactes(chemin, code):
+    r = requests.get(f"{EDGE_URL}{chemin}", headers=NAVIGATEUR)
+    assert r.status_code == code and r.json()["statut"] == code
+    assert "Retry-After" not in r.headers and "Cache-Control" not in r.headers
+
+
+@pytest.mark.parametrize("chemin", ["/_edge/attente.html", "/_edge/attente.json"])
+def test_page_d_attente_inaccessible_en_direct(chemin):
+    assert requests.get(f"{EDGE_URL}{chemin}").status_code == 404
 
 
 def test_journaux_json_sans_query_string():

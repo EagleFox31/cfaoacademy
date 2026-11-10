@@ -6,5 +6,7 @@ location / {
     include /etc/nginx/snippets/proxy-commun.conf;
     proxy_set_header Host $http_host;
     proxy_read_timeout 120s;    # imports needs
+    # Un 502/503/504 renvoyé par le module (sa propre passerelle) : page d'attente.
+    proxy_intercept_errors on;
     proxy_pass http://${EDGE_NEEDS_UPSTREAM};
 }

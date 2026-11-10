@@ -29,5 +29,7 @@ location ~ ^/auth/(realms/cfao|resources)/ {
     proxy_buffer_size 128k;
     proxy_buffers 4 256k;
     proxy_busy_buffers_size 256k;
+    # Keycloak qui démarre (503) : page d'attente plutôt qu'une erreur brute.
+    proxy_intercept_errors on;
     proxy_pass http://${EDGE_KEYCLOAK_UPSTREAM};
 }

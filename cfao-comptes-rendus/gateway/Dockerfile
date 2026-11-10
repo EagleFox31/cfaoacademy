@@ -2,7 +2,8 @@
 # qui route /apercu et /cr-donnees vers l'API.
 # Contexte de build : cfao-comptes-rendus/ (voir docker-compose.yml).
 
-FROM node:20-alpine AS web
+# 22.23.4 : correctif CVE-2026-111497. Étape de build seulement ; l'image servie est nginx.
+FROM node:22.23.4-alpine AS web
 WORKDIR /web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci --no-audit --no-fund

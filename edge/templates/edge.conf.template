@@ -23,6 +23,9 @@ server {
 
     set $edge_module edge;
 
+    # Module arrêté ou en mise à jour : page d'attente au lieu d'un 502 brut.
+    include /etc/nginx/snippets/attente.conf;
+
     # URL vue des navigateurs, annoncée aux modules servis sous préfixe.
     set $edge_fwd_proto ${EDGE_PUBLIC_PROTO};
     set $edge_fwd_host  ${EDGE_PUBLIC_HOST};
