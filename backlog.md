@@ -153,6 +153,18 @@ Implications :
 - `11-3` En tant que RH, je veux mettre à jour les infos RH d'un collaborateur.
 - `11-4` En tant qu'assistante centre, je veux gérer les inscriptions et les convocations.
 - `11-5` En tant que responsable, je veux consulter les historiques.
+- `11-6` En tant que super admin, je veux un **tableau de bord de suivi des accès** afin de savoir qui utilise quel module et de repérer les comptes inactifs ou les tentatives suspectes.
+  - Le tableau affiche :
+    - les connexions par module (jour, 7 jours, 30 jours) ;
+    - la dernière connexion par utilisateur ;
+    - les comptes jamais utilisés ;
+    - les échecs de connexion répétés.
+  - Filtres : module, pays, période. Style « application » du cockpit.
+  - Source : les événements de connexion du realm commun `cfao` (LOGIN, LOGIN_ERROR, LOGOUT). Le client Keycloak de chaque connexion indique le module. Rien n'est ajouté dans les modules.
+  - Contraintes :
+    - données personnelles : durée de conservation explicite (90 jours proposés) ;
+    - lecture réservée au super admin, selon une policy Cerbos avec tests négatifs.
+  - **Dépend de** la fédération (realm commun, L6-L9) et de l'activation des événements dans le realm v2 (voir PASSATION, point 5).
 
 ## 12 · Administration plateforme — *epic : structure & configuration*
 

@@ -35,10 +35,138 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | Un relais public vers un service multi-tenant nomme le tenant exposé (liste blanche), jamais une famille de chemins | E (moindre privilège) | `edge/tests/smoke_edge.py` : `/auth/realms/master/…` et tout autre realm en 404 |
 | La base d'un module se crée et se met à jour seule à chaque `up` (job `migrate` dédié), en no-op si elle est à jour, sans écraser les données de prod | A, I, R | smoke sur base vide + second démarrage sans écriture + rejeu sur copie de base existante (AGENTS.md §7) |
 | Un lien entre deux modules se déclare dans leurs fichiers compose : `docker network connect` disparaît à la recréation du conteneur, et `external` impose une commande préalable | D, A, I | `test_maillage_inter_modules` + smoke jeton réel après recréation de chaque module, dans les deux ordres |
+| Une policy modifiée se prouve sur le PDP en marche : sur un montage Windows, il ne recharge pas seul | D | redémarrage de Cerbos puis lecture du droit par l'API avec un jeton réel |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-11-10 — Bouton « Filtres » reproposé alors qu'il venait d'être retiré à la demande (near miss, barre du tableau)
+- **Contexte / symptôme** : pour supprimer le doublon de filtres du Devis, proposition de masquer la ligne de filtres derrière un bouton « Filtres ».
+- **Impact** : aucun en production, rien n'a été codé. La proposition contredisait une décision produit de la veille et aurait défait un retour déjà livré.
+- **Détection** : lecture du test qui verrouille l'absence du bouton dans `.sheet-toolbar`, juste avant de coder.
+- **Cause racine** : la proposition a été faite à partir du code visible, sans chercher pourquoi l'élément n'y était plus.
+- **Correctif** : barre rangée sans bouton « Filtres », test d'absence conservé.
+- **Prévention** : avant de proposer d'ajouter un contrôle d'interface, chercher son nom dans les tests et dans `git log -S`. Un test d'absence qui le mentionne vaut décision.
+- **Leçon généralisée** : l'absence d'un élément peut être une décision. Vérifier l'historique avant de le proposer, pas seulement avant de le coder.
+- **Catégorie** : décision produit / UX
+- **Récidive** : non
+
+### 2026-11-10 — Niveau des modules figé dans un JSON, copie de plus du catalogue (cfao-planning, cfao-needs)
+
+- **Contexte / symptôme** : la colonne Niveau de la clé de répartition lisait une table JSON livrée avec le code, construite à partir des classeurs. Impossible de corriger un niveau depuis l'écran, et les libellés étaient ramenés à Junior/Senior/Expert.
+- **Impact** : une donnée métier de plus hors base, non modifiable, et un barème faux pour les marques qui ont le leur (G4 à G1, Bronze à Gold, BASIC). Signalé par l'utilisateur en recette, avant tout commit.
+- **Détection** : retour utilisateur sur une cellule « — » qu'il ne pouvait pas renseigner.
+- **Cause racine** : le besoin d'affichage a été traité sans chercher où la donnée vivait déjà. `CatalogLine` portait le libellé de la marque et le palier en base `cfao-needs`.
+- **Correctif** : table JSON supprimée, lecture et écriture du niveau au catalogue par le contrat `needs-analytics` 1.2, clé de service dédiée, journal et droits côté planning.
+- **Prévention** : `test_catalog_levels.py` vérifie le barème propre à chaque marque et l'écriture au catalogue ; recherche reuse-first sur le modèle de données avant toute nouvelle table de référence.
+- **Leçon généralisée** : avant de créer une donnée de référence, trouver sa source. Si elle existe, la lire par contrat. Une valeur qu'un métier peut vouloir corriger ne se livre pas dans un fichier.
+- **Catégorie** : conception/données
+
+### 2026-11-10 — Migration annoncée « rien à appliquer » alors que la colonne manquait (near miss, cfao-planning)
+
+- **Contexte / symptôme** : après reconstruction de l'image de l'API, le job `planning-migrate` répond « No migrations to apply » alors que deux migrations nouvelles existent dans le code.
+- **Impact** : aucun. L'API aurait répondu en erreur sur la colonne absente si le contrôle s'était arrêté au code de sortie du job.
+- **Détection** : lecture de `information_schema.columns` après le job, colonne absente.
+- **Cause racine** : le service `planning-migrate` a sa propre image construite depuis le même contexte. Seule celle de `planning-api` avait été reconstruite, le job a donc tourné sur l'ancien code.
+- **Correctif** : reconstruction des deux services, migrations appliquées, rejeu sans migration.
+- **Prévention** : construire tous les services du compose qui portent le code, puis contrôler la présence de la colonne attendue en base.
+- **Leçon généralisée** : un job qui réussit sans rien faire ne prouve rien. Vérifier l'effet attendu, pas le code de sortie.
+- **Catégorie** : release/déploiement
+- **Récidive** : non
+
+### 2026-11-10 — Logo affiché en texte alors que le fichier existait dans le dépôt (Peugeot, clé de répartition)
+
+- **Contexte / symptôme** : la marque Peugeot s'affichait en texte dans les tableaux de la clé, le manque ayant été seulement noté comme « pas de fichier logo ».
+- **Impact** : consigne « logo partout » non respectée, l'utilisateur a dû redemander.
+- **Détection** : retour de l'utilisateur sur une capture.
+- **Cause racine** : recherche limitée à `frontend/public/assets/logos/`, alors que le module Besoins portait le fichier dans `cfao-needs/web/public/assets/brands/`. Le repli sur le texte masque le manque.
+- **Correctif** : logo recadré, ajouté au portail et déclaré dans `BRAND_LOGOS`, cas ajouté au test `cardBrandBadge.test.js`.
+- **Prévention** : avant de déclarer un logo absent, chercher son nom de fichier dans tout le dépôt ; chaque marque ajoutée à la correspondance a sa ligne de test.
+- **Leçon généralisée** : un repli silencieux transforme un manque en défaut invisible. Chercher dans tout le monorepo avant de conclure qu'une ressource n'existe pas.
+- **Catégorie** : qualité UI
+- **Récidive** : non
+
+### 2026-11-10 — Droit correct dans les tests, absent du PDP en marche (near miss, saisie de la clé)
+
+- **Contexte / symptôme** : la règle `edit_planned` compilait et ses tests Cerbos passaient, mais `/access` renvoyait `edit: false` au superadmin sur la recette. Aucune cellule n'était modifiable.
+- **Impact** : fonctionnalité invisible en recette. Rien de livré.
+- **Détection** : scénario à deux navigateurs sur la pile réelle, avec lecture de la réponse `/access`.
+- **Cause racine** : `watchForChanges` ne reçoit pas les événements de fichier à travers un montage Windows dans Docker Desktop. Le PDP démarré trois jours plus tôt servait l'ancienne policy. `cerbos compile` lit les fichiers, pas l'état du serveur.
+- **Correctif** : redémarrage du conteneur Cerbos local.
+- **Prévention** : après toute modification de policy sur le poste, redémarrer Cerbos et relire le droit par l'API avec un jeton réel.
+- **Near miss associé** : le gel exigeait le jeton `last_edit_at`, mais `PrepareView` appelait encore `freeze(ckey.id)`. Tout gel après une saisie aurait été refusé. Corrigé, et le test « gel après saisie » vérifie le jeton envoyé par l'écran.
+- **Leçon généralisée** : un outil qui valide les fichiers ne dit rien de ce que charge le service en marche. Un contrat durci côté serveur se vérifie aussi chez chaque appelant.
+
+### 2026-11-09 — Build vert, page plantée au rendu (near miss, Devis par filiale)
+
+- **Contexte / symptôme** : un `useMemo` du Devis a reçu dans ses dépendances une constante déclarée plus bas dans le composant. `Cannot access 'data' before initialization` au premier rendu.
+- **Impact** : écran de la fiche pays en erreur. Rien de livré.
+- **Détection** : tests de rendu `CleRepartition.test.jsx` et contrôle Playwright, alors que le build venait de réussir.
+- **Cause racine** : le bundler ne signale pas l'accès à une constante avant sa déclaration, qui n'échoue qu'à l'exécution.
+- **Correctif** : `data` et `sessions` déclarées avant `columns`.
+- **Prévention** : après tout déplacement ou ajout de dépendance de hook, lancer les tests de rendu de la page, pas le build seul.
+- **Leçon généralisée** : un build réussi prouve que le code s'assemble, pas qu'il s'exécute.
+
+### 2026-11-09 — Tailles de texte vérifiées en CSS, 20 % plus petites à l'écran (near miss, cartes de la Vue globale)
+
+- **Contexte / symptôme** : cartes et marques agrandies, contrôle sur la taille calculée (36 px), alors que l'image montrait des chiffres nettement plus petits.
+- **Impact** : l'utilisateur venait de signaler un texte trop petit. La première passe aurait été livrée encore trop petite.
+- **Détection** : écart entre la hauteur CSS d'un logo (30 px) et sa boîte à l'écran (24 px), puis remontée des parents.
+- **Cause racine** : `utils/echelle.js` pose un `zoom` sur `html` selon la largeur de l'écran (jusqu'à 0,8 sur les portables). `getComputedStyle` renvoie la valeur avant réduction.
+- **Correctif** : tailles relevées et documentées dans `costkey.css` pour rester lisibles à 0,8.
+- **Prévention** : toute demande de lisibilité se contrôle sur une capture recadrée et sur `getBoundingClientRect`, à la plus petite échelle (0,8), pas sur la taille calculée seule.
+- **Leçon généralisée** : une valeur calculée décrit le style, pas ce que voit l'utilisateur. Quand un facteur global existe, mesurer la grandeur rendue.
+- **Catégorie** : front/rendu
+- **Récidive** : non
+
+### 2026-11-09 — Ouverture du portail très lente : 451 modules à chaque page et scrutation de tout le dossier (front en Docker)
+
+- **Contexte / symptôme** : après connexion, `/callback` restait de longues secondes sur « Academy. Chargement… », et un simple `index.html` prenait 5 à 9 s.
+- **Impact** : confort de développement et de recette. La production sert un paquet compilé, mais son fichier d'entrée embarquait aussi toutes les pages.
+- **Détection** : plainte utilisateur, puis mesure du graphe de modules (451 modules, 14,4 Mo, 13 à 21 s) et de la charge de la VM Docker.
+- **Cause racine** : `App.jsx` importait toutes les pages en statique. La scrutation à 300 ms couvrait aussi `dist` et les médias de `public`, et saturait les E/S à travers le montage Windows. Après le découpage, 278 modules restaient chargés, car `utils/demoProfiles.js` importait une fonction via `Portal.jsx`, ce qui ramenait tous les tableaux de bord.
+- **Correctif** : pages en `React.lazy`, `Suspense` et `RepliChargement` dans `RouteMotion`, rechargement borné sur `vite:preloadError`, scrutation à 1 s sans `dist` ni médias, import direct de `portalProfiles.js`. Socle à 132 modules, 5,6 à 7,5 s.
+- **Prévention** : test vitest « App : découpage par route », qui refuse tout import statique de page hors connexion et l'import de `Portal` par le tiroir de démo.
+- **Leçon généralisée** : après un découpage, mesurer ce qui reste réellement chargé et remonter la chaîne d'imports des plus gros modules. Un seul import statique d'un utilitaire logé dans une page annule le découpage sans erreur visible.
+- **Catégorie** : performance/build
+- **Récidive** : non
+
+### 2026-11-09 — Lien vers une ligne de tableau, resté sans effet quand un filtre interne la cachait (near miss, Devis par filiale)
+
+- **Contexte / symptôme** : le clic sur un bandeau d'incohérence devait retirer les filtres et ramener à la session. Il ne retirait que les listes Marque, Mois et Lieu : avec une recherche ou un filtre de colonne actif, la ligne restait cachée et rien ne se passait.
+- **Impact** : aucun en production, le lot n'était ni commité ni annoncé. Un clic sans effet visible, sans message, aurait été livré.
+- **Détection** : relecture du script de contrôle, dont le cas « filtre actif » n'avait en réalité jamais été exécuté, puis test de chaque filtre dans Chromium.
+- **Cause racine** : `DataSheet` garde sa recherche et ses filtres de colonne dans son état local. Le parent n'a remis à zéro que les filtres qu'il possède.
+- **Correctif** : prop `revealKey` sur `DataSheet`, qui retire recherche et filtres de colonne, puis ramène à la ligne une fois le corps rendu.
+- **Prévention** : test vitest « le bandeau retire la recherche qui cachait la session » ; contrôle navigateur sur chaque filtre.
+- **Leçon généralisée** : une action qui doit montrer un élément se teste depuis chaque état qui peut le cacher. Un cas prévu dans un script de contrôle compte seulement si sa sortie apparaît dans le résultat.
+- **Catégorie** : UI/test
+- **Récidive** : non
+
+### 2026-11-09 — Nouvelle valeur d'énumération validée sur un processus neuf, API en service encore sur l'ancien code (near miss, cfao-needs)
+
+- **Contexte / symptôme** : après l'ajout du lieu Distanciel, la synthèse d'une fiche renvoyait une erreur 500 (`KeyError: 'DISTANCE'`), et le panneau de synthèse disparaissait sans message.
+- **Impact** : fiche Madagascar sans synthèse à l'écran en recette ; le worker, dont l'image embarque le code, aurait levé la même erreur.
+- **Détection** : contrôle à l'écran avec le vrai parcours, avant d'annoncer la livraison.
+- **Cause racine** : gunicorn tourne sans rechargement, le montage du code ne suffit donc pas à le mettre à jour. `pytest`, `makemigrations --check` et `manage.py shell` démarrent un processus neuf et voyaient le nouveau code, pendant que l'API en service gardait l'ancienne énumération.
+- **Correctif** : redémarrage de l'API, reconstruction et relance du worker ; la synthèse répond 200.
+- **Prévention** : après un changement de modèle ou d'énumération, redémarrer l'API et le worker, puis appeler la route concernée sur le service en marche, avec un vrai jeton.
+- **Leçon généralisée** : un test dans un processus neuf prouve le code, pas le service déployé. La preuve de livraison se prend sur le processus qui sert réellement les requêtes.
+- **Catégorie** : déploiement/test
+- **Récidive** : non
+
+### 2026-11-09 — Garde-fou de page blanche démarré trop tard : page vide pendant tout le chargement des modules (erreur, front)
+
+- **Contexte / symptôme** : page entièrement blanche sur `/portail/cle-repartition/country`, alors que le garde-fou de démarrage existait et que ses tests passaient.
+- **Impact** : écran vide de 7 à 28 s à chaque chargement en dev, sans aucun message ; un module sans réponse l'aurait laissé vide indéfiniment.
+- **Détection** : remarque de l'utilisateur.
+- **Cause racine** : le minuteur du garde-fou partait de l'événement `load`, qui n'arrive qu'une fois tous les modules reçus. Il ne couvrait donc pas la phase où la page est réellement vide. Les tests déclenchaient `load` d'emblée et ne pouvaient pas le montrer.
+- **Correctif** : indicateur affiché 300 ms après le début du chargement, hors de `#root`, et filet à 60 s si `load` n'arrive jamais.
+- **Prévention** : `bootGuard.test.js` couvre les cas sans `load` ; chronologie mesurée en Chromium headless sur le port de l'edge.
+- **Leçon généralisée** : un garde-fou se teste dans le scénario qu'il doit couvrir, avec un test où l'événement déclencheur n'arrive pas. Un contrôle sur `localhost:5173` ne dit rien de ce que voit l'utilisateur sur l'edge.
+- **Catégorie** : frontend/test
+- **Récidive** : non
 
 ### 2026-11-09 — Titre de groupe tronqué, non détecté par la mesure automatique (near miss, Vue globale de la clé de répartition)
 
