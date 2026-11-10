@@ -1,8 +1,9 @@
 # Rôles dérivés de cfao-planning — clé de répartition (SPEC §7).
 #
 # Trois cercles :
-#   - l'équipe Academy fabrique la clé (planning_manager) ; seuls les pilotes la
-#     gèlent, car le gel engage la refacturation des filiales (planning_pilot) ;
+#   - seuls les pilotes écrivent : réglage, import, saisie et gel, ce dernier
+#     engageant la refacturation des filiales (planning_pilot) ; toute l'équipe
+#     Academy, assistante comprise, lit tous les pays (planning_academy) ;
 #   - les directions et managers la LISENT (planning_reader), mais ne voient les
 #     chiffres d'un pays que dans leur périmètre (planning_scoped_reader) ;
 #   - les observateurs de pôle suivent aussi les thématiques non choisies.
@@ -10,7 +11,7 @@ apiVersion: api.cerbos.dev/v1
 derivedRoles:
   name: planning
   definitions:
-    - name: planning_manager
+    - name: planning_academy
       parentRoles:
         - center_assistant
         - training_coordinator

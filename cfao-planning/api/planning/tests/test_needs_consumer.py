@@ -59,6 +59,7 @@ def test_besoins_par_pays_et_marque(calls, benin):
     assert data.available and data.source == "quota_import"
     assert data.by_country == {"ben": example["needs"]}
     assert data.by_cell[("ben", "toyota")] == (example["needs"], example["technicians"])
+    assert data.postponed == {("ben", "toyota", client.norm_code("TS11-G2")): 3}
     assert calls == [client.NEEDS_BY_BRANCH_BRAND]
 
 
@@ -72,6 +73,23 @@ def test_thematiques_non_choisies(calls):
     data = client.fetch_unchosen(2027, "MOTORS")
     example = kit.response_example(SPEC, client.UNCHOSEN_MODULES)
     assert data["available"] and data["modules"] == example["modules"]
+
+
+def test_niveaux_du_catalogue(calls):
+    assert client.fetch_catalog_levels(2027).available is True
+    assert calls == [client.CATALOG_LEVELS]
+
+
+def test_ecriture_du_niveau(monkeypatch, settings):
+    settings.NEEDS_API_URL, settings.NEEDS_CATALOG_WRITE_KEY = BASE, "write-key"
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        path = url[len(BASE):]
+        assert kit.request_errors(SPEC, path, None, headers, method="post") == []
+        return _Response(kit.response_example(SPEC, path, method="post"))
+
+    monkeypatch.setattr(client.requests, "post", fake_post)
+    assert client.update_catalog_level(("a",), "G4", "G3")["changed"] is True
 
 
 def test_needs_injoignable(monkeypatch, settings, db):

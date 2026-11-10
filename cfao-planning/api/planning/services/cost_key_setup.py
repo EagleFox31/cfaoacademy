@@ -15,9 +15,10 @@ from referential.models import Country
 from ..models import CostKeyYear, FrozenKeyError
 
 PARAMS = ("budget", "trainee_lodging_cost", "trainer_lodging_cost", "hours_per_session",
-          "hourly_rate")
+          "hourly_rate", "seats_offered")
 # Paramètres facultatifs : null explicite = effacer la valeur saisie.
-NULLABLE = ("hourly_rate",)
+NULLABLE = ("hourly_rate", "seats_offered")
+INTEGERS = ("hours_per_session", "seats_offered")
 
 
 class SetupError(ValueError):
@@ -42,7 +43,7 @@ def _clean(data: dict) -> dict:
         if value < 0 or value != value.to_integral_value():
             raise SetupError("INVALID_NUMBER", f"{name} doit être un entier positif.",
                              {"field": name})
-        cleaned[name] = int(value) if name == "hours_per_session" else value
+        cleaned[name] = int(value) if name in INTEGERS else value
     if cleaned.get("hours_per_session") == 0:
         raise SetupError("INVALID_NUMBER", "hours_per_session doit être > 0.",
                          {"field": "hours_per_session"})
@@ -81,6 +82,9 @@ def bootstrap(year: int, pole: str, data: dict | None = None) -> tuple[CostKeyYe
 
 @transaction.atomic
 def update(key: CostKeyYear, data: dict) -> CostKeyYear:
+    # Relu sous verrou : sans lui, un gel concurrent serait effacé par le `save()` complet.
+    CostKeyYear.objects.select_for_update().filter(pk=key.pk).first()
+    key.refresh_from_db()
     if key.is_frozen:
         raise FrozenKeyError(f"{key} est gelée : paramètres non modifiables.")
     for name, value in _clean(data).items():

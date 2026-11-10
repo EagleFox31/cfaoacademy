@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 # contracts:begin - bloc géré par contracts/sync.py, ne pas éditer
-LABEL org.cfao.contracts.consumes="needs-analytics@^1.1" \
+LABEL org.cfao.contracts.consumes="needs-analytics@^1.3" \
       org.cfao.module="cfao-planning"
 # contracts:end
 

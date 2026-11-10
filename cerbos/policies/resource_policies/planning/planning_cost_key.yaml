@@ -1,6 +1,6 @@
 # Ressource « planning_cost_key » — la clé annuelle d'un pôle (SPEC §8).
-# Lire : équipe Academy et directions. Amorcer / régler : équipe Academy.
-# Geler (base de la refacturation) : pilotes seulement.
+# Lire : équipe Academy et directions. Amorcer, régler, saisir et geler (base de
+# la refacturation) : pilotes seulement. L'assistante lit sans écrire.
 apiVersion: api.cerbos.dev/v1
 resourcePolicy:
   version: default
@@ -11,15 +11,28 @@ resourcePolicy:
     - actions: ["view", "list"]
       effect: EFFECT_ALLOW
       derivedRoles:
-        - planning_manager
+        - planning_academy
         - planning_reader
 
     - actions: ["create", "update"]
       effect: EFFECT_ALLOW
       derivedRoles:
-        - planning_manager
+        - planning_pilot
 
     - actions: ["freeze"]
       effect: EFFECT_ALLOW
       derivedRoles:
         - planning_pilot
+
+    # Saisie directe dans le Devis par filiale. Le gel reste contrôlé par l'API, en base.
+    - actions: ["edit_planned"]
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - planning_pilot
+
+    # Le décompte des points à traiter est un outil de coordination, pas de direction.
+    - actions: ["review"]
+      effect: EFFECT_ALLOW
+      roles:
+        - training_coordinator
+        - superadmin

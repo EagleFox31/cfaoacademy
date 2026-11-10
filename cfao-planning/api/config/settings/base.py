@@ -97,6 +97,7 @@ CERBOS_HTTP = env("CERBOS_HTTP", default="http://planning-cerbos:3592")
 # ── cfao-needs (contrat needs-analytics) : besoins et thématiques non choisies ──
 NEEDS_API_URL = env("NEEDS_API_URL", default="")
 NEEDS_ANALYTICS_KEY = env("NEEDS_ANALYTICS_KEY", default="")
+NEEDS_CATALOG_WRITE_KEY = env("NEEDS_CATALOG_WRITE_KEY", default="")
 
 # ── Plateforme (mode integrated uniquement) ──
 PLATFORM_CORE_HTTP = env("PLATFORM_CORE_HTTP", default="")

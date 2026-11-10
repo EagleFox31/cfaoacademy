@@ -30,8 +30,10 @@ class Resolver:
             Country.objects.filter(is_active=True).prefetch_related("aliases"),
             lambda c: (c.code, c.label),
         )
+        # Un formateur parti reste reconnu : les classeurs passés le citent encore.
+        # Les actifs passent d'abord pour gagner en cas d'homonyme.
         self._trainers = self._index(
-            Trainer.objects.filter(is_active=True).prefetch_related("aliases"),
+            Trainer.objects.order_by("-is_active", "sort_order").prefetch_related("aliases"),
             lambda t: (t.name_norm, t.full_name),
         )
 

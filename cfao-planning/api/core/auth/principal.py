@@ -14,6 +14,7 @@ class Principal:
     roles: list[str] = field(default_factory=list)
     attr: dict = field(default_factory=dict)
     raw_token: str = ""
+    display_name: str = ""
 
     # DRF traite cet objet comme request.user.
     @property
@@ -41,4 +42,5 @@ def build_principal(claims: dict) -> Principal:
         "brands": claims.get("brands", []),
         "locale": claims.get("locale", "fr"),
     }
-    return Principal(id=claims["sub"], roles=roles, attr=attr)
+    name = claims.get("name") or claims.get("preferred_username") or ""
+    return Principal(id=claims["sub"], roles=roles, attr=attr, display_name=name)

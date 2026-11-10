@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import io
 from decimal import Decimal
+from functools import cached_property
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -27,7 +28,7 @@ from core.imports.models import ImportLog
 from core.imports.template import build_template
 from referential.models import Brand, Country
 
-from .clients.needs import fetch_needs, fetch_unchosen
+from .clients.needs import fetch_catalog_levels, fetch_needs, fetch_unchosen
 from .exports import xlsx
 from .imports.calendar_grid import CalendarGridImporter
 from .imports.data_sheet import COLUMNS as DATA_COLUMNS, DataSheetImporter
@@ -35,7 +36,8 @@ from .imports.seat_sheets import COLUMNS as SEAT_COLUMNS, SeatSheetsImporter
 from .models import CostKeyYear, FrozenKeyError
 from .services.cost_key import Mode, compare
 from .services.cost_key_abc import abc_table, consolidate_abc
-from .services.cost_key_freeze import FreezeRefused, freeze
+from .services.cost_key_cells import MISSING, CellConflict, CellGone, CellInvalid, edit_cell
+from .services.cost_key_freeze import UNCHECKED, FreezeRefused, FreezeStale, freeze, last_edit_at
 from .services.cost_key_global import (
     consolidate, consolidate_sheet, country_sheet, global_table, report_for,
 )
@@ -101,9 +103,11 @@ def _key_json(key: CostKeyYear) -> dict:
         "trainer_lodging_cost": _n(key.trainer_lodging_cost),
         "hours_per_session": key.hours_per_session,
         "hourly_rate": _n(key.hourly_rate),
+        "seats_offered": key.seats_offered,
         "enrolled": sorted(key.enrolled_countries.values_list("code", flat=True)),
         "planned_sessions": key.planned_sessions.count(),
         "frozen_at": key.frozen_at, "frozen_by": key.frozen_by,
+        "last_edit_at": last_edit_at(key),
     }
 
 
@@ -155,6 +159,8 @@ class AccessView(APIView):
             "view": cerbos.check(p, "planning_cost_key", "*", attr, "view"),
             "manage": cerbos.check(p, "planning_cost_key", "*", attr, "update"),
             "freeze": cerbos.check(p, "planning_cost_key", "*", attr, "freeze"),
+            "review": cerbos.check(p, "planning_cost_key", "*", attr, "review"),
+            "edit": cerbos.check(p, "planning_cost_key", "*", attr, "edit_planned"),
             "import": cerbos.check(p, "planning_import", "*", attr, "apply"),
             "gaps": cerbos.check(p, "planning_catalog_gap", "*", attr, "view"),
         })
@@ -224,13 +230,17 @@ class CostKeyReportView(APIView):
 
 class CostKeyFreezeView(APIView):
     """Cas 11 : geler le prévu (snapshot de facturation)."""
+    parser_classes = [JSONParser]
 
     def post(self, request, pk):
         key = _get_key(request, pk, "freeze")
         needs = fetch_needs(key.year, key.pole)
         try:
             snapshot = freeze(key, actor=request.user.id,
-                              needs=needs.by_country if needs.available else None)
+                              needs=needs.by_country if needs.available else None,
+                              seen_edit_at=request.data.get("last_edit_at", UNCHECKED))
+        except FreezeStale as exc:
+            raise Conflict("FREEZE_STALE", str(exc))
         except FreezeRefused as exc:
             raise Conflict("FREEZE_REFUSED", str(exc))
         key.refresh_from_db()
@@ -333,7 +343,8 @@ def _sheet(request, key, code):
             raise PermissionDenied()
     needs = fetch_needs(key.year, key.pole)
     sheet = country_sheet(key, _mode(request), code,
-                          needs.by_country if needs.available else None)
+                          needs.by_country if needs.available else None, postponed=needs.postponed,
+                          needs_by_brand={b: n for (c, b), (n, _) in needs.by_cell.items() if c == code})
     if sheet is None:
         raise NotFound()
     return sheet
@@ -344,6 +355,34 @@ class CountrySheetView(APIView):
 
     def get(self, request, pk, code):
         return Response(_sheet(request, _get_key(request, pk), code))
+
+
+class PlannedCellView(APIView):
+    """Saisie d'une cellule du Devis par filiale, contrôlée sur la valeur vue à l'écran."""
+    parser_classes = [JSONParser]
+
+    def patch(self, request, pk):
+        key = _get_key(request, pk, "edit_planned")
+        data = request.data if isinstance(request.data, dict) else {}
+        try:
+            result = edit_cell(
+                key.pk, target=data.get("target"), target_id=data.get("id"),
+                field=data.get("field"), expected=data.get("expected", MISSING),
+                value=data.get("value", MISSING), actor=request.user.id,
+                actor_name=request.user.display_name,
+            )
+        except CellConflict as exc:
+            # Réponse directe : le gestionnaire d'erreurs texte les détails et perd leur type.
+            return Response({"error": {"code": "CELL_CONFLICT", "message": str(exc),
+                                       "details": exc.details}}, status=status.HTTP_409_CONFLICT)
+        except CellGone:
+            raise Conflict("CELL_GONE", "Cette ligne n'existe plus.")
+        except FrozenKeyError as exc:
+            raise Conflict("KEY_FROZEN", str(exc))
+        except CellInvalid as exc:
+            raise Invalid(exc.code, str(exc))
+        return Response({"changed": result.changed, "value": result.value,
+                         "edited_at": result.edited_at})
 
 
 class CountrySheetXlsxView(APIView):
@@ -362,7 +401,8 @@ class CostKeyExportView(APIView):
         table, needs = _global(request, key)
         mode = _mode(request)
         by_country = needs.by_country if needs.available else None
-        sheets = [country_sheet(key, mode, row["country"], by_country)
+        levels = fetch_catalog_levels(key.year)
+        sheets = [country_sheet(key, mode, row["country"], by_country, levels, needs.postponed)
                   for row in table["rows"] if row["seats"]]
         return _xlsx(xlsx.full_workbook(table, [s for s in sheets if s], _lang(request)),
                      f"cle-{key.pole.lower()}-{key.year}.xlsx")
@@ -399,6 +439,10 @@ class _YearScope:
         self.table = consolidate(tables, self.visible)
         self._rows = {r["country"]: r for r in consolidate(tables)["rows"]}
 
+    @cached_property
+    def levels(self):
+        return fetch_catalog_levels(self.keys[0].year)
+
     def sheet(self, code: str) -> dict:
         row = self._rows.get(code)
         if row is None:
@@ -408,7 +452,8 @@ class _YearScope:
         sheets = []
         for k in self.keys:
             needs = self.needs[k.pk]
-            sheet = country_sheet(k, self.mode, code, needs.by_country if needs.available else None)
+            sheet = country_sheet(k, self.mode, code, needs.by_country if needs.available else None,
+                                  self.levels, needs.postponed)
             if sheet:
                 sheets.append(sheet)
         return consolidate_sheet(sheets, row)
@@ -496,6 +541,8 @@ def _params(request, spec: dict) -> dict:
             raise Invalid("PARAM_INVALID", f"{name} doit être un entier.", {"param": name})
     if str(request.data.get("replace", "")).lower() in {"1", "true", "on", "yes"}:
         params["replace"] = True
+    if str(request.data.get("overwrite_manual", "")).lower() in {"1", "true", "on", "yes"}:
+        params["overwrite_manual"] = True
     return params
 
 
@@ -512,7 +559,7 @@ def _parse(request, kind: str):
 
 def _log_json(log: ImportLog, full: bool = False) -> dict:
     data = {"id": str(log.pk), "kind": log.kind, "status": log.status, "actor": log.actor,
-            "rows_written": log.rows_written, "created_at": log.created_at,
+            "actor_name": log.actor_name, "rows_written": log.rows_written, "created_at": log.created_at,
             "params": log.params, "file_sha256": log.file_sha256[:12]}
     if full:
         data["report"] = log.report
@@ -550,10 +597,16 @@ class ImportApplyView(APIView):
         _import_kind(kind)
         allow(request, "planning_import", "apply", attr={"kind": kind})
         importer, result, sha, params = _parse(request, kind)
+        if params.get("overwrite_manual"):
+            allow(request, "planning_cost_key", "edit_planned", attr=_key_attr(None))
         try:
             log = importer.apply(result, actor=request.user.id, file_sha256=sha, params=params)
         except FrozenKeyError as exc:
             raise Conflict("KEY_FROZEN", str(exc))
+        # Un fichier déjà appliqué renvoie son journal d'origine : il garde son auteur.
+        if log.actor == request.user.id and not log.actor_name:
+            log.actor_name = request.user.display_name
+            log.save(update_fields=["actor_name"])
         code = 200 if log.status == ImportLog.Status.APPLIED else 422
         return Response(_log_json(log, full=True), status=code)
 

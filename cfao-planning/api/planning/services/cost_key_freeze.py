@@ -21,6 +21,19 @@ class FreezeRefused(Exception):
     pass
 
 
+class FreezeStale(FreezeRefused):
+    """Une saisie a eu lieu depuis l'affichage de l'écran qui demande le gel."""
+
+
+UNCHECKED = object()
+
+
+def last_edit_at(key: CostKeyYear) -> str | None:
+    """Date de la dernière cellule modifiée, jeton comparé au moment du gel."""
+    latest = key.cell_edits.order_by("-created_at").values_list("created_at", flat=True).first()
+    return latest.isoformat() if latest else None
+
+
 def inputs_sha256(key: CostKeyYear) -> str:
     """Empreinte des lignes prévues triées et des paramètres de la clé. Les
     identifiants (pas les libellés) : renommer un formateur ne la change pas."""
@@ -43,8 +56,8 @@ def inputs_sha256(key: CostKeyYear) -> str:
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
-def freeze(key: CostKeyYear, actor: str, needs: Mapping[str, int] | None = None
-           ) -> CostKeySnapshot:
+def freeze(key: CostKeyYear, actor: str, needs: Mapping[str, int] | None = None,
+           seen_edit_at: str | None | object = UNCHECKED) -> CostKeySnapshot:
     with transaction.atomic():
         key = CostKeyYear.objects.select_for_update().get(pk=key.pk)
         sha = inputs_sha256(key)
@@ -53,6 +66,8 @@ def freeze(key: CostKeyYear, actor: str, needs: Mapping[str, int] | None = None
             if snapshot.inputs_sha256 != sha:
                 raise FreezeRefused(f"{key} déjà gelée sur un autre prévu.")
             return snapshot
+        if seen_edit_at is not UNCHECKED and seen_edit_at != last_edit_at(key):
+            raise FreezeStale(f"{key} : le prévu a changé depuis l'affichage de cet écran.")
         if not key.planned_sessions.exists():
             raise FreezeRefused(f"{key} : aucune session prévue, rien à geler.")
         report = compute(key, needs, mode=Mode.PLANNED)

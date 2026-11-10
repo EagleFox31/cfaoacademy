@@ -18,14 +18,15 @@ from referential.models import Country
 pytestmark = pytest.mark.django_db
 
 """Reflet de cerbos/policies/resource_policies/planning (testées à part par cerbos compile)."""
-MANAGER = {"planning_cost_key": {"view", "list", "create", "update"},
-           "planning_import": {"template", "preview", "apply", "list", "view"},
-           "planning_catalog_gap": {"view"}, "planning_country_sheet": {"view"}}
-PILOT = {**MANAGER, "planning_cost_key": MANAGER["planning_cost_key"] | {"freeze"}}
+ACADEMY = {"planning_cost_key": {"view", "list"}, "planning_catalog_gap": {"view"},
+           "planning_country_sheet": {"view"}}
+PILOT = {**ACADEMY, "planning_cost_key": ACADEMY["planning_cost_key"] | {"create", "update", "freeze", "edit_planned"},
+         "planning_import": {"template", "preview", "apply", "list", "view"}}
 OBSERVER = {"planning_cost_key": {"view", "list"}, "planning_catalog_gap": {"view"},
             "planning_country_sheet": {"view"}}
 READER = {"planning_cost_key": {"view", "list"}, "planning_country_sheet": {"view"}}
-POLICY = {"center_assistant": MANAGER, "training_coordinator": PILOT, "dps": OBSERVER,
+COORDINATOR = {**PILOT, "planning_cost_key": PILOT["planning_cost_key"] | {"review"}}
+POLICY = {"center_assistant": ACADEMY, "training_coordinator": COORDINATOR, "dps": OBSERVER,
           "workshop_manager": READER}
 
 
@@ -56,7 +57,7 @@ def fake_pdp(monkeypatch, settings):
 
 def client_for(role, scope="cfao"):
     c = APIClient()
-    c.force_authenticate(user=Principal(id=f"u_{role}", roles=[role],
+    c.force_authenticate(user=Principal(id=f"u_{role}", roles=[role], display_name=f"Nom {role}",
                                         attr={"scopeNodes": [scope], "locale": "fr"}))
     return c
 
@@ -80,10 +81,14 @@ def url(key, suffix=""):
 
 def test_access_menu_par_role(db):
     assert client_for("training_coordinator").get("/api/v1/planning/access").json() == {
-        "view": True, "manage": True, "freeze": True, "import": True, "gaps": True}
-    assert client_for("center_assistant").get("/api/v1/planning/access").json()["freeze"] is False
+        "view": True, "manage": True, "freeze": True, "review": True, "edit": True, "import": True,
+        "gaps": True}
+    assert client_for("center_assistant").get("/api/v1/planning/access").json() == {
+        "view": True, "manage": False, "freeze": False, "review": False, "edit": False,
+        "import": False, "gaps": True}
     assert client_for("workshop_manager").get("/api/v1/planning/access").json() == {
-        "view": True, "manage": False, "freeze": False, "import": False, "gaps": False}
+        "view": True, "manage": False, "freeze": False, "review": False, "edit": False,
+        "import": False, "gaps": False}
     assert client_for("learner").get("/api/v1/planning/access").json()["view"] is False
 
 
@@ -95,7 +100,7 @@ def test_inconnu_refuse_partout(key):
 
 
 def test_amorcer_puis_regler(key):
-    c = client_for("center_assistant")
+    c = client_for("training_coordinator")
     r = c.post("/api/v1/planning/cost-keys/", {"year": 2027, "pole": "MOTORS"}, format="json")
     assert r.status_code == 201 and r.json()["budget"] == 1000
     assert sorted(r.json()["enrolled"]) == ["ci", "cm"]
@@ -197,6 +202,25 @@ def test_tous_poles_additionne_les_cles_de_l_annee(key, equipment):
         assert c.get(f"/api/v1/planning/years/2026{suffix}").status_code == 200, suffix
 
 
+def test_filiales_ayant_repondu_par_pole(key, equipment, monkeypatch):
+    def needs(year, pole):
+        counts = {"MOTORS": {"cm": 3, "ci": 0, "sn": 2}, "EQUIPMENT": {"cm": 1}}[pole]
+        return NeedsData(available=True, source="needs_api", by_country=counts)
+    monkeypatch.setattr("planning.views.fetch_needs", needs)
+
+    single = client_for("dps").get(url(key, "/global")).json()["responses"]
+    assert [r["pole"] for r in single] == ["MOTORS"]
+    assert single[0]["answered"] == ["cm", "sn"], "0 place demandée : pas une réponse"
+    assert "ci" in single[0]["known"] and "sn" in single[0]["known"]
+
+    table = client_for("dps").get("/api/v1/planning/years/2026/global").json()
+    assert {r["pole"]: r["answered"] for r in table["responses"]} == {
+        "MOTORS": ["cm", "sn"], "EQUIPMENT": ["cm"]}
+
+    scoped = client_for("workshop_manager", scope="ci").get("/api/v1/planning/years/2026/global").json()
+    assert all(r["answered"] == [] and r["known"] in ([], ["ci"]) for r in scoped["responses"])
+
+
 def test_tous_poles_une_seule_cle_egale_la_cle(key):
     c = client_for("dps")
     single = c.get(url(key, "/global")).json()
@@ -220,12 +244,18 @@ def test_tous_poles_perimetre_et_droits(key, equipment):
 
 
 def test_saisie_du_taux_horaire(key):
-    c = client_for("center_assistant")
+    c = client_for("training_coordinator")
     r = c.patch(url(key), {"hourly_rate": 2500}, format="json")
     assert r.status_code == 200 and r.json()["hourly_rate"] == 2500
     assert c.patch(url(key), {"hourly_rate": -1}, format="json").status_code == 400
     assert c.patch(url(key), {"hourly_rate": None}, format="json").json()["hourly_rate"] is None
     assert client_for("dps").patch(url(key), {"hourly_rate": 1}, format="json").status_code == 403
+
+    # Les places mises à disposition sont un repère : facultatives, entières, jamais négatives.
+    r = c.patch(url(key), {"seats_offered": 450}, format="json")
+    assert r.status_code == 200 and r.json()["seats_offered"] == 450
+    assert c.patch(url(key), {"seats_offered": -1}, format="json").status_code == 400
+    assert c.patch(url(key), {"seats_offered": None}, format="json").json()["seats_offered"] is None
 
 
 def test_abc_droits_et_perimetre(key, equipment):
@@ -258,8 +288,20 @@ def _seat_file():
     return buf
 
 
-def test_imports(key):
+def test_assistante_lit_sans_ecrire(key):
     c = client_for("center_assistant")
+    assert c.get(url(key)).status_code == 200
+    assert c.post("/api/v1/planning/cost-keys/", {"year": 2028, "pole": "MOTORS"}, format="json").status_code == 403
+    assert c.patch(url(key), {"budget": 1}, format="json").status_code == 403
+    imports = "/api/v1/planning/imports/seat_allocations"
+    assert c.get(f"{imports}/template").status_code == 403
+    for step in ("preview", "apply"):
+        assert c.post(f"{imports}/{step}", {"file": _seat_file()}, format="multipart").status_code == 403, step
+    assert ImportLog.objects.count() == 0
+
+
+def test_imports(key):
+    c = client_for("training_coordinator")
     r = c.get("/api/v1/planning/imports/seat_allocations/template")
     assert r.status_code == 200
     assert load_workbook(io.BytesIO(r.content)).sheetnames[0] == "Cameroun"
@@ -284,6 +326,7 @@ def test_imports(key):
     assert r.status_code in (200, 422)
     logs = c.get("/api/v1/planning/imports/").json()
     assert len(logs) == 1
+    assert logs[0]["actor_name"].startswith("Nom ")
     assert c.get(f"/api/v1/planning/imports/{logs[0]['id']}").json()["report"]
 
     reader = client_for("workshop_manager")

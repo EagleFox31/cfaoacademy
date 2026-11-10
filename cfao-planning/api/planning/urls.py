@@ -14,6 +14,7 @@ urlpatterns = [
     path("cost-keys/<uuid:pk>/global", v.CostKeyGlobalView.as_view()),
     path("cost-keys/<uuid:pk>/global.xlsx", v.CostKeyGlobalXlsxView.as_view()),
     path("cost-keys/<uuid:pk>/abc", v.CostKeyAbcView.as_view()),
+    path("cost-keys/<uuid:pk>/planned-cells", v.PlannedCellView.as_view()),
     path("cost-keys/<uuid:pk>/countries/<slug:code>", v.CountrySheetView.as_view()),
     path("cost-keys/<uuid:pk>/countries/<slug:code>.xlsx", v.CountrySheetXlsxView.as_view()),
     path("cost-keys/<uuid:pk>/export.xlsx", v.CostKeyExportView.as_view()),

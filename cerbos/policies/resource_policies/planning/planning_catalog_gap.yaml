@@ -11,5 +11,5 @@ resourcePolicy:
     - actions: ["view"]
       effect: EFFECT_ALLOW
       derivedRoles:
-        - planning_manager
+        - planning_academy
         - planning_observer

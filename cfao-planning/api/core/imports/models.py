@@ -16,6 +16,7 @@ class ImportLog(UUIDModel, TimeStampedModel):
 
     kind = models.CharField(max_length=64)
     actor = models.CharField(max_length=128, blank=True)
+    actor_name = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices)
     rows_written = models.IntegerField(default=0)
     report = models.JSONField(default=dict)

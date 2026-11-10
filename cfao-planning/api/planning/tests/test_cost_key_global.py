@@ -8,7 +8,8 @@ from openpyxl.utils import get_column_letter
 
 from planning.clients.needs import NeedsData
 from planning.exports import xlsx
-from planning.models import CostKeyYear, PlannedAllocation, PlannedSession
+from core.imports.models import ImportLog
+from planning.models import CostKeyYear, PlannedAllocation, PlannedSession, ReviewItem
 from planning.services.cost_key import Mode
 from planning.services.cost_key_abc import abc_table, consolidate_abc
 from planning.services.cost_key_freeze import freeze, inputs_sha256
@@ -69,6 +70,31 @@ def test_global_pays_par_marque(world):
     assert table["partial"] is False
 
 
+def test_places_en_filiale_a_l_academy_et_reportees(world):
+    data = needs()
+    data.postponed = {("cm", "toyota", "TS01"): 2}
+    rows = {r["country"]: r for r in global_table(world["key"], Mode.PLANNED, data)["rows"]}
+    assert (rows["cm"]["in_subsidiary"], rows["cm"]["at_academy"], rows["cm"]["postponed"]) == (0, 4, 2)
+    assert (rows["ci"]["in_subsidiary"], rows["ci"]["at_academy"], rows["ci"]["postponed"]) == (2, 2, 0)
+    assert rows["cm"]["seats"] == 6  # une place reportée reste comptée
+
+    sheet = country_sheet(world["key"], Mode.PLANNED, "cm", {"cm": 12}, postponed=data.postponed)
+    assert [(s["seat_status"], s["postponed"]) for s in sheet["sessions"]] == [("postponed", 2)]
+    assert (sheet["footer"]["seats"], sheet["footer"]["postponed"], sheet["footer"]["at_academy"]) == (6, 2, 4)
+    other = country_sheet(world["key"], Mode.PLANNED, "ci", {"ci": 8})
+    assert {s["code"]: s["seat_status"] for s in other["sessions"]} == {"OM01": "in_subsidiary", "TS01": "at_academy"}
+    # Reportée en partie : le reste de la session garde son site, pour les indicateurs filtrés.
+    assert sheet["sessions"][0]["site"] == "at_academy"
+
+
+def test_fiche_pays_donne_le_besoin_par_marque_si_le_besoin_existe(world):
+    sheet = country_sheet(world["key"], Mode.PLANNED, "ci", {"ci": 8}, needs_by_brand={"toyota": 3})
+    assert sheet["footer"]["needs_by_brand"] == {"toyota": 3}
+    assert all(s["brand_code"] for s in sheet["sessions"])
+    sans = country_sheet(world["key"], Mode.PLANNED, "ci", None, needs_by_brand={})
+    assert sans["footer"]["needs_by_brand"] is None
+
+
 def test_global_filtre_les_pays_non_visibles(world):
     table = global_table(world["key"], Mode.PLANNED, needs(), visible={"ci"})
     assert [r["country"] for r in table["rows"]] == ["ci"] and table["partial"]
@@ -110,7 +136,8 @@ def test_classeur_complet(world):
     assert ws.cell(row=last, column=1).value == "TOTAL"
     heads = [c.value for c in ws[2]]
     # Ordre de « TOUS LES PAYS » : marques juste après les techniciens, l'argent en dernier.
-    assert heads[:2] == ["Pays", "Techniciens"] and heads[-1] == "Total à payer"
+    assert heads[:2] == ["Pays", "Techniciens"] and heads[-1] == "Coût clé"
+    assert "Total à payer" not in heads and not any("accommodation" in h for h in heads)
     assert heads.index("Coût clé") > max(i for i, h in enumerate(heads) if "·" in h)
     col = get_column_letter(heads.index("Coût clé") + 1)
     assert ws[f"{col}{last}"].value == f"=SUM({col}3:{col}{last - 1})"
@@ -138,6 +165,21 @@ def test_fiche_pays_hebergements_par_ligne(world):
     assert lines["TS01"]["trainee_lodging"] == 200 and lines["OM01"]["trainee_lodging"] == 0
     for name in ("trainee_lodging", "trainer_lodging"):
         assert sum(s[name] for s in sheet["sessions"]) == sheet["footer"][name]
+
+
+def test_fiche_pays_cle_tarifee_montant_par_ligne(world):
+    key = world["key"]
+    avant = {s["code"]: s for s in country_sheet(key, Mode.PLANNED, "ci")["sessions"]}
+    assert all(s["key_cost"] is None for s in avant.values())
+    key.hourly_rate = Decimal(10)
+    key.hours_per_session = 40
+    key.save()
+    sheet = country_sheet(key, Mode.PLANNED, "ci")
+    lines = {s["code"]: s for s in sheet["sessions"]}
+    assert lines["TS01"]["key_cost"] == 800 and lines["OM01"]["key_cost"] == 800
+    assert sum(s["key_cost"] for s in sheet["sessions"]) == sheet["footer"]["key_cost"]
+    for code, ligne in lines.items():
+        assert ligne["trainee_lodging"] == avant[code]["trainee_lodging"]
 
 
 def test_abc_trois_bases(world):
@@ -226,3 +268,25 @@ def test_regler_une_cle_gelee_refuse(world):
         update(key, {"budget": 5})
     with pytest.raises(SetupError):
         update(CostKeyYear.objects.create(year=2030, pole="MOTORS", budget=1), {"budget": "-3"})
+
+
+def _incoherence(key, pays, statut="OPEN"):
+    log = ImportLog.objects.create(kind="courriel", status=ImportLog.Status.APPLIED)
+    return ReviewItem.objects.create(
+        import_log=log, sheet="Courriel", cell_range="SS05", status=statut,
+        reason=ReviewItem.Reason.SOURCE_INCONSISTENT, fingerprint=f"{key.id}-{pays}-{statut}",
+        proposed={"cost_key": str(key.id), "country": pays, "country_label": pays, "code": "SS05",
+                  "seats": 4, "start_date": "2027-07-19", "end_date": "2027-05-28",
+                  "issue": "end_before_start", "assignee": "Responsable"})
+
+
+def test_global_signale_les_incoherences_ouvertes(world):
+    _incoherence(world["key"], "ci")
+    _incoherence(world["key"], "ci", statut="RESOLVED")
+    [item] = global_table(world["key"], Mode.PLANNED, needs())["review_items"]
+    assert (item["code"], item["country"], item["assignee"]) == ("SS05", "ci", "Responsable")
+
+
+def test_incoherences_limitees_aux_pays_visibles(world):
+    _incoherence(world["key"], "ci")
+    assert global_table(world["key"], Mode.PLANNED, needs(), visible={"cm"})["review_items"] == []

@@ -4,8 +4,15 @@ from decimal import Decimal
 import pytest
 from django.db import IntegrityError
 
-from planning.models import CostKeyYear, SeatAllocation, Session, SessionAssignment, SessionStatus
-from planning.services.cost_key import Mode, compute
+from planning.models import (
+    CostKeyYear,
+    PlannedSession,
+    SeatAllocation,
+    Session,
+    SessionAssignment,
+    SessionStatus,
+)
+from planning.services.cost_key import Mode, compute, session_has_trainer_lodging
 from referential.models import Country, Trainer
 
 pytestmark = pytest.mark.django_db
@@ -97,6 +104,28 @@ def test_hebergement_formateur_hors_douala_mais_pas_pour_un_technicien_instructe
     assert lines["cm"].trainer_lodging == 0
 
 
+def test_session_sans_formateur_designe_provisionne_son_deplacement(world):
+    session(world, "TS01", world["ci"], "Abidjan")
+    session(world, "TS02", world["ci"], "Bouake")
+    session(world, "TS03", world["cm"], "Douala")
+    lines = by_code(compute(world["key"], mode=ACTUAL))
+    assert lines["ci"].trainer_sessions == 2
+    assert lines["ci"].trainer_lodging == 2 * LODGING
+    assert "cm" not in lines or lines["cm"].trainer_lodging == 0
+
+
+@pytest.mark.parametrize("raw, facture", [
+    ("PIC", False), ("pic suzuki", False), ("Key Instructor", False), ("KI", False),
+    ("", True), ("A. Picard", True),
+])
+def test_libelle_formateur_importe_sans_fiche_liee(world, raw, facture):
+    s = PlannedSession.objects.create(
+        cost_key=world["key"], brand=world["toyota"], code_norm="TS01", title="TS01",
+        country=world["ci"], location="Abidjan", trainers_raw=raw,
+    )
+    assert session_has_trainer_lodging(s, []) is facture
+
+
 def test_sessions_annulees_ou_reportees_ignorees(world):
     allocate(session(world, "TS01", world["cm"], "Douala", status=SessionStatus.CANCELLED), cm=5)
     allocate(session(world, "TS02", world["cm"], "Douala", status=SessionStatus.POSTPONED), ci=5)
@@ -139,6 +168,14 @@ def test_formateur_de_filiale_ne_se_loge_pas_chez_lui(world):
     assert lines["ci"].trainer_sessions == 0
     assert lines["sn"].trainer_sessions == 1
     assert lines["cm"].trainer_sessions == 1  # hors de son pays, même au Cameroun
+
+
+def test_formateur_d_une_filiale_a_douala_se_loge(world):
+    local = Trainer.objects.create(full_name="LOCAL", name_norm="LOCAL", service="MOTORS",
+                                   home_country=world["ci"])
+    session(world, "TS01", world["cm"], "Douala", trainers=[local])
+    session(world, "TS02", world["cm"], "Douala", trainers=[world["eugene"]])
+    assert by_code(compute(world["key"], mode=ACTUAL))["cm"].trainer_sessions == 1
 
 
 def test_couverture_depuis_les_besoins_fournis(world):

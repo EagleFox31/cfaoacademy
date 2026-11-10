@@ -23,6 +23,11 @@ principals:
     roles: ["workshop_manager"]
     attr:
       scopeNodes: ["groupe.civ"]
+  directeur_centre:
+    id: u_dc
+    roles: ["center_director"]
+    attr:
+      scopeNodes: ["groupe"]
   directeur_groupe:
     id: u_dg
     roles: ["group_director"]
@@ -36,6 +41,11 @@ principals:
   formateur:
     id: u_trainer
     roles: ["trainer"]
+    attr:
+      scopeNodes: ["groupe"]
+  superadmin:
+    id: u_superadmin
+    roles: ["superadmin"]
     attr:
       scopeNodes: ["groupe"]
 
@@ -65,7 +75,58 @@ resources:
       orgPath: ["groupe"]
 
 tests:
-  - name: l equipe Academy fabrique la cle, seuls les pilotes la gelent
+  - name: les points a traiter sont reserves au coordinateur
+    input:
+      principals: ["coordonnateur", "directeur_centre", "assistante", "dps_cmr"]
+      resources: ["cle_2026"]
+      actions: ["review"]
+    expected:
+      - principal: coordonnateur
+        resource: cle_2026
+        actions:
+          review: EFFECT_ALLOW
+      - principal: directeur_centre
+        resource: cle_2026
+        actions:
+          review: EFFECT_DENY
+      - principal: assistante
+        resource: cle_2026
+        actions:
+          review: EFFECT_DENY
+      - principal: dps_cmr
+        resource: cle_2026
+        actions:
+          review: EFFECT_DENY
+
+  - name: seuls directeur, coordinateur et superadmin saisissent dans le devis
+    input:
+      principals: ["coordonnateur", "directeur_centre", "superadmin", "assistante", "dps_cmr", "directeur_groupe", "chef_atelier_civ"]
+      resources: ["cle_2026"]
+      actions: ["edit_planned"]
+    expected:
+      - principal: coordonnateur
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_ALLOW}
+      - principal: directeur_centre
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_ALLOW}
+      - principal: superadmin
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_ALLOW}
+      - principal: assistante
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_DENY}
+      - principal: dps_cmr
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_DENY}
+      - principal: directeur_groupe
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_DENY}
+      - principal: chef_atelier_civ
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_DENY}
+
+  - name: l assistante lit la cle, seuls les pilotes la fabriquent et la gelent
     input:
       principals: ["assistante", "coordonnateur"]
       resources: ["cle_2026"]
@@ -76,8 +137,8 @@ tests:
         actions:
           view: EFFECT_ALLOW
           list: EFFECT_ALLOW
-          create: EFFECT_ALLOW
-          update: EFFECT_ALLOW
+          create: EFFECT_DENY
+          update: EFFECT_DENY
           freeze: EFFECT_DENY
       - principal: coordonnateur
         resource: cle_2026
@@ -166,19 +227,40 @@ tests:
         resource: fiche_cmr
         actions: {view: EFFECT_ALLOW}
 
-  - name: imports reserves a l equipe Academy
+  - name: imports reserves aux pilotes
     input:
-      principals: ["assistante", "dps_cmr", "directeur_groupe"]
+      principals: ["coordonnateur", "directeur_centre", "superadmin", "assistante", "dps_cmr", "directeur_groupe"]
       resources: ["import_prevu"]
       actions: ["template", "preview", "apply", "list"]
     expected:
-      - principal: assistante
+      - principal: coordonnateur
         resource: import_prevu
         actions:
           template: EFFECT_ALLOW
           preview: EFFECT_ALLOW
           apply: EFFECT_ALLOW
           list: EFFECT_ALLOW
+      - principal: directeur_centre
+        resource: import_prevu
+        actions:
+          template: EFFECT_ALLOW
+          preview: EFFECT_ALLOW
+          apply: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+      - principal: superadmin
+        resource: import_prevu
+        actions:
+          template: EFFECT_ALLOW
+          preview: EFFECT_ALLOW
+          apply: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+      - principal: assistante
+        resource: import_prevu
+        actions:
+          template: EFFECT_DENY
+          preview: EFFECT_DENY
+          apply: EFFECT_DENY
+          list: EFFECT_DENY
       - principal: dps_cmr
         resource: import_prevu
         actions:

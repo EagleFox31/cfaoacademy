@@ -52,6 +52,8 @@ services:
       OIDC_TRUSTED_ISSUERS: ${OIDC_TRUSTED_ISSUERS:-}
       NEEDS_API_URL: ${NEEDS_API_URL:-}
       NEEDS_ANALYTICS_KEY: ${NEEDS_ANALYTICS_KEY:-}
+      # Écriture du niveau au catalogue. Absente = niveau en lecture seule.
+      NEEDS_CATALOG_WRITE_KEY: ${NEEDS_CATALOG_WRITE_KEY:-}
       PLANNING_ACADEMY_SITE: ${PLANNING_ACADEMY_SITE:-DOUALA}
       PLANNING_ACADEMY_COUNTRY: ${PLANNING_ACADEMY_COUNTRY:-cmr}
     depends_on:

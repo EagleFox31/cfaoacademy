@@ -18,6 +18,7 @@ marque, journal des macros) sont ignorées et listées au rapport.
 from __future__ import annotations
 
 import re
+import uuid
 from typing import BinaryIO
 
 from django.conf import settings
@@ -30,7 +31,10 @@ from referential.models import Country
 from referential.normalize import norm_code, norm_key
 from referential.resolve import Resolver
 
-from ..models import CostKeyYear, FrozenKeyError, PlannedAllocation, PlannedSession
+from ..models import (
+    CostKeyYear, FrozenKeyError, PlannedAllocation, PlannedCellEdit, PlannedSession,
+)
+from ..services.cost_key_cells import manual_cells, raw
 from .data_sheet import _TRAINER_SPLIT, parse_date, parse_int
 
 COLUMNS = ColumnSpec(
@@ -63,19 +67,70 @@ def group_rows(rows: list[dict]) -> dict[tuple, dict]:
     groups: dict[tuple, dict] = {}
     for row in rows:
         group = groups.setdefault(row["identity"], {
-            k: row[k] for k in ("code_raw", "title", "end_date", "location", "trainer_ids",
-                                "trainers")
+            k: row[k] for k in ("code_raw", "title", "start_date", "end_date", "location",
+                                "trainer_ids", "trainers")
         } | {"allocations": {}})
         group["title"] = group["title"] or row["title"]
         group["allocations"][row["country_id"]] = row["seats"]
     return groups
 
 
+SESSION_CELLS = ("title", "start_date", "end_date", "location")
+
+
+class MovedSessionClash(FrozenKeyError):
+    """Import refusé, traité comme une clé gelée : une date saisie occupe une ligne du fichier."""
+
+
+def _identity(session: PlannedSession, start) -> tuple:
+    return session.cost_key_id, session.brand_id, session.code_norm, start, session.country_id
+
+
+def file_identity(session: PlannedSession, groups: dict[tuple, dict]) -> tuple:
+    """L'identité de la session dans ce fichier : sa date d'origine si le début a été saisi,
+    sauf si le fichier porte désormais la date saisie."""
+    original = _identity(session, session.file_start_date)
+    current = _identity(session, session.start_date)
+    return current if original not in groups and current in groups else original
+
+
+def manual_changes(key_ids: set, groups: dict[tuple, dict], countries: set
+                   ) -> tuple[set[tuple], list[dict]]:
+    """Saisies directes que ce fichier remplacerait ou supprimerait, et leur liste lisible."""
+    manual = manual_cells(key_ids)
+    if not manual:
+        return set(), []
+    protected: set[tuple] = set()
+    report: list[dict] = []
+
+    def keep(cell: tuple, session, country, field: str, current, incoming) -> None:
+        protected.add(cell)
+        report.append({"session": str(session), "country": country, "field": field,
+                       "current": raw(current), "file": raw(incoming)})
+
+    stored = (PlannedSession.objects.filter(cost_key_id__in=key_ids)
+              .select_related("brand", "country").prefetch_related("allocations__country"))
+    for session in stored:
+        group = groups.get(file_identity(session, groups))
+        for field in SESSION_CELLS if group else ():
+            current = getattr(session, field)
+            if (session.pk, field) in manual and group[field] != current:
+                keep((session.pk, field), session, None, field, current, group[field])
+        for allocation in session.allocations.all():
+            if (allocation.pk, "seats") not in manual or allocation.country_id not in countries:
+                continue
+            incoming = group["allocations"].get(allocation.country_id) if group else None
+            if incoming != allocation.seats:
+                keep((allocation.pk, "seats"), session, allocation.country.code, "seats",
+                     allocation.seats, incoming)
+    return protected, report
+
+
 def _state(end_date, location, trainer_ids, allocations: dict) -> tuple:
     return end_date, norm_key(location), frozenset(trainer_ids), frozenset(allocations.items())
 
 
-def _stored_state(key: CostKeyYear, countries: set) -> dict[tuple, tuple]:
+def _stored_state(key: CostKeyYear, groups: dict[tuple, dict], countries: set) -> dict[tuple, tuple]:
     """Le prévu en base d'une clé, restreint aux pays lus dans le fichier."""
     state = {}
     planned = key.planned_sessions.prefetch_related("trainers", "allocations")
@@ -83,15 +138,14 @@ def _stored_state(key: CostKeyYear, countries: set) -> dict[tuple, tuple]:
         allocations = {a.country_id: a.seats for a in p.allocations.all()
                        if a.country_id in countries}
         if allocations:
-            identity = (key.pk, p.brand_id, p.code_norm, p.start_date, p.country_id)
-            state[identity] = _state(p.end_date, p.location,
+            state[file_identity(p, groups)] = _state(p.end_date, p.location,
                                      [t.pk for t in p.trainers.all()], allocations)
     return state
 
 
 def frozen_diff(key: CostKeyYear, groups: dict[tuple, dict], countries: set) -> dict:
     """Écart entre le fichier et le prévu gelé ; vide si le contenu est identique."""
-    stored = _stored_state(key, countries)
+    stored = _stored_state(key, groups, countries)
     wanted = {
         identity: _state(g["end_date"], g["location"], g["trainer_ids"], g["allocations"])
         for identity, g in groups.items() if identity[0] == key.pk
@@ -138,6 +192,8 @@ class SeatSheetsImporter(TabularImporter):
             result.fatal = str(exc)
         if not result.fatal:
             self._check_frozen(result)
+        if not result.fatal:
+            self._report_manual(result)
         return result
 
     def _parse_sheet(self, ws, country, result: ParseResult, seen: dict, planned: dict) -> None:
@@ -322,6 +378,11 @@ class SeatSheetsImporter(TabularImporter):
             result.extra["frozen_diff"] = diffs
             result.fatal = "KEY_FROZEN"
 
+    def _report_manual(self, result: ParseResult) -> None:
+        open_keys = {k.pk for k in self._keys.values() if k is not None and not k.is_frozen}
+        _, kept = manual_changes(open_keys, group_rows(result.rows), self._read_countries(result))
+        result.extra["manual_kept"] = kept
+
     @staticmethod
     def _read_countries(result: ParseResult) -> set:
         codes = [s["country"] for s in result.extra.get("sheets", [])]
@@ -330,13 +391,19 @@ class SeatSheetsImporter(TabularImporter):
     # ── écriture ────────────────────────────────────────────────────────────
     def apply(self, result: ParseResult, actor: str = "", file_sha256: str = "",
               params: dict | None = None):
+        if params and params.get("overwrite_manual"):
+            # Le même fichier peut avoir déjà été appliqué : écraser des saisies faites depuis
+            # est un geste explicite, que la reprise sur fichier identique ne doit pas annuler.
+            params = {**params, "overwrite_token": uuid.uuid4().hex}
         self._params = params or {}
         self._countries = self._read_countries(result)
         return super().apply(result, actor=actor, file_sha256=file_sha256, params=params)
 
     def write(self, rows: list[dict], log) -> int:
         groups = group_rows(rows)
-        keys = {k.pk: k for k in CostKeyYear.objects.filter(pk__in={i[0] for i in groups})}
+        # Même verrou que la saisie et le gel. Ordre fixe : deux imports ne s'interbloquent pas.
+        keys = {k.pk: k for k in CostKeyYear.objects.select_for_update()
+                .filter(pk__in={i[0] for i in groups}).order_by("pk")}
         noop = set()
         for key in keys.values():
             if key.is_frozen:
@@ -344,6 +411,21 @@ class SeatSheetsImporter(TabularImporter):
                 if frozen_diff(key, groups, self._countries):
                     raise FrozenKeyError(f"{key} gelée : prévu non modifiable.")
                 noop.add(key.pk)
+
+        overwrite = bool(self._params.get("overwrite_manual"))
+        protected, manual_kept = (set(), []) if overwrite else manual_changes(
+            set(keys) - noop, groups, self._countries)
+        journal: list[PlannedCellEdit] = []
+
+        def trace(key_id, target, target_id, field, old, new) -> None:
+            journal.append(PlannedCellEdit(
+                cost_key_id=key_id, target=target, target_id=target_id, field=field,
+                old_value=raw(old), new_value=raw(new), source=PlannedCellEdit.Source.IMPORT,
+                import_log=log, actor=log.actor,
+            ))
+
+        moved = {_identity(s, s.file_start_date): s for s in PlannedSession.objects.filter(
+            cost_key_id__in=set(keys) - noop, start_moved=True)}
 
         created = updated = sessions = written = 0
         for identity, group in groups.items():
@@ -353,16 +435,31 @@ class SeatSheetsImporter(TabularImporter):
             fields = {"code_raw": group["code_raw"], "title": group["title"],
                       "end_date": group["end_date"], "location": group["location"],
                       "trainers_raw": group["trainers"]}
-            planned, was_created = PlannedSession.objects.get_or_create(
-                cost_key_id=key_id, brand_id=brand_id, code_norm=code_norm, start_date=start,
-                country_id=host_id, defaults={**fields, "last_import": log},
-            )
+            planned, was_created = moved.get(identity), False
+            if planned is None:
+                planned, was_created = PlannedSession.objects.get_or_create(
+                    cost_key_id=key_id, brand_id=brand_id, code_norm=code_norm, start_date=start,
+                    country_id=host_id, defaults={**fields, "last_import": log},
+                )
+                if (not was_created and planned.start_moved
+                        and _identity(planned, planned.file_start_date) in groups):
+                    raise MovedSessionClash(
+                        f"{planned} : le début saisi à la main correspond à une autre ligne du "
+                        "fichier. Corrigez cette date, puis relancez l'import.")
             sessions += 1
             if not was_created:
-                changed = [f for f, v in fields.items() if getattr(planned, f) != v]
+                fields["start_date"] = start
+                changed = [f for f, v in fields.items()
+                           if getattr(planned, f) != v and (planned.pk, f) not in protected]
+                for f in changed:
+                    if f in SESSION_CELLS:
+                        trace(key_id, PlannedCellEdit.Target.SESSION, planned.pk, f,
+                              getattr(planned, f), fields[f])
+                    setattr(planned, f, fields[f])
+                if planned.start_moved and planned.start_date == start:
+                    planned.start_moved, planned.source_start_date = False, None
+                    changed += ["start_moved", "source_start_date"]
                 if changed:
-                    for f in changed:
-                        setattr(planned, f, fields[f])
                     planned.last_import = log
                     planned.save(update_fields=[*changed, "last_import", "updated_at"])
             if {t.pk for t in planned.trainers.all()} != set(group["trainer_ids"]):
@@ -374,7 +471,9 @@ class SeatSheetsImporter(TabularImporter):
                 )
                 if was_created:
                     created += 1
-                elif allocation.seats != seats:
+                elif allocation.seats != seats and (allocation.pk, "seats") not in protected:
+                    trace(key_id, PlannedCellEdit.Target.ALLOCATION, allocation.pk, "seats",
+                          allocation.seats, seats)
                     allocation.seats = seats
                     allocation.save(update_fields=["seats", "updated_at"])
                     updated += 1
@@ -387,20 +486,20 @@ class SeatSheetsImporter(TabularImporter):
             a for a in PlannedAllocation.objects.filter(
                 planned_session__cost_key_id__in=touched, country_id__in=self._countries,
             ).select_related("planned_session__country", "country")
-            if ((a.planned_session.cost_key_id, a.planned_session.brand_id,
-                 a.planned_session.code_norm, a.planned_session.start_date,
-                 a.planned_session.country_id), a.country_id) not in kept
+            if (file_identity(a.planned_session, groups), a.country_id) not in kept
         ]
         report_missing = [
             {"session": str(a.planned_session), "country": a.country.code, "seats": a.seats}
             for a in missing
         ]
         if self._params.get("replace") and missing:
-            PlannedAllocation.objects.filter(pk__in=[a.pk for a in missing]).delete()
+            PlannedAllocation.objects.filter(
+                pk__in=[a.pk for a in missing if (a.pk, "seats") not in protected]).delete()
             PlannedSession.objects.filter(cost_key_id__in=touched,
                                           allocations__isnull=True).delete()
+        PlannedCellEdit.objects.bulk_create(journal)
         self.report_extra.update(
-            created=created, updated=updated, planned_sessions=sessions,
+            manual_kept=manual_kept, overwrite_manual=overwrite, created=created, updated=updated, planned_sessions=sessions,
             missing_from_file=report_missing, replaced=bool(self._params.get("replace")),
             frozen_noop=sorted(str(keys[k]) for k in noop),
         )

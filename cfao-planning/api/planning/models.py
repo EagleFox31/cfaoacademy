@@ -185,7 +185,7 @@ class CostKeyYear(UUIDModel, TimeStampedModel):
     """
 
     FROZEN_FIELDS = ("year", "pole", "budget", "trainee_lodging_cost", "trainer_lodging_cost",
-                     "hours_per_session", "hourly_rate", "status")
+                     "hours_per_session", "hourly_rate", "seats_offered", "status")
 
     year = models.PositiveSmallIntegerField()
     pole = models.CharField(max_length=16, choices=Pole.choices)
@@ -196,6 +196,9 @@ class CostKeyYear(UUIDModel, TimeStampedModel):
     # Taux horaire de formation saisi (par technicien et par heure). Affiché à côté
     # du coût horaire calculé (budget / (places × heures)) : il n'entre pas dans la part.
     hourly_rate = models.DecimalField(max_digits=12, decimal_places=0, null=True, blank=True)
+    # Places que le centre prévoit d'ouvrir sur l'année. Repère de pilotage : seules
+    # les places attribuées entrent dans le calcul et sont facturées.
+    seats_offered = models.PositiveIntegerField(null=True, blank=True)
     enrolled_countries = models.ManyToManyField(Country, related_name="cost_key_years")
     status = models.CharField(max_length=8, choices=CostKeyStatus.choices,
                               default=CostKeyStatus.DRAFT)
@@ -277,6 +280,10 @@ class PlannedSession(UUIDModel, TimeStampedModel):
     code_raw = models.CharField(max_length=64, blank=True)
     title = models.CharField(max_length=255, blank=True)
     start_date = models.DateField(null=True, blank=True)
+    # Date lue dans le classeur quand une saisie a déplacé le début (vide possible : session
+    # « à dater ») : le prochain import retrouve ainsi la session au lieu d'en créer une seconde.
+    start_moved = models.BooleanField(default=False)
+    source_start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     location = models.CharField(max_length=96, blank=True)
     # Pays hôte. Même nom que `Session.country` : le calcul de la clé les lit pareil.
@@ -289,6 +296,11 @@ class PlannedSession(UUIDModel, TimeStampedModel):
     )
 
     objects = PlannedSessionQuerySet.as_manager()
+
+    @property
+    def file_start_date(self):
+        """La date de début telle que le classeur la porte."""
+        return self.source_start_date if self.start_moved else self.start_date
 
     class Meta:
         ordering = ["start_date", "code_norm"]
@@ -352,6 +364,51 @@ class PlannedAllocation(UUIDModel, TimeStampedModel):
     def delete(self, *args, **kwargs):
         self._guard()
         return super().delete(*args, **kwargs)
+
+
+class PlannedCellEditQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise FrozenKeyError("Journal des saisies immuable.")
+
+    def delete(self):
+        raise FrozenKeyError("Journal des saisies immuable.")
+
+
+class PlannedCellEdit(UUIDModel, TimeStampedModel):
+    """Journal des cellules du prévisionnel modifiées : auteur du dernier changement,
+    et protection d'une saisie manuelle contre un réimport."""
+
+    class Target(models.TextChoices):
+        ALLOCATION = "allocation", "Allocation"
+        SESSION = "session", "Session"
+
+    class Source(models.TextChoices):
+        MANUAL = "MANUAL", "Saisie"
+        IMPORT = "IMPORT", "Import"
+
+    cost_key = models.ForeignKey(CostKeyYear, on_delete=models.PROTECT, related_name="cell_edits")
+    target = models.CharField(max_length=12, choices=Target.choices)
+    # Sans clé étrangère : le journal survit à la suppression de la ligne par un import.
+    target_id = models.UUIDField()
+    field = models.CharField(max_length=24)
+    old_value = models.JSONField(null=True, blank=True)
+    new_value = models.JSONField(null=True, blank=True)
+    source = models.CharField(max_length=8, choices=Source.choices, default=Source.MANUAL)
+    import_log = models.ForeignKey("core.ImportLog", null=True, blank=True,
+                                   on_delete=models.SET_NULL, related_name="+")
+    actor = models.CharField(max_length=128)
+    actor_name = models.CharField(max_length=255, blank=True)
+
+    objects = PlannedCellEditQuerySet.as_manager()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["cost_key", "target_id", "field", "created_at"],
+                         name="planned_cell_edit_latest"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.target} {self.target_id} {self.field} ({self.source})"
 
 
 class CostKeySnapshotQuerySet(models.QuerySet):
@@ -462,6 +519,7 @@ class ReviewItem(UUIDModel, TimeStampedModel):
         DATA_MISMATCH = "DATA_MISMATCH", "Écart avec la feuille Data"
         OVERLAP = "OVERLAP", "Chevauchement"
         HOLIDAY_PROPOSAL = "HOLIDAY_PROPOSAL", "Jour férié à confirmer"
+        SOURCE_INCONSISTENT = "SOURCE_INCONSISTENT", "Incohérence dans la source"
 
     class Status(models.TextChoices):
         OPEN = "OPEN", "À traiter"

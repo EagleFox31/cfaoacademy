@@ -9,6 +9,7 @@ Deux modes : PLANNED lit le prévisionnel (`PlannedSession`), ACTUAL le réalis�
 """
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from decimal import ROUND_FLOOR, Decimal
@@ -20,6 +21,8 @@ from referential.models import Trainer
 from referential.normalize import norm_key
 
 from ..models import INACTIVE_STATUSES, CostKeyYear, Session
+
+LOCAL_INSTRUCTOR_LABEL = re.compile(r"\b(pic|ki|key\s+instructor)\b", re.IGNORECASE)
 
 # Version du moteur de calcul, notée dans chaque snapshot de gel.
 COST_KEY_ENGINE = 1
@@ -98,14 +101,27 @@ def is_academy_site(session: Session) -> bool:
 
 
 def needs_trainer_lodging(trainer: Trainer, session: Session) -> bool:
-    """Seul un formateur hors de son pays se loge : un technicien instructeur (PIC
-    Suzuki, Key Instructor Toyota) anime sur place, un formateur de filiale aussi
-    chez lui."""
+    """Seul un formateur hors de son pays de rattachement se loge, y compris sur le site
+    Academy : un formateur de Côte d'Ivoire à Douala est en déplacement. Un technicien
+    instructeur (PIC Suzuki, Key Instructor Toyota) anime sur place. Sans pays renseigné,
+    le formateur est rattaché au centre Academy."""
     if trainer.kind != Trainer.Kind.TRAINER:
         return False
     if trainer.home_country_id:
         return trainer.home_country_id != session.country_id
-    return session.country.code != settings.ACADEMY_COUNTRY_CODE
+    return session.country.code != settings.ACADEMY_COUNTRY_CODE and not is_academy_site(session)
+
+
+def session_has_trainer_lodging(session: Session, trainers: list[Trainer]) -> bool:
+    """Un seul forfait par session dès qu'un de ses formateurs est hors de chez lui. Sans
+    formateur désigné, on provisionne son déplacement comme le classeur de la clé (formateur
+    vide facturé), sauf sur le site Academy ou si le libellé importé annonce un technicien
+    instructeur."""
+    if trainers:
+        return any(needs_trainer_lodging(t, session) for t in trainers)
+    if is_academy_site(session):
+        return False
+    return not LOCAL_INSTRUCTOR_LABEL.search(getattr(session, "trainers_raw", ""))
 
 
 def _split_budget(budget: Decimal, weights: dict[str, int]) -> dict[str, Decimal]:
@@ -179,8 +195,7 @@ def compute(key: CostKeyYear, needs: Mapping[str, int] | None = None, *,
 
     for session, trainers, allocations in _units(key, mode):
         academy = is_academy_site(session)
-        travelling = any(needs_trainer_lodging(t, session) for t in trainers)
-        if not academy and travelling:
+        if session_has_trainer_lodging(session, trainers):
             line(session.country).trainer_sessions += 1
         for country, seats in allocations:
             current = line(country)

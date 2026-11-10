@@ -13,20 +13,28 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
-MONEY = '#,##0'
+from ..services.cost_key_global import AT_ACADEMY, IN_SUBSIDIARY, PLACE_KEYS, POSTPONED
+
+MONEY = '#,##0 "FCFA"'
 INT = '#,##0'
 PCT = '0.0%'
 _HEAD_FILL = PatternFill("solid", fgColor="0E1126")
 _HEAD_FONT = Font(bold=True, color="FFFFFF")
 _TOTAL_FILL = PatternFill("solid", fgColor="E8ECF4")
+# Mêmes couleurs que les cellules de l'écran.
+_PLACE_FILLS = {
+    IN_SUBSIDIARY: PatternFill("solid", fgColor="BFECD0"),
+    AT_ACADEMY: PatternFill("solid", fgColor="C3D8FB"),
+    POSTPONED: PatternFill("solid", fgColor="F9C0C7"),
+}
 _THIN = Side(style="thin", color="C9CED8")
 _BORDER = Border(top=_THIN, bottom=_THIN, left=_THIN, right=_THIN)
 
 LABELS = {
     "fr": {
         "global": "GLOBAL", "country": "Pays", "technicians": "Techniciens", "needs": "Besoins",
-        "seats": "Places", "coverage": "Couverture", "share": "Part", "key_cost": "Coût clé",
-        "trainee_lodging": "Hébergement stagiaires", "trainer_lodging": "Hébergement formateurs",
+        "seats": "Places", "in_subsidiary": "En filiale", "at_academy": "À l'Academy", "postponed": "Reportées", "coverage": "Taux de couverture du besoin", "level": "Niveau", "share": "Part", "key_cost": "Coût clé",
+        "trainee_lodging": "Frais d'accommodation des stagiaires", "trainer_lodging": "Frais d'accommodation formateurs",
         "total": "Total à payer", "brand": "Marque", "code": "Code", "title": "Module",
         "start": "Début", "end": "Fin", "trainers": "Formateurs", "location": "Lieu",
         "totals": "TOTAL", "planned": "Prévu", "actual": "Réalisé", "frozen": "gelée",
@@ -34,7 +42,7 @@ LABELS = {
     },
     "en": {
         "global": "GLOBAL", "country": "Country", "technicians": "Technicians", "needs": "Needs",
-        "seats": "Seats", "coverage": "Coverage", "share": "Share", "key_cost": "Key cost",
+        "seats": "Seats", "in_subsidiary": "In subsidiary", "at_academy": "At the Academy", "postponed": "Postponed", "coverage": "Need coverage rate", "level": "Level", "share": "Share", "key_cost": "Key cost",
         "trainee_lodging": "Trainee lodging", "trainer_lodging": "Trainer lodging",
         "total": "Total due", "brand": "Brand", "code": "Code", "title": "Module",
         "start": "Start", "end": "End", "trainers": "Trainers", "location": "Location",
@@ -100,12 +108,10 @@ def write_global(ws, table: dict, lang: str = "fr") -> None:
           for b in brands],
         (t["needs"], lambda r: r["needs"], INT, True, 10),
         (t["seats"], lambda r: r["seats"], INT, True, 10),
-        (t["coverage"], lambda r: r["coverage"], PCT, False, 12),
+        *[(t[k], lambda r, k=k: r[k], INT, True, 14) for k in PLACE_KEYS],
+        (t["coverage"], lambda r: r["coverage"], PCT, False, 16),
         (t["share"], lambda r: r["share"], PCT, True, 10),
-        (t["key_cost"], lambda r: r["key_cost"], MONEY, True, 16),
-        (t["trainee_lodging"], lambda r: r["trainee_lodging"], MONEY, True, 16),
-        (t["trainer_lodging"], lambda r: r["trainer_lodging"], MONEY, True, 16),
-        (t["total"], lambda r: r["total"], MONEY, True, 16),
+        (t["key_cost"], lambda r: r["key_cost"], MONEY, True, 22),
     ]
     ws.title = t["global"]
     _title_row(ws, f"{t['global']} {_heading(table, t)}", len(cols))
@@ -130,35 +136,39 @@ def write_global(ws, table: dict, lang: str = "fr") -> None:
 
 def write_country(ws, sheet: dict, lang: str = "fr") -> None:
     t = _labels(lang)
-    headers = [t["brand"], t["code"], t["title"], t["start"], t["end"], t["trainers"],
+    headers = [t["brand"], t["level"], t["code"], t["title"], t["start"], t["end"], t["trainers"],
                t["location"], t["seats"]]
     ws.title = sheet["label"][:31]
     _title_row(ws, f"{sheet['label']} · {_heading(sheet, t)}", len(headers))
     _header(ws, 2, headers)
     first = 3
     for s in sheet["sessions"]:
-        ws.append([s["brand"], s["code"], s["title"], s["start_date"], s["end_date"],
+        ws.append([s["brand"], s["level"] or "", s["code"], s["title"], s["start_date"], s["end_date"],
                    s["trainers"], s["location"], s["seats"]])
     last = ws.max_row
     for r in range(first, last + 1):
         for col in range(1, len(headers) + 1):
             ws.cell(row=r, column=col).border = _BORDER
-        ws.cell(row=r, column=4).number_format = "dd/mm/yyyy"
         ws.cell(row=r, column=5).number_format = "dd/mm/yyyy"
-    _totals(ws, last + 1, first, last, {8: INT}, t["totals"])
+        ws.cell(row=r, column=6).number_format = "dd/mm/yyyy"
+    for r, s in enumerate(sheet["sessions"], first):
+        ws.cell(row=r, column=9).fill = _PLACE_FILLS[s["seat_status"]]
+    _totals(ws, last + 1, first, last, {9: INT}, t["totals"])
     footer = sheet["footer"]
     row = last + 3
-    for key, fmt in (("share", PCT), ("key_cost", MONEY), ("trainee_lodging", MONEY),
-                     ("trainer_lodging", MONEY), ("total", MONEY)):
-        ws.cell(row=row, column=7, value=t[key]).font = Font(bold=True)
-        cell = ws.cell(row=row, column=8, value=footer[key])
+    for key, fmt in (*((k, INT) for k in PLACE_KEYS), ("share", PCT), ("key_cost", MONEY),
+                     ("trainee_lodging", MONEY), ("trainer_lodging", MONEY), ("total", MONEY)):
+        ws.cell(row=row, column=8, value=t[key]).font = Font(bold=True)
+        cell = ws.cell(row=row, column=9, value=footer[key])
         cell.number_format = fmt
+        if key in _PLACE_FILLS:
+            cell.fill = _PLACE_FILLS[key]
         cell.font = Font(bold=key == "total")
         row += 1
     ws.freeze_panes = "A3"
     if last >= first:
-        ws.auto_filter.ref = f"A2:H{last}"
-    _widths(ws, [16, 14, 44, 12, 12, 28, 16, 10])
+        ws.auto_filter.ref = f"A2:I{last}"
+    _widths(ws, [16, 10, 14, 44, 12, 12, 28, 16, 22])
 
 
 def _bytes(wb: Workbook) -> bytes:

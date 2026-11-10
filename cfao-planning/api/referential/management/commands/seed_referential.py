@@ -28,6 +28,8 @@ BRAND_ALIASES = [
     ("SINOTRUCK", "sinotruk"), ("SINOTRUCK HOHAN", "sinotruk"), ("HOHAN", "sinotruk"),
     ("SINO", "sinotruk"), ("RENAULT TRUCK", "renault-trucks"), ("RT", "renault-trucks"),
     ("KL", "king-long"), ("TOY", "toyota"),
+    # Le catalogue de formation liste ces quatre marques, la clé les regroupe.
+    ("CITROEN", "stellantis"), ("FIAT", "stellantis"), ("JEEP", "stellantis"), ("PEUGEOT", "stellantis"),
 ]
 
 # (code, libellé, alias du fichier). org_path au format plateforme : groupe.xxx.

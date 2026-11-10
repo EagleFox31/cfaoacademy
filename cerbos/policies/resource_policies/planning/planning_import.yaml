@@ -1,5 +1,5 @@
 # Ressource « planning_import » — imports Excel du planning et du prévisionnel.
-# Réservée à l'équipe Academy : un import réécrit le prévu de toutes les filiales.
+# Réservée aux pilotes : un import réécrit le prévu de toutes les filiales.
 apiVersion: api.cerbos.dev/v1
 resourcePolicy:
   version: default
@@ -10,4 +10,4 @@ resourcePolicy:
     - actions: ["template", "preview", "apply", "list", "view"]
       effect: EFFECT_ALLOW
       derivedRoles:
-        - planning_manager
+        - planning_pilot
