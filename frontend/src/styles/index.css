@@ -6091,6 +6091,36 @@ section:nth-of-type(even) .card-carousel--peek.card-carousel--can-scroll-left::b
   list-style: none;
   margin: 0;
   padding: 0;
+  max-height: min(60vh, 440px);
+  overflow-y: auto;
+}
+
+.nav-notif-item--link {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-notif-item--link:hover {
+  background: #f4f6fb;
+}
+
+.nav-notif-item--link:focus-visible {
+  outline: 2px solid #1a56db;
+  outline-offset: -2px;
+}
+
+.nav-notif-item-cta {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 650;
+  color: #1a56db;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .nav-notif-item {

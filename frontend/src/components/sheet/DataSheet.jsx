@@ -8,14 +8,23 @@
  *   copie Ctrl+C collable dans Excel, export CSV, mise en forme conditionnelle.
  *
  * Colonne : { id, header, group?, groupIcon?, type: text|int|money|percent|date, value(row),
- *             width?, total?: 'sum' | (rows) => valeur, tone?(v, row), bar?, render?(v, row),
- *             hidden? }
+ *             width?, total?: 'sum' | (rows) => valeur, tone?(v, row), bar?, unit?, render?(v, row),
+ *             hidden?, edit? }
+ * Saisie (avec onCellCommit et un rowKey stable, indépendant de l'index) :
+ *   edit : { input: number|date|text, raw(row), can?(row), min?, max?, hint? }.
+ *   F2, Entrée ou double-clic ouvrent la cellule ; Entrée valide et descend, Tab passe à la
+ *   suivante, Échap annule, quitter la cellule valide. La valeur lue à l'ouverture part avec
+ *   la saisie : c'est elle qui permet au serveur de détecter une modification concurrente.
+ *   cellError?(row, col) : message d'erreur à porter sur la cellule (état tenu par le parent).
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSettle } from './useSettle'
 import useLocale from '../../hooks/useLocale'
-import { aggregate, cellAddress, colLetter, fold, inRange, normRange, parseFilter, toTSV } from './sheetMath'
-import { cellText, downloadBlob, makeFormatter, toCsv } from './sheetExport'
+import { aggregate, cellAddress, cellDraft, colLetter, fold, isRowSelected, mergeSpans, normRange, parseCellInput, parseFilter, sameCell, spanInRange, toTSV } from './sheetMath'
+import { cellText, columnTitle, downloadBlob, makeFormatter, toCsv } from './sheetExport'
+
+/** Unité affichée à côté du nombre ; le presse-papier et le CSV gardent le nombre seul. */
+const withUnit = (text, unit) => (unit && text ? <>{text} <small className="sheet-unit">{unit}</small></> : text)
 
 const ROWNUM_W = 44
 const DEFAULT_W = { text: 180, int: 92, money: 132, percent: 96, date: 106 }
@@ -33,9 +42,74 @@ function compareValues(a, b, locale) {
   return String(a).localeCompare(String(b), locale, { sensitivity: 'base', numeric: true })
 }
 
+/** Champ de saisie : son brouillon reste local, la grille ne se redessine pas à chaque frappe. */
+function CellInput({ edit, initial, label, invalidText, onDone, options }) {
+  const [draft, setDraft] = useState(initial)
+  const [invalid, setInvalid] = useState(false)
+  const ref = useRef(null)
+  const closed = useRef(false)
+  const viaKey = useRef(false) // au clavier, les flèches parcourent la liste sans valider
+
+  useEffect(() => { ref.current?.focus(); ref.current?.select?.() }, [])
+
+  const close = (outcome, move) => {
+    if (closed.current) return
+    closed.current = true
+    onDone(outcome, move)
+  }
+  const submit = move => {
+    const parsed = parseCellInput(draft, edit)
+    if (parsed.ok) close(parsed, move)
+    else setInvalid(true)
+  }
+  const onKeyDown = e => {
+    e.stopPropagation() // flèches, Ctrl+A, Ctrl+C : ils agissent sur le texte, pas sur la grille
+    if (e.key === 'Enter') { e.preventDefault(); submit({ row: 1, col: 0 }) }
+    else if (e.key === 'Tab') { e.preventDefault(); submit({ row: 0, col: e.shiftKey ? -1 : 1 }) }
+    else if (e.key === 'Escape') { e.preventDefault(); close(null, { row: 0, col: 0 }) }
+  }
+  const onBlur = () => {
+    if (document.hasFocus?.() === false) return // changement de fenêtre : la saisie continue au retour
+    const parsed = parseCellInput(draft, edit)
+    close(parsed.ok ? parsed : null, null)
+  }
+  const stop = e => e.stopPropagation()
+  if (options) {
+    return (
+      <select ref={ref} className="sheet-edit" aria-label={label} value={draft}
+        onChange={e => {
+          const { value } = e.target
+          setDraft(value)
+          if (!viaKey.current) close(parseCellInput(value, edit), { row: 0, col: 0 })
+        }}
+        onKeyDown={e => { viaKey.current = true; onKeyDown(e) }} onBlur={onBlur}
+        onMouseDown={stop} onClick={stop} onDoubleClick={stop}>
+        <option value="">—</option>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+    )
+  }
+  return (
+    <input ref={ref} className={`sheet-edit${invalid ? ' is-invalid' : ''}`} aria-label={label}
+      aria-invalid={invalid || undefined} title={invalid ? invalidText : undefined}
+      type={edit.input === 'date' ? 'date' : 'text'} inputMode={edit.input === 'number' ? 'numeric' : undefined}
+      value={draft} onChange={e => { setDraft(e.target.value); setInvalid(false) }}
+      onKeyDown={onKeyDown} onBlur={onBlur}
+      onMouseDown={stop} onClick={stop} onDoubleClick={stop} />
+  )
+}
+
+/** Dans une cellule fusionnée, la ligne qui se trouve sous le pointeur. */
+const rowInSpan = (e, span) => {
+  const box = e.currentTarget.getBoundingClientRect()
+  if (span < 2 || !box.height) return 0
+  return Math.min(span - 1, Math.max(0, Math.floor((e.clientY - box.top) / (box.height / span))))
+}
+
 export default function DataSheet({
-  id, columns, rows, rowKey, frozen: frozenDefault = 1, onRowOpen, actions,
-  exportName = 'export', emptyText, openHint, simple = false, rowClass,
+  id, columns, rows, rowKey, frozen = 1, onRowOpen, actions, filterControls, controlsActive = false, onClearControls,
+  exportName = 'export', emptyText, openHint, simple = false, rowClass, revealKey = 0,
+  onCellCommit, cellError, onViewChange,
 }) {
   // simple : lecteur pressé. Ni barre de formule, ni lettres de colonnes, ni
   // réglages de tableur ; la ligne de filtres reste à ouvrir à la demande.
@@ -46,7 +120,6 @@ export default function DataSheet({
   const [hidden, setHidden] = useState(
     () => new Set(prefs0.hidden ?? columns.filter(c => c.hidden).map(c => c.id)))
   const [widths, setWidths] = useState(prefs0.widths ?? {})
-  const [frozen, setFrozen] = useState(prefs0.frozen ?? frozenDefault)
   const showFilters = !simple
   const [sort, setSort] = useState([])
   const [filters, setFilters] = useState({})
@@ -55,6 +128,8 @@ export default function DataSheet({
   const [focus, setFocus] = useState(null)
   const [colsOpen, setColsOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [editing, setEditing] = useState(null) // { id, row, col, base }
+  const [saving, setSaving] = useState({}) // id de cellule -> valeur en cours d'envoi
   // Recherche, filtre de colonne ou tri : bref squelette sur le corps du tableau.
   const settling = useSettle([search, filters, sort])
   const gridRef = useRef(null)
@@ -63,8 +138,17 @@ export default function DataSheet({
   const dragging = useRef(false)
 
   useEffect(() => {
-    savePrefs(id, { hidden: [...hidden], widths, frozen })
-  }, [id, hidden, widths, frozen])
+    savePrefs(id, { hidden: [...hidden], widths })
+  }, [id, hidden, widths])
+
+  // Demande extérieure d'afficher la ligne .is-focus : la recherche et les filtres
+  // de colonne sont retirés, puis la ligne revient à l'écran une fois le corps rendu.
+  useEffect(() => {
+    if (revealKey) { setFilters({}); setSearch('') }
+  }, [revealKey])
+  useEffect(() => {
+    if (revealKey && !settling) gridRef.current?.querySelector('tr.is-focus')?.scrollIntoView?.({ block: 'center' })
+  }, [revealKey, settling])
 
   // Panneau Colonnes : colonnes adjacentes de même groupe réunies sous le nom du groupe.
   const colSections = useMemo(() => {
@@ -115,6 +199,9 @@ export default function DataSheet({
     return out
   }, [rows, cols, columns, filters, search, sort, format, locale])
 
+  // Le parent cale ses indicateurs sur les lignes affichées, avant peinture : jamais d'ancien chiffre.
+  useLayoutEffect(() => { onViewChange?.(view) }, [view, onViewChange])
+
   const totals = useMemo(() => cols.map(c => {
     if (typeof c.total === 'function') return c.total(view)
     if (c.total === 'sum') return view.reduce((s, r) => s + (Number(c.value(r)) || 0), 0)
@@ -152,7 +239,7 @@ export default function DataSheet({
   useEffect(() => {
     if (!focus) return
     gridRef.current
-      ?.querySelector(`[data-cell="${focus.row}:${focus.col}"]`)
+      ?.querySelector(`[data-cell="${focus.row}:${focus.col}"]`) // absente sur une ligne fusionnée
       ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [focus])
 
@@ -184,7 +271,7 @@ export default function DataSheet({
           .map(c => cellText(c.value(view[r]), c.type, locale, format)))
       }
     } else {
-      matrix = [cols.map(c => (c.group ? `${c.group} · ${c.header}` : c.header)),
+      matrix = [cols.map(columnTitle),
         ...view.map(r => cols.map(c => cellText(c.value(r), c.type, locale, format)))]
     }
     try {
@@ -197,6 +284,37 @@ export default function DataSheet({
   const exportCsv = () => {
     downloadBlob(new Blob([toCsv({ columns: cols, rows: view, locale, format })],
       { type: 'text/csv;charset=utf-8' }), `${exportName}.csv`)
+  }
+
+  // ── saisie ───────────────────────────────────────────────────────────────
+  const editId = (row, ri, c) => `${rowKey ? rowKey(row, ri) : ri}|${c.id}`
+  const canEdit = (row, ri, c) => Boolean(
+    onCellCommit && c.edit && (!c.edit.can || c.edit.can(row)) && !(editId(row, ri, c) in saving))
+
+  const openEdit = (ri, ci) => {
+    const row = view[ri]
+    const c = cols[ci]
+    if (!row || !c || !canEdit(row, ri, c)) return false
+    setEditing({ id: editId(row, ri, c), row, col: c, base: c.edit.raw(row), at: { row: ri, col: ci } })
+    return true
+  }
+
+  const finishEdit = async (outcome, move) => {
+    const cur = editing
+    setEditing(null)
+    if (move) {
+      const next = clamp(cur.at.row + move.row, cur.at.col + move.col)
+      setAnchor(next)
+      setFocus(next)
+      gridRef.current?.focus({ preventScroll: true })
+    }
+    if (!outcome || sameCell(outcome.value, cur.base)) return
+    setSaving(s => ({ ...s, [cur.id]: outcome.value }))
+    try {
+      await onCellCommit(cur.row, cur.col, outcome.value, cur.base)
+    } finally {
+      setSaving(({ [cur.id]: _done, ...rest }) => rest)
+    }
   }
 
   const onKeyDown = e => {
@@ -217,7 +335,11 @@ export default function DataSheet({
       case 'End': next = mod ? { row: lastR, col: lastC } : { row: cur.row, col: lastC }; break
       case 'PageUp': next = { row: cur.row - 15, col: cur.col }; break
       case 'PageDown': next = { row: cur.row + 15, col: cur.col }; break
+      case 'F2':
+        if (focus && openEdit(focus.row, focus.col)) e.preventDefault()
+        return
       case 'Enter':
+        if (focus && openEdit(focus.row, focus.col)) { e.preventDefault(); return }
         if (onRowOpen && focus) { e.preventDefault(); onRowOpen(view[focus.row]) }
         return
       case 'Escape':
@@ -232,11 +354,18 @@ export default function DataSheet({
     setFocus(next)
   }
 
-  const onCellDown = (e, row, col) => {
+  // La colonne en cours de saisie se dé-fusionne : chaque ligne y a sa propre valeur.
+  const editingCol = editing?.col.id
+  const spansByCol = useMemo(() => new Map(
+    cols.filter(c => c.merge && c.id !== editingCol)
+      .map(c => [c.id, mergeSpans(view.map(r => (c.mergeKey ?? c.value)(r)))]),
+  ), [cols, view, editingCol])
+
+  const onCellDown = (e, row, col, rows = 1) => {
     if (e.button !== 0) return
     const cell = { row, col }
-    if (e.shiftKey && anchor) setFocus(cell)
-    else { setAnchor(cell); setFocus(cell) }
+    if (e.shiftKey && anchor) setFocus({ row: row + rows - 1, col })
+    else { setAnchor(cell); setFocus({ row: row + rows - 1, col }) }
     dragging.current = true
     gridRef.current?.focus({ preventScroll: true })
   }
@@ -282,8 +411,8 @@ export default function DataSheet({
     return rest
   })
 
-  const reset = () => { setSort([]); setFilters({}); setSearch('') }
-  const dirty = sort.length > 0 || search !== '' || Object.values(filters).some(Boolean)
+  const reset = () => { setSort([]); setFilters({}); setSearch(''); onClearControls?.() }
+  const dirty = controlsActive || sort.length > 0 || search !== '' || Object.values(filters).some(Boolean)
 
   // ── volets figés : décalage gauche de chaque colonne figée ───────────────
   const lefts = []
@@ -339,6 +468,9 @@ export default function DataSheet({
           <input ref={searchRef} type="search" value={search} placeholder={t.search_ph}
             aria-label={t.search_ph} onChange={e => setSearch(e.target.value)} />
         </label>
+        {filterControls}
+        {dirty && <button type="button" className="sheet-btn sheet-btn-ghost" onClick={reset}>{t.reset}</button>}
+        <span className="sheet-toolbar-sep" />
         <div className="sheet-pop" ref={colsRef}>
           <button type="button" className="sheet-btn" aria-expanded={colsOpen}
             onClick={() => setColsOpen(v => !v)}>
@@ -380,18 +512,6 @@ export default function DataSheet({
           )}
         </div>
         {!simple && (
-          <label className="sheet-freeze">
-            {t.freeze}
-            <select value={frozen} onChange={e => setFrozen(Number(e.target.value))}>
-              <option value={0}>{t.freeze_none}</option>
-              {[1, 2, 3].map(n => (
-                <option key={n} value={n}>{t.freeze_cols.replace('{n}', n)}</option>
-              ))}
-            </select>
-          </label>
-        )}
-        <span className="sheet-toolbar-sep" />
-        {!simple && (
           <>
             <button type="button" className="sheet-btn" onClick={copy}
               title={t.copy_hint}>{copied ? t.copied : t.copy}</button>
@@ -399,7 +519,6 @@ export default function DataSheet({
           </>
         )}
         {actions}
-        {dirty && <button type="button" className="sheet-btn sheet-btn-ghost" onClick={reset}>{t.reset}</button>}
       </div>
 
       {/* ── barre de formule ── */}
@@ -443,9 +562,9 @@ export default function DataSheet({
                     style={g.span === 1 ? frozenStyle(g.start) : undefined}>
                     {g.icon ? (
                       <span className="sheet-group-in">
-                        <img className="sheet-h-icon" src={g.icon} alt="" aria-hidden="true"
-                          onError={e => { e.currentTarget.style.display = 'none' }} />
-                        {g.group}
+                        <img className="sheet-h-icon" src={g.icon} alt="" aria-hidden="true" title={g.group}
+                          onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.classList.add('is-broken') }} />
+                        <span className="sheet-group-label">{g.group}</span>
                       </span>
                     ) : g.group}
                   </th>
@@ -508,26 +627,46 @@ export default function DataSheet({
             {view.map((row, ri) => {
               const rowSel = range && ri >= range.r0 && ri <= range.r1
               return (
-                <tr key={rowKey ? rowKey(row, ri) : ri} className={rowClass?.(row) || undefined}>
+                <tr key={rowKey ? rowKey(row, ri) : ri}
+                  className={[rowClass?.(row), isRowSelected(range, ri, lastR, lastC) && 'is-row-sel'].filter(Boolean).join(' ') || undefined}>
                   <th scope="row" className={`sheet-rownum${rowSel ? ' is-hl' : ''}`}
                     onMouseDown={e => selectRow(e, ri)}>{ri + 1}</th>
                   {cols.map((c, ci) => {
                     const v = c.value(row)
                     const text = format(v, c.type)
-                    const sel = inRange(range, ri, ci)
-                    const active = focus && focus.row === ri && focus.col === ci
+                    const span = spansByCol.get(c.id)?.[ri] ?? 1
+                    if (span === 0) return null
+                    const sel = spanInRange(range, ri, span, ci)
+                    const active = focus && focus.row >= ri && focus.row < ri + span && focus.col === ci
                     const tone = c.tone ? c.tone(v, row) : null
+                    const cid = onCellCommit && c.edit ? editId(row, ri, c) : null
+                    const isSaving = cid != null && cid in saving
+                    const isEditing = cid != null && editing?.id === cid
+                    const editable = cid != null && canEdit(row, ri, c)
+                    const failure = editable && !isEditing ? cellError?.(row, c) : null
+                    const shown = isSaving ? format(saving[cid], c.type) : text
                     const cls = `sheet-c${NUMERIC.has(c.type) ? ' is-num' : ''}${groupCls(ci)}${tone ? ` tone-${tone}` : ''}`
-                      + `${sel ? ' is-sel' : ''}${active ? ' is-active' : ''}${frozenCls(ci)}`
+                      + `${sel ? ' is-sel' : ''}${active ? ' is-active' : ''}${c.merge ? ' is-merged' : ''}${c.openOnClick && onRowOpen ? ' is-openable' : ''}${frozenCls(ci)}`
+                      + `${editable ? ' is-editable' : ''}${isSaving ? ' is-saving' : ''}${failure ? ' is-error' : ''}`
+                    const tip = failure || (editable && c.edit.hint ? [text, c.edit.hint].filter(Boolean).join(' · ') : text)
                     return (
                       <td key={c.id} data-cell={`${ri}:${ci}`} role="gridcell" aria-selected={sel || undefined}
-                        className={cls} style={frozenStyle(ci)} title={text}
-                        onMouseDown={e => onCellDown(e, ri, ci)} onMouseEnter={() => onCellEnter(ri, ci)}
-                        onDoubleClick={onRowOpen ? () => onRowOpen(row) : undefined}>
+                        aria-busy={isSaving || undefined}
+                        rowSpan={span > 1 ? span : undefined}
+                        className={cls} style={frozenStyle(ci)} title={tip}
+                        onMouseDown={e => onCellDown(e, ri, ci, span)} onMouseEnter={() => onCellEnter(ri, ci)}
+                        onClick={c.openOnClick && onRowOpen ? e => {
+                          // Une sélection au clavier ou un bouton de la cellule n'ouvrent pas la ligne.
+                          if (!e.shiftKey && !e.ctrlKey && !e.metaKey && !e.target.closest('button, a')) onRowOpen(row)
+                        } : undefined}
+                        onDoubleClick={editable ? e => openEdit(ri + rowInSpan(e, span), ci) : (onRowOpen ? () => onRowOpen(row) : undefined)}>
                         {c.bar && typeof v === 'number' && (
                           <span className="sheet-bar" style={{ width: `${Math.max(0, Math.min(100, v * 100))}%` }} />
                         )}
-                        <span className="sheet-c-txt">{c.render ? c.render(v, row) : text}</span>
+                        {isEditing
+                          ? <CellInput key={cid} edit={c.edit} initial={cellDraft(editing.base)} label={c.header}
+                              invalidText={t.edit_invalid} onDone={finishEdit} options={c.edit.options?.(editing.row)} />
+                          : <span className="sheet-c-txt">{c.render && !isSaving ? c.render(v, row) : withUnit(shown, c.unit)}</span>}
                       </td>
                     )
                   })}
@@ -542,7 +681,7 @@ export default function DataSheet({
                 {cols.map((c, i) => (
                   <td key={c.id} className={`sheet-total${NUMERIC.has(c.type) ? ' is-num' : ''}${groupCls(i)}${frozenCls(i)}`}
                     style={frozenStyle(i)}>
-                    {i === 0 && totals[0] == null ? t.total : format(totals[i], c.type)}
+                    {i === 0 && totals[0] == null ? t.total : withUnit(format(totals[i], c.type), c.unit)}
                   </td>
                 ))}
               </tr>
@@ -553,7 +692,7 @@ export default function DataSheet({
 
       {/* ── barre d'état ── */}
       <div className="sheet-status">
-        <span>{selection && selection.cells > 1 ? address : (onRowOpen && openHint) || t.ready}</span>
+        <span>{selection && selection.cells > 1 ? address : ((onRowOpen || onCellCommit) && openHint) || t.ready}</span>
         <span className="sheet-status-agg">
           {selection && selection.cells > 1 && (
             <>

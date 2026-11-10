@@ -8,6 +8,8 @@
   --sheet-head-2: #e9ebf0;
   --sheet-sel: rgba(26, 86, 219, 0.1);
   --sheet-sel-line: #1a56db;
+  --sheet-row-sel: #c0ef7d;
+  --sheet-row-sel-num: #a3e635;
   --sheet-row-h: 30px;
   display: flex;
   flex-direction: column;
@@ -75,6 +77,8 @@
 .sheet-toolbar-sep { flex: 1 1 auto; }
 
 .sheet-pop { position: relative; }
+/* Rangé avec les outils à droite : le panneau s'ouvre vers l'intérieur de l'écran. */
+.sheet-toolbar-sep ~ .sheet-pop .sheet-pop-panel { left: auto; right: 0; }
 .sheet-pop-panel {
   position: absolute;
   top: calc(100% + 4px);
@@ -103,8 +107,6 @@
 .sheet-pop-group { padding: 6px 6px 4px; border-top: 1px solid var(--sheet-line); }
 .sheet-pop-title { display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--sheet-navy); padding-bottom: 2px; }
 .sheet-pop-row { display: flex; flex-wrap: wrap; gap: 2px 8px; white-space: nowrap; }
-.sheet-freeze { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-weight: 600; }
-.sheet-freeze select { height: 32px; border: 1px solid var(--sheet-line); border-radius: 6px; font: inherit; padding: 0 6px; }
 
 /* ── barre de formule ── */
 .sheet-formula {
@@ -260,7 +262,20 @@
 .sheet-c.is-num { text-align: right; font-variant-numeric: tabular-nums; }
 .sheet-c.is-sel { background: var(--sheet-sel) !important; }
 .sheet-c.is-active { box-shadow: inset 0 0 0 2px var(--sheet-sel-line); }
+.sheet-c.is-openable { cursor: pointer; }
 .sheet-c-txt { position: relative; z-index: 1; }
+.sheet-unit { font-size: .82em; font-weight: 500; opacity: .65; white-space: nowrap; }
+/* saisie directe : pointillé discret, y compris sur une cellule vide */
+.sheet-c.is-editable { cursor: pointer; }
+.sheet-c.is-saving .sheet-c-txt { opacity: .55; }
+.sheet-c.is-error { box-shadow: inset 0 0 0 2px #d92d20; }
+.sheet-edit {
+  position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%;
+  box-sizing: border-box; padding: 0 6px; border: 0; border-radius: 0;
+  outline: 2px solid var(--sheet-sel-line); outline-offset: -2px;
+  background: #fff; color: inherit; font: inherit; text-align: inherit; user-select: text;
+}
+.sheet-edit.is-invalid { outline-color: #d92d20; background: #fff5f4; }
 .sheet-table tbody tr:hover td:not(.is-sel):not(.sheet-rownum) { background: #fafbfd; }
 
 /* colonnes figées (volets) */
@@ -273,6 +288,12 @@
 .sheet-c.tone-low { background: #fdecee; color: #a8001a; }
 .sheet-c.tone-mid { background: #fff3cc; color: #996600; }
 .sheet-c.tone-high { background: #edfaf4; color: #127a40; }
+.sheet-c.tone-place-in_subsidiary { background: #bfecd0; color: #0b5c2e; }
+.sheet-c.tone-place-at_academy { background: #c3d8fb; color: #123d9c; }
+.sheet-c.tone-place-postponed { background: #f9c0c7; color: #8f0015; }
+.sheet-table tbody tr:hover td.sheet-c.tone-place-in_subsidiary:not(.is-sel) { background: #bfecd0; }
+.sheet-table tbody tr:hover td.sheet-c.tone-place-at_academy:not(.is-sel) { background: #c3d8fb; }
+.sheet-table tbody tr:hover td.sheet-c.tone-place-postponed:not(.is-sel) { background: #f9c0c7; }
 .sheet-c.tone-neg { color: #c40017; }
 .sheet-c.tone-pos { color: #127a40; }
 .sheet-bar {
@@ -365,9 +386,6 @@
 .sheet-btn.is-on { background: var(--sheet-navy); color: #fff; border: 0; }
 .sheet-btn.is-on .sheet-badge { background: #fff; color: var(--sheet-navy); }
 .sheet-btn-ghost { background: transparent; }
-.sheet-freeze select {
-  height: 34px; border: 0; border-radius: 10px; background: var(--sheet-fill); padding: 0 10px; color: var(--sheet-navy);
-}
 .sheet-pop-panel { border: 1px solid rgba(14, 17, 38, 0.08); border-radius: 12px; box-shadow: 0 12px 32px rgba(14, 17, 38, 0.14); }
 .sheet-formula { background: #fff; border-bottom: 1px solid var(--sheet-line); }
 .sheet-namebox, .sheet-formula-val { border-color: var(--sheet-line); border-radius: 6px; }
@@ -405,9 +423,29 @@
 .sheet-table thead .sheet-groups th.sheet-group:not(.has-group) { background: var(--sheet-navy); border-color: var(--sheet-navy); }
 .sheet-table thead .sheet-groups .sheet-rownum-h { background: var(--sheet-navy) !important; border-color: var(--sheet-navy); }
 /* Ligne déjà renseignée : fond opaque (colonnes figées), teintes de couverture conservées. */
-.sheet-table tbody tr.is-filled td:not(.is-sel):not(.tone-low):not(.tone-mid):not(.tone-high) { background: #e1f1fd; }
-.sheet-table tbody tr.is-filled:hover td:not(.is-sel):not(.sheet-rownum):not(.tone-low):not(.tone-mid):not(.tone-high) { background: #cfe8fb; }
+.sheet-table tbody tr.is-filled td:not(.is-sel):not(.tone-low):not(.tone-mid):not(.tone-high):not(.tone-place-in_subsidiary):not(.tone-place-at_academy):not(.tone-place-postponed) { background: #e1f1fd; }
+.sheet-table tbody tr.is-filled:hover td:not(.is-sel):not(.sheet-rownum):not(.tone-low):not(.tone-mid):not(.tone-high):not(.tone-place-in_subsidiary):not(.tone-place-at_academy):not(.tone-place-postponed) { background: #cfe8fb; }
 .sheet-table tbody tr.is-filled .sheet-rownum:not(.is-hl) { background: #e1f1fd !important; }
+.sheet-table tbody tr.is-focus:not(.is-row-sel) td:not(.is-sel):not(.sheet-rownum) { background: #fff3cc !important; }
+.sheet-table tbody tr.is-focus:not(.is-row-sel) .sheet-rownum:not(.is-hl) { background: #ffe39a !important; }
+/* Ligne sélectionnée : vert pomme opaque (colonnes figées), prioritaire sur les teintes et les marqueurs. */
+.sheet-table tbody tr.is-row-sel td { background: var(--sheet-row-sel) !important; color: #0e1126; }
+.sheet-table tbody tr.is-row-sel .sheet-rownum { background: var(--sheet-row-sel-num) !important; color: #0e1126; }
+/* Cellule fusionnée : ne prend pas la couleur d'une seule de ses lignes. */
+.sheet-table tbody td.is-merged { text-align: center; vertical-align: middle; }
+.sheet-table tbody td.is-merged:not(.is-sel) { background: #fff !important; }
+.sheet-c-logo { display: block; margin: 0 auto; max-height: 34px; max-width: 86px; object-fit: contain; }
+.sheet-c-logo.is-padded { height: 34px; max-height: none; max-width: none; object-fit: cover; width: 110px; }
+.sheet-c-level { border-radius: 999px; display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; }
+.sheet-c-level.is-junior { background: #e8effd; color: #1a56db; }
+.sheet-c-level.is-senior { background: #fff3e0; color: #b35f00; }
+.sheet-c-level.is-expert { background: #e6f7ee; color: #12804a; }
+.sheet-c-trainers { align-items: center; display: flex; gap: 8px; min-width: 0; }
+.sheet-c-avatars { display: flex; flex: none; }
+.sheet-c-avatars > * + * { margin-left: -8px; }
+.sheet-c-avatar { background: #eef0f6; border: 2px solid #fff; border-radius: 50%; flex: none; height: 30px; object-fit: cover; object-position: center 15%; width: 30px; }
+.sheet-c-avatar.is-initials { align-items: center; color: #5b6275; display: inline-flex; font-size: 11px; font-weight: 700; justify-content: center; }
+.sheet-c-trainer-names { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sheet-table .is-frozen-edge { box-shadow: 3px 0 0 -1px #dfe2ea; }
 .sheet-table tfoot td { background: #eef0f6; border-top: 2px solid var(--sheet-navy); color: var(--sheet-navy); }
 .sheet-status { background: #fff; border-top: 1px solid var(--sheet-line); }
@@ -430,7 +468,7 @@
 
 /* ── Taille de lecture (retour 06/11 « agrandis tes polices ») : +1 à +1,5 px partout ── */
 .sheet { font-size: 14.5px; }
-.sheet-btn, .sheet-freeze, .sheet-freeze select, .sheet .sheet-search input { font-size: 14.5px; }
+.sheet-btn, .sheet .sheet-search input { font-size: 14.5px; }
 .sheet-formula { height: 32px; font-size: 14px; }
 .sheet-table tbody td, .sheet-table tfoot td { font-size: 15px; }
 .sheet-table tbody td { height: 38px; }

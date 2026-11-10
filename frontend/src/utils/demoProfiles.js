@@ -1,4 +1,4 @@
-import { getPrimaryRole } from '../pages/portal/Portal'
+import { getPrimaryRole } from '../pages/portal/portalProfiles.js'
 
 /** Libellé dans la barre démo / login (priorité au champ demoLabel). */
 export function profileDemoOptionLabel(profile, t) {

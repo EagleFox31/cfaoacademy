@@ -20,7 +20,7 @@ import { isMaintenanceError } from '../../lib/api'
 import { makeFormatter } from '../../components/sheet/sheetExport'
 import { planningApi } from '../../lib/planningApi'
 import { planningMenu } from '../../utils/planningAccess'
-import { AbcView, Banner, CountryView, Segmented, SheetSkeleton, TableView, ThemesView, errText } from './costKey/costKeyViews'
+import { AbcView, Banner, CountryView, Segmented, SheetSkeleton, TableView, ThemesView, errText, reviewText } from './costKey/costKeyViews'
 import PrepareView from './costKey/PrepareView'
 import SettingsView from './costKey/SettingsView'
 
@@ -61,6 +61,7 @@ export default function CleRepartition() {
   useSiteEffects()
   const { user, status: authStatus } = useAuth()
   const { t, locale } = useLocale('costKey')
+  const [revealTick, setRevealTick] = useState(0)
   const fmt = useMemo(() => makeFormatter(locale), [locale])
   const navigate = useNavigate()
   const { view: rawView } = useParams()
@@ -107,7 +108,25 @@ export default function CleRepartition() {
     return () => { alive = false }
   }, [scopeId, mode, reload]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const menu = planningMenu(boot.access, { scoped: Boolean(global.data?.partial) })
+  // Après une saisie : chiffres de l'année et jeton de gel à jour, sans squelette
+  // (setReload démonterait le tableau, et la cellule en cours de saisie avec lui).
+  const scopeRef = useRef(scopeId)
+  scopeRef.current = scopeId
+  const silentSeq = useRef(0)
+  const ckeyId = ckey?.id
+  const refreshSilently = useCallback(() => {
+    if (!scopeId) return Promise.resolve()
+    silentSeq.current += 1
+    const seq = silentSeq.current
+    const load = allPoles ? planningApi.yearGlobal(year, mode) : planningApi.global(ckeyId, mode)
+    return Promise.all([load, planningApi.keys()]).then(([data, nextKeys]) => {
+      if (seq !== silentSeq.current || scopeRef.current !== scopeId) return
+      setGlobal(g => ({ ...g, data }))
+      setBoot(b => ({ ...b, keys: nextKeys }))
+    }).catch(() => undefined)
+  }, [scopeId, allPoles, year, ckeyId, mode])
+
+  const menu = planningMenu(boot.access, { scoped: Boolean(global.data?.partial), roles: user?.roles })
   const view = menu.includes(viewParam) ? viewParam : (ckey ? menu[0] : (menu.includes('prepare') ? 'prepare' : menu[0]))
 
   // Sens du glissement : vers la gauche si l'entrée cible est plus loin dans le menu.
@@ -129,7 +148,6 @@ export default function CleRepartition() {
     Object.entries(patch).forEach(([k, v]) => (v == null ? next.delete(k) : next.set(k, v)))
     setSearch(next, { replace: true })
   }
-  const setParam = (k, v) => setParams({ [k]: v })
 
   const onKeyChange = key => {
     setReload(r => r + 1)
@@ -155,7 +173,7 @@ export default function CleRepartition() {
   } else if (view === 'prepare') {
     body = (
       <PrepareView t={t} fmt={fmt} access={boot.access} ckey={ckey}
-        onKeyChange={onKeyChange} onDataChanged={() => setReload(r => r + 1)} />
+        onKeyChange={onKeyChange} onDataChanged={() => setReload(r => r + 1)} onRefresh={refreshSilently} />
     )
   } else if (!ckey && keys.length && pole !== ALL) {
     const msg = menu.includes('prepare') ? t.no_key_pole_manage : t.no_key_pole
@@ -173,12 +191,15 @@ export default function CleRepartition() {
   else if (view === 'country') {
     body = (
       <CountryView t={t} locale={locale} fmt={fmt} ckey={scope} mode={mode} global={global.data}
-        code={search.get('pays')} setCode={c => setParam('pays', c)} slots={slots} />
+        code={search.get('pays')} setCode={c => setParams({ pays: c, session: null })}
+        session={search.get('session')} revealTick={revealTick} slots={slots}
+        canEdit={Boolean(boot.access?.edit)} onEdited={refreshSilently} />
     )
   } else {
     body = (
       <TableView t={t} locale={locale} fmt={fmt} ckey={scope} mode={mode} global={global.data}
-        openCountry={code => go('country', { pays: code })} simple={simple} />
+        openCountry={(code, session = null) => go('country', { pays: code, session })} simple={simple}
+        canReview={Boolean(boot.access?.review)} />
     )
   }
 
@@ -197,9 +218,17 @@ export default function CleRepartition() {
       to: `${BASE}/${id}${search.toString() ? `?${search}` : ''}`,
     })),
   }
+  // Incohérences à trancher : la cloche remplace le menu Aide dans ce module.
+  const notifications = (global.data?.review_items || []).flatMap(i => {
+    const text = reviewText(t, locale, i)
+    return text
+      ? [{ id: i.id, label: `${i.country_label} · ${i.code}`, text, cta: t.review_open,
+        onOpen: () => { go('country', { pays: i.country, session: i.code }); setRevealTick(n => n + 1) } }]
+      : []
+  })
   return (
     <>
-      <Nav appNav={menu.length ? appNav : undefined} />
+      <Nav appNav={menu.length ? appNav : undefined} notifications={notifications} hideHelp />
       <main className="portal-page ck-page">
         <div className="ck-shell">
           <div className="ck-main">

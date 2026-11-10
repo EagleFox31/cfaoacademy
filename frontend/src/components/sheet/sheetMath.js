@@ -117,6 +117,63 @@ export function inRange(range, row, col) {
   return !!range && row >= range.r0 && row <= range.r1 && col >= range.c0 && col <= range.c1
 }
 
+/** Hauteur de fusion par ligne : n > 0 sur la première ligne d'un bloc de valeurs égales, 0 sur les suivantes. */
+export function mergeSpans(values) {
+  const spans = new Array(values.length).fill(1)
+  let debut = 0
+  for (let i = 1; i < values.length; i++) {
+    const v = values[i]
+    if (v !== null && v !== undefined && v !== '' && v === values[debut]) {
+      spans[debut] += 1
+      spans[i] = 0
+    } else {
+      debut = i
+    }
+  }
+  return spans
+}
+
+/** Une cellule haute de `rows` lignes n'est sélectionnée que si toutes ses lignes le sont. */
+export function spanInRange(range, row, rows, col) {
+  return !!range && row >= range.r0 && row + rows - 1 <= range.r1 && col >= range.c0 && col <= range.c1
+}
+
+/** Ligne à colorer : touchée par la sélection, sauf si celle-ci n'est qu'une colonne entière. */
+export function isRowSelected(range, row, lastRow, lastCol) {
+  if (!range || row < range.r0 || row > range.r1) return false
+  const toutesLesLignes = lastRow > 0 && range.r0 === 0 && range.r1 === lastRow
+  const toutesLesColonnes = range.c0 === 0 && range.c1 === lastCol
+  return !toutesLesLignes || toutesLesColonnes
+}
+
+/** Valeur brute du serveur -> texte du champ de saisie. */
+export const cellDraft = raw => (raw == null ? '' : String(raw))
+
+/** Vrai si la saisie ne change rien à la valeur lue : aucun appel au serveur. */
+export const sameCell = (value, base) => cellDraft(value).trim() === cellDraft(base).trim()
+
+function isIsoDate(text) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false
+  const date = new Date(`${text}T00:00:00Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === text
+}
+
+/**
+ * Texte tapé dans une cellule -> valeur à envoyer. Les règles métier restent au serveur :
+ * ici, seulement ce qui permet de refuser une frappe sans aller-retour.
+ */
+export function parseCellInput(draft, { input, min, max }) {
+  const text = cellDraft(draft).trim()
+  if (input === 'number') {
+    const digits = text.replace(/[\s  ]/g, '')
+    if (!/^\d+$/.test(digits)) return { ok: false }
+    const value = Number(digits)
+    return (min != null && value < min) || (max != null && value > max) ? { ok: false } : { ok: true, value }
+  }
+  if (input === 'date') return text === '' || isIsoDate(text) ? { ok: true, value: text } : { ok: false }
+  return { ok: true, value: text }
+}
+
 /** Teinte de couverture : rouge sous 50 %, ambre sous 80 %, vert au-delà. */
 export function coverageTone(ratio) {
   if (ratio == null) return null

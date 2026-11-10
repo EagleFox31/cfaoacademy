@@ -8,9 +8,10 @@ import { getCopy } from '../../i18n/index.js'
 
 // Le menu du module est passé à la navbar (prop appNav) : la maquette l'affiche.
 vi.mock('../../components/Nav', () => ({
-  default: ({ appNav }) => (
-    <nav data-testid="portal-nav">
+  default: ({ appNav, notifications, hideHelp }) => (
+    <nav data-testid="portal-nav" data-hide-help={hideHelp ? 'yes' : 'no'}>
       {appNav?.items.map(i => <a key={i.key} className="app-nav-item">{i.label}</a>)}
+      {notifications?.map(n => <button key={n.id} type="button" className="test-notif" onClick={n.onOpen}>{n.text}</button>)}
     </nav>
   ),
 }))
@@ -29,7 +30,7 @@ const { default: CleRepartition } = awaitedModule
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const T = getCopy('costKey', 'fr')
 
-const KEY = { id: 7, year: 2026, pole: 'MOTORS', status: 'DRAFT', budget: 1000000 }
+const KEY = { id: 7, year: 2026, pole: 'MOTORS', status: 'DRAFT', budget: 1000000, hours_per_session: 40 }
 const ROW = (country, label, seats, needs) => ({
   country, label, enrolled: true, technicians: 10, needs, seats, coverage: needs ? seats / needs : null,
   share: 0.5, key_cost: 400000, trainee_lodging: 50000, trainer_lodging: 50000, total: 500000,
@@ -106,10 +107,19 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
     expect(brandHead.map(th => [th.textContent, th.colSpan])).toEqual([[T.group_all_brands, 1], ['Toyota', 3], [T.group_totals, 8]])
     const headers = [...host.querySelectorAll('.sheet-head .sheet-h-label')].map(s => s.textContent)
     expect(headers.filter(h => [T.col_needs, T.col_allocated].includes(h)))
-      .toEqual([T.col_needs, T.col_allocated, T.col_needs])
+      .toEqual([T.col_needs, T.col_allocated, T.col_needs, T.col_allocated])
     expect(headers.filter(h => h === T.col_contractual)).toHaveLength(2)
     expect(host.querySelector('.ck-view .ck-seg')).toBeNull()
-    expect(host.textContent).toContain(T.xlsx_table)
+    expect(host.querySelector('[role=menu]')).toBeNull()
+    planningApi.downloadAll = vi.fn().mockResolvedValue()
+    const excel = host.querySelector('.ck-xlsx[aria-haspopup=menu]')
+    await act(async () => { excel.click() })
+    const entries = [...host.querySelectorAll('[role=menuitem]')]
+    expect(entries.map(e => e.querySelector('strong').textContent)).toEqual([T.xlsx_table, T.xlsx_all])
+    expect(document.activeElement).toBe(entries[0])
+    await act(async () => { entries[1].click() })
+    expect(planningApi.downloadAll).toHaveBeenCalledOnce()
+    expect(host.querySelector('[role=menu]')).toBeNull()
   })
 
   it('observateur (DPS/DOP) : rien à préparer', async () => {
@@ -149,6 +159,97 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
     expect(planningApi.country).toHaveBeenLastCalledWith(7, 'CI', 'PLANNED')
     expect(host.querySelector('.ck-combo-panel')).toBeNull()
     expect(host.querySelector('.ck-xlsx').textContent).toContain(T.export)
+  })
+
+  const kpiTexts = () => [...host.querySelectorAll('.ck-kpi')].map(n => n.textContent)
+  const RESPONSES = pole => ({ pole, answered: ['CM'], known: ['CI', 'CM'] })
+
+  it('cartes : filiales ayant répondu, places attribuées / demandées, total à facturer', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, review: false })
+    planningApi.global = vi.fn().mockResolvedValue({ ...GLOBAL(), responses: [RESPONSES('MOTORS')] })
+    await show('/portail/cle-repartition/table')
+    const kpis = kpiTexts()
+    expect(kpis).toHaveLength(3)
+    expect(kpis[0]).toContain(T.kpi_responses)
+    expect(kpis[0]).toContain('1 / 2')
+    expect(kpis[1]).toContain(T.kpi_seats_needs)
+    expect(kpis[1]).toContain('30 / 40')
+    expect(kpis[2]).toContain(T.kpi_to_bill)
+    expect(kpis[2]).toContain(T.currency)
+    expect(kpis.join()).not.toContain(T.kpi_review)
+  })
+
+  it('cartes : tous pôles, une ligne par pôle ; le coordinateur voit le nombre de points à traiter', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, review: true })
+    planningApi.global = vi.fn().mockResolvedValue({ ...GLOBAL(), review_items: [],
+      responses: [RESPONSES('EQUIPMENT'), RESPONSES('MOTORS')] })
+    await show('/portail/cle-repartition/table')
+    const kpis = kpiTexts()
+    expect(kpis).toHaveLength(4)
+    expect(kpis[0]).toContain(T.kpi_review)
+    expect(kpis[0]).toContain('0')
+    expect(kpis[1]).toContain(`${T.pole_MOTORS}1 / 2`)
+    expect(kpis[1]).toContain(`${T.pole_EQUIPMENT}1 / 2`)
+  })
+
+  it('cartes : sans les besoins, aucune filiale n’est annoncée comme n’ayant pas répondu', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, review: false })
+    planningApi.global = vi.fn().mockResolvedValue({ ...GLOBAL(), needs_source: 'none',
+      responses: [{ pole: 'MOTORS', answered: [], known: ['CI', 'CM'] }] })
+    await show('/portail/cle-repartition/table')
+    expect(kpiTexts()[0]).not.toContain('0 / 2')
+  })
+
+  it('incohérence : un marqueur sur la ligne de la filiale ouvre la session surlignée, sans bandeau', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
+    planningApi.global = vi.fn().mockResolvedValue({ ...GLOBAL(), review_items: [{
+      id: 'r1', country: 'CM', country_label: 'Cameroun', code: 'T-01', seats: 6,
+      start_date: '2026-07-19', end_date: '2026-05-28', issue: 'end_before_start', assignee: 'A. B.' }] })
+    await show('/portail/cle-repartition/table')
+    const row = [...host.querySelectorAll('.sheet-table tbody tr')].find(r => r.textContent.includes('Cameroun'))
+    const mark = row.querySelector('button.ck-review-mark')
+    expect(mark.title).toContain('T-01')
+    expect(host.querySelectorAll('button.ck-review-mark')).toHaveLength(1)
+    expect([...host.querySelectorAll('.ck-banner')].some(b => b.textContent.includes('T-01'))).toBe(false)
+    expect(host.querySelector('[data-testid="portal-nav"]').dataset.hideHelp).toBe('yes')
+    expect(host.querySelector('.test-notif').textContent).toContain('T-01')
+    await act(async () => { mark.click() })
+    for (let i = 0; i < 5; i += 1) await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+    expect(planningApi.country).toHaveBeenCalledWith(7, 'CM', 'PLANNED')
+    expect(host.querySelector('tr.is-focus')?.textContent).toContain('T-01')
+  })
+
+  it('Vue globale : un clic sur la filiale ouvre son devis, un clic sur un chiffre sélectionne seulement', async () => {
+    await show('/portail/cle-repartition/table')
+    const row = [...host.querySelectorAll('.sheet-table tbody tr')].find(r => r.textContent.includes('Cameroun'))
+    const filiale = row.querySelector('td.is-openable')
+    expect(filiale.textContent).toContain('Cameroun')
+    expect(row.querySelectorAll('td.is-openable')).toHaveLength(1)
+    await act(async () => { row.querySelector('td.is-num').click() })
+    expect(planningApi.country).not.toHaveBeenCalled()
+    await act(async () => { filiale.click() })
+    for (let i = 0; i < 5; i += 1) await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+    expect(planningApi.country).toHaveBeenCalledWith(7, 'CM', 'PLANNED')
+  })
+
+  it('incohérence : dans le Devis, la cloche retire la recherche qui cachait la session', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
+    planningApi.global = vi.fn().mockResolvedValue({ ...GLOBAL(), review_items: [{
+      id: 'r1', country: 'CM', country_label: 'Cameroun', code: 'T-01', seats: 6,
+      start_date: '2026-07-19', end_date: '2026-05-28', issue: 'end_before_start', assignee: 'A. B.' }] })
+    await show('/portail/cle-repartition/country?pays=CM')
+    const wait = () => act(async () => { await new Promise(r => setTimeout(r, 400)) })
+    const input = host.querySelector('.sheet-toolbar input')
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+    await act(async () => { setValue.call(input, 'introuvable'); input.dispatchEvent(new Event('input', { bubbles: true })) })
+    await wait()
+    expect(host.querySelector('tr.is-focus')).toBeNull()
+    await act(async () => { host.querySelector('.test-notif').click() })
+    await wait()
+    expect(host.querySelector('.sheet-toolbar input').value).toBe('')
+    const focused = host.querySelector('tr.is-focus')
+    expect(focused?.textContent).toContain('T-01')
+    expect(focused.querySelector('.ck-review-mark').title).toContain('T-01')
   })
 
   it('lecteur : la colonne Contractuel reste affichée quand l’effectif n’est pas connu', async () => {
@@ -198,11 +299,17 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
     expect(planningApi.abc).not.toHaveBeenCalled()
   })
 
-  it('Saisie : le taux horaire se saisit à côté du coût calculé', async () => {
+  it('Saisie : au budget fixe par défaut, le tarif remplace le budget une fois choisi', async () => {
     planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
     await show('/portail/cle-repartition/settings?pole=MOTORS')
-    expect(host.textContent).toContain(T.f_hourly_rate)
+    expect(host.textContent).toContain(T.set_budget)
     expect(host.textContent).toContain(T.computed_hour)
+    expect(host.textContent).not.toContain(T.f_hourly_rate)
+    expect(host.querySelector('.ck-set-bar')).toBeNull()
+    await act(async () => { host.querySelector('input[type="radio"][value="rate"]').click() })
+    expect(host.textContent).toContain(T.f_hourly_rate)
+    expect(host.textContent).toContain(T.set_budget_out)
+    expect(host.querySelector('.ck-set-bar button[type="submit"]').disabled).toBe(true)
     const input = [...host.querySelectorAll('label.ck-field')]
       .find(l => l.textContent.includes(T.f_hourly_rate)).querySelector('input')
     await act(async () => {
@@ -212,6 +319,48 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
     })
     await act(async () => { host.querySelector('.ck-view form.ck-form button[type="submit"]').click() })
     expect(planningApi.updateKey).toHaveBeenCalledWith(7, expect.objectContaining({ hourly_rate: 2500, budget: 1000000 }))
+  })
+
+  describe('Saisie : tarif existant', () => {
+    const field = label => [...host.querySelectorAll('label.ck-field')]
+      .find(l => l.textContent.includes(label)).querySelector('input')
+    const type = async (input, value) => act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, value)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    const open = async () => {
+      planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
+      planningApi.keys = vi.fn().mockResolvedValue([{ ...KEY, hourly_rate: 10000, hours_per_session: 40 }])
+      await show('/portail/cle-repartition/settings?pole=MOTORS')
+    }
+
+    it('affiche le prix de la place et groupe les milliers à la frappe', async () => {
+      await open()
+      expect(host.querySelector('.ck-set-recap-value').textContent.replace(/\s/g, '')).toContain('400000')
+      await type(field(T.f_hourly_rate), '12500a')
+      expect(field(T.f_hourly_rate).value).toBe('12 500')
+      expect(host.querySelector('.ck-set-recap-value').textContent.replace(/\s/g, '')).toContain('500000')
+    })
+
+    it('passer au budget fixe efface le tarif, Annuler rétablit tout', async () => {
+      await open()
+      expect(host.querySelector('.ck-set-bar')).toBeNull()
+      await act(async () => { host.querySelector('input[type="radio"][value="budget"]').click() })
+      expect(host.querySelector('.ck-set-bar')).not.toBeNull()
+      await act(async () => { [...host.querySelectorAll('.ck-set-bar button')].find(b => b.type === 'button').click() })
+      expect(host.querySelector('.ck-set-bar')).toBeNull()
+      expect(host.querySelector('input[type="radio"][value="rate"]').checked).toBe(true)
+      await act(async () => { host.querySelector('input[type="radio"][value="budget"]').click() })
+      await act(async () => { host.querySelector('.ck-set-bar button[type="submit"]').click() })
+      expect(planningApi.updateKey).toHaveBeenCalledWith(7, expect.objectContaining({ hourly_rate: null, budget: 1000000 }))
+    })
+
+    it('sans heures par session : enregistrement bloqué, message clair', async () => {
+      await open()
+      await type(field(T.f_hours), '')
+      expect(host.querySelector('.ck-set-bar button[type="submit"]').disabled).toBe(true)
+      expect(host.querySelector('.ck-set-bar').textContent).toContain(T.set_required_hours)
+    })
   })
 
   it('sans droit : message clair, aucun menu', async () => {
