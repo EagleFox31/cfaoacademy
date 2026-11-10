@@ -84,8 +84,17 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     fs: { allow: ['..'] },
     // Dans Docker sous Windows, le montage ne remonte pas les événements fichiers :
-    // VITE_POLLING=1 active la scrutation pour garder le HMR.
-    watch: process.env.VITE_POLLING ? { usePolling: true, interval: 300 } : undefined,
+    // VITE_POLLING=1 active la scrutation pour garder le HMR. Chaque fichier scruté
+    // coûte un stat à travers le montage : à 300 ms sur tout le dossier, la file d'E/S
+    // de node ne se vide plus et un simple index.html attend plusieurs secondes.
+    watch: process.env.VITE_POLLING
+      ? {
+        usePolling: true,
+        interval: 1000,
+        binaryInterval: 3000,
+        ignored: ['**/dist/**', '**/coverage/**', '**/public/assets/**', '**/public/catalogues/**'],
+      }
+      : undefined,
     // Cibles surchargeables : en conteneur, localhost désigne le conteneur lui-même.
     proxy: {
       // Avant '/api/v1' : vite prend la première règle qui correspond.

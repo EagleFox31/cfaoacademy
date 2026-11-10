@@ -7,14 +7,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const SRC = readFileSync(resolve(process.cwd(), 'public/boot-guard.js'), 'utf8')
 
 let reload
-function boot() {
+function boot({ load = true } = {}) {
   reload = vi.fn()
   // Doubles pour window / location / navigator : aucun écouteur ne survit d'un test à l'autre.
   const win = new EventTarget()
   win.sessionStorage = sessionStorage
   new Function('window', 'location', 'navigator', SRC)(win, { reload }, { language: 'fr-FR' })
-  win.dispatchEvent(new Event('load'))
+  if (load) win.dispatchEvent(new Event('load'))
 }
+const splash = () => document.querySelector('[data-boot-splash]')
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -50,6 +51,42 @@ describe('garde-fou de démarrage (public/boot-guard.js)', () => {
     document.getElementById('root').innerHTML = '<main>app</main>'
     vi.advanceTimersByTime(3000)
     expect(reload).not.toHaveBeenCalled()
+  })
+
+  it('modules encore en chargement : indicateur visible, aucun rechargement', () => {
+    boot({ load: false })
+    expect(splash()).toBeNull()
+    vi.advanceTimersByTime(400)
+    expect(splash().textContent).toContain('Chargement')
+    vi.advanceTimersByTime(30000)
+    expect(reload).not.toHaveBeenCalled()
+    expect(document.getElementById('root').childNodes.length).toBe(0)
+  })
+
+  it('indicateur retiré dès que l’application monte', () => {
+    boot({ load: false })
+    vi.advanceTimersByTime(400)
+    document.getElementById('root').innerHTML = '<main>app</main>'
+    vi.advanceTimersByTime(800)
+    expect(splash()).toBeNull()
+  })
+
+  it('application montée avant le délai : pas d’indicateur', () => {
+    boot({ load: false })
+    document.getElementById('root').innerHTML = '<main>app</main>'
+    vi.advanceTimersByTime(1000)
+    expect(splash()).toBeNull()
+  })
+
+  it('load jamais reçu (module sans réponse) : message puis rechargement', () => {
+    boot({ load: false })
+    vi.advanceTimersByTime(60000)
+    expect(reload).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(4300)
+    expect(document.querySelector('[data-boot-guard]').textContent).toContain('Mise à jour en cours')
+    expect(splash()).toBeNull()
+    vi.advanceTimersByTime(3000)
+    expect(reload).toHaveBeenCalledTimes(1)
   })
 
   it('trop d’essais : plus de boucle, un bouton « Recharger »', () => {

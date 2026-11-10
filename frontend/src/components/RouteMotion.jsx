@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import PortalLoader from './PortalLoader.jsx'
+import RepliChargement from './RepliChargement.jsx'
 import useLocale from '../hooks/useLocale.js'
 
 /** Routes dont la page est elle-même un loader plein écran (pas de double intro). */
@@ -76,7 +77,12 @@ export default function RouteMotion({ children }) {
         className={`route-motion${contentVisible ? ' route-motion--ready' : ' route-motion--pending'}`}
         aria-hidden={!contentVisible}
       >
-        {children}
+        <RepliChargement>
+          {/* Pendant la transition, le loader de route couvre déjà l'écran. */}
+          <Suspense fallback={phase === 'done' ? <PortalLoader messages={messages} ariaLabel={t.routeLoaderAria} /> : null}>
+            {children}
+          </Suspense>
+        </RepliChargement>
       </div>
     </>
   )
