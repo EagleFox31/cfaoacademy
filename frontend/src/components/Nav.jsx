@@ -7,7 +7,7 @@ import useNavScrollSpy from '../hooks/useNavScrollSpy.js'
 import useLocale from '../hooks/useLocale.js'
 import LocaleSwitch from './LocaleSwitch.jsx'
 import useAuth from '../hooks/useAuth.js'
-import { canSeePlanning } from '../utils/planningAccess.js'
+import { canSeePlanning, cleSeule } from '../utils/planningAccess.js'
 import { usePortalOnboarding } from '../context/PortalOnboardingContext.jsx'
 import PortalHelpMenu from './PortalHelpMenu.jsx'
 import PortalNotificationsBell from './PortalNotificationsBell.jsx'
@@ -126,16 +126,18 @@ function UserMenu({ user, onLogout, t, onPortal = false }) {
               </Link>
             )}
 
-            <Link
-              to="/portail/assistance"
-              className="nav-user-dropdown-item"
-              role="menuitem"
-              onClick={() => setOpen(false)}
-            >
-              <LifeBuoyIcon size={16} className="nav-user-dropdown-item-icon" />
-              <span className="nav-user-dropdown-item-label">{t.nav_tech_assistance || 'Assistance technique'}</span>
-              <span className="nav-user-dropdown-arrow">→</span>
-            </Link>
+            {!cleSeule(user.roles ?? []) && (
+              <Link
+                to="/portail/assistance"
+                className="nav-user-dropdown-item"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+              >
+                <LifeBuoyIcon size={16} className="nav-user-dropdown-item-icon" />
+                <span className="nav-user-dropdown-item-label">{t.nav_tech_assistance || 'Assistance technique'}</span>
+                <span className="nav-user-dropdown-arrow">→</span>
+              </Link>
+            )}
 
             {canSeePlanning(user.roles ?? []) && (
               <Link
@@ -282,7 +284,7 @@ function NavLinkList({
  * appNav (facultatif) : menu d'un écran applicatif, { items: [{ key, to, label }], activeKey }.
  * Il remplace les sections du portail et la barre prend toute la largeur.
  */
-export default function Nav({ user: propUser, active: pageActive, notifications, appNav }) {
+export default function Nav({ user: propUser, active: pageActive, notifications, appNav, hideHelp = false }) {
   const { pathname, hash } = useLocation()
   const navigate = useNavigate()
   const onHome    = pathname === '/'
@@ -303,7 +305,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
   const mobileMenuId = `nav-mobile-menu${menuInstanceId}`
 
   const portalSections = useMemo(
-    () => (user ? resolvePortalNavSections(user.roles, LMS_BY_USER[user.id], user) : []),
+    () => (user && !cleSeule(user.roles ?? []) ? resolvePortalNavSections(user.roles, LMS_BY_USER[user.id], user) : []),
     [user],
   )
 
@@ -474,7 +476,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
             <PortalNotificationsBell t={portalT} alerts={notifications} />
           )}
 
-          {onPortal && user && !isDpsRole && (
+          {onPortal && user && !isDpsRole && !hideHelp && (
             <PortalHelpMenu
               t={portalT}
               hasTour={hasTour}
@@ -586,7 +588,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
                 onMenuAction={closeMenu}
               />
             )}
-            {onPortal && user && !isDpsRole && (
+            {onPortal && user && !isDpsRole && !hideHelp && (
               <PortalHelpMenu
                 variant="mobile"
                 t={portalT}
@@ -608,7 +610,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
                 {portalT.nav_training_catalog || 'Catalogue des formations'}
               </Link>
             )}
-            {onPortal && user && (
+            {onPortal && user && !cleSeule(user.roles ?? []) && (
               <Link to="/portail/assistance" className="nav-mobile-foot-link" onClick={closeMenu}>
                 {portalT.nav_tech_assistance || 'Assistance technique'}
               </Link>

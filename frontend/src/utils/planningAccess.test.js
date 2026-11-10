@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canSeePlanning, pageAccueil, planningMenu, PLANNING_HOME } from './planningAccess'
+import { canSeePlanning, cleSeule, pageAccueil, planningMenu, PLANNING_HOME, PLANNING_ROLES } from './planningAccess'
 
 const ALL = { view: true, manage: true, freeze: true, import: true, gaps: true }
 
@@ -16,6 +16,10 @@ describe('menu de la clé de répartition par rôle', () => {
   })
   it('import seul : Préparer sans Saisie', () => {
     expect(planningMenu({ view: true, import: true })).toEqual(['table', 'country', 'prepare'])
+    expect(planningMenu(ALL, { roles: ['center_director'] })).not.toContain('prepare')
+    expect(planningMenu(ALL, { roles: ['center_director'] })).toContain('settings')
+    expect(planningMenu(ALL, { roles: ['training_coordinator'] })).toContain('prepare')
+    expect(planningMenu(ALL, { roles: ['center_director', 'training_coordinator'] })).toContain('prepare')
   })
   it('sans droit de lecture : aucun menu', () => {
     expect(planningMenu({ view: false })).toEqual([])
@@ -41,5 +45,22 @@ describe('page d\'arrivée après connexion', () => {
   it('sans rôle : le portail', () => {
     expect(pageAccueil([])).toBe('/portail')
     expect(pageAccueil(undefined)).toBe('/portail')
+  })
+  it('équipe du centre : la clé de répartition', () => {
+    for (const role of ['center_director', 'center_assistant', 'training_coordinator']) {
+      expect(pageAccueil([role])).toBe(PLANNING_HOME)
+      expect(cleSeule([role])).toBe(true)
+    }
+  })
+  it('un autre rôle de portail garde tout le portail', () => {
+    expect(cleSeule(['center_director', 'superadmin'])).toBe(false)
+    expect(cleSeule(['training_coordinator', 'dps'])).toBe(false)
+    expect(pageAccueil(['center_director', 'superadmin'])).toBe('/portail')
+  })
+  it('seule l\'équipe du centre est réduite à la clé', () => {
+    const centre = ['center_director', 'center_assistant', 'training_coordinator']
+    for (const role of PLANNING_ROLES.filter(r => !centre.includes(r))) {
+      expect(cleSeule([role])).toBe(false)
+    }
   })
 })
