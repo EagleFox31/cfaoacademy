@@ -1,0 +1,215 @@
+# Tests de la politique « session_formation » (cerbos compile --tests).
+# Tests negatifs obligatoires : un formateur ne lit pas la session d'un autre,
+# un lecteur ne marque pas d'absent, un role inconnu et un anonyme n'ont rien.
+name: SessionFormationSuite
+description: Acces aux sessions du referentiel des formations
+
+principals:
+  formateur:
+    id: f-a
+    roles: ["trainer"]
+    attr: { scopeNode: "", scopeNodes: [], brands: ["TOYOTA"] }
+  suppleant_ki:
+    id: k-1
+    roles: ["learner", "ki"]
+    attr: { scopeNode: "CMR", scopeNodes: ["CMR"], brands: ["TOYOTA"] }
+  suppleant_pic:
+    id: p-1
+    roles: ["pic"]
+    attr: { scopeNode: "CIV", scopeNodes: ["CIV"], brands: ["SUZUKI"] }
+  autre_formateur:
+    id: f-b
+    roles: ["trainer"]
+    attr: { scopeNode: "", scopeNodes: [], brands: ["TOYOTA"] }
+  lecteur:
+    id: l-1
+    roles: ["lecteur_cr"]
+    attr: { scopeNode: "", scopeNodes: [], brands: [] }
+  admin_referentiel:
+    id: ad-1
+    roles: ["admin_referentiel"]
+    attr: { scopeNode: "", scopeNodes: [], brands: [] }
+  superadmin:
+    id: s-1
+    roles: ["superadmin"]
+    attr: { scopeNode: "" }
+  apprenant:
+    id: a-1
+    roles: ["learner"]
+    attr: { scopeNode: "CMR", scopeNodes: ["CMR"], brands: ["TOYOTA"] }
+  role_inconnu:
+    id: x-1
+    roles: ["comptable"]
+    attr: { scopeNode: "" }
+  anonyme:
+    id: anonymous
+    roles: ["_anon"]
+    attr: { scopeNode: "" }
+
+resources:
+  de_f_a:
+    kind: session_formation
+    id: "12"
+    attr: { formateurs: ["f-a"] }
+  de_k_1_et_p_1:
+    kind: session_formation
+    id: "13"
+    attr: { formateurs: ["k-1", "p-1"] }
+  sans_animateur:
+    kind: session_formation
+    id: "14"
+    attr: { formateurs: [] }
+  toutes:
+    kind: session_formation
+    id: "*"
+
+tests:
+  - name: la liste est ouverte aux formateurs, lecteurs et administrateurs
+    input:
+      principals: ["formateur", "suppleant_ki", "suppleant_pic", "lecteur", "admin_referentiel", "superadmin"]
+      resources: ["toutes"]
+      actions: ["list"]
+    expected:
+      - { principal: formateur, resource: toutes, actions: { list: EFFECT_ALLOW } }
+      - { principal: suppleant_ki, resource: toutes, actions: { list: EFFECT_ALLOW } }
+      - { principal: suppleant_pic, resource: toutes, actions: { list: EFFECT_ALLOW } }
+      - { principal: lecteur, resource: toutes, actions: { list: EFFECT_ALLOW } }
+      - { principal: admin_referentiel, resource: toutes, actions: { list: EFFECT_ALLOW } }
+      - { principal: superadmin, resource: toutes, actions: { list: EFFECT_ALLOW } }
+
+  - name: NEGATIF la liste est refusee a l'apprenant, au role inconnu et a l'anonyme
+    input:
+      principals: ["apprenant", "role_inconnu", "anonyme"]
+      resources: ["toutes"]
+      actions: ["list"]
+    expected:
+      - { principal: apprenant, resource: toutes, actions: { list: EFFECT_DENY } }
+      - { principal: role_inconnu, resource: toutes, actions: { list: EFFECT_DENY } }
+      - { principal: anonyme, resource: toutes, actions: { list: EFFECT_DENY } }
+
+  - name: un formateur lit et marque les absents de ses sessions
+    input:
+      principals: ["formateur"]
+      resources: ["de_f_a"]
+      actions: ["read", "marquer_absent"]
+    expected:
+      - principal: formateur
+        resource: de_f_a
+        actions: { read: EFFECT_ALLOW, marquer_absent: EFFECT_ALLOW }
+
+  - name: les suppleants KI et PIC lisent les sessions qu'ils animent
+    input:
+      principals: ["suppleant_ki", "suppleant_pic"]
+      resources: ["de_k_1_et_p_1"]
+      actions: ["read", "marquer_absent"]
+    expected:
+      - principal: suppleant_ki
+        resource: de_k_1_et_p_1
+        actions: { read: EFFECT_ALLOW, marquer_absent: EFFECT_ALLOW }
+      - principal: suppleant_pic
+        resource: de_k_1_et_p_1
+        actions: { read: EFFECT_ALLOW, marquer_absent: EFFECT_ALLOW }
+
+  - name: NEGATIF un formateur ne lit pas la session d'un autre
+    input:
+      principals: ["formateur", "autre_formateur", "suppleant_ki", "suppleant_pic"]
+      resources: ["de_f_a", "de_k_1_et_p_1"]
+      actions: ["read", "marquer_absent"]
+    expected:
+      - principal: formateur
+        resource: de_f_a
+        actions: { read: EFFECT_ALLOW, marquer_absent: EFFECT_ALLOW }
+      - principal: formateur
+        resource: de_k_1_et_p_1
+        actions: { read: EFFECT_DENY, marquer_absent: EFFECT_DENY }
+      - principal: autre_formateur
+        resource: de_f_a
+        actions: { read: EFFECT_DENY, marquer_absent: EFFECT_DENY }
+      - principal: autre_formateur
+        resource: de_k_1_et_p_1
+        actions: { read: EFFECT_DENY, marquer_absent: EFFECT_DENY }
+      - principal: suppleant_ki
+        resource: de_f_a
+        actions: { read: EFFECT_DENY, marquer_absent: EFFECT_DENY }
+      - principal: suppleant_ki
+        resource: de_k_1_et_p_1
+        actions: { read: EFFECT_ALLOW, marquer_absent: EFFECT_ALLOW }
+      - principal: suppleant_pic
+        resource: de_f_a
+        actions: { read: EFFECT_DENY, marquer_absent: EFFECT_DENY }
+      - principal: suppleant_pic
+        resource: de_k_1_et_p_1
+        actions: { read: EFFECT_ALLOW, marquer_absent: EFFECT_ALLOW }
+
+  - name: NEGATIF une session sans animateur n'est lue par aucun formateur
+    input:
+      principals: ["formateur", "suppleant_ki"]
+      resources: ["sans_animateur"]
+      actions: ["read", "marquer_absent"]
+    expected:
+      - principal: formateur
+        resource: sans_animateur
+        actions: { read: EFFECT_DENY, marquer_absent: EFFECT_DENY }
+      - principal: suppleant_ki
+        resource: sans_animateur
+        actions: { read: EFFECT_DENY, marquer_absent: EFFECT_DENY }
+
+  - name: lecteur, administrateur et superadmin lisent toute session
+    input:
+      principals: ["lecteur", "admin_referentiel", "superadmin"]
+      resources: ["de_f_a", "sans_animateur"]
+      actions: ["read"]
+    expected:
+      - { principal: lecteur, resource: de_f_a, actions: { read: EFFECT_ALLOW } }
+      - { principal: lecteur, resource: sans_animateur, actions: { read: EFFECT_ALLOW } }
+      - { principal: admin_referentiel, resource: de_f_a, actions: { read: EFFECT_ALLOW } }
+      - { principal: admin_referentiel, resource: sans_animateur, actions: { read: EFFECT_ALLOW } }
+      - { principal: superadmin, resource: de_f_a, actions: { read: EFFECT_ALLOW } }
+      - { principal: superadmin, resource: sans_animateur, actions: { read: EFFECT_ALLOW } }
+
+  - name: l'administrateur du referentiel marque un absent sur toute session
+    input:
+      principals: ["admin_referentiel"]
+      resources: ["de_f_a", "sans_animateur"]
+      actions: ["marquer_absent"]
+    expected:
+      - { principal: admin_referentiel, resource: de_f_a, actions: { marquer_absent: EFFECT_ALLOW } }
+      - { principal: admin_referentiel, resource: sans_animateur, actions: { marquer_absent: EFFECT_ALLOW } }
+
+  - name: NEGATIF le lecteur et le superadmin ne marquent aucun absent
+    input:
+      principals: ["lecteur", "superadmin"]
+      resources: ["de_f_a"]
+      actions: ["marquer_absent"]
+    expected:
+      - { principal: lecteur, resource: de_f_a, actions: { marquer_absent: EFFECT_DENY } }
+      - { principal: superadmin, resource: de_f_a, actions: { marquer_absent: EFFECT_DENY } }
+
+  - name: NEGATIF role inconnu, apprenant et anonyme n'ont aucun droit sur une session
+    input:
+      principals: ["apprenant", "role_inconnu", "anonyme"]
+      resources: ["de_f_a"]
+      actions: ["read", "marquer_absent", "update", "delete", "create"]
+    expected:
+      - principal: apprenant
+        resource: de_f_a
+        actions: { read: EFFECT_DENY, marquer_absent: EFFECT_DENY, update: EFFECT_DENY, delete: EFFECT_DENY, create: EFFECT_DENY }
+      - principal: role_inconnu
+        resource: de_f_a
+        actions: { read: EFFECT_DENY, marquer_absent: EFFECT_DENY, update: EFFECT_DENY, delete: EFFECT_DENY, create: EFFECT_DENY }
+      - principal: anonyme
+        resource: de_f_a
+        actions: { read: EFFECT_DENY, marquer_absent: EFFECT_DENY, update: EFFECT_DENY, delete: EFFECT_DENY, create: EFFECT_DENY }
+
+  - name: NEGATIF une action inconnue est refusee, meme au superadmin (default-deny)
+    input:
+      principals: ["admin_referentiel", "superadmin"]
+      resources: ["de_f_a"]
+      actions: ["update", "delete", "export"]
+    expected:
+      - principal: admin_referentiel
+        resource: de_f_a
+        actions: { update: EFFECT_DENY, delete: EFFECT_DENY, export: EFFECT_DENY }
+      - principal: superadmin
+        resource: de_f_a
+        actions: { update: EFFECT_DENY, delete: EFFECT_DENY, export: EFFECT_DENY }

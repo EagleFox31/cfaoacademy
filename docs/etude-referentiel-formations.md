@@ -204,3 +204,27 @@ rapport, puis application en production sur go explicite.
 6. Navigateur : liste des sessions, code en lecture seule, bandeau de verrou, % et statut.
 7. Écrans administrateur et lecteur.
 8. Reprise des comptes rendus existants : commande, essai sur copie, rapport.
+
+## 14. Cadrage du lot L1 (10/11/2026)
+
+Périmètre L1 (plan du 2/12) : étapes 1, 3, 5, 6 ci-dessus, plus la part de l'étape 2 sans laquelle l'API
+ne serait pas protégée. Le compte rendu partagé par session, le verrou et l'historique (étape 4) restent en L2.
+
+Fichier réel (titres seulement lus, aucune donnée recopiée) : feuille repérée par ses titres, une ligne par
+stagiaire. `N° de la Formation` = numéro de session (`M116-2026`) ; `Référence` = code de formation
+(`TS13-G1`) ; `Désignation formation`, `Marques`, `Animateurs` (noms, pas des identifiants), `Date début
+formation`, `Date fin formation`, `Lieu de la formation`, `Noms`, `Prénoms`, `Pays stagiaires`, `Présence à la
+formation`. Colonnes de frais, vols, hébergement et notes ignorées.
+
+| Choix | Décision | Pourquoi |
+|---|---|---|
+| Clé de session | `N° de la Formation` + date de début | Toujours rempli ; la `Référence` peut manquer : session signalée « code à compléter » |
+| Seuil | `Formation.seuil` (défaut 70) préremplit `brouillon.seuil` | Option A de L0 : L1 ne fait que préremplir |
+| Formateurs | `Animation` garde le nom lu dans le fichier et l'identifiant du compte quand le nom correspond (nom + prénom normalisés) | Le fichier ne porte pas d'identifiant ; l'administrateur rattache les autres |
+| Droits | Rôles `admin_referentiel`, `lecteur_cr` ; ressources `session_formation` et `referentiel` ; la liste est filtrée par une vérification Cerbos par session | Refus par défaut, aucun rôle testé dans les vues |
+| Code non modifiable | À l'enregistrement d'un brouillon lié à une session du référentiel, le serveur réimpose code, libellé, dates, lieu, marque et liste des stagiaires (nom, prénom, pays) ; les notes, absences et textes restent ceux du formateur | « Refusé par le serveur » sans casser les brouillons existants |
+| Saisie manuelle | Gardée tant que le référentiel est vide (transition), retirée ensuite | Pas de rupture le jour du déploiement |
+| Import | API essai / application, réservée à `admin_referentiel` ; commande `importer_referentiel --essai/--appliquer` ; écran administrateur en étape 7 | L'API et la commande suffisent à charger la base dès L1 |
+| Statut et % | Statut calculé (À rédiger / En cours / Terminé) ; % provisoire = parties remplies du brouillon, pondération § 7 en L5 | La pondération reste à valider (§ 12) |
+
+Tests : fichier Excel fictif construit dans les tests, jamais le fichier réel.

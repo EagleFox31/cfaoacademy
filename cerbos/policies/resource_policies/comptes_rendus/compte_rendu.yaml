@@ -23,6 +23,11 @@ resourcePolicy:
         match:
           expr: request.resource.attr.ownerId == request.principal.id
 
+    # Lecteur des comptes rendus : consultation seule.
+    - actions: ["read", "list"]
+      effect: EFFECT_ALLOW
+      roles: ["lecteur_cr"]
+
     # Equipe technique (PLATFORM_ROLES.md).
     - actions: ["*"]
       effect: EFFECT_ALLOW

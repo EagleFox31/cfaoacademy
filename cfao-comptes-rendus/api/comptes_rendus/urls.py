@@ -1,7 +1,7 @@
 """Routes explicites, sans barre finale : celles que le portail appelle deja."""
 from django.urls import path, re_path
 
-from . import views
+from . import referentiel, views
 
 urlpatterns = [
     path("apercu/sante", views.Sante.as_view()),
@@ -19,5 +19,10 @@ urlpatterns = [
     path("cr-donnees/erreurs", views.Erreurs.as_view()),
     path("cr-donnees/brouillons", views.BrouillonsListe.as_view()),
     path("cr-donnees/brouillons/<str:ident>", views.BrouillonDetail.as_view()),
+    path("cr-donnees/sessions", referentiel.SessionsListe.as_view()),
+    path("cr-donnees/sessions/<str:pk>", referentiel.SessionDetail.as_view()),
+    path("cr-donnees/sessions/<str:pk>/inscriptions/<str:insc_id>", referentiel.InscriptionAbsence.as_view()),
+    path("cr-donnees/referentiel/etat", referentiel.ReferentielEtat.as_view()),
+    path("cr-donnees/referentiel/import", referentiel.ReferentielImport.as_view()),
     re_path(r"^cr-donnees/photos/(?P<ident>[0-9a-f]{1,32})\.jpg$", views.PhotoServie.as_view()),
 ]

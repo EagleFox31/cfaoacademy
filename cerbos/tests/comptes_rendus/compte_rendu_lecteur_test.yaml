@@ -1,0 +1,51 @@
+# Tests du role « lecteur_cr » sur la politique « compte_rendu » (cerbos compile --tests).
+# Il consulte (read, list) ; il ne cree, ne modifie ni ne supprime rien.
+name: CompteRenduLecteurSuite
+description: Le lecteur des comptes rendus consulte sans ecrire
+
+principals:
+  lecteur:
+    id: l-1
+    roles: ["lecteur_cr"]
+    attr: { scopeNode: "", scopeNodes: [], brands: [] }
+  formateur:
+    id: f-a
+    roles: ["trainer"]
+    attr: { scopeNode: "", scopeNodes: [], brands: ["TOYOTA"] }
+
+resources:
+  d_un_formateur:
+    kind: compte_rendu
+    id: r-1
+    attr: { ownerId: "f-a", scopeNode: "", brand: "toyota" }
+
+tests:
+  - name: le lecteur consulte et liste
+    input:
+      principals: ["lecteur"]
+      resources: ["d_un_formateur"]
+      actions: ["read", "list"]
+    expected:
+      - principal: lecteur
+        resource: d_un_formateur
+        actions: { read: EFFECT_ALLOW, list: EFFECT_ALLOW }
+
+  - name: NEGATIF le lecteur n ecrit rien
+    input:
+      principals: ["lecteur"]
+      resources: ["d_un_formateur"]
+      actions: ["create", "update", "delete"]
+    expected:
+      - principal: lecteur
+        resource: d_un_formateur
+        actions: { create: EFFECT_DENY, update: EFFECT_DENY, delete: EFFECT_DENY }
+
+  - name: le formateur garde ses droits sur ses comptes rendus
+    input:
+      principals: ["formateur"]
+      resources: ["d_un_formateur"]
+      actions: ["read", "update", "delete"]
+    expected:
+      - principal: formateur
+        resource: d_un_formateur
+        actions: { read: EFFECT_ALLOW, update: EFFECT_ALLOW, delete: EFFECT_ALLOW }
