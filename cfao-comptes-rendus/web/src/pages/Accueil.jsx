@@ -8,7 +8,7 @@ import PortalReveal from '../components/portail/PortalReveal'
 import PortalStaggerGrid from '../components/portail/PortalStaggerGrid'
 import PortalStickyBar from '../components/portail/PortalStickyBar'
 import PvCard from '../components/portail/PvCard'
-import { sessionsDuFormateur } from '../data/mock_sessions_formateur'
+import useSessionsFormateur from '../hooks/useSessionsFormateur'
 import useAjustementEcran from '../hooks/useAjustementEcran'
 import useEnHautDePage from '../hooks/useEnHautDePage'
 import usePortalBackground from '../hooks/usePortalBackground'
@@ -97,9 +97,10 @@ export default function Accueil() {
   // occuper exactement le reste de l'ecran.
   usePortalHeaderHeight(headerRef)
   const contenuPriorites = useRef(null)
-  useAjustementEcran(contenuPriorites, [Boolean(user)])
 
-  const sessions = useMemo(() => sessionsDuFormateur(user), [user])
+  // Les sessions arrivent du service : sans elles, la liste est vide le
+  // temps du chargement, sans message d'erreur sur cette page.
+  const { sessions } = useSessionsFormateur(user)
   const aVenir = useMemo(() => sessionsAVenir(sessions), [sessions])
   // Ceux de ce navigateur tout de suite, puis ceux du service — saisis
   // sur un autre poste — des qu'il repond.
@@ -153,6 +154,10 @@ export default function Accueil() {
   ]
 
   const aTraiter = priorites.filter(c => c.nombre !== 0)
+
+  // La section des priorites n'existe qu'une fois les sessions et les
+  // comptes rendus connus : l'ajustement se refait quand elle apparait.
+  useAjustementEcran(contenuPriorites, [Boolean(user), aTraiter.length > 0])
 
   if (!user) return null
 

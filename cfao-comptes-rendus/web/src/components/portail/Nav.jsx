@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, useRef, useId } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import useNavScrollSpy from '../../hooks/useNavScrollSpy.js'
 import { useAuth } from '../../lib/auth'
-import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
+import useSessionsFormateur from '../../hooks/useSessionsFormateur'
 import { sessionsAVenir } from '../../utils/planningFormateur.js'
 import { scrollToPortalSection } from '../../utils/portalScroll.js'
 import { adresse } from '../../lib/adresse'
@@ -139,12 +139,13 @@ export default function Nav({ sansPriorites = false }) {
   const menuInstanceId = useId()
   const mobileMenuId = `nav-mobile-menu${menuInstanceId}`
 
+  const { sessions } = useSessionsFormateur(onPortal ? user : null)
   const portalSections = useMemo(() => {
     if (!onPortal) return []
-    const aVenir = sessionsAVenir(sessionsDuFormateur(user)).length > 0
+    const aVenir = sessionsAVenir(sessions).length > 0
     return SECTIONS_FORMATEUR.filter(s => (aVenir || s.key !== 'sessions-a-venir')
       && !(sansPriorites && s.key === 'a-documenter'))
-  }, [onPortal, user, sansPriorites])
+  }, [onPortal, sessions, sansPriorites])
 
   // Le suivi de défilement n'a de sens que sur l'accueil, où sont les sections.
   const spyEnabled = onPortal && onHome

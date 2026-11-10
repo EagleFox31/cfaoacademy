@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import useEnHautDePage from '../hooks/useEnHautDePage'
 import useSiteEffects from '../hooks/useSiteEffects'
-import { sessionsDuFormateur } from '../data/mock_sessions_formateur'
+import useSessionsFormateur from '../hooks/useSessionsFormateur'
 import CarteCompteRendu, {
   BadgeCompteRendu, carteDeBrouillon, carteDeSession,
 } from '../components/compte-rendu/CarteCompteRendu'
@@ -32,7 +32,7 @@ export default function TrainerReportsEnCours({ aDocumenterAussi = false }) {
   useSiteEffects()
   const naviguer = useNavigate()
   const { user } = useAuth()
-  const sessions = useMemo(() => sessionsDuFormateur(user), [user])
+  const { sessions } = useSessionsFormateur(user)
   const [tous, setTous] = useState(() => brouillonsEnregistres())
   useEffect(() => {
     let actif = true

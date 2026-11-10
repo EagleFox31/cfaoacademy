@@ -3674,3 +3674,19 @@
   color: var(--warn-ink);
 }
 .cr-redac-perime-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+
+/* Recherche et filtres de la liste des sessions : une ligne qui se
+   replie, au-dessus de la grille, sans la pousser hors de l'ecran. */
+.cr-filtres {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px 12px;
+  margin-top: 8px;
+}
+.cr-filtres .cr-field { margin-bottom: 8px; min-width: 150px; flex: 1 1 150px; }
+.cr-filtres .cr-filtres-recherche { flex: 2 1 240px; }
+.cr-filtres .cr-input { padding: 8px 12px; }
+.cr-filtres .cr-filtres-effacer { flex: none; width: auto; margin-bottom: 8px; }
+.cr-assistant .cr-panel--choix .cr-filtres { flex: none; }
+.cr-session-etat-vide { padding: 16px 4px; color: var(--muted-2); font-size: 0.9rem; }

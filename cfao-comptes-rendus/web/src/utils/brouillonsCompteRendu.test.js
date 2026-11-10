@@ -203,3 +203,34 @@ describe('aDuContenu', () => {
     expect(m.aDuContenu({ sessionId: 's1', infosModifiees: true })).toBe(true)
   })
 })
+
+describe('un enregistrement refuse par le serveur', () => {
+  async function refuser(status, json) {
+    const a = await onglet()
+    a.adopter('42', { ...V1, sessionId: '42' })
+    reponse = () => ({ status, json })
+    const refus = vi.fn()
+    a.surveillerRefus('42', refus)
+    a.enregistrer('42', { ...V1, sessionId: '42', textes: { a: 'v2' } })
+    await envoyer()
+    return { a, refus }
+  }
+
+  it('403 : le motif est signale a l ecran', async () => {
+    const { refus } = await refuser(403, { detail: 'Interdit.' })
+    expect(refus).toHaveBeenCalledWith(expect.stringMatching(/pas le droit/))
+  })
+
+  it('400 stagiaire hors session : message clair', async () => {
+    const { refus } = await refuser(400, { erreur: 'stagiaire hors session' })
+    expect(refus).toHaveBeenCalledWith(expect.stringMatching(/ne fait pas partie de la session/))
+  })
+
+  it('un enregistrement reussi efface le refus', async () => {
+    const { a, refus } = await refuser(403, {})
+    reponse = corps => ({ status: 200, json: { ecrit: true, brouillon: { ...corps, revision: corps.revision + 1 } } })
+    a.enregistrer('42', { ...V1, sessionId: '42', textes: { a: 'v3' } })
+    await envoyer()
+    expect(refus).toHaveBeenLastCalledWith(null)
+  })
+})

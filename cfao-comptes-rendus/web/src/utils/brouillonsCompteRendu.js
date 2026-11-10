@@ -17,6 +17,7 @@
  */
 import { pagesARemplir } from '../components/compte-rendu/PhaseVerification'
 import { SESSIONS_FORMATEUR } from '../data/mock_sessions_formateur'
+import { estSessionReferentiel, sessionDepuisBrouillon } from './brouillonSession'
 import { adresse } from '../lib/adresse'
 
 const CLE_ANCIENNE = 'cfao.comptes-rendus'
@@ -60,7 +61,30 @@ function ecrire(tout) {
   }
 }
 
-/** Un appel au serveur ; `null` s'il ne repond pas. */
+/**
+ * Le motif d'un refus d'enregistrement, tel que le service le donne :
+ * 400 (`erreur`, par exemple un stagiaire qui n'est pas de la session)
+ * ou 403 (`detail`).
+ */
+async function motifDuRefus(r) {
+  let corps = null
+  try { corps = await r.json() } catch { /* corps absent ou illisible */ }
+  if (r.status === 403) {
+    return 'Vous n’avez pas le droit d’enregistrer ce compte rendu : il ne vous est pas rattaché.'
+  }
+  const precis = typeof corps?.erreur === 'string' ? corps.erreur : ''
+  if (/hors session/i.test(precis)) {
+    return 'Enregistrement refusé : un stagiaire de ce compte rendu ne fait pas partie de la session. '
+      + 'Rouvrez la session depuis la liste pour reprendre ses stagiaires.'
+  }
+  return precis ? `Enregistrement refusé : ${precis}.` : 'Enregistrement refusé par le service.'
+}
+
+/**
+ * Un appel au serveur ; `null` s'il ne repond pas. Un envoi (PUT)
+ * refuse en 400 ou 403 renvoie `{ refus: true, statut, message }` : les
+ * autres appels n'ont pas a le distinguer d'une panne.
+ */
 async function serveur(chemin, options = {}) {
   const u = utilisateur()
   if (!u) return null
@@ -72,6 +96,9 @@ async function serveur(chemin, options = {}) {
     })
     if (r.status === 404) return undefined
     if (r.status === 409) return { ...(await r.json()), conflit: true }
+    if (options.method === 'PUT' && (r.status === 400 || r.status === 403)) {
+      return { refus: true, statut: r.status, message: await motifDuRefus(r) }
+    }
     if (!r.ok) return null
     return await r.json()
   } catch {
@@ -150,6 +177,21 @@ function signaler(id, recent) {
   (ecoutes.get(id) || new Set()).forEach(f => f(recent))
 }
 
+// Les ecrans prevenus d'un envoi refuse par le service (400, 403), ou
+// de la reprise des envois (`null`).
+const ecoutesRefus = new Map()
+function signalerRefus(id, message) {
+  (ecoutesRefus.get(id) || new Set()).forEach(f => f(message))
+}
+
+/** Previent `quand(message)` d'un enregistrement refuse, puis `quand(null)` des qu'il passe. */
+export function surveillerRefus(id, quand) {
+  if (!id) return () => {}
+  if (!ecoutesRefus.has(id)) ecoutesRefus.set(id, new Set())
+  ecoutesRefus.get(id).add(quand)
+  return () => ecoutesRefus.get(id)?.delete(quand)
+}
+
 // Une version ecrite ailleurs, plus avancee que celle de cet onglet.
 const depassePar = (id, b) => b && b.ecrivain !== ECRIVAIN && bases.has(id) && rev(b) > bases.get(id)
 
@@ -167,7 +209,9 @@ async function partir(id) {
   // `keepalive` : l'envoi aboutit meme si l'onglet se ferme.
   const r = await serveur(`/${encodeURIComponent(id)}`,
     { method: 'PUT', body: JSON.stringify(corps), keepalive: true })
-  if (r?.conflit) {
+  if (r?.refus) {
+    signalerRefus(id, r.message)
+  } else if (r?.conflit) {
     signaler(id, r.brouillon)
   } else if (r && r.ecrit === false && !r.brouillon) {
     // Supprime sur un autre poste pendant la saisie d'ici : la saisie
@@ -181,6 +225,7 @@ async function partir(id) {
     }
     envoyer(id, { ...brouillon, revision: 0 })
   } else if (r?.ecrit && r.brouillon) {
+    signalerRefus(id, null)
     const n = rev(r.brouillon)
     bases.set(id, Math.max(n, bases.get(id) || 0))
     const tout = lire()
@@ -424,14 +469,12 @@ export function brouillonsEnregistres() {
     .sort((a, b) => String(b.modifieLe).localeCompare(String(a.modifieLe)))
 }
 
-/** La session d'un brouillon : celle du planning, ou celle qu'il decrit. */
+/**
+ * La session d'un brouillon : celle qu'il decrit (saisie manuelle, ou
+ * session du referentiel dont il garde l'identite), ou celle du planning.
+ */
 export function sessionDuBrouillon(b) {
-  if (b.manuel) {
-    return {
-      moduleFormation: b.intitule, codeFormation: b.codeFormation, marque: b.marque,
-      lieu: b.lieu, paysHote: b.pays, debut: b.debut, fin: b.fin, nbJours: b.nbJours,
-    }
-  }
+  if (b.manuel || estSessionReferentiel(b.sessionId)) return sessionDepuisBrouillon(b)
   return SESSIONS_FORMATEUR.find(s => s.id === b.sessionId) || null
 }
 
