@@ -17,7 +17,7 @@ def submission_summary(submission: Submission) -> dict:
     )
 
     by_quarter = {q: 0 for q in QUARTERS}
-    by_place = {Place.CFR: 0, Place.FILIALE: 0}
+    by_place = {place: 0 for place in Place.values}
     families: dict[str, int] = {}
     selected = 0
 

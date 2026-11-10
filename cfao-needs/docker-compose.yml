@@ -125,6 +125,8 @@ services:
       # Shared key attendue par /api/v1/needs/analytics/* (appels service-to-service
       # depuis cfao-core). Absente = 401 sur tous ces endpoints.
       NEEDS_ANALYTICS_INBOUND_KEY: ${NEEDS_ANALYTICS_INBOUND_KEY:-dev-analytics-shared-secret}
+      # Correction du niveau d'un module par cfao-planning. Absente = écriture refusée.
+      NEEDS_CATALOG_WRITE_INBOUND_KEY: ${NEEDS_CATALOG_WRITE_INBOUND_KEY:-}
     # cfao-maillage : lu par planning-api (GET analytics, clé partagée).
     networks: [default, cfao-maillage]
     depends_on:

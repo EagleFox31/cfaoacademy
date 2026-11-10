@@ -16,6 +16,7 @@ QUARTERS = ("q1", "q2", "q3", "q4")
 class Place(models.TextChoices):
     CFR = "CFR", "Academy de Douala"
     FILIALE = "FILIALE", "Filiale"
+    DISTANCE = "DISTANCE", "Distanciel"
 
 
 class Campaign(UUIDModel, TimeStampedModel):
@@ -68,6 +69,8 @@ class CatalogLine(UUIDModel, TimeStampedModel):
 
     Immuable une fois la campagne ouverte : corriger une ligne casserait le lien
     avec les besoins déjà saisis. Une correction crée une nouvelle campagne.
+    Exception : `level_label` et `tier`, étrangers à ce lien, restent corrigeables
+    (analytics.views.catalog_level_update).
     """
 
     class Tier(models.TextChoices):
@@ -233,6 +236,8 @@ class NeedLine(UUIDModel, TimeStampedModel):
     place_q4 = models.CharField(max_length=8, choices=Place.choices, default=Place.CFR)
 
     comment = models.TextField(blank=True)
+    # Places reportées par la filiale : elles restent comptées et facturées.
+    postponed = models.PositiveIntegerField(default=0)
 
     class Meta:
         constraints = [

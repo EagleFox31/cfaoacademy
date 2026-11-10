@@ -31,11 +31,14 @@ export default function PlaceSelect({
   const lockedChoice = allowed.length === 1
   const localLabel = orgUnitLabel?.trim() || t('grid.placeFILIALE')
 
-  const options = allowed.map((place) => ({
-    value: place,
-    label: place === 'CFR' ? t('grid.placeCFR') : localLabel,
-    flag: countryFlag(place === 'CFR' ? ACADEMY_COUNTRY : country),
-  }))
+  const options = allowed.map((place) => {
+    if (place === 'DISTANCE') return { value: place, label: t('grid.placeDISTANCE'), flag: null }
+    return {
+      value: place,
+      label: place === 'CFR' ? t('grid.placeCFR') : localLabel,
+      flag: countryFlag(place === 'CFR' ? ACADEMY_COUNTRY : country),
+    }
+  })
 
   const selected =
     options.find((o) => o.value === value) ??

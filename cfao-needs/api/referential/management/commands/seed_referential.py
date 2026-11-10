@@ -37,6 +37,7 @@ FAMILIES = [
     ("process-parts-motors",    "Process Parts Motors",    Pole.MOBILITY,    True,  "READY",   50, PROCESS),
     ("process-sav-equipment",   "Process SAV Equipment",   Pole.EQUIPMENT,   True,  "READY",   60, PROCESS),
     ("process-parts-equipment", "Process Parts Equipment", Pole.EQUIPMENT,   True,  "READY",   70, PROCESS),
+    ("conduite-equipment",      "Conduite Equipment",      Pole.EQUIPMENT,   False, "READY",   75, PROCESS),
     # Yamaha est rattaché à Motors : le métier ne lui donne pas de BU à part, et un
     # pôle « Autre » à une seule marque produisait une carte orpheline à l'écran.
     # Catalogue non livré : la famille s'affiche avec un bandeau et ne se saisit pas.

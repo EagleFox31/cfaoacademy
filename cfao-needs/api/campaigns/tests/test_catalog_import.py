@@ -361,3 +361,10 @@ def test_le_modele_vierge_se_relit_avec_le_meme_parseur(campaign, motors_family)
 
     assert result.ok, result.errors
     assert result.rows[0]["code"] == "TFT01"
+
+
+def test_suzuki_replie_le_palier_sur_son_bareme():
+    from campaigns.imports.levels import level_label
+
+    assert level_label("SNM01", tier="SENIOR", brand="SUZUKI") == "Silver"
+    assert level_label("SNM01", tier="SENIOR", brand="MERCEDES") == "Senior"

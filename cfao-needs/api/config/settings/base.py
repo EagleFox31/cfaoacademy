@@ -136,6 +136,7 @@ PUBLIC_BASE_URL = env("NEEDS_PUBLIC_BASE_URL", default="http://localhost:8080")
 # Utilisée par cfao-core pour agréger les KPIs du dashboard super admin.
 # Absente = tous les endpoints analytics renvoient 401 (fail-close).
 ANALYTICS_INBOUND_KEY = env("NEEDS_ANALYTICS_INBOUND_KEY", default="")
+CATALOG_WRITE_INBOUND_KEY = env("NEEDS_CATALOG_WRITE_INBOUND_KEY", default="")
 
 # ── Worker asynchrone : broker = Postgres, pas de Redis (architecture.md §7) ──
 Q_CLUSTER = {

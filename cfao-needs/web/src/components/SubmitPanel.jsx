@@ -58,6 +58,15 @@ function IconPin() {
   )
 }
 
+function IconMonitor() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <path d="M8 21h8M12 17v4" />
+    </svg>
+  )
+}
+
 function IconCheckCircle() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -112,9 +121,11 @@ function Panel({ submission, summary, onSent }) {
 
   const cfrCount = summary?.by_place?.CFR ?? 0
   const filialeCount = summary?.by_place?.FILIALE ?? 0
+  const distanceCount = summary?.by_place?.DISTANCE ?? 0
   const totalPlacesSafe = totalHeadcount > 0 ? totalHeadcount : 1
   const cfrPct = Math.round((cfrCount / totalPlacesSafe) * 100)
   const filialePct = Math.round((filialeCount / totalPlacesSafe) * 100)
+  const distancePct = Math.round((distanceCount / totalPlacesSafe) * 100)
 
   return (
     <div id="synthese-section" className="card submit-panel">
@@ -191,7 +202,7 @@ function Panel({ submission, summary, onSent }) {
                     <div className="submit-place-card__stats">
                       <span className="submit-place-card__count">{number(cfrCount)}</span>
                       <span className="submit-place-card__sub">
-                        places ({cfrPct}%)
+                        {t('recap.placesUnit')} ({cfrPct}%)
                       </span>
                     </div>
                     <div className="submit-place-card__bar">
@@ -218,13 +229,40 @@ function Panel({ submission, summary, onSent }) {
                     <div className="submit-place-card__stats">
                       <span className="submit-place-card__count">{number(filialeCount)}</span>
                       <span className="submit-place-card__sub">
-                        places ({filialePct}%)
+                        {t('recap.placesUnit')} ({filialePct}%)
                       </span>
                     </div>
                     <div className="submit-place-card__bar">
                       <div
                         className="submit-place-card__bar-fill submit-place-card__bar-fill--filiale"
                         style={{ width: `${filialePct}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Distanciel */}
+                <div className="submit-place-card">
+                  <div className="submit-place-card__icon submit-place-card__icon--distance">
+                    <IconMonitor />
+                  </div>
+                  <div className="submit-place-card__body">
+                    <div className="submit-place-card__meta">
+                      <span className="submit-place-card__name">{t('grid.placeDISTANCE')}</span>
+                      <span className="submit-place-card__tag submit-place-card__tag--distance">
+                        {t('recap.placeDISTANCEBadge')}
+                      </span>
+                    </div>
+                    <div className="submit-place-card__stats">
+                      <span className="submit-place-card__count">{number(distanceCount)}</span>
+                      <span className="submit-place-card__sub">
+                        {t('recap.placesUnit')} ({distancePct}%)
+                      </span>
+                    </div>
+                    <div className="submit-place-card__bar">
+                      <div
+                        className="submit-place-card__bar-fill submit-place-card__bar-fill--distance"
+                        style={{ width: `${distancePct}%` }}
                       />
                     </div>
                   </div>

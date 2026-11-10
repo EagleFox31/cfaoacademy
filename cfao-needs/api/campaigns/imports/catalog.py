@@ -162,7 +162,7 @@ class CatalogImporter(TabularImporter):
             # source, la table n'est qu'un repli pour ce qu'il ne renseigne pas.
             "title_en": self._text(values.get("title_en")) or english_title(title),
             # Nomenclature constructeur : la vitrine, pas le seul palier MEDACAP.
-            "level_label": level_label(code, tier=tier),
+            "level_label": level_label(code, tier=tier, brand=brand.code if brand else ""),
             "tier": tier,
             "populations": populations,
         }

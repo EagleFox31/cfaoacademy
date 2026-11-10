@@ -23,13 +23,13 @@ class Command(BaseCommand):
         parser.add_argument("--dry-run", action="store_true")
 
     def handle(self, *args, **options):
-        lines = CatalogLine.objects.select_related("campaign").all()
+        lines = CatalogLine.objects.select_related("campaign", "brand").all()
         if options["year"]:
             lines = lines.filter(campaign__year=options["year"])
 
         updated = []
         for line in lines:
-            label = level_label(line.code, tier=line.tier)
+            label = level_label(line.code, tier=line.tier, brand=line.brand.code if line.brand_id else "")
             if not label:
                 continue
             if line.level_label and not options["overwrite"]:

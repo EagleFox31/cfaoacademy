@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 CONTRACT_ID = "needs-analytics"
-CONTRACT_VERSION = "1.1.0"
+CONTRACT_VERSION = "1.3.0"
 CONTRACT_PATH = Path(__file__).resolve().parent / "contract" / "needs-analytics.openapi.json"
 
 _YEAR = {
@@ -50,8 +50,81 @@ def _operation(operation_id: str, summary: str, parameters: list, schema: str) -
     }
 
 
+def _level_update_operation() -> dict:
+    envelope = {"application/json": {"schema": {"type": "object"}}}
+    return {
+        "post": {
+            "operationId": "updateCatalogLevel",
+            "summary": "Corrige le niveau d'un module (cfao-planning, clé X-Catalog-Write-Key).",
+            "parameters": [],
+            "security": [{"CatalogWriteKey": []}],
+            "requestBody": {
+                "required": True,
+                "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CatalogLevelUpdate"}}},
+            },
+            "responses": {
+                "200": {
+                    "description": "Niveau enregistré.",
+                    "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CatalogLevelResult"}}},
+                },
+                "400": {"description": "Corps invalide, ou libellé absent du barème de la marque.", "content": envelope},
+                "403": {"description": "Clé `X-Catalog-Write-Key` absente ou invalide.", "content": envelope},
+                "404": {"description": "Ligne de catalogue inconnue.", "content": envelope},
+                "409": {"description": "`expected` n'est plus à jour : `current` donne la valeur en base.", "content": envelope},
+            },
+        }
+    }
+
+
 def openapi_document() -> dict:
     schemas = {
+        "CatalogLevels": {
+            "type": "object",
+            "required": ["year", "catalog_available", "lines"],
+            "properties": {
+                "year": {"type": "integer"},
+                "catalog_available": {"type": "boolean"},
+                "lines": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["id", "brand", "code", "level_label", "tier", "sort_order"],
+                        "properties": {
+                            "id": {"type": "string", "format": "uuid"},
+                            "brand": {"type": "string"},
+                            "code": {"type": "string"},
+                            "level_label": {"type": "string"},
+                            "tier": {"type": ["string", "null"]},
+                            "sort_order": {"type": "integer"},
+                        },
+                    },
+                },
+            },
+            "examples": [{
+                "year": 2027, "catalog_available": True,
+                "lines": [{"id": "6f1c1a4e-0b7a-4b52-9d39-3a3f7f1d2c10", "brand": "TOYOTA", "code": "TS01-G4",
+                           "level_label": "G4", "tier": "JUNIOR", "sort_order": 40}],
+            }],
+        },
+        "CatalogLevelUpdate": {
+            "type": "object",
+            "required": ["line_ids", "expected", "level_label"],
+            "properties": {
+                "line_ids": {"type": "array", "items": {"type": "string", "format": "uuid"}},
+                "expected": {"type": "string"},
+                "level_label": {"type": "string"},
+            },
+        },
+        "CatalogLevelResult": {
+            "type": "object",
+            "required": ["changed", "level_label", "tier"],
+            "properties": {
+                "changed": {"type": "boolean"},
+                "level_label": {"type": "string"},
+                "tier": {"type": ["string", "null"]},
+            },
+            "examples": [{"changed": True, "level_label": "G3", "tier": "SENIOR"}],
+        },
         "TotalTechnicians": {
             "type": "object",
             "required": ["bu", "year", "count"],
@@ -110,9 +183,24 @@ def openapi_document() -> dict:
                         },
                     },
                 },
+                "postponed": {
+                    "type": "array",
+                    "description": "Places reportées par module ; elles restent comptées dans `needs`.",
+                    "items": {
+                        "type": "object",
+                        "required": ["country", "brand", "code", "places"],
+                        "properties": {
+                            "country": {"type": "string"},
+                            "brand": {"type": "string"},
+                            "code": {"type": "string"},
+                            "places": {"type": "integer", "minimum": 1},
+                        },
+                    },
+                },
             },
             "examples": [{"year": 2026, "pole": "motors", "source": "quota_import", "rows": [
-                {"country": "BENIN", "brand": "TOYOTA", "needs": 34, "technicians": 22}]}],
+                {"country": "BENIN", "brand": "TOYOTA", "needs": 34, "technicians": 22}],
+                "postponed": [{"country": "BENIN", "brand": "TOYOTA", "code": "TS11-G2", "places": 3}]}],
         },
         "UnchosenModules": {
             "type": "object",
@@ -196,11 +284,17 @@ def openapi_document() -> dict:
                 "unchosenModules", "Modules du catalogue sans aucune demande validée (cfao-planning).",
                 [pole, _YEAR], "UnchosenModules"
             ),
+            "/api/v1/needs/analytics/catalog-levels": _operation(
+                "catalogLevels", "Niveau de chaque module, dans le barème de sa marque (cfao-planning).",
+                [_YEAR], "CatalogLevels"
+            ),
+            "/api/v1/needs/analytics/catalog-level": _level_update_operation(),
         },
         "components": {
             "schemas": schemas,
             "securitySchemes": {
                 "AnalyticsKey": {"type": "apiKey", "in": "header", "name": "X-Analytics-Key"},
+                "CatalogWriteKey": {"type": "apiKey", "in": "header", "name": "X-Catalog-Write-Key"},
             },
         },
     }

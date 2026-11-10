@@ -5,8 +5,8 @@ from django.urls import path
 
 from .contract import CONTRACT_PATH
 from .views import (
-    allocations_per_branch, needs_by_branch_brand, scheduled_trainings, total_technicians,
-    unchosen_modules,
+    allocations_per_branch, catalog_level_update, catalog_levels, needs_by_branch_brand,
+    scheduled_trainings, total_technicians, unchosen_modules,
 )
 
 
@@ -23,4 +23,6 @@ urlpatterns = [
     path("analytics/needs-by-branch-brand", needs_by_branch_brand,
          name="analytics-needs-by-branch-brand"),
     path("analytics/unchosen-modules", unchosen_modules, name="analytics-unchosen-modules"),
+    path("analytics/catalog-levels", catalog_levels, name="analytics-catalog-levels"),
+    path("analytics/catalog-level", catalog_level_update, name="analytics-catalog-level"),
 ]

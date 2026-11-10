@@ -15,9 +15,9 @@ from analytics.contract import CONTRACT_PATH, CONTRACT_VERSION, openapi_document
 KEY = "contract-test-key"
 
 
-def _validator(path: str, status: int) -> Draft202012Validator:
+def _validator(path: str, status: int, method: str = "get") -> Draft202012Validator:
     document = openapi_document()
-    schema = document["paths"][path]["get"]["responses"][str(status)]["content"]["application/json"]["schema"]
+    schema = document["paths"][path][method]["responses"][str(status)]["content"]["application/json"]["schema"]
     bundled = {**schema, "$defs": document["components"]["schemas"]}
     return Draft202012Validator(json.loads(json.dumps(bundled).replace("#/components/schemas/", "#/$defs/")))
 
@@ -45,7 +45,7 @@ def test_contract_endpoint_serves_the_file():
     assert response.json() == openapi_document()
 
 
-PATHS = sorted(openapi_document()["paths"])
+PATHS = sorted(path for path, operations in openapi_document()["paths"].items() if "get" in operations)
 
 
 @pytest.mark.django_db
