@@ -8,7 +8,8 @@ import { FILTRES_VIDES, chargerSession, trouverSession } from '../data/sessionsR
 import { syntheseGroupe, seuilDe } from '../utils/baremeCfao'
 import { estCertification, syntheseCertification } from '../utils/certification'
 import {
-  adopter, enregistrer, garder, recuperer, recupererDuServeur, surveiller, surveillerRefus,
+  adopter, enregistrer, garder, inchangeDepuis, recuperer, recupererDuServeur, surveiller, surveillerRefus,
+  surveillerReprise,
 } from '../utils/brouillonsCompteRendu'
 import {
   brouillonVide, depuisSession, estSessionReferentiel, sessionDepuisBrouillon,
@@ -152,6 +153,16 @@ export default function TrainerReportNew() {
     setRefus(null)
     return surveillerRefus(idCourant, setRefus)
   }, [idCourant])
+
+  // Un envoi accepte que le serveur a corrige (formation, dates, stagiaires
+  // du referentiel) : l'ecran montre la version corrigee, sauf si le
+  // formateur a tape depuis l'envoi : sa frappe partira au prochain envoi.
+  useEffect(() => surveillerReprise(idCourant, (reprise, envoye) => {
+    const { brouillon: b, phase: p } = dernier.current
+    if (!inchangeDepuis({ ...b, phase: p }, envoye)) return
+    const { phase: _p, ...contenu } = reprise
+    setBrouillon(contenu)
+  }), [idCourant])
 
   const sauver = useCallback(() => {
     if (!synchro.current || enConflit.current) return

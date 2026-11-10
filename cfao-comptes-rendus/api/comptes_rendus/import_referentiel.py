@@ -28,6 +28,28 @@ from .models import Animation, Formation, ImportReferentiel, Inscription, Sessio
 
 JOURS_MAX = 5
 
+
+def _limite(*champs):
+    """La plus petite longueur permise parmi des champs de modele (`Modele.champ`)."""
+    return min(c.field.max_length for c in champs)
+
+
+# Cle de la ligne lue -> longueur permise : lue sur les colonnes du modele, pour
+# qu'une valeur trop longue soit signalee a l'analyse au lieu de lever une
+# erreur de base a l'application.
+LIMITES = {
+    "numero": _limite(Session.numero),
+    "reference": _limite(Formation.code),
+    "marque": _limite(Formation.marque),
+    "designation": _limite(Formation.libelle, Session.libelle_fichier),
+    "lieu": _limite(Session.lieu),
+    "nom": _limite(Stagiaire.nom),
+    "prenom": _limite(Stagiaire.prenom),
+    "pays": _limite(Stagiaire.pays, Session.pays),
+}
+LIMITE_CLE = _limite(Stagiaire.cle)
+LIMITE_ANIMATEUR = _limite(Animation.nom_fichier)
+
 # Titre attendu (comme dans le fichier) -> cle de la ligne lue.
 # Les colonnes « cles » manquantes refusent l'import ; les autres sont facultatives.
 COLONNES = {
@@ -226,6 +248,24 @@ def _etiquette(numero, debut):
     return f"{numero} ({debut:%d/%m/%Y})"
 
 
+_TITRES = {cle: titre for titre, cle in COLONNES.items()}
+
+
+def _trop_longues(l):
+    """[(titre de colonne, longueur, limite)] des valeurs de la ligne que la base ne peut pas garder.
+
+    Les valeurs mesurees sont celles qui seraient ecrites (nom en majuscules,
+    pays a sa graphie retenue)."""
+    pays = pays_normalise(l["pays"])[0]
+    valeurs = {**{c: l[c] for c in ("numero", "reference", "marque", "designation", "lieu")},
+               "nom": nom_affiche(l["nom"]), "prenom": prenom_affiche(l["prenom"]), "pays": pays}
+    trop = [(_TITRES[c], len(v), LIMITES[c]) for c, v in valeurs.items() if len(v) > LIMITES[c]]
+    cle = cle_stagiaire(l["nom"], l["prenom"], pays)
+    if not trop and len(cle) > LIMITE_CLE:
+        trop.append((f"{_TITRES['nom']} / {_TITRES['prenom']} / {_TITRES['pays']}", len(cle), LIMITE_CLE))
+    return trop
+
+
 def _grouper(lignes):
     """(sessions, anomalies) : les lignes regroupees par (numero, debut)."""
     anomalies = []
@@ -237,6 +277,13 @@ def _grouper(lignes):
                       else "nom absent" if not l["nom"] else "date de debut absente ou illisible")
             anomalies.append({"type": "ligne_ignoree", "session": l["numero"],
                               "message": f"ligne {l['ligne']} ignoree : {raison}"})
+            continue
+        trop = _trop_longues(l)
+        if trop:
+            for titre, n, limite in trop:
+                anomalies.append({"type": "valeur_trop_longue", "session": l["numero"][:LIMITES["numero"]],
+                                  "message": f"ligne {l['ligne']} ignoree : « {titre} » compte {n} caracteres "
+                                             f"(au plus {limite})"})
             continue
         groupes.setdefault((l["numero"], l["debut"]), []).append(l)
 
@@ -279,9 +326,14 @@ def _grouper(lignes):
         animateurs, vus = [], set()
         for r in rows:
             for a in animateurs_de(r["animateurs"]):
-                if normaliser(a) not in vus:
-                    vus.add(normaliser(a))
-                    animateurs.append(a)
+                if normaliser(a) in vus:
+                    continue
+                vus.add(normaliser(a))
+                if len(a) > LIMITE_ANIMATEUR:
+                    note("valeur_trop_longue", f"ligne {r['ligne']} : « {_TITRES['animateurs']} » : un nom compte "
+                         f"{len(a)} caracteres (au plus {LIMITE_ANIMATEUR}) : animateur ignore")
+                    continue
+                animateurs.append(a)
 
         stagiaires = {}
         for r in rows:
@@ -344,8 +396,11 @@ def _executer(lignes, ecrire, nom_fichier=""):
         if g["reference"]:
             formation = formations.get(g["reference"])
             if formation is None:
-                compte["formations_a_creer"] += 1
-                formations_neuves.add(g["reference"])
+                # Une formation neuve est comptee une fois, en essai comme a
+                # l'application, quel que soit le nombre de sessions qui la partagent.
+                if g["reference"] not in formations_neuves:
+                    formations_neuves.add(g["reference"])
+                    compte["formations_a_creer"] += 1
                 if ecrire:
                     formation = Formation.objects.create(code=g["reference"], libelle=g["designation"],
                                                          marque=g["marque"])
@@ -372,8 +427,10 @@ def _executer(lignes, ecrire, nom_fichier=""):
                 session = Session.objects.create(formation=formation, numero=g["numero"], debut=g["debut"], **voulu)
         else:
             # Un champ vide dans le fichier n'efface pas ce que le referentiel garde.
+            # Une formation neuve (essai : pas encore creee) differe forcement de l'actuelle.
             diff = any(v and getattr(session, k) != v for k, v in voulu.items()) \
-                or (formation is not None and session.formation_id != formation.pk)
+                or (formation is not None and session.formation_id != formation.pk) \
+                or (formation is None and bool(g["reference"]))
             etat = "a_mettre_a_jour" if diff else "inchangee"
             if diff and ecrire:
                 for k, v in voulu.items():
@@ -410,13 +467,13 @@ def _executer(lignes, ecrire, nom_fichier=""):
                                              "inscrit en base mais absent du fichier : conserve"})
 
         # Animations
-        animations = {a.nom_fichier: a for a in Animation.objects.filter(session=session)} \
+        animations = {normaliser(a.nom_fichier): a for a in Animation.objects.filter(session=session)} \
             if session is not None and session.pk else {}
         animations_neuves = 0
         for nom in g["animateurs"]:
             fid = _formateur_id(nom, profils)
             (rattaches if fid else non_rattaches).add(nom)
-            existante = animations.get(nom)
+            existante = animations.get(normaliser(nom))
             if existante is None:
                 animations_neuves += 1
                 if ecrire:

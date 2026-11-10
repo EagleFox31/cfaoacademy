@@ -195,6 +195,37 @@ export function surveillerRefus(id, quand) {
 // Une version ecrite ailleurs, plus avancee que celle de cet onglet.
 const depassePar = (id, b) => b && b.ecrivain !== ECRIVAIN && bases.has(id) && rev(b) > bases.get(id)
 
+// Les ecrans prevenus qu'un envoi accepte a ete corrige par le serveur
+// (champs reimposes depuis le referentiel) et que la copie d'ici l'a repris.
+const ecoutesReprise = new Map()
+
+/**
+ * Previent `quand(reprise, envoye)` quand la copie de cet onglet devient la
+ * version corrigee par le serveur. L'ecran ne la prend que si sa saisie n'a
+ * pas bouge depuis l'envoi (`inchangeDepuis`), sinon il garde sa frappe.
+ */
+export function surveillerReprise(id, quand) {
+  if (!id) return () => {}
+  if (!ecoutesReprise.has(id)) ecoutesReprise.set(id, new Set())
+  ecoutesReprise.get(id).add(quand)
+  return () => ecoutesReprise.get(id)?.delete(quand)
+}
+
+/** Vrai si `b` est, au contenu pres, ce qui a ete envoye. */
+export const inchangeDepuis = (b, envoye) => signer(b) === signer(envoye)
+
+// Apres un envoi accepte : si la copie d'ici n'a pas bouge depuis l'envoi
+// (meme contenu, donc meme session), elle devient la version du serveur.
+// Sinon rien n'est fusionne : la saisie faite pendant la requete, ou le
+// changement de session, part au prochain envoi, que le serveur corrigera
+// a son tour.
+function reprendre(id, copie, envoye, distant) {
+  if (signer(copie) !== signer(envoye) || String(distant?.sessionId ?? '') !== String(envoye?.sessionId ?? '')) {
+    return copie
+  }
+  return signer(distant) === signer(envoye) ? copie : { ...distant, _id: copie._id ?? id, ecrivain: ECRIVAIN }
+}
+
 // Les envois au serveur, un par brouillon : la saisie en declenche un
 // toutes les secondes et demie, inutile d'en empiler.
 const enAttente = new Map()
@@ -229,10 +260,20 @@ async function partir(id) {
     const n = rev(r.brouillon)
     bases.set(id, Math.max(n, bases.get(id) || 0))
     const tout = lire()
-    // La copie d'ici prolonge cet envoi : elle en prend le numero.
-    if (tout[id]?.ecrivain === ECRIVAIN && rev(tout[id]) < n) {
-      tout[id] = { ...tout[id], revision: n }
-      ecrire(tout)
+    // La copie d'ici prolonge cet envoi : elle en prend le numero et ce
+    // que le serveur a reimpose.
+    if (tout[id]?.ecrivain === ECRIVAIN) {
+      let copie = reprendre(id, tout[id], brouillon, r.brouillon)
+      if (rev(copie) < n) copie = { ...copie, revision: n }
+      if (copie !== tout[id]) {
+        const repris = signer(copie) !== signer(tout[id])
+        tout[id] = copie
+        ecrire(tout)
+        if (repris) {
+          vus.set(id, signer(copie))
+          ;(ecoutesReprise.get(id) || new Set()).forEach(f => f(copie, brouillon))
+        }
+      }
     }
   }
 }

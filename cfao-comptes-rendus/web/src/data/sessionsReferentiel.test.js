@@ -48,13 +48,35 @@ describe('chargerEtat', () => {
     service({ '/referentiel/etat': { json: { vide: false } } })
     expect(await chargerEtat()).toEqual({ vide: false })
   })
-  it('service muet, refus ou reponse illisible : null', async () => {
-    service({})
-    expect(await chargerEtat()).toBeNull()
-    service({ '/referentiel/etat': { status: 500 } })
+  it('service absent (404) ou reponse qui n\'est pas l\'etat : null', async () => {
+    service({ '/referentiel/etat': { status: 404 } })
     expect(await chargerEtat()).toBeNull()
     service({ '/referentiel/etat': { json: { autre: 1 } } })
     expect(await chargerEtat()).toBeNull()
+    vi.stubGlobal('fetch', async () => ({ ok: true, status: 200, json: async () => { throw new Error('html') } }))
+    expect(await chargerEtat()).toBeNull()
+  })
+  it.each([401, 403, 500, 502, 503])('statut %i : erreur lisible, pas le mode d\'essai', async statut => {
+    service({ '/referentiel/etat': { status: statut } })
+    const erreur = await chargerEtat().catch(e => e)
+    expect(erreur).toBeInstanceOf(ErreurSessions)
+    expect(erreur.statut).toBe(statut)
+  })
+  it('reseau coupe ou delai depasse : erreur de statut 0', async () => {
+    service({})
+    const coupe = await chargerEtat().catch(e => e)
+    expect(coupe).toBeInstanceOf(ErreurSessions)
+    expect(coupe.statut).toBe(0)
+    vi.stubGlobal('fetch', (url, { signal }) => new Promise((_, rejet) => {
+      signal.addEventListener('abort', () => rejet(new DOMException('abort', 'AbortError')))
+    }))
+    vi.useFakeTimers()
+    const attente = chargerEtat().catch(e => e)
+    await vi.advanceTimersByTimeAsync(8100)
+    const delai = await attente
+    vi.useRealTimers()
+    expect(delai).toBeInstanceOf(ErreurSessions)
+    expect(delai.statut).toBe(0)
   })
 })
 
@@ -79,9 +101,25 @@ describe('chargerSessions', () => {
     expect(appels.every(a => a.includes('/referentiel/etat'))).toBe(true)
   })
 
-  it('service muet : le mode d\'essai', async () => {
-    service({})
+  it('service absent (404) : le mode d\'essai', async () => {
+    service({ '/referentiel/etat': { status: 404 } })
     expect((await chargerSessions({}, user)).source).toBe(SOURCE_ESSAI)
+  })
+
+  it.each([401, 403, 500])('etat refuse ou en panne (%i) : erreur, jamais les sessions d\'essai', async statut => {
+    service({ '/referentiel/etat': { status: statut } })
+    const erreur = await chargerSessions({}, user).catch(e => e)
+    expect(erreur).toBeInstanceOf(ErreurSessions)
+    expect(erreur.statut).toBe(statut)
+    expect(appels.every(a => a.includes('/referentiel/etat'))).toBe(true)
+  })
+
+  it('reseau coupe : erreur lisible, jamais les sessions d\'essai', async () => {
+    service({})
+    const erreur = await chargerSessions({}, user).catch(e => e)
+    expect(erreur).toBeInstanceOf(ErreurSessions)
+    expect(erreur.statut).toBe(0)
+    expect(erreur.message).toMatch(/ne répond pas/)
   })
 
   it('panne apres un referentiel renseigne : erreur lisible, pas de repli sur les essais', async () => {

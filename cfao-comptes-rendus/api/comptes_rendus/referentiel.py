@@ -5,7 +5,7 @@ Ce module ne decide d'aucun droit : chaque route demande au PDP Cerbos
 par session pour les lectures. Le portail ne voit que ce que le PDP autorise.
 """
 import io
-from datetime import date
+from datetime import date, timedelta
 
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser
@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 from core.authz import cerbos
 
 from . import import_referentiel
-from .models import Brouillon, Inscription
+from .models import Brouillon, Formation, Inscription
 from .models import Session as SessionFormation
 
 SESSION = "session_formation"
@@ -23,6 +23,7 @@ REFERENTIEL = "referentiel"
 
 TAILLE_MAX = 10 * 1024 * 1024
 PARTIES = 5
+JOURS_MAX = import_referentiel.JOURS_MAX
 
 
 class StagiaireHorsSession(ValueError):
@@ -31,10 +32,16 @@ class StagiaireHorsSession(ValueError):
 
 # ── Autorisation ───────────────────────────────────────────────────────
 
-def _permis(request, kind, ident, action, **attr):
+def _permis_lot(request, kind, elements, action):
+    """{id: autorise} pour des `(id, attributs)` : une requete par lot au PDP."""
     # Via le module : le PDP reste substituable dans les tests.
-    return cerbos.check_permission(request.user.to_cerbos(),
-                                   {"kind": kind, "id": ident, "attr": attr}, action)
+    return cerbos.check_resources(
+        request.user.to_cerbos(),
+        [{"kind": kind, "id": ident, "attr": attr} for ident, attr in elements], action)
+
+
+def _permis(request, kind, ident, action, **attr):
+    return _permis_lot(request, kind, [(ident, attr)], action).get(str(ident or "_new"), False)
 
 
 def _exiger(request, kind, ident, action, **attr):
@@ -111,6 +118,17 @@ def _bilan_saisi(contenu):
                if k.startswith("bilan.") and k != "bilan.forme")
 
 
+def jours_retenus(session):
+    """Duree de la session pour le compte rendu : ses jours ouvres (week-ends
+    exclus, comme l'ecran), un au moins, bornes a `JOURS_MAX`.
+
+    Une session importee trop longue (anomalie `session_trop_longue`) est
+    gardee telle quelle ; son compte rendu, lui, n'a jamais plus de `JOURS_MAX` journees."""
+    ouvres = sum(1 for k in range(session.jours)
+                 if (session.debut + timedelta(days=k)).weekday() < 5)
+    return min(max(1, ouvres), JOURS_MAX)
+
+
 def completion(contenu, jours=None):
     """Part des cinq parties remplies (notes, objectifs, journees, satisfaction, bilan), en %."""
     if not isinstance(contenu, dict):
@@ -141,7 +159,7 @@ def _avancement_des_sessions(sessions):
             cle = str(contenu.get("sessionId"))
             if cle not in idents:
                 continue
-            c = completion(contenu, idents[cle].jours)
+            c = completion(contenu, jours_retenus(idents[cle]))
             valide = bool(contenu.get("termineLe"))
             if cle not in meilleur or (c, valide) > meilleur[cle]:
                 meilleur[cle] = (c, valide)
@@ -172,6 +190,7 @@ def session_json(session, avancement=None, aujourdhui=None):
         "lieu": session.lieu,
         "debut": session.debut.isoformat(),
         "fin": session.fin.isoformat(),
+        "nbJours": jours_retenus(session),
         "formateur": ", ".join(a.nom_fichier for a in animations),
         "formateurs": [{"nom": a.nom_fichier, "id": a.formateur_id} for a in animations],
         "seuil": formation.seuil if formation else 70,
@@ -188,7 +207,7 @@ def _sessions():
 
 # ── Routes ─────────────────────────────────────────────────────────────
 
-def _correspond(session, q, pays, marque, mois, formateur):
+def _correspond(session, q, pays, formateur):
     n = import_referentiel.normaliser
     f = session.formation
     if q:
@@ -199,13 +218,6 @@ def _correspond(session, q, pays, marque, mois, formateur):
             return False
     if pays and n(session.pays) != n(import_referentiel.pays_normalise(pays)[0]):
         return False
-    if marque and n(f.marque if f else "") != n(marque):
-        return False
-    if mois:
-        premier = date(int(mois[:4]), int(mois[5:7]), 1)
-        suivant = date(premier.year + (premier.month == 12), premier.month % 12 + 1, 1)
-        if session.debut >= suivant or session.fin < premier:
-            return False
     if formateur:
         cible = n(formateur)
         if not any(a.formateur_id == formateur or cible in n(a.nom_fichier) for a in session.animations.all()):
@@ -215,7 +227,7 @@ def _correspond(session, q, pays, marque, mois, formateur):
 
 def _mois_valide(mois):
     return len(mois) == 7 and mois[4] == "-" and mois[:4].isdigit() and mois[5:].isdigit() \
-        and 1 <= int(mois[5:]) <= 12
+        and 1 <= int(mois[5:]) <= 12 and 1 <= int(mois[:4]) <= 9998
 
 
 class SessionsListe(APIView):
@@ -225,11 +237,24 @@ class SessionsListe(APIView):
         mois = p.get("mois", "").strip()
         if mois and not _mois_valide(mois):
             return _erreur("mois invalide (AAAA-MM attendu)", 400)
-        filtres = (p.get("q", "").strip(), p.get("pays", "").strip(), p.get("marque", "").strip(),
-                   mois, p.get("formateur", "").strip())
-        # Le filtre reduit d'abord la liste ; le PDP tranche ensuite session par session.
-        candidates = [s for s in _sessions() if _correspond(s, *filtres)]
-        visibles = [s for s in candidates if peut_lire(request, s)]
+        marque = p.get("marque", "").strip()
+        sessions = _sessions()
+        if marque:
+            # Sans accents ni casse (Citroen = Citroën), en SQL sur les marques connues.
+            n = import_referentiel.normaliser
+            connues = Formation.objects.values_list("marque", flat=True).distinct()
+            sessions = sessions.filter(formation__marque__in=[m for m in connues if n(m) == n(marque)])
+        if mois:
+            premier = date(int(mois[:4]), int(mois[5:7]), 1)
+            suivant = date(premier.year + (premier.month == 12), premier.month % 12 + 1, 1)
+            sessions = sessions.filter(debut__lt=suivant, fin__gte=premier)
+        filtres = (p.get("q", "").strip(), p.get("pays", "").strip(), p.get("formateur", "").strip())
+        # Le filtre reduit d'abord la liste ; le PDP tranche ensuite, toutes les
+        # sessions retenues dans une seule demande (par lots).
+        candidates = [s for s in sessions if _correspond(s, *filtres)]
+        lisibles = _permis_lot(request, SESSION,
+                               [(str(s.pk), {"formateurs": formateurs_ids(s)}) for s in candidates], "read")
+        visibles = [s for s in candidates if lisibles.get(str(s.pk))]
         avancement = _avancement_des_sessions(visibles)
         return Response({"sessions": [session_json(s, avancement.get(str(s.pk))) for s in visibles]})
 
@@ -316,11 +341,24 @@ def session_liee(contenu):
     return _sessions().filter(pk=int(ident)).first()
 
 
+def referentiel_impose(existant):
+    """Vrai si le brouillon doit se rattacher a une session du referentiel.
+
+    Referentiel vide : saisie libre. Sinon, un brouillon nouveau ou deja lie
+    doit rester lie ; un ancien brouillon non lie (cree avant le referentiel) reste libre."""
+    if not SessionFormation.objects.exists():
+        return False
+    return existant is None or session_liee(existant.contenu) is not None
+
+
 def reimposer(contenu, session):
     """Le contenu du brouillon, avec les donnees du referentiel reimposees.
 
-    Le serveur fait foi pour la formation, les dates, le lieu et l'identite des
+    Le serveur fait foi pour la formation, les dates, le lieu, le nombre de
+    journees (celui de la session, `JOURS_MAX` au plus) et l'identite des
     stagiaires ; notes, appreciations, presence et textes restent ceux du formateur.
+    Le seuil et le type de compte rendu ne sont pas reimposes : le referentiel
+    ne fait que les preremplir, le formateur peut les changer.
     Leve `StagiaireHorsSession` si un participant n'est pas inscrit.
     """
     norm = import_referentiel.normaliser
@@ -334,6 +372,7 @@ def reimposer(contenu, session):
         "fin": session.fin.isoformat(),
         "lieu": session.lieu,
         "pays": session.pays,
+        "nbJours": jours_retenus(session),
     })
     participants = contenu.get("participants", [])
     if not isinstance(participants, list):

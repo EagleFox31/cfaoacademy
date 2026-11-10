@@ -30,6 +30,7 @@ class FauxPDP:
     def __init__(self):
         self.demandes = []
         self.reponse = True
+        self.lots = []
 
     def __call__(self, principal, resource, action):
         self.demandes.append({"principal": principal, "kind": resource["kind"],
@@ -37,11 +38,17 @@ class FauxPDP:
                               "attr": resource.get("attr", {})})
         return self.reponse(principal, resource, action) if callable(self.reponse) else self.reponse
 
+    def lot(self, principal, resources, action):
+        """`check_resources` : la meme reponse, ressource par ressource ; chaque appel est note."""
+        self.lots.append(len(resources))
+        return {str(r.get("id") or "_new"): bool(self(principal, r, action)) for r in resources}
+
 
 @pytest.fixture(autouse=True)
 def pdp(monkeypatch):
     faux = FauxPDP()
     monkeypatch.setattr(cerbos, "check_permission", faux)
+    monkeypatch.setattr(cerbos, "check_resources", faux.lot)
     return faux
 
 

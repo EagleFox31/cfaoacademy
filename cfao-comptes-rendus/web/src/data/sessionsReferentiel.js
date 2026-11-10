@@ -3,8 +3,9 @@
  *
  * Referentiel des formations non vide : les sessions de l'API
  * (`/cr-donnees/sessions`), seules a pouvoir etre documentees. Referentiel
- * vide, ou service qui ne repond pas (mode d'essai) : le comportement
- * d'avant est conserve, avec les sessions d'essai et la saisie manuelle.
+ * vide, ou service absent (mode d'essai) : le comportement d'avant est
+ * conserve, avec les sessions d'essai et la saisie manuelle. Un service
+ * present mais en panne ou qui refuse n'est pas « absent » : erreur lisible.
  *
  * Ce module est le seul a decider de la source ; les ecrans n'appellent
  * plus `sessionsDuFormateur` directement.
@@ -74,12 +75,24 @@ async function obtenir(url) {
   }
 }
 
-/** `{ vide }` quand le service repond ; `null` sinon (mode d'essai). */
+/**
+ * `{ vide }` quand le service repond ; `null` quand il est absent
+ * (404, reponse qui n'est pas l'etat) : le mode d'essai. Un refus
+ * (401, 403), une panne (5xx), un delai depasse ou un reseau coupe levent
+ * une `ErreurSessions` : le service existe, on ne le remplace pas par des
+ * sessions de demonstration.
+ */
 export function chargerEtat() {
   return unSeulAppel(ETAT, async () => {
+    let r
     try {
-      const r = await obtenir(ETAT)
-      if (!r.ok) return null
+      r = await obtenir(ETAT)
+    } catch {
+      throw new ErreurSessions(0)
+    }
+    if (r.status === 404) return null
+    if (!r.ok) throw new ErreurSessions(r.status)
+    try {
       const etat = await r.json()
       return typeof etat?.vide === 'boolean' ? etat : null
     } catch {
@@ -107,7 +120,7 @@ async function lireJson(url) {
  * Les sessions du formateur : `{ source, sessions }`.
  *
  * En mode d'essai les filtres ne s'appliquent pas (la liste tient en
- * quelques lignes). Une panne du service, referentiel renseigne, leve
+ * quelques lignes). Une panne ou un refus du service (etat ou liste) leve
  * une `ErreurSessions` : on ne retombe pas sur les sessions d'essai.
  */
 export async function chargerSessions(filtres = {}, user = null) {

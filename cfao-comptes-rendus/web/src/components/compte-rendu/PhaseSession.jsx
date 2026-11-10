@@ -165,8 +165,9 @@ export default function PhaseSession({
         {/* Sous la liste, comme le « Je n'ai pas de compte » d'un
             formulaire de connexion : la ou le regard arrive quand il
             n'a rien trouve au-dessus, et jamais noye dans la grille.
-            Referentiel renseigne : pas de saisie libre. */}
-        {!referentiel && (
+            Referentiel renseigne : pas de saisie libre ; service en erreur :
+            pas non plus, la liste n'est pas connue. */}
+        {!referentiel && !erreur && (
           <div className="cr-echappee">
             <span className="cr-echappee-texte">
               Vous ne trouvez pas votre formation dans la liste ?

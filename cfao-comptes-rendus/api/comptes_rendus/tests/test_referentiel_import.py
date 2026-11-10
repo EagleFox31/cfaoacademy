@@ -3,7 +3,7 @@
 Le fichier est fictif (noms inventes, construit en memoire) : aucune donnee reelle.
 """
 import io
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 from django.core.management import call_command
@@ -144,8 +144,6 @@ def test_un_libelle_de_formation_different_est_signale_sans_etre_modifie(client,
 
 
 def test_les_anomalies_de_dates_de_libelles_et_d_homonymes(db, excel):
-    from datetime import datetime
-
     from comptes_rendus.tests.conftest import lignes_fictives
     base = lignes_fictives()[0]
     lignes = [
@@ -297,3 +295,109 @@ def test_hors_mode_local_la_commande_ne_fait_rien(mode_local, settings, monkeypa
     monkeypatch.setenv("CR_COMPTE_ADMIN_DEV1_MDP", "mdp-un-fictif")
     call_command("comptes_referentiel", stdout=io.StringIO())
     assert not comptes.existe("admin.dev1")
+
+
+# ── Formations neuves, longueurs, animateurs ───────────────────────────
+
+def lignes_session_neuve(reference="NEW-1", numeros=("S-3001", "S-3002", "S-3003")):
+    from comptes_rendus.tests.conftest import LIGNE
+    return [{**LIGNE, "numero": n, "reference": reference, "marque": "Toyota", "designation": "Formation neuve",
+             "animateurs": "Marie FICTIVE", "debut": datetime(2026, 5, 4 + 7 * i), "fin": datetime(2026, 5, 6 + 7 * i),
+             "lieu": "Douala, Cameroun", "nom": f"Nom{i}", "prenom": "Zoe", "pays": "Cameroun", "presence": "Présent"}
+            for i, n in enumerate(numeros)]
+
+
+def comptes(rapport):
+    return {k: rapport[k] for k in ("sessions_a_creer", "sessions_a_mettre_a_jour", "sessions_inchangees",
+                                    "formations_a_creer", "stagiaires_a_creer", "inscriptions_a_creer")}
+
+
+def test_une_formation_neuve_partagee_par_trois_sessions_compte_pour_une(db, excel, profils_referentiel):
+    lignes = lire(excel(lignes_session_neuve()))
+    essai = imp.analyser(lignes)
+    applique = imp.appliquer(lignes, auteur="test", nom_fichier="f.xlsx")
+    assert essai["formations_a_creer"] == applique["formations_a_creer"] == 1
+    assert Formation.objects.filter(code="NEW-1").count() == 1
+    assert comptes(essai) == comptes(applique)
+
+
+def test_une_session_existante_dont_la_formation_est_neuve_est_comptee_pareil_en_essai_et_en_application(
+        db, excel, profils_referentiel):
+    from comptes_rendus.tests.conftest import lignes_fictives
+    imp.appliquer(lire(excel()), auteur="test", nom_fichier="f.xlsx")
+    # S-2602 n'avait pas de reference : elle en recoit une, donc une formation neuve.
+    modifiees = [{**l, "reference": "NEW-2"} if l["numero"] == "S-2602" else l for l in lignes_fictives()]
+    lignes = lire(excel(modifiees))
+    essai = imp.analyser(lignes)
+    assert (essai["sessions_a_mettre_a_jour"], essai["formations_a_creer"]) == (1, 1)
+    applique = imp.appliquer(lignes, auteur="test", nom_fichier="f.xlsx")
+    assert comptes(essai) == comptes(applique)
+    assert Session.objects.get(numero="S-2602").formation.code == "NEW-2"
+    # Rejoue : plus rien a faire.
+    assert imp.analyser(lignes)["sessions_a_mettre_a_jour"] == 0
+
+
+CHAMPS_LONGS = ["numero", "reference", "marque", "designation", "lieu", "nom", "prenom", "pays"]
+
+
+def test_les_limites_viennent_des_colonnes_du_modele():
+    from comptes_rendus.models import Animation, Formation, Session, Stagiaire
+    taille = lambda m, c: m._meta.get_field(c).max_length
+    assert imp.LIMITES["numero"] == taille(Session, "numero")
+    assert imp.LIMITES["reference"] == taille(Formation, "code")
+    assert imp.LIMITES["marque"] == taille(Formation, "marque")
+    assert imp.LIMITES["designation"] == min(taille(Formation, "libelle"), taille(Session, "libelle_fichier"))
+    assert imp.LIMITES["lieu"] == taille(Session, "lieu")
+    assert imp.LIMITES["nom"] == taille(Stagiaire, "nom") and imp.LIMITES["prenom"] == taille(Stagiaire, "prenom")
+    assert imp.LIMITES["pays"] == min(taille(Stagiaire, "pays"), taille(Session, "pays"))
+    assert imp.LIMITE_ANIMATEUR == taille(Animation, "nom_fichier")
+
+
+@pytest.mark.parametrize("champ", CHAMPS_LONGS)
+def test_une_valeur_trop_longue_est_signalee_et_la_ligne_ignoree(db, excel, profils_referentiel, champ):
+    from comptes_rendus.tests.conftest import lignes_fictives
+    longue = {**lignes_fictives()[0], "numero": "S-LONG", "nom": "Longue", "prenom": "Ligne"}
+    longue[champ] = "x" * (imp.LIMITES[champ] + 1)
+    lignes = lire(excel(lignes_fictives()[:2] + [longue]))
+    numero_de_ligne = lignes[2]["ligne"]
+    essai = imp.analyser(lignes)
+    applique = imp.appliquer(lignes, auteur="test", nom_fichier="f.xlsx")
+    for rapport in (essai, applique):
+        trop = [a for a in rapport["anomalies"] if a["type"] == "valeur_trop_longue"]
+        assert len(trop) == 1 and f"ligne {numero_de_ligne} ignoree" in trop[0]["message"]
+        assert str(imp.LIMITES[champ] + 1) in trop[0]["message"]
+        assert rapport["sessions_a_creer"] == 1
+    assert comptes(essai) == comptes(applique)
+    assert Session.objects.count() == 1 and not Session.objects.filter(numero__startswith="S-LONG").exists()
+    assert not Stagiaire.objects.filter(nom="LONGUE").exists()
+
+
+def test_une_valeur_a_la_limite_est_acceptee(db, excel, profils_referentiel):
+    from comptes_rendus.tests.conftest import lignes_fictives
+    limite = {**lignes_fictives()[0], "reference": "R" * imp.LIMITES["reference"]}
+    rapport = imp.analyser(lire(excel([limite])))
+    assert "valeur_trop_longue" not in types(rapport) and rapport["sessions_a_creer"] == 1
+
+
+def test_un_nom_d_animateur_trop_long_est_ignore_seul(db, excel, profils_referentiel):
+    from comptes_rendus.tests.conftest import lignes_fictives
+    a = {**lignes_fictives()[0], "animateurs": "Marie FICTIVE / " + "A" * (imp.LIMITE_ANIMATEUR + 1)}
+    lignes = lire(excel([a]))
+    essai = imp.analyser(lignes)
+    imp.appliquer(lignes, auteur="test", nom_fichier="f.xlsx")
+    assert types(essai).count("valeur_trop_longue") == 1
+    assert essai["sessions_a_creer"] == 1
+    assert list(Animation.objects.values_list("nom_fichier", flat=True)) == ["Marie FICTIVE"]
+
+
+def test_un_animateur_existant_est_retrouve_malgre_la_casse_et_les_espaces(db, excel, profils_referentiel):
+    from comptes_rendus.tests.conftest import lignes_fictives
+    base = lignes_fictives()[:2]
+    avec = lambda nom: [{**l, "animateurs": nom} for l in base]
+    imp.appliquer(lire(excel(avec("Jean Dupont"))), auteur="test", nom_fichier="f.xlsx")
+    assert Animation.objects.count() == 1
+    suite = lire(excel(avec("JEAN  DUPONT")))
+    essai = imp.analyser(suite)
+    assert (essai["sessions_a_mettre_a_jour"], essai["sessions_inchangees"]) == (0, 1)
+    imp.appliquer(suite, auteur="test", nom_fichier="f.xlsx")
+    assert list(Animation.objects.values_list("nom_fichier", flat=True)) == ["Jean Dupont"]

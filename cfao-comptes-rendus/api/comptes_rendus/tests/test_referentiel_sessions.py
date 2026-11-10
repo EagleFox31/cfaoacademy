@@ -77,6 +77,7 @@ def test_une_session_est_decrite_pour_le_portail(client, pdp_fidele, referentiel
     ({"pays": "cote d'ivoire"}, ["S-2602"]),
     ({"pays": "RCI"}, ["S-2602"]),
     ({"marque": "toyota"}, ["S-2601", "S-2603"]),
+    ({"marque": "TOYÔTA "}, ["S-2601", "S-2603"]),
     ({"marque": "Suzuki"}, []),
     ({"mois": "2026-02"}, ["S-2601"]),
     ({"mois": "2026-03"}, ["S-2602"]),
@@ -287,3 +288,52 @@ def test_un_brouillon_manuel_ou_d_une_autre_session_ne_compte_pas(client, pdp_fi
     stockage.ecrire("f-a", "manuel-1", {"sessionId": "manuel-1", "textes": {"objectifs.objectifs": "ok"}})
     lier("f-b", autre, {"textes": {"objectifs.objectifs": "ok"}})
     assert client("adm").get(f"{LISTE}/{s.pk}").json()["completion"] == 0
+
+
+# ── Droits en lot et filtres en base ───────────────────────────────────
+
+def test_la_liste_interroge_le_pdp_une_fois_par_lot_et_non_par_session(client, pdp_fidele, referentiel):
+    pdp_fidele.lots.clear()
+    assert numeros(client("f-a").get(LISTE)) == ["S-2601", "S-2602"]
+    # Une demande « list », puis une seule pour les trois sessions.
+    assert pdp_fidele.lots == [1, 3]
+
+
+def test_le_lot_porte_les_formateurs_de_chaque_session(client, pdp_fidele, referentiel):
+    pdp_fidele.demandes.clear()
+    client("f-b").get(LISTE)
+    lectures = {d["id"]: d["attr"]["formateurs"] for d in pdp_fidele.demandes
+                if d["kind"] == "session_formation" and d["action"] == "read"}
+    assert lectures == {str(referentiel["S-2601"].pk): ["f-a"], str(referentiel["S-2602"].pk): ["f-a"],
+                        str(referentiel["S-2603"].pk): ["f-b"]}
+
+
+def test_un_pdp_en_panne_refuse_la_liste_filtree(client, pdp_fidele, referentiel, monkeypatch):
+    from core.authz import cerbos
+    monkeypatch.setattr(cerbos, "check_resources", lambda principal, resources, action:
+                        {str(r["id"]): action == "list" for r in resources})
+    r = client("lect").get(LISTE)
+    assert r.status_code == 200 and numeros(r) == []
+
+
+def test_les_filtres_mois_et_marque_restreignent_les_sessions_soumises_au_pdp(client, pdp_fidele, referentiel):
+    pdp_fidele.lots.clear()
+    client("adm").get(LISTE, {"marque": "TOYOTA", "mois": "2026-04"})
+    assert pdp_fidele.lots == [1, 1]
+    assert numeros(client("adm").get(LISTE, {"marque": "TOYOTA"})) == ["S-2601", "S-2603"]
+
+
+@pytest.mark.parametrize("mois", ["0000-01", "9999-12", "0000-12"])
+def test_une_annee_hors_bornes_est_refusee_sans_erreur_serveur(client, pdp_fidele, referentiel, mois):
+    assert client("adm").get(LISTE, {"mois": mois}).status_code == 400
+
+
+def test_la_duree_d_une_session_trop_longue_est_bornee_pour_l_avancement(client, pdp_fidele, referentiel):
+    # S-2603 dure 7 jours ; le compte rendu n'en a que 5.
+    s = referentiel["S-2603"]
+    assert s.jours == 7 and ref.jours_retenus(s) == 5
+    inscrit = str(s.inscriptions.get().pk)
+    contenu = contenu_complet(inscrit, jours=5)
+    contenu["termineLe"] = "2026-04-13"
+    lier("f-b", s, contenu)
+    assert client("adm").get(f"{LISTE}/{s.pk}").json()["completion"] == 100
