@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { canSeePlanning, cleSeule, pageAccueil, planningMenu, PLANNING_HOME, PLANNING_ROLES } from './planningAccess'
+import {
+  canSeePlanning, CENTER_ROLES, centreSeul, pageAccueil, pageCentreAutorisee,
+  planningMenu, PLANNING_HOME, PLANNING_ROLES,
+} from './planningAccess'
 
 const ALL = { view: true, manage: true, freeze: true, import: true, gaps: true }
 
@@ -46,21 +49,32 @@ describe('page d\'arrivée après connexion', () => {
     expect(pageAccueil([])).toBe('/portail')
     expect(pageAccueil(undefined)).toBe('/portail')
   })
-  it('équipe du centre : la clé de répartition', () => {
-    for (const role of ['center_director', 'center_assistant', 'training_coordinator']) {
-      expect(pageAccueil([role])).toBe(PLANNING_HOME)
-      expect(cleSeule([role])).toBe(true)
+  it('équipe du centre : son portail', () => {
+    for (const role of CENTER_ROLES) {
+      expect(pageAccueil([role])).toBe('/portail')
+      expect(centreSeul([role])).toBe(true)
     }
   })
   it('un autre rôle de portail garde tout le portail', () => {
-    expect(cleSeule(['center_director', 'superadmin'])).toBe(false)
-    expect(cleSeule(['training_coordinator', 'dps'])).toBe(false)
+    expect(centreSeul(['center_director', 'superadmin'])).toBe(false)
+    expect(centreSeul(['training_coordinator', 'dps'])).toBe(false)
     expect(pageAccueil(['center_director', 'superadmin'])).toBe('/portail')
   })
-  it('seule l\'équipe du centre est réduite à la clé', () => {
-    const centre = ['center_director', 'center_assistant', 'training_coordinator']
-    for (const role of PLANNING_ROLES.filter(r => !centre.includes(r))) {
-      expect(cleSeule([role])).toBe(false)
+  it('seule l\'équipe du centre est réduite à sa vitrine et à la clé', () => {
+    for (const role of PLANNING_ROLES.filter(r => !CENTER_ROLES.includes(r))) {
+      expect(centreSeul([role])).toBe(false)
     }
+  })
+})
+
+describe('pageCentreAutorisee', () => {
+  it('la vitrine et la clé de répartition', () => {
+    expect(pageCentreAutorisee('/portail')).toBe(true)
+    expect(pageCentreAutorisee(PLANNING_HOME)).toBe(true)
+    expect(pageCentreAutorisee(`${PLANNING_HOME}/country`)).toBe(true)
+  })
+  it('rien d\'autre dans le portail', () => {
+    expect(pageCentreAutorisee('/portail/assistance')).toBe(false)
+    expect(pageCentreAutorisee('/portail/cle-repartition-bis')).toBe(false)
   })
 })

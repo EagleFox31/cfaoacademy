@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom'
 import useAuth from '../hooks/useAuth'
 import useLocale from '../hooks/useLocale'
 import PortalLoader from '../components/PortalLoader'
-import { consumeAuthReturnPath, handleCallback } from '../lib/auth'
+import { CALLBACK_INVALID, consumeAuthReturnPath, handleCallback, relancerConnexionUneFois } from '../lib/auth'
 import { pageAccueil } from '../utils/planningAccess'
 
 // Le code d'autorisation ne s'échange qu'une fois : le double montage de
@@ -50,6 +50,7 @@ export default function AuthCallback() {
         navigate(target, { replace: true })
       })
       .catch((err) => {
+        if (err?.message === CALLBACK_INVALID && relancerConnexionUneFois()) return
         console.error('[AuthCallback] Erreur d’échange de code :', err)
         if (vivant) setErreur(true)
       })
@@ -74,7 +75,7 @@ export default function AuthCallback() {
               {t.authFailed || 'Connexion interrompue'}
             </h1>
             <p style={{ color: 'var(--muted, #6b7280)', marginBottom: 24, lineHeight: 1.5, fontSize: 14 }}>
-              Le lien de retour n’était plus valide ou la session a expiré. Veuillez relancer la connexion d’entreprise.
+              {t.authFailedDetail}
             </p>
             <button type="button" className="btn btn-primary" onClick={connexionSso} style={{ width: '100%', height: 44 }}>
               {t.authRetry || 'Réessayer la connexion'}

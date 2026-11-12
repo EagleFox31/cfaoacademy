@@ -6,7 +6,7 @@ const DEFAULT_IMG = '/assets/logo-cfao-mobility.jpg'
 export default function PvCard({
   kicker, title, meta, variant, corner,
   to, href, img, imgFallback, imgPosition, cardMedia, logo, brandLabel, brandAside,
-  cta, ctaAside, ctaDateTime, secondCta, secondCtaTo,
+  cta, ctaAside, ctaDateTime, secondCta, secondCtaTo, actions,
   accentColor,
   hoverHint,
   onClick,
@@ -107,7 +107,8 @@ export default function PvCard({
         {title ? <h3>{title}</h3> : null}
         {meta && <div className="meta">{meta}</div>}
 
-        {(ctaAside || cta || secondCta) && (
+        {actions && <div className="pv-card-cta pv-card-cta--split pv-card-cta--actions">{actions}</div>}
+        {!actions && (ctaAside || cta || secondCta) && (
           <div className={`pv-card-cta${hasDualCta ? ' pv-card-cta--dual' : ''}${ctaAside ? ' pv-card-cta--split' : ''}`}>
             {ctaAside && (
               <time className="pv-card-cta-aside" dateTime={ctaDateTime}>

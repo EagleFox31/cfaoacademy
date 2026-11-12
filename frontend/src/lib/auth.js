@@ -195,6 +195,31 @@ export async function loginWithCredentials(username, password) {
   }
 }
 
+export const CALLBACK_INVALID = 'callback_invalid'
+/** Horodatage de la dernière relance automatique depuis `/callback`. */
+const RELANCE_KEY = 'cfao.auth.relance'
+const RELANCE_FENETRE_MS = 2 * 60_000
+
+/**
+ * Retour de Keycloak dont le `state` ne correspond plus à cet onglet : page de
+ * connexion restée ouverte au-delà du délai Keycloak (`expired_code`,
+ * `restart_after_timeout`), connexion lancée depuis un autre onglet, ou
+ * `/callback` rechargé. La session Keycloak est en général déjà ouverte : un
+ * nouveau flux revient aussitôt, sans ressaisie. Une seule relance par fenêtre
+ * de deux minutes, pour ne jamais boucler.
+ */
+export function relancerConnexionUneFois() {
+  try {
+    const derniere = Number(sessionStorage.getItem(RELANCE_KEY) || 0)
+    if (Date.now() - derniere < RELANCE_FENETRE_MS) return false
+    sessionStorage.setItem(RELANCE_KEY, String(Date.now()))
+  } catch {
+    return false
+  }
+  login()
+  return true
+}
+
 export async function handleCallback() {
   const url = new URL(window.location.href)
   const code = url.searchParams.get('code')
@@ -203,10 +228,11 @@ export async function handleCallback() {
   const verifier = sessionStorage.getItem(VERIFIER_KEY)
 
   if (!code || !state || state !== expected || !verifier) {
-    throw new Error('callback_invalid')
+    throw new Error(CALLBACK_INVALID)
   }
   sessionStorage.removeItem(STATE_KEY)
   sessionStorage.removeItem(VERIFIER_KEY)
+  sessionStorage.removeItem(RELANCE_KEY)
 
   const response = await fetch(`${ISSUER}/protocol/openid-connect/token`, {
     method: 'POST',

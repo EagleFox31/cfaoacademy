@@ -30,12 +30,14 @@ const ROLE_LABELS = {
   superadmin:       'Super Admin',
   trainer:          'Formateur',
   center_director:  'Dir. Centre de formation',
+  training_coordinator: 'Coordinateur formations',
+  center_assistant: 'Assistante Centre de formation',
 }
 
 const ROLE_PRIORITY = [
   'superadmin','branch_hr','branch_admin','group_hr','group_admin',
   'workshop_manager','team_manager','ki','pic',
-  'trainer','center_director','dop','dps','branch_director',
+  'trainer','center_director','training_coordinator','center_assistant','dop','dps','branch_director',
 ]
 
 function getPrimaryRole(roles) {
@@ -156,6 +158,7 @@ export default function PortalHeader({
   activeBu: controlledActiveBu,
   onBuChange,
   managerHeroCard,
+  centerHero,
 }) {
   const { t } = useLocale('portal')
   const { t: heroT } = useLocale('hero')
@@ -293,10 +296,11 @@ export default function PortalHeader({
       firstName={user.firstName}
       user={user}
       primaryRole={primaryRole}
-      hideOrient={showBrandLevels || showDpsBrandsStrip || isSuperAdmin || isManager}
+      hideOrient={showBrandLevels || showDpsBrandsStrip || isSuperAdmin || isManager || Boolean(centerHero)}
       dpsHero={dpsHero}
       superadminHero={superadminHero}
       managerHero={managerHero}
+      centerHero={centerHero}
     />
   )
 

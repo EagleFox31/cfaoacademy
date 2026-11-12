@@ -1,5 +1,5 @@
 import { getCopy } from '../i18n/index.js'
-import { useLocaleContext } from '../context/LocaleProvider.jsx'
+import { useLocaleContext } from '../context/localeContext.js'
 
 export default function useLocale(section) {
   const { locale, setLocale } = useLocaleContext()

@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import GardeCleSeule from './GardeCleSeule.jsx'
+import GardeCentre from './GardeCentre.jsx'
 import useAuth from '../hooks/useAuth.js'
 
 vi.mock('../hooks/useAuth.js', () => ({ default: vi.fn() }))
@@ -26,31 +26,35 @@ async function afficher(chemin, roles) {
   await act(async () => {
     racine.render(
       <MemoryRouter initialEntries={[chemin]}>
-        <GardeCleSeule><Lieu /></GardeCleSeule>
+        <GardeCentre><Lieu /></GardeCentre>
       </MemoryRouter>,
     )
   })
   return hote.querySelector('[data-testid="lieu"]')?.textContent
 }
 
-afterEach(async () => {
+async function demonter() {
   await act(async () => racine.unmount())
   hote.remove()
-})
+}
 
-describe('GardeCleSeule', () => {
+afterEach(demonter)
+
+describe('GardeCentre', () => {
   it.each(['center_director', 'center_assistant', 'training_coordinator'])(
-    '%s : ramené du portail vers la clé',
+    '%s : garde sa vitrine /portail',
     async (role) => {
-      expect(await afficher('/portail', [role])).toBe('/portail/cle-repartition')
+      expect(await afficher('/portail', [role])).toBe('/portail')
     },
   )
 
-  it('ramène aussi depuis une autre page du portail', async () => {
-    expect(await afficher('/portail/assistance', ['center_director'])).toBe('/portail/cle-repartition')
+  it('ramène vers la vitrine depuis une autre page du portail', async () => {
+    expect(await afficher('/portail/assistance', ['center_director'])).toBe('/portail')
   })
 
-  it('laisse les sous-vues de la clé', async () => {
+  it('laisse la clé et ses sous-vues', async () => {
+    expect(await afficher('/portail/cle-repartition', ['training_coordinator'])).toBe('/portail/cle-repartition')
+    await demonter()
     expect(await afficher('/portail/cle-repartition/country', ['center_assistant'])).toBe('/portail/cle-repartition/country')
   })
 
@@ -59,13 +63,12 @@ describe('GardeCleSeule', () => {
   })
 
   it('ne touche pas aux autres rôles', async () => {
-    expect(await afficher('/portail', ['dps'])).toBe('/portail')
-    await act(async () => racine.unmount())
-    hote.remove()
-    expect(await afficher('/portail', ['center_director', 'superadmin'])).toBe('/portail')
+    expect(await afficher('/portail/assistance', ['dps'])).toBe('/portail/assistance')
+    await demonter()
+    expect(await afficher('/portail/assistance', ['center_director', 'superadmin'])).toBe('/portail/assistance')
   })
 
   it('ne touche pas un visiteur non connecté', async () => {
-    expect(await afficher('/portail', null)).toBe('/portail')
+    expect(await afficher('/portail/assistance', null)).toBe('/portail/assistance')
   })
 })

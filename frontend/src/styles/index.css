@@ -380,7 +380,9 @@ body {
   padding: 0 clamp(16px, 2vw, 32px);
 }
 /* Écran applicatif (menu du module dans la barre) : toute la largeur disponible. */
-.nav--wide .nav-shell { max-width: none; }
+/* La barre du portail et des écrans applicatifs occupe toute la largeur de l'écran. */
+.nav--wide .nav-shell,
+.nav--portal .nav-shell { max-width: none; }
 .nav--portal .nav-brand {
   grid-column: 1;
   grid-row: 1;

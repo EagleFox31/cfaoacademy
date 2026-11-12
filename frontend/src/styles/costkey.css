@@ -42,10 +42,9 @@
 .ck-topbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px 24px;
-  padding: 14px 18px;
+  align-items: center;
+  gap: 10px 28px;
+  padding: 12px 16px 12px 20px;
   border: 1px solid #e3e5ec;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.88);
@@ -83,7 +82,17 @@
   height: 34px; padding: 0 14px; border-bottom: 1px solid #eceef3;
 }
 .ck-skel-row:last-child { border-bottom: 0; }
-.ck-topbar-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.ck-topbar-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 6px; }
+.ck-topbar-heading h1 { margin-right: 4px; }
+/* Filtres du titre et de la vue : une seule rangée qui ne passe à la ligne que faute de place. */
+.ck-topbar-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
+.ck-topbar-tools { margin-left: auto; }
+/* Le choix de filiale fait partie du titre : pas de cadre, seulement un survol. */
+.ck-topbar .ck-combo-btn { border-color: transparent; box-shadow: none; background: transparent; padding: 0 8px; font-size: 17px; }
+.ck-topbar .ck-combo-btn:hover { background: #f2f3f6; }
+/* L'année est un filtre : même contour que les autres. */
+.ck-topbar .ck-year select { background-color: #ffffff; box-shadow: inset 0 0 0 1px #d9dce5; }
+.ck-topbar .ck-year select:hover { background-color: #f7f8fa; box-shadow: inset 0 0 0 1px #b4bac9; }
 .ck-topbar-slot { display: contents; }
 .ck-topbar-tools .ck-pill-select select { font-weight: 650; }
 /* Noms de filiales en gras dans les tableaux (le combobox garde son propre poids). */
@@ -208,6 +217,33 @@
 .ck-pill-select.is-on select { background-color: #0e1126; color: #fff; }
 .ck-inline-err { font-size: 12px; color: #c40017; }
 
+/* Filtres à choix multiple de la barre au-dessus des indicateurs. */
+.ck-facet-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 8px 0 12px;
+  border: 1px solid #d9dce5; border-radius: 10px; background: #ffffff;
+  font: inherit; font-size: 14px; font-weight: 550; color: #3b4060; white-space: nowrap;
+  cursor: pointer; transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+.ck-facet-btn:hover, .ck-facet-btn[aria-expanded='true'] { border-color: #b4bac9; background: #f7f8fa; color: #0e1126; }
+.ck-facet-sep { opacity: 0.55; }
+.ck-facet-btn:focus-visible { outline: 2px solid #1a56db; outline-offset: 1px; }
+.ck-facet-btn[aria-expanded='true'] .ck-combo-chev { transform: rotate(180deg); }
+/* Fond clair : les logos des marques y restent lisibles. */
+.ck-facet.is-on .ck-facet-btn { border-color: #1a56db; background: #e8efff; color: #1a56db; font-weight: 650; }
+.ck-facet.is-on .ck-facet-btn .ck-combo-chev { color: #1a56db; }
+.ck-facet-box.is-ghost { visibility: hidden; }
+.ck-country-add { display: inline-flex; margin: -6px; padding: 6px; border-radius: 6px; }
+.ck-country-add:hover .ck-facet-box { border-color: #1a56db; }
+.ck-facet-value { display: inline-flex; align-items: center; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+.ck-combo-panel.ck-facet-panel { width: 260px; }
+.ck-facet-main { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.ck-facet-box {
+  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 16px; height: 16px;
+  border: 1.5px solid #b8bcc9; border-radius: 4px; background: #fff; color: #fff;
+}
+.ck-combo-opt.is-on .ck-facet-box { border-color: #1a56db; background: #1a56db; }
+.ck-facet-count { color: #6b7086; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+
 /* ── contenu ── */
 .ck-view { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .ck-viewbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
@@ -278,6 +314,8 @@ button.ck-review-mark:focus-visible { outline: 2px solid #1a56db; outline-offset
 .ck-split--in_subsidiary { background: #bfecd0; color: #0b5c2e; }
 .ck-split--at_academy { background: #c3d8fb; color: #123d9c; }
 .ck-split--postponed { background: #f9c0c7; color: #8f0015; }
+.ck-split--plain { background: #ffffff; color: #0e1126; box-shadow: inset 0 0 0 1px #d9dce5; }
+.ck-split--plain .ck-kpi-unit { font-size: 11px; font-weight: 500; color: var(--muted); }
 @container (min-width: 1500px) {
   .ck-kpi--split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(170px, auto); column-gap: 18px; align-content: start; }
   .ck-kpi--split > dt, .ck-kpi--split > dd:not(.ck-kpi-split) { grid-column: 1; }
@@ -359,6 +397,20 @@ button.ck-review-mark:focus-visible { outline: 2px solid #1a56db; outline-offset
 .ck-flag { flex: none; width: 22px; height: 15px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px rgba(14, 17, 38, .12); }
 .ck-flag-code { flex: none; min-width: 22px; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 15px; text-align: center; color: var(--muted); border: 1px solid #d9dbe3; border-radius: 2px; }
 .ck-filters { padding: 10px 12px; border: 1px solid #e3e5ec; border-radius: 10px; background: #fff; }
+
+/* Recherche et filtres, au-dessus des indicateurs qu'ils modifient. */
+.sheet.ck-filterbar { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.ck-filterbar-host { flex: 1 1 420px; min-width: 0; }
+.ck-filterbar .sheet-toolbar { border-bottom: 0; background: transparent; }
+.ck-filterbar-note { margin: 0; padding: 4px 14px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.ck-filterbar-note:empty { display: none; }
+/* Sur la ligne du titre : ni cadre ni fond, les filtres s'alignent sur ceux de la page. */
+.sheet.ck-filterbar.is-inline { flex: 0 1 auto; min-width: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.ck-filterbar.is-inline .ck-filterbar-host { flex: 0 1 auto; }
+.ck-filterbar.is-inline .sheet-toolbar { padding: 0; gap: 8px; flex-wrap: wrap; }
+.ck-filterbar.is-inline .sheet-btn-ghost { height: 34px; padding: 0 10px; border: 0; background: transparent; color: #1a56db; font-size: 13.5px; font-weight: 600; }
+.ck-filterbar.is-inline .sheet-btn-ghost:hover { background: #eef3ff; }
+.ck-filterbar.is-inline .ck-filterbar-note { padding: 0 6px; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
 
 /* Saisie directe refusée ou en conflit : visible quelle que soit la ligne éditée. */
 .ck-cell-alert {
@@ -577,3 +629,5 @@ button.ck-review-mark:focus-visible { outline: 2px solid #1a56db; outline-offset
 .ck-link-btn { align-self: flex-start; padding: 0; border: 0; background: none; color: #1a56db; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
 .ck-link-btn:hover { text-decoration: underline; }
 @media (max-width: 900px) { .ck-flow { grid-template-columns: minmax(0, 1fr); } }
+.ck-delivery { display: inline-flex; align-items: center; gap: 6px; }
+.ck-delivery svg { flex: none; color: var(--muted, #6b7280); }

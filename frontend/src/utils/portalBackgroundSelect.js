@@ -36,7 +36,8 @@ export const PORTAL_BACKGROUND_POSITIONS = {
 
 const ADMIN_ROLES = new Set(['superadmin', 'group_hr', 'branch_hr', 'branch_admin'])
 const MANAGER_ROLES = new Set(['dps', 'dop'])
-const TRAINER_ROLES = new Set(['trainer', 'ki', 'pic', 'center_director'])
+// Le visuel « trainer » est la photo du centre de formation : toute l'équipe du centre l'a.
+const TRAINER_ROLES = new Set(['trainer', 'ki', 'pic', 'center_director', 'training_coordinator', 'center_assistant'])
 
 /** Première marque Motors → clé visuelle (slug profil normalisé). */
 const MOTORS_BRAND_BACKGROUND_KEYS = {

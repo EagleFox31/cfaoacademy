@@ -101,6 +101,7 @@ const LOCAL_COUNTRY_FLAGS = {
 
 /** Codes ISO (alpha-3 du référentiel planning, alpha-2 accepté) → fichier local. */
 const ISO_FLAG_FILES = {
+  all: 'groupe-cfao', // choix « toutes les filiales »
   cmr: 'cameroon', cm: 'cameroon',
   civ: 'ivory-coast', ci: 'ivory-coast',
   sen: 'senegal', sn: 'senegal',

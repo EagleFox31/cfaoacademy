@@ -7,7 +7,7 @@ import useNavScrollSpy from '../hooks/useNavScrollSpy.js'
 import useLocale from '../hooks/useLocale.js'
 import LocaleSwitch from './LocaleSwitch.jsx'
 import useAuth from '../hooks/useAuth.js'
-import { canSeePlanning, cleSeule } from '../utils/planningAccess.js'
+import { canSeePlanning, centreSeul } from '../utils/planningAccess.js'
 import { usePortalOnboarding } from '../context/PortalOnboardingContext.jsx'
 import PortalHelpMenu from './PortalHelpMenu.jsx'
 import PortalNotificationsBell from './PortalNotificationsBell.jsx'
@@ -126,7 +126,7 @@ function UserMenu({ user, onLogout, t, onPortal = false }) {
               </Link>
             )}
 
-            {!cleSeule(user.roles ?? []) && (
+            {!centreSeul(user.roles ?? []) && (
               <Link
                 to="/portail/assistance"
                 className="nav-user-dropdown-item"
@@ -305,7 +305,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
   const mobileMenuId = `nav-mobile-menu${menuInstanceId}`
 
   const portalSections = useMemo(
-    () => (user && !cleSeule(user.roles ?? []) ? resolvePortalNavSections(user.roles, LMS_BY_USER[user.id], user) : []),
+    () => (user ? resolvePortalNavSections(user.roles, LMS_BY_USER[user.id], user) : []),
     [user],
   )
 
@@ -610,7 +610,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
                 {portalT.nav_training_catalog || 'Catalogue des formations'}
               </Link>
             )}
-            {onPortal && user && !cleSeule(user.roles ?? []) && (
+            {onPortal && user && !centreSeul(user.roles ?? []) && (
               <Link to="/portail/assistance" className="nav-mobile-foot-link" onClick={closeMenu}>
                 {portalT.nav_tech_assistance || 'Assistance technique'}
               </Link>

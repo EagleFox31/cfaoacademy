@@ -44,7 +44,24 @@ export const ROLE_PRIORITY = [
   'superadmin','build_team','group_admin','group_hr',
   'branch_director','branch_hr','branch_admin',
   'dop','dps','workshop_manager','team_manager',
-  'ki','pic','trainer','center_director','center_assistant',
+  'ki','pic','trainer','center_director','training_coordinator','center_assistant',
+]
+
+/** Sections du portail du centre de formation (CenterHome), communes aux trois rôles. */
+const DIRECTOR_NAV_SECTIONS = [
+  { key: 'besoins', id: 'besoins', labelKey: 'nav_sec_dir_besoins', iconKey: 'clipboard' },
+  { key: 'devis', id: 'devis', labelKey: 'nav_sec_dir_devis', iconKey: 'sliders' },
+  { key: 'offres', id: 'offres', labelKey: 'nav_sec_dir_offres', iconKey: 'clipboard' },
+  { key: 'calendrier', id: 'calendrier', labelKey: 'nav_sec_dir_calendrier', iconKey: 'milestone' },
+  { key: 'rapports', id: 'rapports', labelKey: 'nav_sec_dir_rapports', iconKey: 'clipboard' },
+  { key: 'roi', id: 'roi', labelKey: 'nav_sec_dir_roi', iconKey: 'sliders' },
+  { key: 'plateforme', id: 'plateforme', labelKey: 'nav_sec_dir_plateforme', iconKey: 'milestone' },
+]
+
+const CENTER_NAV_SECTIONS = [
+  { key: 'cle',     id: 'cle',     labelKey: 'nav_sec_centre_cle',     iconKey: 'sliders' },
+  { key: 'outils',  id: 'outils',  labelKey: 'nav_sec_centre_outils',  iconKey: 'clipboard' },
+  { key: 'bientot', id: 'bientot', labelKey: 'nav_sec_centre_bientot', iconKey: 'milestone' },
 ]
 
 export function getPrimaryRole(roles = []) {
@@ -148,6 +165,9 @@ export const PORTAL_NAV_SECTIONS = {
     { key: 'comptes-rendus',   id: 'comptes-rendus',   labelKey: 'nav_sec_comptes_rendus' },
     { key: 'sessions-a-venir', id: 'sessions-a-venir', labelKey: 'nav_sec_sessions_animees' },
   ],
+  center_director: DIRECTOR_NAV_SECTIONS,
+  training_coordinator: CENTER_NAV_SECTIONS,
+  center_assistant: CENTER_NAV_SECTIONS,
 }
 
 export function getPortalNavSections(roles) {
@@ -274,6 +294,10 @@ export const BRANDS = [
   { name: 'JCB',            logo: '/assets/logos/jcb.png',             cat: 'Engins TP',                     group: 'engins',   bu: 'equipment',   n: 8,  niveaux: 'Maint. - Diag.' },
   { name: 'Lovol',          logo: '/assets/logos/lovol.png',           cat: 'Engins · Agri',                 group: 'engins',   bu: 'equipment',   n: 11, niveaux: 'Maint. - Diag.' },
 ]
+
+/** Les marques de chaque pôle, telles que l'offre de formations les présente. */
+export const MOTORS_BRANDS = BRANDS.filter(b => b.bu === 'motors' && b.name !== 'Citroën')
+export const EQUIPMENT_BRANDS = BRANDS.filter(b => b.bu === 'equipment')
 
 export { SESSIONS } from './sessions.js'
 

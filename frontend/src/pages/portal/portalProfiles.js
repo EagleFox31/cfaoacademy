@@ -19,7 +19,16 @@ export const ROLE_PRIORITY = [
   'pic',
   'trainer',
   'center_director',
+  'training_coordinator',
+  'center_assistant',
 ]
+
+/** Mode du portail du centre de formation, par rôle. */
+const CENTER_MODES = {
+  center_director: 'director',
+  training_coordinator: 'coordinator',
+  center_assistant: 'assistant',
+}
 
 export const PORTAL_PROFILES = {
   learner: {
@@ -79,6 +88,12 @@ export const PORTAL_PROFILES = {
     roles: ['build_team', 'group_admin'],
     redirectTo: '/portail/delivery',
   },
+  center: {
+    key: 'center',
+    label: 'Centre de formation',
+    description: 'Clé de répartition, devis des filiales, besoins et taux de remplissage.',
+    roles: ['center_director', 'training_coordinator', 'center_assistant'],
+  },
 }
 
 /**
@@ -121,6 +136,9 @@ export function resolveProfile(roles = []) {
   }
   if (primary === 'ki' || primary === 'pic') {
     return PORTAL_PROFILES.ki
+  }
+  if (CENTER_MODES[primary]) {
+    return { ...PORTAL_PROFILES.center, mode: CENTER_MODES[primary] }
   }
 
   return PORTAL_PROFILES.learner

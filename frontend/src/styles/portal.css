@@ -7515,6 +7515,17 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   word-break: break-word;
 }
 
+/* Cases qui portent un chiffre (PortalCardKpis) : la valeur en grand */
+.portal-team-member-subcards--chiffres .portal-team-member-subcard-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--navy);
+  margin-top: auto; /* libellé sur une ou deux lignes : les chiffres restent sur la même ligne */
+}
+
 .portal-team-member-subcard-bar {
   display: flex;
   align-items: center;
@@ -12258,4 +12269,91 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
    qui verrait la hauteur avant mise a l'echelle (cf. utils/echelle.js). */
 :root[data-bas~="720"] .portal-page .portal-next-actions-viewport {
   min-height: 0;
+}
+
+/* ── Lisibilité des portails : tailles minimales des textes ──────────────
+   Un seul endroit pour les régler. Aucun texte utile sous 11 px. */
+.portal-page .portal-section-eyebrow { font-size: 13px; }
+.portal-page .portal-section-title { font-size: 28px; }
+.portal-page .portal-status-chip { font-size: 12px; }
+.portal-page .portal-campaign-year-chip { font-size: 12px; }
+.portal-page .pv-card h3 { font-size: 20px; }
+.portal-page .pv-card .meta { font-size: 14.5px; }
+.portal-page .pv-cta-link { font-size: 15px; }
+.portal-page .portal-team-member-subcard-lbl { font-size: 11px; }
+.portal-page .portal-team-member-subcard-val { font-size: 14px; }
+.portal-page .portal-team-member-subcards--chiffres .portal-team-member-subcard-val { font-size: 28px; }
+
+/* ── Carte d'un écran en construction (PortalConstructionMedia) ─────────── */
+.portal-construction-media {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 16px 30px;
+  background: #fff8e6;
+  color: #996600;
+  overflow: hidden;
+}
+.portal-construction-icon {
+  width: 64px;
+  height: 64px;
+  transform-origin: 20% 85%;
+  animation: portal-construction-hammer 1.1s ease-in-out infinite;
+}
+.portal-construction-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--navy);
+  text-align: center;
+}
+.portal-construction-tape {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 14px;
+  background: repeating-linear-gradient(-45deg, #f5b400 0 14px, #0e1126 14px 28px);
+  background-size: 39.6px 100%;
+  animation: portal-construction-tape 1.4s linear infinite;
+}
+@keyframes portal-construction-hammer {
+  0%, 100% { transform: rotate(-18deg); }
+  45% { transform: rotate(14deg); }
+  55% { transform: rotate(10deg); }
+}
+@keyframes portal-construction-tape {
+  to { background-position: 39.6px 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-construction-icon,
+  .portal-construction-tape { animation: none; }
+}
+
+/* ── Pied de carte en icônes (portails) : voir à gauche, modifier à droite ── */
+.pv-card-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: #fff;
+  color: var(--navy);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.pv-card:hover .pv-card-action:not(.pv-card-action--soon) {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+.pv-card-action--soon {
+  color: var(--muted);
+  border-style: dashed;
+  cursor: not-allowed;
 }

@@ -15,6 +15,7 @@
 - **Réutiliser avant de dupliquer** :
   - Toute UI doit réutiliser `PvCard`, `PreviewSection`, `.pv-grid`, `.portal-status-chip`.
   - Pas de cartes ad-hoc ou styles custom redondants.
+  - Avant de poser une carte, consulter [docs/engineering/guide-cartes.md](docs/engineering/guide-cartes.md) : il dit quel composant reprendre pour chaque type de contenu (une marque se montre avec `BrandCard` ou `PlanEntryCard`, jamais avec une `PvCard` et un petit logo).
 - **Colorimétrie & Statuts** :
   - Pastilles de statut (`portal-status-chip`) :
     - `done` : vert (`#1aab5b`)

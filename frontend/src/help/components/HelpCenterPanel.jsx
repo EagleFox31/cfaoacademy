@@ -1,5 +1,5 @@
 import { GuideTourIcon, LifeBuoyIcon } from '../../components/portalSectionIcons.jsx'
-import { useHelp } from '../context/HelpProvider.jsx'
+import { useHelp } from '../context/helpContext.js'
 import HelpArticleView from './HelpArticleView.jsx'
 
 function HelpArticleList({ articles, onSelect }) {

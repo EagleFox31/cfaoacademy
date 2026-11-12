@@ -4,7 +4,7 @@ import useSiteEffects from '../hooks/useSiteEffects.js'
 import useAuth from '../hooks/useAuth.js'
 import usePortalBackground from '../hooks/usePortalBackground.js'
 import useLocale from '../hooks/useLocale.js'
-import { NEWS_TAB_KEYS, CARRO_TAB_KEYS } from '../i18n/home.js'
+import { NEWS_TAB_KEYS } from '../i18n/home.js'
 import { SESSION_TAB_KEYS } from '../i18n/sessions.js'
 import { sectionTitle } from '../utils/sectionTitle.jsx'
 import Nav from '../components/Nav.jsx'
@@ -13,11 +13,9 @@ import HomeHero from '../components/HomeHero.jsx'
 import LogoMarquee from '../components/LogoMarquee.jsx'
 import KpiBand from '../components/KpiBand.jsx'
 import PreviewSection from '../components/PreviewSection.jsx'
+import HomeOfferSections from '../components/HomeOfferSections.jsx'
 import PublicCard from '../components/PublicCard.jsx'
-import BrandOfferGrid from '../components/BrandOfferGrid.jsx'
-import ProcessSavHomeGrid from '../components/ProcessSavHomeGrid.jsx'
 import CardRail from '../components/CardRail.jsx'
-import CatalogTrainingCard from '../components/CatalogTrainingCard.jsx'
 import SessionCard from '../components/SessionCard.jsx'
 import CtaBanner from '../components/CtaBanner.jsx'
 import FlagMarquee from '../components/FlagMarquee.jsx'
@@ -37,16 +35,6 @@ import {
   scheduleSessionsScroll,
 } from '../utils/sessionsReturn.js'
 import { HOME_BACKDROP_SECTION_IDS } from '../data/homeSectionBg.js'
-import CATALOG from '../data/training-catalog.json'
-import {
-  EQUIPMENT_SAV_FOLDER,
-  MOTORS_SAV_FOLDER,
-  equipmentSavTabCounts,
-  getEquipmentSavTrainings,
-  getMotorsSavTrainings,
-  motorsSavTabCounts,
-} from '../utils/processSavCatalog.js'
-import { getOfferCataloguePdf } from '../utils/offerCatalogues.js'
 import useHomeSectionFocus from '../hooks/useHomeSectionFocus.js'
 import useHomeNewsBgReveal from '../hooks/useHomeNewsBgReveal.js'
 import HomeBackdrop from '../components/HomeBackdrop.jsx'
@@ -62,27 +50,6 @@ function bootstrapSessionsRestore(location, searchParams) {
   return merged
 }
 
-// Grille accueil : tout afficher jusqu’à 12 cartes ; au-delà, 8 visibles + « Voir tout »
-const MOTORS_BRANDS = BRANDS.filter(b => b.bu === 'motors' && b.name !== 'Citroën')
-const EQUIPMENT_BRANDS = BRANDS.filter(b => b.bu === 'equipment')
-
-const carrosserieTabDefs = CATALOG.CARROSSERIE.map((g) => ({
-  id: g.level,
-  labelKey: CARRO_TAB_KEYS[g.level],
-  count: g.trainings.length,
-}))
-
-const motorsSavCounts = motorsSavTabCounts()
-const motorsSavTabs = [
-  { id: 'sav', labelKey: 'savTabSav', count: motorsSavCounts.sav },
-  { id: 'parts', labelKey: 'savTabParts', count: motorsSavCounts.parts },
-]
-
-const equipmentSavCounts = equipmentSavTabCounts()
-const equipmentSavTabs = [
-  { id: 'sav', labelKey: 'savTabSav', count: equipmentSavCounts.sav },
-  { id: 'parts', labelKey: 'savTabParts', count: equipmentSavCounts.parts },
-]
 
 const newsTabsFromCopy = (homeT, articles) =>
   NEWS_CATS.map((c) => ({
@@ -107,28 +74,11 @@ export default function Accueil() {
   useSiteEffects()
   const { user } = useAuth()
   usePortalBackground(user, { requireUser: true })
-  const { locale, t: homeT } = useLocale('home')
+  const { t: homeT } = useLocale('home')
   const { t: commonT } = useLocale('common')
-  const { t: cardsT } = useLocale('cards')
   const { t: sessionsT } = useLocale('sessions')
   const newsTabs = useMemo(() => newsTabsFromCopy(homeT, ARTICLES), [homeT])
   const sessionTabs = useMemo(() => sessionTabsFromCopy(sessionsT, UPCOMING), [sessionsT])
-  const motorsSavTabsLocalized = useMemo(
-    () => motorsSavTabs.map((t) => ({ id: t.id, label: homeT[t.labelKey], count: t.count })),
-    [homeT],
-  )
-  const equipmentSavTabsLocalized = useMemo(
-    () => equipmentSavTabs.map((t) => ({ id: t.id, label: homeT[t.labelKey], count: t.count })),
-    [homeT],
-  )
-  const carrosserieTabsLocalized = useMemo(
-    () => carrosserieTabDefs.map((t) => ({
-      id: t.id,
-      label: homeT[t.labelKey] ?? t.id,
-      count: t.count,
-    })),
-    [homeT],
-  )
   const location = useLocation()
   const { hash } = location
   const [searchParams] = useSearchParams()
@@ -278,106 +228,7 @@ export default function Accueil() {
         </CardRail>
       </PreviewSection>
 
-      {/* ── 04 · FORMATIONS MOTORS ── */}
-      <PreviewSection
-        id="offres"
-        ix={homeT.motorsIx}
-        title={sectionTitle(homeT.motorsTitleBefore, homeT.motorsTitleEm, homeT.motorsTitleAfter)}
-        headClass="pv-head--compact-line"
-        bgWord="motors"
-        bgWordSide="right"      >
-        <BrandOfferGrid
-          brands={MOTORS_BRANDS}
-        />
-      </PreviewSection>
-
-      {/* ── 05 · FORMATIONS EQUIPMENT ── */}
-      <PreviewSection
-        id="formations-equipment"
-        ix={homeT.equipmentIx}
-        title={sectionTitle(homeT.equipmentTitleBefore, homeT.equipmentTitleEm, homeT.equipmentTitleAfter)}
-        headClass="pv-head--compact-line"
-        bgWord="equipment"
-        bgWordSide="left"      >
-        <BrandOfferGrid brands={EQUIPMENT_BRANDS} showAll />
-      </PreviewSection>
-
-      {/* ── 06 · FORMATIONS CARROSSERIE ── */}
-      <PreviewSection
-        id="formations-carrosserie"
-        ix={homeT.carrosserieIx}
-        title={sectionTitle(homeT.carrosserieTitleBefore, homeT.carrosserieTitleEm, homeT.carrosserieTitleAfter)}
-        headClass="pv-head--compact-line"
-        bgWord="carrosserie"
-        bgWordSide="left"
-        tabs={carrosserieTabsLocalized}
-        voir={{
-          href: getOfferCataloguePdf('carrosserie', locale),
-          label: cardsT.openCatalogue,
-          filled: true,
-        }}
-      >
-        {(active) => {
-          const group = CATALOG.CARROSSERIE.find((g) => g.level === active)
-          return (
-            <CardRail
-              ariaLabel={homeT.carrosserieIx ?? 'Formations carrosserie'}
-              arrowLabelPrev={commonT.prev ?? 'Précédent'}
-              arrowLabelNext={commonT.next ?? 'Suivant'}
-            >
-              {group?.trainings.map((f) => (
-                <CatalogTrainingCard key={f.code} folder="carrosserie" training={f} />
-              ))}
-            </CardRail>
-          )
-        }}
-      </PreviewSection>
-
-      {/* ── 07 · ORGANISATION SAV MOTORS ── */}
-      <PreviewSection
-        id="formations-sav-motors"
-        ix={homeT.savMotorsIx}
-        title={sectionTitle(homeT.savMotorsTitleBefore, homeT.savMotorsTitleEm, homeT.savMotorsTitleAfter)}
-        headClass="pv-head--compact-line"
-        bgWord="sav"
-        bgWordSide="right"        tabs={motorsSavTabsLocalized}
-        voir={{
-          href: getOfferCataloguePdf('savMotors', locale),
-          label: cardsT.openCatalogue,
-          filled: true,
-        }}
-      >
-        {(active) => (
-          <ProcessSavHomeGrid
-            key={active}
-            items={getMotorsSavTrainings(active)}
-            folder={MOTORS_SAV_FOLDER[active]}
-          />
-        )}
-      </PreviewSection>
-
-      {/* ── 08 · ORGANISATION SAV EQUIPMENT ── */}
-      <PreviewSection
-        id="formations-sav-equipment"
-        ix={homeT.savEquipmentIx}
-        title={sectionTitle(homeT.savEquipmentTitleBefore, homeT.savEquipmentTitleEm, homeT.savEquipmentTitleAfter)}
-        headClass="pv-head--compact-line"
-        bgWord="sav"
-        bgWordSide="right"        tabs={equipmentSavTabsLocalized}
-        voir={{
-          href: getOfferCataloguePdf('savEquipment', locale),
-          label: cardsT.openCatalogue,
-          filled: true,
-        }}
-      >
-        {(active) => (
-          <ProcessSavHomeGrid
-            key={active}
-            items={getEquipmentSavTrainings(active)}
-            folder={EQUIPMENT_SAV_FOLDER[active]}
-          />
-        )}
-      </PreviewSection>
+      <HomeOfferSections />
 
 
 {HOME_SESSIONS_SECTION_VISIBLE && (

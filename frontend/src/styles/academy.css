@@ -275,16 +275,18 @@
   background: rgba(14, 17, 38, 0.11);
   color: var(--ink);
 }
-section.has-section-bg:nth-of-type(even) .pv-tabs--pills .pv-tab,
-section.has-section-bg:nth-of-type(even) .pv-tabs--pills .pv-tab.active,
-section.has-section-bg:nth-of-type(even) .pv-tabs--pills .pv-tab:hover:not(.active) {
+/* Une pastille a toujours un fond clair : texte foncé, section sombre ou non,
+   avec ou sans photo de fond. */
+section:nth-of-type(even) .pv-tabs--pills .pv-tab,
+section:nth-of-type(even) .pv-tabs--pills .pv-tab.active,
+section:nth-of-type(even) .pv-tabs--pills .pv-tab:hover:not(.active) {
   color: var(--ink);
 }
-section.has-section-bg:nth-of-type(even) .pv-tabs--pills .pv-tab .tab-count {
+section:nth-of-type(even) .pv-tabs--pills .pv-tab .tab-count {
   background: rgba(14, 17, 38, 0.08);
   color: var(--ink);
 }
-section.has-section-bg:nth-of-type(even) .pv-tabs--pills .pv-tab.active .tab-count {
+section:nth-of-type(even) .pv-tabs--pills .pv-tab.active .tab-count {
   background: var(--red);
   color: #fff;
 }
@@ -3744,6 +3746,11 @@ section:nth-of-type(even) .sessions-month-count {
   color: #475569;
   border: 1px solid #cbd5e1;
 }
+
+/* Année dans le titre d'une carte : mêmes couleurs que les pastilles d'année */
+.portal-card-year--future { color: #1a56db; }
+.portal-card-year--current { color: #047857; }
+.portal-card-year--past { color: #475569; }
 
 /* ─── Titre section Plans de formations pluriannuels — en blanc sur fond sombre ─ */
 .portal-pif-filiale-section .portal-section-title,

@@ -20,7 +20,8 @@ import { isMaintenanceError } from '../../lib/api'
 import { makeFormatter } from '../../components/sheet/sheetExport'
 import { planningApi } from '../../lib/planningApi'
 import { planningMenu } from '../../utils/planningAccess'
-import { AbcView, Banner, CountryView, Segmented, SheetSkeleton, TableView, ThemesView, errText, reviewText } from './costKey/costKeyViews'
+import { FacetFilter } from './costKey/FacetFilter'
+import { AbcView, Banner, CountryView, SheetSkeleton, TableView, ThemesView, errText, reviewText } from './costKey/costKeyViews'
 import PrepareView from './costKey/PrepareView'
 import SettingsView from './costKey/SettingsView'
 
@@ -76,7 +77,8 @@ export default function CleRepartition() {
   // Emplacements de l'en-tête où une vue peut poser ses contrôles (filiale, export).
   const [titleSlot, setTitleSlot] = useState(null)
   const [toolsSlot, setToolsSlot] = useState(null)
-  const slots = useMemo(() => ({ title: titleSlot, tools: toolsSlot }), [titleSlot, toolsSlot])
+  const [filtersSlot, setFiltersSlot] = useState(null)
+  const slots = useMemo(() => ({ title: titleSlot, tools: toolsSlot, filters: filtersSlot }), [titleSlot, toolsSlot, filtersSlot])
   const maintenance = useMaintenance()
 
   /* droits + clés */
@@ -159,6 +161,8 @@ export default function CleRepartition() {
   // Lecteur (ni préparation, ni import, ni gel) : écran réduit à l'essentiel.
   const simple = !(boot.access?.manage || boot.access?.import || boot.access?.freeze)
   const itemLabel = id => (id === 'country' && global.data?.partial ? t.nav_country_scoped : t[`nav_${id}`])
+  // Le titre se lit avec le choix posé à côté : « Devis · Congo », « Devis · Toutes les filiales ».
+  const heading = id => (id === 'country' && !global.data?.partial ? t.view_country : itemLabel(id))
 
   let body
   if (boot.loading) body = <SheetSkeleton label={t.loading} kpis />
@@ -183,7 +187,7 @@ export default function CleRepartition() {
   } else if (view === 'settings') {
     body = <SettingsView t={t} fmt={fmt} ckey={ckey} onSaved={onKeyChange} />
   } else if (view === 'abc') {
-    body = <AbcView t={t} fmt={fmt} scope={allPoles ? scope : ckey} ckey={ckey} />
+    body = <AbcView t={t} locale={locale} fmt={fmt} scope={allPoles ? scope : ckey} ckey={ckey} slots={slots} />
   } else if (view === 'themes') body = <ThemesView t={t} ckey={ckey} />
   else if (global.error) body = <Banner tone="warn">{errText(t, global.error)}</Banner>
   // Pôle, année, mode : tout rechargement affiche le squelette à la place de l'ancien tableau.
@@ -197,7 +201,7 @@ export default function CleRepartition() {
     )
   } else {
     body = (
-      <TableView t={t} locale={locale} fmt={fmt} ckey={scope} mode={mode} global={global.data}
+      <TableView t={t} locale={locale} fmt={fmt} ckey={scope} mode={mode} global={global.data} slots={slots}
         openCountry={(code, session = null) => go('country', { pays: code, session })} simple={simple}
         canReview={Boolean(boot.access?.review)} />
     )
@@ -232,33 +236,33 @@ export default function CleRepartition() {
       <main className="portal-page ck-page">
         <div className="ck-shell">
           <div className="ck-main">
+            {/* Une seule ligne : ce qu'on regarde, ce qui change les chiffres, puis les outils. */}
             <header className="ck-topbar">
-              <div className="ck-topbar-title">
-                {!simple && <p className="ck-eyebrow">{t.eyebrow}</p>}
-                <div className="ck-topbar-heading">
-                  <h1 id="ck-view-title">{menu.includes(view) ? itemLabel(view) : t.title}</h1>
-                  {/* La vue Filiale y pose son choix de filiale (portail) : une seule ligne. */}
-                  <div className="ck-topbar-slot" ref={setTitleSlot} />
-                </div>
+              <div className="ck-topbar-heading">
+                <h1 id="ck-view-title">{menu.includes(view) ? heading(view) : t.title}</h1>
+                {/* La vue Filiale y pose son choix de filiales (portail). */}
+                <div className="ck-topbar-slot" ref={setTitleSlot} />
               </div>
               {year && (
-                <div className="ck-topbar-tools">
-                  <div className="ck-topbar-slot" ref={setToolsSlot} />
-                  {/* L'année est un filtre, même quand une seule année existe. */}
-                  <label className="ck-pill-select">
-                    <span className="ck-sr">{t.key_label}</span>
-                    <select value={year} onChange={e => setParams({ cle: null, annee: e.target.value })}>
-                      {years.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                  </label>
-                  <Segmented value={shownPole} options={poleOptions} label={t.pole_label}
-                    onChange={p => setParams({ cle: null, pole: p === ALL ? null : p })} />
-                  {status && (
-                    <span className={`portal-status-chip ${frozen ? 'closed' : 'open'}`}>
-                      {t[`status_${status}`] || status}
-                    </span>
-                  )}
-                </div>
+                <>
+                  <div className="ck-topbar-filters">
+                    <FacetFilter t={t} single noAll={!poleOptions.some(o => o.value === ALL)}
+                      facet={{ id: 'pole', label: t.pole_label, options: poleOptions.filter(o => o.value !== ALL) }}
+                      selected={shownPole && shownPole !== ALL ? [shownPole] : []}
+                      onChange={list => setParams({ cle: null, pole: list[0] ?? null })} />
+                    <div className="ck-topbar-slot" ref={setFiltersSlot} />
+                  </div>
+                  <div className="ck-topbar-tools">
+                    {/* L'année est un filtre, même quand une seule année existe. */}
+                    <label className="ck-pill-select ck-year">
+                      <span className="ck-sr">{t.key_label}</span>
+                      <select value={year} onChange={e => setParams({ cle: null, annee: e.target.value })}>
+                        {years.map(y => <option key={y} value={y}>{y}</option>)}
+                      </select>
+                    </label>
+                    <div className="ck-topbar-slot" ref={setToolsSlot} />
+                  </div>
+                </>
               )}
             </header>
             {maintenance && <Banner tone="info">{t.maintenance}</Banner>}

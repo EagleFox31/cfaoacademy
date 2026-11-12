@@ -194,12 +194,12 @@ describe('saisie dans le devis par filiale', () => {
     expect(host.querySelector('.sheet-c-trainer-names').textContent).toBe('Awa TESTEUR, Formateur externe')
   })
 
-  it('affiche les places face aux besoins et le taux de couverture du besoin', async () => {
+  it('affiche les places face aux besoins et le taux de couverture des besoins', async () => {
     await show()
     expect(host.textContent).toContain('Nombre de places attribuées / Besoins')
     expect(host.textContent).toContain('6 / 8')
     expect(host.textContent).toContain('2 besoins non couverts')
-    expect(host.textContent).toContain('Taux de couverture du besoin')
+    expect(host.textContent).toContain('Taux de couverture des besoins')
   })
 
   it('colore les places selon leur destination et montre les trois compteurs', async () => {
@@ -228,7 +228,7 @@ describe('saisie dans le devis par filiale', () => {
     const rows = () => [
       row('a1', 'Toyota', 'toyota', 'Douala', 'at_academy', 4, { postponed: 2, seat_status: 'postponed' }),
       row('a2', 'Suzuki', 'suzuki', 'Douala', 'in_subsidiary', 3),
-      row('a3', 'Suzuki', 'suzuki', 'Tana', 'in_subsidiary', 3),
+      row('a3', 'Suzuki', 'suzuki', 'Tana', 'in_subsidiary', 3, { start_date: '2027-04-01' }),
     ]
     const load = async (sessions = rows(), foot = footer) => {
       planningApi.country.mockResolvedValue({ ...payload(sessions), footer: foot })
@@ -237,40 +237,78 @@ describe('saisie dans le devis par filiale', () => {
     const kpi = label => [...host.querySelectorAll('.ck-kpi')].find(k => k.querySelector('dt').textContent === label)
     const value = label => kpi(label).querySelector('dd').textContent.replace(/\s/g, ' ')
     const split = key => host.querySelector(`.ck-split--${key} b`).textContent
-    const choose = async (index, val) => {
-      const el = host.querySelectorAll('.ck-pill-select select')[index]
-      await act(async () => {
-        Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(el, val)
-        el.dispatchEvent(new Event('change', { bubbles: true }))
-      })
+    const facet = label => [...host.querySelectorAll('.ck-facet-btn')].find(b => b.querySelector('.ck-facet-label').textContent === label)
+    const option = val => host.querySelector(`[role=option][data-value="${val}"]`)
+    const toggleFacet = async label => { await act(async () => { facet(label).click() }) }
+    const choose = async (label, val) => {
+      await toggleFacet(label)
+      await act(async () => { option(val).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })) })
+      await toggleFacet(label)
       await flush()
     }
 
-    it('range les filtres à gauche et les outils à droite', async () => {
+    it('place les filtres juste avant les indicateurs, sans recherche globale ni barre de boutons', async () => {
       await load()
-      const bar = host.querySelector('.sheet-toolbar')
-      const items = [...bar.children].map(el => el.className || el.tagName)
-      const sep = items.indexOf('sheet-toolbar-sep')
-      expect(items.indexOf('sheet-search')).toBeLessThan(sep)
-      expect(items.indexOf('ck-pill-select')).toBeLessThan(sep)
-      expect(items.indexOf('sheet-pop')).toBeGreaterThan(sep)
+      const filtres = host.querySelector('.ck-filterbar')
+      expect(filtres.nextElementSibling.classList.contains('ck-kpis')).toBe(true)
+      expect(filtres.querySelector('.sheet-search')).toBeNull()
+      expect([...filtres.querySelectorAll('.ck-facet-label')].map(l => l.textContent))
+        .toEqual(['Marque', 'Métier', 'Type', 'Lieu', 'Mois'])
+      expect(host.querySelector('.sheet:not(.ck-filterbar) .sheet-toolbar')).toBeNull()
+      expect(host.querySelector('.sheet-head .sheet-rownum-h .sheet-cols-btn')).not.toBeNull()
+    })
+
+    it('garde les filtres sur un devis vide, sans aucun choix à proposer', async () => {
+      await load([], { ...footer, seats: 0 })
+      expect(host.querySelectorAll('.ck-filterbar .ck-facet-btn')).toHaveLength(5)
+      await toggleFacet('Marque')
+      expect(host.querySelectorAll('[role=option]')).toHaveLength(0)
+      expect(host.querySelector('.ck-combo-empty').textContent).toBe('Aucun choix possible')
+    })
+
+    it('une case par ligne : le CSV ne reprend que les lignes cochées', async () => {
+      await load()
+      URL.createObjectURL = vi.fn(() => 'blob:devis')
+      URL.revokeObjectURL = vi.fn()
+      const cases = [...host.querySelectorAll('.sheet-table tbody .sheet-check input')]
+      expect(cases.length).toBeGreaterThan(1)
+      expect(cases).toHaveLength(host.querySelectorAll('.sheet-table tbody tr').length)
+      await act(async () => { cases[0].click() })
+      expect(host.querySelector('.sheet-status').textContent).toContain('1 ligne cochée')
+      await act(async () => { host.querySelector('.ck-xlsx[aria-haspopup=menu]').click() })
+      const csv = [...host.querySelectorAll('[role=menuitem]')].find(e => e.textContent.includes(T.export_csv))
+      await act(async () => { csv.click() })
+      const texte = await new Promise(resolve => {
+        const lecteur = new FileReader()
+        lecteur.onload = () => resolve(lecteur.result)
+        lecteur.readAsText(URL.createObjectURL.mock.calls[0][0])
+      })
+      expect(texte.trim().split(/\r?\n/)).toHaveLength(2)
+    })
+
+    it('l’icône de l’en-tête ouvre le choix des colonnes, Échap le referme', async () => {
+      await load()
+      await act(async () => { host.querySelector('.sheet-cols-btn').click() })
+      expect(host.querySelector('.sheet-pop-panel')).not.toBeNull()
+      await act(async () => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })) })
+      expect(host.querySelector('.sheet-pop-panel')).toBeNull()
     })
 
     it('« Tout effacer » retire aussi les filtres Marque, Mois et Lieu', async () => {
       await load()
-      await choose(0, 'Toyota')
+      await choose('Marque', 'Toyota')
       const clear = [...host.querySelectorAll('.sheet-toolbar button')].find(b => b.textContent === 'Tout effacer')
       await act(async () => { clear.click() })
       await flush()
-      expect(host.querySelectorAll('.ck-pill-select select')[0].value).toBe('')
+      expect(facet('Marque').getAttribute('aria-label')).toBe('Marque : Tous')
       expect(value(T.kpi_seats_needs)).toBe('10 / 16')
     })
 
     it('annonce le filtre au-dessus des indicateurs, seulement si des lignes sont masquées', async () => {
       await load()
       expect(host.textContent).not.toContain(T.filter_on)
-      await choose(0, 'Toyota')
-      expect(host.textContent).toMatch(new RegExp(`${T.filter_on} : Toyota · \\d+ / \\d+ lignes`))
+      await choose('Marque', 'Toyota')
+      expect(host.querySelector('.ck-filterbar-note').textContent).toMatch(/^\d+ \/ \d+ lignes$/)
     })
 
     it('explique sous la somme totale ce qu’elle additionne', async () => {
@@ -286,7 +324,7 @@ describe('saisie dans le devis par filiale', () => {
 
     it('suit la marque choisie, besoin et taux compris', async () => {
       await load()
-      await choose(0, 'Toyota')
+      await choose('Marque', 'Toyota')
       expect(value(T.kpi_seats_needs)).toBe('4 / 5')
       expect(value(T.col_coverage)).toBe('80,0 %')
       expect([split('in_subsidiary'), split('at_academy'), split('postponed')]).toEqual(['0', '2', '2'])
@@ -295,26 +333,84 @@ describe('saisie dans le devis par filiale', () => {
 
     it('n’invente pas de besoin pour un filtre qui coupe une marque', async () => {
       await load()
-      await choose(2, 'Tana')
+      await choose('Mois', '2027-04')
       expect(value(T.kpi_seats)).toBe('3')
       expect(value(T.col_coverage)).toBe('—')
       expect(kpi(T.col_coverage).textContent).toContain(T.kpi_needs_by_brand_note)
     })
 
-    it('suit aussi la recherche du tableau', async () => {
+    it('choix multiple dans un filtre : une valeur OU l’autre', async () => {
       await load()
-      const search = host.querySelector('.sheet-search input')
+      await choose('Mois', '2027-04')
+      expect(value(T.kpi_seats)).toBe('3')
+      await choose('Mois', '2027-03')
+      expect(value(T.kpi_seats_needs)).toBe('10 / 16')
+      expect(facet('Mois').textContent).toContain('2')
+    })
+
+    it('Lieu propose Filiale et Academy', async () => {
+      await load()
+      await choose('Lieu', 'at_academy')
+      expect(split('at_academy')).toBe('2')
+      expect(facet('Lieu').textContent).toContain('Academy')
+    })
+
+    it('filtres intelligents : les choix suivent les autres filtres, pas le leur', async () => {
+      await load([
+        row('a1', 'Toyota', 'toyota', 'Douala', 'at_academy', 4, { job: 'TECHNICIAN' }),
+        row('a2', 'Suzuki', 'suzuki', 'Douala', 'in_subsidiary', 3, { job: 'PARTS' }),
+        row('a3', 'Suzuki', 'suzuki', 'Tana', 'in_subsidiary', 3, { job: 'TECHNICIAN' }),
+      ])
+      await choose('Lieu', 'at_academy')
+      await toggleFacet('Marque')
+      expect(option('Toyota')).not.toBeNull()
+      expect(option('Suzuki')).toBeNull()
+      await toggleFacet('Marque')
+      await toggleFacet('Lieu')
+      expect(option('in_subsidiary')).not.toBeNull()
+      await toggleFacet('Lieu')
+      await toggleFacet('Métier')
+      expect(option('PARTS')).toBeNull()
+      expect(option('TECHNICIAN').querySelector('.ck-facet-count').textContent).toBe('1')
+    })
+
+    it('montre un filtre sans donnée, ses options suivent les lignes', async () => {
+      await load()
+      await toggleFacet('Type')
+      expect([...host.querySelectorAll('[role=option]')].map(o => o.textContent)).toEqual(['Tous', 'Présentiel0', 'Distanciel0'])
+      await toggleFacet('Type')
+      await toggleFacet('Métier')
+      expect([...host.querySelectorAll('[role=option]')].map(o => o.textContent)).toEqual(['Tous', 'Non classé3'])
+    })
+
+    const type = async (input, text) => {
       await act(async () => {
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(search, 'Tana')
-        search.dispatchEvent(new Event('input', { bubbles: true }))
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, text)
+        input.dispatchEvent(new Event('input', { bubbles: true }))
       })
+    }
+
+    it('chaque filtre est une combobox : on tape pour réduire sa liste, même courte', async () => {
+      await load()
+      await toggleFacet('Lieu')
+      const input = host.querySelector('.ck-facet-panel input[role=combobox]')
+      expect(document.activeElement).toBe(input)
+      await type(input, 'acad')
+      expect(option('at_academy')).not.toBeNull()
+      expect(option('in_subsidiary')).toBeNull()
+    })
+
+    it('suit aussi le filtre d’une colonne du tableau', async () => {
+      await load()
+      const input = [...host.querySelectorAll('.sheet-filters input')].find(i => /Lieu/.test(i.getAttribute('aria-label')))
+      await type(input, 'Tana')
       await flush()
       expect(value(T.kpi_seats)).toBe('3')
     })
 
     it('ne donne pas de total partiel sur une clé à budget fixe', async () => {
       await load(rows().map(s => ({ ...s, key_cost: null })))
-      await choose(2, 'Tana')
+      await choose('Mois', '2027-04')
       expect(value(T.col_total)).toBe('—')
     })
   })

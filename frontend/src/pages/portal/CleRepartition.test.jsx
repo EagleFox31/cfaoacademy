@@ -115,7 +115,7 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
     const excel = host.querySelector('.ck-xlsx[aria-haspopup=menu]')
     await act(async () => { excel.click() })
     const entries = [...host.querySelectorAll('[role=menuitem]')]
-    expect(entries.map(e => e.querySelector('strong').textContent)).toEqual([T.xlsx_table, T.xlsx_all])
+    expect(entries.map(e => e.querySelector('strong').textContent)).toEqual([T.xlsx_table, T.xlsx_all, T.export_csv])
     expect(document.activeElement).toBe(entries[0])
     await act(async () => { entries[1].click() })
     expect(planningApi.downloadAll).toHaveBeenCalledOnce()
@@ -159,6 +159,66 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
     expect(planningApi.country).toHaveBeenLastCalledWith(7, 'CI', 'PLANNED')
     expect(host.querySelector('.ck-combo-panel')).toBeNull()
     expect(host.querySelector('.ck-xlsx').textContent).toContain(T.export)
+  })
+
+  it('Devis : titre court et choix « Toutes les filiales » en premier, avec une colonne Filiale', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
+    await show('/portail/cle-repartition/country')
+    expect(host.querySelector('#ck-view-title').textContent).toBe(T.view_country)
+    expect(menuLabels()).toContain(T.nav_country)
+    await act(async () => { host.querySelector('.ck-combo-btn').click() })
+    const opts = [...host.querySelectorAll('[role="option"]')]
+    expect(opts[0].textContent).toBe(T.all_countries)
+    await act(async () => { opts[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+    for (let i = 0; i < 3; i += 1) await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+    expect(planningApi.country).toHaveBeenLastCalledWith(7, 'all', 'PLANNED')
+    const headers = [...host.querySelectorAll('.sheet-head .sheet-h-label')].map(s => s.textContent)
+    expect(headers[0]).toBe(T.col_country)
+  })
+
+  it('Devis : cocher une 2e filiale ouvre la vue consolidée limitée aux deux', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
+    await show('/portail/cle-repartition/country')
+    await act(async () => { host.querySelector('.ck-combo-btn').click() })
+    const other = [...host.querySelectorAll('[role="option"]')].slice(1).find(o => o.getAttribute('aria-selected') === 'false')
+    await act(async () => {
+      other.querySelector('.ck-country-add').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    })
+    for (let i = 0; i < 3; i += 1) await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+    expect(planningApi.country).toHaveBeenLastCalledWith(7, 'all', 'PLANNED')
+    expect(host.querySelector('.ck-combo-btn').getAttribute('aria-label'))
+      .toBe(`${T.pick_country} : ${T.countries_n.replace('{n}', 2)}`)
+  })
+
+  it('compte filiale : ni « Toutes les filiales » ni titre générique', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: false, freeze: false, import: false, gaps: false })
+    planningApi.global = vi.fn().mockResolvedValue(GLOBAL(true))
+    await show('/portail/cle-repartition/country')
+    expect(host.querySelector('#ck-view-title').textContent).toBe(T.nav_country_scoped)
+    await act(async () => { host.querySelector('.ck-combo-btn').click() })
+    expect([...host.querySelectorAll('[role="option"]')].map(o => o.textContent)).not.toContain(T.all_countries)
+  })
+
+  it('Devis : Exporter ouvre un menu où se trouve le CSV, il n’y a plus de bouton CSV à part', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
+    planningApi.global = vi.fn().mockResolvedValue(GLOBAL())
+    planningApi.downloadCountry = vi.fn().mockResolvedValue()
+    URL.createObjectURL = vi.fn(() => 'blob:devis')
+    URL.revokeObjectURL = vi.fn()
+    await show('/portail/cle-repartition/country')
+    expect(host.querySelector('.sheet:not(.ck-filterbar) .sheet-toolbar')).toBeNull()
+    const open = async () => {
+      await act(async () => { host.querySelector('.ck-xlsx[aria-haspopup=menu]').click() })
+      return [...host.querySelectorAll('[role=menuitem]')]
+    }
+    const entries = await open()
+    expect(entries.map(e => e.querySelector('strong').textContent)).toEqual([T.xlsx_country, T.export_csv])
+    await act(async () => { entries[1].click() })
+    expect(URL.createObjectURL).toHaveBeenCalledOnce()
+    expect(planningApi.downloadCountry).not.toHaveBeenCalled()
+    const again = await open()
+    await act(async () => { again[0].click() })
+    expect(planningApi.downloadCountry).toHaveBeenCalledOnce()
   })
 
   const kpiTexts = () => [...host.querySelectorAll('.ck-kpi')].map(n => n.textContent)
@@ -232,21 +292,21 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
     expect(planningApi.country).toHaveBeenCalledWith(7, 'CM', 'PLANNED')
   })
 
-  it('incohérence : dans le Devis, la cloche retire la recherche qui cachait la session', async () => {
+  it('incohérence : dans le Devis, la cloche retire le filtre qui cachait la session', async () => {
     planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
     planningApi.global = vi.fn().mockResolvedValue({ ...GLOBAL(), review_items: [{
       id: 'r1', country: 'CM', country_label: 'Cameroun', code: 'T-01', seats: 6,
       start_date: '2026-07-19', end_date: '2026-05-28', issue: 'end_before_start', assignee: 'A. B.' }] })
     await show('/portail/cle-repartition/country?pays=CM')
     const wait = () => act(async () => { await new Promise(r => setTimeout(r, 400)) })
-    const input = host.querySelector('.sheet-toolbar input')
+    const input = host.querySelector('.sheet-filters input')
     const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
     await act(async () => { setValue.call(input, 'introuvable'); input.dispatchEvent(new Event('input', { bubbles: true })) })
     await wait()
     expect(host.querySelector('tr.is-focus')).toBeNull()
     await act(async () => { host.querySelector('.test-notif').click() })
     await wait()
-    expect(host.querySelector('.sheet-toolbar input').value).toBe('')
+    expect(host.querySelector('.sheet-filters input').value).toBe('')
     const focused = host.querySelector('tr.is-focus')
     expect(focused?.textContent).toContain('T-01')
     expect(focused.querySelector('.ck-review-mark').title).toContain('T-01')
@@ -264,6 +324,13 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
     expect(headers.filter(h => h === T.col_contractual)).toHaveLength(2)
   })
 
+  it('synthèse : la recherche rejoint la ligne du titre, avec le pôle', async () => {
+    await show('/portail/cle-repartition')
+    const filtres = host.querySelector('.ck-topbar .ck-filterbar.is-inline')
+    expect(filtres.querySelector('.sheet-search')).not.toBeNull()
+    expect(host.querySelector('.ck-topbar .ck-facet-btn').getAttribute('aria-label')).toMatch(new RegExp(`^${T.pole_label} : `))
+  })
+
   it('une filiale avec des besoins ou des places a sa ligne marquée, pas celle qui n’a qu’un effectif', async () => {
     const g = GLOBAL()
     const rempli = { ...g.rows[0], needs: 4, seats: 0 }
@@ -276,9 +343,8 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
 
   it('panneau Colonnes : cases Besoins, Contractuel, Attribué sous chaque marque, plus de bouton Filtres', async () => {
     await show('/portail/cle-repartition')
-    const boutons = [...host.querySelectorAll('.sheet-toolbar button')]
-    expect(boutons.map(b => b.textContent.trim())).not.toContain('Filtres')
-    await act(async () => { boutons.find(b => b.textContent.includes('Colonnes')).click() })
+    expect([...host.querySelectorAll('.sheet-toolbar button')].map(b => b.textContent.trim())).not.toContain('Filtres')
+    await act(async () => { host.querySelector('.sheet-head .sheet-cols-btn').click() })
     const toyota = host.querySelector('.sheet-pop-panel [role="group"][aria-label="Toyota"]')
     expect([...toyota.querySelectorAll('label')].map(l => l.textContent))
       .toEqual([T.col_needs, T.col_contractual, T.col_allocated])

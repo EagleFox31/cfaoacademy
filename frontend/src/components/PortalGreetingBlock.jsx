@@ -42,6 +42,42 @@ function DpsHeroStatsLine({ t, technicianCount, brandCount, startWi }) {
   )
 }
 
+/**
+ * Phrase chiffrée du centre de formation, même rendu que celle du DPS.
+ * Le début dit ce que fait le rôle (`mode`), la fin donne le périmètre : jetons
+ * {countries} et {brands} (chiffres animés, « — » pendant le chargement).
+ * Sans marques connues (aucune clé, erreur), la fin ne cite que les pays.
+ */
+function CenterHeroStatsLine({ t, hero, startWi }) {
+  const avecMarques = hero.loading || hero.brands > 0
+  const debut = t[`center_hero_lead_${hero.mode}`] ?? t.center_hero_lead_director
+  const gabarit = `${debut} ${avecMarques ? t.center_hero_tail : t.center_hero_tail_nobrands}`
+  const chiffres = { countries: hero.countries, brands: hero.loading ? null : hero.brands }
+  let wi = startWi
+  return (
+    <p className="portal-header-dps-stats portal-greeting-cascade">
+      {String(gabarit).split(/(\{\w+\})/).filter(Boolean).flatMap((morceau, i) => {
+        const jeton = morceau.match(/^\{(\w+)\}$/)?.[1]
+        if (jeton) {
+          const v = chiffres[jeton]
+          return [
+            <Fragment key={i}>
+              <span className="portal-word portal-header-dps-stat" style={{ '--wi': wi++ }}>
+                {Number.isFinite(v) ? <AnimatedCount value={v} /> : '—'}
+              </span>{' '}
+            </Fragment>,
+          ]
+        }
+        return splitWords(morceau).map((w, j) => (
+          <Fragment key={`${i}-${j}`}>
+            <span className="portal-word" style={{ '--wi': wi++ }}>{w}</span>{' '}
+          </Fragment>
+        ))
+      })}
+    </p>
+  )
+}
+
 function SuperAdminHeroStatsLine({
   t,
   learnerCount,
@@ -221,6 +257,7 @@ export default function PortalGreetingBlock({
   kiHero,
   superadminHero,
   managerHero,
+  centerHero,
 }) {
   const { t, locale } = useLocale('portal')
   const orientKey = resolvePortalOrientKey(primaryRole)
@@ -229,7 +266,7 @@ export default function PortalGreetingBlock({
 
   const greetingWords = splitWords(greetingKey)
   let wi = 0
-  const showPill = Boolean(filialeLabel && user && !dpsHero && !kiHero && !superadminHero && !managerHero)
+  const showPill = Boolean(filialeLabel && user && !dpsHero && !kiHero && !superadminHero && !managerHero && !centerHero)
 
   const pays = user ? resolveProfilePays(user) : null
   const countryLabel = pays
@@ -244,7 +281,9 @@ export default function PortalGreetingBlock({
       ? t[kiHero.kind === 'pic' ? 'pic_hero_greeting_filiale' : 'ki_hero_greeting_filiale']
         .replace('{bu}', buLabel)
         .replace('{country}', countryLabel)
-      : null
+      : centerHero
+        ? t.center_hero_greeting_suffix
+        : null
   const filialeSuffixWords = filialeSuffix ? splitWords(filialeSuffix) : []
   const [refreshSoonVisible, setRefreshSoonVisible] = useState(false)
 
@@ -262,7 +301,7 @@ export default function PortalGreetingBlock({
           const node = (
             <Fragment key={`g-${idx}`}>
               <span className="portal-word" style={{ '--wi': wi }}>
-                {isLast && !dpsHero && !kiHero && !managerHero ? `${w},` : w}
+                {isLast && !dpsHero && !kiHero && !managerHero && !centerHero ? `${w},` : w}
               </span>{' '}
             </Fragment>
           )
@@ -272,7 +311,7 @@ export default function PortalGreetingBlock({
         <span className="portal-word portal-header-firstname" style={{ '--wi': wi++ }}>
           {firstName}
         </span>
-        {dpsHero || kiHero || managerHero ? (
+        {dpsHero || kiHero || managerHero || centerHero ? (
           <>
             <span className="portal-word" style={{ '--wi': wi++ }}>,</span>{' '}
             {filialeSuffixWords.map((w, idx) => (
@@ -344,6 +383,11 @@ export default function PortalGreetingBlock({
             loading={kiHero.loading}
             startWi={wi}
           />
+        </div>
+      )}
+      {centerHero && (
+        <div className="portal-header-dps-stats-row">
+          <CenterHeroStatsLine t={t} hero={centerHero} startWi={wi} />
         </div>
       )}
       {superadminHero && (

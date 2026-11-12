@@ -8,6 +8,7 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 
 | Règle | RAIDER | Prévention vérifiable |
 |---|---|---|
+| RAIDER s'applique aussi à l'interface : chercher l'existant avant toute carte, section ou écran | R, E | le composant repris figure dans `docs/engineering/guide-cartes.md` et dans le compte rendu de livraison |
 | Toute file de tâches a son consommateur déclaré dans le déploiement | D, E | smoke test Docker : un message passe à `SENT` |
 | Une donnée qui arrive par plusieurs chemins est validée au point de convergence | E | tests sur chaque chemin d'arrivée |
 | Une route n'est publiée que si un client externe identifié en a besoin | E (moindre privilège) | test ou revue de `gateway/nginx.conf` |
@@ -40,6 +41,48 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-11-11 — Cartes de marques construites sans regarder celles de la page d'accueil (portail du directeur)
+- **Contexte / symptôme** : la rubrique « Les offres de formations par marque » du portail du directeur affiche des cartes génériques du portail avec un logo ajouté, différentes des cartes de marque de la page d'accueil.
+- **Impact** : un même contenu (une marque) représenté de deux façons ; travail à reprendre.
+- **Détection** : signalée par l'utilisateur (« tu n'utilises absolument pas les principes RAIDER »).
+- **Cause racine** : aucune recherche de l'existant avant de coder la carte. L'étape reuse-first de RAIDER (Adopt / Adapt / Learn / Build) a été sautée, alors qu'AGENTS.md §6 l'impose.
+- **Correctif** : inventaire des cartes de la page d'accueil et du portail DPS, guide `docs/engineering/guide-cartes.md`, puis reprise des cartes de marques avec le composant existant.
+- **Prévention** : avant toute carte ou section d'écran, consulter `docs/engineering/guide-cartes.md` et y trouver le composant prévu pour ce type de contenu ; une carte absente du guide s'y ajoute avant d'être codée. Le compte rendu de livraison nomme le composant repris.
+- **Leçon généralisée** : RAIDER s'applique à l'interface comme au backend ; la recherche de l'existant fait partie du travail par défaut, elle n'attend pas qu'on la demande.
+- **Catégorie** : méthode
+
+### 2026-11-11 — Page blanche après la modification d'une traduction (contexte de langue recréé à chaud)
+- **Contexte / symptôme** : après une modification de `i18n/portal.js`, la page ouverte devient blanche ; la console affiche « useLocaleContext must be used within LocaleProvider ».
+- **Impact** : il faut recharger la page à la main après chaque modification de texte.
+- **Détection** : signalée par l'utilisateur (captures d'écran).
+- **Cause racine** : `LocaleProvider.jsx` créait le contexte et importait `i18n/index.js`. Toute modification d'une traduction réévaluait ce module et créait un nouveau contexte, alors que l'arbre affiché fournissait encore l'ancien.
+- **Correctif** : le contexte et son hook vivent dans `context/localeContext.js`, un module sans dépendance, que la modification d'une traduction ne réévalue pas.
+- **Prévention** : un `createContext` ne se déclare pas dans un module qui importe des données ou qui exporte aussi un composant. Récidive le même jour sur l'aide (« useHelp must be used within HelpProvider ») : les trois contextes sans valeur par défaut sont désormais chacun dans un module sans dépendance (`context/localeContext.js`, `context/sessionContext.js`, `help/context/helpContext.js`). Contrôle : `grep -rn "createContext(" frontend/src` ne doit renvoyer que ces modules et les contextes à valeur par défaut.
+- **Leçon généralisée** : avec le rechargement à chaud, un contexte doit être l'objet le plus stable de l'application ; il se place dans un module feuille.
+- **Catégorie** : environnement local
+
+### 2026-11-11 — Front recréé sans l'émetteur OIDC de la recette (portail inaccessible sur 8088)
+- **Contexte / symptôme** : après un redémarrage de Docker Desktop, `localhost:8088/login` renvoie ERR_CONNECTION_REFUSED.
+- **Impact** : le portail de recette est inaccessible, la vérification visuelle est bloquée.
+- **Détection** : signalée par l'utilisateur (capture d'écran).
+- **Cause racine** : il y en a deux. 1) La pile edge et Keycloak (`cfao-recette`) ne redémarre pas seule après le redémarrage de Docker. 2) Le front a été relancé par un `docker compose -f frontend/compose.dev.yml up -d` sans `VITE_OIDC_ISSUER`. Le conteneur a été recréé avec la valeur par défaut `localhost:8080`, qui est le port de cfao-needs.
+- **Correctif** : `docker start` des conteneurs `cfao-recette-*`, puis `VITE_OIDC_ISSUER=http://localhost:8088/auth/realms/cfao docker compose -f frontend/compose.dev.yml up -d`.
+- **Prévention** : avant de relancer un conteneur existant, lire son environnement (`docker inspect ... Config.Env`) et le repasser, ou utiliser `docker start` plutôt que `compose up`. Après un redémarrage de Docker, contrôler `curl localhost:8088/login` et `/auth/realms/cfao/.well-known/openid-configuration`.
+- **Leçon généralisée** : `compose up` recrée un conteneur à partir des variables du shell courant, pas de celles du lancement initial. Pour réveiller une pile existante, `docker start` la remet exactement dans son état.
+- **Catégorie** : environnement local
+- **Récidive** : non
+
+### 2026-11-10 — Titre de colonne annoncé lisible alors qu'il restait coupé (clé de répartition)
+- **Contexte / symptôme** : après le renommage en « Coût de formation des stagiaires », la colonne a été élargie et le titre annoncé comme tenant. La capture suivante le montrait tronqué, comme « Frais d'accommodation des stagiaires ».
+- **Impact** : local, un libellé tronqué et une affirmation fausse dans le compte rendu.
+- **Détection** : capture de l'utilisateur.
+- **Cause racine** : largeur choisie à l'estime, sans la comparer à la longueur du texte, et résultat affirmé sans avoir vu le rendu.
+- **Correctif** : colonnes portées à 296 et 320 px d'après la largeur mesurée sur la capture.
+- **Prévention** : pour tout libellé d'en-tête modifié, largeur au moins égale à 8 px par caractère plus 40 px, et ne pas écrire « tient » sans avoir vu le rendu.
+- **Leçon généralisée** : un test vert ne prouve rien sur le rendu. Ce qui n'a pas été regardé se dit « non vu ».
+- **Catégorie** : vérification / UI
+- **Récidive** : non
 
 ### 2026-11-10 — Bouton « Filtres » reproposé alors qu'il venait d'être retiré à la demande (near miss, barre du tableau)
 - **Contexte / symptôme** : pour supprimer le doublon de filtres du Devis, proposition de masquer la ligne de filtres derrière un bouton « Filtres ».

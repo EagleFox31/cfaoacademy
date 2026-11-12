@@ -18,6 +18,7 @@
  *   cellError?(row, col) : message d'erreur à porter sur la cellule (état tenu par le parent).
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useSettle } from './useSettle'
 import useLocale from '../../hooks/useLocale'
 import { aggregate, cellAddress, cellDraft, colLetter, fold, isRowSelected, mergeSpans, normRange, parseCellInput, parseFilter, sameCell, spanInRange, toTSV } from './sheetMath'
@@ -27,6 +28,7 @@ import { cellText, columnTitle, downloadBlob, makeFormatter, toCsv } from './she
 const withUnit = (text, unit) => (unit && text ? <>{text} <small className="sheet-unit">{unit}</small></> : text)
 
 const ROWNUM_W = 44
+const ROWNUM_CHECK_W = 58 // avec la case à cocher de la ligne
 const DEFAULT_W = { text: 180, int: 92, money: 132, percent: 96, date: 106 }
 const NUMERIC = new Set(['int', 'money', 'percent'])
 
@@ -107,7 +109,7 @@ const rowInSpan = (e, span) => {
 }
 
 export default function DataSheet({
-  id, columns, rows, rowKey, frozen = 1, onRowOpen, actions, filterControls, controlsActive = false, onClearControls,
+  id, columns, rows, rowKey, frozen = 1, onRowOpen, filterControls, filtersTarget, hideSearch = false, exportRef, controlsActive = false, onClearControls,
   exportName = 'export', emptyText, openHint, simple = false, rowClass, revealKey = 0,
   onCellCommit, cellError, onViewChange,
 }) {
@@ -121,12 +123,14 @@ export default function DataSheet({
     () => new Set(prefs0.hidden ?? columns.filter(c => c.hidden).map(c => c.id)))
   const [widths, setWidths] = useState(prefs0.widths ?? {})
   const showFilters = !simple
+  const rowHeadW = simple ? ROWNUM_W : ROWNUM_CHECK_W
   const [sort, setSort] = useState([])
   const [filters, setFilters] = useState({})
   const [search, setSearch] = useState('')
   const [anchor, setAnchor] = useState(null)
   const [focus, setFocus] = useState(null)
-  const [colsOpen, setColsOpen] = useState(false)
+  const [colsAt, setColsAt] = useState(null) // position du panneau des colonnes, null s'il est fermé
+  const [checked, setChecked] = useState(() => new Set())
   const [copied, setCopied] = useState(false)
   const [editing, setEditing] = useState(null) // { id, row, col, base }
   const [saving, setSaving] = useState({}) // id de cellule -> valeur en cours d'envoi
@@ -135,6 +139,7 @@ export default function DataSheet({
   const gridRef = useRef(null)
   const searchRef = useRef(null)
   const colsRef = useRef(null)
+  const colsBtn = useRef(null)
   const dragging = useRef(false)
 
   useEffect(() => {
@@ -250,11 +255,48 @@ export default function DataSheet({
   }, [])
 
   useEffect(() => {
-    if (!colsOpen) return undefined
-    const close = e => { if (!colsRef.current?.contains(e.target)) setColsOpen(false) }
+    if (!colsAt) return undefined
+    const close = e => {
+      if (!colsRef.current?.contains(e.target) && !colsBtn.current?.contains(e.target)) setColsAt(null)
+    }
+    const onEsc = e => {
+      if (e.key !== 'Escape') return
+      setColsAt(null)
+      colsBtn.current?.focus()
+    }
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [colsOpen])
+    document.addEventListener('keydown', onEsc)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', onEsc)
+    }
+  }, [colsAt])
+
+  const toggleCols = e => {
+    const btn = e.currentTarget.getBoundingClientRect()
+    const box = e.currentTarget.closest('.sheet').getBoundingClientRect()
+    setColsAt(at => (at ? null : { top: btn.bottom - box.top + 4, left: btn.left - box.left }))
+  }
+
+  // Lignes cochées : elles seules partent dans la copie et le CSV. La clé ne dépend ni du tri
+  // ni des filtres, pour qu'une case reste sur sa ligne.
+  const rowIndex = useMemo(() => new Map(rows.map((r, i) => [r, i])), [rows])
+  const checkKey = row => (rowKey ? rowKey(row, rowIndex.get(row)) : row)
+  const isChecked = row => checked.has(checkKey(row))
+  const checkedRows = view.filter(isChecked)
+  const allChecked = view.length > 0 && checkedRows.length === view.length
+  // Cocher remplace la sélection de cellules : la copie suit toujours le dernier geste.
+  const pickRows = next => {
+    setAnchor(null)
+    setFocus(null)
+    setChecked(next)
+  }
+  const toggleCheck = row => {
+    const next = new Set(checked)
+    if (!next.delete(checkKey(row))) next.add(checkKey(row))
+    pickRows(next)
+  }
+  const toggleAll = () => pickRows(new Set(allChecked ? [] : view.map(checkKey)))
 
   const selectAll = () => {
     if (!view.length || !cols.length) return
@@ -272,7 +314,7 @@ export default function DataSheet({
       }
     } else {
       matrix = [cols.map(columnTitle),
-        ...view.map(r => cols.map(c => cellText(c.value(r), c.type, locale, format)))]
+        ...(checkedRows.length ? checkedRows : view).map(r => cols.map(c => cellText(c.value(r), c.type, locale, format)))]
     }
     try {
       await navigator.clipboard.writeText(toTSV(matrix))
@@ -282,9 +324,11 @@ export default function DataSheet({
   }
 
   const exportCsv = () => {
-    downloadBlob(new Blob([toCsv({ columns: cols, rows: view, locale, format })],
+    downloadBlob(new Blob([toCsv({ columns: cols, rows: checkedRows.length ? checkedRows : view, locale, format })],
       { type: 'text/csv;charset=utf-8' }), `${exportName}.csv`)
   }
+  // exportRef : la page propose le CSV dans son propre menu d'export, à la place du bouton.
+  useLayoutEffect(() => { if (exportRef) exportRef.current = exportCsv })
 
   // ── saisie ───────────────────────────────────────────────────────────────
   const editId = (row, ri, c) => `${rowKey ? rowKey(row, ri) : ri}|${c.id}`
@@ -320,9 +364,10 @@ export default function DataSheet({
   const onKeyDown = e => {
     const mod = e.ctrlKey || e.metaKey
     const k = e.key.toLowerCase()
-    if (mod && k === 'f') { e.preventDefault(); searchRef.current?.focus(); return }
+    if (mod && k === 'f' && searchRef.current) { e.preventDefault(); searchRef.current.focus(); return }
     if (mod && k === 'c') { e.preventDefault(); copy(); return }
     if (mod && k === 'a') { e.preventDefault(); selectAll(); return }
+    if (e.target.matches('button, input[type="checkbox"]')) return // Entrée, Espace et flèches restent aux contrôles
     if (!view.length || !cols.length) return
     const cur = focus ?? { row: 0, col: 0 }
     let next
@@ -416,14 +461,14 @@ export default function DataSheet({
 
   // ── volets figés : décalage gauche de chaque colonne figée ───────────────
   const lefts = []
-  let acc = ROWNUM_W
+  let acc = rowHeadW
   cols.forEach((c, i) => {
     lefts.push(i < frozen ? acc : null)
     if (i < frozen) acc += width(c)
   })
   const frozenCls = i => (lefts[i] != null ? ` is-frozen${i === frozen - 1 ? ' is-frozen-edge' : ''}` : '')
   const frozenStyle = (i, extra) => (lefts[i] != null ? { ...extra, left: lefts[i] } : extra)
-  const tableWidth = cols.reduce((s, c) => s + width(c), ROWNUM_W)
+  const tableWidth = cols.reduce((s, c) => s + width(c), rowHeadW)
 
   const groups = useMemo(() => {
     if (!cols.some(c => c.group)) return null
@@ -456,10 +501,15 @@ export default function DataSheet({
   const focusRow = focus ? view[focus.row] : null
   const focusText = focusCol && focusRow ? format(focusCol.value(focusRow), focusCol.type) : ''
 
-  return (
-    <div className={`sheet${settling ? ' is-settling' : ''}`} aria-busy={settling || undefined}>
-      {/* ── barre d'outils ── */}
-      <div className="sheet-toolbar" role="toolbar" aria-label={t.toolbar}>
+  // filtersTarget : élément qui reçoit recherche et filtres quand ils pilotent aussi le reste
+  // de la page (null tant qu'il n'est pas monté). Non fourni, ils restent dans la barre.
+  const filtersOutside = filtersTarget !== undefined
+  const colsLabel = hidden.size > 0
+    ? `${t.columns_choose} (${columns.length - hidden.size}/${columns.length})`
+    : t.columns_choose
+  const filterTools = (
+    <>
+      {!hideSearch && (
         <label className="sheet-search">
           <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
             <circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" strokeWidth="1.6" />
@@ -468,58 +518,62 @@ export default function DataSheet({
           <input ref={searchRef} type="search" value={search} placeholder={t.search_ph}
             aria-label={t.search_ph} onChange={e => setSearch(e.target.value)} />
         </label>
-        {filterControls}
-        {dirty && <button type="button" className="sheet-btn sheet-btn-ghost" onClick={reset}>{t.reset}</button>}
-        <span className="sheet-toolbar-sep" />
-        <div className="sheet-pop" ref={colsRef}>
-          <button type="button" className="sheet-btn" aria-expanded={colsOpen}
-            onClick={() => setColsOpen(v => !v)}>
-            {t.columns} {hidden.size > 0 && <span className="sheet-badge">{columns.length - hidden.size}/{columns.length}</span>}
-          </button>
-          {colsOpen && (
-            <div className="sheet-pop-panel" role="dialog" aria-label={t.columns}>
-              <div className="sheet-pop-actions">
-                <button type="button" onClick={() => setHidden(new Set())}>{t.show_all}</button>
-              </div>
-              {colSections.map(s => {
-                const items = s.cols.map(c => (
-                  <label key={c.id} className="sheet-pop-item">
-                    <input type="checkbox" checked={!hidden.has(c.id)}
-                      onChange={() => setHidden(h => {
-                        const n = new Set(h)
-                        if (n.has(c.id)) n.delete(c.id)
-                        else n.add(c.id)
-                        return n
-                      })} />
-                    {c.header}
-                  </label>
-                ))
-                if (!s.group) return items
-                return (
-                  <div key={s.cols[0].id} className="sheet-pop-group" role="group" aria-label={s.group}>
-                    <div className="sheet-pop-title">
-                      {s.icon && (
-                        <img className="sheet-h-icon" src={s.icon} alt="" aria-hidden="true"
-                          onError={e => { e.currentTarget.style.display = 'none' }} />
-                      )}
-                      {s.group}
-                    </div>
-                    <div className="sheet-pop-row">{items}</div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+      )}
+      {filterControls}
+      {dirty && <button type="button" className="sheet-btn sheet-btn-ghost" onClick={reset}>{t.reset}</button>}
+    </>
+  )
+
+  return (
+    <div className={`sheet${settling ? ' is-settling' : ''}`} aria-busy={settling || undefined}>
+      {filtersOutside && filtersTarget && createPortal(
+        <div className="sheet-toolbar" role="toolbar" aria-label={t.filter_tools}>{filterTools}</div>,
+        filtersTarget,
+      )}
+      {/* ── barre d'outils : seulement s'il lui reste quelque chose à porter ── */}
+      {(!filtersOutside || (!simple && !exportRef)) && (
+        <div className="sheet-toolbar" role="toolbar" aria-label={t.toolbar}>
+          {!filtersOutside && filterTools}
+          <span className="sheet-toolbar-sep" />
+          {!simple && !exportRef && <button type="button" className="sheet-btn" onClick={exportCsv}>{t.csv}</button>}
         </div>
-        {!simple && (
-          <>
-            <button type="button" className="sheet-btn" onClick={copy}
-              title={t.copy_hint}>{copied ? t.copied : t.copy}</button>
-            <button type="button" className="sheet-btn" onClick={exportCsv}>{t.csv}</button>
-          </>
-        )}
-        {actions}
-      </div>
+      )}
+
+      {/* Hors de la grille, qui défile et couperait le panneau. */}
+      {colsAt && (
+        <div ref={colsRef} className="sheet-pop-panel" style={colsAt} role="dialog" aria-label={t.columns}>
+          <div className="sheet-pop-actions">
+            <button type="button" onClick={() => setHidden(new Set())}>{t.show_all}</button>
+          </div>
+          {colSections.map(s => {
+            const items = s.cols.map(c => (
+              <label key={c.id} className="sheet-pop-item">
+                <input type="checkbox" checked={!hidden.has(c.id)}
+                  onChange={() => setHidden(h => {
+                    const n = new Set(h)
+                    if (n.has(c.id)) n.delete(c.id)
+                    else n.add(c.id)
+                    return n
+                  })} />
+                {c.header}
+              </label>
+            ))
+            if (!s.group) return items
+            return (
+              <div key={s.cols[0].id} className="sheet-pop-group" role="group" aria-label={s.group}>
+                <div className="sheet-pop-title">
+                  {s.icon && (
+                    <img className="sheet-h-icon" src={s.icon} alt="" aria-hidden="true"
+                      onError={e => { e.currentTarget.style.display = 'none' }} />
+                  )}
+                  {s.group}
+                </div>
+                <div className="sheet-pop-row">{items}</div>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* ── barre de formule ── */}
       {!simple && (
@@ -538,7 +592,7 @@ export default function DataSheet({
         aria-rowcount={view.length} aria-colcount={cols.length} onKeyDown={onKeyDown}>
         <table className="sheet-table" style={{ width: tableWidth }}>
           <colgroup>
-            <col style={{ width: ROWNUM_W }} />
+            <col style={{ width: rowHeadW }} />
             {cols.map(c => <col key={c.id} style={{ width: width(c) }} />)}
           </colgroup>
           <thead>
@@ -557,7 +611,7 @@ export default function DataSheet({
               <tr className="sheet-groups">
                 <th className="sheet-rownum-h" />
                 {groups.map(g => (
-                  <th key={`${g.start}-${g.group}`} colSpan={g.span}
+                  <th key={`${g.start}-${g.group}`} scope="colgroup" colSpan={g.span}
                     className={`sheet-group${g.group ? ' has-group' : ''}${groupCls(g.start)}${g.span === 1 ? frozenCls(g.start) : ''}`}
                     style={g.span === 1 ? frozenStyle(g.start) : undefined}>
                     {g.icon ? (
@@ -572,7 +626,25 @@ export default function DataSheet({
               </tr>
             )}
             <tr className="sheet-head">
-              <th className="sheet-rownum-h" />
+              <th className="sheet-rownum-h">
+                <span className="sheet-rownum-in">
+                  {!simple && (
+                    <label className="sheet-check" title={t.check_hint}>
+                      <input type="checkbox" aria-label={t.check_all} checked={allChecked} disabled={!view.length}
+                        ref={el => { if (el) el.indeterminate = checkedRows.length > 0 && !allChecked }}
+                        onChange={toggleAll} />
+                    </label>
+                  )}
+                  <button type="button" ref={colsBtn} className="sheet-cols-btn" aria-haspopup="dialog"
+                    aria-expanded={Boolean(colsAt)} aria-label={colsLabel} title={colsLabel} onClick={toggleCols}>
+                    <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+                      <rect x="1.8" y="2.3" width="12.4" height="11.4" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                      <path d="M6 2.5v11M10 2.5v11" stroke="currentColor" strokeWidth="1.4" />
+                    </svg>
+                    {hidden.size > 0 && <span className="sheet-cols-dot" />}
+                  </button>
+                </span>
+              </th>
               {cols.map((c, i) => {
                 const s = sort.find(x => x.id === c.id)
                 const order = sort.length > 1 && s ? sort.indexOf(s) + 1 : null
@@ -629,8 +701,18 @@ export default function DataSheet({
               return (
                 <tr key={rowKey ? rowKey(row, ri) : ri}
                   className={[rowClass?.(row), isRowSelected(range, ri, lastR, lastC) && 'is-row-sel'].filter(Boolean).join(' ') || undefined}>
-                  <th scope="row" className={`sheet-rownum${rowSel ? ' is-hl' : ''}`}
-                    onMouseDown={e => selectRow(e, ri)}>{ri + 1}</th>
+                  <th scope="row" className={`sheet-rownum${rowSel ? ' is-hl' : ''}${isChecked(row) ? ' is-checked' : ''}`}
+                    onMouseDown={e => selectRow(e, ri)}>
+                    {simple ? ri + 1 : (
+                      <span className="sheet-rownum-in">
+                        <label className="sheet-check" title={t.check_hint} onMouseDown={e => e.stopPropagation()}>
+                          <input type="checkbox" aria-label={t.check_row.replace('{n}', ri + 1)}
+                            checked={isChecked(row)} onChange={() => toggleCheck(row)} />
+                        </label>
+                        {ri + 1}
+                      </span>
+                    )}
+                  </th>
                   {cols.map((c, ci) => {
                     const v = c.value(row)
                     const text = format(v, c.type)
@@ -692,7 +774,14 @@ export default function DataSheet({
 
       {/* ── barre d'état ── */}
       <div className="sheet-status">
-        <span>{selection && selection.cells > 1 ? address : ((onRowOpen || onCellCommit) && openHint) || t.ready}</span>
+        <span>
+          {copied ? t.copied : selection && selection.cells > 1 ? address : checkedRows.length > 0 ? (
+            <>
+              {(checkedRows.length === 1 ? t.checked_one : t.checked_many).replace('{n}', checkedRows.length)}{' '}
+              <button type="button" className="sheet-link" onClick={() => pickRows(new Set())}>{t.uncheck_all}</button>
+            </>
+          ) : ((onRowOpen || onCellCommit) && openHint) || t.ready}
+        </span>
         <span className="sheet-status-agg">
           {selection && selection.cells > 1 && (
             <>

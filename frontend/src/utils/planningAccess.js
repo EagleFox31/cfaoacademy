@@ -25,23 +25,30 @@ export function canSeePlanning(roles = []) {
 
 export const PLANNING_HOME = '/portail/cle-repartition'
 
-/** Équipe du centre de formation : pour l'instant, la clé de répartition et rien d'autre. */
-const CENTER_ROLES = ['center_director', 'center_assistant', 'training_coordinator']
+/** Équipe du centre de formation : leur portail (CenterHome) et les applications qu'il ouvre. */
+export const CENTER_ROLES = ['center_director', 'center_assistant', 'training_coordinator']
 
 /** Vrai pour un compte du centre sans autre rôle de portail. */
-export function cleSeule(roles = []) {
+export function centreSeul(roles = []) {
   return roles.some(r => CENTER_ROLES.includes(r))
     && !roles.some(r => ROLE_PRIORITY.includes(r) && !CENTER_ROLES.includes(r))
+}
+
+/** Pages du portail ouvertes à un compte du centre seul : sa vitrine et la clé de répartition. */
+export function pageCentreAutorisee(pathname = '') {
+  return pathname === '/portail' || pathname === '/portail/'
+    || pathname === PLANNING_HOME || pathname.startsWith(`${PLANNING_HOME}/`)
 }
 
 /**
  * Page d'arrivée après connexion, sans page de retour demandée :
  * sans rôle de portail mais avec un rôle planning, le portail apprenant n'a
  * rien à lui montrer, on l'envoie droit sur la clé de répartition.
+ * L'équipe du centre arrive sur son portail.
  */
 export function pageAccueil(roles = []) {
   const rolePortail = roles.some(r => ROLE_PRIORITY.includes(r))
-  return cleSeule(roles) || (!rolePortail && canSeePlanning(roles)) ? PLANNING_HOME : '/portail'
+  return !rolePortail && canSeePlanning(roles) ? PLANNING_HOME : '/portail'
 }
 
 /**

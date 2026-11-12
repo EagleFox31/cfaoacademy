@@ -9,6 +9,7 @@ export default function PreviewSection({
   sectionBg,
   sectionBgPosition,
   sectionVeil,
+  noBackdrop = false,
   activeTab: controlledActive,
   onTabChange,
   headClass,
@@ -21,7 +22,7 @@ export default function PreviewSection({
     else setInternalActive(tabId)
   }
 
-  const autoBackdrop = resolveSectionBackdrop(id)
+  const autoBackdrop = noBackdrop ? null : resolveSectionBackdrop(id)
   const bgImage = sectionBg ?? autoBackdrop?.image ?? null
   const bgPosition = sectionBg
     ? (sectionBgPosition ?? 'center')

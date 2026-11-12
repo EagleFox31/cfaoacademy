@@ -12,6 +12,7 @@ import SuperAdminDashboard from './SuperAdminDashboard'
 import DpsDashboard from './DpsDashboard'
 import TrainerHome from './TrainerHome'
 import RHHome from './RHHome'
+import CenterHome from './CenterHome'
 
 import { getPrimaryRole, resolveProfile } from './portalProfiles.js'
 
@@ -28,6 +29,7 @@ function resolveView(roles = []) {
   if (profile.key === 'team_manager') return <TeamManagerDashboard mode="team" />
   if (profile.key === 'ki') return <KIDashboard />
   if (roles.includes('trainer')) return <TrainerHome />
+  if (profile.key === 'center') return <CenterHome mode={profile.mode} />
   return <LearnerDashboard />
 }
 

@@ -4,6 +4,7 @@
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Check, Chevron, FacetFilter, NO_VALUE, applyFacets, buildFacets, byOrder, fold } from './FacetFilter'
 import { useSettle } from '../../../components/sheet/useSettle'
 import DataSheet from '../../../components/sheet/DataSheet'
 import { coverageTone } from '../../../components/sheet/sheetMath'
@@ -113,6 +114,24 @@ export function Banner({ tone = 'info', children }) {
   return <p className={`ck-banner ck-banner--${tone}`} role={tone === 'warn' ? 'alert' : 'status'}>{children}</p>
 }
 
+const NEEDS_STALE = 'needs_snapshot_stale'
+
+/** Besoins absents (couverture vide), ou présents mais lus dans la copie datée de planning. */
+export function needsStatus(data) {
+  const warnings = data.warnings || []
+  const stale = warnings.find(w => w.code === NEEDS_STALE)
+  return {
+    missing: data.needs_source === 'none' || warnings.some(w => w.code !== NEEDS_STALE),
+    staleAt: stale ? stale.value : null,
+  }
+}
+
+function NeedsStaleBanner({ t, locale, at }) {
+  if (!at) return null
+  const date = new Date(at).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })
+  return <Banner>{t.needs_stale.replace('{date}', date)}</Banner>
+}
+
 /** Phrase d'une incohérence encore ouverte, avec la personne chargée de la traiter ; null si le type est inconnu. */
 export function reviewText(t, locale, i) {
   const template = t[`review_${i.issue}`]
@@ -161,11 +180,45 @@ function kpiMoney(value, fmt, t) {
 
 /** Où vont les places : le détail de l'indicateur porte les couleurs des cellules et sert de légende. */
 const PLACE_KEYS = ['in_subsidiary', 'at_academy', 'postponed']
+/** Types de formation toujours proposés dans le filtre Type ; E-learning n'apparaît que s'il existe. */
+const DELIVERY_MODES = ['PRESENTIEL', 'DISTANCIEL']
+const DELIVERY_ICONS = {
+  // Deux personnes : en salle, ensemble.
+  PRESENTIEL: <><circle cx="6" cy="5.5" r="2.2" /><circle cx="11" cy="6.5" r="1.8" /><path d="M2 13c0-2.2 1.8-3.8 4-3.8s4 1.6 4 3.8M9.5 10.2c.5-.3 1-.4 1.5-.4 1.7 0 3 1.3 3 3.2" /></>,
+  // Écran : à distance, en direct.
+  DISTANCIEL: <><rect x="2" y="2.5" width="12" height="8.5" rx="1.2" /><path d="M5.5 14h5M8 11v3" /></>,
+  // Écran et lecture : contenu à suivre seul.
+  ELEARNING: <><rect x="2" y="2.5" width="12" height="8.5" rx="1.2" /><path d="M6.8 4.9v3.7l3-1.85z" /><path d="M5.5 14h5M8 11v3" /></>,
+}
+const DeliveryMark = ({ t, mode }) => (
+  <span className="ck-delivery">
+    {DELIVERY_ICONS[mode] && (
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor"
+        strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{DELIVERY_ICONS[mode]}</svg>
+    )}
+    {t[`delivery_${mode}`] ?? mode}
+  </span>
+)
+const JOBS = ['TECHNICIAN', 'SAV', 'BODY', 'PARTS', 'DRIVER', NO_VALUE]
+const NO_FILTERS = {}
 const placeTone = key => `place-${key}`
 const seatSplit = (t, fmt, counts) => ({
   split: PLACE_KEYS.map(key => ({ key, label: t[`col_${key}`], value: fmt(counts[key] ?? 0, 'int') })),
   splitNote: counts.postponed ? t.kpi_postponed_note : null,
 })
+
+// Recherche et filtres décident de ce que comptent les indicateurs : ils se placent juste
+// au-dessus d'eux. Les outils propres au tableau (colonnes, copie, CSV) restent sur le tableau.
+function FilterBar({ hostRef, note, slots }) {
+  const bar = inline => (
+    <div className={`sheet ck-filterbar${inline ? ' is-inline' : ''}`}>
+      <div className="ck-filterbar-host" ref={hostRef} />
+      <p className="ck-filterbar-note" role="status">{note || null}</p>
+    </div>
+  )
+  // La page offre une place sur la ligne du titre : filtres et chiffres qu'ils changent restent liés.
+  return slots?.filters ? createPortal(bar(true), slots.filters) : bar(false)
+}
 
 function Kpis({ items, large = false, paired = false }) {
   return (
@@ -178,7 +231,7 @@ function Kpis({ items, large = false, paired = false }) {
           {k.split && (
             <dd className="ck-kpi-split">
               <ul>
-                {k.split.map(p => <li className={`ck-split--${p.key}`} key={p.key}><span>{p.label}</span><b>{p.value}</b></li>)}
+                {k.split.map(p => <li className={`ck-split--${p.tone ?? p.key}`} key={p.key}><span>{p.label}</span><b>{p.value}</b></li>)}
               </ul>
               {k.splitNote && <small>{k.splitNote}</small>}
             </dd>
@@ -202,7 +255,7 @@ function SpreadsheetIcon() {
   )
 }
 
-/** Bouton d'export Excel : désactivé pendant l'envoi, erreur affichée sur place. */
+/** Téléchargement d'un export : bouton désactivé pendant l'envoi, erreur affichée sur place. */
 function useXlsxDownload(t) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
@@ -213,22 +266,14 @@ function useXlsxDownload(t) {
   return { busy, err, start }
 }
 
-function XlsxButton({ label, text, t, run }) {
-  const { busy, err, start } = useXlsxDownload(t)
-  return (
-    <>
-      <button type="button" className="sheet-btn ck-xlsx" onClick={() => start(run)} disabled={busy} title={label}
-        aria-label={busy ? t.downloading : label}>
-        <SpreadsheetIcon />
-        <span>{busy ? t.downloading : (text ?? t.export)}</span>
-      </button>
-      {err && <span className="ck-inline-err">{err}</span>}
-    </>
-  )
-}
+/** L'export se range dans l'en-tête de la page, à côté du titre : le tableau n'a plus de barre à lui. */
+const inHeader = (slots, node) => (node && slots?.tools ? createPortal(node, slots.tools) : node)
 
-/** Un seul bouton Excel qui ouvre la liste des fichiers proposés (menu ARIA : flèches, Échap). */
-function XlsxMenu({ t, items }) {
+/** Le CSV reprend ce que le tableau affiche : c'est le tableau qui le produit, via exportRef. */
+const csvItem = (t, ref) => ({ label: t.export_csv, hint: t.export_csv_hint, run: () => ref.current?.() })
+
+/** Un seul bouton « Exporter » qui ouvre la liste des formats proposés (menu ARIA : flèches, Échap). */
+function ExportMenu({ t, items }) {
   const { busy, err, start } = useXlsxDownload(t)
   const [open, setOpen] = useState(false)
   const boxRef = useRef(null)
@@ -259,7 +304,7 @@ function XlsxMenu({ t, items }) {
           disabled={busy} aria-label={busy ? t.downloading : t.xlsx_menu_aria} title={t.xlsx_menu_aria}
           onClick={() => setOpen(o => !o)}>
           <SpreadsheetIcon />
-          <span>{busy ? t.downloading : t.xlsx_menu}</span>
+          <span>{busy ? t.downloading : t.export}</span>
           <svg className="ck-combo-chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
             <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -280,54 +325,62 @@ function XlsxMenu({ t, items }) {
   )
 }
 
-const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-
 /**
- * Choix de la filiale : bouton (drapeau, nom, chevron) qui ouvre une liste avec recherche
- * au clavier (combobox ARIA : flèches, Entrée, Échap).
+ * Choix des filiales (combobox avec recherche). Un clic sur un nom ouvre cette filiale seule,
+ * modifiable ; sa case (ou Maj+Entrée) en ajoute d'autres, lues ensemble en vue consolidée.
  */
-function CountryCombo({ t, countries, value, onChange }) {
+function CountryCombo({ t, countries, selected, onChange }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const boxRef = useRef(null)
+  const btnRef = useRef(null)
   const inputRef = useRef(null)
   const listId = useId()
   const matches = useMemo(() => {
     const q = fold(query.trim())
     return q ? countries.filter(c => fold(c.label).includes(q) || fold(c.country).startsWith(q)) : countries
   }, [countries, query])
-  const current = countries.find(c => c.country === value)
+  const all = countries.find(c => c.country === ALL_COUNTRIES)
+  const isOn = c => (c === all ? selected.length === 0 : selected.includes(c.country))
 
   useEffect(() => {
     if (!open) return undefined
     setQuery('')
-    setActive(Math.max(0, countries.findIndex(c => c.country === value)))
+    setActive(Math.max(0, countries.findIndex(isOn)))
     inputRef.current?.focus()
     const away = e => { if (!boxRef.current?.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', away)
     return () => document.removeEventListener('mousedown', away)
-  }, [open, countries, value])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
   useEffect(() => { setActive(0) }, [query])
   useEffect(() => {
     if (open) document.getElementById(`${listId}-${active}`)?.scrollIntoView?.({ block: 'nearest' })
   }, [open, active, listId])
 
-  const pick = c => { onChange(c.country); setOpen(false) }
+  const only = c => { onChange(c === all ? [] : [c.country]); setOpen(false); btnRef.current?.focus() }
+  const toggle = c => {
+    if (!all || c === all) { only(c); return }
+    onChange(selected.includes(c.country) ? selected.filter(v => v !== c.country) : [...selected, c.country])
+  }
   const onKey = e => {
     if (e.key === 'ArrowDown') { e.preventDefault(); setActive(i => Math.min(i + 1, matches.length - 1)) }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(i => Math.max(i - 1, 0)) }
-    else if (e.key === 'Enter') { e.preventDefault(); if (matches[active]) pick(matches[active]) }
-    else if (e.key === 'Escape') { e.preventDefault(); setOpen(false) }
+    else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (matches[active]) (e.shiftKey || e.ctrlKey || e.metaKey ? toggle : only)(matches[active])
+    } else if (e.key === 'Escape') { e.preventDefault(); setOpen(false); btnRef.current?.focus() }
   }
+  const current = selected.length > 1
+    ? { country: ALL_COUNTRIES, label: t.countries_n.replace('{n}', selected.length) }
+    : (selected.length === 1 ? countries.find(c => c.country === selected[0]) : all)
   return (
     <div className="ck-combo" ref={boxRef}>
-      <button type="button" className="ck-combo-btn" aria-haspopup="listbox" aria-expanded={open}
+      <button type="button" ref={btnRef} className="ck-combo-btn" aria-haspopup="listbox" aria-expanded={open}
         aria-label={`${t.pick_country} : ${current?.label ?? ''}`} onClick={() => setOpen(o => !o)}>
         {current && <CountryName code={current.country} label={current.label} />}
-        <svg className="ck-combo-chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-          <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <Chevron />
       </button>
       {open && (
         <div className="ck-combo-panel">
@@ -336,17 +389,24 @@ function CountryCombo({ t, countries, value, onChange }) {
             aria-activedescendant={matches[active] ? `${listId}-${active}` : undefined}
             placeholder={t.country_search} aria-label={t.country_search}
             value={query} onChange={e => setQuery(e.target.value)} onKeyDown={onKey} />
-          <ul id={listId} role="listbox" className="ck-combo-list" aria-label={t.pick_country}>
+          <ul id={listId} role="listbox" className="ck-combo-list" aria-label={t.pick_country}
+            aria-multiselectable={Boolean(all)}>
             {matches.map((c, i) => (
-              <li key={c.country} id={`${listId}-${i}`} role="option" aria-selected={c.country === value}
-                className={`ck-combo-opt${i === active ? ' is-active' : ''}${c.country === value ? ' is-on' : ''}`}
-                onMouseEnter={() => setActive(i)} onMouseDown={e => { e.preventDefault(); pick(c) }}>
-                <CountryName code={c.country} label={c.label} />
-                {c.country === value && (
-                  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" className="ck-combo-check">
-                    <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
+              <li key={c.country} id={`${listId}-${i}`} role="option" aria-selected={isOn(c)}
+                className={`ck-combo-opt${i === active ? ' is-active' : ''}${isOn(c) ? ' is-on' : ''}`}
+                onMouseEnter={() => setActive(i)}
+                onMouseDown={e => { e.preventDefault(); (e.target.closest('.ck-country-add') ? toggle : only)(c) }}>
+                <span className="ck-facet-main">
+                  {all && (c === all
+                    ? <span className="ck-facet-box is-ghost" aria-hidden="true" />
+                    : (
+                      <span className="ck-country-add" title={t.country_add}>
+                        <span className="ck-facet-box" aria-hidden="true">{isOn(c) && <Check />}</span>
+                      </span>
+                    ))}
+                  <CountryName code={c.country} label={c.label} />
+                </span>
+                {c === all && isOn(c) && <Check className="ck-combo-check" />}
               </li>
             ))}
             {matches.length === 0 && <li className="ck-combo-empty">{t.country_none}</li>}
@@ -375,11 +435,13 @@ export function Segmented({ value, options, onChange, label }) {
 
 /* ─────────────────────────── Tableau (tous pays × marques) ─────────────────────────── */
 
-export function TableView({ t, locale, fmt, ckey, mode, global, openCountry, simple = false, canReview = false }) {
+export function TableView({ t, locale, fmt, ckey, mode, global, openCountry, simple = false, canReview = false, slots }) {
   const rows = global.rows
   const [sheetRows, setSheetRows] = useState(null)
+  const [filtersHost, setFiltersHost] = useState(null)
+  const csvRef = useRef(null)
   const visible = sheetRows ?? rows
-  const needsMissing = global.needs_source === 'none' || (global.warnings || []).length > 0
+  const { missing: needsMissing, staleAt } = needsStatus(global)
   const hideNeeds = simple && needsMissing
   const reviews = useMemo(() => groupReviews(global.review_items, i => i.country), [global.review_items])
 
@@ -422,7 +484,7 @@ export function TableView({ t, locale, fmt, ckey, mode, global, openCountry, sim
           value: r => r.coverage, tone: v => coverageTone(v),
           total: rs => ratio(sumOf(rs, r => r.seats), sumOf(rs, r => r.needs)) },
         { id: 'share', header: t.col_share, type: 'percent', width: 210, bar: true, total: 'sum', value: r => r.share },
-        { id: 'key_cost', header: t.col_key_cost, type: 'money', unit: t.currency, width: 206, total: 'sum', value: r => r.key_cost },
+        { id: 'key_cost', header: t.col_key_cost, type: 'money', unit: t.currency, width: 296, total: 'sum', value: r => r.key_cost },
       ].map(c => ({ ...c, group: t.group_totals })),
     ]
   // eslint-disable-next-line react-hooks/exhaustive-deps -- openCountry change à chaque rendu de la page
@@ -474,23 +536,28 @@ export function TableView({ t, locale, fmt, ckey, mode, global, openCountry, sim
   ].map(k => ({ ...k, value: k.value || (simple ? null : '—') }))
     .filter(k => k.value != null)
 
+  const exports = [
+    ...(global.partial ? [] : [
+      { label: t.xlsx_table, hint: t.xlsx_table_hint, run: () => planningApi.downloadGlobal(ckey, mode, serverLang(locale)) },
+      { label: t.xlsx_all, hint: t.xlsx_all_hint, run: () => planningApi.downloadAll(ckey, mode, serverLang(locale)) },
+    ]),
+    ...(simple ? [] : [csvItem(t, csvRef)]),
+  ]
+
   return (
     <section className="ck-view" aria-labelledby="ck-view-title">
+      {inHeader(slots, exports.length > 0 && <ExportMenu t={t} items={exports} />)}
+      <FilterBar hostRef={setFiltersHost} slots={slots} />
       <Kpis items={kpis} large />
       {needsMissing && !simple && <Banner tone="warn">{t.needs_missing}</Banner>}
+      {!needsMissing && <NeedsStaleBanner t={t} locale={locale} at={staleAt} />}
       <DataSheet
         id="ck-global" columns={shownColumns} rows={rows} rowKey={r => r.country} frozen={1} simple={simple}
-        onViewChange={setSheetRows}
+        onViewChange={setSheetRows} filtersTarget={filtersHost} exportRef={simple ? undefined : csvRef}
         exportName={`cle-${ckey.year}-${ckey.pole}-${mode.toLowerCase()}`}
         onRowOpen={r => openCountry(r.country)} openHint={t.open_hint}
         // Besoins ou places : ce qui a été saisi. L'effectif contractuel est un référentiel, il ne compte pas.
         rowClass={r => ((r.needs || 0) > 0 || (r.seats || 0) > 0 ? 'is-filled' : '')}
-        actions={global.partial ? null : (
-          <XlsxMenu t={t} items={[
-            { label: t.xlsx_table, hint: t.xlsx_table_hint, run: () => planningApi.downloadGlobal(ckey, mode, serverLang(locale)) },
-            { label: t.xlsx_all, hint: t.xlsx_all_hint, run: () => planningApi.downloadAll(ckey, mode, serverLang(locale)) },
-          ]} />
-        )}
       />
     </section>
   )
@@ -520,6 +587,7 @@ function visibleFooter(foot, all, visible) {
   const needs = wholeBrands ? sumOf([...brands], b => foot.needs_by_brand[b]) : null
   return {
     ...foot, ...places, ...lodging, seats, needs,
+    key_cost: costUnknown ? null : sumOf(visible, s => s.key_cost),
     coverage: needs == null ? null : ratio(seats, needs),
     needs_unknown: needs == null && foot.needs != null,
     total: costUnknown ? null : sumOf(visible, s => s.key_cost) + lodging.trainee_lodging + lodging.trainer_lodging,
@@ -531,10 +599,18 @@ const editableCell = (target, field, input, extra) => ({
   input, target, field, raw: s => s.edit.raw[field], can: s => Boolean(s.edit && !s.edit.frozen), ...extra,
 })
 
+const ALL_COUNTRIES = 'all'
+
 export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode, session, revealTick = 0, slots, canEdit = false, onEdited }) {
   const [state, setState] = useState({ loading: true })
-  const countries = global.rows
-  const current = code || (countries.find(c => DEFAULT_COUNTRY.has(c.country)) ?? countries[0])?.country
+  // Le choix « toutes » n'a de sens que pour qui voit plusieurs filiales.
+  const countries = useMemo(() => (global.partial || global.rows.length < 2
+    ? global.rows
+    : [{ country: ALL_COUNTRIES, label: t.all_countries }, ...global.rows]), [global, t])
+  // Une adresse héritée d'un autre compte (ex. « pays=all » pour une filiale) retombe sur le défaut.
+  const current = (countries.some(c => c.country === code) && code)
+    || (global.rows.find(c => DEFAULT_COUNTRY.has(c.country)) ?? global.rows[0])?.country
+  const isAll = current === ALL_COUNTRIES
 
   const fetchCountry = useCallback(() => (ckey.pole === 'ALL'
     ? planningApi.yearCountry(ckey.year, current, mode)
@@ -612,13 +688,20 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
     return () => document.removeEventListener('visibilitychange', onShow)
   }, [canEdit, refresh, onEdited])
 
-  const [filters, setFilters] = useState({ brand: '', month: '', location: '' })
+  const [filters, setFilters] = useState(NO_FILTERS)
   const [reveal, setReveal] = useState(0)
-  useEffect(() => { setFilters({ brand: '', month: '', location: '' }); setProblem(null) }, [current])
+  // Plusieurs filiales cochées depuis une filiale : la vue consolidée s'ouvre déjà filtrée.
+  const pendingCountries = useRef(null)
+  useEffect(() => {
+    const keep = pendingCountries.current
+    pendingCountries.current = null
+    setFilters(keep ? { country: keep } : NO_FILTERS)
+    setProblem(null)
+  }, [current])
   // Arrivée depuis la cloche : aucun filtre ni recherche ne doit cacher la session visée.
   useEffect(() => {
     if (!revealTick) return
-    setFilters({ brand: '', month: '', location: '' })
+    setFilters(NO_FILTERS)
     setReveal(n => n + 1)
   }, [revealTick])
   // Filtres locaux (sans appel serveur) : un bref squelette sur le corps du tableau signale
@@ -626,17 +709,22 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
   const filtering = useSettle([filters])
 
   const reviews = useMemo(() => groupReviews(
-    (global.review_items || []).filter(i => i.country === current), i => i.code,
-  ), [global.review_items, current])
+    (global.review_items || []).filter(i => isAll || i.country === current), i => `${i.country}|${i.code}`,
+  ), [global.review_items, current, isAll])
 
   const data = state.data
   const sessions = useMemo(() => data?.sessions ?? [], [data])
   const columns = useMemo(() => [
+    ...(isAll
+      ? [{ id: 'country', header: t.col_country, type: 'text', width: 180, merge: true, value: s => s.country_label,
+        render: (v, s) => <CountryName code={s.country} label={v} /> }]
+      : []),
     { id: 'brand', header: t.col_brand, type: 'text', width: 130, merge: true, value: s => s.brand,
+      mergeKey: s => `${s.country ?? ''}|${s.brand}`,
       render: v => <BrandMark brand={v} /> },
     // Fusion limitée à une même marque : deux marques voisines au même niveau restent séparées.
     { id: 'level', header: t.col_level, type: 'text', width: 96, merge: true,
-      mergeKey: s => (s.level ? `${s.brand}|${s.level}` : null),
+      mergeKey: s => (s.level ? `${s.country ?? ''}|${s.brand}|${s.level}` : null),
       value: s => s.level ?? '',
       // Le libellé est celui du barème de la marque ; seule sa couleur vient du palier commun.
       render: (v, s) => (v
@@ -647,7 +735,7 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
       }) : undefined },
     { id: 'code', header: t.col_code, type: 'text', width: 130, value: s => s.code,
       render: (v, s) => (
-        <span className="ck-country">{v}<ReviewMark t={t} locale={locale} items={reviews.get(s.code)} /></span>
+        <span className="ck-country">{v}<ReviewMark t={t} locale={locale} items={reviews.get(`${s.country ?? current}|${s.code}`)} /></span>
       ) },
     { id: 'title', header: t.col_title, type: 'text', width: 260, value: s => s.title,
       edit: canEdit ? editableCell('session', 'title', 'text', { hint: t.edit_shared }) : undefined },
@@ -666,60 +754,71 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
       edit: canEdit ? editableCell('allocation', 'seats', 'number', { min: 1, max: 32767 }) : undefined },
     // Montant par ligne : clé tarifée seulement, une clé à budget fixe n'a pas de prix de place.
     ...(sessions.some(s => s.key_cost != null)
-      ? [{ id: 'key_cost', header: t.col_key_cost, type: 'money', unit: t.currency, width: 206, total: 'sum', value: s => s.key_cost }]
+      ? [{ id: 'key_cost', header: t.col_key_cost, type: 'money', unit: t.currency, width: 296, total: 'sum', value: s => s.key_cost }]
       : []),
-    { id: 'trainee_lodging', header: t.col_trainee_lodging, type: 'money', unit: t.currency, width: 290, total: 'sum',
+    { id: 'trainee_lodging', header: t.col_trainee_lodging, type: 'money', unit: t.currency, width: 320, total: 'sum',
       value: s => s.trainee_lodging },
     { id: 'trainer_lodging', header: t.col_trainer_lodging, type: 'money', unit: t.currency, width: 290, total: 'sum',
       value: s => s.trainer_lodging },
-  ], [t, locale, reviews, sessions, canEdit])
+  ], [t, locale, reviews, sessions, canEdit, isAll, current])
 
   // Sans filtre, le pied renvoyé par le serveur fait foi ; sinon les indicateurs suivent le tableau.
   const [sheetRows, setSheetRows] = useState(null)
+  const [filtersHost, setFiltersHost] = useState(null)
+  const csvRef = useRef(null)
   const foot = useMemo(() => visibleFooter(data?.footer, sessions, sheetRows ?? sessions), [data, sessions, sheetRows])
-  const options = useMemo(() => {
-    const uniq = fn => [...new Set(sessions.map(fn).filter(Boolean))].sort()
-    return { brand: uniq(s => s.brand), month: uniq(s => s.start_date?.slice(0, 7)), location: uniq(s => s.location) }
-  }, [sessions])
-  const shown = useMemo(() => sessions.filter(s =>
-    (!filters.brand || s.brand === filters.brand)
-    && (!filters.month || s.start_date?.slice(0, 7) === filters.month)
-    && (!filters.location || s.location === filters.location)), [sessions, filters])
   const monthLabel = ym => {
     const [y, m] = ym.split('-').map(Number)
     return new Date(y, m - 1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' })
   }
-  // Filtre compact : le libellé est porté par l'option « tous » (Marque : toutes…).
-  const filter = (k, label, fmtOpt = v => v) => (
-    <label className={`ck-pill-select${filters[k] ? ' is-on' : ''}`} key={k}>
-      <span className="ck-sr">{label}</span>
-      <select value={filters[k]} onChange={e => setFilters(f => ({ ...f, [k]: e.target.value }))}>
-        <option value="">{label} · {t.filter_all}</option>
-        {options[k].map(v => <option key={v} value={v}>{fmtOpt(v)}</option>)}
-      </select>
-    </label>
-  )
+  // Du plus large au plus fin : la marque, la filiale, puis ce qui décrit la formation.
+  const facetDefs = useMemo(() => {
+    const countryLabels = new Map(sessions.map(s => [s.country, s.country_label]))
+    return [
+      { id: 'brand', label: t.filter_brand, get: s => s.brand, render: v => <BrandMark brand={v} /> },
+      ...(isAll ? [{ id: 'country', label: t.filter_country, get: s => s.country, text: v => countryLabels.get(v) ?? v,
+        render: v => <CountryName code={v} label={countryLabels.get(v) ?? v} /> }] : []),
+      { id: 'job', label: t.filter_job, get: s => s.job || NO_VALUE, text: v => t[`job_${v}`], compare: byOrder(JOBS) },
+      { id: 'delivery', label: t.filter_delivery, get: s => s.delivery, text: v => t[`delivery_${v}`],
+        render: v => <DeliveryMark t={t} mode={v} />, values: DELIVERY_MODES, compare: byOrder(DELIVERY_MODES) },
+      { id: 'site', label: t.filter_location, get: s => s.site, text: v => t[`site_${v}`], compare: byOrder(PLACE_KEYS) },
+      { id: 'month', label: t.filter_month, get: s => s.start_date?.slice(0, 7), text: monthLabel,
+        compare: (x, y) => x.value.localeCompare(y.value) },
+    ]
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t, locale, isAll, sessions])
+  const facets = useMemo(() => buildFacets(sessions, facetDefs, filters), [sessions, facetDefs, filters])
+  const shown = useMemo(() => applyFacets(sessions, facetDefs, filters), [sessions, facetDefs, filters])
   // Une seule ligne : la filiale se choisit à droite du titre, l'export rejoint les outils
-  // de l'en-tête (slots de la page) ; les filtres vivent dans la barre du tableau.
-  const combo = <CountryCombo t={t} countries={countries} value={current} onChange={setCode} />
+  // de l'en-tête (slots de la page) ; les filtres vivent juste au-dessus des indicateurs.
+  // Une filiale : sa vue, modifiable. Aucune ou plusieurs : la vue consolidée, filtrée.
+  const pickCountries = list => {
+    if (list.length === 1) { if (list[0] !== current) setCode(list[0]); return }
+    if (!countries.some(c => c.country === ALL_COUNTRIES)) return
+    if (isAll) setFilters(cur => ({ ...cur, country: list }))
+    else { pendingCountries.current = list; setCode(ALL_COUNTRIES) }
+  }
+  const combo = <CountryCombo t={t} countries={countries} onChange={pickCountries}
+    selected={isAll ? (filters.country ?? []) : [current]} />
   const exportBtn = data && (
-    <XlsxButton t={t} label={t.xlsx_country}
-      run={() => planningApi.downloadCountry(ckey, current, mode, serverLang(locale))} />
+    <ExportMenu t={t} items={[
+      { label: t.xlsx_country, hint: isAll ? t.xlsx_all_countries_hint : t.xlsx_country_hint, run: () => planningApi.downloadCountry(ckey, current, mode, serverLang(locale)) },
+      csvItem(t, csvRef),
+    ]} />
   )
-  const filterBar = sessions.length > 0 && (
+  const filterBar = (
     <>
-      {filter('brand', t.filter_brand)}
-      {filter('month', t.filter_month, monthLabel)}
-      {filter('location', t.filter_location)}
+      {facets.filter(f => f.id !== 'country').map(f => (
+        <FacetFilter key={f.id} t={t} facet={f} selected={filters[f.id] ?? []}
+          onChange={list => setFilters(cur => ({ ...cur, [f.id]: list }))} />
+      ))}
     </>
   )
   // Dit au-dessus des indicateurs qu'ils ne portent que sur une partie du devis.
   const hiddenRows = sheetRows != null && sheetRows.length < sessions.length
-  const filterLabels = [filters.brand, filters.month && monthLabel(filters.month), filters.location].filter(Boolean)
-  const filterNote = hiddenRows && [
-    filterLabels.length ? `${t.filter_on} : ${filterLabels.join(' · ')}` : t.filter_on,
-    t.filter_count.replace('{n}', fmt(sheetRows.length, 'int')).replace('{total}', fmt(sessions.length, 'int')),
-  ].join(' · ')
+  // Les pastilles disent déjà quoi : la note ne dit que combien.
+  const filterNote = hiddenRows
+    && t.filter_count.replace('{n}', fmt(sheetRows.length, 'int')).replace('{total}', fmt(sessions.length, 'int'))
   // Pendant un chargement, le squelette REMPLACE l'ancien contenu (jamais les deux à la fois).
   const ready = !state.loading
   const scrollToSession = () => requestAnimationFrame(() =>
@@ -733,10 +832,10 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
   return (
     <section className="ck-view" aria-busy={state.loading || undefined}>
       {slots?.title ? createPortal(combo, slots.title) : combo}
-      {ready && exportBtn && (slots?.tools ? createPortal(exportBtn, slots.tools) : exportBtn)}
+      {ready && inHeader(slots, exportBtn)}
       {state.loading && <SheetSkeleton label={t.loading} kpis />}
       {state.error && <Banner tone="warn">{errText(t, state.error)}</Banner>}
-      {ready && foot && filterNote && <Banner tone="info">{filterNote}</Banner>}
+      {ready && data && <FilterBar hostRef={setFiltersHost} note={foot && filterNote} slots={slots} />}
       {ready && foot && (
         // Lecture par colonne : places, accommodation, puis la somme totale seule.
         <Kpis large paired items={[
@@ -747,21 +846,28 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
             ...seatSplit(t, fmt, foot) },
           { label: t.col_coverage, value: foot.coverage == null ? '—' : fmt(foot.coverage, 'percent'),
             note: foot.needs_unknown ? t.kpi_needs_by_brand_note : null },
-          { label: t.col_trainee_lodging, value: kpiMoney(foot.trainee_lodging, fmt, t) },
-          { label: t.col_trainer_lodging, value: kpiMoney(foot.trainer_lodging, fmt, t) },
+          // Une carte pour l'accommodation (stagiaires puis formateurs), le coût de formation dessous.
+          { label: t.kpi_lodging,
+            value: kpiMoney(Number(foot.trainee_lodging || 0) + Number(foot.trainer_lodging || 0), fmt, t),
+            // Mêmes encadrés que les places, sans couleur : ce sont deux postes, pas deux états.
+            split: [
+              { key: 'trainees', tone: 'plain', label: t.kpi_lodging_trainees, value: kpiMoney(foot.trainee_lodging, fmt, t) },
+              { key: 'trainers', tone: 'plain', label: t.kpi_lodging_trainers, value: kpiMoney(foot.trainer_lodging, fmt, t) },
+            ] },
+          { label: t.col_key_cost, value: foot.key_cost == null ? '—' : kpiMoney(foot.key_cost, fmt, t) },
           { label: t.col_total, value: foot.total == null ? '—' : kpiMoney(foot.total, fmt, t), note: t.kpi_total_note },
         ]} />
       )}
       {ready && data && (
         <div className={filtering ? 'ck-sheet-busy' : undefined} aria-busy={filtering || undefined}>
-          <DataSheet id="ck-country-niveau" columns={columns} rows={shown} frozen={3} onViewChange={setSheetRows}
+          <DataSheet id="ck-country-niveau" columns={columns} rows={shown} frozen={isAll ? 4 : 3} onViewChange={setSheetRows} filtersTarget={filtersHost} exportRef={csvRef}
             rowKey={(s, i) => s.edit?.allocation ?? `${s.code}-${s.start_date}-${i}`}
             rowClass={s => (session && s.code === session ? 'is-focus' : undefined)} revealKey={reveal}
             onCellCommit={canEdit ? sendCell : undefined} openHint={canEdit ? t.edit_hint : undefined}
             cellError={(s, c) => (problem?.cell === `${s.edit?.allocation}|${c.id}` ? problem.text : null)}
-            exportName={`cle-${ckey.year}-${current}`} emptyText={t.no_sessions} filterControls={filterBar || null}
-            controlsActive={Boolean(filters.brand || filters.month || filters.location)}
-            onClearControls={() => setFilters({ brand: '', month: '', location: '' })} />
+            exportName={`cle-${ckey.year}-${current}`} emptyText={t.no_sessions} filterControls={filterBar || null} hideSearch
+            controlsActive={Object.values(filters).some(list => list.length > 0)}
+            onClearControls={() => setFilters(NO_FILTERS)} />
         </div>
       )}
       {problem && (
@@ -793,7 +899,9 @@ const ABC_BASES = ['a', 'b', 'c']
  * de la filiale, C = techniciens du contrat. Pour la base choisie : part et montant
  * par filiale, quantité par marque. « Réalisé » = l'ancien écran Prévu / Réalisé.
  */
-export function AbcView({ t, fmt, scope, ckey }) {
+export function AbcView({ t, locale, fmt, scope, ckey, slots }) {
+  const csvRef = useRef(null)
+  const [filtersHost, setFiltersHost] = useState(null)
   const [base, setBase] = useState('a')
   const settling = useSettle([base]) // bascule A / B / C locale : bref squelette
   const [state, setState] = useState({ loading: true })
@@ -851,17 +959,20 @@ export function AbcView({ t, fmt, scope, ckey }) {
   if (state.loading) return <section className="ck-view">{bar}<SheetSkeleton label={t.loading} /></section>
   if (state.error) return <Banner tone="warn">{errText(t, state.error)}</Banner>
 
-  const needsMissing = data.needs_source === 'none' || (data.warnings || []).length > 0
+  const { missing: needsMissing, staleAt } = needsStatus(data)
   return (
     <section className="ck-view">
       <p className="ck-lead">{t.abc_lead}</p>
+      {inHeader(slots, <ExportMenu t={t} items={[csvItem(t, csvRef)]} />)}
+      <FilterBar hostRef={setFiltersHost} slots={slots} />
       <Kpis items={[
         { label: t.kpi_budget, value: data.budget ? kpiMoney(data.budget, fmt, t) : '—' },
         ...ABC_BASES.map(x => ({ label: t[`abc_${x}`], value: fmt(sumOf(sheetRows ?? data.rows, r => r[x]), 'int') })),
       ]} />
       {needsMissing && <Banner tone="warn">{t.needs_missing}</Banner>}
+      {!needsMissing && <NeedsStaleBanner t={t} locale={locale} at={staleAt} />}
       {bar}
-      <DataSheet id="ck-abc" columns={columns} rows={data.rows} rowKey={r => r.country} frozen={1} onViewChange={setSheetRows}
+      <DataSheet id="ck-abc" columns={columns} rows={data.rows} rowKey={r => r.country} frozen={1} onViewChange={setSheetRows} filtersTarget={filtersHost} exportRef={csvRef}
         exportName={`cle-${data.year}-${data.pole}-abc-${base}`} />
     </section>
   )

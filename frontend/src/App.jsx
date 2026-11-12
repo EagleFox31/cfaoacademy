@@ -7,7 +7,7 @@ import ScrollToTop from './components/ScrollToTop.jsx'
 import { SiteBackToTopFab } from './components/BackToTopFab.jsx'
 import RedirectionExterne from './components/RedirectionExterne.jsx'
 import RouteMotion from './components/RouteMotion.jsx'
-import GardeCleSeule from './components/GardeCleSeule.jsx'
+import GardeCentre from './components/GardeCentre.jsx'
 import AnnonceMaintenance from './components/AnnonceMaintenance.jsx'
 import useAuth from './hooks/useAuth.js'
 import Login from './pages/Login.jsx'
@@ -62,7 +62,7 @@ export default function App() {
       <AnnonceSelonRole />
       {/* Loader + transition morph sur chaque changement de route */}
       <RouteMotion>
-        <GardeCleSeule>
+        <GardeCentre>
         <Routes>
           <Route path="/" element={<Accueil />} />
           <Route path="/formations" element={<Formations />} />
@@ -100,7 +100,7 @@ export default function App() {
           <Route path="/portail/journal-erreurs" element={<RedirectionExterne />} />
           <Route path="/portail" element={<Portal />} />
         </Routes>
-        </GardeCleSeule>
+        </GardeCentre>
       </RouteMotion>
       </PortalHelpShell>
     </LocaleProvider>
