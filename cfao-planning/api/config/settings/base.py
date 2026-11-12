@@ -98,6 +98,12 @@ CERBOS_HTTP = env("CERBOS_HTTP", default="http://planning-cerbos:3592")
 NEEDS_API_URL = env("NEEDS_API_URL", default="")
 NEEDS_ANALYTICS_KEY = env("NEEDS_ANALYTICS_KEY", default="")
 NEEDS_CATALOG_WRITE_KEY = env("NEEDS_CATALOG_WRITE_KEY", default="")
+# Copie des besoins : poussée par cfao-needs (clé `X-Needs-Snapshot-Key`, absente =
+# push refusé), revérifiée au plus toutes les RECHECK secondes par GET conditionnel.
+NEEDS_SNAPSHOT_INBOUND_KEY = env("NEEDS_SNAPSHOT_INBOUND_KEY", default="")
+NEEDS_SNAPSHOT_RECHECK_S = env.int("NEEDS_SNAPSHOT_RECHECK_S", default=300)
+NEEDS_SNAPSHOT_TIMEOUT_S = env.float("NEEDS_SNAPSHOT_TIMEOUT_S", default=2.0)
+NEEDS_SNAPSHOT_BACKGROUND = True  # revérification hors requête quand une copie existe
 
 # ── Plateforme (mode integrated uniquement) ──
 PLATFORM_CORE_HTTP = env("PLATFORM_CORE_HTTP", default="")

@@ -7,3 +7,4 @@ from .base import *  # noqa: E402,F401,F403
 
 DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
 CERBOS_HTTP = "http://cerbos.invalid:3592"
+NEEDS_SNAPSHOT_BACKGROUND = False  # SQLite en mémoire : un autre fil ne voit pas la base de test

@@ -138,6 +138,13 @@ PUBLIC_BASE_URL = env("NEEDS_PUBLIC_BASE_URL", default="http://localhost:8080")
 ANALYTICS_INBOUND_KEY = env("NEEDS_ANALYTICS_INBOUND_KEY", default="")
 CATALOG_WRITE_INBOUND_KEY = env("NEEDS_CATALOG_WRITE_INBOUND_KEY", default="")
 
+# ── Copie des besoins poussée à cfao-planning (relais `needs-relay`) ──────────
+# URL ou clé absente = relais inactif ; planning se rattrape par /analytics/snapshot.
+PLANNING_API_URL = env("PLANNING_API_URL", default="")
+NEEDS_SNAPSHOT_PUSH_KEY = env("NEEDS_SNAPSHOT_PUSH_KEY", default="")
+NEEDS_RELAY_LISTEN_TIMEOUT_S = env.int("NEEDS_RELAY_LISTEN_TIMEOUT_S", default=30)
+NEEDS_RELAY_MAX_BACKOFF_S = env.int("NEEDS_RELAY_MAX_BACKOFF_S", default=600)
+
 # ── Worker asynchrone : broker = Postgres, pas de Redis (architecture.md §7) ──
 Q_CLUSTER = {
     "name": "needs",

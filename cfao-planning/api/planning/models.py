@@ -547,3 +547,28 @@ class ReviewItem(UUIDModel, TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.sheet}!{self.cell_range} {self.reason}"
+
+
+# ── Copie locale des besoins (poussée par cfao-needs, contrat needs-snapshot-push) ──
+
+class NeedsCopyState(models.Model):
+    """Ligne unique (id=1) : version de la copie reçue. `version` nul = aucune copie."""
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1)
+    version = models.BigIntegerField(null=True, blank=True)
+    generated_at = models.DateTimeField(null=True, blank=True)
+    received_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"copie des besoins v{self.version}"
+
+
+class NeedsCopyYear(models.Model):
+    """Lectures d'une année de campagne, telles que cfao-needs les sert (`years.<année>`)."""
+
+    year = models.IntegerField(primary_key=True)
+    version = models.BigIntegerField()
+    payload = models.JSONField()
+
+    def __str__(self) -> str:
+        return f"besoins {self.year} v{self.version}"

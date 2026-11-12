@@ -1,0 +1,188 @@
+{
+  "components": {
+    "schemas": {
+      "Error": {
+        "properties": {
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "type": "object"
+      },
+      "NeedsSnapshot": {
+        "properties": {
+          "generated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "years": {
+            "additionalProperties": {
+              "description": "Corps des lectures `needs-analytics` de l'année (même forme que ses GET).",
+              "properties": {
+                "catalog_levels": {
+                  "required": [
+                    "lines"
+                  ],
+                  "type": "object"
+                },
+                "needs_by_branch_brand": {
+                  "properties": {
+                    "all": {
+                      "type": "object"
+                    },
+                    "equipment": {
+                      "type": "object"
+                    },
+                    "motors": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "motors",
+                    "equipment",
+                    "all"
+                  ],
+                  "type": "object"
+                },
+                "unchosen_modules": {
+                  "properties": {
+                    "all": {
+                      "type": "object"
+                    },
+                    "equipment": {
+                      "type": "object"
+                    },
+                    "motors": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "motors",
+                    "equipment",
+                    "all"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "needs_by_branch_brand",
+                "unchosen_modules",
+                "catalog_levels"
+              ],
+              "type": "object"
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "version",
+          "generated_at",
+          "years"
+        ],
+        "type": "object"
+      },
+      "PushResult": {
+        "examples": [
+          {
+            "applied": true,
+            "version": 42
+          }
+        ],
+        "properties": {
+          "applied": {
+            "description": "Faux si la version était déjà connue.",
+            "type": "boolean"
+          },
+          "version": {
+            "description": "Version de la copie après l'appel.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "applied",
+          "version"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "NeedsSnapshotKey": {
+        "in": "header",
+        "name": "X-Needs-Snapshot-Key",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "description": "cfao-needs pousse sa copie complète à chaque changement (relais `needs-relay`). Idempotent : une version déjà connue ou plus ancienne ne change rien.",
+    "title": "CFAO Planning — copie des besoins",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/planning/internal/needs-snapshot": {
+      "post": {
+        "operationId": "pushNeedsSnapshot",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NeedsSnapshot"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushResult"
+                }
+              }
+            },
+            "description": "Reçue ; appliquée seulement si plus récente."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Document invalide : rien n'est écrit."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Clé `X-Needs-Snapshot-Key` absente ou invalide."
+          }
+        },
+        "summary": "Reçoit la copie des besoins (réseau interne seulement)."
+      }
+    }
+  },
+  "security": [
+    {
+      "NeedsSnapshotKey": []
+    }
+  ]
+}

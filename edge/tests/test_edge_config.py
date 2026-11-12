@@ -22,7 +22,14 @@ def _locations(texte):
 def test_liste_blanche_des_routes():
     # Toute nouvelle route publique doit modifier ce test, donc être relue.
     trouvees = sorted(loc for m in MODELES for loc in _locations(_texte(m)))
-    assert trouvees == sorted(["/", "/", "/auth/", "/auth", r"^/auth/(realms/cfao|resources)/", "/cr", "/cr/", "/api/v1/planning/"])
+    assert trouvees == sorted(["/", "/", "/auth/", "/auth", r"^/auth/(realms/cfao|resources)/", "/cr", "/cr/", "/api/v1/planning/",
+                                 "/api/v1/planning/internal/"])
+
+
+def test_routes_internes_jamais_publiees():
+    modele = _texte(EDGE / "templates" / "routes" / "planning.conf.template")
+    bloc = modele.split("location /api/v1/planning/internal/ {", 1)[1].split("}", 1)[0]
+    assert bloc.split() == ["return", "404;"]
 
 
 def test_needs_transparent():

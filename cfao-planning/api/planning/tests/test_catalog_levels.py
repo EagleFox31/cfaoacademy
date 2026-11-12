@@ -9,7 +9,7 @@ from openpyxl import load_workbook
 from planning.clients import needs as client
 from planning.exports.xlsx import country_workbook
 from planning.services import cost_key_cells as cells
-from planning.services.cost_key_global import consolidate_sheet
+from planning.services.cost_key_global import JOB_BY_FAMILY, consolidate_sheet
 
 BASE = "http://needs.test"
 
@@ -41,8 +41,7 @@ def catalog(monkeypatch, settings):
 
     def serve(*lines):
         payload = {"year": 2027, "catalog_available": True, "lines": list(lines)}
-        monkeypatch.setattr(client.requests, "get", lambda *a, **k: _Response(payload))
-        return client.fetch_catalog_levels(2027)
+        return client._parse_catalog_levels(payload)
 
     return serve
 
@@ -70,17 +69,28 @@ def test_un_module_multi_marques_est_corrige_d_un_seul_tenant(catalog):
     assert levels.module("stellantis", "SS01").line_ids == ("c", "p")
 
 
+def test_la_famille_du_catalogue_donne_le_metier(catalog):
+    levels = catalog({**_line("1", "TOYOTA", "TP03", "", "", 1), "family": "process-parts-motors"})
+    assert levels.module("toyota", "TP03").family == "process-parts-motors"
+    assert JOB_BY_FAMILY[levels.module("toyota", "TP03").family] == "PARTS"
+
+
+def test_un_catalogue_sans_famille_reste_lisible(catalog):
+    assert catalog(_line("1", "TOYOTA", "TS01", "G4", "JUNIOR", 1)).module("toyota", "TS01").family == ""
+
+
 def test_marque_inconnue_ignoree(catalog):
     assert catalog(_line("1", "INCONNUE", "X1", "A", "JUNIOR", 1)).modules == {}
 
 
-def test_catalogue_injoignable(monkeypatch, settings):
+def test_catalogue_injoignable(monkeypatch, settings, db):
     settings.NEEDS_API_URL, settings.NEEDS_ANALYTICS_KEY = BASE, "key"
 
     def down(*a, **k):
         raise requests.ConnectionError("down")
 
     monkeypatch.setattr(client.requests, "get", down)
+    client.reset_refresh_clock()
     assert client.fetch_catalog_levels(2027).available is False
 
 
@@ -190,3 +200,10 @@ def test_l_export_du_devis_garde_le_libelle_du_bareme():
     assert ws.cell(row=3, column=2).value == "BASIC"
     assert ws.cell(row=4, column=2).value in (None, "")
     assert ws.cell(row=5, column=9).value == "=SUM(I3:I4)"
+    # Le récapitulatif sous le tableau : libellé centré sur deux colonnes, le montant à côté.
+    labels = {ws.cell(row=r, column=7).value: r for r in range(7, 15)}
+    assert list(labels) == ["En filiale", "À l'Academy", "Reportées", "Part", "Coût de formation des stagiaires",
+                            "Frais d'accommodation des stagiaires", "Frais d'accommodation formateurs", "Total à payer"]
+    assert {f"G{r}:H{r}" for r in labels.values()} <= {str(m) for m in ws.merged_cells.ranges}
+    assert all(ws.cell(row=r, column=7).alignment.horizontal == "center" for r in labels.values())
+    assert ws.cell(row=labels["Total à payer"], column=9).value == 6

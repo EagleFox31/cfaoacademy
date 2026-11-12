@@ -61,7 +61,10 @@ jobs:
               - 'cfao-needs/api/analytics/**'
               - 'cfao-planning/api/Dockerfile'
               - 'cfao-planning/api/planning/clients/**'
+              - 'cfao-planning/api/planning/contract.py'
+              - 'cfao-planning/api/planning/contract/**'
               - 'cfao-planning/api/planning/tests/test_needs_consumer.py'
+              - 'cfao-planning/api/planning/tests/test_needs_copy.py'
               - '.github/workflows/ci.yml'
 
   # Registre des contrats inter-modules (contracts/registry.json) : cohérence,
@@ -328,6 +331,15 @@ jobs:
     defaults:
       run:
         working-directory: cfao-needs/api
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -339,6 +351,8 @@ jobs:
           cache-dependency-path: cfao-needs/api/requirements-dev.txt
       - run: pip install -r requirements-dev.txt
       - run: pytest -q
+      # Trigger de version, outbox et NOTIFY : Postgres seulement.
+      - run: pytest analytics -q --ds=config.settings.test_pg
 
   planning:
     name: cfao-planning (app 05 · Django · pytest)

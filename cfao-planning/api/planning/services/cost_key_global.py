@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date
 from decimal import Decimal
+from functools import reduce
 
 from django.conf import settings
 
@@ -287,6 +288,43 @@ def consolidate_sheet(sheets: list[dict], row: dict) -> dict:
     }
 
 
+ALL_COUNTRIES = "all"
+
+
+# Métier visé par une formation, déduit de sa famille dans le catalogue de cfao-needs.
+JOB_BY_FAMILY = {
+    "techniques-motors": "TECHNICIAN", "techniques-equipment": "TECHNICIAN",
+    "process-sav-motors": "SAV", "process-sav-equipment": "SAV",
+    "techniques-carrosserie": "BODY",
+    "process-parts-motors": "PARTS", "process-parts-equipment": "PARTS",
+    "conduite-equipment": "DRIVER",
+}
+
+
+def all_countries_sheet(table: dict, sheets: list[dict]) -> dict:
+    """Devis « toutes les filiales » : les lignes de chaque fiche, filiale après filiale. Le pied
+    vient du tableau global, qui compte aussi les besoins des filiales encore sans place."""
+    rows = table["rows"]
+    def total(field):
+        return reduce(_add, (r[field] for r in rows), None)
+    seats = sum(r["seats"] for r in rows)
+    needs = total("needs")
+    return {
+        "year": table["year"], "pole": table["pole"], "mode": table["mode"], "status": table["status"],
+        "country": ALL_COUNTRIES, "label": ALL_COUNTRIES, "enrolled": any(r["enrolled"] for r in rows),
+        "sessions": [{**s, "country": sh["country"], "country_label": sh["label"]}
+                     for sh in sheets for s in sh["sessions"]],
+        "footer": {
+            "seats": seats, "share": round(sum(r["share"] for r in rows), 6),
+            **{k: total(k) for k in ("key_cost", "trainee_lodging", "trainer_lodging", "total", "needs")},
+            "coverage": _ratio(seats, needs),
+            "needs_by_brand": ({b: v["needs"] for b, v in table["brand_totals"].items()}
+                               if needs is not None else None),
+            **{k: sum(r[k] for r in rows) for k in PLACE_KEYS},
+        },
+    }
+
+
 def _edit_block(key: CostKeyYear, session, allocation, mode: Mode, module: ModuleLevel | None) -> dict:
     """Ce qu'il faut au tableur pour modifier la ligne : identifiants et valeurs brutes."""
     if mode != Mode.PLANNED:
@@ -353,6 +391,9 @@ def country_sheet(key: CostKeyYear, mode: Mode, country_code: str,
             "level_tier": module.tier if module else None,
             "level_order": module.order if module else NO_LEVEL_ORDER,
             "in_catalog": module is not None,
+            "job": JOB_BY_FAMILY.get(module.family) if module else None,
+            # Le prévu ne porte pas ce champ, seules les sessions réalisées l'ont.
+            "delivery": getattr(s, "delivery_mode", None) or None,
             "code": s.code_raw or s.code_norm,
             "title": s.title, "start_date": s.start_date, "end_date": s.end_date,
             # Une session chargée sans lien au référentiel garde le nom lu dans le classeur.

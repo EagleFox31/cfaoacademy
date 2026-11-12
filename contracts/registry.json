@@ -40,9 +40,23 @@
         },
         {
           "module": "cfao-planning",
-          "range": "^1.3",
+          "range": "^1.4",
           "client_files": ["cfao-planning/api/planning/clients/needs.py"],
           "tests": ["cfao-planning/api/planning/tests/test_needs_consumer.py"]
+        }
+      ]
+    },
+    {
+      "id": "needs-snapshot-push",
+      "provider": "cfao-planning",
+      "format": "openapi",
+      "spec": "cfao-planning/api/planning/contract/needs-snapshot.openapi.json",
+      "consumers": [
+        {
+          "module": "cfao-needs",
+          "range": "^1",
+          "client_files": ["cfao-needs/api/analytics/relay.py"],
+          "tests": ["cfao-needs/api/analytics/tests/test_snapshot.py"]
         }
       ]
     }

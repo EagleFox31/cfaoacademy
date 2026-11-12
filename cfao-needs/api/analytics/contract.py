@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 CONTRACT_ID = "needs-analytics"
-CONTRACT_VERSION = "1.3.0"
+CONTRACT_VERSION = "1.4.0"
 CONTRACT_PATH = Path(__file__).resolve().parent / "contract" / "needs-analytics.openapi.json"
 
 _YEAR = {
@@ -48,6 +48,34 @@ def _operation(operation_id: str, summary: str, parameters: list, schema: str) -
             },
         }
     }
+
+
+def _snapshot_operation() -> dict:
+    return {
+        "get": {
+            "operationId": "needsSnapshot",
+            "summary": "Copie complète des lectures de cfao-planning, toutes années et tous pôles.",
+            "parameters": [{
+                "name": "If-None-Match", "in": "header", "required": False,
+                "description": "ETag d'une copie déjà connue (`\"v<version>\"`) : 304 si rien n'a changé.",
+                "schema": {"type": "string"},
+            }],
+            "responses": {
+                "200": {
+                    "description": "Copie ; l'en-tête `ETag` vaut `\"v<version>\"`.",
+                    "content": {"application/json": {"schema": {"$ref": "#/components/schemas/NeedsSnapshot"}}},
+                },
+                "304": {"description": "La version demandée est toujours la dernière."},
+                "403": _ERRORS["403"],
+            },
+        }
+    }
+
+
+def _by_pole(schema: str) -> dict:
+    ref = {"$ref": f"#/components/schemas/{schema}"}
+    return {"type": "object", "required": ["motors", "equipment", "all"],
+            "properties": {"motors": ref, "equipment": ref, "all": ref}}
 
 
 def _level_update_operation() -> dict:
@@ -93,6 +121,7 @@ def openapi_document() -> dict:
                             "id": {"type": "string", "format": "uuid"},
                             "brand": {"type": "string"},
                             "code": {"type": "string"},
+                            "family": {"type": "string", "description": "Clé de la famille du catalogue."},
                             "level_label": {"type": "string"},
                             "tier": {"type": ["string", "null"]},
                             "sort_order": {"type": "integer"},
@@ -228,6 +257,28 @@ def openapi_document() -> dict:
                 {"pole": "MOBILITY", "brand": "Toyota", "tier": "EXPERT", "code": "TS14-G1",
                  "title": "Diagnostic"}]}],
         },
+        "NeedsSnapshot": {
+            "type": "object",
+            "required": ["version", "generated_at", "years"],
+            "properties": {
+                "version": {"type": "integer", "minimum": 0,
+                            "description": "Croît à chaque transaction qui change une donnée lue."},
+                "generated_at": {"type": "string", "format": "date-time"},
+                "years": {
+                    "type": "object",
+                    "description": "Clé = année de campagne.",
+                    "additionalProperties": {
+                        "type": "object",
+                        "required": ["needs_by_branch_brand", "unchosen_modules", "catalog_levels"],
+                        "properties": {
+                            "needs_by_branch_brand": _by_pole("NeedsByBranchBrand"),
+                            "unchosen_modules": _by_pole("UnchosenModules"),
+                            "catalog_levels": {"$ref": "#/components/schemas/CatalogLevels"},
+                        },
+                    },
+                },
+            },
+        },
         "Error": {
             "type": "object",
             "required": ["detail"],
@@ -249,6 +300,13 @@ def openapi_document() -> dict:
             },
         },
     }
+    year_example = {
+        "needs_by_branch_brand": {p: schemas["NeedsByBranchBrand"]["examples"][0] for p in ("motors", "equipment", "all")},
+        "unchosen_modules": {p: schemas["UnchosenModules"]["examples"][0] for p in ("motors", "equipment", "all")},
+        "catalog_levels": schemas["CatalogLevels"]["examples"][0],
+    }
+    schemas["NeedsSnapshot"]["examples"] = [
+        {"version": 42, "generated_at": "2026-11-10T08:00:00+00:00", "years": {"2026": year_example}}]
     bu = {
         "name": "bu",
         "in": "query",
@@ -289,6 +347,7 @@ def openapi_document() -> dict:
                 [_YEAR], "CatalogLevels"
             ),
             "/api/v1/needs/analytics/catalog-level": _level_update_operation(),
+            "/api/v1/needs/analytics/snapshot": _snapshot_operation(),
         },
         "components": {
             "schemas": schemas,

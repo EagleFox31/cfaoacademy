@@ -127,6 +127,10 @@ services:
       NEEDS_ANALYTICS_INBOUND_KEY: ${NEEDS_ANALYTICS_INBOUND_KEY:-dev-analytics-shared-secret}
       # Correction du niveau d'un module par cfao-planning. Absente = écriture refusée.
       NEEDS_CATALOG_WRITE_INBOUND_KEY: ${NEEDS_CATALOG_WRITE_INBOUND_KEY:-}
+      # Copie des besoins poussée à cfao-planning par needs-relay (contrat
+      # needs-snapshot-push). URL vide = relais inactif, planning se rattrape seul.
+      PLANNING_API_URL: ${PLANNING_API_URL:-http://planning-api:8000}
+      NEEDS_SNAPSHOT_PUSH_KEY: ${NEEDS_SNAPSHOT_PUSH_KEY:-dev-needs-snapshot-secret}
     # cfao-maillage : lu par planning-api (GET analytics, clé partagée).
     networks: [default, cfao-maillage]
     depends_on:
@@ -173,6 +177,21 @@ services:
     environment: *api_env
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      needs-migrate:
+        condition: service_completed_successfully
+
+  # Relais de l'outbox : à chaque version des besoins (trigger + NOTIFY), pousse
+  # une copie complète à cfao-planning ; reprise avec backoff si planning est arrêté.
+  needs-relay:
+    mem_limit: 256m
+    restart: unless-stopped
+    build: ./api
+    volumes:
+      - ./api:/app
+    command: ["python", "manage.py", "relay_needs_snapshot"]
+    environment: *api_env
+    networks: [default, cfao-maillage]
     depends_on:
       needs-migrate:
         condition: service_completed_successfully

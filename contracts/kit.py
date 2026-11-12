@@ -163,6 +163,14 @@ def response_example(spec: dict, path: str, status: int | str = 200, method: str
     return schema["examples"][0]
 
 
+def request_body_validator(spec: dict, path: str, method: str = "post"):
+    """Validateur du corps JSON qu'un consommateur envoie (`requestBody`)."""
+    from jsonschema import Draft202012Validator, FormatChecker
+
+    schema = operation(spec, path, method)["requestBody"]["content"]["application/json"]["schema"]
+    return Draft202012Validator(_bundled(spec, schema), format_checker=FormatChecker())
+
+
 def request_errors(spec: dict, path: str, params: dict | None, headers: dict | None, method: str = "get") -> list[str]:
     """Écarts d'une requête de consommateur : paramètre inconnu ou hors schéma, en-tête de sécurité absent."""
     from jsonschema import Draft202012Validator

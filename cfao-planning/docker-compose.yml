@@ -34,7 +34,9 @@ services:
     mem_limit: 384m
     restart: "no"
     build: ./api
-    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_referential && python manage.py seed_cost_key"]
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_referential && python manage.py seed_cost_key && python manage.py sync_needs_snapshot"]
+    # cfao-maillage : premier rattrapage de la copie des besoins (sans effet si needs est arrêté).
+    networks: [default, cfao-maillage]
     environment: &api_env
       DJANGO_SETTINGS_MODULE: config.settings.dev
       DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
@@ -54,6 +56,11 @@ services:
       NEEDS_ANALYTICS_KEY: ${NEEDS_ANALYTICS_KEY:-}
       # Écriture du niveau au catalogue. Absente = niveau en lecture seule.
       NEEDS_CATALOG_WRITE_KEY: ${NEEDS_CATALOG_WRITE_KEY:-}
+      # Copie des besoins poussée par needs-relay. Vide = push refusé (403),
+      # la copie se rattrape alors seule toutes les NEEDS_SNAPSHOT_RECHECK_S secondes.
+      NEEDS_SNAPSHOT_INBOUND_KEY: ${NEEDS_SNAPSHOT_INBOUND_KEY:-dev-needs-snapshot-secret}
+      NEEDS_SNAPSHOT_RECHECK_S: ${NEEDS_SNAPSHOT_RECHECK_S:-300}
+      NEEDS_SNAPSHOT_TIMEOUT_S: ${NEEDS_SNAPSHOT_TIMEOUT_S:-2}
       PLANNING_ACADEMY_SITE: ${PLANNING_ACADEMY_SITE:-DOUALA}
       PLANNING_ACADEMY_COUNTRY: ${PLANNING_ACADEMY_COUNTRY:-cmr}
     depends_on:

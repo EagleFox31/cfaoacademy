@@ -14,15 +14,18 @@ from uuid import UUID
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import F, Q, Sum
+from django.db.models import Q, Sum
 from django.utils.crypto import constant_time_compare
 from django.views.decorators.http import require_GET
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 
-from campaigns.models import (
-    BranchBrandQuota, CatalogLine, CourseAllocation, NeedLine, Submission, TrainingSession,
+from campaigns.models import BranchBrandQuota, CatalogLine, CourseAllocation, TrainingSession
+
+from .snapshot import (
+    LEVEL_ORDER, QUOTA_POLE, build_snapshot, catalog_levels_body, current_version,
+    needs_by_branch_brand_body, unchosen_modules_body,
 )
 
 
@@ -165,12 +168,6 @@ def scheduled_trainings(request):
     return Response({"year": year, "count": count})
 
 
-# Pôle du contrat → pôle des quotas importés (clé de répartition) et pôle du
-# catalogue (le code catalogue de Motors reste `MOBILITY`, referential.Pole).
-_QUOTA_POLE = {"motors": "MOTORS", "equipment": "EQUIPMENT"}
-_CATALOG_POLE = {"motors": "MOBILITY", "equipment": "EQUIPMENT"}
-
-
 def _year_and_pole(request):
     raw_year = request.query_params.get("year")
     try:
@@ -178,16 +175,7 @@ def _year_and_pole(request):
     except (TypeError, ValueError):
         return None, None
     pole = (request.query_params.get("pole") or "all").strip().lower()
-    return year, pole if pole in _QUOTA_POLE else "all"
-
-
-def _validated_lines(year: int, pole: str):
-    lines = NeedLine.objects.filter(
-        submission__campaign__year=year, submission__status=Submission.Status.VALIDATED,
-    )
-    if pole != "all":
-        lines = lines.filter(catalog_line__family__pole=_CATALOG_POLE[pole])
-    return lines
+    return year, pole if pole in QUOTA_POLE else "all"
 
 
 @api_view(["GET"])
@@ -212,50 +200,7 @@ def needs_by_branch_brand(request):
     year, pole = _year_and_pole(request)
     if year is None:
         return Response({"detail": "year must be an integer"}, status=400)
-
-    quotas = BranchBrandQuota.objects.filter(campaign__year=year)
-    if pole != "all":
-        quotas = quotas.filter(pole=_QUOTA_POLE[pole])
-    rows: dict[tuple[str, str], dict] = {}
-    for q in quotas:
-        row = rows.setdefault((q.country, q.brand), {
-            "country": q.country, "brand": q.brand, "needs": 0, "technicians": 0})
-        row["needs"] += q.requested_needs
-        row["technicians"] += q.brand_tech_count
-
-    submitted = (
-        _validated_lines(year, pole).exclude(catalog_line__brand__isnull=True)
-        .values("submission__country", "catalog_line__brand__label")
-        .annotate(total=Sum(F("q1") + F("q2") + F("q3") + F("q4")))
-    )
-    source = "none"
-    if submitted:
-        source = "submissions"
-        for row in rows.values():
-            row["needs"] = 0
-        for s in submitted:
-            key = (s["submission__country"], s["catalog_line__brand__label"])
-            row = rows.setdefault(key, {"country": key[0], "brand": key[1], "needs": 0,
-                                        "technicians": None})
-            row["needs"] += int(s["total"] or 0)
-    elif rows:
-        source = "quota_import"
-
-    postponed = (
-        _validated_lines(year, pole).filter(postponed__gt=0).exclude(catalog_line__brand__isnull=True)
-        .values("submission__country", "catalog_line__brand__label", "catalog_line__code")
-        .annotate(places=Sum("postponed"))
-        .order_by("submission__country", "catalog_line__brand__label", "catalog_line__code")
-    )
-    return Response({
-        "year": year, "pole": pole, "source": source,
-        "rows": sorted(rows.values(), key=lambda r: (r["country"], r["brand"])),
-        "postponed": [
-            {"country": p["submission__country"], "brand": p["catalog_line__brand__label"],
-             "code": p["catalog_line__code"], "places": p["places"]}
-            for p in postponed
-        ],
-    })
+    return Response(needs_by_branch_brand_body(year, pole))
 
 
 @api_view(["GET"])
@@ -274,29 +219,7 @@ def unchosen_modules(request):
     year, pole = _year_and_pole(request)
     if year is None:
         return Response({"detail": "year must be an integer"}, status=400)
-
-    catalog = CatalogLine.objects.filter(campaign__year=year).select_related("family", "brand")
-    if pole != "all":
-        catalog = catalog.filter(family__pole=_CATALOG_POLE[pole])
-    chosen = (
-        _validated_lines(year, pole)
-        .annotate(total=F("q1") + F("q2") + F("q3") + F("q4"))
-        .filter(total__gt=0).values_list("catalog_line_id", flat=True)
-    )
-    modules = catalog.exclude(pk__in=chosen).order_by("family__pole", "brand__label", "sort_order",
-                                                      "code")
-    return Response({
-        "year": year, "pole": pole, "catalog_available": catalog.exists(),
-        "modules": [
-            {"pole": m.family.pole, "brand": m.brand.label if m.brand else None,
-             "tier": m.tier or None, "code": m.code, "title": m.title}
-            for m in modules
-        ],
-    })
-
-
-# Même ordre en lecture et en écriture : la ligne affichée est celle qui fait foi.
-_LEVEL_ORDER = ("brand__label", "sort_order", "code")
+    return Response(unchosen_modules_body(year, pole))
 
 
 @api_view(["GET"])
@@ -313,16 +236,30 @@ def catalog_levels(request):
     year, _pole = _year_and_pole(request)
     if year is None:
         return Response({"detail": "year must be an integer"}, status=400)
-    lines = (CatalogLine.objects.filter(campaign__year=year, brand__isnull=False)
-             .select_related("brand").order_by(*_LEVEL_ORDER))
-    return Response({
-        "year": year, "catalog_available": lines.exists(),
-        "lines": [
-            {"id": str(line.pk), "brand": line.brand.label, "code": line.code,
-             "level_label": line.level_label, "tier": line.tier or None, "sort_order": line.sort_order}
-            for line in lines
-        ],
-    })
+    return Response(catalog_levels_body(year))
+
+
+@api_view(["GET"])
+@authentication_classes([])
+@permission_classes([])
+@require_GET
+def needs_snapshot(request):
+    """GET /api/v1/needs/analytics/snapshot
+
+    Tout ce que cfao-planning lit de cfao-needs, toutes années et tous pôles, sous
+    une version. `ETag: "v<version>"` ; `If-None-Match` égal répond 304 sans corps.
+    Filet du relais (`relay_needs_snapshot`) : amorçage et rattrapage.
+    """
+    _check_shared_key(request)
+    etag = f'"v{current_version()}"'
+    if request.META.get("HTTP_IF_NONE_MATCH", "") == etag:
+        response = Response(status=304)
+    else:
+        snapshot = build_snapshot()
+        response = Response(snapshot)
+        etag = f'"v{snapshot["version"]}"'
+    response["ETag"] = etag
+    return response
 
 
 def _check_catalog_write_key(request) -> None:
@@ -373,7 +310,7 @@ def catalog_level_update(request):
     ids, expected, label = parsed
     with transaction.atomic():
         lines = list(CatalogLine.objects.select_for_update(of=("self",)).filter(pk__in=ids)
-                     .order_by(*_LEVEL_ORDER))
+                     .order_by(*LEVEL_ORDER))
         if len(lines) != len(set(ids)):
             return Response({"detail": "unknown_line"}, status=404)
         current = lines[0].level_label

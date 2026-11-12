@@ -46,6 +46,7 @@ def test_contract_endpoint_serves_the_file():
 
 
 PATHS = sorted(path for path, operations in openapi_document()["paths"].items() if "get" in operations)
+YEAR_PATHS = [p for p in PATHS if "400" in openapi_document()["paths"][p]["get"]["responses"]]
 
 
 @pytest.mark.django_db
@@ -58,7 +59,7 @@ def test_server_success_matches_published_contract(settings, path):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("path", PATHS)
+@pytest.mark.parametrize("path", YEAR_PATHS)
 def test_server_errors_match_published_contract(settings, path):
     settings.ANALYTICS_INBOUND_KEY = KEY
     client = APIClient()

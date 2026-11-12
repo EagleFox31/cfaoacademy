@@ -125,6 +125,10 @@
                 "code": {
                   "type": "string"
                 },
+                "family": {
+                  "description": "Clé de la famille du catalogue.",
+                  "type": "string"
+                },
                 "id": {
                   "format": "uuid",
                   "type": "string"
@@ -314,6 +318,213 @@
         ],
         "type": "object"
       },
+      "NeedsSnapshot": {
+        "examples": [
+          {
+            "generated_at": "2026-11-10T08:00:00+00:00",
+            "version": 42,
+            "years": {
+              "2026": {
+                "catalog_levels": {
+                  "catalog_available": true,
+                  "lines": [
+                    {
+                      "brand": "TOYOTA",
+                      "code": "TS01-G4",
+                      "id": "6f1c1a4e-0b7a-4b52-9d39-3a3f7f1d2c10",
+                      "level_label": "G4",
+                      "sort_order": 40,
+                      "tier": "JUNIOR"
+                    }
+                  ],
+                  "year": 2027
+                },
+                "needs_by_branch_brand": {
+                  "all": {
+                    "pole": "motors",
+                    "postponed": [
+                      {
+                        "brand": "TOYOTA",
+                        "code": "TS11-G2",
+                        "country": "BENIN",
+                        "places": 3
+                      }
+                    ],
+                    "rows": [
+                      {
+                        "brand": "TOYOTA",
+                        "country": "BENIN",
+                        "needs": 34,
+                        "technicians": 22
+                      }
+                    ],
+                    "source": "quota_import",
+                    "year": 2026
+                  },
+                  "equipment": {
+                    "pole": "motors",
+                    "postponed": [
+                      {
+                        "brand": "TOYOTA",
+                        "code": "TS11-G2",
+                        "country": "BENIN",
+                        "places": 3
+                      }
+                    ],
+                    "rows": [
+                      {
+                        "brand": "TOYOTA",
+                        "country": "BENIN",
+                        "needs": 34,
+                        "technicians": 22
+                      }
+                    ],
+                    "source": "quota_import",
+                    "year": 2026
+                  },
+                  "motors": {
+                    "pole": "motors",
+                    "postponed": [
+                      {
+                        "brand": "TOYOTA",
+                        "code": "TS11-G2",
+                        "country": "BENIN",
+                        "places": 3
+                      }
+                    ],
+                    "rows": [
+                      {
+                        "brand": "TOYOTA",
+                        "country": "BENIN",
+                        "needs": 34,
+                        "technicians": 22
+                      }
+                    ],
+                    "source": "quota_import",
+                    "year": 2026
+                  }
+                },
+                "unchosen_modules": {
+                  "all": {
+                    "catalog_available": true,
+                    "modules": [
+                      {
+                        "brand": "Toyota",
+                        "code": "TS14-G1",
+                        "pole": "MOBILITY",
+                        "tier": "EXPERT",
+                        "title": "Diagnostic"
+                      }
+                    ],
+                    "pole": "motors",
+                    "year": 2027
+                  },
+                  "equipment": {
+                    "catalog_available": true,
+                    "modules": [
+                      {
+                        "brand": "Toyota",
+                        "code": "TS14-G1",
+                        "pole": "MOBILITY",
+                        "tier": "EXPERT",
+                        "title": "Diagnostic"
+                      }
+                    ],
+                    "pole": "motors",
+                    "year": 2027
+                  },
+                  "motors": {
+                    "catalog_available": true,
+                    "modules": [
+                      {
+                        "brand": "Toyota",
+                        "code": "TS14-G1",
+                        "pole": "MOBILITY",
+                        "tier": "EXPERT",
+                        "title": "Diagnostic"
+                      }
+                    ],
+                    "pole": "motors",
+                    "year": 2027
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "properties": {
+          "generated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "description": "Croît à chaque transaction qui change une donnée lue.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "years": {
+            "additionalProperties": {
+              "properties": {
+                "catalog_levels": {
+                  "$ref": "#/components/schemas/CatalogLevels"
+                },
+                "needs_by_branch_brand": {
+                  "properties": {
+                    "all": {
+                      "$ref": "#/components/schemas/NeedsByBranchBrand"
+                    },
+                    "equipment": {
+                      "$ref": "#/components/schemas/NeedsByBranchBrand"
+                    },
+                    "motors": {
+                      "$ref": "#/components/schemas/NeedsByBranchBrand"
+                    }
+                  },
+                  "required": [
+                    "motors",
+                    "equipment",
+                    "all"
+                  ],
+                  "type": "object"
+                },
+                "unchosen_modules": {
+                  "properties": {
+                    "all": {
+                      "$ref": "#/components/schemas/UnchosenModules"
+                    },
+                    "equipment": {
+                      "$ref": "#/components/schemas/UnchosenModules"
+                    },
+                    "motors": {
+                      "$ref": "#/components/schemas/UnchosenModules"
+                    }
+                  },
+                  "required": [
+                    "motors",
+                    "equipment",
+                    "all"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "needs_by_branch_brand",
+                "unchosen_modules",
+                "catalog_levels"
+              ],
+              "type": "object"
+            },
+            "description": "Clé = année de campagne.",
+            "type": "object"
+          }
+        },
+        "required": [
+          "version",
+          "generated_at",
+          "years"
+        ],
+        "type": "object"
+      },
       "ScheduledTrainings": {
         "examples": [
           {
@@ -468,7 +679,7 @@
   "info": {
     "description": "Agrégats de service à service lus par cfao-core (tableau de bord super admin) et cfao-planning (clé de répartition).",
     "title": "CFAO Needs Analytics",
-    "version": "1.3.0"
+    "version": "1.4.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -754,6 +965,48 @@
           }
         },
         "summary": "Sessions programmées."
+      }
+    },
+    "/api/v1/needs/analytics/snapshot": {
+      "get": {
+        "operationId": "needsSnapshot",
+        "parameters": [
+          {
+            "description": "ETag d'une copie déjà connue (`\"v<version>\"`) : 304 si rien n'a changé.",
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeedsSnapshot"
+                }
+              }
+            },
+            "description": "Copie ; l'en-tête `ETag` vaut `\"v<version>\"`."
+          },
+          "304": {
+            "description": "La version demandée est toujours la dernière."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Clé `X-Analytics-Key` absente ou invalide (DRF sans authentificateur : 403)."
+          }
+        },
+        "summary": "Copie complète des lectures de cfao-planning, toutes années et tous pôles."
       }
     },
     "/api/v1/needs/analytics/total-technicians": {

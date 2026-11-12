@@ -34,8 +34,9 @@ def test_prod_sur_l_emetteur_commun():
     assert api["OIDC_AUDIENCE"] == "${OIDC_AUDIENCE:-cfao-needs-api}"
     assert api["OIDC_JWKS_URL"].endswith(":-http://keycloak:8080/auth/realms/cfao/protocol/openid-connect/certs}")
     assert services["needs-worker"]["environment"] == api
-    # Les clés se lisent sur le réseau du Keycloak commun, créé par son projet.
-    assert set(services["needs-api"]["networks"]) == {"default", "identite"}
+    # Les clés se lisent sur le réseau du Keycloak commun, créé par son projet ;
+    # cfao-maillage porte les appels entre modules (planning, relais).
+    assert set(services["needs-api"]["networks"]) == {"default", "identite", "cfao-maillage"}
     reseau = _prod()["networks"]["identite"]
     assert reseau["external"] is True and reseau["name"] == "${IDENTITY_NETWORK:-cfao-identity_default}"
 

@@ -13,7 +13,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
-from ..services.cost_key_global import AT_ACADEMY, IN_SUBSIDIARY, PLACE_KEYS, POSTPONED
+from ..services.cost_key_global import ALL_COUNTRIES, AT_ACADEMY, IN_SUBSIDIARY, PLACE_KEYS, POSTPONED
 
 MONEY = '#,##0 "FCFA"'
 INT = '#,##0'
@@ -32,8 +32,9 @@ _BORDER = Border(top=_THIN, bottom=_THIN, left=_THIN, right=_THIN)
 
 LABELS = {
     "fr": {
+        "all_countries": "Toutes les filiales", "subsidiary": "Filiale",
         "global": "GLOBAL", "country": "Pays", "technicians": "Techniciens", "needs": "Besoins",
-        "seats": "Places", "in_subsidiary": "En filiale", "at_academy": "À l'Academy", "postponed": "Reportées", "coverage": "Taux de couverture du besoin", "level": "Niveau", "share": "Part", "key_cost": "Coût clé",
+        "seats": "Places", "in_subsidiary": "En filiale", "at_academy": "À l'Academy", "postponed": "Reportées", "coverage": "Taux de couverture des besoins", "level": "Niveau", "share": "Part", "key_cost": "Coût de formation des stagiaires",
         "trainee_lodging": "Frais d'accommodation des stagiaires", "trainer_lodging": "Frais d'accommodation formateurs",
         "total": "Total à payer", "brand": "Marque", "code": "Code", "title": "Module",
         "start": "Début", "end": "Fin", "trainers": "Formateurs", "location": "Lieu",
@@ -41,8 +42,9 @@ LABELS = {
         "draft": "brouillon", "all_poles": "TOUS PÔLES",
     },
     "en": {
+        "all_countries": "All subsidiaries", "subsidiary": "Subsidiary",
         "global": "GLOBAL", "country": "Country", "technicians": "Technicians", "needs": "Needs",
-        "seats": "Seats", "in_subsidiary": "In subsidiary", "at_academy": "At the Academy", "postponed": "Postponed", "coverage": "Need coverage rate", "level": "Level", "share": "Share", "key_cost": "Key cost",
+        "seats": "Seats", "in_subsidiary": "In subsidiary", "at_academy": "At the Academy", "postponed": "Postponed", "coverage": "Needs coverage rate", "level": "Level", "share": "Share", "key_cost": "Trainee training cost",
         "trainee_lodging": "Trainee lodging", "trainer_lodging": "Trainer lodging",
         "total": "Total due", "brand": "Brand", "code": "Code", "title": "Module",
         "start": "Start", "end": "End", "trainers": "Trainers", "location": "Location",
@@ -136,30 +138,37 @@ def write_global(ws, table: dict, lang: str = "fr") -> None:
 
 def write_country(ws, sheet: dict, lang: str = "fr") -> None:
     t = _labels(lang)
-    headers = [t["brand"], t["level"], t["code"], t["title"], t["start"], t["end"], t["trainers"],
-               t["location"], t["seats"]]
-    ws.title = sheet["label"][:31]
-    _title_row(ws, f"{sheet['label']} · {_heading(sheet, t)}", len(headers))
+    # Toutes les filiales : une colonne de plus en tête, pour savoir à qui est chaque ligne.
+    offset = 1 if sheet.get("country") == ALL_COUNTRIES else 0
+    headers = [*[t["subsidiary"]] * offset, t["brand"], t["level"], t["code"], t["title"], t["start"],
+               t["end"], t["trainers"], t["location"], t["seats"]]
+    seats_col = len(headers)
+    label = t["all_countries"] if offset else sheet["label"]
+    ws.title = label[:31]
+    _title_row(ws, f"{label} · {_heading(sheet, t)}", len(headers))
     _header(ws, 2, headers)
     first = 3
     for s in sheet["sessions"]:
-        ws.append([s["brand"], s["level"] or "", s["code"], s["title"], s["start_date"], s["end_date"],
+        ws.append([*[s.get("country_label")] * offset, s["brand"], s["level"] or "", s["code"], s["title"],
+                   s["start_date"], s["end_date"],
                    s["trainers"], s["location"], s["seats"]])
     last = ws.max_row
     for r in range(first, last + 1):
-        for col in range(1, len(headers) + 1):
+        for col in range(1, seats_col + 1):
             ws.cell(row=r, column=col).border = _BORDER
-        ws.cell(row=r, column=5).number_format = "dd/mm/yyyy"
-        ws.cell(row=r, column=6).number_format = "dd/mm/yyyy"
+        ws.cell(row=r, column=5 + offset).number_format = "dd/mm/yyyy"
+        ws.cell(row=r, column=6 + offset).number_format = "dd/mm/yyyy"
     for r, s in enumerate(sheet["sessions"], first):
-        ws.cell(row=r, column=9).fill = _PLACE_FILLS[s["seat_status"]]
-    _totals(ws, last + 1, first, last, {9: INT}, t["totals"])
+        ws.cell(row=r, column=seats_col).fill = _PLACE_FILLS[s["seat_status"]]
+    _totals(ws, last + 1, first, last, {seats_col: INT}, t["totals"])
     footer = sheet["footer"]
     row = last + 3
     for key, fmt in (*((k, INT) for k in PLACE_KEYS), ("share", PCT), ("key_cost", MONEY),
                      ("trainee_lodging", MONEY), ("trainer_lodging", MONEY), ("total", MONEY)):
-        ws.cell(row=row, column=8, value=t[key]).font = Font(bold=True)
-        cell = ws.cell(row=row, column=9, value=footer[key])
+        caption = ws.cell(row=row, column=seats_col - 2, value=t[key])
+        caption.font, caption.alignment = Font(bold=True), Alignment(horizontal="center", vertical="center")
+        ws.merge_cells(start_row=row, start_column=seats_col - 2, end_row=row, end_column=seats_col - 1)
+        cell = ws.cell(row=row, column=seats_col, value=footer[key])
         cell.number_format = fmt
         if key in _PLACE_FILLS:
             cell.fill = _PLACE_FILLS[key]
@@ -167,8 +176,8 @@ def write_country(ws, sheet: dict, lang: str = "fr") -> None:
         row += 1
     ws.freeze_panes = "A3"
     if last >= first:
-        ws.auto_filter.ref = f"A2:I{last}"
-    _widths(ws, [16, 10, 14, 44, 12, 12, 28, 16, 22])
+        ws.auto_filter.ref = f"A2:{get_column_letter(seats_col)}{last}"
+    _widths(ws, [*[24] * offset, 16, 10, 14, 44, 12, 12, 28, 16, 22])
 
 
 def _bytes(wb: Workbook) -> bytes:

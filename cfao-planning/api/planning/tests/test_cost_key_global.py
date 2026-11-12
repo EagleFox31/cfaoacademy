@@ -136,10 +136,10 @@ def test_classeur_complet(world):
     assert ws.cell(row=last, column=1).value == "TOTAL"
     heads = [c.value for c in ws[2]]
     # Ordre de « TOUS LES PAYS » : marques juste après les techniciens, l'argent en dernier.
-    assert heads[:2] == ["Pays", "Techniciens"] and heads[-1] == "Coût clé"
+    assert heads[:2] == ["Pays", "Techniciens"] and heads[-1] == "Coût de formation des stagiaires"
     assert "Total à payer" not in heads and not any("accommodation" in h for h in heads)
-    assert heads.index("Coût clé") > max(i for i, h in enumerate(heads) if "·" in h)
-    col = get_column_letter(heads.index("Coût clé") + 1)
+    assert heads.index("Coût de formation des stagiaires") > max(i for i, h in enumerate(heads) if "·" in h)
+    col = get_column_letter(heads.index("Coût de formation des stagiaires") + 1)
     assert ws[f"{col}{last}"].value == f"=SUM({col}3:{col}{last - 1})"
     en = load_workbook(io.BytesIO(xlsx.global_workbook(table, "en")))["GLOBAL"]
     assert en.cell(row=2, column=1).value == "Country"

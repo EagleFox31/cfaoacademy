@@ -39,7 +39,7 @@ from .services.cost_key_abc import abc_table, consolidate_abc
 from .services.cost_key_cells import MISSING, CellConflict, CellGone, CellInvalid, edit_cell
 from .services.cost_key_freeze import UNCHECKED, FreezeRefused, FreezeStale, freeze, last_edit_at
 from .services.cost_key_global import (
-    consolidate, consolidate_sheet, country_sheet, global_table, report_for,
+    ALL_COUNTRIES, all_countries_sheet, consolidate, consolidate_sheet, country_sheet, global_table, report_for,
 )
 from .services.cost_key_setup import SetupError, bootstrap, update
 from .services.plan_match import match
@@ -336,7 +336,19 @@ class CostKeyGlobalXlsxView(APIView):
                      f"cle-{key.pole.lower()}-{key.year}-global.xlsx")
 
 
+def _country_sheets(request, key, table, needs):
+    """Une fiche par filiale ayant des places, parmi celles du tableau (donc lisibles)."""
+    by_country = needs.by_country if needs.available else None
+    levels = fetch_catalog_levels(key.year)
+    sheets = (country_sheet(key, _mode(request), row["country"], by_country, levels, needs.postponed)
+              for row in table["rows"] if row["seats"])
+    return [s for s in sheets if s]
+
+
 def _sheet(request, key, code):
+    if code == ALL_COUNTRIES:
+        table, needs = _global(request, key)
+        return all_countries_sheet(table, _country_sheets(request, key, table, needs))
     if Country.objects.filter(code=code).exists():
         visible = visible_countries(request, key)
         if visible is not None and code not in visible:
@@ -399,12 +411,7 @@ class CostKeyExportView(APIView):
     def get(self, request, pk):
         key = _get_key(request, pk)
         table, needs = _global(request, key)
-        mode = _mode(request)
-        by_country = needs.by_country if needs.available else None
-        levels = fetch_catalog_levels(key.year)
-        sheets = [country_sheet(key, mode, row["country"], by_country, levels, needs.postponed)
-                  for row in table["rows"] if row["seats"]]
-        return _xlsx(xlsx.full_workbook(table, [s for s in sheets if s], _lang(request)),
+        return _xlsx(xlsx.full_workbook(table, _country_sheets(request, key, table, needs), _lang(request)),
                      f"cle-{key.pole.lower()}-{key.year}.xlsx")
 
 
@@ -444,6 +451,8 @@ class _YearScope:
         return fetch_catalog_levels(self.keys[0].year)
 
     def sheet(self, code: str) -> dict:
+        if code == ALL_COUNTRIES:
+            return all_countries_sheet(self.table, [self.sheet(r["country"]) for r in self.table["rows"] if r["seats"]])
         row = self._rows.get(code)
         if row is None:
             raise NotFound()

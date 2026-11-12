@@ -39,11 +39,18 @@ def calls(monkeypatch, settings):
     def fake_get(url, params=None, headers=None, timeout=None):
         path = url[len(BASE):]
         assert kit.request_errors(SPEC, path, params, headers) == []
+        assert list(kit.response_validator(SPEC, path, 200).iter_errors(kit.response_example(SPEC, path))) == []
         seen.append(path)
         return _Response(kit.response_example(SPEC, path))
 
+    client.reset_refresh_clock()
     monkeypatch.setattr(client.requests, "get", fake_get)
     return seen
+
+
+def _example(kind: str, pole: str = "motors") -> dict:
+    year = kit.response_example(SPEC, client.SNAPSHOT)["years"]["2026"]
+    return year[kind] if kind == "catalog_levels" else year[kind][pole]
 
 
 @pytest.fixture
@@ -55,12 +62,12 @@ def benin(referential):
 
 def test_besoins_par_pays_et_marque(calls, benin):
     data = client.fetch_needs(2026, "MOTORS")
-    example = kit.response_example(SPEC, client.NEEDS_BY_BRANCH_BRAND)["rows"][0]
+    example = _example("needs_by_branch_brand")["rows"][0]
     assert data.available and data.source == "quota_import"
     assert data.by_country == {"ben": example["needs"]}
     assert data.by_cell[("ben", "toyota")] == (example["needs"], example["technicians"])
     assert data.postponed == {("ben", "toyota", client.norm_code("TS11-G2")): 3}
-    assert calls == [client.NEEDS_BY_BRANCH_BRAND]
+    assert calls == [client.SNAPSHOT]
 
 
 def test_libelle_inconnu_signale_jamais_compte(calls, referential):
@@ -70,14 +77,14 @@ def test_libelle_inconnu_signale_jamais_compte(calls, referential):
 
 
 def test_thematiques_non_choisies(calls):
-    data = client.fetch_unchosen(2027, "MOTORS")
-    example = kit.response_example(SPEC, client.UNCHOSEN_MODULES)
+    data = client.fetch_unchosen(2026, "MOTORS")
+    example = _example("unchosen_modules")
     assert data["available"] and data["modules"] == example["modules"]
 
 
 def test_niveaux_du_catalogue(calls):
-    assert client.fetch_catalog_levels(2027).available is True
-    assert calls == [client.CATALOG_LEVELS]
+    assert client.fetch_catalog_levels(2026).available is True
+    assert calls == [client.SNAPSHOT]
 
 
 def test_ecriture_du_niveau(monkeypatch, settings):
@@ -94,6 +101,7 @@ def test_ecriture_du_niveau(monkeypatch, settings):
 
 def test_needs_injoignable(monkeypatch, settings, db):
     settings.NEEDS_API_URL, settings.NEEDS_ANALYTICS_KEY = BASE, "k"
+    client.reset_refresh_clock()
     monkeypatch.setattr(client.requests, "get", lambda *a, **k: _Response({}, 503))
     data = client.fetch_needs(2026, "MOTORS")
     assert not data.available and data.warnings == [{"code": "needs_unavailable"}]

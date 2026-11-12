@@ -150,6 +150,8 @@ def test_lecteur_de_filiale_ne_voit_que_son_pays(key):
     assert c.get(url(key, "/countries/cm")).status_code == 403
     assert c.get(url(key, "/countries/cm.xlsx")).status_code == 403
     assert c.get(url(key, "/unchosen-modules")).status_code == 403
+    # « Toutes les filiales » ne lui ouvre que la sienne.
+    assert {s["country"] for s in c.get(url(key, "/countries/all")).json()["sessions"]} == {"ci"}
 
 
 def test_tableau_global_et_exports(key):
@@ -166,6 +168,22 @@ def test_tableau_global_et_exports(key):
     assert load_workbook(io.BytesIO(r.content)).active.cell(row=2, column=1).value == "Brand"
     assert c.get(url(key, "/countries/zz")).status_code == 404
     assert c.get(url(key, "/global.xlsx")).status_code == 200
+
+
+def test_devis_de_toutes_les_filiales(key):
+    c = client_for("dps")
+    table = c.get(url(key, "/global")).json()
+    sheet = c.get(url(key, "/countries/all")).json()
+    assert {s["country_label"] for s in sheet["sessions"]} == {"Cameroun", "Côte d'Ivoire"}
+    assert sheet["footer"]["seats"] == sum(r["seats"] for r in table["rows"]) == sum(s["seats"] for s in sheet["sessions"])
+    assert sheet["footer"]["total"] == sum(r["total"] or 0 for r in table["rows"])
+    assert sheet["footer"]["needs_by_brand"]["toyota"] == table["brand_totals"]["toyota"]["needs"]
+    r = c.get(url(key, "/countries/all.xlsx"))
+    ws = load_workbook(io.BytesIO(r.content)).active
+    assert ws.title == "Toutes les filiales"
+    assert [ws.cell(row=2, column=col).value for col in (1, 2, 10)] == ["Filiale", "Marque", "Places"]
+    assert ws.cell(row=3, column=1).value in ("Cameroun", "Côte d'Ivoire")
+    assert any(str(m).startswith("H") and ":I" in str(m) for m in ws.merged_cells.ranges)
 
 
 @pytest.fixture
@@ -198,7 +216,8 @@ def test_tous_poles_additionne_les_cles_de_l_annee(key, equipment):
     sheet = c.get("/api/v1/planning/years/2026/countries/cm").json()
     assert sorted(s["code"] for s in sheet["sessions"]) == ["LV01", "TS01"]
     assert sheet["footer"]["total"] == rows["cm"]["total"] and sheet["pole"] == "ALL"
-    for suffix in ("/global.xlsx", "/countries/cm.xlsx", "/export.xlsx"):
+    assert {s["country"] for s in c.get("/api/v1/planning/years/2026/countries/all").json()["sessions"]} == {"cm", "ci"}
+    for suffix in ("/global.xlsx", "/countries/cm.xlsx", "/countries/all.xlsx", "/export.xlsx"):
         assert c.get(f"/api/v1/planning/years/2026{suffix}").status_code == 200, suffix
 
 

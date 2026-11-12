@@ -1,6 +1,12 @@
 # API planning sous /api/v1/planning/ : chemin conservé, l'API le sert tel quel.
 # Le jeton Bearer du realm cfao est vérifié par l'API (audience cfao-planning-api).
 
+# Points d'entrée entre modules (copie des besoins poussée par cfao-needs) :
+# réseau cfao-maillage seulement, jamais publiés par l'edge.
+location /api/v1/planning/internal/ {
+    return 404;
+}
+
 location /api/v1/planning/ {
     set $edge_module planning;
     client_max_body_size 25m;
