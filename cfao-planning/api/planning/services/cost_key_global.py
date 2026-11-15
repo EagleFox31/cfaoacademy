@@ -106,6 +106,15 @@ def places_by_country(key: CostKeyYear, mode: Mode, postponed: dict) -> dict[str
     return places
 
 
+def unassigned_by_country(unassigned: dict, code: str | None = None) -> int | dict[str, int]:
+    """Places exprimées sans attribution (cfao-needs) par pays, ou d'un seul pays. Ce ne sont
+    pas des places de session : elles s'ajoutent à côté des sites, jamais dans `seats`."""
+    totals: dict[str, int] = defaultdict(int)
+    for (country, _brand, _code), places in unassigned.items():
+        totals[country] += places
+    return totals[code] if code is not None else dict(totals)
+
+
 def review_items(key: CostKeyYear, visible: set[str] | None = None) -> list[dict]:
     """Incohérences de source encore ouvertes sur cette clé, limitées aux pays du lecteur."""
     items = ReviewItem.objects.filter(status=ReviewItem.Status.OPEN,
@@ -124,11 +133,14 @@ def _responses(pole: str, answered, known, visible: set[str] | None) -> dict:
 
 
 def global_table(key: CostKeyYear, mode: Mode, needs: NeedsData,
-                 visible: set[str] | None = None) -> dict:
-    """`visible` : codes pays que le lecteur peut voir (None = tous)."""
-    report = report_for(key, mode, needs.by_country if needs.available else None)
+                 visible: set[str] | None = None, report: CostKeyReport | None = None) -> dict:
+    """`visible` : codes pays que le lecteur peut voir (None = tous). `report` : rapport de
+    la clé déjà calculé (`report_for`), pour ne pas le recalculer à chaque tableau."""
+    if report is None:
+        report = report_for(key, mode, needs.by_country if needs.available else None)
     cells, brands = seats_by_cell(key, mode)
     places = places_by_country(key, mode, needs.postponed)
+    unassigned = unassigned_by_country(needs.unassigned)
     for (_, brand_code) in needs.by_cell:
         brands.setdefault(brand_code, brand_code.upper())
     brand_order = sorted(brands, key=lambda c: brands[c])
@@ -154,6 +166,7 @@ def global_table(key: CostKeyYear, mode: Mode, needs: NeedsData,
             "country": line.code, "label": line.label, "enrolled": line.enrolled,
             "technicians": technicians, "needs": line.needs, "seats": line.seats,
             **{k: places[line.code][k] for k in PLACE_KEYS},
+            "unassigned": unassigned.get(line.code, 0),
             "coverage": _num(round(line.coverage, 4)) if line.coverage is not None else None,
             "share": float(round(line.share, 6)), "key_cost": _num(line.key_cost),
             "trainee_lodging": _num(line.trainee_lodging),
@@ -219,8 +232,8 @@ def consolidate(tables: list[dict], visible: set[str] | None = None) -> dict:
             for k in ("technicians", "needs", "key_cost", "trainee_lodging",
                       "trainer_lodging", "total"):
                 acc[k] = _add(acc[k], r[k])
-            for k in ("seats", *PLACE_KEYS):
-                acc[k] += r[k]
+            for k in ("seats", *PLACE_KEYS, "unassigned"):
+                acc[k] += r.get(k, 0)
             for b, c in r["cells"].items():
                 acc["cells"][b] = _merge_cell(acc["cells"].get(b), c)
 
@@ -283,8 +296,9 @@ def consolidate_sheet(sheets: list[dict], row: dict) -> dict:
         "status": "FROZEN" if all(s["status"] == "FROZEN" for s in sheets) else "DRAFT",
         "country": row["country"], "label": row["label"], "enrolled": row["enrolled"],
         "sessions": sessions,
-        "footer": {k: row[k] for k in ("seats", "share", "key_cost", "trainee_lodging", "trainer_lodging",
-                                       "total", "needs", "coverage", *PLACE_KEYS)},
+        "footer": {**{k: row[k] for k in ("seats", "share", "key_cost", "trainee_lodging", "trainer_lodging",
+                                          "total", "needs", "coverage", *PLACE_KEYS)},
+                   "unassigned": row.get("unassigned", 0)},
     }
 
 
@@ -321,6 +335,7 @@ def all_countries_sheet(table: dict, sheets: list[dict]) -> dict:
             "needs_by_brand": ({b: v["needs"] for b, v in table["brand_totals"].items()}
                                if needs is not None else None),
             **{k: sum(r[k] for r in rows) for k in PLACE_KEYS},
+            "unassigned": sum(r.get("unassigned", 0) for r in rows),
         },
     }
 
@@ -346,12 +361,15 @@ def _edit_block(key: CostKeyYear, session, allocation, mode: Mode, module: Modul
 def country_sheet(key: CostKeyYear, mode: Mode, country_code: str,
                   needs: dict[str, int] | None = None,
                   levels: CatalogLevels | None = None,
-                  postponed: dict | None = None,
-                  needs_by_brand: dict[str, int] | None = None) -> dict | None:
+                  postponed: dict | None = None, unassigned: dict | None = None,
+                  needs_by_brand: dict[str, int] | None = None,
+                  report: CostKeyReport | None = None) -> dict | None:
     """Sessions où le pays a des places, et le pied de feuille (coût clé,
-    hébergements, total). None si le pays est inconnu de la clé. `levels` évite de
-    relire le catalogue quand plusieurs fiches sont produites d'affilée."""
-    report = report_for(key, mode, needs)
+    hébergements, total). None si le pays est inconnu de la clé. `levels` et `report`
+    évitent de relire le catalogue et de recalculer la clé quand plusieurs fiches
+    sont produites d'affilée (toutes les filiales, tous les pôles)."""
+    if report is None:
+        report = report_for(key, mode, needs)
     line = next((l for l in report.lines if l.code == country_code), None)
     if line is None:
         return None
@@ -420,5 +438,6 @@ def country_sheet(key: CostKeyYear, mode: Mode, country_code: str,
             # Par marque : ce qui reste juste quand l'écran n'affiche qu'une partie de la filiale.
             "needs_by_brand": needs_by_brand if line.needs is not None else None,
             **places,
+            "unassigned": unassigned_by_country(unassigned or {}, line.code),
         },
     }

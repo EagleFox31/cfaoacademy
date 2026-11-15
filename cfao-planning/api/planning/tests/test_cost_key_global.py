@@ -13,7 +13,7 @@ from planning.models import CostKeyYear, PlannedAllocation, PlannedSession, Revi
 from planning.services.cost_key import Mode
 from planning.services.cost_key_abc import abc_table, consolidate_abc
 from planning.services.cost_key_freeze import freeze, inputs_sha256
-from planning.services.cost_key_global import country_sheet, global_table
+from planning.services.cost_key_global import consolidate, country_sheet, global_table
 from planning.services.cost_key_setup import SetupError, bootstrap, update
 from planning.models import FrozenKeyError
 from referential.models import Country
@@ -85,6 +85,21 @@ def test_places_en_filiale_a_l_academy_et_reportees(world):
     assert {s["code"]: s["seat_status"] for s in other["sessions"]} == {"OM01": "in_subsidiary", "TS01": "at_academy"}
     # Reportée en partie : le reste de la session garde son site, pour les indicateurs filtrés.
     assert sheet["sessions"][0]["site"] == "at_academy"
+
+
+def test_places_non_attribuees_a_cote_des_places_de_session(world):
+    data = needs()
+    data.unassigned = {("cm", "toyota", "TS06"): 3, ("cm", "toyota", "TP03"): 1}
+    table = global_table(world["key"], Mode.PLANNED, data)
+    rows = {r["country"]: r for r in table["rows"]}
+    assert (rows["cm"]["unassigned"], rows["cm"]["seats"]) == (4, 6)  # jamais dans les places
+    assert rows["ci"]["unassigned"] == 0
+    merged = {r["country"]: r for r in consolidate([table, table])["rows"]}
+    assert (merged["cm"]["unassigned"], merged["cm"]["seats"]) == (8, 12)
+
+    sheet = country_sheet(world["key"], Mode.PLANNED, "cm", {"cm": 12}, unassigned=data.unassigned)
+    assert sheet["footer"]["unassigned"] == 4
+    assert country_sheet(world["key"], Mode.PLANNED, "ci", {"ci": 8})["footer"]["unassigned"] == 0
 
 
 def test_fiche_pays_donne_le_besoin_par_marque_si_le_besoin_existe(world):

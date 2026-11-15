@@ -43,6 +43,7 @@ def world():
 @pytest.mark.parametrize("change", [
     pytest.param(lambda w: setattr(w["submission"], "status", Submission.Status.VALIDATED) or w["submission"], id="validation"),
     pytest.param(lambda w: setattr(w["need"], "postponed", 2) or w["need"], id="report"),
+    pytest.param(lambda w: setattr(w["need"], "unassigned", 2) or w["need"], id="non_attribue"),
     pytest.param(lambda w: setattr(w["need"], "q4", 1) or w["need"], id="quantite"),
     pytest.param(lambda w: setattr(w["line"], "tier", "SENIOR") or w["line"], id="palier"),
     pytest.param(lambda w: setattr(w["line"], "level_label", "G3") or w["line"], id="niveau"),

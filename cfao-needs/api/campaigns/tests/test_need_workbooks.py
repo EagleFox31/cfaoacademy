@@ -1,9 +1,13 @@
 """Fiches de besoins des filiales : lecture des classeurs."""
+from types import SimpleNamespace
+
 import pytest
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import PatternFill
 
-from campaigns.imports.need_workbooks import Report, _precise_line, canonical_brand, canonical_code, parse_workbook
+from campaigns.imports.need_workbooks import (
+    Report, _merge, _need_fields, _precise_line, canonical_brand, canonical_code, parse_workbook,
+)
 from campaigns.models import Campaign, CatalogFamily, CatalogLine, NeedLine, Submission
 from referential.models import OrgUnitRef
 
@@ -60,6 +64,21 @@ def test_lit_la_ligne_demandee_et_reporte_la_marque_fusionnee(tmp_path):
     assert rows[0].places == ("ACADEMY", "", "", "SUBSIDIARY")
 
 
+@pytest.mark.parametrize("name, sheet, org", [
+    ("Fiche besoins EQUIPMENT 2027 v1 RGE.xlsx", "EQUIPMENT", "groupe.gnq"),
+    ("MOBILITY 2027 Formulaire besoins formation RGE.xlsx", " TECHNIQUE ", "groupe.gnq"),
+    ("MOBILITY 2027_Tchad.xlsx", " TECHNIQUE ", "groupe.tcd"),
+    ("MOBILITY 2027_Inconnu.xlsx", " TECHNIQUE ", None),
+])
+def test_filiale_reconnue_au_nom_du_fichier(tmp_path, name, sheet, org):
+    path = _save(tmp_path, name, sheet, [
+        ["Titre"], HEADER, QUARTERS,
+        ["SENIOR", "SUZUKI", "SS03-ARGENT", "T", "Diag", 9, 2],
+    ])
+    rows = parse_workbook(path)
+    assert [r.org for r in rows] == ([org] if org else [])
+
+
 def test_conduite_sans_colonne_niveau(tmp_path):
     path = _save(tmp_path, "Fiche EQUIPMENT 2027_Congo.xlsx", "CONDUITE", [
         ["Titre"], ["MARQUE", "CODE", "TYPE", "NOM", "Page"], [],
@@ -101,6 +120,15 @@ def test_couleurs_lieu_filiale_et_report(tmp_path):
     assert red.marks[3] == "FFFF0000" and red.place_of(3) == "ACADEMY"
     assert written_elsewhere.place_of(2) == "ACADEMY"
     assert plain.place_of(0) == ""
+    # Sans couleur : besoin exprimé, attribué à aucune session, même avec un lieu écrit.
+    class _Lines:  # une ligne de catalogue par code, sans base
+        def line_for(self, row):
+            return SimpleNamespace(pk=row.code)
+    entries = list(_merge([green, red, written_elsewhere, plain], _Lines()).values())
+    assert [(e["postponed"], e["unassigned"]) for e in entries] == [(0, 0), (3, 0), (0, 0), (0, 2)]
+    assert _need_fields(entries[3])["unassigned"] == 2
+    assert "Non attribué sur la fiche : 2 place(s)." in _need_fields(entries[3])["comment"]
+    assert _need_fields(entries[0])["comment"] == ""
 
 
 def test_rci_couleur_portee_par_le_total(tmp_path):
@@ -123,9 +151,28 @@ def test_report_enregistre_une_seule_fois_et_places_gardees():
     submission = Submission.objects.create(campaign=campaign, org_unit=unit, country="CONGO",
                                            status=Submission.Status.VALIDATED)
     need = NeedLine.objects.create(submission=submission, catalog_line=line, q4=3)
-    entry = {"line": line, "q": [0, 0, 0, 3], "places": ["", "", "", "ACADEMY"], "postponed": 3}
+    entry = {"line": line, "q": [0, 0, 0, 3], "places": ["", "", "", "ACADEMY"], "postponed": 3,
+             "unassigned": 0}
 
     assert _precise_line(need, entry, Report()) is True
     need.refresh_from_db()
     assert (need.postponed, need.q4) == (3, 3)
+    assert _precise_line(need, entry, Report()) is False
+
+
+@pytest.mark.django_db
+def test_non_attribue_precise_une_ligne_existante_une_seule_fois():
+    campaign = Campaign.objects.create(year=2027, label="2027")
+    family = CatalogFamily.objects.create(key="f", label="F", pole="MOBILITY")
+    line = CatalogLine.objects.create(campaign=campaign, family=family, code="TS06-G3", title="T")
+    unit = OrgUnitRef.objects.create(code="ou-td", label="Tchad")
+    submission = Submission.objects.create(campaign=campaign, org_unit=unit, country="TCHAD",
+                                           status=Submission.Status.VALIDATED)
+    need = NeedLine.objects.create(submission=submission, catalog_line=line, q3=3)
+    entry = {"line": line, "q": [0, 0, 3, 0], "places": ["", "", "", ""], "postponed": 0, "unassigned": 3}
+
+    assert _precise_line(need, entry, Report()) is True
+    need.refresh_from_db()
+    assert (need.unassigned, need.postponed, need.q3) == (3, 0, 3)
+    assert need.comment.count("Non attribué") == 1
     assert _precise_line(need, entry, Report()) is False

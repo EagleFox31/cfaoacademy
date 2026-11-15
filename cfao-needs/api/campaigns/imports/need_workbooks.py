@@ -30,6 +30,8 @@ ORG_BY_FILE = (
     ("rci", "groupe.civ"), ("congo", "groupe.cog"), ("gabon", "groupe.gab"),
     ("madagascar", "groupe.mdg"), ("maroc", "groupe.mar"), ("tchad", "groupe.tcd"),
     ("togo", "groupe.tgo"),
+    # Guinée équatoriale : les fiches portent le sigle de la filiale (« ... v1 RGE.xlsx »).
+    ("rge", "groupe.gnq"),
 )
 
 FAMILY_BY_SHEET = {
@@ -58,6 +60,9 @@ BRAND_FIXES = {"TOYIE": "TOYOTA FORKLIFT", "TOYOTA INDUSTRIES EQUIPMENT": "TOYOT
 
 NO_PLACE_COMMENT = "Lieu non renseigné sur la fiche."
 POSTPONED_COMMENT = "Reporté sur la fiche : {places} place(s)."
+# Une case sans couleur est un besoin exprimé que la fiche n'attribue à aucune session,
+# même si un lieu est écrit. Les cases vertes (filiale) et rouges (reporté) sont attribuées.
+UNASSIGNED_COMMENT = "Non attribué sur la fiche : {places} place(s)."
 
 # Couleur des cases d'effectif ; les classeurs n'ont pas de légende, le sens vient du centre.
 IN_SUBSIDIARY, POSTPONED = "FF92D050", "FFFF0000"
@@ -268,11 +273,13 @@ def _merge(rows: list[SheetRow], catalog: _Catalog) -> dict:
         line = catalog.line_for(row)
         if line is None:
             continue
-        entry = wanted.setdefault((row.org, line.pk), {"line": line, "q": [0] * 4, "places": [""] * 4, "postponed": 0})
+        entry = wanted.setdefault((row.org, line.pk), {"line": line, "q": [0] * 4, "places": [""] * 4, "postponed": 0,
+                                                     "unassigned": 0})
         for i in range(4):
             entry["q"][i] += row.quantities[i]
             entry["places"][i] = entry["places"][i] or (row.place_of(i) if row.quantities[i] else "")
             entry["postponed"] += row.quantities[i] if row.marks[i] == POSTPONED else 0
+            entry["unassigned"] += row.quantities[i] if not row.marks[i] else 0
     return wanted
 
 
@@ -281,14 +288,19 @@ def _need_fields(entry: dict) -> dict:
     for i in range(4):
         fields[f"place_q{i + 1}"] = PLACE_BY_LABEL.get(entry["places"][i], Place.CFR)
     no_place = any(entry["q"][i] and entry["places"][i] not in PLACE_BY_LABEL for i in range(4))
-    notes = [NO_PLACE_COMMENT if no_place else "", _postponed_note(entry)]
+    notes = [NO_PLACE_COMMENT if no_place else "", _postponed_note(entry), _unassigned_note(entry)]
     fields["comment"] = " ".join(note for note in notes if note)
     fields["postponed"] = entry["postponed"]
+    fields["unassigned"] = entry["unassigned"]
     return fields
 
 
 def _postponed_note(entry: dict) -> str:
     return POSTPONED_COMMENT.format(places=entry["postponed"]) if entry["postponed"] else ""
+
+
+def _unassigned_note(entry: dict) -> str:
+    return UNASSIGNED_COMMENT.format(places=entry["unassigned"]) if entry.get("unassigned") else ""
 
 
 def _precise_line(need, entry, report: Report) -> bool:
@@ -308,13 +320,15 @@ def _precise_line(need, entry, report: Report) -> bool:
             report.place_conflicts.append((need.submission.org_unit.code, entry["line"].code, i + 1, have, wanted))
     known = all(entry["places"][i] in PLACE_BY_LABEL for i in range(4) if entry["q"][i])
     comment = "" if need.comment == NO_PLACE_COMMENT and known else need.comment
-    note = _postponed_note(entry)
-    if note and note not in comment:
-        comment = f"{comment} {note}".strip()
+    for note in (_postponed_note(entry), _unassigned_note(entry)):
+        if note and note not in comment:
+            comment = f"{comment} {note}".strip()
     if comment != need.comment:
         changes["comment"] = comment
     if entry["postponed"] and not need.postponed:
         changes["postponed"] = entry["postponed"]
+    if entry.get("unassigned") and not need.unassigned:
+        changes["unassigned"] = entry["unassigned"]
     if changes:
         NeedLine.objects.filter(pk=need.pk).update(**changes)
     return bool(changes)

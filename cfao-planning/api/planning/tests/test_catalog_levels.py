@@ -201,8 +201,9 @@ def test_l_export_du_devis_garde_le_libelle_du_bareme():
     assert ws.cell(row=4, column=2).value in (None, "")
     assert ws.cell(row=5, column=9).value == "=SUM(I3:I4)"
     # Le récapitulatif sous le tableau : libellé centré sur deux colonnes, le montant à côté.
-    labels = {ws.cell(row=r, column=7).value: r for r in range(7, 15)}
-    assert list(labels) == ["En filiale", "À l'Academy", "Reportées", "Part", "Coût de formation des stagiaires",
+    labels = {ws.cell(row=r, column=7).value: r for r in range(7, 16)}
+    assert list(labels) == ["En filiale", "À l'Academy", "Reportées", "Non attribuées", "Part",
+                            "Coût de formation des stagiaires",
                             "Frais d'accommodation des stagiaires", "Frais d'accommodation formateurs", "Total à payer"]
     assert {f"G{r}:H{r}" for r in labels.values()} <= {str(m) for m in ws.merged_cells.ranges}
     assert all(ws.cell(row=r, column=7).alignment.horizontal == "center" for r in labels.values())

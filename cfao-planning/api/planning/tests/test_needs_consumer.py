@@ -67,6 +67,7 @@ def test_besoins_par_pays_et_marque(calls, benin):
     assert data.by_country == {"ben": example["needs"]}
     assert data.by_cell[("ben", "toyota")] == (example["needs"], example["technicians"])
     assert data.postponed == {("ben", "toyota", client.norm_code("TS11-G2")): 3}
+    assert data.unassigned == {("ben", "toyota", client.norm_code("TS12-G1")): 4}
     assert calls == [client.SNAPSHOT]
 
 

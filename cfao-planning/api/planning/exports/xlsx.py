@@ -34,7 +34,7 @@ LABELS = {
     "fr": {
         "all_countries": "Toutes les filiales", "subsidiary": "Filiale",
         "global": "GLOBAL", "country": "Pays", "technicians": "Techniciens", "needs": "Besoins",
-        "seats": "Places", "in_subsidiary": "En filiale", "at_academy": "À l'Academy", "postponed": "Reportées", "coverage": "Taux de couverture des besoins", "level": "Niveau", "share": "Part", "key_cost": "Coût de formation des stagiaires",
+        "seats": "Places", "in_subsidiary": "En filiale", "at_academy": "À l'Academy", "postponed": "Reportées", "unassigned": "Non attribuées", "coverage": "Taux de couverture des besoins", "level": "Niveau", "share": "Part", "key_cost": "Coût de formation des stagiaires",
         "trainee_lodging": "Frais d'accommodation des stagiaires", "trainer_lodging": "Frais d'accommodation formateurs",
         "total": "Total à payer", "brand": "Marque", "code": "Code", "title": "Module",
         "start": "Début", "end": "Fin", "trainers": "Formateurs", "location": "Lieu",
@@ -44,7 +44,7 @@ LABELS = {
     "en": {
         "all_countries": "All subsidiaries", "subsidiary": "Subsidiary",
         "global": "GLOBAL", "country": "Country", "technicians": "Technicians", "needs": "Needs",
-        "seats": "Seats", "in_subsidiary": "In subsidiary", "at_academy": "At the Academy", "postponed": "Postponed", "coverage": "Needs coverage rate", "level": "Level", "share": "Share", "key_cost": "Trainee training cost",
+        "seats": "Seats", "in_subsidiary": "In subsidiary", "at_academy": "At the Academy", "postponed": "Postponed", "unassigned": "Unassigned", "coverage": "Needs coverage rate", "level": "Level", "share": "Share", "key_cost": "Trainee training cost",
         "trainee_lodging": "Trainee lodging", "trainer_lodging": "Trainer lodging",
         "total": "Total due", "brand": "Brand", "code": "Code", "title": "Module",
         "start": "Start", "end": "End", "trainers": "Trainers", "location": "Location",
@@ -111,6 +111,7 @@ def write_global(ws, table: dict, lang: str = "fr") -> None:
         (t["needs"], lambda r: r["needs"], INT, True, 10),
         (t["seats"], lambda r: r["seats"], INT, True, 10),
         *[(t[k], lambda r, k=k: r[k], INT, True, 14) for k in PLACE_KEYS],
+        (t["unassigned"], lambda r: r.get("unassigned", 0), INT, True, 14),
         (t["coverage"], lambda r: r["coverage"], PCT, False, 16),
         (t["share"], lambda r: r["share"], PCT, True, 10),
         (t["key_cost"], lambda r: r["key_cost"], MONEY, True, 22),
@@ -163,12 +164,12 @@ def write_country(ws, sheet: dict, lang: str = "fr") -> None:
     _totals(ws, last + 1, first, last, {seats_col: INT}, t["totals"])
     footer = sheet["footer"]
     row = last + 3
-    for key, fmt in (*((k, INT) for k in PLACE_KEYS), ("share", PCT), ("key_cost", MONEY),
+    for key, fmt in (*((k, INT) for k in PLACE_KEYS), ("unassigned", INT), ("share", PCT), ("key_cost", MONEY),
                      ("trainee_lodging", MONEY), ("trainer_lodging", MONEY), ("total", MONEY)):
         caption = ws.cell(row=row, column=seats_col - 2, value=t[key])
         caption.font, caption.alignment = Font(bold=True), Alignment(horizontal="center", vertical="center")
         ws.merge_cells(start_row=row, start_column=seats_col - 2, end_row=row, end_column=seats_col - 1)
-        cell = ws.cell(row=row, column=seats_col, value=footer[key])
+        cell = ws.cell(row=row, column=seats_col, value=footer.get(key, 0) if key == "unassigned" else footer[key])
         cell.number_format = fmt
         if key in _PLACE_FILLS:
             cell.fill = _PLACE_FILLS[key]

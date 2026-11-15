@@ -227,6 +227,14 @@
               }
             ],
             "source": "quota_import",
+            "unassigned": [
+              {
+                "brand": "TOYOTA",
+                "code": "TS12-G1",
+                "country": "BENIN",
+                "places": 4
+              }
+            ],
             "year": 2026
           }
         ],
@@ -306,6 +314,34 @@
             ],
             "type": "string"
           },
+          "unassigned": {
+            "description": "Places exprimées sans attribution sur la fiche (cellule sans couleur) par module ; elles restent comptées dans `needs`.",
+            "items": {
+              "properties": {
+                "brand": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "country": {
+                  "type": "string"
+                },
+                "places": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "country",
+                "brand",
+                "code",
+                "places"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
           "year": {
             "type": "integer"
           }
@@ -359,6 +395,14 @@
                       }
                     ],
                     "source": "quota_import",
+                    "unassigned": [
+                      {
+                        "brand": "TOYOTA",
+                        "code": "TS12-G1",
+                        "country": "BENIN",
+                        "places": 4
+                      }
+                    ],
                     "year": 2026
                   },
                   "equipment": {
@@ -380,6 +424,14 @@
                       }
                     ],
                     "source": "quota_import",
+                    "unassigned": [
+                      {
+                        "brand": "TOYOTA",
+                        "code": "TS12-G1",
+                        "country": "BENIN",
+                        "places": 4
+                      }
+                    ],
                     "year": 2026
                   },
                   "motors": {
@@ -401,6 +453,14 @@
                       }
                     ],
                     "source": "quota_import",
+                    "unassigned": [
+                      {
+                        "brand": "TOYOTA",
+                        "code": "TS12-G1",
+                        "country": "BENIN",
+                        "places": 4
+                      }
+                    ],
                     "year": 2026
                   }
                 },
@@ -679,7 +739,7 @@
   "info": {
     "description": "Agrégats de service à service lus par cfao-core (tableau de bord super admin) et cfao-planning (clé de répartition).",
     "title": "CFAO Needs Analytics",
-    "version": "1.4.0"
+    "version": "1.5.0"
   },
   "openapi": "3.1.0",
   "paths": {

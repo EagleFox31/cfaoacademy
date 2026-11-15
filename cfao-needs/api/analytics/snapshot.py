@@ -67,21 +67,28 @@ def needs_by_branch_brand_body(year: int, pole: str) -> dict:
     elif rows:
         source = "quota_import"
 
-    postponed = (
-        validated_lines(year, pole).filter(postponed__gt=0).exclude(catalog_line__brand__isnull=True)
-        .values("submission__country", "catalog_line__brand__label", "catalog_line__code")
-        .annotate(places=Sum("postponed"))
-        .order_by("submission__country", "catalog_line__brand__label", "catalog_line__code")
-    )
     return {
         "year": year, "pole": pole, "source": source,
         "rows": sorted(rows.values(), key=lambda r: (r["country"], r["brand"])),
-        "postponed": [
-            {"country": p["submission__country"], "brand": p["catalog_line__brand__label"],
-             "code": p["catalog_line__code"], "places": p["places"]}
-            for p in postponed
-        ],
+        "postponed": _places_by_module(year, pole, "postponed"),
+        "unassigned": _places_by_module(year, pole, "unassigned"),
     }
+
+
+def _places_by_module(year: int, pole: str, column: str) -> list[dict]:
+    """Places d'un compteur de ligne (`postponed`, `unassigned`) par pays, marque et module."""
+    lines = (
+        validated_lines(year, pole).filter(**{f"{column}__gt": 0})
+        .exclude(catalog_line__brand__isnull=True)
+        .values("submission__country", "catalog_line__brand__label", "catalog_line__code")
+        .annotate(places=Sum(column))
+        .order_by("submission__country", "catalog_line__brand__label", "catalog_line__code")
+    )
+    return [
+        {"country": p["submission__country"], "brand": p["catalog_line__brand__label"],
+         "code": p["catalog_line__code"], "places": p["places"]}
+        for p in lines
+    ]
 
 
 def unchosen_modules_body(year: int, pole: str) -> dict:

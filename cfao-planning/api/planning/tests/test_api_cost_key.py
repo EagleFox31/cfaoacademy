@@ -200,6 +200,25 @@ def equipment(key, referential):
     return eq
 
 
+def test_tous_poles_calcule_chaque_cle_une_seule_fois(key, equipment, monkeypatch):
+    # Toutes les filiales, tous les pôles : le rapport d'une clé (sessions, places, hébergements)
+    # se calcule une fois par clé, pas une fois par fiche pays ; les requêtes restent bornées.
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+    from planning.services import cost_key_global
+
+    calls = []
+    original = cost_key_global.compute
+    monkeypatch.setattr(cost_key_global, "compute", lambda *a, **kw: calls.append(a) or original(*a, **kw))
+    client = client_for("dps")
+    for path, budget in (("global", 25), ("countries/cm", 40), ("countries/all", 45), ("export.xlsx", 45)):
+        calls.clear()
+        with CaptureQueriesContext(connection) as ctx:
+            assert client.get(f"/api/v1/planning/years/2026/{path}").status_code == 200
+        assert len(calls) == 2, (path, len(calls))  # une par clé (Motors, Equipment)
+        assert len(ctx.captured_queries) <= budget, (path, len(ctx.captured_queries))
+
+
 def test_tous_poles_additionne_les_cles_de_l_annee(key, equipment):
     c = client_for("dps")
     motors = {r["country"]: r for r in c.get(url(key, "/global")).json()["rows"]}

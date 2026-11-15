@@ -42,6 +42,17 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
 
+### 2026-11-14 — Lignes « total » d'un classeur importées comme données, puis écart 2026 cherché au mauvais endroit (cfao-planning)
+- **Contexte / symptôme** : la passation notait un écart 2026 inexpliqué de la clé de répartition (20/24 pays → 19/24, 2 158 → 1 368 besoins) et le soupçon d'un resync ou d'une perte de données.
+- **Impact** : une demi-journée d'enquête planifiée sur une « régression » ; des lignes parasites servies par cfao-needs à tout consommateur du contrat analytics.
+- **Détection** : rejeu du dump de production dans un conteneur jetable, puis recoupement avec les classeurs sources.
+- **Cause racine** : (1) les deux chiffres viennent de deux vues différentes (tous pôles vs Motors seul) et non d'un changement de données ; (2) l'import des quotas 2026 a gardé les lignes et colonnes de total du classeur comme données (pays « 26 PAYS », « 18/25 PAYS », « TAUX DE COUVERTURE », marque « TOTAL DE PLACES », « AUTRES »). cfao-planning les écarte en avertissement `unknown_country` / `unknown_brand`, ce qui masquait le défaut.
+- **Correctif** : explication consignée dans PASSATION.md ; aucune donnée touchée (le nettoyage des lignes parasites en production est une décision à prendre avec l'utilisateur, et l'importeur de quotas n'est pas dans le dépôt).
+- **Prévention** : tout importeur de classeur rejette les lignes dont la clé n'est pas dans le référentiel (pays, marque) au lieu de les stocker ; les écarts de chiffres se vérifient d'abord en comparant le périmètre des deux lectures (pôle, mode, visibilité) avant de supposer une perte de données.
+- **Leçon généralisée** : un chiffre n'est comparable qu'avec son périmètre ; un consommateur tolérant (lignes inconnues écartées en silence) ne dispense pas le producteur de valider ce qu'il stocke.
+- **Catégorie** : données / import
+- **Récidive** : non
+
 ### 2026-11-11 — Cartes de marques construites sans regarder celles de la page d'accueil (portail du directeur)
 - **Contexte / symptôme** : la rubrique « Les offres de formations par marque » du portail du directeur affiche des cartes génériques du portail avec un logo ajouté, différentes des cartes de marque de la page d'accueil.
 - **Impact** : un même contenu (une marque) représenté de deux façons ; travail à reprendre.

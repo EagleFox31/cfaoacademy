@@ -40,7 +40,7 @@ NO_COPY_RECHECK_S = 10  # sans copie, on retente plus souvent
 
 _POLES = ("motors", "equipment", "all")
 _EMPTY_YEAR = {
-    "needs_by_branch_brand": {p: {"source": "none", "rows": [], "postponed": []} for p in _POLES},
+    "needs_by_branch_brand": {p: {"source": "none", "rows": [], "postponed": [], "unassigned": []} for p in _POLES},
     "unchosen_modules": {p: {"catalog_available": False, "modules": []} for p in _POLES},
     "catalog_levels": {"lines": []},
 }
@@ -57,6 +57,8 @@ class NeedsData:
     by_cell: dict[tuple[str, str], tuple[int, int | None]] = field(default_factory=dict)
     # (code pays, code marque, code module normalisé) → places reportées.
     postponed: dict[tuple[str, str, str], int] = field(default_factory=dict)
+    # Même clé → places exprimées sans attribution sur la fiche (cellule sans couleur).
+    unassigned: dict[tuple[str, str, str], int] = field(default_factory=dict)
     warnings: list[dict] = field(default_factory=list)
 
 
@@ -180,12 +182,13 @@ def _parse_needs(payload: dict) -> NeedsData:
         if row["technicians"] is not None:
             techs = (techs or 0) + row["technicians"]
         data.by_cell[(code, brand_code)] = (needs + row["needs"], techs)
-    for row in payload.get("postponed", []):
-        country, brand = resolver.country(row["country"]), resolver.brand(row["brand"])
-        if country is None or brand is None:  # déjà signalé par la ligne de besoins
-            continue
-        module = (country.obj.code, brand.obj.code, norm_code(row["code"]))
-        data.postponed[module] = data.postponed.get(module, 0) + row["places"]
+    for kind, target in (("postponed", data.postponed), ("unassigned", data.unassigned)):
+        for row in payload.get(kind, []):
+            country, brand = resolver.country(row["country"]), resolver.brand(row["brand"])
+            if country is None or brand is None:  # déjà signalé par la ligne de besoins
+                continue
+            module = (country.obj.code, brand.obj.code, norm_code(row["code"]))
+            target[module] = target.get(module, 0) + row["places"]
     data.warnings = [{"code": f"unknown_{kind}", "value": value} for kind, value in sorted(unknown)]
     return data
 

@@ -195,6 +195,8 @@ def needs_by_branch_brand(request):
     - Pays et marques en libellés bruts : le consommateur les résout par ses alias.
     - `postponed` : places reportées par pays, marque et module ; elles restent
       comptées dans `needs`.
+    - `unassigned` : places exprimées sans attribution sur la fiche (cellule sans
+      couleur), même découpage ; elles restent comptées dans `needs`.
     """
     _check_shared_key(request)
     year, pole = _year_and_pole(request)

@@ -125,7 +125,8 @@ def test_validated_submissions_replace_imported_needs(client, campaign):
 
 def test_needs_empty_year_says_none(client, campaign):
     body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2030}).json()
-    assert body == {"year": 2030, "pole": "all", "source": "none", "rows": [], "postponed": []}
+    assert body == {"year": 2030, "pole": "all", "source": "none", "rows": [], "postponed": [],
+                    "unassigned": []}
 
 
 def test_unchosen_modules_lists_catalog_without_validated_demand(client, campaign):
@@ -220,3 +221,13 @@ def test_postponed_seats_stay_in_the_needs(client, campaign):
     body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2026}).json()
     assert body["rows"][0]["needs"] == 5
     assert body["postponed"] == [{"country": "BENIN", "brand": "Toyota", "code": "TS11", "places": 3}]
+
+
+def test_unassigned_seats_stay_in_the_needs(client, campaign):
+    toyota = Brand.objects.create(code="toyota", label="Toyota", pole="MOBILITY")
+    line = _catalog(campaign, "TS06", toyota)
+    NeedLine.objects.create(submission=_submission(campaign, "BENIN"), catalog_line=line, q2=4, unassigned=4)
+    body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2026}).json()
+    assert body["rows"][0]["needs"] == 4
+    assert body["unassigned"] == [{"country": "BENIN", "brand": "Toyota", "code": "TS06", "places": 4}]
+    assert body["postponed"] == []

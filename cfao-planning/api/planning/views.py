@@ -340,7 +340,9 @@ def _country_sheets(request, key, table, needs):
     """Une fiche par filiale ayant des places, parmi celles du tableau (donc lisibles)."""
     by_country = needs.by_country if needs.available else None
     levels = fetch_catalog_levels(key.year)
-    sheets = (country_sheet(key, _mode(request), row["country"], by_country, levels, needs.postponed)
+    report = report_for(key, _mode(request), by_country)
+    sheets = (country_sheet(key, _mode(request), row["country"], by_country, levels, needs.postponed,
+                            needs.unassigned, report=report)
               for row in table["rows"] if row["seats"])
     return [s for s in sheets if s]
 
@@ -355,7 +357,7 @@ def _sheet(request, key, code):
             raise PermissionDenied()
     needs = fetch_needs(key.year, key.pole)
     sheet = country_sheet(key, _mode(request), code,
-                          needs.by_country if needs.available else None, postponed=needs.postponed,
+                          needs.by_country if needs.available else None, postponed=needs.postponed, unassigned=needs.unassigned,
                           needs_by_brand={b: n for (c, b), (n, _) in needs.by_cell.items() if c == code})
     if sheet is None:
         raise NotFound()
@@ -441,10 +443,17 @@ class _YearScope:
         self.keys = _year_keys(request, year)
         self.mode = _mode(request)
         self.needs = {k.pk: fetch_needs(k.year, k.pole) for k in self.keys}
-        tables = [global_table(k, self.mode, self.needs[k.pk]) for k in self.keys]
+        # Une clé se calcule une fois : tableau global et fiches pays relisent ce rapport.
+        self.reports = {k.pk: report_for(k, self.mode, self._needs_by_country(k)) for k in self.keys}
+        tables = [global_table(k, self.mode, self.needs[k.pk], report=self.reports[k.pk])
+                  for k in self.keys]
         self.visible = _year_visible(request, self.keys)
         self.table = consolidate(tables, self.visible)
         self._rows = {r["country"]: r for r in consolidate(tables)["rows"]}
+
+    def _needs_by_country(self, key) -> dict[str, int] | None:
+        needs = self.needs[key.pk]
+        return needs.by_country if needs.available else None
 
     @cached_property
     def levels(self):
@@ -461,8 +470,8 @@ class _YearScope:
         sheets = []
         for k in self.keys:
             needs = self.needs[k.pk]
-            sheet = country_sheet(k, self.mode, code, needs.by_country if needs.available else None,
-                                  self.levels, needs.postponed)
+            sheet = country_sheet(k, self.mode, code, self._needs_by_country(k), self.levels,
+                                  needs.postponed, needs.unassigned, report=self.reports[k.pk])
             if sheet:
                 sheets.append(sheet)
         return consolidate_sheet(sheets, row)

@@ -6,7 +6,7 @@ from django.db import IntegrityError
 
 from planning.models import (
     CostKeyYear,
-    PlannedSession,
+    PlannedAllocation, PlannedSession,
     SeatAllocation,
     Session,
     SessionAssignment,
@@ -176,6 +176,66 @@ def test_formateur_d_une_filiale_a_douala_se_loge(world):
     session(world, "TS01", world["cm"], "Douala", trainers=[local])
     session(world, "TS02", world["cm"], "Douala", trainers=[world["eugene"]])
     assert by_code(compute(world["key"], mode=ACTUAL))["cm"].trainer_sessions == 1
+
+
+def test_formateur_sans_pays_est_chez_lui_partout_au_cameroun(world):
+    # Sans pays renseigné, le formateur est rattaché au centre Academy : pas de forfait au
+    # Cameroun, même hors de Douala ; forfait dès qu'il quitte le pays.
+    session(world, "TS01", world["cm"], "Yaounde", trainers=[world["eugene"]])
+    session(world, "TS02", world["cm"], trainers=[world["eugene"]])
+    session(world, "TS03", world["sn"], "Dakar", trainers=[world["eugene"]])
+    lines = by_code(compute(world["key"], mode=ACTUAL))
+    assert lines["cm"].trainer_sessions == 0
+    assert lines["sn"].trainer_sessions == 1
+
+
+def test_formateur_rattache_au_cameroun_se_loge_seulement_a_l_etranger(world):
+    cmr = Trainer.objects.create(full_name="CMR", name_norm="CMR", service="MOTORS",
+                                 home_country=world["cm"])
+    session(world, "TS01", world["cm"], "Douala", trainers=[cmr])
+    session(world, "TS02", world["cm"], "Yaounde", trainers=[cmr])
+    session(world, "TS03", world["ci"], "Abidjan", trainers=[cmr])
+    lines = by_code(compute(world["key"], mode=ACTUAL))
+    assert lines["cm"].trainer_lodging == 0
+    assert lines["ci"].trainer_lodging == LODGING
+
+
+def test_technicien_instructeur_de_filiale_ne_se_loge_jamais(world):
+    pic = Trainer.objects.create(full_name="PIC", name_norm="PIC", service="MOTORS",
+                                 kind=Trainer.Kind.TECH_INSTRUCTOR, home_country=world["ci"])
+    session(world, "TS01", world["sn"], "Dakar", trainers=[pic])
+    session(world, "TS02", world["cm"], "Douala", trainers=[pic])
+    lines = by_code(compute(world["key"], mode=ACTUAL))
+    assert "sn" not in lines and lines["cm"].trainer_sessions == 0
+
+
+def test_un_seul_forfait_formateur_par_session_meme_a_deux_deplaces(world):
+    local = Trainer.objects.create(full_name="LOCAL", name_norm="LOCAL", service="MOTORS",
+                                   home_country=world["ci"])
+    session(world, "TS01", world["sn"], "Dakar", trainers=[local, world["eugene"]])
+    assert by_code(compute(world["key"], mode=ACTUAL))["sn"].trainer_lodging == LODGING
+
+
+def test_pas_d_hebergement_stagiaires_hors_du_site_academy_meme_pour_le_cameroun(world):
+    allocate(session(world, "TS01", world["ci"], "Abidjan"), cm=3, sn=2)
+    lines = by_code(compute(world["key"], mode=ACTUAL))
+    assert (lines["cm"].seats, lines["cm"].academy_seats, lines["cm"].trainee_lodging) == (3, 0, 0)
+    assert (lines["sn"].seats, lines["sn"].academy_seats, lines["sn"].trainee_lodging) == (2, 0, 0)
+
+
+def test_regles_d_hebergement_identiques_en_mode_prevu(world):
+    local = Trainer.objects.create(full_name="LOCAL", name_norm="LOCAL", service="MOTORS",
+                                   home_country=world["ci"])
+    planned = PlannedSession.objects.create(
+        cost_key=world["key"], brand=world["toyota"], code_norm="TS01", title="TS01",
+        country=world["cm"], location="Douala",
+    )
+    planned.trainers.set([local])
+    PlannedAllocation.objects.create(planned_session=planned, country=world["cm"], seats=2)
+    PlannedAllocation.objects.create(planned_session=planned, country=world["ci"], seats=3)
+    lines = by_code(compute(world["key"], mode=Mode.PLANNED))
+    assert (lines["cm"].trainer_lodging, lines["cm"].trainee_lodging) == (LODGING, 0)
+    assert (lines["ci"].trainer_lodging, lines["ci"].trainee_lodging) == (0, 3 * LODGING)
 
 
 def test_couverture_depuis_les_besoins_fournis(world):

@@ -238,6 +238,8 @@ class NeedLine(UUIDModel, TimeStampedModel):
     comment = models.TextField(blank=True)
     # Places reportées par la filiale : elles restent comptées et facturées.
     postponed = models.PositiveIntegerField(default=0)
+    # Places sans couleur sur la fiche : besoin exprimé, attribué à aucune session.
+    unassigned = models.PositiveIntegerField(default=0)
 
     class Meta:
         constraints = [

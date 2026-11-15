@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 CONTRACT_ID = "needs-analytics"
-CONTRACT_VERSION = "1.4.0"
+CONTRACT_VERSION = "1.5.0"
 CONTRACT_PATH = Path(__file__).resolve().parent / "contract" / "needs-analytics.openapi.json"
 
 _YEAR = {
@@ -226,10 +226,26 @@ def openapi_document() -> dict:
                         },
                     },
                 },
+                "unassigned": {
+                    "type": "array",
+                    "description": "Places exprimées sans attribution sur la fiche (cellule sans "
+                                   "couleur) par module ; elles restent comptées dans `needs`.",
+                    "items": {
+                        "type": "object",
+                        "required": ["country", "brand", "code", "places"],
+                        "properties": {
+                            "country": {"type": "string"},
+                            "brand": {"type": "string"},
+                            "code": {"type": "string"},
+                            "places": {"type": "integer", "minimum": 1},
+                        },
+                    },
+                },
             },
             "examples": [{"year": 2026, "pole": "motors", "source": "quota_import", "rows": [
                 {"country": "BENIN", "brand": "TOYOTA", "needs": 34, "technicians": 22}],
-                "postponed": [{"country": "BENIN", "brand": "TOYOTA", "code": "TS11-G2", "places": 3}]}],
+                "postponed": [{"country": "BENIN", "brand": "TOYOTA", "code": "TS11-G2", "places": 3}],
+                "unassigned": [{"country": "BENIN", "brand": "TOYOTA", "code": "TS12-G1", "places": 4}]}],
         },
         "UnchosenModules": {
             "type": "object",
