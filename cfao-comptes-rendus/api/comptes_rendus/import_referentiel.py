@@ -18,7 +18,7 @@ Le fichier est lu en memoire et n'est jamais conserve.
 import re
 import unicodedata
 from collections import Counter
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from django.db import transaction
 
@@ -318,8 +318,9 @@ def _grouper(lignes):
         elif fin < debut:
             note("fin_avant_debut", f"fin ({fin:%d/%m/%Y}) avant le debut : fin ramenee au debut")
             fin = debut
-        elif (fin - debut).days + 1 > JOURS_MAX:
-            note("session_trop_longue", f"{(fin - debut).days + 1} jours (plus de {JOURS_MAX}) : "
+        elif (ouvres := sum(1 for k in range((fin - debut).days + 1)
+                            if (debut + timedelta(days=k)).weekday() < 5)) > JOURS_MAX:
+            note("session_trop_longue", f"{ouvres} jours ouvres (plus de {JOURS_MAX}) : "
                  "une semaine de plus forme une autre session")
 
         lieu = _frequent([r["lieu"] for r in rows])

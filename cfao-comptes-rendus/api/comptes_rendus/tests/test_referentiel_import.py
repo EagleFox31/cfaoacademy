@@ -71,7 +71,9 @@ def test_essai_n_ecrit_rien(client, pdp_fidele, excel):
     assert (rapport["stagiaires_a_creer"], rapport["inscriptions_a_creer"], rapport["formations_a_creer"]) == (5, 5, 2)
     assert rapport["animateurs_rattaches"] == ["Marie FICTIVE", "Paul AUTRE"]
     assert rapport["animateurs_non_rattaches"] == ["Jean INCONNU"]
-    assert {"reference_vide", "session_trop_longue", "pays_inconnu"} <= set(types(rapport))
+    assert {"reference_vide", "pays_inconnu"} <= set(types(rapport))
+    # S-2603 : lundi -> dimanche = 5 jours ouvres, pas trop longue.
+    assert "session_trop_longue" not in types(rapport)
     assert not (Session.objects.exists() or Stagiaire.objects.exists() or Formation.objects.exists()
                 or Inscription.objects.exists() or Animation.objects.exists() or ImportReferentiel.objects.exists())
 
@@ -153,6 +155,16 @@ def test_les_anomalies_de_dates_de_libelles_et_d_homonymes(db, excel):
     ]
     rapport = imp.analyser(lire(excel(lignes)))
     assert {"fin_avant_debut", "libelles_multiples", "homonyme"} <= set(types(rapport))
+
+
+def test_une_session_trop_longue_se_compte_en_jours_ouvres(db, excel):
+    from comptes_rendus.tests.conftest import lignes_fictives
+    base = lignes_fictives()[0]
+    jeudi_mardi = {**base, "numero": "S-11", "debut": datetime(2026, 11, 12), "fin": datetime(2026, 11, 17)}
+    deux_semaines = {**base, "numero": "S-12", "debut": datetime(2026, 11, 2), "fin": datetime(2026, 11, 10)}
+    assert "session_trop_longue" not in types(imp.analyser(lire(excel([jeudi_mardi]))))
+    trop = [a for a in imp.analyser(lire(excel([deux_semaines])))["anomalies"] if a["type"] == "session_trop_longue"]
+    assert len(trop) == 1 and "7 jours ouvres" in trop[0]["message"]
 
 
 def test_une_graphie_de_pays_est_normalisee_sinon_gardee_avec_anomalie():
