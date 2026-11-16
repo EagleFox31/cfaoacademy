@@ -34,7 +34,7 @@ Regles tenues par le code :
 import hashlib
 import random
 
-SEUIL = 70
+from regles import SEUIL_DEFAUT as SEUIL, palier_au_seuil, seuil_de  # noqa: E402
 PCT = ' %'          # l'espace insecable tient le nombre et son signe
 
 
@@ -42,9 +42,8 @@ def _pct(v):
     return f'{int(round(v))}{PCT}'
 
 
-def _palier(v):
-    return ('excellent' if v >= 90 else 'bon' if v >= 80 else 'correct' if v >= SEUIL
-            else 'limite' if v >= 55 else 'faible')
+def _palier(v, seuil=SEUIL):
+    return palier_au_seuil(v, seuil)
 
 
 def _nom(p):
@@ -203,17 +202,18 @@ def rediger_appreciation(participant, graine=None):
         graine = int(hashlib.sha256(cle.encode('utf-8')).hexdigest()[:8], 16)
     rnd = random.Random(graine)
     nom = _nom(p)
+    seuil = seuil_de(p.get('seuil'))
     acq, th, pr = (_nombre(p.get(c)) for c in ('acquisition', 'theorie', 'pratique'))
     e, s, prog = (_nombre(p.get(c)) for c in ('entree', 'sortie', 'taux_progression'))
     f, a = _nombre(p.get('satisfaction')), _nombre(p.get('sat_accueil'))
     phrases = []
-    reg = _palier(acq) if acq is not None else None
+    reg = _palier(acq, seuil) if acq is not None else None
 
     if acq is not None:
         phrases.append(rnd.choice(ACQUISITION).format(
             P=nom, deP=_de(nom), acq=_pct(acq), assim=rnd.choice(ASSIMILATION[reg])))
-        if acq < SEUIL:
-            phrases.append(rnd.choice(SOUS_SEUIL).format(seuil=_pct(SEUIL)))
+        if acq < seuil:
+            phrases.append(rnd.choice(SOUS_SEUIL).format(seuil=_pct(seuil)))
 
     # Une sortie sous l'entree dit deja que la theorie est a reprendre :
     # l'ecart theorie / pratique, dans le meme sens, ferait doublon.

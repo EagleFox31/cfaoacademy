@@ -3,13 +3,17 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import useEnHautDePage from '../hooks/useEnHautDePage'
 import useSiteEffects from '../hooks/useSiteEffects'
 import { useAuth } from '../lib/auth'
-import { sessionsDuFormateur } from '../data/mock_sessions_formateur'
-import { syntheseGroupe } from '../utils/baremeCfao'
-import { estCertification, syntheseCertification, typeDepuisCode } from '../utils/certification'
+import useSessionsFormateur from '../hooks/useSessionsFormateur'
+import { FILTRES_VIDES, chargerSession, trouverSession } from '../data/sessionsReferentiel'
+import { syntheseGroupe, seuilDe } from '../utils/baremeCfao'
+import { estCertification, syntheseCertification } from '../utils/certification'
 import {
-  adopter, enregistrer, garder, recuperer, recupererDuServeur, surveiller,
+  adopter, enregistrer, garder, inchangeDepuis, recuperer, recupererDuServeur, surveiller, surveillerRefus,
+  surveillerReprise,
 } from '../utils/brouillonsCompteRendu'
-import { nombreDeJours } from '../utils/compteRendu'
+import {
+  brouillonVide, depuisSession, estSessionReferentiel, sessionDepuisBrouillon,
+} from '../utils/brouillonSession'
 import PhaseSession from '../components/compte-rendu/PhaseSession'
 import PhaseResultats from '../components/compte-rendu/PhaseResultats'
 import PhaseStructure from '../components/compte-rendu/PhaseStructure'
@@ -45,31 +49,6 @@ const PHASES = [
 /** Libelle du bouton qui mene a l'etape suivante : il dit ou l'on va. */
 const VERS_SUIVANTE = ['Passer aux notes →', 'Passer au choix des pages →', 'Passer aux pages →']
 
-function brouillonVide() {
-  return {
-    sessionId: null,
-    manuel: false,
-    intitule: '',
-    codeFormation: '',
-    marque: '',
-    lieu: '',
-    pays: '',
-    debut: '',
-    fin: '',
-    participants: [],
-    photos: {},
-    dispositions: {},
-    textes: {},
-    parties: {},
-    satisfaction: {},
-    // Formation (tests d'entree et de sortie) ou certification pratique
-    // (modules notes sur 100) : decide a l'etape 1, il change la saisie
-    // des notes, les fiches et quelques titres du document.
-    type: 'formation',
-    phase: 0,
-  }
-}
-
 export default function TrainerReportNew() {
   useEnHautDePage('Nouveau compte rendu')
   useSiteEffects()
@@ -79,34 +58,63 @@ export default function TrainerReportNew() {
   const [params] = useSearchParams()
   const sessionDemandee = params.get('session')
   const { user } = useAuth()
-  const sessions = useMemo(() => sessionsDuFormateur(user), [user])
+  // Recherche et filtres de la liste : le service les applique.
+  const [filtres, setFiltres] = useState(FILTRES_VIDES)
+  const liste = useSessionsFormateur(user, filtres)
+  const { sessions } = liste
 
   const [brouillon, setBrouillon] = useState(() => {
     if (sessionDemandee) {
       const repris = recuperer(sessionDemandee)
       if (repris) return repris
-      const s = sessions.find(x => x.id === sessionDemandee)
-      if (s) return depuisSession(s)
     }
     return brouillonVide()
   })
   const [phase, setPhase] = useState(brouillon.phase || 0)
   const haut = useRef(null)
 
+  // Sans formation a proposer, la saisie s'ouvre d'elle-meme : revenir
+  // au choix n'aurait plus de sens, le retour ramene donc au tableau de bord.
+  const [sansListe, setSansListe] = useState(false)
+  const saisieManuelle = useCallback(() => setBrouillon({
+    ...brouillonVide(), manuel: true, participants: [],
+    // Un id propre a cette saisie : sans lui, toutes les
+    // saisies manuelles partageaient la cle 'manuel' et
+    // s'ecrasaient l'une l'autre dans le stockage local.
+    sessionId: `manuel-${Date.now()}`,
+  }), [])
+  const listeVide = useCallback(() => {
+    setSansListe(true)
+    saisieManuelle()
+  }, [saisieManuelle])
+
   // Le brouillon a peut-etre avance sur un autre poste : on demande au
   // serveur sa version avant tout enregistrement — sinon la copie de ce
   // navigateur, re-enregistree a l'ouverture, passerait pour la derniere.
+  const [erreurOuverture, setErreurOuverture] = useState(null)
   const synchro = useRef(!sessionDemandee)
   useEffect(() => {
     if (!sessionDemandee) return undefined
     let actif = true
-    recupererDuServeur(sessionDemandee).then(distant => {
+    recupererDuServeur(sessionDemandee).then(async distant => {
       if (!actif) return
       // Monte deux fois (mode strict), la page a deja range ici la
       // version du serveur au premier appel : le second, seul ecoute,
       // la trouve dans ce navigateur et non plus sur le serveur. Sans
       // cela, un lien ouvert sur un poste neuf montrait une page vide.
-      const b = distant || (!dernier.current.brouillon.modifieLe && recuperer(sessionDemandee))
+      let b = distant || (!dernier.current.brouillon.modifieLe && recuperer(sessionDemandee))
+      // Ni brouillon ici ni sur le serveur : le compte rendu part de la
+      // session, d'ou qu'elle vienne (referentiel ou planning d'essai).
+      if (!b && !dernier.current.brouillon.sessionId) {
+        try {
+          const s = await trouverSession(sessionDemandee, user)
+          if (s) b = depuisSession(s)
+          else setErreurOuverture('Cette session est introuvable : choisissez-la dans la liste.')
+        } catch (e) {
+          setErreurOuverture(e?.message || 'La session ne se charge pas.')
+        }
+        if (!actif) return
+      }
       if (b) {
         setBrouillon(b)
         setPhase(b.phase || 0)
@@ -137,6 +145,24 @@ export default function TrainerReportNew() {
     setConflit(null)
     return surveiller(idCourant, setConflit)
   }, [idCourant])
+
+  // Un envoi refuse par le service (stagiaire hors session, droit
+  // manquant) : dit clairement, la saisie reste dans ce navigateur.
+  const [refus, setRefus] = useState(null)
+  useEffect(() => {
+    setRefus(null)
+    return surveillerRefus(idCourant, setRefus)
+  }, [idCourant])
+
+  // Un envoi accepte que le serveur a corrige (formation, dates, stagiaires
+  // du referentiel) : l'ecran montre la version corrigee, sauf si le
+  // formateur a tape depuis l'envoi : sa frappe partira au prochain envoi.
+  useEffect(() => surveillerReprise(idCourant, (reprise, envoye) => {
+    const { brouillon: b, phase: p } = dernier.current
+    if (!inchangeDepuis({ ...b, phase: p }, envoye)) return
+    const { phase: _p, ...contenu } = reprise
+    setBrouillon(contenu)
+  }), [idCourant])
 
   const sauver = useCallback(() => {
     if (!synchro.current || enConflit.current) return
@@ -182,28 +208,33 @@ export default function TrainerReportNew() {
     }
   }, [sauver])
 
+  // Une session du referentiel absente de la liste (filtres, lien direct)
+  // se demande au service : son code et son formateur n'ont pas d'autre source.
+  const [sessionApi, setSessionApi] = useState(null)
+  const lieeAuReferentiel = !brouillon.manuel && estSessionReferentiel(brouillon.sessionId)
+  const dansLaListe = lieeAuReferentiel && sessions.some(s => s.id === brouillon.sessionId)
+  useEffect(() => {
+    if (!lieeAuReferentiel || dansLaListe) return undefined
+    let actif = true
+    chargerSession(brouillon.sessionId)
+      .then(s => { if (actif && s) setSessionApi(s) })
+      .catch(() => {})
+    return () => { actif = false }
+  }, [lieeAuReferentiel, dansLaListe, brouillon.sessionId])
+
   const session = useMemo(() => {
-    if (brouillon.manuel) {
-      return {
-        moduleFormation: brouillon.intitule,
-        codeFormation: brouillon.codeFormation,
-        marque: brouillon.marque,
-        lieu: brouillon.lieu,
-        paysHote: brouillon.pays,
-        debut: brouillon.debut,
-        fin: brouillon.fin,
-        nbJours: brouillon.nbJours,
-      }
-    }
-    return sessions.find(s => s.id === brouillon.sessionId) || null
-  }, [brouillon, sessions])
+    if (brouillon.manuel) return sessionDepuisBrouillon(brouillon)
+    const connue = sessions.find(s => s.id === brouillon.sessionId)
+      || (sessionApi?.id === brouillon.sessionId ? sessionApi : null)
+    return lieeAuReferentiel ? sessionDepuisBrouillon(brouillon, connue) : connue || null
+  }, [brouillon, sessions, sessionApi, lieeAuReferentiel])
 
   const certification = estCertification(brouillon)
   const synthese = useMemo(
     () => (certification
-      ? syntheseCertification(brouillon.participants, brouillon.modules)
-      : syntheseGroupe(brouillon.participants)),
-    [certification, brouillon.participants, brouillon.modules],
+      ? syntheseCertification(brouillon.participants, brouillon.modules, seuilDe(brouillon))
+      : syntheseGroupe(brouillon.participants, brouillon.baremes, seuilDe(brouillon))),
+    [certification, brouillon.participants, brouillon.modules, brouillon.baremes, brouillon.seuil],
   )
 
   // Un patch, ou une fonction de l'etat courant quand la modification
@@ -253,7 +284,7 @@ export default function TrainerReportNew() {
   // Le retour suit la profondeur reelle : a la premiere phase, une
   // session engagee se quitte d'abord vers la liste, et seule la liste
   // vide ramene au tableau de bord.
-  const engage = Boolean(brouillon.sessionId || brouillon.manuel)
+  const engage = Boolean(brouillon.sessionId || brouillon.manuel) && !sansListe
   const libelleRetour = phase > 0 ? 'Retour'
     : engage ? 'Changer de formation' : 'Annuler'
 
@@ -275,28 +306,30 @@ export default function TrainerReportNew() {
             <h1 className="cr-home-title cr-home-title--sm">
               {session?.moduleFormation || 'Nouveau compte rendu'}
             </h1>
-            {enregistreA && !conflit && (
-              <p className="cr-enregistre" role="status">
-                ✓ Enregistré à {enregistreA.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}
-              </p>
-            )}
-            <div className="cr-phases" role="tablist" aria-label="Phases">
-              {PHASES.map((p, i) => (
-                <button key={p.cle} type="button" role="tab"
-                  aria-selected={i === phase}
-                  className={`cr-phase${i === phase ? ' cr-phase--on' : ''}`
-                    + `${i < phase ? ' cr-phase--done' : ''}`}
-                  onClick={() => i <= phase && aller(i)}
-                  disabled={i > phase && !pret}>
-                  <span className="cr-phase-num">{i < phase ? '✓' : i + 1}</span>
-                  <span className="cr-phase-texte">
-                    <span className="cr-phase-titre">{p.titre}</span>
-                    <span className="cr-phase-resume">
-                      {certification && p.cle === 'resultats' ? 'Modules et satisfaction' : p.resume}
+            <div className="cr-phases-ligne">
+              <div className="cr-phases" role="tablist" aria-label="Phases">
+                {PHASES.map((p, i) => (
+                  <button key={p.cle} type="button" role="tab"
+                    aria-selected={i === phase}
+                    className={`cr-phase${i === phase ? ' cr-phase--on' : ''}`
+                      + `${i < phase ? ' cr-phase--done' : ''}`}
+                    onClick={() => i <= phase && aller(i)}
+                    disabled={i > phase && !pret}>
+                    <span className="cr-phase-num">{i < phase ? '✓' : i + 1}</span>
+                    <span className="cr-phase-texte">
+                      <span className="cr-phase-titre">{p.titre}</span>
+                      <span className="cr-phase-resume">
+                        {certification && p.cle === 'resultats' ? 'Modules et satisfaction' : p.resume}
+                      </span>
                     </span>
-                  </span>
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
+              {enregistreA && !conflit && (
+                <p className="cr-enregistre" role="status">
+                  ✓ Enregistré à {enregistreA.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}
+                </p>
+              )}
             </div>
           </div>
         </header>
@@ -324,20 +357,25 @@ export default function TrainerReportNew() {
                 </div>
               </div>
             )}
+            {refus && (
+              <div className="cr-alerte" role="alert">
+                <p className="cr-alerte-texte">
+                  <strong>Ce compte rendu n’est pas enregistré sur le serveur.</strong> {refus}
+                </p>
+              </div>
+            )}
+            {erreurOuverture && (
+              <div className="cr-alerte" role="alert">
+                <p className="cr-alerte-texte">{erreurOuverture}</p>
+              </div>
+            )}
             {phase === 0 && (
               <PhaseSession
                 brouillon={brouillon} maj={maj}
-                sessions={sessions}
+                liste={liste} filtres={filtres} onFiltres={setFiltres} user={user}
                 onChoisirSession={reprendreOuCommencer}
-                onSaisieManuelle={(depart = {}) => setBrouillon({
-                  ...brouillonVide(), manuel: true, participants: [],
-                  // Un id propre a cette saisie : sans lui, toutes les
-                  // saisies manuelles partageaient la cle 'manuel' et
-                  // s'ecrasaient l'une l'autre dans le stockage local.
-                  sessionId: `manuel-${Date.now()}`,
-                  // Ce qu'un classeur d'evaluation importe a deja rempli.
-                  ...depart,
-                })}
+                onSaisieManuelle={saisieManuelle}
+                onListeVide={listeVide}
               />
             )}
             {phase === 1 && (
@@ -412,26 +450,4 @@ export default function TrainerReportNew() {
       </main>
     </>
   )
-}
-
-/** Prepare un brouillon depuis une session du planning. */
-function depuisSession(s) {
-  return {
-    ...brouillonVide(),
-    sessionId: s.id,
-    intitule: s.moduleFormation,
-    codeFormation: s.codeFormation,
-    marque: s.marque,
-    lieu: s.lieu,
-    pays: s.paysHote,
-    debut: s.debut,
-    fin: s.fin,
-    nbJours: nombreDeJours(s),
-    ...typeDepuisCode(s.codeFormation),
-    participants: s.participants.map(p => ({
-      ...p,
-      entreeBrut: '', sortieTheoBrut: '', sortiePratBrut: '',
-      appreciation: '',
-    })),
-  }
 }

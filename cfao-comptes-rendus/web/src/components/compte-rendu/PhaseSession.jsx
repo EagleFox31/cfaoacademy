@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { periodeLongue } from '../../utils/compteRendu'
-import CarteCompteRendu, { BadgeCompteRendu, carteDeSession } from './CarteCompteRendu'
+import CarteCompteRendu, { BadgeCompteRendu, BadgeStatutSession, carteDeSession } from './CarteCompteRendu'
 import Consigne from './Consigne'
+import FiltresSessions from './FiltresSessions'
 import RepriseStagiaires from './RepriseStagiaires'
-import { lireEvaluation, lireResultats, appliquerEvaluation } from '../../utils/importEvaluation'
 import { brouillonsEnregistres, estTermine, synchroniser } from '../../utils/brouillonsCompteRendu'
 import { CERTIFICATION, FORMATION, champsDeType, estCertification } from '../../utils/certification'
+import { identiteVerrouillee } from '../../utils/brouillonSession'
+import { SOURCE_API } from '../../data/sessionsReferentiel'
 
 /**
  * Phase 1 — quelle formation, et qui l'a suivie.
@@ -18,6 +20,11 @@ import { CERTIFICATION, FORMATION, champsDeType, estCertification } from '../../
  *     client, session d'un autre centre. Le formateur saisit alors les
  *     details lui-meme.
  *
+ * Referentiel des formations renseigne : seules ses sessions se
+ * documentent. Leur code et l'identite des stagiaires viennent du
+ * referentiel et se lisent sans se modifier ; la saisie libre n'existe
+ * que referentiel vide.
+ *
  * Le second cas reste visible en permanence, sous la liste, comme le
  * « Je n'ai pas de compte » d'un formulaire de connexion. Presente en
  * sixieme carte de la grille, au meme format que les sessions, il se
@@ -28,8 +35,11 @@ import { CERTIFICATION, FORMATION, champsDeType, estCertification } from '../../
  * decide de toute la suite —, puis les participants.
  */
 export default function PhaseSession({
-  brouillon, maj, sessions, onChoisirSession, onSaisieManuelle,
+  brouillon, maj, onChoisirSession, onSaisieManuelle, onListeVide,
+  liste, filtres, onFiltres, user,
 }) {
+  const { sessions, source, chargement, erreur, options, recharger } = liste
+  const referentiel = source === SOURCE_API
   // Le mode se deduit du brouillon : l'orchestrateur porte le bouton de
   // retour dans sa barre fixe, et doit pouvoir revenir au choix sans
   // qu'un etat local vienne le contredire.
@@ -44,7 +54,9 @@ export default function PhaseSession({
   // lieu, un stagiaire mal orthographie) : « Modifier » l'ouvre dans le
   // formulaire de la saisie libre, stagiaires compris.
   const [edition, setEdition] = useState(false)
-  const saisie = mode === 'manuel' || edition
+  // Une session du referentiel n'a ni formulaire ni bouton de contournement.
+  const verrouille = identiteVerrouillee(brouillon)
+  const saisie = mode === 'manuel' || (edition && !verrouille)
 
   // Les informations retouchees (dates, lieu, stagiaires) font du compte
   // rendu une saisie a enregistrer, meme sans note : le planning n'en est
@@ -57,10 +69,14 @@ export default function PhaseSession({
   // liste des formations dit ou en est chacune, pas seulement le
   // planning. Cliquer une formation commencee la reprend.
   const [commences, setCommences] = useState(() => (mode ? [] : brouillonsEnregistres()))
+  const [synchronise, setSynchronise] = useState(false)
   useEffect(() => {
     if (mode) return undefined
     let actif = true
-    synchroniser().then(liste => { if (actif && liste) setCommences(liste) })
+    synchroniser()
+      .then(liste => { if (actif && liste) setCommences(liste) })
+      .catch(() => {})
+      .finally(() => { if (actif) setSynchronise(true) })
     return () => { actif = false }
   }, [mode])
 
@@ -78,59 +94,6 @@ export default function PhaseSession({
   const participants = brouillon.participants || []
   const presents = participants.filter(p => p.present !== false).length
 
-  // Un classeur d'evaluation porte deja la formation et ses stagiaires :
-  // l'importer evite de recopier vingt noms a la main. Sur le choix
-  // initial, il cree la saisie ; dans la saisie, il la complete sans
-  // ecraser ce qui y est deja ecrit.
-  const fichier = useRef(null)
-  const [importInfo, setImportInfo] = useState(null)
-  async function importer(f) {
-    if (!f) return
-    try {
-      let lu
-      try {
-        lu = await lireEvaluation(f)
-      } catch (e1) {
-        try { lu = await lireResultats(f) } catch { throw e1 }
-      }
-      const { entete, stagiaires } = lu
-      if (!mode) {
-        const r = appliquerEvaluation({ participants: [] }, stagiaires)
-        onSaisieManuelle({
-          ...Object.fromEntries(Object.entries(entete).filter(([, v]) => v)),
-          participants: r.participants, satisfaction: r.satisfaction,
-        })
-      } else {
-        const r = appliquerEvaluation(brouillon, stagiaires)
-        if (r.remplaces && !window.confirm(
-          `Le classeur remplace des notes déjà saisies pour ${r.remplaces} stagiaire`
-          + `${r.remplaces > 1 ? 's' : ''}. Continuer ?`)) return
-        const vides = Object.fromEntries(Object.entries(entete)
-          .filter(([k, v]) => v && !String(brouillon[k] || '').trim()))
-        maj({ ...vides, participants: r.participants, satisfaction: r.satisfaction })
-      }
-      setImportInfo({
-        ok: true,
-        texte: `${stagiaires.length} stagiaire${stagiaires.length > 1 ? 's' : ''} repris du classeur,`
-          + ' avec leurs notes et leurs réponses. Vérifiez les noms et prénoms.',
-      })
-    } catch (e) {
-      setImportInfo({ ok: false, texte: `Classeur non reconnu : ${e.message}` })
-    }
-  }
-  const champFichier = (
-    <input ref={fichier} type="file" hidden
-      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      onChange={e => { importer(e.target.files?.[0]); e.target.value = '' }} />
-  )
-  const message = importInfo && (
-    <p className={`cr-import-info${importInfo.ok ? '' : ' cr-import-info--ko'}`} role="status">
-      {importInfo.texte}
-      <button type="button" className="cr-import-fermer" aria-label="Masquer"
-        onClick={() => setImportInfo(null)}>×</button>
-    </p>
-  )
-
   // Un compte rendu termine n'est plus a faire : sa formation quitte la
   // liste et se retrouve dans « Mes comptes rendus ». Une session deja
   // documentee au planning n'y revient que si une saisie la reprend.
@@ -141,44 +104,80 @@ export default function PhaseSession({
     return s.statut !== 'termine' || !!b
   })
 
+  // Aucune formation a proposer : une liste vide n'apprend rien, la
+  // saisie s'ouvre directement. On attend la synchronisation, qui peut
+  // ramener une formation commencee sur un autre poste.
+  // Referentiel renseigne : une liste vide (filtres trop serres, rien a
+  // documenter) ne mene jamais a la saisie libre.
+  const listeVide = !mode && synchronise && !chargement && !erreur && !referentiel
+    && proposables.length === 0
+  useEffect(() => {
+    if (listeVide) onListeVide()
+  }, [listeVide, onListeVide])
+
   // ── Le volet de la formation : le type, puis la formation elle-meme
   let formation
   if (!mode) {
     formation = (
       <>
+        {referentiel && (
+          <FiltresSessions filtres={filtres} onChange={onFiltres} options={options} user={user} />
+        )}
+
+        {erreur && (
+          <div className="cr-alerte" role="alert">
+            <p className="cr-alerte-texte"><strong>Les sessions ne se chargent pas.</strong> {erreur}</p>
+            <div className="cr-alerte-actions">
+              <button type="button" className="cr-btn cr-btn--primary" onClick={recharger}>
+                Réessayer
+              </button>
+            </div>
+          </div>
+        )}
+
+        {referentiel && !erreur && proposables.length === 0 && (
+          <p className="cr-session-etat-vide" role="status">
+            {chargement ? 'Chargement des sessions…'
+              : 'Aucune session ne correspond : modifiez la recherche ou les filtres.'}
+          </p>
+        )}
+
         <div className="cr-session-grid">
           {proposables.map(s => {
             const commence = commences.find(b => b.id === s.id)
             return (
               <CarteCompteRendu key={s.id} carte={carteDeSession(s)} onClick={() => choisir(s)}
-                badge={<BadgeCompteRendu phase={commence?.phase}
-                  etat={commence ? 'en_cours_redaction'
-                    : s.statut === 'a_rediger' ? 'a_rediger'
-                      : s.statut === 'en_cours' ? 'session_en_cours' : null} />} />
+                badge={referentiel ? (
+                  <>
+                    {commence && <BadgeCompteRendu phase={commence.phase} etat="en_cours_redaction" />}
+                    <BadgeStatutSession statut={s.statut} completion={s.completion} />
+                  </>
+                ) : (
+                  <BadgeCompteRendu phase={commence?.phase}
+                    etat={commence ? 'en_cours_redaction'
+                      : s.statut === 'a_rediger' ? 'a_rediger'
+                        : s.statut === 'en_cours' ? 'session_en_cours' : null} />
+                )} />
             )
           })}
         </div>
 
         {/* Sous la liste, comme le « Je n'ai pas de compte » d'un
             formulaire de connexion : la ou le regard arrive quand il
-            n'a rien trouve au-dessus, et jamais noye dans la grille. */}
-        <div className="cr-echappee">
-          <span className="cr-echappee-texte">
-            Vous ne trouvez pas votre formation dans la liste ?
-          </span>
-          <button type="button" className="cr-echappee-lien"
-            onClick={passerEnManuel}>
-            Saisir les informations moi-même →
-          </button>
-          <span className="cr-echappee-ou">ou</span>
-          <button type="button" className="cr-echappee-lien cr-echappee-lien--second"
-            onClick={() => fichier.current?.click()}
-            title="Formation, dates, stagiaires, notes et satisfaction, repris d’un fichier Excel">
-            j’ai déjà les notes dans un fichier Excel
-          </button>
-          {champFichier}
-        </div>
-        {message}
+            n'a rien trouve au-dessus, et jamais noye dans la grille.
+            Referentiel renseigne : pas de saisie libre ; service en erreur :
+            pas non plus, la liste n'est pas connue. */}
+        {!referentiel && !erreur && (
+          <div className="cr-echappee">
+            <span className="cr-echappee-texte">
+              Vous ne trouvez pas votre formation dans la liste ?
+            </span>
+            <button type="button" className="cr-echappee-lien"
+              onClick={passerEnManuel}>
+              Saisir les informations moi-même →
+            </button>
+          </div>
+        )}
       </>
     )
   } else if (saisie) {
@@ -241,6 +240,9 @@ export default function PhaseSession({
   // ── Rien d'engage : la liste des formations, seule. Une session du
   // planning porte deja son type et ses stagiaires.
   if (!mode) {
+    // Pendant la synchronisation, une liste vide ne s'affiche pas : elle
+    // laisserait voir une page sans formation juste avant la saisie.
+    if (!referentiel && !erreur && (!synchronise || chargement) && proposables.length === 0) return null
     return (
       <div className="cr-panel cr-panel--choix">
         <Consigne faire="Cliquez sur la formation de ce compte rendu."
@@ -257,12 +259,14 @@ export default function PhaseSession({
       ? 'D’abord la formation. Puis : les participants, juste en dessous. Ensuite : les notes.'
       : saisie
         ? 'Nom, pays et fonction de chaque stagiaire. Ensuite : les notes.'
-        : 'Décochez les absents, ajoutez ceux qui manquent. Ensuite : les notes.']
+        : verrouille
+          ? 'Décochez les absents. Ensuite : les notes.'
+          : 'Décochez les absents, ajoutez ceux qui manquent. Ensuite : les notes.']
 
   return (
     <div className={`cr-panel ${mode === 'manuel' ? 'cr-panel--formulaire' : 'cr-panel--fiche'}`}>
       <Consigne faire={consigne[0]} ensuite={consigne[1]}>
-        {mode === 'planning' && (
+        {mode === 'planning' && !verrouille && (
           <button type="button" className="cr-btn cr-btn--ghost cr-export"
             onClick={() => setEdition(e => !e)}
             title={edition ? 'Revenir à la fiche de la formation'
@@ -270,23 +274,7 @@ export default function PhaseSession({
             {edition ? '✓ Terminer la modification' : '✎ Modifier les informations'}
           </button>
         )}
-        {mode === 'manuel' && (
-          <>
-            <button type="button" className="cr-btn cr-btn--ghost cr-export cr-import"
-              onClick={() => fichier.current?.click()}
-              title="Reprendre formation, stagiaires, notes et satisfaction d’un fichier Excel">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-                strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5" />
-                <path d="M4 15.5v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
-              </svg>
-              Reprendre d’un fichier Excel
-            </button>
-            {champFichier}
-          </>
-        )}
       </Consigne>
-      {mode === 'manuel' && message}
 
       <div className="cr-blocs cr-blocs--etape1">
         <Bloc titre="1. Formation"
@@ -309,7 +297,8 @@ export default function PhaseSession({
           ton={presents ? 'ok' : null}
           ouvert={volet === 'participants'}
           onOuvrir={() => setVolet('participants')}>
-          <ListeParticipants brouillon={brouillon} maj={majInfos} modifiable={saisie} />
+          <ListeParticipants brouillon={brouillon} maj={majInfos} modifiable={saisie}
+            verrouille={verrouille} />
         </Bloc>
       </div>
     </div>
@@ -501,7 +490,7 @@ function ChampNomComplet({ p, onChange }) {
 }
 
 /** La liste des stagiaires, en lecture ou en saisie. */
-function ListeParticipants({ brouillon, maj, modifiable }) {
+function ListeParticipants({ brouillon, maj, modifiable, verrouille = false }) {
   const participants = brouillon.participants || []
 
   function basculer(id) {
@@ -534,7 +523,11 @@ function ListeParticipants({ brouillon, maj, modifiable }) {
 
   return (
     <div className="cr-participants">
-      {participants.length === 0 ? (
+      {participants.length === 0 && verrouille ? (
+        <p className="cr-vide-texte">
+          Aucun stagiaire n’est inscrit à cette session dans le référentiel.
+        </p>
+      ) : participants.length === 0 ? (
         <p className="cr-vide-texte">
           Indiquez le nombre de stagiaires dans « 1. Formation » : une
           ligne par stagiaire apparaîtra ici.
@@ -599,19 +592,21 @@ function ListeParticipants({ brouillon, maj, modifiable }) {
         </div>
       )}
 
-      <div className="cr-ajouts-stagiaires">
-        <button type="button" className="cr-echappee-lien cr-ajout-stagiaire"
-          onClick={() => maj({ participants: [...participants, ligneVide(participants.length)] })}>
-          + Ajouter un stagiaire
-        </button>
-        {!reprise && (
+      {!verrouille && (
+        <div className="cr-ajouts-stagiaires">
           <button type="button" className="cr-echappee-lien cr-ajout-stagiaire"
-            onClick={() => setReprise(true)}>
-            ↺ Reprendre des stagiaires d’un autre compte rendu
+            onClick={() => maj({ participants: [...participants, ligneVide(participants.length)] })}>
+            + Ajouter un stagiaire
           </button>
-        )}
-      </div>
-      {reprise && (
+          {!reprise && (
+            <button type="button" className="cr-echappee-lien cr-ajout-stagiaire"
+              onClick={() => setReprise(true)}>
+              ↺ Reprendre des stagiaires d’un autre compte rendu
+            </button>
+          )}
+        </div>
+      )}
+      {reprise && !verrouille && (
         <RepriseStagiaires brouillon={brouillon} onAjouter={reprendre}
           onFermer={() => setReprise(false)} />
       )}

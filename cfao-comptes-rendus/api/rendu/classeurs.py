@@ -96,15 +96,20 @@ def _nature_de(parts, feuille, ref):
 
 
 def _poser_cellule(feuille, ref, valeur):
-    """La valeur d'une cellule, formule conservee."""
+    """La valeur d'une cellule, sans la formule du modele.
+
+    La valeur posee fait foi : Excel, en recalculant a l'activation, ne
+    doit pas la remplacer. Le score final, par exemple, est la moyenne des
+    stagiaires, pas `AVERAGE(B2:B3)` des moyennes theorie et pratique —
+    les deux s'ecartent des qu'une note manque.
+    """
     v = f'<v>{float(valeur):.10g}</v>'
     motif = re.compile(r'<c r="' + ref + r'"([^>]*?)(/>|>(.*?)</c>)', re.S)
     m = motif.search(feuille)
     if not m:
         return feuille
     attributs = re.sub(r'\s+t="\w+"', '', m.group(1))
-    formule = re.search(r'<f>.*?</f>|<f [^>]*/>|<f [^>]*>.*?</f>', m.group(3) or '', re.S)
-    neuf = f'<c r="{ref}"{attributs}>{formule.group(0) if formule else ""}{v}</c>'
+    neuf = f'<c r="{ref}"{attributs}>{v}</c>'
     return feuille[:m.start()] + neuf + feuille[m.end():]
 
 
@@ -397,6 +402,32 @@ def _ajouter_signes_acquisition(parts):
         parts['[Content_Types].xml'] = types.encode('utf-8')
 
     return parts
+
+
+def _hauteur_zone(parts):
+    """Hauteur (EMU) de la zone visible de l'objet, comme Excel la mesure.
+
+    `imgH` du modele est faux (754,8 pt pour 796,2 pt reels sur la fiche) :
+    Excel recalcule la zone a l'activation et retaille le cadre depuis son
+    coin gauche, ce qui decentre l'objet. La somme des hauteurs de lignes
+    (`ht`, sinon `defaultRowHeight`) est celle qu'il obtient.
+    """
+    classeur = parts['xl/workbook.xml'].decode('utf-8')
+    zone = re.search(r'<oleSize ref="[A-Z]+(\d+)(?::[A-Z]+(\d+))?"', classeur)
+    feuille = parts.get('xl/worksheets/sheet1.xml', b'').decode('utf-8')
+    defaut = re.search(r'<sheetFormatPr [^>]*defaultRowHeight="([\d.]+)"', feuille)
+    if not zone or not defaut:
+        return None
+    haut, bas = int(zone.group(1)), int(zone.group(2) or zone.group(1))
+    lignes = {int(n): a for n, a in re.findall(r'<row [^>]*?r="(\d+)"([^>]*)>', feuille)}
+    total = 0.0
+    for n in range(haut, bas + 1):
+        a = lignes.get(n, '')
+        if 'hidden="1"' in a:
+            continue
+        ht = re.search(r'\bht="([\d.]+)"', a)
+        total += float(ht.group(1) if ht else defaut.group(1))
+    return round(total * 12700)
 
 
 def _pour_rendu(parts):
@@ -745,9 +776,20 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
     from PIL import Image
     image = _sans_blanc(pixmap_png if isinstance(pixmap_png, Image.Image)
                         else Image.open(io.BytesIO(pixmap_png)))
-    boite = cadre[:4] if cadre else image.getbbox()
+    boite = image.getbbox()
+    # Avec un cadre, le coin haut gauche reste celui de la reference (une
+    # moitie absente y laisse sa place vide) ; le bas et la droite sont
+    # ceux du rendu, pour ne rien couper.
+    if boite and cadre:
+        boite = (cadre[0], cadre[1], max(boite[2], cadre[0] + 1), max(boite[3], cadre[1] + 1))
     if boite:
         image = image.crop(boite)
+    # LibreOffice met la feuille a une note a une echelle un peu
+    # differente (~1,5 %) de celle aux deux notes, depuis ce coin : le
+    # tableau, qui donne toute la largeur, reprend celle de la reference.
+    if cadre and image.width != cadre[2] - cadre[0]:
+        f_ = (cadre[2] - cadre[0]) / image.width
+        image = image.resize((cadre[2] - cadre[0], max(1, round(image.height * f_))), Image.LANCZOS)
     if anneau:
         image = _anneau_excel(image, *anneau)
     if cadre:
@@ -758,24 +800,32 @@ def _rogner(pixmap_png, anneau=None, ratio=None, cadre=None):
         toile.paste(image, (max(0, ox - dx), max(0, oy - dy)))
         image = toile
     # L'objet etire son image aux proportions de l'EMF d'origine : on les
-    # retrouve par un bord transparent, centre sur les deux axes pour ne
-    # pas laisser le contenu glisser vers un coin de son cadre.
+    # retrouve par un bord transparent, a droite et en bas. Excel ancre la
+    # zone visible en haut a gauche du cadre (l'EMF du modele aussi) :
+    # centre, l'apercu tombait a droite du vrai objet ouvert dans PowerPoint.
+    # La largeur utile, avant le bord transparent des proportions : avec un
+    # cadre, celle de l'image complete. `placer_objets` centre sur elle,
+    # pour que la place de l'objet ne depende pas des notes presentes.
+    largeur_utile = image.width
     if ratio:
         from PIL import Image
         l, h = image.size
         cible_l, cible_h = max(l, round(h * ratio)), max(h, round(l / ratio))
         if (cible_l, cible_h) != (l, h):
             cadre = Image.new('RGBA', (cible_l, cible_h), (255, 255, 255, 0))
-            cadre.paste(image, ((cible_l - l) // 2, (cible_h - h) // 2))
+            cadre.paste(image, (0, 0))
             image = cadre
     # optimize=True quadruple le temps pour un fichier a peine plus petit.
+    from PIL.PngImagePlugin import PngInfo
+    infos = PngInfo()
+    infos.add_text('largeur-utile', str(largeur_utile))
     sortie = io.BytesIO()
-    image.save(sortie, 'PNG', compress_level=6)
+    image.save(sortie, 'PNG', compress_level=6, pnginfo=infos)
     return sortie.getvalue()
 
 
 # A changer quand le dessin d'un classeur change a classeur identique.
-VERSION_IMAGES = 10
+VERSION_IMAGES = 14
 
 
 def _cadre_de(rendu, reference):
@@ -960,7 +1010,16 @@ def _sans_moitie_absente(parts, valeurs):
     for nom in [n for n in parts if re.match(r'xl/charts/chart\d+\.xml$', n)]:
         graphique = parts[nom].decode('utf-8')
         if '<c:doughnutChart>' in graphique:
+            avant = graphique.count('<c:ser>')
             graphique = re.sub(r'<c:ser>.*?</c:ser>', hors_moitie, graphique, flags=re.S)
+            # Le trou grandit pour que l'anneau restant garde l'epaisseur
+            # d'une bande, au lieu de prendre celle des deux.
+            apres = graphique.count('<c:ser>')
+            if 0 < apres < avant:
+                graphique = re.sub(
+                    r'<c:holeSize val="(\d+)"/>',
+                    lambda m: f'<c:holeSize val="{min(90, round(100 - (100 - int(m.group(1))) * apres / avant))}"/>',
+                    graphique)
             # Seule, une serie donne son nom en titre au graphique : ce
             # titre automatique n'existe pas dans le modele.
             graphique = graphique.replace('<c:autoTitleDeleted val="0"/>',
@@ -1016,6 +1075,61 @@ def rafraichir(contenus, slides, valeurs, soffice, profil, cache):
     rafraichir_pages(contenus, [(s, valeurs) for s in slides], soffice, profil, cache)
 
 
+# Deux en-tetes de tableaux sont sur la meme ligne a moins de cet ecart.
+MEME_LIGNE = 228600
+
+
+def placer_objets(xml, objets):
+    """Centre chaque objet sous son titre et aligne le haut des tableaux.
+
+    `objets` : `[(r:id de l'objet, image PNG)]`. Excel dessine la zone
+    visible en haut a gauche du cadre (l'apercu aussi, voir `_rogner`) :
+    c'est le cadre qu'on deplace, de sorte que le contenu soit centre sur
+    la largeur d'origine, donc sous le titre de meme largeur, et que les
+    contenus d'une meme ligne commencent a la meme hauteur.
+    """
+    from PIL import Image
+    boites = {}
+    for rid, png in objets:
+        image = Image.open(io.BytesIO(png))
+        boite = image.getchannel('A').getbbox() if 'A' in image.getbands() else None
+        m = re.search(r'<p:graphicFrame>(?:(?!</p:graphicFrame>).)*?r:id="' + re.escape(rid)
+                      + r'"', xml, re.S)
+        if not boite or not m:
+            continue
+        x, y, cx, cy = (int(v) for v in re.search(
+            r'<a:off x="(\d+)" y="(\d+)"/>\s*<a:ext cx="(\d+)" cy="(\d+)"', m.group(0)).groups())
+        # Le cadre prend les proportions de l'image (celles de la zone que
+        # dessine Excel, voir `rafraichir_pages`), au plus grand dans sa
+        # place du modele et centre sur elle : regenere par Excel, l'apercu
+        # occupe le meme cadre.
+        s = min(cx / image.width, cy / image.height)
+        ncx, ncy = round(image.width * s), round(image.height * s)
+        x += (cx - ncx) // 2
+        utile = getattr(image, 'text', {}).get('largeur-utile')
+        if utile:
+            gauche, droite = 0, (image.width - int(utile)) * s
+        else:
+            gauche, droite = boite[0] * s, (image.width - boite[2]) * s
+        boites[rid] = [x + round((droite - gauche) / 2), y, y + round(boite[1] * s), ncx, ncy]
+    hauts = sorted(b[2] for b in boites.values())
+    for b in boites.values():
+        haut = min(h for h in hauts if abs(h - b[2]) <= MEME_LIGNE)
+        b[1] -= b[2] - haut
+
+    def deplacer(m):
+        rid = re.search(r'<p:oleObj [^>]*r:id="([^"]+)"', m.group(0))
+        if not rid or rid.group(1) not in boites:
+            return m.group(0)
+        # Le cadre et l'image de repli (`p:pic` de l'objet) bougent ensemble.
+        x, y, _, cx, cy = boites[rid.group(1)]
+        return re.sub(r'<a:off x="\d+" y="\d+"/>(\s*)<a:ext cx="\d+" cy="\d+"/>',
+                      lambda k: f'<a:off x="{x}" y="{y}"/>{k.group(1)}<a:ext cx="{cx}" cy="{cy}"/>',
+                      m.group(0))
+
+    return RE_OLE.sub(deplacer, xml)
+
+
 def rafraichir_pages(contenus, pages, soffice, profil, cache):
     """Comme `rafraichir`, chaque diapositive avec ses propres valeurs.
 
@@ -1024,7 +1138,7 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
     un seul lancement de LibreOffice plutot qu'un par page.
     """
     types = contenus['[Content_Types].xml'].decode('utf-8')
-    a_rendre, poses, natures = {}, [], {}
+    a_rendre, poses, natures, objets = {}, [], {}, {}
     for slide, valeurs in pages:
         if not valeurs:
             continue
@@ -1065,14 +1179,20 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
             brut = _ecrire(remplies)
             contenus[emb] = brut
             a_rendre[emb] = brut
-            # L'image s'etire aux proportions du cadre de l'objet, qui ne
-            # sont pas toujours celles de l'EMF (page 27) : c'est sur le
-            # cadre qu'on les prend, sinon l'anneau devient ovale.
-            taille = (re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', m.group(0))
-                      or re.search(r'imgW="(\d+)" imgH="(\d+)"', m.group(0)))
+            # Les proportions de la zone que dessine Excel (imgW/imgH), et non
+            # celles du cadre du modele (page 27, plus large) : le cadre les
+            # reprend (`placer_objets`), et l'apercu regenere par Excel tombe
+            # au meme endroit que le notre. La hauteur est celle des lignes
+            # du classeur (`_hauteur_zone`), imgH du modele etant faux.
+            taille = (re.search(r'imgW="(\d+)" imgH="(\d+)"', m.group(0))
+                      or re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', m.group(0)))
             ratio = int(taille.group(1)) / int(taille.group(2)) if taille else None
+            hauteur = _hauteur_zone(remplies)
+            if hauteur and 'imgW="' in m.group(0):
+                ratio = int(taille.group(1)) / hauteur
             natures[emb] = (quoi, valeurs[quoi], ratio, reference)
             poses += [(rels_nom, rid, emb) for rid in images]
+            objets.setdefault(slide, []).append((objet.group(1), emb))
         if retirer:
             for debut, fin in reversed(retirer):
                 xml = xml[:debut] + xml[fin:]
@@ -1090,6 +1210,11 @@ def rafraichir_pages(contenus, pages, soffice, profil, cache):
         rels = re.sub(r'(<Relationship [^>]*Id="' + re.escape(rid) + r'"[^>]*Target=")[^"]+"',
                       lambda k: k.group(1) + f'../media/{Path(media).name}"', rels)
         contenus[rels_nom] = rels.encode('utf-8')
+    for slide, liste in objets.items():
+        places = [(rid, rendus[emb]) for rid, emb in liste if emb in rendus]
+        if places:
+            xml = placer_objets(contenus[slide].decode('utf-8'), places)
+            contenus[slide] = xml.encode('utf-8')
     if 'Extension="png"' not in types:
         types = types.replace('<Default ', '<Default Extension="png" '
                               'ContentType="image/png"/><Default ', 1)

@@ -17,6 +17,12 @@ describe('adresse affichee des photos', () => {
     expect(patch.photos.objectifs[0]).toMatchObject({ ref: 'f00d', apercu: adressePhoto('f00d') })
     expect(adressePhoto('f00d')).toBe('/cr-donnees/photos/f00d.jpg?v=2')
   })
+
+  it('ancre aussi la photo d\'un stagiaire', () => {
+    const patch = ancrerPhotos({ participants: [{ id: 's1', photo: { id: 'a', apercu: 'blob:x' } }, { id: 's2' }] }, { a: 'f00d' })
+    expect(patch.participants[0].photo).toMatchObject({ ref: 'f00d', apercu: adressePhoto('f00d') })
+    expect(patch.participants[1]).toEqual({ id: 's2' })
+  })
 })
 
 describe('photo qui ne se charge pas', () => {

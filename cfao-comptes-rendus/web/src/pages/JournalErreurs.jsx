@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useEnHautDePage from '../hooks/useEnHautDePage'
 import useSiteEffects from '../hooks/useSiteEffects'
+import ListeVide from '../components/compte-rendu/ListeVide'
 import { lireErreurs, supprimerErreurs } from '../utils/journalErreurs'
 import '../styles/compte-rendu.css'
 
@@ -116,6 +117,7 @@ export default function JournalErreurs() {
                       </button>
                     </div>
                   )}
+                  {erreurs?.length === 0 && <ListeVide />}
                   {erreurs?.length > 0 && (
                     <table className="cr-journal">
                       <thead>

@@ -1,5 +1,5 @@
 import { certificationDe } from '../data/certifications'
-import { SEUIL } from './baremeCfao'
+import { SEUIL_DEFAUT, lireNote } from './baremeCfao'
 
 /**
  * Les comptes rendus de certification pratique.
@@ -12,7 +12,7 @@ import { SEUIL } from './baremeCfao'
  *     tire une progression et un taux d'acquisition ;
  *   * **certification pratique** : une serie de modules notes chacun
  *     sur 100, sans test d'entree. Le candidat valide la partie pratique
- *     a 70 %, comme le classeur « Résultats de la certification ».
+ *     au seuil du compte rendu (70 % par defaut), comme le classeur « Résultats de la certification ».
  *
  * S'y ajoute l'e-learning : modules requis et valides, et un statut que
  * la plateforme donne (« Validé » ou « Non finalisé »). Aucun seuil ne
@@ -79,10 +79,11 @@ export function libelleModule(m) {
   return [m?.code, m?.intitule].map(v => String(v || '').trim()).filter(Boolean).join(' : ')
 }
 
-const nombre = v => {
-  if (v === '' || v == null) return null
-  const n = Number(String(v).replace(',', '.'))
-  return Number.isNaN(n) ? null : n
+// Une note de module est sur 100 : hors de 0-100, elle est signalee et
+// n'entre pas dans le total (le pourcentage attend alors sa correction).
+const noteModule = v => {
+  const n = lireNote(v)
+  return n != null && n >= 0 && n <= 100 ? n : null
 }
 const arrondi = v => (v == null ? null : Math.round(v * 10) / 10)
 
@@ -93,18 +94,18 @@ const arrondi = v => (v == null ? null : Math.round(v * 10) / 10)
  * un module manquant, le classeur compterait zero et annoncerait un
  * echec qui n'en est pas un.
  */
-export function calculerCertification(p, modules) {
+export function calculerCertification(p, modules, seuil = SEUIL_DEFAUT) {
   const liste = modules || []
-  const notes = liste.map(m => nombre(p?.notesModules?.[m.id]))
+  const notes = liste.map(m => noteModule(p?.notesModules?.[m.id]))
   const saisies = notes.filter(n => n != null).length
   const complet = liste.length > 0 && saisies === liste.length
   const total = notes.reduce((t, n) => t + (n ?? 0), 0)
   const pourcentage = complet ? arrondi((100 * total) / (100 * liste.length)) : null
-  const pratique = pourcentage == null ? null : pourcentage >= SEUIL ? VALIDE : ECHOUE
+  const pratique = pourcentage == null ? null : pourcentage >= seuil ? VALIDE : ECHOUE
 
   const e = p?.elearning || {}
-  const requis = nombre(e.requis)
-  const valides = nombre(e.valides)
+  const requis = lireNote(e.requis)
+  const valides = lireNote(e.valides)
   const taux = requis ? Math.round((100 * (valides ?? 0)) / requis) : null
   const statut = STATUTS_ELEARNING.includes(e.statut) ? e.statut : null
 
@@ -127,16 +128,16 @@ export function calculerCertification(p, modules) {
 }
 
 /** La synthese d'une certification : effectifs, reussite et modules. */
-export function syntheseCertification(participants, modules) {
+export function syntheseCertification(participants, modules, seuil = SEUIL_DEFAUT) {
   const presents = (participants || []).filter(p => p.present !== false)
   const liste = modules || []
-  const calculs = presents.map(p => calculerCertification(p, liste))
+  const calculs = presents.map(p => calculerCertification(p, liste, seuil))
   const notes = calculs.filter(c => c.complet)
   const moyenne = v => (v.length ? arrondi(v.reduce((a, b) => a + b, 0) / v.length) : null)
   const enRetrait = notes.filter(c => c.pratique === ECHOUE).length
   const parModule = liste.map((m, i) => {
     const v = calculs.map(c => c.notes[i]).filter(n => n != null)
-    return { module: m, moyenne: moyenne(v), sousSeuil: v.filter(n => n < SEUIL).length, saisies: v.length }
+    return { module: m, moyenne: moyenne(v), sousSeuil: v.filter(n => n < seuil).length, saisies: v.length }
   })
   return {
     effectif: presents.length,

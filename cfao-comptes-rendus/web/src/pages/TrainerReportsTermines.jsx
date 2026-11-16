@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import useEnHautDePage from '../hooks/useEnHautDePage'
 import useSiteEffects from '../hooks/useSiteEffects'
 import CarteCompteRendu, { BadgeCompteRendu, carteDeBrouillon } from '../components/compte-rendu/CarteCompteRendu'
+import ListeVide from '../components/compte-rendu/ListeVide'
 import { brouillonsTermines, synchroniser } from '../utils/brouillonsCompteRendu'
 import '../styles/compte-rendu.css'
 
@@ -69,9 +70,10 @@ export default function TrainerReportsTermines() {
                   ))}
                 </div>
               )}
+              {termines.length === 0 && <ListeVide />}
 
               <div className="cr-echappee">
-                <span className="cr-echappee-texte">Une autre formation à documenter ?</span>
+                <span className="cr-echappee-texte">Un autre compte rendu à rédiger ?</span>
                 <button type="button" className="cr-echappee-lien"
                   onClick={() => naviguer('/portail/compte-rendu/nouveau')}>
                   Nouveau compte rendu →

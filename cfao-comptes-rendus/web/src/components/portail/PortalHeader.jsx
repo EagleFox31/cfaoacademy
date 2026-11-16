@@ -95,7 +95,7 @@ export default function PortalHeader({ user }) {
           <p className="page-header-eyebrow portal-header-eyebrow">
             <span className="portal-header-role-badge">
               <RoleIcon />
-              Formateur
+              {(user.roles ?? []).includes('superadmin') ? 'Super Admin' : 'Formateur'}
             </span>
           </p>
           <PortalGreetingBlock

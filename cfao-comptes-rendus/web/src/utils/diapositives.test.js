@@ -101,3 +101,29 @@ describe('formuleCertification', () => {
     expect(formuleCertification({ type: 'formation', marque: 'toyota' })).toEqual({})
   })
 })
+
+describe('photo du stagiaire sur sa fiche', () => {
+  const formation = {
+    participants: [
+      { id: 's1', prenom: 'Ana', nom: 'B', photo: { id: 'p1', cadrage: { x: 30, y: 50 } } },
+      { id: 's2', prenom: 'Léo', nom: 'C' },
+    ],
+  }
+
+  it('se pose a droite de l\'appreciation, avec son cadrage', () => {
+    const v = valeursDrapeaux(formation, null, {}, { cle: 'fiche-s1' }, { p1: 'f00d' })
+    expect(v['@photos'][27]).toEqual({
+      'ZoneTexte 9': { id: 'f00d', cote: 'droite', cadrage: { x: 30, y: 50 } },
+    })
+  })
+
+  it('laisse la fiche intacte sans photo, ou tant qu\'elle n\'est pas envoyee', () => {
+    expect(valeursDrapeaux(formation, null, {}, { cle: 'fiche-s2' }, { p1: 'f00d' })['@photos'][27]).toBeUndefined()
+    expect(valeursDrapeaux(formation, null, {}, { cle: 'fiche-s1' }, {})['@photos'][27]).toBeUndefined()
+  })
+
+  it('ne concerne pas la fiche de certification', () => {
+    const cert = { ...brouillon, participants: [{ ...brouillon.participants[0], photo: { id: 'p1' } }] }
+    expect(valeursDrapeaux(cert, null, {}, fiche, { p1: 'f00d' })['@photos'][27]).toBeUndefined()
+  })
+})

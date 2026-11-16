@@ -193,3 +193,166 @@ describe('une session du planning retouchee sans note', () => {
     expect(envois).toHaveLength(0)
   })
 })
+
+describe('aDuContenu', () => {
+  it("une saisie libre sans information n'est pas un compte rendu", async () => {
+    const m = await onglet()
+    const vide = { sessionId: 'manuel-1', manuel: true, codeFormation: ' ', type: 'formation', infosModifiees: true }
+    expect(m.aDuContenu(vide)).toBe(false)
+    expect(m.aDuContenu({ ...vide, intitule: 'Freinage' })).toBe(true)
+    expect(m.aDuContenu({ sessionId: 's1', infosModifiees: true })).toBe(true)
+  })
+})
+
+describe('un enregistrement refuse par le serveur', () => {
+  async function refuser(status, json) {
+    const a = await onglet()
+    a.adopter('42', { ...V1, sessionId: '42' })
+    reponse = () => ({ status, json })
+    const refus = vi.fn()
+    a.surveillerRefus('42', refus)
+    a.enregistrer('42', { ...V1, sessionId: '42', textes: { a: 'v2' } })
+    await envoyer()
+    return { a, refus }
+  }
+
+  it('403 : le motif est signale a l ecran', async () => {
+    const { refus } = await refuser(403, { detail: 'Interdit.' })
+    expect(refus).toHaveBeenCalledWith(expect.stringMatching(/pas le droit/))
+  })
+
+  it('400 stagiaire hors session : message clair', async () => {
+    const { refus } = await refuser(400, { erreur: 'stagiaire hors session' })
+    expect(refus).toHaveBeenCalledWith(expect.stringMatching(/ne fait pas partie de la session/))
+  })
+
+  it('un enregistrement reussi efface le refus', async () => {
+    const { a, refus } = await refuser(403, {})
+    reponse = corps => ({ status: 200, json: { ecrit: true, brouillon: { ...corps, revision: corps.revision + 1 } } })
+    a.enregistrer('42', { ...V1, sessionId: '42', textes: { a: 'v3' } })
+    await envoyer()
+    expect(refus).toHaveBeenLastCalledWith(null)
+  })
+})
+
+describe('un envoi accepte dont le serveur a reimpose le contenu', () => {
+  const LIE = {
+    ...V1, sessionId: '42', intitule: 'Faux', codeFormation: 'X', lieu: 'Ailleurs', nbJours: 9,
+    participants: [{ id: '', nom: 'dupont', prenom: 'alice', pays: '', present: true, entreeBrut: '9' }],
+  }
+  const IMPOSE = {
+    intitule: 'Diagnostic', codeFormation: 'ABC-101', lieu: 'Douala', nbJours: 3,
+    participants: [
+      { id: '7', nom: 'DUPONT', prenom: 'Alice', pays: 'Cameroun', present: true, entreeBrut: '9' },
+      { id: '8', nom: 'DURAND', prenom: 'Bob', pays: 'Cameroun', present: false, entreeBrut: '' },
+    ],
+  }
+  const reimposer = (corps, plus = {}) => ({
+    status: 200, json: { ecrit: true, brouillon: { ...corps, ...IMPOSE, ...plus, revision: corps.revision + 1 } },
+  })
+
+  it('la copie d\'ici, restee telle quelle, devient la version du serveur', async () => {
+    const a = await onglet()
+    a.adopter('42', LIE)
+    reponse = corps => reimposer(corps)
+    a.enregistrer('42', { ...LIE, textes: { a: 'v2' } })
+    await envoyer()
+    expect(local()['42']).toMatchObject({ intitule: 'Diagnostic', codeFormation: 'ABC-101', lieu: 'Douala',
+      nbJours: 3, revision: 2, textes: { a: 'v2' }, ecrivain: expect.any(String) })
+    expect(local()['42'].participants.map(p => [p.id, p.nom])).toEqual([['7', 'DUPONT'], ['8', 'DURAND']])
+    expect(local()['42'].participants[0].entreeBrut).toBe('9')
+    // Rien de nouveau a envoyer : la copie adoptee n'est pas renvoyee.
+    await envoyer()
+    expect(envois).toHaveLength(1)
+  })
+
+  it('une saisie faite pendant la requete est gardee telle quelle, rien n\'est fusionne', async () => {
+    const a = await onglet()
+    a.adopter('42', LIE)
+    const repris = vi.fn()
+    a.surveillerReprise('42', repris)
+    reponse = corps => {
+      a.enregistrer('42', { ...LIE, textes: { a: 'tape pendant l\'envoi' }, intitule: 'Saisi a la main' })
+      return reimposer(corps)
+    }
+    a.enregistrer('42', { ...LIE, textes: { a: 'v2' } })
+    await envoyer()
+    expect(local()['42']).toMatchObject({ textes: { a: 'tape pendant l\'envoi' }, intitule: 'Saisi a la main',
+      nbJours: 9, revision: 2 })
+    expect(repris).not.toHaveBeenCalled()
+  })
+
+  it('un changement de session pendant la requete ne recoit rien de l\'ancienne', async () => {
+    const a = await onglet()
+    a.adopter('42', LIE)
+    reponse = corps => {
+      a.enregistrer('42', { ...LIE, sessionId: '43', intitule: 'Autre session' })
+      return reimposer(corps)
+    }
+    a.enregistrer('42', { ...LIE, textes: { a: 'v2' } })
+    await envoyer()
+    expect(local()['42']).toMatchObject({ sessionId: '43', intitule: 'Autre session', nbJours: 9 })
+    expect(local()['42'].participants.map(p => p.nom)).toEqual(['dupont'])
+  })
+
+  it('la saisie en attente part telle quelle, puis la copie reprend la correction', async () => {
+    const a = await onglet()
+    a.adopter('42', LIE)
+    const repris = vi.fn()
+    a.surveillerReprise('42', repris)
+    let premier = true
+    reponse = corps => {
+      if (premier) {
+        premier = false
+        a.enregistrer('42', { ...LIE, textes: { a: 'suite' } })
+      }
+      return reimposer(corps)
+    }
+    a.enregistrer('42', { ...LIE, textes: { a: 'v2' } })
+    await envoyer()
+    await envoyer()
+    expect(envois).toHaveLength(2)
+    expect(envois[1]).toMatchObject({ revision: 2, intitule: 'Faux', textes: { a: 'suite' } })
+    expect(local()['42']).toMatchObject({ intitule: 'Diagnostic', nbJours: 3, revision: 3, textes: { a: 'suite' } })
+    expect(repris).toHaveBeenCalledTimes(1)
+    expect(repris.mock.calls[0][0]).toMatchObject({ intitule: 'Diagnostic', textes: { a: 'suite' } })
+    expect(a.inchangeDepuis({ ...LIE, textes: { a: 'suite' } }, repris.mock.calls[0][1])).toBe(true)
+    // La copie reprise n'est pas renvoyee.
+    await envoyer()
+    expect(envois).toHaveLength(2)
+  })
+
+  it('un participant ajoute pendant la requete reste', async () => {
+    const a = await onglet()
+    a.adopter('42', LIE)
+    const ajoute = { id: 'm-1', nom: 'Nouveau', prenom: 'Zed', present: true, entreeBrut: '5' }
+    reponse = corps => {
+      a.enregistrer('42', { ...LIE, participants: [...LIE.participants, ajoute], textes: { a: 'v3' } })
+      return reimposer(corps)
+    }
+    a.enregistrer('42', { ...LIE, textes: { a: 'v2' } })
+    await envoyer()
+    expect(local()['42'].participants.map(p => p.nom)).toEqual(['dupont', 'Nouveau'])
+  })
+
+  it('sans difference avec ce qui a ete envoye, la copie n\'est pas reecrite', async () => {
+    const a = await onglet()
+    a.adopter('42', LIE)
+    a.enregistrer('42', { ...LIE, textes: { a: 'v2' } })
+    await envoyer()
+    expect(local()['42']).toMatchObject({ intitule: 'Faux', nbJours: 9, revision: 2 })
+    expect(envois).toHaveLength(1)
+  })
+
+  it('une copie ecrite par un autre onglet n\'est pas touchee', async () => {
+    const a = await onglet()
+    a.adopter('42', LIE)
+    reponse = corps => {
+      stockage.set('cfao.comptes-rendus.f1', JSON.stringify({ '42': { ...LIE, ecrivain: 'autre', revision: 5, intitule: 'Autre' } }))
+      return reimposer(corps)
+    }
+    a.enregistrer('42', { ...LIE, textes: { a: 'v2' } })
+    await envoyer()
+    expect(local()['42']).toMatchObject({ intitule: 'Autre', revision: 5 })
+  })
+})

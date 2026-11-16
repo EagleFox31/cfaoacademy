@@ -103,3 +103,92 @@ def test_un_principal_sans_role_est_presente_comme_anonyme(monkeypatch):
                         lambda url, json, timeout: envois.append(json) or _reponse("EFFECT_DENY"))
     VRAI_CHECK({"id": "x", "roles": []}, RESSOURCE, "read")
     assert envois[0]["principal"]["roles"] == ["_anon"]
+
+
+# ── Le client HTTP du PDP : plusieurs ressources en une demande ────────
+
+VRAI_LOT = cerbos.check_resources
+
+
+def _ressources(n):
+    return [{"kind": "session_formation", "id": str(i), "attr": {"formateurs": ["f-a"]}} for i in range(n)]
+
+
+def _pdp_qui_autorise(ids_autorises, envois, inverser=False):
+    def post(url, json, timeout):
+        envois.append(json)
+        resultats = [{"resource": {"id": r["resource"]["id"]},
+                      "actions": {"read": "EFFECT_ALLOW" if r["resource"]["id"] in ids_autorises else "EFFECT_DENY"}}
+                     for r in json["resources"]]
+        if inverser:
+            resultats.reverse()
+        return SimpleNamespace(raise_for_status=lambda: None, json=lambda: {"results": resultats})
+    return post
+
+
+def test_check_resources_rend_une_decision_par_ressource(monkeypatch, settings):
+    settings.CERBOS_HTTP = "http://pdp.invalid:3592/"
+    envois = []
+    monkeypatch.setattr(cerbos.requests, "post", _pdp_qui_autorise({"1"}, envois))
+    decisions = VRAI_LOT(PRINCIPAL, _ressources(3), "read")
+    assert decisions == {"0": False, "1": True, "2": False}
+    assert len(envois) == 1
+    assert [r["resource"]["id"] for r in envois[0]["resources"]] == ["0", "1", "2"]
+    assert all(r["actions"] == ["read"] for r in envois[0]["resources"])
+    assert envois[0]["principal"] == PRINCIPAL
+
+
+def test_check_resources_apparie_par_id_et_non_par_position(monkeypatch):
+    monkeypatch.setattr(cerbos.requests, "post", _pdp_qui_autorise({"0"}, [], inverser=True))
+    assert VRAI_LOT(PRINCIPAL, _ressources(3), "read") == {"0": True, "1": False, "2": False}
+
+
+def test_check_resources_un_resultat_sans_id_reste_refuse(monkeypatch):
+    resultats = [{"resource": {"id": "0"}, "actions": {"read": "EFFECT_ALLOW"}},
+                 {"actions": {"read": "EFFECT_ALLOW"}}, {"resource": {"id": "2"}, "actions": {"read": "EFFECT_ALLOW"}}]
+    monkeypatch.setattr(cerbos.requests, "post", lambda *a, **k: SimpleNamespace(
+        raise_for_status=lambda: None, json=lambda: {"results": resultats}))
+    assert VRAI_LOT(PRINCIPAL, _ressources(3), "read") == {"0": True, "1": False, "2": True}
+
+
+def test_check_resources_decoupe_par_lots_de_50(monkeypatch):
+    envois = []
+    monkeypatch.setattr(cerbos.requests, "post", _pdp_qui_autorise({str(i) for i in range(51)}, envois))
+    decisions = VRAI_LOT(PRINCIPAL, _ressources(51), "read")
+    assert [len(e["resources"]) for e in envois] == [50, 1]
+    assert len(decisions) == 51 and all(decisions.values())
+
+
+def test_check_resources_sans_ressource_ne_demande_rien(monkeypatch):
+    envois = []
+    monkeypatch.setattr(cerbos.requests, "post", _pdp_qui_autorise(set(), envois))
+    assert VRAI_LOT(PRINCIPAL, [], "read") == {} and envois == []
+
+
+def test_check_resources_une_panne_refuse_tout(monkeypatch):
+    def post(*_a, **_k):
+        raise ConnectionError("PDP injoignable")
+    monkeypatch.setattr(cerbos.requests, "post", post)
+    assert VRAI_LOT(PRINCIPAL, _ressources(3), "read") == {"0": False, "1": False, "2": False}
+
+
+def test_check_resources_un_lot_en_echec_refuse_meme_les_lots_deja_autorises(monkeypatch):
+    appels = []
+
+    def post(url, json, timeout):
+        appels.append(len(json["resources"]))
+        if len(appels) == 2:
+            raise TimeoutError("trop lent")
+        return SimpleNamespace(raise_for_status=lambda: None,
+                               json=lambda: {"results": [{"actions": {"read": "EFFECT_ALLOW"}}] * len(json["resources"])})
+    monkeypatch.setattr(cerbos.requests, "post", post)
+    decisions = VRAI_LOT(PRINCIPAL, _ressources(60), "read")
+    assert appels == [50, 10] and len(decisions) == 60 and not any(decisions.values())
+
+
+@pytest.mark.parametrize("resultats", [[], [{"actions": {"read": "EFFECT_ALLOW"}}] * 2, None, "x"],
+                         ids=["vide", "trop-nombreux", "absent", "mal-forme"])
+def test_check_resources_une_reponse_incoherente_refuse_tout(monkeypatch, resultats):
+    monkeypatch.setattr(cerbos.requests, "post", lambda *a, **k: SimpleNamespace(
+        raise_for_status=lambda: None, json=lambda: {"results": resultats}))
+    assert VRAI_LOT(PRINCIPAL, _ressources(3), "read") == {"0": False, "1": False, "2": False}

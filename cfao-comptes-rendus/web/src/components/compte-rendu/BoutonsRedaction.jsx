@@ -53,3 +53,24 @@ export default function BoutonsRedaction({
     </div>
   )
 }
+
+/**
+ * Un texte ecrit sur d'anciennes notes : il peut citer des chiffres que le
+ * rapport ne montre plus. Le formateur le fait reecrire, ou garde le sien.
+ */
+export function AlertePerime({ cle, redaction, onRediger }) {
+  if (!redaction?.perime(cle) || redaction.redigeant) return null
+  return (
+    <p className="cr-redac-perime" role="status">
+      Les notes ont changé depuis l’écriture de ce texte : il peut citer d’anciens chiffres.
+      <span className="cr-redac-perime-actions">
+        <button type="button" className="cr-part-ajout cr-redac" onClick={onRediger}>
+          Réécrire avec les notes actuelles
+        </button>
+        <button type="button" className="cr-redac-annuler" onClick={() => redaction.garder(cle)}>
+          Garder mon texte
+        </button>
+      </span>
+    </p>
+  )
+}

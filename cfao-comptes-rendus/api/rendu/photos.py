@@ -414,6 +414,9 @@ def poser_nommes(contenus, slide, par_nom, cache):
     la photo de groupe — plutot qu'une place dans une disposition.
     `par_nom` associe le nom de la forme a `{id, cadrage}`. L'image
     reprend exactement le cadre de l'emplacement, rognee pour le remplir.
+    Avec `cote: 'droite'`, la forme reste et se retrecit : la photo,
+    carree et de sa hauteur, se pose a sa droite (la photo du stagiaire
+    a cote de son appreciation).
     """
     xml = contenus[slide].decode('utf-8')
     rang = 0
@@ -429,10 +432,16 @@ def poser_nommes(contenus, slide, par_nom, cache):
         pos = tuple(int(v) for v in pos.groups())
         rang += 1
         rid = _joindre(contenus, slide, rang, chemin)
+        garde = ''
+        if p.get('cote') == 'droite':
+            x, y, l, h = pos
+            garde = m.group(0).replace(
+                f'<a:ext cx="{l}" cy="{h}"/>', f'<a:ext cx="{l - h - ECART}" cy="{h}"/>', 1)
+            pos = (x + l - h, y, h, h)
         with Image.open(chemin) as image:
             rect = rognage(image.width, image.height, pos[2], pos[3],
                            p.get('cadrage'))
-        xml = (xml[:m.start()] + forme_image(900 + rang, nom, rid, pos, rect)
+        xml = (xml[:m.start()] + garde + forme_image(900 + rang, nom, rid, pos, rect)
                + xml[m.end():])
     contenus[slide] = xml.encode('utf-8')
 

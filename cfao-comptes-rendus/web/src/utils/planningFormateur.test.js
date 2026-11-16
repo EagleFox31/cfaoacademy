@@ -20,7 +20,8 @@ describe('planning du formateur', () => {
   })
 
   it('une session commencee se continue, elle ne se recommence pas', () => {
-    const brouillons = [{ id: 'passee', termine: false }, { id: 'manuel-1', termine: false }]
+    const saisi = { textes: { bilan: 'x' } }
+    const brouillons = [{ id: 'passee', termine: false, ...saisi }, { id: 'manuel-1', termine: false, ...saisi }]
     const { aContinuer, aCommencer } = aDocumenter(SESSIONS, brouillons, JOUR)
     expect(aContinuer.map(b => b.id)).toEqual(['passee', 'manuel-1'])
     expect(aCommencer.map(x => x.id)).toEqual(['redige'])

@@ -31,8 +31,9 @@ import hashlib
 import random
 
 from lexique import (ACCUEIL, CLOTURES, CONSTATS, ELEARNING, NUANCES,
-                     OUVERTURES, PROGRESSION, QUALIFICATIF, SEUIL,
-                     palier, palier_progression)
+                     OUVERTURES, PROGRESSION, QUALIFICATIF,
+                     palier_progression)
+from regles import palier_au_seuil, seuil_de
 
 
 class Tirage:
@@ -163,7 +164,7 @@ def rediger(participant, longueur="standard"):
     nom = _nom_usage(p)
 
     acquisition = p.get("acquisition")
-    reg = palier(acquisition) or "correct"
+    reg = palier_au_seuil(acquisition, seuil_de(p.get("seuil"))) or "correct"
     phrases, appuis = [], []
 
     # ── ouverture
@@ -258,6 +259,7 @@ def verifier(resultat, participant):
     fautes = []
     texte = resultat["texte"].lower()
     acq = participant.get("acquisition")
+    seuil = seuil_de(participant.get("seuil"))
 
     # Le defaut des sources : un eloge sur une note en retrait. On ne
     # regarde que les eloges portant sur le RESULTAT ; « une progression
@@ -267,9 +269,9 @@ def verifier(resultat, participant):
         eloges = ("taux d'acquisition excellent", "resultat excellent",
                   "résultat excellent", "premier ordre", "s'est distingué",
                   "pleinement réussi", "les plus solides")
-        if acq < SEUIL and any(e in texte for e in eloges):
+        if acq < seuil and any(e in texte for e in eloges):
             fautes.append(f"eloge du resultat alors que le taux ({acq} %) "
-                          f"est sous le seuil de {SEUIL} %")
+                          f"est sous le seuil de {seuil} %")
         reserves = ("insuffisant", "en deçà", "remise à niveau",
                     "n'atteint pas")
         if acq >= 90 and any(r in texte for r in reserves):

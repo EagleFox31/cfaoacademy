@@ -39,7 +39,7 @@ export function BadgeCompteRendu({ etat, phase = 0, termineLe }) {
     const i = Math.min(phase ?? 0, ETAPES.length - 1)
     return (
       <span className="cr-badge cr-badge--info" title={`Reprendre à l’étape ${i + 1} : ${ETAPES[i]}`}>
-        En cours · étape {i + 1}
+        Non terminé · étape {i + 1}
       </span>
     )
   }
@@ -50,6 +50,25 @@ export function BadgeCompteRendu({ etat, phase = 0, termineLe }) {
   if (etat === 'a_rediger') return <span className="cr-badge cr-badge--warn">À rédiger</span>
   if (etat === 'session_en_cours') return <span className="cr-badge cr-badge--muted">Session en cours</span>
   return null
+}
+
+const STATUTS_SESSION = {
+  a_venir: ['muted', 'À venir'],
+  a_rediger: ['warn', 'À rédiger'],
+  en_cours: ['info', 'En cours'],
+  termine: ['ok', 'Terminé'],
+}
+
+/** Le statut d'une session du referentiel et l'avancement de son compte rendu, en %. */
+export function BadgeStatutSession({ statut, completion }) {
+  const [ton, libelle] = STATUTS_SESSION[statut] || STATUTS_SESSION.a_venir
+  const pct = Number.isFinite(Number(completion)) ? Math.round(Number(completion)) : 0
+  return (
+    <span className={`cr-badge cr-badge--${ton}`}
+      title={`Compte rendu rempli à ${pct} %`}>
+      {libelle} · {pct} %
+    </span>
+  )
 }
 
 /** Les champs de la carte, depuis une session du planning. */
@@ -100,7 +119,7 @@ export default function CarteCompteRendu({ carte, badge, onClick, onSupprimer, a
           {badge}
           {onSupprimer && (
             <button type="button" className="cr-brouillon-suppr cr-carte-suppr"
-              title="Supprimer ce compte rendu en cours" aria-label="Supprimer ce compte rendu en cours"
+              title="Supprimer ce compte rendu non terminé" aria-label="Supprimer ce compte rendu non terminé"
               onClick={e => { e.stopPropagation(); onSupprimer() }}
               onKeyDown={e => e.stopPropagation()}>
               <IconeCorbeille />

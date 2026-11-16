@@ -18,7 +18,7 @@
 import { useState } from 'react'
 import ImageCadree, { BoutonRecadrer } from './ImageCadree'
 import ChoixLegende from './ChoixLegende'
-import BoutonsRedaction from './BoutonsRedaction'
+import BoutonsRedaction, { AlertePerime } from './BoutonsRedaction'
 import { casesDe, dispositionsClassees, dispositionsPour, grilleDe, MAX_PHOTOS }
   from '../../data/dispositions_photos'
 import { formeBilan, paragrapheBilan } from '../../utils/remarquesSession'
@@ -109,6 +109,8 @@ export default function EditeurBilan({
               value={paragraphe}
               placeholder="Contexte, résultats, points de vigilance et suites, en un paragraphe"
               onChange={e => onTexte('bilan.paragraphe', e.target.value)} />
+            <AlertePerime cle="bilan.paragraphe" redaction={redaction}
+              onRediger={() => redaction?.bilan('paragraphe')} />
           </div>
         ) : (
         /* Le moteur redige rubrique par rubrique : un bouton global
@@ -131,6 +133,8 @@ export default function EditeurBilan({
                   value={valeur(b)}
                   placeholder={b.texte || 'Quelques lignes'}
                   onChange={e => onTexte(cle, e.target.value)} />
+                <AlertePerime cle={cle} redaction={redaction}
+                  onRediger={() => redaction?.bilan(b.cle)} />
               </div>
             )
           })}

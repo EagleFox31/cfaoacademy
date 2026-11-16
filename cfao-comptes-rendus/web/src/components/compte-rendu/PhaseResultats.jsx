@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { BAREMES, SEUIL, calculer, anomalies, afficher } from '../../utils/baremeCfao'
+import { BAREMES, seuilDe, calculer, anomalies, afficher, nettoyerNote } from '../../utils/baremeCfao'
 import {
   MENTIONS,
   CRITERES_FORMATION,
@@ -77,6 +77,7 @@ export default function PhaseResultats({
 }) {
   const participants = (brouillon.participants || []).filter(p => p.present !== false)
   const baremes = brouillon.baremes || BAREMES
+  const seuil = seuilDe(brouillon)
   // Une certification se note module par module : seul le premier volet
   // change, les deux questionnaires restent les memes.
   const certif = estCertification(brouillon)
@@ -97,7 +98,7 @@ export default function PhaseResultats({
   function modifier(id, champ, valeur) {
     // On garde la chaine vide : un champ vide et un zero ne disent pas
     // la meme chose dans un compte rendu.
-    const v = valeur === '' ? '' : valeur.replace(/[^\d]/g, '').slice(0, 3)
+    const v = nettoyerNote(valeur)
     maj({
       participants: brouillon.participants.map(p =>
         p.id === id ? { ...p, [champ]: v } : p),
@@ -290,6 +291,7 @@ export default function PhaseResultats({
   const aDesReponses = criteres => participants.some(p =>
     criteres.some(c => reponses[p.id]?.[c.cle]))
 
+
   function majBareme(cle, valeur) {
     const n = Number(valeur)
     maj({ baremes: { ...baremes, [cle]: Number.isNaN(n) || n <= 0 ? 1 : n } })
@@ -351,19 +353,23 @@ export default function PhaseResultats({
             resume={`${synthese.saisis}/${synthese.effectif} candidats`}
             valeur={afficher(synthese.scoreFinal)}
             ton={synthese.scoreFinal == null ? null
-              : synthese.scoreFinal >= SEUIL ? 'ok' : 'ko'}
+              : synthese.scoreFinal >= seuil ? 'ok' : 'ko'}
             ouvert={volet === 'tests'} onOuvrir={() => ouvrir('tests')}>
             <OutilsVolet>
               <BoutonEffacer disabled={!aDesNotes} onClick={() => effacerNotes(null)}>
                 Effacer toutes les notes
               </BoutonEffacer>
             </OutilsVolet>
+            <div className="cr-baremes">
+              <span className="cr-baremes-label">Seuil</span>
+              <ChampSeuil seuil={seuil} maj={maj} />
+            </div>
             <SaisieCertification brouillon={brouillon} maj={maj} onEffacer={effacerNotes} />
             {synthese.saisis > 0 && (
               <div className="cr-kpis" style={{ marginTop: 20 }}>
                 <Indicateur valeur={afficher(synthese.scoreFinal)} legende="Moyenne du groupe" />
                 <Indicateur valeur={`${synthese.reussis}/${synthese.saisis}`}
-                  legende={`Pratique validée (${SEUIL} %)`}
+                  legende={`Pratique validée (${seuil} %)`}
                   ton={synthese.enRetrait === 0 ? 'ok' : 'ko'} />
                 <Indicateur valeur={synthese.certifies} legende="Certifiés" />
                 <Indicateur valeur={`${synthese.saisis}/${synthese.effectif}`}
@@ -379,7 +385,7 @@ export default function PhaseResultats({
           resume={`${synthese.saisis}/${synthese.effectif} stagiaires`}
           valeur={afficher(synthese.scoreFinal)}
           ton={synthese.scoreFinal == null ? null
-            : synthese.scoreFinal >= SEUIL ? 'ok' : 'ko'}
+            : synthese.scoreFinal >= seuil ? 'ok' : 'ko'}
           ouvert={volet === 'tests'} onOuvrir={() => ouvrir('tests')}>
           <div className="cr-baremes">
             <span className="cr-baremes-label">Notés sur</span>
@@ -396,6 +402,7 @@ export default function PhaseResultats({
                   aria-label={`Barème ${libelle}`} />
               </label>
             ))}
+            <ChampSeuil seuil={seuil} maj={maj} />
             <BoutonEffacer disabled={!aDesNotes} onClick={() => effacerNotes(null)}>
               Effacer toutes les notes
             </BoutonEffacer>
@@ -429,7 +436,7 @@ export default function PhaseResultats({
               </thead>
               <tbody>
                 {participants.map(p => {
-                  const c = calculer(p, baremes)
+                  const c = calculer(p, baremes, seuil)
                   const faits = anomalies(p, baremes)
                   const erreurs = new Set(faits.filter(f => f.niveau === 'erreur').map(f => f.champ))
                   // La couleur signale deja l'ecart ; le motif reste au survol.
@@ -448,12 +455,11 @@ export default function PhaseResultats({
                         ['entreeBrut', 'entrée', 'entreeTheorique'],
                         ['sortieTheoBrut', 'théorie', 'sortieTheorique'],
                         ['sortiePratBrut', 'pratique', 'sortiePratique'],
-                      ].map(([champ, nom, bareme]) => (
+                      ].map(([champ, nom]) => (
                         <td key={champ}>
                           <input
                             className={`cr-num${erreurs.has(champ) ? ' cr-num--erreur' : ''}`}
-                            type="number" min="0" max={baremes[bareme]}
-                            inputMode="numeric" value={p[champ] ?? ''}
+                            type="text" inputMode="decimal" value={p[champ] ?? ''}
                             onChange={e => modifier(p.id, champ, e.target.value)}
                             placeholder="—"
                             aria-label={`Note ${nom} de ${p.prenom} ${p.nom}`} />
@@ -469,7 +475,7 @@ export default function PhaseResultats({
                       </td>
                       <td>
                         <span className={`cr-calc${c.scoreFinal == null ? ' cr-calc--vide'
-                          : c.scoreFinal >= SEUIL ? ' cr-calc--ok' : ' cr-calc--ko'}`}
+                          : c.scoreFinal >= seuil ? ' cr-calc--ok' : ' cr-calc--ko'}`}
                           title={avertis || undefined}>
                           {afficher(c.scoreFinal)}
                         </span>
@@ -497,7 +503,7 @@ export default function PhaseResultats({
                   : `${synthese.progression > 0 ? '+' : ''}${synthese.progression} %`}
                 legende="Progrès moyen" />
               <Indicateur valeur={synthese.enRetrait}
-                legende={`Sous le seuil de ${SEUIL} %`}
+                legende={`Sous le seuil de ${seuil} %`}
                 ton={synthese.enRetrait === 0 ? 'ok' : 'ko'} />
               <Indicateur valeur={`${synthese.saisis}/${synthese.effectif}`}
                 legende="Notes saisies" />
@@ -536,6 +542,33 @@ export default function PhaseResultats({
 }
 
 /** Le passage au volet suivant, la ou l'on arrive en finissant celui-ci. */
+/** Le seuil de validation, saisi au clavier. Il n'est retenu qu'en
+ * quittant le champ (ou sur Entree) : une valeur en cours de frappe
+ * (« 8 » pour 85) ne recalcule pas le compte rendu. Hors 1-100 ou vide,
+ * le champ reprend le seuil en vigueur.
+ */
+function ChampSeuil({ seuil, maj }) {
+  const [texte, setTexte] = useState(null)
+  function valider() {
+    if (texte == null) return
+    const n = Number(texte)
+    if (texte !== '' && n >= 1 && n <= 100 && n !== seuil) maj({ seuil: n })
+    setTexte(null)
+  }
+  return (
+    <label className="cr-bareme">
+      Validé à
+      <input className="cr-num cr-num--court" type="text" inputMode="numeric"
+        value={texte ?? String(seuil)}
+        onChange={e => setTexte(e.target.value.replace(/\D/g, '').slice(0, 3))}
+        onBlur={valider}
+        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
+        aria-label="Seuil de validation" />
+      %
+    </label>
+  )
+}
+
 function SuiteVolet({ onClick, children }) {
   return (
     <div className="cr-suite-volet">

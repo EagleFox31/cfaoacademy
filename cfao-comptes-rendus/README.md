@@ -104,6 +104,10 @@ Le serveur Vite relaie `/apercu` et `/cr-donnees` vers `http://127.0.0.1:5175` ;
 (`CR_SERVICE=http://127.0.0.1:8090 npm run dev`) ; dans ce cas ajouter
 `http://localhost:5176` aux `ORIGINES_AUTORISEES` de la pile Docker.
 
+Seule une réponse 404 sur l'état des sessions bascule l'écran en mode d'essai (sessions
+fictives). API arrêtée sous `npm run dev` : le relais Vite répond en 5xx, l'écran affiche
+alors une erreur de service au lieu du mode d'essai — démarrer l'API (ou viser la pile Docker).
+
 ## Dans la plateforme
 
 Le `docker-compose.yml` racine déclare le même service sous le nom `rapports` (mode

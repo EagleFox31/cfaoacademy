@@ -25,6 +25,7 @@ from pathlib import Path
 from django.conf import settings
 from django.http import FileResponse
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -39,7 +40,7 @@ from moteur_fiche import rediger_appreciation
 from moteur_session import rediger_acquisition, rediger_bilan, rediger_progression
 from service import CACHE, MODELE, SOFFICE, document, image_de, rapport
 
-from . import erreurs, stockage, taches
+from . import erreurs, referentiel, stockage, taches
 from .models import Brouillon, Erreur, Photo, TacheRapport
 from .perimetre import perimetre_du_contenu
 
@@ -233,9 +234,31 @@ class BrouillonDetail(APIView):
         b = self._existant(request, ident)
         if b:
             _autoriser(request, COMPTE_RENDU, ident, "update", b.owner, b.scope_node, b.brand)
-        else:
-            _autoriser(request, COMPTE_RENDU, ident, "create", None, *perimetre_du_contenu(request.data))
-        garde, ecrit = stockage.ecrire(request.user.id, ident, request.data)
+        contenu = request.data
+        lie = referentiel.session_liee(contenu)
+        if lie:
+            # Brouillon d'une session du referentiel : il faut pouvoir la lire,
+            # et le serveur reimpose ce qui vient du referentiel.
+            if not referentiel.peut_lire(request, lie):
+                raise PermissionDenied("Action 'read' non autorisee sur cette ressource.")
+            try:
+                contenu = referentiel.reimposer(contenu, lie)
+            except referentiel.StagiaireHorsSession as e:
+                return _erreur(str(e), 400)
+        # Les droits se jugent sur le perimetre du contenu tel que stocke,
+        # pas sur la marque brute envoyee par le client.
+        perimetre = perimetre_du_contenu(contenu)
+        if not b or perimetre != (b.scope_node, b.brand):
+            _autoriser(request, COMPTE_RENDU, ident, "create", None, *perimetre)
+        # Un brouillon nouveau (ou deja lie) ne se rattache qu'a une session
+        # du referentiel ; les anciens, non lies, restent modifiables. La copie
+        # que l'equipe technique ecrit sous son id se juge sur l'original.
+        origine = b
+        if not origine and _voit_tout(request):
+            origine = Brouillon.objects.filter(ident=ident).order_by("-modifie_le").first()
+        if not lie and referentiel.referentiel_impose(origine):
+            return _erreur("choisissez une session du referentiel", 400)
+        garde, ecrit = stockage.ecrire(request.user.id, ident, contenu)
         if ecrit == stockage.CONFLIT:
             # Copie perimee : la version gardee part avec le refus, pour
             # que l'onglet propose de la reprendre.

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, useRef, useId } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import useNavScrollSpy from '../../hooks/useNavScrollSpy.js'
 import { useAuth } from '../../lib/auth'
-import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
+import useSessionsFormateur from '../../hooks/useSessionsFormateur'
 import { sessionsAVenir } from '../../utils/planningFormateur.js'
 import { scrollToPortalSection } from '../../utils/portalScroll.js'
 import { adresse } from '../../lib/adresse'
@@ -11,7 +11,7 @@ import { adresse } from '../../lib/adresse'
 // « Retour au site » n'existe que si elle est renseignée.
 const PORTAIL_URL = import.meta.env.VITE_PORTAIL_URL
 
-/** Sections du menu formateur ; « sessions » n'existe que s'il y en a à venir. */
+/** Sections du menu formateur ; « Priorités » et « sessions » n'existent que si elles ont du contenu. */
 const SECTIONS_FORMATEUR = [
   { key: 'a-documenter', id: 'a-documenter', libelle: 'Priorités' },
   { key: 'comptes-rendus', id: 'comptes-rendus', libelle: 'Vos comptes rendus' },
@@ -45,6 +45,7 @@ function UserMenu({ user, onLogout }) {
   }, [])
 
   const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase()
+  const superadmin = (user.roles ?? []).includes('superadmin')
 
   return (
     <div className="nav-user-menu" ref={ref}>
@@ -64,8 +65,19 @@ function UserMenu({ user, onLogout }) {
         <div className="nav-user-dropdown" role="menu">
           <div className="nav-user-dropdown-head">
             <span className="nav-user-dropdown-name">{user.firstName} {user.lastName}</span>
-            <span className="nav-user-dropdown-filiale">{user.filiale || 'Formateur'}</span>
+            <span className="nav-user-dropdown-filiale">{user.filiale || (superadmin ? 'Super Admin' : 'Formateur')}</span>
           </div>
+          {superadmin && (
+            <Link
+              to="/portail/journal-erreurs"
+              className="nav-user-dropdown-item"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+            >
+              <span>Journal des erreurs</span>
+              <span className="nav-user-dropdown-arrow">→</span>
+            </Link>
+          )}
           <button
             type="button"
             className="nav-user-dropdown-item nav-user-dropdown-logout"
@@ -113,7 +125,7 @@ function NavLinkList({ variant, portalSections, isActive, handlePortalNavClick, 
  * Connecté : mode portail formateur (sections de l'accueil, menu du compte).
  * Sur la connexion : mode « non connecté », sans lien vers d'autres pages.
  */
-export default function Nav() {
+export default function Nav({ sansPriorites = false }) {
   const { pathname, hash } = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -127,11 +139,13 @@ export default function Nav() {
   const menuInstanceId = useId()
   const mobileMenuId = `nav-mobile-menu${menuInstanceId}`
 
+  const { sessions } = useSessionsFormateur(onPortal ? user : null)
   const portalSections = useMemo(() => {
     if (!onPortal) return []
-    const aVenir = sessionsAVenir(sessionsDuFormateur(user)).length > 0
-    return aVenir ? SECTIONS_FORMATEUR : SECTIONS_FORMATEUR.filter(s => s.key !== 'sessions-a-venir')
-  }, [onPortal, user])
+    const aVenir = sessionsAVenir(sessions).length > 0
+    return SECTIONS_FORMATEUR.filter(s => (aVenir || s.key !== 'sessions-a-venir')
+      && !(sansPriorites && s.key === 'a-documenter'))
+  }, [onPortal, sessions, sansPriorites])
 
   // Le suivi de défilement n'a de sens que sur l'accueil, où sont les sections.
   const spyEnabled = onPortal && onHome

@@ -17,6 +17,7 @@
  */
 import { pagesARemplir } from '../components/compte-rendu/PhaseVerification'
 import { SESSIONS_FORMATEUR } from '../data/mock_sessions_formateur'
+import { estSessionReferentiel, sessionDepuisBrouillon } from './brouillonSession'
 import { adresse } from '../lib/adresse'
 
 const CLE_ANCIENNE = 'cfao.comptes-rendus'
@@ -60,7 +61,30 @@ function ecrire(tout) {
   }
 }
 
-/** Un appel au serveur ; `null` s'il ne repond pas. */
+/**
+ * Le motif d'un refus d'enregistrement, tel que le service le donne :
+ * 400 (`erreur`, par exemple un stagiaire qui n'est pas de la session)
+ * ou 403 (`detail`).
+ */
+async function motifDuRefus(r) {
+  let corps = null
+  try { corps = await r.json() } catch { /* corps absent ou illisible */ }
+  if (r.status === 403) {
+    return 'Vous n’avez pas le droit d’enregistrer ce compte rendu : il ne vous est pas rattaché.'
+  }
+  const precis = typeof corps?.erreur === 'string' ? corps.erreur : ''
+  if (/hors session/i.test(precis)) {
+    return 'Enregistrement refusé : un stagiaire de ce compte rendu ne fait pas partie de la session. '
+      + 'Rouvrez la session depuis la liste pour reprendre ses stagiaires.'
+  }
+  return precis ? `Enregistrement refusé : ${precis}.` : 'Enregistrement refusé par le service.'
+}
+
+/**
+ * Un appel au serveur ; `null` s'il ne repond pas. Un envoi (PUT)
+ * refuse en 400 ou 403 renvoie `{ refus: true, statut, message }` : les
+ * autres appels n'ont pas a le distinguer d'une panne.
+ */
 async function serveur(chemin, options = {}) {
   const u = utilisateur()
   if (!u) return null
@@ -72,6 +96,9 @@ async function serveur(chemin, options = {}) {
     })
     if (r.status === 404) return undefined
     if (r.status === 409) return { ...(await r.json()), conflit: true }
+    if (options.method === 'PUT' && (r.status === 400 || r.status === 403)) {
+      return { refus: true, statut: r.status, message: await motifDuRefus(r) }
+    }
     if (!r.ok) return null
     return await r.json()
   } catch {
@@ -91,18 +118,20 @@ const rempli = v => (Array.isArray(v) ? v.length > 0
  * brouillon, et une carte « Saisie interrompue » sur un formulaire vide
  * ne reprend rien. Compte ce qui ne s'invente pas : les notes, la
  * satisfaction, les textes, les photos, les journees, les objectifs —
- * et pour une saisie libre, l'intitule, le code ou un nom de stagiaire.
+ * et pour une saisie libre, l'intitule, le code, le lieu ou un nom de stagiaire.
  */
 export function aDuContenu(b) {
   if (!b) return false
   const notes = (b.participants || []).some(p => aDesNotes(p) || rempli(p.elearning))
-  const saisieLibre = b.manuel && (rempli(b.intitule) || rempli(b.codeFormation)
+  const saisieLibre = b.manuel && (rempli(b.intitule) || rempli(b.codeFormation) || rempli(b.lieu)
     || (b.participants || []).some(p => rempli(p.nom) || rempli(p.prenom)))
   return notes || saisieLibre
     || rempli(b.satisfaction) || rempli(b.textes) || rempli(b.photos)
     || rempli(b.photoGroupe) || rempli(b.jours) || rempli(b.objectifs)
     || rempli(b.legendes)
-    || b.infosModifiees === true
+    // Pour une saisie libre, toucher un champ sans rien y ecrire marquait
+    // les infos modifiees : un compte rendu vide restait alors en cours.
+    || (!b.manuel && b.infosModifiees === true)
     // Des notes effacees a dessein : le brouillon doit s'enregistrer
     // quand meme, sinon l'ancienne version reviendrait au chargement.
     || rempli(b.reinitialiseLe)
@@ -148,8 +177,54 @@ function signaler(id, recent) {
   (ecoutes.get(id) || new Set()).forEach(f => f(recent))
 }
 
+// Les ecrans prevenus d'un envoi refuse par le service (400, 403), ou
+// de la reprise des envois (`null`).
+const ecoutesRefus = new Map()
+function signalerRefus(id, message) {
+  (ecoutesRefus.get(id) || new Set()).forEach(f => f(message))
+}
+
+/** Previent `quand(message)` d'un enregistrement refuse, puis `quand(null)` des qu'il passe. */
+export function surveillerRefus(id, quand) {
+  if (!id) return () => {}
+  if (!ecoutesRefus.has(id)) ecoutesRefus.set(id, new Set())
+  ecoutesRefus.get(id).add(quand)
+  return () => ecoutesRefus.get(id)?.delete(quand)
+}
+
 // Une version ecrite ailleurs, plus avancee que celle de cet onglet.
 const depassePar = (id, b) => b && b.ecrivain !== ECRIVAIN && bases.has(id) && rev(b) > bases.get(id)
+
+// Les ecrans prevenus qu'un envoi accepte a ete corrige par le serveur
+// (champs reimposes depuis le referentiel) et que la copie d'ici l'a repris.
+const ecoutesReprise = new Map()
+
+/**
+ * Previent `quand(reprise, envoye)` quand la copie de cet onglet devient la
+ * version corrigee par le serveur. L'ecran ne la prend que si sa saisie n'a
+ * pas bouge depuis l'envoi (`inchangeDepuis`), sinon il garde sa frappe.
+ */
+export function surveillerReprise(id, quand) {
+  if (!id) return () => {}
+  if (!ecoutesReprise.has(id)) ecoutesReprise.set(id, new Set())
+  ecoutesReprise.get(id).add(quand)
+  return () => ecoutesReprise.get(id)?.delete(quand)
+}
+
+/** Vrai si `b` est, au contenu pres, ce qui a ete envoye. */
+export const inchangeDepuis = (b, envoye) => signer(b) === signer(envoye)
+
+// Apres un envoi accepte : si la copie d'ici n'a pas bouge depuis l'envoi
+// (meme contenu, donc meme session), elle devient la version du serveur.
+// Sinon rien n'est fusionne : la saisie faite pendant la requete, ou le
+// changement de session, part au prochain envoi, que le serveur corrigera
+// a son tour.
+function reprendre(id, copie, envoye, distant) {
+  if (signer(copie) !== signer(envoye) || String(distant?.sessionId ?? '') !== String(envoye?.sessionId ?? '')) {
+    return copie
+  }
+  return signer(distant) === signer(envoye) ? copie : { ...distant, _id: copie._id ?? id, ecrivain: ECRIVAIN }
+}
 
 // Les envois au serveur, un par brouillon : la saisie en declenche un
 // toutes les secondes et demie, inutile d'en empiler.
@@ -165,7 +240,9 @@ async function partir(id) {
   // `keepalive` : l'envoi aboutit meme si l'onglet se ferme.
   const r = await serveur(`/${encodeURIComponent(id)}`,
     { method: 'PUT', body: JSON.stringify(corps), keepalive: true })
-  if (r?.conflit) {
+  if (r?.refus) {
+    signalerRefus(id, r.message)
+  } else if (r?.conflit) {
     signaler(id, r.brouillon)
   } else if (r && r.ecrit === false && !r.brouillon) {
     // Supprime sur un autre poste pendant la saisie d'ici : la saisie
@@ -179,13 +256,24 @@ async function partir(id) {
     }
     envoyer(id, { ...brouillon, revision: 0 })
   } else if (r?.ecrit && r.brouillon) {
+    signalerRefus(id, null)
     const n = rev(r.brouillon)
     bases.set(id, Math.max(n, bases.get(id) || 0))
     const tout = lire()
-    // La copie d'ici prolonge cet envoi : elle en prend le numero.
-    if (tout[id]?.ecrivain === ECRIVAIN && rev(tout[id]) < n) {
-      tout[id] = { ...tout[id], revision: n }
-      ecrire(tout)
+    // La copie d'ici prolonge cet envoi : elle en prend le numero et ce
+    // que le serveur a reimpose.
+    if (tout[id]?.ecrivain === ECRIVAIN) {
+      let copie = reprendre(id, tout[id], brouillon, r.brouillon)
+      if (rev(copie) < n) copie = { ...copie, revision: n }
+      if (copie !== tout[id]) {
+        const repris = signer(copie) !== signer(tout[id])
+        tout[id] = copie
+        ecrire(tout)
+        if (repris) {
+          vus.set(id, signer(copie))
+          ;(ecoutesReprise.get(id) || new Set()).forEach(f => f(copie, brouillon))
+        }
+      }
     }
   }
 }
@@ -422,22 +510,24 @@ export function brouillonsEnregistres() {
     .sort((a, b) => String(b.modifieLe).localeCompare(String(a.modifieLe)))
 }
 
-/** La session d'un brouillon : celle du planning, ou celle qu'il decrit. */
+/**
+ * La session d'un brouillon : celle qu'il decrit (saisie manuelle, ou
+ * session du referentiel dont il garde l'identite), ou celle du planning.
+ */
 export function sessionDuBrouillon(b) {
-  if (b.manuel) {
-    return {
-      moduleFormation: b.intitule, codeFormation: b.codeFormation, marque: b.marque,
-      lieu: b.lieu, paysHote: b.pays, debut: b.debut, fin: b.fin, nbJours: b.nbJours,
-    }
-  }
+  if (b.manuel || estSessionReferentiel(b.sessionId)) return sessionDepuisBrouillon(b)
   return SESSIONS_FORMATEUR.find(s => s.id === b.sessionId) || null
 }
 
 /** Un compte rendu termine quitte les saisies en cours pour l'archive. */
 export const estTermine = b => !!b?.termine
 
-/** Les saisies en cours, sans les comptes rendus termines. */
-export const brouillonsEnCours = (liste = brouillonsEnregistres()) => liste.filter(b => !estTermine(b))
+/**
+ * Les saisies en cours, sans les comptes rendus termines ni ceux
+ * enregistres vides par une version precedente.
+ */
+export const brouillonsEnCours = (liste = brouillonsEnregistres()) => liste
+  .filter(b => !estTermine(b) && aDuContenu(b))
 
 /** Les comptes rendus termines, du plus recent au plus ancien. */
 export const brouillonsTermines = (liste = brouillonsEnregistres()) => liste

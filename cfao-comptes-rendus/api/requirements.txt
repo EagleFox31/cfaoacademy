@@ -9,3 +9,5 @@ gunicorn>=22.0.0
 pillow>=11,<13
 pymupdf>=1.24,<2
 numpy>=2,<3
+# Lecture du fichier Excel du referentiel des formations (import_referentiel.py).
+openpyxl>=3.1,<4

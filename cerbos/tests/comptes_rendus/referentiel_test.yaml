@@ -1,0 +1,114 @@
+# Tests de la politique « referentiel » (cerbos compile --tests).
+# Tests negatifs obligatoires : seul l'administrateur du referentiel importe
+# et modifie ; formateur, lecteur, superadmin, role inconnu et anonyme sont refuses.
+name: ReferentielSuite
+description: Import et modification du referentiel des formations
+
+principals:
+  admin_referentiel:
+    id: ad-1
+    roles: ["admin_referentiel"]
+    attr: { scopeNode: "", scopeNodes: [], brands: [] }
+  formateur:
+    id: f-a
+    roles: ["trainer"]
+    attr: { scopeNode: "", scopeNodes: [], brands: ["TOYOTA"] }
+  suppleant_ki:
+    id: k-1
+    roles: ["learner", "ki"]
+    attr: { scopeNode: "CMR", scopeNodes: ["CMR"], brands: ["TOYOTA"] }
+  suppleant_pic:
+    id: p-1
+    roles: ["pic"]
+    attr: { scopeNode: "CIV", scopeNodes: ["CIV"], brands: ["SUZUKI"] }
+  lecteur:
+    id: l-1
+    roles: ["lecteur_cr"]
+    attr: { scopeNode: "", scopeNodes: [], brands: [] }
+  superadmin:
+    id: s-1
+    roles: ["superadmin"]
+    attr: { scopeNode: "" }
+  role_inconnu:
+    id: x-1
+    roles: ["comptable"]
+    attr: { scopeNode: "" }
+  anonyme:
+    id: anonymous
+    roles: ["_anon"]
+    attr: { scopeNode: "" }
+
+resources:
+  referentiel:
+    kind: referentiel
+    id: "*"
+
+tests:
+  - name: l'administrateur du referentiel importe et modifie
+    input:
+      principals: ["admin_referentiel"]
+      resources: ["referentiel"]
+      actions: ["importer", "modifier"]
+    expected:
+      - principal: admin_referentiel
+        resource: referentiel
+        actions: { importer: EFFECT_ALLOW, modifier: EFFECT_ALLOW }
+
+  - name: NEGATIF un formateur et ses suppleants n'importent ni ne modifient
+    input:
+      principals: ["formateur", "suppleant_ki", "suppleant_pic"]
+      resources: ["referentiel"]
+      actions: ["importer", "modifier"]
+    expected:
+      - principal: formateur
+        resource: referentiel
+        actions: { importer: EFFECT_DENY, modifier: EFFECT_DENY }
+      - principal: suppleant_ki
+        resource: referentiel
+        actions: { importer: EFFECT_DENY, modifier: EFFECT_DENY }
+      - principal: suppleant_pic
+        resource: referentiel
+        actions: { importer: EFFECT_DENY, modifier: EFFECT_DENY }
+
+  - name: NEGATIF le lecteur n'importe ni ne modifie
+    input:
+      principals: ["lecteur"]
+      resources: ["referentiel"]
+      actions: ["importer", "modifier"]
+    expected:
+      - principal: lecteur
+        resource: referentiel
+        actions: { importer: EFFECT_DENY, modifier: EFFECT_DENY }
+
+  - name: NEGATIF le superadmin n'importe pas (reserve a l'administrateur du referentiel)
+    input:
+      principals: ["superadmin"]
+      resources: ["referentiel"]
+      actions: ["importer", "modifier"]
+    expected:
+      - principal: superadmin
+        resource: referentiel
+        actions: { importer: EFFECT_DENY, modifier: EFFECT_DENY }
+
+  - name: NEGATIF role inconnu et anonyme sont refuses partout
+    input:
+      principals: ["role_inconnu", "anonyme"]
+      resources: ["referentiel"]
+      actions: ["importer", "modifier", "read", "list", "delete"]
+    expected:
+      - principal: role_inconnu
+        resource: referentiel
+        actions: { importer: EFFECT_DENY, modifier: EFFECT_DENY, read: EFFECT_DENY, list: EFFECT_DENY, delete: EFFECT_DENY }
+      - principal: anonyme
+        resource: referentiel
+        actions: { importer: EFFECT_DENY, modifier: EFFECT_DENY, read: EFFECT_DENY, list: EFFECT_DENY, delete: EFFECT_DENY }
+
+  - name: NEGATIF une action inconnue est refusee a l'administrateur (default-deny)
+    input:
+      principals: ["admin_referentiel"]
+      resources: ["referentiel"]
+      actions: ["supprimer", "export"]
+    expected:
+      - principal: admin_referentiel
+        resource: referentiel
+        actions: { supprimer: EFFECT_DENY, export: EFFECT_DENY }

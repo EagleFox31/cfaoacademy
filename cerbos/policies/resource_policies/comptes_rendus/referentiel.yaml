@@ -1,0 +1,14 @@
+# Ressource « referentiel » — import et modification du referentiel des formations.
+# Reservee a l'administrateur du referentiel : meme l'equipe technique n'y touche pas.
+# Default-deny : toute action non listee est refusee.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: referentiel
+  schemas:
+    principalSchema:
+      ref: cerbos:///comptes_rendus/principal.json
+  rules:
+    - actions: ["importer", "modifier"]
+      effect: EFFECT_ALLOW
+      roles: ["admin_referentiel"]

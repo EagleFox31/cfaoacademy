@@ -68,7 +68,7 @@ export default function CrRecapitulatif({
         </div>
         <div className="cr-actions" style={{ justifyContent: 'center' }}>
           <button type="button" className="cr-btn cr-btn--ghost" onClick={onRecommencer}>
-            Documenter une autre session
+            Rédiger un autre compte rendu
           </button>
         </div>
       </div>
