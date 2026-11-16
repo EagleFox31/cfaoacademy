@@ -29,7 +29,7 @@ def ecritures(**options) -> list[str]:
 def test_base_vide_complete_sans_compte():
     call_command("bootstrap", verbosity=0)
 
-    assert CatalogFamily.objects.count() == 8
+    assert CatalogFamily.objects.count() == 9
     assert Brand.objects.count() == 21
     campagne = Campaign.objects.get(year=2027)
     assert campagne.status == Campaign.Status.DRAFT
