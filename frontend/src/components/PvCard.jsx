@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { imageResponsive } from '../utils/imageResponsive.js'
 import PortalConstructionMedia from './PortalConstructionMedia.jsx'
+import ClampedText from './ClampedText.jsx'
 import useLocale from '../hooks/useLocale.js'
 
 const DEFAULT_IMG = '/assets/logo-cfao-mobility.jpg'
@@ -160,7 +161,7 @@ export default function PvCard({
           </div>
         )}
         {kicker && <div className="kicker">{kicker}</div>}
-        {title ? <h3>{title}</h3> : null}
+        {title ? (variant === 'quote' ? <h3>{title}</h3> : <ClampedText as="h3">{title}</ClampedText>) : null}
         {meta && <div className="meta">{meta}</div>}
 
         {actions && <div className="pv-card-cta pv-card-cta--split pv-card-cta--actions">{actions}</div>}

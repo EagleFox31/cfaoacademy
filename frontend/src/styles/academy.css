@@ -629,6 +629,14 @@ button.pv-card {
   font-weight: 600; color: var(--ink);
   text-wrap: pretty;
 }
+/* ClampedText : N lignes max (--clamp-lines, 3 par défaut), texte complet en infobulle. */
+.clamp-lines {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--clamp-lines, 3);
+  line-clamp: var(--clamp-lines, 3);
+  overflow: hidden;
+}
 .pv-card .meta {
   font-size: 13px;
   color: var(--muted);
