@@ -78,7 +78,7 @@ export function planningMenu(access, { scoped = false, roles = [] } = {}) {
   const items = scoped ? ['country', 'table'] : ['table', 'country']
   if (access.gaps) items.push('themes')
   if (access.manage) items.push('settings')
-  // Imports et gel relèvent du coordinateur : le directeur du centre n'a pas ce menu.
+  // « Préparer l'année » (imports, validation des montants) relève du coordinateur : le directeur du centre n'a pas ce menu.
   const directeurSeul = roles.includes('center_director') && !roles.includes('training_coordinator')
   if (!directeurSeul && (access.manage || access.import || access.freeze)) items.push('prepare')
   return items.slice(0, 6)

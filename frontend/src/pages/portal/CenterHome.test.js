@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { chiffresHero, tauxRemplissage } from './CenterHome.jsx'
+import { chiffresHero, etatAnnee, tauxRemplissage } from './CenterHome.jsx'
 import { PAYS_ACADEMY, SECTIONS_DIRECTEUR, paysAttendus, statutBesoins, syntheseAnnee } from './CenterDirectorSections.jsx'
 import { resolveProfile } from './portalProfiles.js'
 import { getPortalNavSections } from '../../data/index.js'
@@ -72,6 +72,27 @@ describe('portail du centre de formation', () => {
     expect(tauxRemplissage(45, 60)).toBe(75)
     expect(tauxRemplissage(10, 0)).toBeNull()
     expect(tauxRemplissage(10, null)).toBeNull()
+  })
+
+  it('une carte par année : places additionnées, filiales comptées une fois', () => {
+    const cles = [
+      { pole: 'MOTORS', status: 'DRAFT', seats_offered: 40 },
+      { pole: 'EQUIPMENT', status: 'FROZEN', seats_offered: 20 },
+    ]
+    const g = {
+      year: 2027, status: 'DRAFT', total_seats: 50,
+      responses: [
+        { pole: 'MOTORS', answered: ['cm', 'ci'], known: ['cm', 'ci', 'sn'] },
+        { pole: 'EQUIPMENT', answered: ['cm'], known: ['cm', 'ga'] },
+      ],
+      review_items: [{ id: 1 }, { id: 2 }],
+    }
+    expect(etatAnnee(cles, g)).toEqual({
+      statut: 'DRAFT', places: 50, offertes: 60, repondu: 2, connues: 4, points: [{ id: 1 }, { id: 2 }],
+    })
+    // Synthèse illisible : l'état vient des clés, sans chiffre inventé.
+    expect(etatAnnee([{ status: 'FROZEN', seats_offered: null }], null))
+      .toEqual({ statut: 'FROZEN', places: 0, offertes: null, repondu: 0, connues: 0, points: [] })
   })
 
   it('hero : pays de la carte et marques du périmètre officiel', () => {

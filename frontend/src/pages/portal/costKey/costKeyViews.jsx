@@ -7,6 +7,8 @@ import { createPortal } from 'react-dom'
 import { Check, Chevron, FacetFilter, NO_VALUE, applyFacets, buildFacets, byOrder, fold } from './FacetFilter'
 import { useSettle } from '../../../components/sheet/useSettle'
 import DataSheet from '../../../components/sheet/DataSheet'
+import { PoleMark } from '../../../components/PoleIcon.jsx'
+import { reviewText } from './reviewText.js'
 import { coverageTone } from '../../../components/sheet/sheetMath'
 import { planningApi } from '../../../lib/planningApi'
 import { flagUrlForIso } from '../../../utils/countryFlag'
@@ -140,13 +142,7 @@ function NeedsStaleBanner({ t, locale, at }) {
 }
 
 /** Phrase d'une incohérence encore ouverte, avec la personne chargée de la traiter ; null si le type est inconnu. */
-export function reviewText(t, locale, i) {
-  const template = t[`review_${i.issue}`]
-  if (!template) return null
-  const day = d => new Date(`${d}T12:00:00`).toLocaleDateString(locale)
-  return template.replace('{assignee}', i.assignee).replace('{code}', i.code).replace('{country}', i.country_label)
-    .replace('{seats}', i.seats).replace('{end}', day(i.end_date)).replace('{start}', day(i.start_date))
-}
+export { reviewText }
 
 const groupReviews = (items, keyOf) => {
   const groups = new Map()
@@ -1159,7 +1155,7 @@ export function ThemesView({ t, ckey }) {
     { id: 'code', header: t.col_code, type: 'text', width: 120, value: m => m.code },
     { id: 'title', header: t.col_title, type: 'text', width: 340, value: m => m.title },
     { id: 'pole', header: t.col_pole, type: 'text', width: 100, hidden: true,
-      value: m => t[`pole_${m.pole}`] || m.pole },
+      value: m => t[`pole_${m.pole}`] || m.pole, render: (v, m) => <PoleMark pole={m.pole} label={v} /> },
   ], [t])
 
   if (state.loading) return <SheetSkeleton label={t.loading} />

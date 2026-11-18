@@ -16,12 +16,13 @@ import useLocale from '../../hooks/useLocale'
 import usePortalBackground from '../../hooks/usePortalBackground'
 import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
 import { planningApi } from '../../lib/planningApi.js'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { lienPlanning, planningMenu } from '../../utils/planningAccess.js'
+import { reviewText } from './costKey/reviewText.js'
 import { versBesoins } from '../../utils/urlBesoins.js'
 import { BRANDS, STATS } from '../../data/index.js'
 import PortalIconMedia from '../../components/PortalIconMedia.jsx'
-import CenterDirectorSections, { PAYS_ACADEMY } from './CenterDirectorSections.jsx'
+import CenterDirectorSections, { PAYS_ACADEMY, syntheseAnnee } from './CenterDirectorSections.jsx'
 
 const ROUGE = '#E3001B'
 
@@ -51,13 +52,33 @@ export function tauxRemplissage(places, offertes) {
 }
 
 /**
- * Charge les clés de la dernière année et, pour chacune, sa synthèse :
- * état (en préparation / gelée), places, réponses des filiales, points à traiter.
- * Sans `detail` (page du directeur, qui a ses propres rubriques), seuls les
- * droits sont lus : pas d'appel dont le résultat ne serait pas affiché.
+ * La clé d'une année, tous pôles confondus : une seule carte par année.
+ * Places et places offertes s'additionnent ; une filiale qui a répondu pour
+ * Motors et pour Equipment ne compte qu'une fois (syntheseAnnee).
+ * `g` : synthèse de l'année (/years/{année}/global), null si elle n'a pas pu être lue.
+ */
+export function etatAnnee(clesAnnee, g) {
+  const offres = clesAnnee.map(c => c.seats_offered).filter(v => v != null)
+  const synthese = g ? syntheseAnnee(g) : null
+  const toutesGelees = clesAnnee.length > 0 && clesAnnee.every(c => c.status === 'FROZEN')
+  return {
+    statut: g?.status ?? (toutesGelees ? 'FROZEN' : 'DRAFT'),
+    places: g?.total_seats ?? 0,
+    offertes: offres.length ? offres.reduce((n, v) => n + v, 0) : null,
+    repondu: synthese?.repondu ?? 0,
+    connues: synthese?.connus ?? 0,
+    points: g?.review_items ?? [],
+  }
+}
+
+/**
+ * Charge la clé de la dernière année (synthèse tous pôles) : état, places,
+ * réponses des filiales, points à traiter. Sans `detail` (page du directeur,
+ * qui a ses propres rubriques), seuls les droits sont lus : pas d'appel dont
+ * le résultat ne serait pas affiché.
  */
 function useEtatCle(detail = true) {
-  const [etat, setEtat] = useState({ statut: 'chargement', access: null, annee: null, poles: [] })
+  const [etat, setEtat] = useState({ statut: 'chargement', access: null, annee: null, cle: null })
 
   useEffect(() => {
     let actif = true
@@ -65,34 +86,20 @@ function useEtatCle(detail = true) {
       try {
         if (!detail) {
           const access = await planningApi.access()
-          if (actif) setEtat({ statut: 'pret', access, annee: null, poles: [] })
+          if (actif) setEtat({ statut: 'pret', access, annee: null, cle: null })
           return
         }
         const [access, cles] = await Promise.all([planningApi.access(), planningApi.keys()])
         const liste = Array.isArray(cles) ? cles : cles?.results ?? []
         if (!liste.length) {
-          if (actif) setEtat({ statut: 'vide', access, annee: null, poles: [] })
+          if (actif) setEtat({ statut: 'vide', access, annee: null, cle: null })
           return
         }
         const annee = Math.max(...liste.map(c => c.year))
-        const delAnnee = liste.filter(c => c.year === annee)
-        const syntheses = await Promise.all(delAnnee.map(c => planningApi.global(c.id).catch(() => null)))
-        const poles = delAnnee.map((cle, i) => {
-          const g = syntheses[i]
-          const reponses = g?.responses?.[0]
-          return {
-            pole: cle.pole,
-            statut: g?.status ?? cle.status,
-            places: g?.total_seats ?? 0,
-            offertes: cle.seats_offered ?? null,
-            repondu: reponses?.answered?.length ?? 0,
-            connues: reponses?.known?.length ?? 0,
-            aTraiter: g?.review_items?.length ?? 0,
-          }
-        })
-        if (actif) setEtat({ statut: 'pret', access, annee, poles })
+        const g = await planningApi.yearGlobal(annee).catch(() => null)
+        if (actif) setEtat({ statut: 'pret', access, annee, cle: etatAnnee(liste.filter(c => c.year === annee), g) })
       } catch {
-        if (actif) setEtat({ statut: 'erreur', access: null, annee: null, poles: [] })
+        if (actif) setEtat({ statut: 'erreur', access: null, annee: null, cle: null })
       }
     })()
     return () => { actif = false }
@@ -119,7 +126,10 @@ export function chiffresHero({ mode }) {
 export default function CenterHome({ mode = 'director' }) {
   useSiteEffects()
   const { user } = useAuth()
-  const { t } = useLocale('centerHome')
+  const { t, locale } = useLocale('centerHome')
+  // Textes des points à traiter : ceux de l'écran de la clé, pas une seconde rédaction.
+  const { t: tCle } = useLocale('costKey')
+  const navigate = useNavigate()
   const headerRef = useRef(null)
   // Une carte ouvre un seul écran de la clé ; la croix de cet écran ramène ici.
   const { pathname } = useLocation()
@@ -128,18 +138,26 @@ export default function CenterHome({ mode = 'director' }) {
   usePortalHeaderHeight(headerRef)
 
   const directeur = mode === 'director'
-  const { statut, access, annee, poles } = useEtatCle(!directeur)
+  const { statut, access, annee, cle } = useEtatCle(!directeur)
 
   if (!user) return null
 
   const roles = user.roles ?? []
-  const aTraiter = poles.reduce((n, p) => n + p.aTraiter, 0)
+  const points = access?.review ? cle?.points ?? [] : []
+  const aTraiter = points.length
   const outils = planningMenu(access, { roles })
-  const nomPole = pole => t[`pole_${pole}`] ?? pole
+  // La cloche remplace « Aide » : chaque point mène à la session concernée dans la fiche filiale.
+  const notifications = points.flatMap(i => {
+    const text = reviewText(tCle, locale, i)
+    return text
+      ? [{ id: i.id, label: `${i.country_label} · ${i.code}`, text, cta: tCle.review_open,
+        onOpen: () => navigate(lienCle('country', { annee, pays: i.country, session: i.code })) }]
+      : []
+  })
 
   return (
     <>
-      <Nav />
+      <Nav notifications={notifications} hideHelp />
       <PortalStickyBar user={user} headerRef={headerRef} />
       <main className="portal-page">
         <div ref={headerRef}>
@@ -168,38 +186,38 @@ export default function CenterHome({ mode = 'director' }) {
 
                 {statut === 'pret' && (
                   <PortalStaggerGrid>
-                    {poles.map(p => {
-                      const taux = tauxRemplissage(p.places, p.offertes)
-                      const gelee = p.statut === 'FROZEN'
+                    {cle && (() => {
+                      const taux = tauxRemplissage(cle.places, cle.offertes)
+                      const gelee = cle.statut === 'FROZEN'
                       return (
-                        <div key={p.pole} className="portal-card-anchor">
+                        <div className="portal-card-anchor">
                           <PvCard
                             cardMedia={<PortalIconMedia icon="devis" tone={gelee ? 'closed' : 'progress'} />}
                             kicker={
                               <span className={`portal-status-chip ${gelee ? 'closed' : 'progress'}`}>
-                                {t[`status_${p.statut}`] ?? p.statut}
+                                {t[`status_${cle.statut}`] ?? cle.statut}
                               </span>
                             }
-                            title={remplir(t.card_pole_title, { pole: nomPole(p.pole), year: annee })}
+                            title={remplir(t.card_year_title, { year: annee })}
                             meta={
                               <PortalCardKpis
                                 items={[
                                   taux === null
-                                    ? { value: p.places, label: t.kpi_seats }
-                                    : { value: p.places, total: p.offertes, label: t.kpi_seats },
+                                    ? { value: cle.places, label: t.kpi_seats }
+                                    : { value: cle.places, total: cle.offertes, label: t.kpi_seats },
                                   taux !== null && { value: taux, unit: '%', label: t.kpi_fill },
-                                  { value: p.repondu, total: p.connues, label: t.kpi_answers },
+                                  { value: cle.repondu, total: cle.connues, label: t.kpi_answers },
                                 ]}
                               />
                             }
                             cta={t.cta_pole}
                             hoverHint={t.cta_pole}
-                            to={lienCle('table', { annee, pole: p.pole })}
+                            to={lienCle('table', { annee })}
                             corner
                           />
                         </div>
                       )
-                    })}
+                    })()}
 
                     {access?.review && (
                       <div className="portal-card-anchor">

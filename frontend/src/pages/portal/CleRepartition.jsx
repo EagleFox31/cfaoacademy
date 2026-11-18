@@ -8,7 +8,7 @@
  * L'état est dans l'URL (vue, clé, mode, pays) : un lien copié rouvre le même écran.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import PortalDemoBar from '../../components/PortalDemoBar'
@@ -21,6 +21,7 @@ import { makeFormatter } from '../../components/sheet/sheetExport'
 import { planningApi } from '../../lib/planningApi'
 import { planningMenu, retourInterne } from '../../utils/planningAccess'
 import { FacetFilter } from './costKey/FacetFilter'
+import { PoleMark } from '../../components/PoleIcon.jsx'
 import { AbcView, Banner, CountryView, SheetSkeleton, TableView, ThemesView, errText, reviewText } from './costKey/costKeyViews'
 import PrepareView from './costKey/PrepareView'
 import SettingsView from './costKey/SettingsView'
@@ -177,7 +178,7 @@ export default function CleRepartition() {
   } else if (view === 'prepare') {
     body = (
       <PrepareView t={t} fmt={fmt} access={boot.access} ckey={ckey}
-        onKeyChange={onKeyChange} onDataChanged={() => setReload(r => r + 1)} onRefresh={refreshSilently} />
+        onKeyChange={onKeyChange} onDataChanged={refreshSilently} onRefresh={refreshSilently} />
     )
   } else if (!ckey && keys.length && pole !== ALL) {
     const msg = menu.includes('prepare') ? t.no_key_pole_manage : t.no_key_pole
@@ -214,15 +215,22 @@ export default function CleRepartition() {
   const shownPole = pole === ALL && !ALL_VIEWS.has(view) ? ckey?.pole : pole
   const status = allHere ? global.data?.status : ckey?.status
   const frozen = status === 'FROZEN'
+  // Chaque pôle avec son pictogramme, comme les marques (logo) et les filiales (drapeau) des filtres.
   const poleOptions = [...(ALL_VIEWS.has(view) ? [ALL] : []), ...POLES]
-    .map(p => ({ value: p, label: t[`pole_${p}`] || p }))
+    .map(p => ({ value: p, label: t[`pole_${p}`] || p, node: <PoleMark pole={p} label={t[`pole_${p}`] || p} /> }))
   // Le menu du module vit dans la navbar : la page garde toute la largeur.
-  // Ouvert depuis une carte du portail (`retour`) : l'écran seul et une croix de retour.
+  // Ouvert depuis une carte du portail (`retour`) : pas d'onglets du module (un onglet
+  // unique suivi d'une croix se lisait « fermer cet onglet ») ; la navbar garde celui du
+  // portail. La croix quitte l'écran : elle vit dans la barre de page, à côté de l'année.
   const retour = retourInterne(search.get('retour'))
+  const closeLink = retour && (
+    <Link to={retour} className="ck-close" aria-label={t.close_screen} title={t.close_screen}>
+      <span aria-hidden="true">✕</span>
+    </Link>
+  )
   const appNav = {
     activeKey: view,
-    close: retour ? { to: retour, label: t.back_portal } : undefined,
-    items: (retour ? menu.filter(id => id === view) : menu).map(id => ({
+    items: (retour ? [] : menu).map(id => ({
       key: id, label: itemLabel(id), hint: t[`hint_${id}`],
       to: `${BASE}/${id}${search.toString() ? `?${search}` : ''}`,
     })),
@@ -237,7 +245,8 @@ export default function CleRepartition() {
   })
   return (
     <>
-      <Nav appNav={menu.length ? appNav : undefined} notifications={notifications} hideHelp />
+      {/* Ouvert depuis le portail : la navbar garde le menu du portail (pas d'onglet seul). */}
+      <Nav appNav={menu.length && !retour ? appNav : undefined} notifications={notifications} hideHelp />
       <main className="portal-page ck-page">
         <div className="ck-shell">
           <div className="ck-main">
@@ -266,9 +275,11 @@ export default function CleRepartition() {
                       </select>
                     </label>
                     <div className="ck-topbar-slot" ref={setToolsSlot} />
+                    {closeLink}
                   </div>
                 </>
               )}
+              {!year && closeLink && <div className="ck-topbar-tools">{closeLink}</div>}
             </header>
             {maintenance && <Banner tone="info">{t.maintenance}</Banner>}
             {global.data?.partial && ALL_VIEWS.has(view) && <Banner tone="info">{t.partial}</Banner>}

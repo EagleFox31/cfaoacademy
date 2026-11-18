@@ -88,18 +88,22 @@ beforeEach(() => {
 afterEach(() => { act(() => root.unmount()); host.remove() })
 
 describe('Clé de répartition : écran ouvert depuis une carte du portail', () => {
-  it('seul l’écran ouvert reste au menu, la croix ramène au portail', async () => {
+  it('pas d’onglets dans la navbar, la croix est dans la barre de page après l’année', async () => {
     planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
     await show('/portail/cle-repartition/country?annee=2026&pays=all&retour=/portail/centre')
-    expect(menuLabels()).toEqual([T.nav_country])
-    expect(host.querySelector('.app-nav-close').getAttribute('href')).toBe('/portail/centre')
+    expect(menuLabels()).toEqual([])
+    expect(host.querySelector('.app-nav-close')).toBeNull()
+    const close = host.querySelector('.ck-topbar-tools .ck-close')
+    expect(close.getAttribute('href')).toBe('/portail/centre')
+    expect(close.getAttribute('aria-label')).toBe(T.close_screen)
+    expect(close.previousElementSibling.matches('.ck-topbar-slot')).toBe(true)
   })
 
   it('un retour externe est ignoré : menu complet, pas de croix', async () => {
     planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
     await show('/portail/cle-repartition/country?retour=//evil.example')
     expect(menuLabels()).toHaveLength(5)
-    expect(host.querySelector('.app-nav-close')).toBeNull()
+    expect(host.querySelector('.ck-close')).toBeNull()
   })
 })
 
@@ -495,6 +499,34 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
       expect(host.querySelector('.ck-set-bar button[type="submit"]').disabled).toBe(true)
       expect(host.querySelector('.ck-set-bar').textContent).toContain(T.set_required_hours)
     })
+  })
+
+  it('Imports : une étape à la fois, le fichier mène à la vérification, puis « Nouvel import »', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
+    planningApi.preview = vi.fn().mockResolvedValue({ status: 'OK', rows_read: 3, rows_valid: 3, rows_rejected: 0, errors: [] })
+    planningApi.apply = vi.fn().mockResolvedValue({ rows_written: 3, report: { status: 'OK', rows_read: 3, rows_valid: 3, rows_rejected: 0 } })
+    await show('/portail/cle-repartition/prepare')
+    const btn = label => [...host.querySelectorAll('.ck-import button')].find(b => b.textContent === label)
+    const current = () => host.querySelector('.ck-wiz [aria-current=step]').textContent
+    expect(current()).toContain(T.wiz_kind)
+    expect(host.querySelectorAll('.ck-kind')).toHaveLength(3)
+    await act(async () => { btn(T.wiz_next).click() })
+    expect(current()).toContain(T.wiz_template)
+    expect(btn(T.template)).toBeTruthy()
+    await act(async () => { btn(T.wiz_next).click() })
+    expect(current()).toContain(T.wiz_file)
+    expect(btn(T.wiz_next).disabled).toBe(true)
+    const input = host.querySelector('.ck-drop input[type=file]')
+    Object.defineProperty(input, 'files', { value: [new File(['x'], 'places.xlsx')] })
+    await act(async () => { input.dispatchEvent(new Event('change', { bubbles: true })) })
+    expect(current()).toContain(T.wiz_check)
+    expect(btn(T.apply).disabled).toBe(true)
+    await act(async () => { btn(T.check).click() })
+    expect(planningApi.preview).toHaveBeenCalledOnce()
+    await act(async () => { btn(T.apply).click() })
+    expect(planningApi.apply).toHaveBeenCalledOnce()
+    await act(async () => { btn(T.wiz_again).click() })
+    expect(current()).toContain(T.wiz_kind)
   })
 
   it('sans droit : message clair, aucun menu', async () => {

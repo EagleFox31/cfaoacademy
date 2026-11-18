@@ -832,3 +832,27 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 - **Prévention** : Vite 8 ne lit que `build.watch.chokidar` (`usePolling`, `interval`) et écrase `watch.watcher`. Un build de vérification ponctuel ne se lance pas dans le conteneur qui fait déjà tourner la recette : on passe par un `compose run --rm`.
 - **Leçon généralisée** : mesurer le premier build et le rebuild, ainsi que le poids chargé par l'accueil, avant et après une migration d'outillage.
 - **Récidive** : non
+
+### 2026-11-18 — Build de contrôle bloqué, puis issuer perdu à la recréation du front (frontend)
+- **Contexte / symptôme** : un `vite build` de contrôle n'aboutissait pas (13 min, puis plus de 10 min). Ensuite, le passage du front à 2 Go par un `up -d` nu a de nouveau remis l'issuer sur `localhost:8080`.
+- **Cause racine** : le conteneur front (1 Go) fait déjà tourner le build continu (environ 300 Mo) et la preview (environ 100 Mo). Un troisième build (environ 440 Mo) saturait la mémoire, et Node passait son temps au ramasse-miettes. Pour l'issuer, `frontend/.env` (local) valait `8080`, et compose s'en sert pour l'interpolation : seule une variable passée dans le shell l'emportait.
+- **Correctif** : `mem_limit: 2g` (un plafond, Docker a 4 Go). `frontend/.env` et `.env.example` passent à l'issuer de l'edge (`8088/auth/realms/cfao`), de même que le défaut de `frontend/compose.dev.yml`. L'en-tête de `edge/compose.dev.yml` a été simplifié.
+- **Prévention** : la preuve de build est le build continu du conteneur. Son « built in » doit être postérieur à la dernière modification (`docker logs -t`), et le bundle doit contenir le changement. On ne lance pas de build parallèle. Avant une recréation : `docker compose -f frontend/compose.dev.yml config | grep VITE_OIDC_ISSUER` doit afficher `8088/auth`.
+- **Leçon généralisée** : une valeur qui doit survivre à une recréation va dans le `.env` du projet compose, pas dans le shell. Penser à vérifier ce que `compose config` résout réellement.
+- **Récidive** : oui (entrée « connexion hors edge après recréation du front » du même jour) : contrôle renforcé par le `.env` et le défaut du compose.
+
+### 2026-11-18 — Message « enregistré » d'un import effacé aussitôt (frontend, clé de répartition)
+- **Contexte / symptôme** : après « Enregistrer » sur l'écran Imports et gel, le message de succès et le compte rendu disparaissaient aussitôt. L'écran revenait à son état initial. Le problème a été découvert en écrivant le test du parcours pas à pas.
+- **Cause racine** : `onDataChanged` déclenchait `setReload`. Ce rechargement remettait `boot.loading` à vrai, ce qui remplaçait l'écran par le squelette : `PrepareView` était démonté et son état perdu.
+- **Correctif** : `onDataChanged` déclenche maintenant `refreshSilently`, qui met à jour les chiffres et les clés sans squelette. C'est déjà le mécanisme utilisé après une saisie dans le Devis.
+- **Prévention** : le test « Imports : une étape à la fois… » de `CleRepartition.test.jsx` clique sur « Nouvel import », ce qui n'est possible que si l'état a survécu à l'enregistrement.
+- **Leçon généralisée** : un rappel qui suit une action ne doit pas recharger la page entière quand l'écran porte un état utile (compte rendu, saisie). Il faut rafraîchir les données en silence.
+- **Récidive** : non
+
+### 2026-11-18 — Chiffres de la clé absents au retour sur le portail : refus Cerbos sur délai, sans trace (cfao-planning)
+- **Contexte / symptôme** : en revenant sur l'accueil du centre, la carte de la clé affichait « chiffres indisponibles ». Un rechargement suffisait. Le journal de l'edge montrait `/cost-keys/` en 403 entre deux 200 pour le même utilisateur.
+- **Cause racine** : le PDP Cerbos est joint par `host.docker.internal`, qui répond parfois en plus de 4 s (mesuré jusqu'à 4,25 s, et 21,8 s pour le JWKS). Le client ouvrait une connexion par décision avec un délai de 5 s. Sur délai dépassé, `check()` renvoyait False (fail-closed, à juste titre) sans rien journaliser : un incident réseau se lisait comme un vrai refus.
+- **Correctif** : `core/authz/cerbos.py` garde une session HTTP par fil, rejoue une fois sur délai dépassé ou connexion coupée (une décision est une lecture, sans effet de bord) et journalise chaque échec. Une erreur HTTP n'est pas rejouée. Le refus final reste fail-closed.
+- **Prévention** : `core/tests/test_cerbos_client.py` (délai rejoué puis accordé avec trace, PDP durablement absent refusé en deux essais au plus, erreur HTTP non rejouée).
+- **Leçon généralisée** : un refus fail-closed doit toujours laisser une trace qui distingue l'incident technique du vrai refus. Sans elle, on cherche un problème de droits qui n'existe pas.
+- **Récidive** : non

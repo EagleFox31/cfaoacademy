@@ -29,14 +29,15 @@ services:
         npx vite build --outDir /tmp/front-dist --emptyOutDir false &
         until [ -f /tmp/front-dist/index.html ]; do sleep 2; done;
         exec npx vite preview --outDir /tmp/front-dist --host 0.0.0.0 --port 5173 --strictPort
-    mem_limit: 1g
+    mem_limit: 2g # build continu + preview + un build de contrôle ponctuel ; plafond, pas une réservation
     restart: unless-stopped
     environment:
       VITE_POLLING: "1"
       FRONT_MODE: ${FRONT_MODE:-build}
       VITE_POSTE_DEV: "1"
       # Prime sur frontend/.env. Recette derrière edge : http://localhost:8088/auth/realms/cfao.
-      VITE_OIDC_ISSUER: ${VITE_OIDC_ISSUER:-http://localhost:8080/realms/cfao}
+      # Défaut = Keycloak derrière l'edge (recette 8088) : un `up -d` nu ne casse plus la connexion.
+      VITE_OIDC_ISSUER: ${VITE_OIDC_ISSUER:-http://localhost:8088/auth/realms/cfao}
       # host.docker.internal a aussi une adresse IPv6 injoignable : sans cela, le proxy expire au hasard.
       NODE_OPTIONS: --dns-result-order=ipv4first
       GATEWAY_SERVICE: http://host.docker.internal:8000

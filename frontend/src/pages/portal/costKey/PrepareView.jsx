@@ -1,5 +1,5 @@
 /**
- * « Imports et gel » : étapes numérotées, dans l'ordre du métier.
+ * « Préparer l'année » : charger les fichiers Excel pas à pas, puis valider les montants.
  *   - Créer la clé de l'année (s'il n'y en a pas) ; ses montants se règlent dans « Gestion des tarifs »
  *   - Importer un fichier : Vérifier (aperçu, rien n'est écrit) puis Enregistrer
  *   - Geler (coordinateur de formation)
@@ -14,12 +14,13 @@ const KINDS = ['sessions', 'calendar_grid', 'seat_allocations']
 const HAS_TEMPLATE = { sessions: true, calendar_grid: false, seat_allocations: true }
 const POLES = ['MOTORS', 'EQUIPMENT']
 const HISTORY_SHORT = 5
+const WIZARD = ['kind', 'template', 'file', 'check']
 
 function Step({ n, title, lead, children }) {
   return (
+    // Sans pastille numérotée : la numérotation appartient au fil d'étapes de l'import.
     <section className="ck-step" aria-labelledby={`ck-step-${n}`}>
       <header className="ck-step-head">
-        <span className="ck-step-num" aria-hidden="true">{n}</span>
         <div>
           <h2 id={`ck-step-${n}`}>{title}</h2>
           {lead && <p>{lead}</p>}
@@ -122,6 +123,7 @@ function ImportStep({ t, fmt, ckey, onApplied, canOverwrite }) {
   const [error, setError] = useState(null)
   const [history, setHistory] = useState([])
   const [inputKey, setInputKey] = useState(0)
+  const [step, setStep] = useState(0)
 
   const loadHistory = () => planningApi.imports().then(setHistory).catch(() => setHistory([]))
   useEffect(() => { loadHistory() }, [])
@@ -164,7 +166,8 @@ function ImportStep({ t, fmt, ckey, onApplied, canOverwrite }) {
     { id: 'message', header: t.col_message, type: 'text', width: 380, value: e => e.message },
   ], [t])
 
-  const pickFile = picked => { setFile(picked ?? null); reset() }
+  // Un fichier déposé mène tout de suite à la vérification.
+  const pickFile = picked => { setFile(picked ?? null); reset(); if (picked) setStep(3) }
   const drop = e => {
     e.preventDefault()
     const picked = e.dataTransfer.files?.[0]
@@ -182,69 +185,110 @@ function ImportStep({ t, fmt, ckey, onApplied, canOverwrite }) {
   const manualKept = report?.manual_kept ?? []
 
   const ok = report?.status === 'OK'
+  // Une étape à la fois : on n'avance au fichier qu'avec le type choisi, à la vérification
+  // qu'avec un fichier. Les étapes passées restent cliquables pour revenir en arrière.
+  const reachable = i => i <= 2 || Boolean(file)
+  const goTo = i => { if (reachable(i)) { setStep(i); setError(null) } }
+  const restart = () => { reset(); setStep(0) }
+  const last = WIZARD.length - 1
   return (
     <div className="ck-import">
-      <div className="ck-kinds" role="radiogroup" aria-label={t.col_kind}>
-        {KINDS.map(k => (
-          <button key={k} type="button" role="radio" aria-checked={kind === k}
-            className={`ck-kind${kind === k ? ' is-on' : ''}`}
-            onClick={() => { setKind(k); reset() }}>
-            <strong>{t[`kind_${k}`]}</strong>
-            <span>{t[`kind_${k}_hint`]}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="ck-flow">
-        <div className="ck-flow-step">
-          <strong>{t.flow_template}</strong>
-          {HAS_TEMPLATE[kind]
-            ? <button type="button" className="ck-btn" onClick={() => planningApi.downloadTemplate(kind).catch(e => setError(errText(t, e)))}>
-                {t.template}
+      <ol className="ck-wiz" aria-label={t.step2}>
+        {WIZARD.map((id, i) => {
+          const state = i < step ? 'done' : i === step ? 'current' : 'todo'
+          return (
+            <li key={id} className={`ck-wiz-item is-${state}`}>
+              <button type="button" className="ck-wiz-btn" onClick={() => goTo(i)}
+                disabled={!reachable(i) || i === step} aria-current={i === step ? 'step' : undefined}>
+                <span className="ck-wiz-num" aria-hidden="true">{state === 'done' ? '✓' : i + 1}</span>
+                <span className="ck-wiz-label">{t[`wiz_${id}`]}</span>
               </button>
-            : <span className="ck-muted">{t.no_template}</span>}
-        </div>
-        <div className="ck-flow-step">
-          <strong>{t.flow_file}</strong>
+            </li>
+          )
+        })}
+      </ol>
+
+      <div className="ck-wiz-panel">
+        {step === 0 && (
+          <>
+            <div className="ck-kinds" role="radiogroup" aria-label={t.col_kind}>
+              {KINDS.map(k => (
+                <button key={k} type="button" role="radio" aria-checked={kind === k}
+                  className={`ck-kind${kind === k ? ' is-on' : ''}`}
+                  onClick={() => { setKind(k); reset() }}>
+                  <strong>{t[`kind_${k}`]}</strong>
+                  <span>{t[`kind_${k}_hint`]}</span>
+                </button>
+              ))}
+            </div>
+            <div className="ck-import-options">
+              {kind === 'calendar_grid' && (
+                <label className="ck-field"><span>{t.year}</span>
+                  <input type="number" min="2020" max="2100" value={year}
+                    onChange={e => { setYear(e.target.value); reset() }} />
+                </label>
+              )}
+              {kind === 'seat_allocations' && (
+                <label className="ck-check">
+                  <input type="checkbox" checked={replace} onChange={e => { setReplace(e.target.checked); reset() }} />
+                  <span>{t.replace}</span>
+                </label>
+              )}
+              {kind === 'seat_allocations' && canOverwrite && (
+                <label className="ck-check">
+                  <input type="checkbox" checked={overwrite} onChange={e => { setOverwrite(e.target.checked); reset() }} />
+                  <span>{t.overwrite_manual}</span>
+                </label>
+              )}
+            </div>
+          </>
+        )}
+        {step === 1 && (
+          <>
+            <p className="ck-wiz-lead">{t.wiz_template_lead.replace('{kind}', t[`kind_${kind}`])}</p>
+            {HAS_TEMPLATE[kind]
+              ? <button type="button" className="ck-btn" onClick={() => planningApi.downloadTemplate(kind).catch(e => setError(errText(t, e)))}>
+                  {t.template}
+                </button>
+              : <span className="ck-muted">{t.no_template}</span>}
+          </>
+        )}
+        {step === 2 && (
           <label className={`ck-drop${file ? ' has-file' : ''}`} onDragOver={e => e.preventDefault()} onDrop={drop}>
             <input key={inputKey} type="file" accept=".xlsx" onChange={e => pickFile(e.target.files?.[0])} />
             <span>{file ? file.name : t.drop_file}</span>
           </label>
-        </div>
-        <div className="ck-flow-step">
-          <strong>{t.flow_check}</strong>
-          <div className="ck-form-actions">
-            <button type="button" className="ck-btn" disabled={!!busy || !file} onClick={() => run('check')}>
-              {busy === 'check' ? t.checking : t.check}
-            </button>
-            <button type="button" className="ck-btn ck-btn--primary" disabled={!!busy || !ok}
-              title={ok ? undefined : t.check_first} onClick={() => run('apply')}>
-              {busy === 'apply' ? t.applying : t.apply}
-            </button>
-          </div>
-          <small>{t.flow_check_hint}</small>
-        </div>
+        )}
+        {step === 3 && (
+          <>
+            <p className="ck-wiz-lead">{file ? `${t[`kind_${kind}`]} · ${file.name}` : t[`kind_${kind}`]}</p>
+            {!outcome && (
+              <div className="ck-form-actions">
+                <button type="button" className="ck-btn" disabled={!!busy || !file} onClick={() => run('check')}>
+                  {busy === 'check' ? t.checking : t.check}
+                </button>
+                <button type="button" className="ck-btn ck-btn--primary" disabled={!!busy || !ok}
+                  title={ok ? undefined : t.check_first} onClick={() => run('apply')}>
+                  {busy === 'apply' ? t.applying : t.apply}
+                </button>
+              </div>
+            )}
+            {!outcome && <small className="ck-muted">{t.flow_check_hint}</small>}
+          </>
+        )}
       </div>
 
-      <div className="ck-import-options">
-        {kind === 'calendar_grid' && (
-          <label className="ck-field"><span>{t.year}</span>
-            <input type="number" min="2020" max="2100" value={year}
-              onChange={e => { setYear(e.target.value); reset() }} />
-          </label>
+      <div className="ck-wiz-nav">
+        {step > 0 && !outcome && (
+          <button type="button" className="ck-btn" onClick={() => goTo(step - 1)}>{t.wiz_prev}</button>
         )}
-        {kind === 'seat_allocations' && (
-          <label className="ck-check">
-            <input type="checkbox" checked={replace} onChange={e => { setReplace(e.target.checked); reset() }} />
-            <span>{t.replace}</span>
-          </label>
+        {step < last && (
+          <button type="button" className="ck-btn ck-btn--primary" disabled={!reachable(step + 1)}
+            title={reachable(step + 1) ? undefined : t.err_FILE_REQUIRED} onClick={() => goTo(step + 1)}>
+            {t.wiz_next}
+          </button>
         )}
-        {kind === 'seat_allocations' && canOverwrite && (
-          <label className="ck-check">
-            <input type="checkbox" checked={overwrite} onChange={e => { setOverwrite(e.target.checked); reset() }} />
-            <span>{t.overwrite_manual}</span>
-          </label>
-        )}
+        {outcome && <button type="button" className="ck-btn ck-btn--primary" onClick={restart}>{t.wiz_again}</button>}
       </div>
 
       {error && <Banner tone="warn">{error}</Banner>}

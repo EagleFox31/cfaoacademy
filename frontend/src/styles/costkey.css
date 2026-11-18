@@ -95,6 +95,27 @@
 .ck-topbar .ck-year select:hover { background-color: #f7f8fa; box-shadow: inset 0 0 0 1px #b4bac9; }
 .ck-topbar-slot { display: contents; }
 .ck-topbar-tools .ck-pill-select select { font-weight: 650; }
+/* Fermer l'écran ouvert depuis le portail : dernier outil de la barre, après l'année. */
+.ck-close {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #0e1126;
+  border-radius: 50%;
+  background: #0e1126;
+  color: #fff;
+  font-size: 15px;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(14, 17, 38, 0.25);
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+/* Pastille encre et croix blanche : visible sur la barre en verre. `a.ck-close` : les liens
+   du portail sont bleus par défaut, la croix reste blanche. */
+.portal-page.ck-page .ck-topbar a.ck-close,
+.portal-page.ck-page .ck-topbar a.ck-close:visited { color: #fff; }
+.portal-page.ck-page .ck-topbar a.ck-close:hover { background: var(--red); border-color: var(--red); color: #fff; }
+.ck-close:focus-visible { outline: 2px solid #1a56db; outline-offset: 2px; }
 /* Noms de filiales en gras dans les tableaux (le combobox garde son propre poids). */
 .sheet-c .ck-country-label { font-weight: 700; color: #0e1126; }
 
@@ -588,6 +609,52 @@ button.ck-review-mark:focus-visible { outline: 2px solid #1a56db; outline-offset
 
 /* ── Écrans à formulaire : centrés dans la page, quelle que soit la largeur ── */
 .ck-view--center { width: 100%; max-width: 1120px; margin-inline: auto; }
+/* Préparer l'année : les étapes s'alignent sur la barre de page (même largeur) et restent des
+   panneaux pleins, lisibles sur la photo. `.ck-shell section` (plus spécifique) les rendait
+   transparents et sans marge intérieure. */
+.ck-steps.ck-view--center { max-width: none; }
+
+/* Import pas à pas : fil d'étapes, panneau de l'étape, Précédent / Suivant. */
+.ck-wiz { display: flex; gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: none; }
+.ck-wiz-item { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.ck-wiz-item:not(:last-child)::after { content: ''; flex: 1 1 24px; height: 2px; border-radius: 1px; background: #e3e5ec; }
+.ck-wiz-item.is-done:not(:last-child)::after { background: #1aab5b; }
+.ck-wiz-btn {
+  display: flex; align-items: center; gap: 10px; min-width: 0;
+  padding: 4px 6px; border: 0; border-radius: 8px; background: none;
+  font: inherit; color: var(--muted); cursor: pointer;
+}
+.ck-wiz-btn:disabled { cursor: default; }
+.ck-wiz-btn:not(:disabled):hover { background: #f2f3f6; }
+.ck-wiz-btn:focus-visible { outline: 2px solid #1a56db; outline-offset: 2px; }
+.ck-wiz-num {
+  flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid #d9dce5; background: #fff; font-size: 13px; font-weight: 700;
+}
+.ck-wiz-label { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ck-wiz-item.is-current .ck-wiz-btn { color: var(--ink); }
+.ck-wiz-item.is-current .ck-wiz-num { border-color: var(--ink); background: var(--ink); color: #fff; }
+.ck-wiz-item.is-done .ck-wiz-btn { color: var(--ink); }
+.ck-wiz-item.is-done .ck-wiz-num { border-color: #1aab5b; background: #1aab5b; color: #fff; }
+.ck-wiz-panel {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
+  min-height: 132px; padding: 20px; border: 1px solid #e3e5ec; border-radius: 10px; background: #fafbfc;
+}
+.ck-wiz-panel > .ck-kinds, .ck-wiz-panel > .ck-drop { align-self: stretch; }
+.ck-wiz-panel .ck-drop { padding-block: 36px; }
+.ck-wiz-lead { margin: 0; font-size: 14px; color: var(--muted); }
+.ck-wiz-nav { display: flex; justify-content: flex-end; gap: 10px; }
+.ck-wiz-nav:empty { display: none; }
+@media (max-width: 720px) {
+  .ck-wiz-label { display: none; }
+  .ck-wiz-item.is-current .ck-wiz-label { display: inline; }
+}
+.portal-page.ck-page .ck-shell section.ck-step {
+  padding: 20px 22px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(6px);
+  border-radius: 12px;
+}
 .ck-set-aside { align-self: center; margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
 /* Quatre colonnes de sens : les cartes se suivent de haut en bas, la dernière occupe sa colonne seule. */
 .ck-kpis--paired { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, auto); grid-auto-flow: column; }
@@ -600,19 +667,6 @@ button.ck-review-mark:focus-visible { outline: 2px solid #1a56db; outline-offset
 /* ── Imports : modèle, fichier, vérification ── */
 .ck-step-body > .ck-btn { align-self: flex-start; }
 .ck-kind span { line-height: 1.35; }
-.ck-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.ck-flow-step {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  min-width: 0;
-  padding: 14px 16px;
-  border: 1px solid #e3e5ec;
-  border-radius: 10px;
-  background: #fafbfc;
-}
-.ck-flow-step > small { font-size: 12.5px; line-height: 1.4; color: var(--muted); }
 .ck-drop {
   position: relative;
   display: block;
@@ -641,6 +695,7 @@ button.ck-review-mark:focus-visible { outline: 2px solid #1a56db; outline-offset
 .ck-hist .is-num { text-align: right; font-variant-numeric: tabular-nums; }
 .ck-link-btn { align-self: flex-start; padding: 0; border: 0; background: none; color: #1a56db; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
 .ck-link-btn:hover { text-decoration: underline; }
-@media (max-width: 900px) { .ck-flow { grid-template-columns: minmax(0, 1fr); } }
-.ck-delivery { display: inline-flex; align-items: center; gap: 6px; }
+.ck-delivery,
+.ck-pole-mark { display: inline-flex; align-items: center; gap: 6px; }
+.ck-pole-mark svg { flex: none; }
 .ck-delivery svg { flex: none; color: var(--muted, #6b7280); }

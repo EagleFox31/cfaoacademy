@@ -159,23 +159,24 @@ export default function CenterDirectorSections({ t, access }) {
       <Section id="besoins" t={t}>
         <Etat statut={statut} t={t} />
         <PortalStaggerGrid className={GRILLE_RAIL}>
-          {annees.flatMap(a => a.poles.map(p => {
-            const attendus = paysAttendus(a, p)
-            const etat = statutBesoins({ ...a, repondu: p.repondu, connus: attendus })
-            const titre = t.dir_besoins_card_pole.replace('{pole}', t[`pole_${p.pole}`] ?? p.pole)
+          {/* Une carte par année, tous pôles confondus : une filiale qui a répondu
+              pour Motors et pour Equipment ne compte qu'une fois. */}
+          {annees.map(a => {
+            const attendus = paysAttendus(a, a)
+            const etat = statutBesoins({ ...a, connus: attendus })
             return (
-              <div key={`${a.annee}-${p.pole}`} className="portal-card-anchor">
+              <div key={a.annee} className="portal-card-anchor">
                 <PvCard
                   cardMedia={<PortalIconMedia icon="besoins" tone={etat.chip} />}
                   kicker={
                     <span className={`portal-status-chip ${etat.chip}`}>{t[etat.cle]}</span>
                   }
-                  title={titreAnnee(titre, a.annee)}
+                  title={titreAnnee(t.dir_besoins_card, a.annee)}
                   meta={
                     <PortalCardKpis
                       items={[
-                        { value: p.repondu, total: attendus, label: t.kpi_countries },
-                        { value: p.besoins, label: t.kpi_needs },
+                        { value: a.repondu, total: attendus, label: t.kpi_countries },
+                        { value: a.besoins, label: t.kpi_needs },
                       ]}
                     />
                   }
@@ -186,7 +187,7 @@ export default function CenterDirectorSections({ t, access }) {
                 />
               </div>
             )
-          }))}
+          })}
         </PortalStaggerGrid>
       </Section>
 

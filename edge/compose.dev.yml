@@ -7,8 +7,7 @@
 # Ordre de lancement (depuis la racine du dépôt) :
 #   RAPPORTS_SECRET_KEY=x docker compose up -d cerbos
 #   docker compose -f edge/compose.dev.yml up -d --build
-#   VITE_OIDC_ISSUER=http://localhost:8088/auth/realms/cfao \
-#     docker compose -f frontend/compose.dev.yml up -d
+#   docker compose -f frontend/compose.dev.yml up -d   (issuer de l'edge via frontend/.env)
 #   OIDC_AUDIENCE=cfao-planning-api OIDC_TRUSTED_ISSUERS="http://localhost:8088/auth/realms/cfao=http://host.docker.internal:8088/auth/realms/cfao/protocol/openid-connect/certs" \
 #     docker compose -f cfao-planning/docker-compose.yml up -d
 #
