@@ -107,7 +107,9 @@ describe('Clé de répartition : écran ouvert depuis une carte du portail', () 
   })
 })
 
-describe('Clé de répartition : menu par rôle et vue tableur', () => {
+// Le premier rendu charge tous les écrans de la clé : sous charge (build continu du
+// conteneur), il dépassait 5 s et le délai dépassé faisait échouer les tests suivants.
+describe('Clé de répartition : menu par rôle et vue tableur', { timeout: 20000 }, () => {
   it('équipe Academy : navbar du portail, 5 entrées, tableau des filiales avec totaux', async () => {
     planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
     await show('/portail/cle-repartition')

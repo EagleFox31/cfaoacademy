@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { chiffresHero, etatAnnee, tauxRemplissage } from './CenterHome.jsx'
+import { alertesCle, chiffresHero, etatAnnee, tauxRemplissage } from './CenterHome.jsx'
 import { PAYS_ACADEMY, SECTIONS_DIRECTEUR, paysAttendus, statutBesoins, syntheseAnnee } from './CenterDirectorSections.jsx'
 import { resolveProfile } from './portalProfiles.js'
 import { getPortalNavSections } from '../../data/index.js'
@@ -93,6 +93,22 @@ describe('portail du centre de formation', () => {
     // Synthèse illisible : l'état vient des clés, sans chiffre inventé.
     expect(etatAnnee([{ status: 'FROZEN', seats_offered: null }], null))
       .toEqual({ statut: 'FROZEN', places: 0, offertes: null, repondu: 0, connues: 0, points: [] })
+  })
+
+  it('cloche : le coordinateur ouvre la session, le directeur lit sans lien d’action', () => {
+    const tCle = { review_open: 'Ouvrir', review_late: '{code} en retard ({country})' }
+    const points = [
+      { id: 1, issue: 'late', code: 'S12', country: 'CM', country_label: 'Cameroun' },
+      { id: 2, issue: 'inconnu', code: 'S13', country: 'CI', country_label: 'Côte d’Ivoire' },
+    ]
+    const ouvertes = []
+    const coord = alertesCle(points, tCle, 'fr', i => ouvertes.push(i.code))
+    expect(coord).toHaveLength(1)
+    expect(coord[0]).toMatchObject({ label: 'Cameroun · S12', text: 'S12 en retard (Cameroun)', cta: 'Ouvrir' })
+    coord[0].onOpen()
+    expect(ouvertes).toEqual(['S12'])
+    const dir = alertesCle(points, tCle, 'fr')
+    expect(dir).toEqual([{ id: 1, label: 'Cameroun · S12', text: 'S12 en retard (Cameroun)' }])
   })
 
   it('hero : pays de la carte et marques du périmètre officiel', () => {

@@ -72,23 +72,30 @@ export function etatAnnee(clesAnnee, g) {
 }
 
 /**
- * Charge la clé de la dernière année (synthèse tous pôles) : état, places,
- * réponses des filiales, points à traiter. Sans `detail` (page du directeur,
- * qui a ses propres rubriques), seuls les droits sont lus : pas d'appel dont
- * le résultat ne serait pas affiché.
+ * Alertes de la cloche à partir des points à traiter de la clé. Sans `ouvrir`
+ * (rôle observateur), l'alerte se lit sans lien d'action.
  */
-function useEtatCle(detail = true) {
+export function alertesCle(points, tCle, locale, ouvrir = null) {
+  return points.flatMap(i => {
+    const text = reviewText(tCle, locale, i)
+    if (!text) return []
+    const alerte = { id: i.id, label: `${i.country_label} · ${i.code}`, text }
+    return [ouvrir ? { ...alerte, cta: tCle.review_open, onOpen: () => ouvrir(i) } : alerte]
+  })
+}
+
+/**
+ * Charge la clé de la dernière année (synthèse tous pôles) : état, places,
+ * réponses des filiales, points à traiter. Le directeur aussi : sa cloche
+ * affiche les points.
+ */
+function useEtatCle() {
   const [etat, setEtat] = useState({ statut: 'chargement', access: null, annee: null, cle: null })
 
   useEffect(() => {
     let actif = true
     ;(async () => {
       try {
-        if (!detail) {
-          const access = await planningApi.access()
-          if (actif) setEtat({ statut: 'pret', access, annee: null, cle: null })
-          return
-        }
         const [access, cles] = await Promise.all([planningApi.access(), planningApi.keys()])
         const liste = Array.isArray(cles) ? cles : cles?.results ?? []
         if (!liste.length) {
@@ -103,7 +110,7 @@ function useEtatCle(detail = true) {
       }
     })()
     return () => { actif = false }
-  }, [detail])
+  }, [])
 
   return etat
 }
@@ -138,7 +145,7 @@ export default function CenterHome({ mode = 'director' }) {
   usePortalHeaderHeight(headerRef)
 
   const directeur = mode === 'director'
-  const { statut, access, annee, cle } = useEtatCle(!directeur)
+  const { statut, access, annee, cle } = useEtatCle()
 
   if (!user) return null
 
@@ -146,14 +153,10 @@ export default function CenterHome({ mode = 'director' }) {
   const points = access?.review ? cle?.points ?? [] : []
   const aTraiter = points.length
   const outils = planningMenu(access, { roles })
-  // La cloche remplace « Aide » : chaque point mène à la session concernée dans la fiche filiale.
-  const notifications = points.flatMap(i => {
-    const text = reviewText(tCle, locale, i)
-    return text
-      ? [{ id: i.id, label: `${i.country_label} · ${i.code}`, text, cta: tCle.review_open,
-        onOpen: () => navigate(lienCle('country', { annee, pays: i.country, session: i.code })) }]
-      : []
-  })
+  // La cloche remplace « Aide ». Coordinateur : chaque point mène à la session dans la
+  // fiche filiale. Directeur (observateur) : les mêmes points, en lecture seule.
+  const notifications = alertesCle(directeur ? cle?.points ?? [] : points, tCle, locale,
+    directeur ? null : i => navigate(lienCle('country', { annee, pays: i.country, session: i.code })))
 
   return (
     <>

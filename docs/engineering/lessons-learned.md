@@ -856,3 +856,11 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 - **Prévention** : `core/tests/test_cerbos_client.py` (délai rejoué puis accordé avec trace, PDP durablement absent refusé en deux essais au plus, erreur HTTP non rejouée).
 - **Leçon généralisée** : un refus fail-closed doit toujours laisser une trace qui distingue l'incident technique du vrai refus. Sans elle, on cherche un problème de droits qui n'existe pas.
 - **Récidive** : non
+
+### 2026-11-18 — 25 tests rouges d'un coup dans `CleRepartition.test.jsx`, verts une fois relancés (near miss, frontend)
+- **Contexte / symptôme** : la suite du portail a été lancée pendant le build continu du conteneur front. Le premier test du bloc « menu par rôle » a dépassé 5 s, puis les 24 suivants ont échoué (éléments introuvables). Relancée au calme : 137/137.
+- **Cause racine** : le premier rendu charge tous les écrans de la clé. Sous charge, il dépasse le délai par défaut de vitest (5 s), et le test interrompu laisse son rendu, qui fausse les suivants.
+- **Correctif** : délai de 20 s sur ce bloc (`describe(..., { timeout: 20000 })`).
+- **Prévention** : la suite du portail passe même avec le build continu actif.
+- **Leçon généralisée** : quand une série d'échecs commence par un délai dépassé, lire d'abord ce premier échec. Les suivants n'en sont que la conséquence.
+- **Récidive** : non
