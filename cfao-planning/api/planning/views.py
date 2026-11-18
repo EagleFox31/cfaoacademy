@@ -43,6 +43,7 @@ from .services.cost_key_global import (
 )
 from .services.cost_key_setup import SetupError, bootstrap, update
 from .services.plan_match import match
+from .services.trainer_load import trainer_load
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -506,6 +507,14 @@ class YearExportView(APIView):
         scope = _YearScope(request, year)
         sheets = [scope.sheet(r["country"]) for r in scope.table["rows"] if r["seats"]]
         return _xlsx(xlsx.full_workbook(scope.table, sheets, _lang(request)), f"cle-tous-{year}.xlsx")
+
+
+class YearTrainerLoadView(APIView):
+    """Charge des formateurs de l'année (prévisionnel tous pôles) : directeur du centre."""
+
+    def get(self, request, year):
+        allow(request, "planning_trainer_load", "view", str(year), {"orgPath": ["groupe"], "year": year})
+        return Response(trainer_load(year))
 
 
 class UnchosenModulesView(APIView):

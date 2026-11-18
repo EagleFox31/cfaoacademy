@@ -880,3 +880,11 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 - **Prévention** : avant de changer un chiffre d'une carte, chercher la fonction qui calcule le même chiffre sur les cartes voisines et la réutiliser.
 - **Leçon généralisée** : une question sur un chiffre ne vaut pas demande de nouvelle règle. On applique d'abord la règle déjà décidée.
 - **Récidive** : non
+
+### 2026-11-18 — Charge des formateurs refusée au directeur : politique Cerbos ajoutée mais pas chargée (cfao-planning)
+- **Contexte / symptôme** : la nouvelle section « Charge des formateurs » renvoyait 403 au directeur, alors que `cerbos compile` et les tests de politique passaient (directeur autorisé).
+- **Cause racine** : le PDP de la recette lit les politiques sur un montage Windows. La surveillance de fichiers ne traverse pas ce montage : la nouvelle politique `planning_trainer_load` n'était jamais chargée, et une ressource inconnue est refusée.
+- **Correctif** : `docker restart cfaoacademy-cerbos-1` (23 politiques chargées), puis le directeur reçoit 200.
+- **Prévention** : après tout ajout ou changement de politique, redémarrer le PDP et faire un appel `check` direct sur la nouvelle ressource avant de tester l'écran.
+- **Leçon généralisée** : des tests de politique verts prouvent la règle, pas son chargement. Vérifier aussi ce que le PDP qui tourne a réellement en mémoire.
+- **Récidive** : non

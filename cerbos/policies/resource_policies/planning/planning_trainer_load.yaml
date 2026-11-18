@@ -1,0 +1,13 @@
+# Ressource « planning_trainer_load » : charge des formateurs d'une année.
+# Lecture réservée au directeur du centre (pilotage de l'équipe) ; ni le
+# coordinateur, ni les filiales, ni les formateurs eux-mêmes.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: planning_trainer_load
+  rules:
+    - actions: ["view"]
+      effect: EFFECT_ALLOW
+      roles:
+        - center_director
+        - superadmin

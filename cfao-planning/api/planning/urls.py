@@ -26,6 +26,7 @@ urlpatterns = [
     path("years/<int:year>/countries/<slug:code>", v.YearCountrySheetView.as_view()),
     path("years/<int:year>/countries/<slug:code>.xlsx", v.YearCountrySheetXlsxView.as_view()),
     path("years/<int:year>/export.xlsx", v.YearExportView.as_view()),
+    path("years/<int:year>/trainer-load", v.YearTrainerLoadView.as_view()),
     path("imports/", v.ImportListView.as_view()),
     path("imports/<uuid:pk>", v.ImportDetailView.as_view()),
     path("imports/<slug:kind>/template", v.ImportTemplateView.as_view()),

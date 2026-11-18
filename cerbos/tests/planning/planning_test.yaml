@@ -68,6 +68,12 @@ resources:
     id: "*"
     attr:
       kind: "seat_allocations"
+  charge_2027:
+    kind: planning_trainer_load
+    id: "2027"
+    attr:
+      orgPath: ["groupe"]
+      year: 2027
   thematiques:
     kind: planning_catalog_gap
     id: k_2026
@@ -75,6 +81,34 @@ resources:
       orgPath: ["groupe"]
 
 tests:
+  - name: la charge des formateurs est reservee au directeur du centre
+    input:
+      principals: ["directeur_centre", "superadmin", "coordonnateur", "assistante", "formateur", "directeur_groupe", "dps_cmr"]
+      resources: ["charge_2027"]
+      actions: ["view"]
+    expected:
+      - principal: directeur_centre
+        resource: charge_2027
+        actions: {view: EFFECT_ALLOW}
+      - principal: superadmin
+        resource: charge_2027
+        actions: {view: EFFECT_ALLOW}
+      - principal: coordonnateur
+        resource: charge_2027
+        actions: {view: EFFECT_DENY}
+      - principal: assistante
+        resource: charge_2027
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: charge_2027
+        actions: {view: EFFECT_DENY}
+      - principal: directeur_groupe
+        resource: charge_2027
+        actions: {view: EFFECT_DENY}
+      - principal: dps_cmr
+        resource: charge_2027
+        actions: {view: EFFECT_DENY}
+
   - name: les points a traiter sont reserves au coordinateur
     input:
       principals: ["coordonnateur", "directeur_centre", "assistante", "dps_cmr"]

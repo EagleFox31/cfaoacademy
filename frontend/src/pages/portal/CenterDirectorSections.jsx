@@ -7,6 +7,7 @@ import PortalConstructionMedia from '../../components/PortalConstructionMedia.js
 import PortalIconMedia from '../../components/PortalIconMedia.jsx'
 import PortalCardKpis from '../../components/PortalCardKpis.jsx'
 import HomeOfferSections from '../../components/HomeOfferSections.jsx'
+import CenterTrainerLoad from './CenterTrainerLoad.jsx'
 import { planningApi } from '../../lib/planningApi.js'
 import { useLocation } from 'react-router-dom'
 import { lienPlanning } from '../../utils/planningAccess.js'
@@ -27,7 +28,7 @@ export function paysAttendus(a, p, anneeCourante) {
 }
 
 /** Ancres de la page, dans l'ordre : la navigation du directeur s'y aligne. */
-export const SECTIONS_DIRECTEUR = ['besoins', 'devis', 'offres', 'calendrier', 'rapports', 'roi', 'plateforme']
+export const SECTIONS_DIRECTEUR = ['besoins', 'devis', 'formateurs', 'offres', 'calendrier', 'rapports', 'roi', 'plateforme']
 
 const PLATEFORME = ['site', 'support', 'reports']
 
@@ -222,6 +223,8 @@ export default function CenterDirectorSections({ t, access }) {
           ))}
         </PortalStaggerGrid>
       </Section>
+
+      <CenterTrainerLoad t={t} annees={annees.map(a => a.annee)} statutAnnees={statut} />
 
       <HomeOfferSections backdrop={false} />
 
