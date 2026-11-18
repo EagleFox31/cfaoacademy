@@ -74,7 +74,7 @@ body {
   position: sticky; top: 0; z-index: 50;
   background: rgba(255,255,255,0.85);
   /* Flou partagé par toutes les variantes de la barre (accueil, portail, pages éditoriales). */
-  --nav-blur: saturate(180%) blur(22px);
+  --nav-blur: saturate(180%) blur(40px);
   --nav-bg-glass: rgba(255, 255, 255, 0.7);
   backdrop-filter: var(--nav-blur);
   -webkit-backdrop-filter: var(--nav-blur);
