@@ -7,6 +7,7 @@ import PortalDemoBar from '../../components/PortalDemoBar'
 import PortalReveal from '../../components/PortalReveal.jsx'
 import PortalStaggerGrid from '../../components/PortalStaggerGrid.jsx'
 import PortalAssistanceSection from '../../components/PortalAssistanceSection.jsx'
+import PortalConstructionMedia from '../../components/PortalConstructionMedia.jsx'
 import PvCard from '../../components/PvCard'
 import { scrollToPortalSection } from '../../utils/portalScroll.js'
 import useSiteEffects from '../../hooks/useSiteEffects'
@@ -17,7 +18,6 @@ import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
 import useAjustementEcran from '../../hooks/useAjustementEcran.js'
 import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
 import { sessionsAVenir } from '../../utils/sessionsAVenir.js'
-import { periodeLongue } from '../../utils/dates.js'
 import { adresseComptesRendus } from '../../utils/urlComptesRendus.js'
 import { resolvePortalCardBrand } from '../../utils/portalCardMedia.js'
 
@@ -35,6 +35,7 @@ const VISUEL_POLE = {
 
 /** Visuel des cartes de priorite, une par zone du portail. */
 const VISUEL_PRIORITE = {
+  comptesRendus: '/assets/img_cards/test_theorie_senior.jpg',
   sessions: '/assets/img_cards/clients-carte.jpg',
   assistance: '/assets/img_cards/techniciens-carte.jpg',
   journal: '/assets/img_cards/process_sav_equipment.png',
@@ -47,6 +48,20 @@ const VISUEL_ENTREE = {
   brouillon: '/assets/publics/process-sav.jpg',
 }
 
+/**
+ * Sections annoncees, sans ecran derriere (matrice des sections, colonne
+ * Formateur) : une carte en construction chacune, branchee ensuite une a une.
+ * `id` = ancre de la section, cible de la navbar (`PORTAL_NAV_SECTIONS.trainer`).
+ */
+const SECTIONS_A_VENIR = [
+  { id: 'formations', surtitre: 'formations_eyebrow', titre: 'formations_title',
+    cartes: [['formations_card', 'formations_meta']] },
+  { id: 'competences', surtitre: 'comp_eyebrow', titre: 'comp_title',
+    cartes: [['tests_card', 'tests_meta'], ['results_card', 'results_meta']] },
+  { id: 'certifs', surtitre: 'certifs_eyebrow', titre: 'certifs_title',
+    cartes: [['certifs_card', 'certifs_meta']] },
+]
+
 function visuelSession(session) {
   const { logo, label } = resolvePortalCardBrand(session.marque)
   return {
@@ -56,6 +71,29 @@ function visuelSession(session) {
   }
 }
 
+/** « 12–14 mars 2027 » dans la langue de l'interface. */
+function periode(locale, debut, fin) {
+  const d = new Date(debut)
+  const f = new Date(fin)
+  if (Number.isNaN(d.getTime()) || Number.isNaN(f.getTime())) return ''
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).formatRange(d, f)
+}
+
+/** Nombre de stagiaires, au singulier jusqu'a 1. */
+function stagiaires(t, n) {
+  return ((n <= 1 && t.session_trainees_one) || t.session_trainees).replace('{n}', n)
+}
+
+/** En-tete de section du portail : surtitre et titre. */
+function TeteSection({ surtitre, titre }) {
+  return (
+    <div className="portal-section-head">
+      <p className="portal-section-eyebrow">{surtitre}</p>
+      <h2 className="portal-section-title">{titre}</h2>
+    </div>
+  )
+}
+
 /**
  * Tableau de bord du formateur — calque sur celui du technicien.
  *
@@ -63,19 +101,23 @@ function visuelSession(session) {
  * `PortalReveal` avec surtitre et titre, grilles `PvCard`. Un formateur
  * qui a deja vu le portail cote apprenant n'a rien a reapprendre.
  *
- * Trois sections, dans l'ordre ou il en a besoin :
+ * Sections, dans l'ordre ou il en a besoin :
  *
  *   1. **Priorites** — une carte par zone du portail avec son compteur
- *      (sessions a venir, assistance aux techniciens). L'ancre historique
+ *      (comptes rendus a documenter, sessions a venir, assistance). L'ancre historique
  *      `a-documenter` reste son identifiant (cible du menu « Priorites »).
  *   2. **Comptes rendus** — les entrees du module, servi a part : en ouvrir
  *      un, reprendre un brouillon, relire les precedents.
  *   3. **Vos prochaines sessions** — ce qu'il anime bientot.
+ *   4. **Formations a dispenser**, **Tests et resultats** (resultats toutes
+ *      filiales, sur ses marques et domaines), **Certifications** : en
+ *      construction (`SECTIONS_A_VENIR`).
  */
 export default function TrainerHome() {
   useSiteEffects()
   const { user } = useAuth()
-  const { t } = useLocale('portal')
+  const { t } = useLocale('trainerHome')
+  const { t: tPortal, locale } = useLocale('portal')
   // Le module des comptes rendus est une application à part : on y va par
   // son adresse, pas par une route du portail.
   const ouvrirModule = chemin => window.location.assign(adresseComptesRendus({ pathname: chemin }))
@@ -103,25 +145,30 @@ export default function TrainerHome() {
   // Une carte par zone du portail, au modele des autres : la pastille
   // porte le nombre d'elements qui attendent le formateur, 0 compris.
   const priorites = [
+    // Le compte des saisies vit dans le module des comptes rendus : la carte
+    // y mene, sans nombre (comme le journal).
+    {
+      id: 'cr', img: VISUEL_PRIORITE.comptesRendus, nombre: null,
+      enAttente: t.prio_cr_chip, titre: t.prio_cr_title, meta: t.prio_cr_meta,
+      lien: '/portail/compte-rendu/a-documenter', cta: t.prio_cr_cta,
+    },
     {
       id: 'sessions', img: VISUEL_PRIORITE.sessions, nombre: aVenir.length,
-      enAttente: 'à venir', titre: 'Sessions de formation à venir',
-      meta: 'Les sessions de formation que vous animez prochainement.',
-      metaVide: 'Aucune session de formation planifiée pour le moment.',
-      section: aVenir.length ? 'sessions-a-venir' : null, cta: 'Voir les sessions de formation',
+      enAttente: t.prio_sessions_chip, titre: t.prio_sessions_title,
+      meta: t.prio_sessions_meta, metaVide: t.prio_sessions_empty,
+      section: aVenir.length ? 'sessions-a-venir' : null, cta: t.prio_sessions_cta,
     },
     {
       id: 'assistance', img: VISUEL_PRIORITE.assistance, nombre: assistanceEnAttente,
-      enAttente: 'en attente', titre: 'Assistance aux techniciens',
-      meta: 'Des techniciens attendent votre aide.',
-      metaVide: 'Aucune demande d’assistance en attente.',
-      section: null, cta: 'Voir les demandes',
+      enAttente: t.prio_assist_chip, titre: t.prio_assist_title,
+      meta: t.prio_assist_meta, metaVide: t.prio_assist_empty,
+      section: null, cta: t.prio_assist_cta,
     },
     ...(superadmin ? [{
       id: 'journal', img: VISUEL_PRIORITE.journal, nombre: null,
-      enAttente: 'équipe technique', titre: 'Journal des erreurs',
-      meta: 'Les erreurs du service des comptes rendus.',
-      lien: '/portail/journal-erreurs', cta: 'Ouvrir le journal des erreurs',
+      enAttente: t.prio_journal_chip, titre: t.prio_journal_title,
+      meta: t.prio_journal_meta,
+      lien: '/portail/journal-erreurs', cta: t.prio_journal_cta,
     }] : []),
   ]
 
@@ -141,10 +188,7 @@ export default function TrainerHome() {
             voit d'un coup d'oeil ou agir, sans carte vide. */}
         <PortalReveal id="a-documenter" className="portal-next-actions-viewport">
           <div ref={contenuPriorites} className="container" style={{ padding: '16px 32px' }}>
-            <div className="portal-section-head">
-              <p className="portal-section-eyebrow">{t.eyebrow_next_actions}</p>
-              <h2 className="portal-section-title">{t.title_next_actions}</h2>
-            </div>
+            <TeteSection surtitre={tPortal.eyebrow_next_actions} titre={tPortal.title_next_actions} />
             <PortalStaggerGrid>
               {priorites.map(c => (
                 <div key={c.id} className="portal-card-anchor">
@@ -173,10 +217,7 @@ export default function TrainerHome() {
         {/* ── 2. Le module compte rendu ─────────────────────────── */}
         <PortalReveal id="comptes-rendus">
           <div className="container" style={{ padding: '16px 32px' }}>
-            <div className="portal-section-head">
-              <p className="portal-section-eyebrow">Vos documents</p>
-              <h2 className="portal-section-title">Comptes rendus</h2>
-            </div>
+            <TeteSection surtitre={t.cr_eyebrow} titre={t.cr_title} />
 
             {/* Trois entrees, toujours presentes : commencer, reprendre,
                 retrouver. Les sessions a documenter se choisissent a
@@ -185,14 +226,12 @@ export default function TrainerHome() {
               <div className="portal-card-anchor">
                 <PvCard
                   img={VISUEL_ENTREE.nouveau}
-                  kicker={
-                    <span className="portal-status-chip progress">À rédiger</span>
-                  }
-                  title="Nouveau compte rendu"
-                  meta="Depuis une session de formation planifiée, ou en saisissant tout manuellement."
-                  cta="Commencer"
+                  kicker={<span className="portal-status-chip progress">{t.cr_new_chip}</span>}
+                  title={t.cr_new_title}
+                  meta={t.cr_new_meta}
+                  cta={t.cr_new_cta}
                   accentColor="#E3001B"
-                  hoverHint="Ouvrir un compte rendu"
+                  hoverHint={t.cr_new_hint}
                   onClick={() => ouvrirModule('/portail/compte-rendu/nouveau')}
                   corner
                 />
@@ -203,13 +242,11 @@ export default function TrainerHome() {
               <div className="portal-card-anchor">
                 <PvCard
                   img={VISUEL_ENTREE.brouillon}
-                  kicker={
-                    <span className="portal-status-chip todo">En cours</span>
-                  }
-                  title="Comptes rendus en cours"
-                  meta="Reprendre ou supprimer une saisie commencée — elles se retrouvent sur tout poste."
-                  cta="Voir les saisies"
-                  hoverHint="Choisir un compte rendu à reprendre"
+                  kicker={<span className="portal-status-chip todo">{t.cr_draft_chip}</span>}
+                  title={t.cr_draft_title}
+                  meta={t.cr_draft_meta}
+                  cta={t.cr_draft_cta}
+                  hoverHint={t.cr_draft_hint}
                   onClick={() => ouvrirModule('/portail/compte-rendu/en-cours')}
                   corner
                 />
@@ -218,13 +255,11 @@ export default function TrainerHome() {
               <div className="portal-card-anchor">
                 <PvCard
                   img={VISUEL_ENTREE.archive}
-                  kicker={
-                    <span className="portal-status-chip done">Archive</span>
-                  }
-                  title="Mes comptes rendus"
-                  meta="Les comptes rendus terminés s’y rangent."
-                  cta="Ouvrir l’archive"
-                  hoverHint="Voir les rapports produits"
+                  kicker={<span className="portal-status-chip done">{t.cr_archive_chip}</span>}
+                  title={t.cr_archive_title}
+                  meta={t.cr_archive_meta}
+                  cta={t.cr_archive_cta}
+                  hoverHint={t.cr_archive_hint}
                   onClick={() => ouvrirModule('/portail/compte-rendu/mes-rapports')}
                   corner
                 />
@@ -237,29 +272,23 @@ export default function TrainerHome() {
         {aVenir.length > 0 && (
           <PortalReveal id="sessions-a-venir">
             <div className="container" style={{ padding: '16px 32px' }}>
-              <div className="portal-section-head">
-                <p className="portal-section-eyebrow">Planning — animation</p>
-                <h2 className="portal-section-title">Vos prochaines sessions de formation</h2>
-              </div>
+              <TeteSection surtitre={t.sessions_eyebrow} titre={t.sessions_title} />
               <PortalStaggerGrid>
                 {aVenir.map(s => (
                   <div key={s.id} className="portal-card-anchor">
+                    {/* La fiche de session n'existe pas encore : visuel
+                        garde, chantier au survol, aucun lien. */}
                     <PvCard
                       {...visuelSession(s)}
                       kicker={
                         <span className={`portal-status-chip ${
                           s.statut === 'en_cours' ? 'progress' : 'todo'}`}>
-                          {s.statut === 'en_cours' ? 'En cours' : 'À venir'}
+                          {s.statut === 'en_cours' ? t.session_running : t.session_upcoming}
                         </span>
                       }
                       title={s.moduleFormation}
-                      meta={`${periodeLongue(s.debut, s.fin)} · ${s.participants.length} stagiaires · ${s.lieu}`}
-                      cta="Voir la session de formation"
-                      hoverHint="Voir la session de formation"
-                      // La fiche de session n'existe pas encore : la carte
-                      // reagit au clic, sans rediriger.
-                      onClick={() => {}}
-                      corner
+                      meta={`${periode(locale, s.debut, s.fin)} · ${stagiaires(t, s.participants.length)} · ${s.lieu}`}
+                      enConstruction={t.under_construction}
                     />
                   </div>
                 ))}
@@ -268,7 +297,28 @@ export default function TrainerHome() {
           </PortalReveal>
         )}
 
-        <PortalAssistanceSection t={t} variant="learner" />
+        {/* ── 4. Sections annoncees : cartes en construction ────── */}
+        {SECTIONS_A_VENIR.map(section => (
+          <PortalReveal key={section.id} id={section.id}>
+            <div className="container" style={{ padding: '16px 32px' }}>
+              <TeteSection surtitre={t[section.surtitre]} titre={t[section.titre]} />
+              <PortalStaggerGrid>
+                {section.cartes.map(([titre, meta]) => (
+                  <div key={titre} className="portal-card-anchor">
+                    <PvCard
+                      cardMedia={<PortalConstructionMedia label={t.under_construction} />}
+                      kicker={<span className="portal-status-chip todo">{t.chip_follow}</span>}
+                      title={t[titre]}
+                      meta={t[meta]}
+                    />
+                  </div>
+                ))}
+              </PortalStaggerGrid>
+            </div>
+          </PortalReveal>
+        ))}
+
+        <PortalAssistanceSection t={tPortal} variant="learner" />
       </main>
 
       <Footer />
