@@ -37,10 +37,58 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 | La base d'un module se crée et se met à jour seule à chaque `up` (job `migrate` dédié), en no-op si elle est à jour, sans écraser les données de prod | A, I, R | smoke sur base vide + second démarrage sans écriture + rejeu sur copie de base existante (AGENTS.md §7) |
 | Un lien entre deux modules se déclare dans leurs fichiers compose : `docker network connect` disparaît à la recréation du conteneur, et `external` impose une commande préalable | D, A, I | `test_maillage_inter_modules` + smoke jeton réel après recréation de chaque module, dans les deux ordres |
 | Une policy modifiée se prouve sur le PDP en marche : sur un montage Windows, il ne recharge pas seul | D | redémarrage de Cerbos puis lecture du droit par l'API avec un jeton réel |
+| Une valeur que des media queries doivent changer ne se pose jamais en style inline ; tout écran se mesure à 360 et 390 px (pas de défilement horizontal) | E, D | `CardRail.test.jsx` + mesure Playwright `scrollWidth` contre largeur d'écran |
+| Une copie alimentée par événements est aussi réalignée sur l'état courant au démarrage du fournisseur ; le délai d'un rattrapage hors requête se règle sur le temps mesuré de la réponse, pas sur celui d'une lecture | R, D | `test_startup_push_catches_up_planning_started_before_needs` + `test_sync_command_never_fails_the_migrate_job` (délai hors requête) |
 
 ## Entrées
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
+
+### 2026-11-17 — Rails de cartes illisibles sur téléphone, page plus large que l'écran (accueil public, portail)
+- **Contexte / symptôme** : sur téléphone, les cartes de marques de l'accueil étaient écrasées (4,5 cartes par écran, texte coupé), le bouton « Retour en haut » sortait à droite. Mesure à 390 px : page de 448 px.
+- **Impact** : accueil public inutilisable sur mobile ; détecté par l'utilisateur.
+- **Détection** : capture de l'utilisateur, puis mesure Playwright (largeur des cartes, `scrollWidth` contre largeur d'écran) à 320, 360, 390, 430, 768 et 1440 px.
+- **Cause racine** :
+  - `CardRail` posait `--rail-count` en style inline. Un style inline l'emporte sur toute règle de feuille, donc les media queries (2 cartes sous 900 px, 1 sous 560 px) ne s'appliquaient jamais.
+  - La barre publique (logo et libellé, menu, 3 drapeaux, connexion) mesurait 467 px pour 390 px d'écran.
+  - La bande collante des marques du portail ne se rétrécissait pas.
+- **Correctif** :
+  - `CardRail` ne pose plus que `--rail-count-lg` (grand écran) ; la CSS en dérive `--rail-count`.
+  - Sous 480 px, le logo s'affiche sans le libellé et les marges sont réduites ; sous 360 px, le logo descend à 30 px.
+  - Sous 680 px, la bande des marques devient un ruban qui défile.
+- **Prévention** : `CardRail.test.jsx` (pas de `--rail-count` inline). Tout écran se mesure à 360 et 390 px avant livraison : page sans défilement horizontal, cartes de rail d'au moins 1 par écran.
+- **Leçon généralisée** : une valeur que des media queries doivent pouvoir changer ne se pose jamais en style inline. Un composant passe sa valeur par une variable distincte que la CSS reprend.
+- **Catégorie** : responsive front
+- **Récidive** : non
+
+### 2026-11-17 — Copie des besoins de planning restée vide après un démarrage dans le mauvais ordre (recette)
+- **Contexte / symptôme** : le 16/11, cartes « Besoins 2026/2027 » du directeur à 0 / 24 pays et 0 besoin. `planning-migrate` a demandé le snapshot pendant que needs n'était pas encore migré (HTTP 500). La copie est restée vide jusqu'à un `sync_needs_snapshot` lancé à la main.
+- **Impact** : recette seulement ; en prod, tout redémarrage de planning avant needs aurait affiché des besoins nuls sans alerte.
+- **Détection** : visuelle, par l'utilisateur.
+- **Cause racine** : deux filets, percés tous les deux.
+  - Le relais de needs ne pousse que les lignes de l'outbox, c'est-à-dire les changements. Ici il n'y en avait aucun, car les données ont été posées avant les triggers et `needsstate` est vide, version 0.
+  - Le rattrapage de planning à la lecture coupe au bout de 2 s, alors que le snapshot complet (207 Ko) met de 1,3 à 3,4 s à répondre. Il échouait donc presque à chaque essai.
+- **Correctif** :
+  - `analytics/relay.py` : `StartupPush` pousse l'état courant une fois par démarrage du relais, même outbox vide, et réessaie avec le backoff de l'outbox jusqu'à ce que planning accepte. Il n'écrit rien. Planning ignore une version connue, donc ce push ne fait rien sur une copie à jour.
+  - `planning/clients/needs.py` : `OFFLINE_TIMEOUT_S = 30` pour le job migrate et le fil de fond. La lecture garde son délai court.
+- **Prévention** :
+  - Test needs : `test_startup_push_catches_up_planning_started_before_needs` (planning injoignable puis disponible, outbox vide).
+  - Tests planning : délai hors requête et délai de lecture.
+  - Smoke recette : copie vidée, puis push de démarrage, puis 2026 et 2027 de retour ; second démarrage sans écriture (`received_at` inchangé).
+- **Leçon généralisée** : un flux par événements ne transporte que des différences ; tout consommateur qui a pu manquer le premier état doit pouvoir le recevoir en entier au démarrage. Un délai se fixe sur une mesure de la réponse réelle, pas par analogie avec un autre appel.
+- **Catégorie** : intégration inter-modules
+- **Récidive** : non
+
+### 2026-11-17 — Fondu d'image piloté par `load` : peinture retardée de 1,3 s (near miss, cartes du portail)
+- **Contexte / symptôme** : flou d'attente des `PvCard` livré avec un fondu (image en `opacity: 0` jusqu'à l'événement `load` traité par React). Mesure Playwright : image chargée à 9,58 s, peinte à 10,94 s, et devenue l'élément LCP du portail.
+- **Impact** : aucun en prod ; le gain des variantes WebP aurait été masqué par un LCP plus tardif.
+- **Détection** : lecture de `loadTime` et `renderTime` des entrées `largest-contentful-paint`, avant de déclarer le lot fini.
+- **Cause racine** : l'affichage dépendait du fil principal (rendu React après `load`), occupé à évaluer les morceaux du tableau de bord au même moment.
+- **Correctif** : l'image n'est plus jamais masquée ; la miniature floue reste dessous (`::before`) et l'image la recouvre dès son décodage. La classe `is-loaded` ne sert plus qu'à retirer le flou derrière un PNG transparent. LCP mesuré ensuite : le titre (7,4 s), plus l'image.
+- **Prévention** : toute image au-dessus de la ligne de flottaison se vérifie par `renderTime - loadTime` des entrées LCP (script de mesure Playwright) ; aucun `opacity: 0` conditionné à un événement JS sur une image.
+- **Leçon généralisée** : un effet d'attente ne doit jamais retarder le contenu qu'il annonce ; ce qui est purement visuel se fait en CSS, sans attendre le JS.
+- **Catégorie** : performance front
+- **Récidive** : non
 
 ### 2026-11-14 — Lignes « total » d'un classeur importées comme données, puis écart 2026 cherché au mauvais endroit (cfao-planning)
 - **Contexte / symptôme** : la passation notait un écart 2026 inexpliqué de la clé de répartition (20/24 pays → 19/24, 2 158 → 1 368 besoins) et le soupçon d'un resync ou d'une perte de données.
@@ -693,4 +741,94 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 - **Prévention** : service `mail-worker` dans `docker-compose.yml`, et smoke test dont la sortie est collée dans le walkthrough.
 - **Leçon généralisée** : un mode synchrone en test ne couvre pas un chemin asynchrone de prod. Chaque processus (API, worker, cron) doit être déclaré et démarré au moins une fois.
 - **Catégorie** : release/déploiement
+- **Récidive** : non
+
+### 2026-11-16 — Keycloak du module besoins arrêté : script de lancement en CRLF (cfao-needs)
+- **Contexte / symptôme** : `needs-keycloak` sort en 255 au démarrage, « bootstrap-keycloak.sh: no such file or directory ».
+- **Cause racine** : `.gitattributes` force LF pour `keycloak/` et `edge/`, pas pour `cfao-needs/keycloak/` ; avec `core.autocrlf=true`, la copie Windows a le script en CRLF et l'image le copie tel quel.
+- **Correctif** : règle `cfao-needs/keycloak/** text=auto eol=lf`, fichiers ressortis en LF, image reconstruite.
+- **Prévention** : tout dossier copié dans une image Linux a sa règle `eol=lf` ; vérifier avec `git ls-files --eol <dossier>` qu'aucun fichier n'est en `w/crlf`.
+- **Leçon généralisée** : une image construite depuis Windows hérite des fins de ligne de la copie de travail, pas de celles du dépôt.
+- **Récidive** : non
+
+### 2026-11-16 — Backend mail inconnu : repli silencieux sur la console (cfao-academy-mail)
+- **Contexte / symptôme** : pendant le smoke `cfao-hub`, le lien de réinitialisation sort coupé de la console du worker. En relisant le code, on trouve aussi que `get_backend()` retombait sur la console pour toute valeur inconnue de `MAIL_EMAIL_BACKEND`.
+- **Cause racine** : la console tronquait le texte à 500 caractères, et le repli par défaut était la console, pas une erreur. Une faute de frappe en prod (`smpt`) aurait écrit les liens et codes secrets dans les journaux au lieu de les envoyer.
+- **Correctif** : la console affiche le texte entier (dev uniquement), et une valeur inconnue lève `ImproperlyConfigured`.
+- **Prévention** : `test_unknown_backend_fails_instead_of_printing_links` et `test_console_prints_the_whole_link` (`outbound/tests/test_deploy_guards.py`).
+- **Leçon généralisée** : un réglage inconnu doit faire échouer, pas retomber sur le mode le plus bavard. Repli silencieux et secrets ne vont pas ensemble.
+- **Catégorie** : sécurité
+- **Récidive** : non
+
+### 2026-11-16 — Bouton « recevoir un code » absent de la page de connexion (keycloak)
+- **Contexte / symptôme** : extension `cfao-password-or-email-form` chargée, flux `cfao-browser` actif, mais la première page de connexion ne montre pas le bouton de connexion par mail. Les pages d'erreur du mot de passe, elles, l'affichent.
+- **Cause racine** : l'attribut `cfaoMailLogin` était posé dans `createLoginForm`. Dans Keycloak 26.5, `UsernamePasswordForm.authenticate` rend la page par `challenge(ctx, formData)`, qui appelle directement `createLoginUsernamePassword()` sans passer par `createLoginForm`. Seul `challenge(ctx, error, field)`, utilisé pour les erreurs, y passe.
+- **Correctif** : l'attribut est aussi posé dans une surcharge de `challenge(ctx, formData)`. `context.form()` rend le même fournisseur pendant toute la requête.
+- **Prévention** : `test_la_page_de_connexion_propose_le_code_mail` (`keycloak/tests/smoke_login_mail.py`, lancé par la CI) vérifie le bouton sur la vraie image, sur la page d'arrivée et pas seulement sur une page d'erreur.
+- **Leçon généralisée** : quand on surcharge une classe de Keycloak, lire le chemin d'appel réel de la version utilisée, sans se fier au nom de la méthode. Un smoke sur la page d'arrivée prouve ce que la lecture du code ne prouve pas.
+- **Catégorie** : intégration
+- **Récidive** : non
+
+### 2026-11-16 — Smoke : cookie Secure perdu entre deux redirections (keycloak)
+- **Contexte / symptôme** : le lien de connexion ouvert dans un autre navigateur renvoie 400 `cookie_not_found` dans le smoke, alors que la connexion réussit dans un vrai navigateur.
+- **Cause racine** : le smoke parle à `http://localhost` et retire le drapeau Secure des cookies. Il ne le faisait qu'à la fin de la chaîne de redirections, pas après chaque réponse. Le cookie posé par la première réponse n'était donc pas renvoyé au saut suivant.
+- **Correctif** : `_suivre` désactive Secure avant chaque saut.
+- **Prévention** : tout client HTTP de smoke qui suit les redirections à la main traite les cookies à chaque saut, jamais seulement à la fin.
+- **Leçon généralisée** : un faux échec de test se diagnostique en traçant chaque saut (statut, Location, cookies), avant de suspecter le code testé.
+- **Catégorie** : tests
+- **Récidive** : non
+
+### 2026-11-16 — Recette 8088 : codes de connexion refusés par le hub (400) (cfao-academy-mail)
+- **Contexte / symptôme** : sur la recette locale, la page « Vérifiez votre boîte mail » s'affiche, mais aucun mail n'arrive. Keycloak journalise « refusé par le hub (400) ».
+- **Cause racine** : le lien de connexion est en `http://localhost:8088`, et hors DEBUG le hub n'accepte que des liens `https`. La passation disait « localhost dans MAIL_ALLOWED_LINK_HOSTS **ou** DJANGO_DEBUG=true », alors qu'il faut les deux en http.
+- **Correctif** : `.env` local du hub avec `DJANGO_DEBUG=true` et `localhost` ; `.env.example` explique les deux conditions.
+- **Prévention** : la consigne de recette se vérifie en faisant le parcours sur la recette elle-même (code reçu puis jeton), pas seulement sur la pile du smoke, qui avait déjà DEBUG.
+- **Leçon généralisée** : une pile de test qui diffère de la cible par un réglage (ici DEBUG) prouve le code, pas la consigne de déploiement. Rejouer le parcours sur la cible.
+- **Catégorie** : configuration
+- **Récidive** : non
+
+### 2026-11-16 — Changer de langue sur « recevoir un code » ramène au mot de passe (keycloak)
+- **Contexte / symptôme** : sur la page de demande de code, le lien de langue (`kc_locale`) réaffiche la page mot de passe.
+- **Cause racine** : les pages du parcours mail sont rendues par `action()` (POST) ; le lien de langue est un GET qui rappelle `authenticate()`, et celui-ci rendait toujours la première page. L'étape affichée n'était pas mémorisée.
+- **Correctif** : note de session `cfao.mail.step` posée à chaque rendu de page ; `authenticate()` réaffiche la page en cours ; effacée au retour au mot de passe et au succès.
+- **Prévention** : `smoke_login_mail.py::test_changer_de_langue_garde_la_page_du_code_mail`.
+- **Leçon généralisée** : toute page rendue depuis `action()` d'un authenticator doit survivre à un GET (langue, F5) : son état vit dans la session, pas dans le POST.
+- **Récidive** : non
+
+### 2026-11-16 — Recette lente au premier appel : VM WSL saturée (poste de dev)
+- **Contexte / symptôme** : portail directeur 6 à 12 s au premier chargement, 0,4 s au suivant ; chaque composant mesuré seul est rapide (JWKS 0,02 s, Cerbos 0,12 s, calcul d'une année < 0,2 s).
+- **Cause racine** : `.wslconfig` limitait Docker à 2 cœurs et 4 Go pour 24 conteneurs ; swap de 1 Go plein à 85 % : les services inactifs repartent du swap.
+- **Correctif** : `processors=6`, `swap=4GB` (RAM gardée à 4 Go : Windows n'a que 0,4 Go libre sur 8). Puis `wsl --shutdown`.
+- **Piège** : après `wsl --shutdown`, les conteneurs redémarrent mais leurs ports publiés peuvent rester muets (curl 52) : `docker restart` du conteneur recrée la redirection. Vérifier chaque port HTTP publié.
+- **Prévention** : avant de chercher une lenteur dans le code, lire `docker info` (NCPU, mémoire) et le swap (`/proc/meminfo`) ; arrêter les piles hors sujet.
+- **Complément (même jour, LCP mesuré à 21 s)** : la machine n'expliquait pas tout, le code amplifiait. Le portail importait les neuf tableaux de bord pour n'en afficher qu'un (513 requêtes Vite) ; planning tournait en workers synchrones (2 requêtes à la fois, les appels parallèles du portail faisaient la queue) et ne chargeait les clés OIDC qu'à la première requête (5,3 s). Correctif : `React.lazy` par rôle dans `Portal.jsx` (préchargé pendant l'écran d'accueil) ; `cfao-planning/api/gunicorn.conf.py` (2 workers × 4 threads, préchauffage JWKS par worker, testé dans `test_jwt_verifier.py`).
+- **Complément 2 (20:45, LCP 45 s malgré ce qui précède)** : la VM restait à une charge de 7,5 sur 6 CPU au repos, un fichier de 32 octets mettait 5 à 8 s. Deux causes trouvées par `docker stats` puis `top` dans `--pid=host` : Cerbos collé à son plafond (`CPU_CERBOS` 0,5) sans aucune requête, à cause du backend d'audit `local` (base Badger qui compacte en continu, mémoire à 150/192 Mo) → passé à `backend: file`, `path: stdout` (0 % et 46 Mo ensuite, 334 tests de politiques OK) ; Vite scrutait 1 331 fichiers à travers le montage Windows, dont 398 d'un dossier parasite `frontend/C:` (build lancé dans le conteneur avec un `outDir` Windows) et des `vite.config.js.timestamp-*` → supprimés et ajoutés aux `ignored`. Après : VM inactive à 80 %.
+- **Prévention** : au repos, aucun conteneur ne doit dépasser quelques % de CPU ; `docker stats --no-stream` avant toute mesure de LCP. Ne jamais passer un chemin Windows en `outDir` à un build lancé dans un conteneur Linux (utiliser `/tmp/...`).
+- **Leçon généralisée** : « lent au premier appel, rapide au second » signale une contention, mais il faut aussi chercher ce qui la provoque dans le code : travail fait d'avance pour rien (imports de vues jamais affichées) et travail fait trop tard (caches remplis par la première requête), serveur qui sérialise des appels parallèles. Corriger les deux, ne pas s'arrêter à la machine.
+- **Complément 3 (mode build)** : même VM au repos, le serveur de dev Vite mettait 15 s à afficher la connexion (138 modules servis un par un, 253 pour le portail). La recette 8088 est maintenant servie depuis un build (`FRONT_MODE=build` par défaut dans `frontend/compose.dev.yml`, `vite build` en surveillance + `vite preview`, `public/` lu en direct). Mesure Playwright : connexion 15 s → 4,5–6,8 s, LCP portail 11 s → 5,7–6,3 s, 80 requêtes. Near miss : `vite build --watch` remplace l'objet `build.watch` par `true` et perd la scrutation, donc aucun rebuild sur le montage Windows. La surveillance est déclarée dans `vite.config.js` uniquement. Prévention : après un changement de chaîne de build, toucher une source et constater le rebuild dans `docker logs`.
+- **Complément 4 (mesure fausse, IPv6)** : j'ai annoncé des images à 8–9 s « côté navigateur ». C'était faux : `time.sleep()` bloque la réception des événements Playwright, donc toute requête semblait finir après la pause. Mesurer avec la Resource Timing du navigateur et `page.wait_for_timeout()`, jamais `time.sleep()`. Vraie cause trouvée ensuite : la passerelle n'écoutait que sur `127.0.0.1:8088`, et `localhost` essaie `::1` d'abord, soit ~200 ms perdues par connexion (curl `localhost` 225 ms contre `127.0.0.1` 25 ms). Écoute `[::1]` ajoutée. Également faits : polices et drapeaux hébergés en local (@fontsource, flag-icons, plus aucun hôte externe), icônes de profil en WebP 768 px (22 Mo → 0,6 Mo), petits morceaux JS fusionnés (`experimentalMinChunkSize`, 86 → 59 requêtes). Prévention : toute publication de port en boucle locale se fait en IPv4 et en IPv6.
+- **Récidive** : non
+
+### 2026-11-17 — Import des fiches bloqué : filiale RGE absente de la base besoins (cfao-needs)
+- **Contexte / symptôme** : `import_need_workbooks` sur le dossier complet s'arrête sur `OrgUnitRef.DoesNotExist` ; la fiche RGE (Guinée équatoriale, `groupe.gnq`) n'avait jamais été importée.
+- **Cause racine** : `import_need_workbooks` reconnaît 8 filiales (`ORG_BY_FILE`), mais `seed_referential` n'amorçait que la racine. Les autres filiales avaient été créées à la main dans la base locale, et il en manquait une. Sur une base neuve, l'import échouait pour toutes.
+- **Correctif** : les 8 filiales des fiches entrent dans `ORG_UNITS` de `seed_referential` (job `needs-migrate`, création seule, jamais de réécriture). Le pays porte le libellé du planning (« Guinée équatoriale »), puisque le planning rapproche les besoins par ce nom.
+- **Prévention** : `test_base_vide_connait_chaque_filiale_des_fiches` (`core/tests/test_bootstrap.py`) exige que chaque filiale de `ORG_BY_FILE` existe après `bootstrap` sur base vide.
+- **Leçon généralisée** : une donnée dont dépend une commande du dépôt fait partie du référentiel amorcé. Une ligne ajoutée à la main en local masque le manque jusqu'à la première base neuve.
+- **Récidive** : non
+
+### 2026-11-18 — Recette 8088 : connexion hors edge après recréation du front (frontend)
+- **Contexte / symptôme** : après la migration vers Vite 8, `/login` de la recette n'envoyait plus vers Keycloak derrière l'edge (`8088/auth`).
+- **Cause racine** : `docker compose -f frontend/compose.dev.yml up -d` a été relancé sans `VITE_OIDC_ISSUER`, qui avait été passée dans le shell au démarrage d'origine. Le conteneur recréé a pris la valeur par défaut du compose (`localhost:8080`, Keycloak en direct).
+- **Correctif** : conteneur recréé avec `VITE_OIDC_ISSUER=http://localhost:8088/auth/realms/cfao`, la commande documentée dans `edge/compose.dev.yml`.
+- **Prévention** : avant de recréer un conteneur de recette, relever son environnement avec `docker exec <c> env | grep VITE_`, et relancer avec la commande d'en-tête de `edge/compose.dev.yml`. Après la relance, vérifier que le bundle contient `8088/auth/realms/cfao`.
+- **Leçon généralisée** : une variable passée seulement dans le shell est perdue à la recréation du conteneur. On relance avec la commande documentée, jamais avec un `up -d` nu.
+- **Récidive** : non
+
+### 2026-11-18 — Build de recette à 18 min : Vite 5 en mode watch sur montage Windows (frontend)
+- **Contexte / symptôme** : chaque modification demandait jusqu'à 18 min de rebuild sur 8088.
+- **Cause racine** : Rollup refaisait tout l'assemblage à chaque modification, avec 1 Go de mémoire saturée par des builds de vérification oubliés, et en scrutant aussi `node_modules`.
+- **Correctif** : passage à Vite 8.3.8 (Rolldown), plugin-react 6.3.0 et Vitest 5.1.1. Le lockfile a été régénéré, car npm refusait la résolution depuis l'ancien. `node_modules` est exclu de la surveillance. Mesures : premier build 30 à 60 s, rebuild après modification 19 s. Vitest : 356/356.
+- **Prévention** : Vite 8 ne lit que `build.watch.chokidar` (`usePolling`, `interval`) et écrase `watch.watcher`. Un build de vérification ponctuel ne se lance pas dans le conteneur qui fait déjà tourner la recette : on passe par un `compose run --rm`.
+- **Leçon généralisée** : mesurer le premier build et le rebuild, ainsi que le poids chargé par l'accueil, avant et après une migration d'outillage.
 - **Récidive** : non

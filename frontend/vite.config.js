@@ -13,12 +13,64 @@ const MIME = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
+  '.avif': 'image/avif',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.woff2': 'font/woff2',
+  '.json': 'application/json',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.txt': 'text/plain; charset=utf-8',
+}
+
+function envoyer(req, res, fichier) {
+  const st = fs.statSync(fichier)
+  const date = st.mtime.toUTCString()
+  res.setHeader('Content-Type', MIME[path.extname(fichier).toLowerCase()] ?? 'application/octet-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Last-Modified', date)
+  if (req.headers['if-modified-since'] === date) {
+    res.statusCode = 304
+    return res.end()
+  }
+  res.setHeader('Content-Length', st.size)
+  return fs.createReadStream(fichier).pipe(res)
+}
+
+function estFichier(p) {
+  try { return fs.statSync(p).isFile() } catch { return false }
+}
+
+/**
+ * Recette servie depuis un build (`vite preview`) : `public/` est lu en direct
+ * au lieu d'être copié à chaque build (images montées, catalogues, et
+ * `maintenance.json` que l'administrateur modifie à chaud).
+ */
+function publicEnDirect(req, res, next) {
+  const rel = decodeURIComponent((req.url ?? '').split('?')[0]).replace(/^\/+/, '')
+  if (!rel || rel.includes('..') || rel.startsWith('catalogues/')) return next()
+  const fichier = path.join(__dirname, 'public', rel)
+  return estFichier(fichier) ? envoyer(req, res, fichier) : next()
 }
 
 /** Sert aussi `../catalogues` (source projet) si le fichier n’est pas dans `public/catalogues`. */
 function cataloguesFallbackPlugin() {
   return {
     name: 'catalogues-fallback',
+    configurePreviewServer(server) {
+      server.middlewares.use(publicEnDirect)
+      server.middlewares.use((req, res, next) => {
+        const raw = req.url?.split('?')[0] ?? ''
+        if (!raw.startsWith('/catalogues/')) return next()
+        const rel = decodeURIComponent(raw.slice('/catalogues/'.length))
+        if (!rel || rel.includes('..')) return next()
+        const fichier = path.join(repoCatalogues, rel)
+        return estFichier(fichier) ? envoyer(req, res, fichier) : next()
+      })
+    },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const raw = req.url?.split('?')[0] ?? ''
@@ -79,6 +131,33 @@ export default defineConfig(({ mode }) => ({
   plugins: [react(), cataloguesFallbackPlugin(), avertirSansUrlComptesRendus(mode)],
   css: { postcss: { plugins: [unitesEcran] } },
   publicDir: 'public',
+  // FRONT_MODE=build (recette, frontend/compose.dev.yml) : `public/` est servi en
+  // direct par `vite preview`, et le build se refait à chaque modification.
+  // Surveillance activée ici, pas par `--watch` : l'option de la ligne de commande
+  // remplace tout l'objet par `true` et fait perdre la scrutation (montage Windows).
+  build: {
+    // Drapeaux (src/utils/drapeau.js) : 271 SVG, jamais incrustés dans le JS ;
+    // chacun reste un fichier, chargé seulement s'il est affiché.
+    assetsInlineLimit: (fichier) => (fichier.includes('/flag-icons/') ? false : undefined),
+    // Les tableaux de bord chargés à la demande tiraient ~35 morceaux de
+    // quelques Ko : en HTTP/1.1 (6 connexions), 1 à 2,6 s de file d'attente.
+    // Rolldown (Vite 8) n'a pas `experimentalMinChunkSize`. Mesure du 18/11 : découpage
+    // par défaut = accueil 5 fichiers / 865 Ko (Vite 5 : 1 / 921 Ko), mais 110 morceaux
+    // de moins de 20 Ko sur 128. Un groupe `codeSplitting.groups` des modules partagés
+    // alourdit l'accueil (18 à 24 fichiers, 1,5 Mo) : écarté, à affiner par écran.
+    ...(process.env.FRONT_MODE === 'build'
+      ? {
+        copyPublicDir: false,
+        // Scrutation sur le montage Windows. Vite 8 ne lit que `chokidar` (usePolling,
+        // interval) et en dérive l'option `watcher` de Rolldown : `watcher` serait écrasé.
+        // Dépendances exclues : elles ne changent qu'avec le lockfile, qui relance le conteneur.
+        watch: {
+          chokidar: process.env.VITE_POLLING ? { usePolling: true, interval: 1000 } : {},
+          exclude: ['**/node_modules/**', '**/public/**', '**/C:/**'],
+        },
+      }
+      : {}),
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,
@@ -92,7 +171,10 @@ export default defineConfig(({ mode }) => ({
         usePolling: true,
         interval: 1000,
         binaryInterval: 3000,
-        ignored: ['**/dist/**', '**/coverage/**', '**/public/assets/**', '**/public/catalogues/**'],
+        // Restes de build (dossier `C:` d'un outDir Windows lancé dans le conteneur,
+        // `vite.config.js.timestamp-*`) : des centaines de fichiers scrutés pour rien.
+        ignored: ['**/dist/**', '**/coverage/**', '**/public/assets/**', '**/public/catalogues/**',
+          '**/scripts/**', '**/C:/**', '**/*.timestamp-*.mjs'],
       }
       : undefined,
     // Cibles surchargeables : en conteneur, localhost désigne le conteneur lui-même.
