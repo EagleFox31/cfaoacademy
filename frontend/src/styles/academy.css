@@ -2321,7 +2321,7 @@ body.editorial-page-bg {
 }
 /* Même transparence que l’accueil — la photo reste visible sous la nav */
 body.editorial-page-bg .nav {
-  background: rgba(255, 255, 255, 0.52);
+  background: var(--nav-bg-glass);
 }
 body.editorial-page-bg .nav .nav-cta:not(.nav-cta--primary) {
   background: transparent;

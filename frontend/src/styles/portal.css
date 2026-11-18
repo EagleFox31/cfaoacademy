@@ -27,16 +27,10 @@ body.portal-bg-define-tech {
     var(--portal-page-bg);
 }
 
-body.portal-bg-define-tech .nav {
-  background: rgba(255, 255, 255, 0.52);
-  backdrop-filter: saturate(160%) blur(12px);
-  -webkit-backdrop-filter: saturate(160%) blur(12px);
-}
-
+/* Fond photo du portail : même verre que la barre de l'accueil (flou défini sur .nav). */
+body.portal-bg-define-tech .nav,
 body.portal-bg-active .nav {
-  background: rgba(255, 255, 255, 0.52);
-  backdrop-filter: saturate(160%) blur(12px);
-  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  background: var(--nav-bg-glass);
 }
 
 /* ── Sticky context bar ─────────────────────────── */

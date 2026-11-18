@@ -73,8 +73,11 @@ body {
 .nav {
   position: sticky; top: 0; z-index: 50;
   background: rgba(255,255,255,0.85);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  /* Flou partagé par toutes les variantes de la barre (accueil, portail, pages éditoriales). */
+  --nav-blur: saturate(180%) blur(22px);
+  --nav-bg-glass: rgba(255, 255, 255, 0.7);
+  backdrop-filter: var(--nav-blur);
+  -webkit-backdrop-filter: var(--nav-blur);
   border-bottom: 1px solid rgba(26, 31, 60, 0.14);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
@@ -197,7 +200,7 @@ body {
 }
 .nav-links a:hover { color: var(--red); }
 .nav--home {
-  background: rgba(255, 255, 255, 0.52);
+  background: var(--nav-bg-glass);
 }
 .nav--home .nav-links a {
   color: var(--ink);
