@@ -83,6 +83,18 @@
 
 ---
 
+## 6b. RÈGLE STRICTE : LE WORDING EST PRIMORDIAL (ÉCRANS ET RÉPONSES)
+
+> **DÉCISION UTILISATEUR (18/11/2026), VALABLE POUR TOUTES LES SESSIONS :**
+>
+> - **Zéro friction de lecture ou d'interprétation.** Si quelqu'un qui fait son travail se demande ce qu'un mot veut dire, ce mot doit changer.
+> - **Chaque portail sert un profil métier précis.** On écrit dans les mots de ce métier, pas dans ceux de l'équipe technique ni du modèle de données (pas de « GF », « palier », « charge », « couverture », « scope », sigles internes...).
+> - **Le lecteur est pressé, paresseux et ne veut pas réfléchir.** Chaque titre, carte ou chiffre doit se comprendre en une lecture, sans contexte : une question qu'il se pose, une réponse directe.
+> - **Test avant de livrer** : relire chaque libellé en se mettant à la place du profil. Un mot qui demande une explication = un mot à remplacer, pas une explication à ajouter.
+> - S'applique aussi aux propositions faites à l'utilisateur (maquettes, plans, réponses) : phrases simples, exemples concrets.
+
+---
+
 ## 7. RÈGLE STRICTE : CRÉATION DE BASE AUTOMATIQUE, IDEMPOTENTE, RÉTROACTIVE ET AGNOSTIQUE
 
 > **DÉCISION UTILISATEUR (31/10/2026), POUR CHAQUE MODULE QUI POSSÈDE UNE BASE :**
