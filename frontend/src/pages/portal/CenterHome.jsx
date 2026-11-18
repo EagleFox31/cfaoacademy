@@ -22,7 +22,7 @@ import { reviewText } from './costKey/reviewText.js'
 import { versBesoins } from '../../utils/urlBesoins.js'
 import { BRANDS, STATS } from '../../data/index.js'
 import PortalIconMedia from '../../components/PortalIconMedia.jsx'
-import CenterDirectorSections, { PAYS_ACADEMY, syntheseAnnee } from './CenterDirectorSections.jsx'
+import CenterDirectorSections, { PAYS_ACADEMY, paysAttendus, syntheseAnnee } from './CenterDirectorSections.jsx'
 
 const ROUGE = '#E3001B'
 
@@ -209,7 +209,8 @@ export default function CenterHome({ mode = 'director' }) {
                                     ? { value: cle.places, label: t.kpi_seats }
                                     : { value: cle.places, total: cle.offertes, label: t.kpi_seats },
                                   taux !== null && { value: taux, unit: '%', label: t.kpi_fill },
-                                  { value: cle.repondu, total: cle.connues, label: t.kpi_answers },
+                                  // Même total que le portail du directeur : tout le périmètre pendant le recueil.
+                                  { value: cle.repondu, total: paysAttendus({ annee, gelee: cle.statut === 'FROZEN' }, { connus: cle.connues }), label: t.kpi_answers },
                                 ]}
                               />
                             }

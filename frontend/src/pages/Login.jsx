@@ -5,6 +5,7 @@ import FormAlert, { FormFieldError } from '../components/FormAlert.jsx'
 import PageCloseButton from '../components/PageCloseButton.jsx'
 import LoginDemoDrawer from '../components/LoginDemoDrawer.jsx'
 import LoginParticles from '../components/LoginParticles.jsx'
+import PortalLoader from '../components/PortalLoader.jsx'
 import useSiteEffects from '../hooks/useSiteEffects.js'
 import useAuthForm from '../hooks/useAuthForm.js'
 import useLocale from '../hooks/useLocale.js'
@@ -97,7 +98,9 @@ export default function Login() {
     navigate('/portail')
   }
 
-  if (keycloakSeul) return null
+  // Keycloak peut mettre plusieurs secondes à répondre : le loader du portail
+  // plutôt qu'une page blanche pendant la redirection.
+  if (keycloakSeul) return <PortalLoader messages={[t.loaderRedirect]} ariaLabel={t.loaderRedirect} />
 
   return (
     <div className="login-page">
