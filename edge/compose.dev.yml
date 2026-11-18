@@ -22,6 +22,7 @@ services:
   keycloak-db:
     image: postgres:16-alpine
     mem_limit: 256m
+    restart: unless-stopped
     environment:
       POSTGRES_DB: keycloak
       POSTGRES_USER: keycloak
@@ -37,6 +38,7 @@ services:
     build: ../keycloak
     image: cfao-keycloak:recette
     mem_limit: 1024m
+    restart: unless-stopped
     environment:
       KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
       KC_DB_USERNAME: keycloak
@@ -50,6 +52,15 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
       JAVA_OPTS_KC_HEAP: "-XX:MaxRAMPercentage=70"
+      # Mails d'action (mot de passe, vérification) par le hub, joint sur cfao-maillage.
+      # La même clé figure dans MAIL_INBOUND_KEYS du hub (cfao-identity=<clé>).
+      KC_SPI_EMAIL_TEMPLATE__CFAO_HUB__URL: http://mail-api:5180
+      KC_SPI_EMAIL_TEMPLATE__CFAO_HUB__SERVICE_KEY: ${CFAO_IDENTITY_MAIL_KEY:-dev-identity-mail-key}
+      # Connexion par code mail. Adresse du support : .env local seulement (dépôt public) ;
+      # vide = pas d'alerte. Poivre vide = tiré au hasard à chaque démarrage (codes en cours perdus).
+      KC_SPI_AUTHENTICATOR__CFAO_PASSWORD_OR_EMAIL_FORM__SUPPORT_EMAIL: ${CFAO_LOGIN_SUPPORT_EMAIL:-}
+      KC_SPI_AUTHENTICATOR__CFAO_PASSWORD_OR_EMAIL_FORM__CODE_PEPPER: ${CFAO_LOGIN_CODE_PEPPER:-}
+    networks: [default, cfao-maillage]
     depends_on:
       keycloak-db: { condition: service_healthy }
     # Console d'administration, poste local seulement.
@@ -88,6 +99,7 @@ services:
   edge:
     build: .
     image: cfao-edge:recette
+    restart: unless-stopped
     read_only: true
     tmpfs: [/tmp]
     cap_drop: [ALL]
@@ -108,12 +120,20 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       keycloak: { condition: service_healthy }
-    ports: ["127.0.0.1:8088:8088"]
+    # Boucle locale IPv4 et IPv6 : « localhost » essaie ::1 en premier ; sans
+    # cette écoute, chaque connexion du navigateur attend ~200 ms le repli IPv4.
+    ports: ["127.0.0.1:8088:8088", "[::1]:8088:8088"]
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 8088"]
       interval: 15s
       timeout: 3s
       retries: 5
+
+networks:
+  # Réseau de maillage inter-modules (voir cfao-planning/docker-compose.yml) :
+  # Keycloak y joint le hub mail. Pas `external` : le premier démarré le crée.
+  cfao-maillage:
+    name: cfao-maillage
 
 volumes:
   keycloak-db-data:

@@ -77,41 +77,6 @@
   overflow: visible !important;
 }
 
-/* Bouton de fermeture (✕) en haut à droite, lien injecté par js/login.js */
-.login-pf-page .card-pf .cfao-close {
-  position: absolute;
-  top: -14px;
-  right: -14px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* !important : la règle générale « .login-pf-page a » fixe déjà couleur et taille en !important. */
-  color: var(--cfao-navy) !important;
-  font-size: 15px !important;
-  font-weight: 700;
-  line-height: 36px;
-  text-align: center;
-  text-decoration: none;
-  z-index: 10;
-  transition: transform 0.15s ease, color 0.15s ease;
-}
-
-.login-pf-page .card-pf .cfao-close:hover,
-.login-pf-page .card-pf .cfao-close:focus-visible {
-  transform: scale(1.05);
-  color: var(--cfao-red) !important;
-}
-
-.login-pf-page .card-pf .cfao-close:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-}
-
 /* ── Logo CFAO Mobility centré ───────────────────────────────────────────── */
 .login-pf-page .login-pf-header {
   position: relative !important;
@@ -389,54 +354,129 @@ button[type="submit"]#kc-login:hover,
   color: #ffe5e8 !important;
 }
 
-/* ── Sélecteur de langue Keycloak (Aligné sur la même ligne que le logo) ── */
-#kc-locale-wrapper,
+/* ── Barre minimale (parcours ciblé) : logo = retour à l'accueil, langue à droite ──
+   Pas la navbar de la landing : une page de connexion n'offre que la marque,
+   une sortie et la langue. js/login.js crée la barre dans <body>, hors de
+   .login-pf-page (la règle des liens de la carte ne l'atteint pas) et y déplace
+   le sélecteur de Keycloak ; sans JS, le sélecteur reste dans l'en-tête de la carte.
+   Pas de drapeaux : un drapeau désigne un pays, pas une langue (W3C i18n). */
+:root {
+  --cfao-globe: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230e1126' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9s1-6.5 3.5-9z'/%3E%3C/svg%3E");
+}
+
+.cfao-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px clamp(16px, 4vw, 32px);
+  background: linear-gradient(rgba(14, 17, 38, 0.55), rgba(14, 17, 38, 0));
+}
+
+/* Sortie vers l'accueil : texte, pas un 2e logo (celui de la carte suffit). */
+.cfao-topbar-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #fff;
+  color: #0e1126;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.cfao-topbar-home::before {
+  content: "\2190";
+  font-size: 16px;
+  line-height: 1;
+}
+
+.cfao-topbar-home:hover {
+  color: #e30613;
+}
+
+.cfao-topbar-home:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* La carte démarre sous la barre. */
+.login-pf-page {
+  padding-top: 72px !important;
+}
+
 #kc-locale {
-  position: absolute !important;
-  top: 14px !important;
-  right: 0 !important;
+  position: relative !important;
   margin: 0 !important;
   z-index: 20 !important;
-  display: flex !important;
-  justify-content: flex-end !important;
 }
 
-#kc-locale-wrapper button,
-#kc-locale-wrapper a,
+/* Resté dans l'en-tête de la carte (sans JS) : en haut à droite de la carte. */
+.login-pf-header #kc-locale {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+}
+
+#kc-locale-wrapper {
+  position: relative !important;
+  margin: 0 !important;
+}
+
 #kc-current-locale-link,
-.login-pf-page .card-pf .pf-c-dropdown__toggle,
-#kc-locale a {
-  color: #ffffff !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  font-family: var(--cfao-sans) !important;
-  background: rgba(255, 255, 255, 0.15) !important;
-  backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  border-radius: 8px !important;
-  padding: 5px 12px !important;
+.login-pf-page .card-pf #kc-current-locale-link {
+  height: 40px !important;
+  padding: 0 14px 0 12px !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 6px !important;
-  text-decoration: none !important;
+  gap: 8px !important;
+  background: #fff !important;
+  color: var(--cfao-navy) !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+  font-family: var(--cfao-sans) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
   cursor: pointer !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-  transition: all 0.15s ease !important;
+  transition: color 0.15s ease !important;
 }
 
-#kc-locale-wrapper button:hover,
-#kc-locale-wrapper a:hover,
 #kc-current-locale-link:hover,
-.login-pf-page .card-pf .pf-c-dropdown__toggle:hover,
-#kc-locale a:hover {
-  background: rgba(255, 255, 255, 0.28) !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  color: #ffffff !important;
+#kc-current-locale-link:focus-visible {
+  color: var(--cfao-red) !important;
 }
 
-#kc-locale-wrapper .pf-c-dropdown__toggle-icon,
-#kc-locale-wrapper i {
-  color: rgba(255, 255, 255, 0.85) !important;
+#kc-current-locale-link:focus-visible {
+  outline: 2px solid #fff !important;
+  outline-offset: 3px !important;
+}
+
+#kc-current-locale-link::before {
+  content: "" !important;
+  flex: none !important;
+  width: 18px !important;
+  height: 18px !important;
+  background: var(--cfao-globe) center / contain no-repeat !important;
+}
+
+#kc-current-locale-link::after {
+  content: "" !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-right: 2px solid currentColor !important;
+  border-bottom: 2px solid currentColor !important;
+  transform: translateY(-2px) rotate(45deg) !important;
+  margin-left: 2px !important;
 }
 
 #kc-locale ul,
@@ -444,6 +484,7 @@ button[type="submit"]#kc-login:hover,
   position: absolute !important;
   top: 100% !important;
   right: 0 !important;
+  left: auto !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
   border-radius: 8px !important;
   background: rgba(255, 255, 255, 0.98) !important;
@@ -453,22 +494,8 @@ button[type="submit"]#kc-login:hover,
   list-style: none !important;
   padding: 4px 0 !important;
   margin-top: 6px !important;
-  min-width: 110px !important;
+  min-width: 160px !important;
   z-index: 25 !important;
-}
-
-/* Sur mobile, le logo centré ne laisse pas la place : le sélecteur monte dans
-   la marge haute de la carte. */
-@media (max-width: 480px) {
-  .login-pf-page .card-pf {
-    padding-top: 76px !important;
-  }
-
-  #kc-locale-wrapper,
-  #kc-locale {
-    top: -24px !important;
-    right: 0 !important;
-  }
 }
 
 #kc-locale ul a,
@@ -477,7 +504,9 @@ button[type="submit"]#kc-login:hover,
   font-size: 13px !important;
   font-weight: 500 !important;
   padding: 8px 14px !important;
-  display: block !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
   text-decoration: none !important;
   background: transparent !important;
 }
@@ -512,4 +541,67 @@ button[type="submit"]#kc-login:hover,
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── Connexion par code mail (extension cfao-password-or-email-form) ─────── */
+.cfao-or {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin: 20px 0 6px !important;
+  color: rgba(255, 255, 255, 0.72) !important;
+  font-size: 13px !important;
+}
+
+.cfao-or::before,
+.cfao-or::after {
+  content: "" !important;
+  flex: 1 !important;
+  height: 1px !important;
+  background: rgba(255, 255, 255, 0.24) !important;
+}
+
+/* Bouton secondaire : contour blanc, jamais rouge (le rouge reste l'action principale). */
+.cfao-btn-secondary {
+  background: transparent !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.55) !important;
+  border-radius: 999px !important;
+  min-height: 40px !important;
+  padding: 8px 16px !important;
+  font-family: var(--cfao-sans) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+
+.cfao-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: #fff !important;
+}
+
+.cfao-btn-secondary:focus-visible {
+  outline: 2px solid #fff !important;
+  outline-offset: 2px !important;
+}
+
+.cfao-btn-wide {
+  width: 100% !important;
+  min-height: 48px !important;
+  margin-top: 8px !important;
+}
+
+.cfao-secondary-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  margin-top: 14px !important;
+}
+
+.cfao-help {
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  margin: 6px 0 0 !important;
 }

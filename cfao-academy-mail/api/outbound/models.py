@@ -30,6 +30,7 @@ class OutboundMessage(UUIDModel, TimeStampedModel):
         SENT = "SENT", "Envoyé"
         FAILED = "FAILED", "Échec"
         REJECTED = "REJECTED", "Rejeté"
+        EXPIRED = "EXPIRED", "Expiré"
 
     kind = models.CharField(max_length=96)
     status = models.CharField(
@@ -52,6 +53,10 @@ class OutboundMessage(UUIDModel, TimeStampedModel):
     rendered_text = models.TextField(blank=True)
     rendered_html = models.TextField(blank=True)
     context = models.JSONField(default=dict)
+    # Messages sensibles : champs secrets chiffrés (Fernet), vidés après envoi,
+    # échec ou expiration. Jamais lus ailleurs que dans l'envoi.
+    sealed_context = models.BinaryField(null=True, blank=True, editable=False)
+    expires_at = models.DateTimeField(null=True, blank=True)
 
     reviewed_by = models.CharField(max_length=128, blank=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)

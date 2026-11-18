@@ -16,6 +16,10 @@
     "cfao-planning": {
       "dockerfile": "cfao-planning/api/Dockerfile",
       "images": []
+    },
+    "keycloak": {
+      "dockerfile": "keycloak/Dockerfile",
+      "images": ["antifragile237/cfao-keycloak"]
     }
   },
   "contracts": [
@@ -24,7 +28,17 @@
       "provider": "cfao-academy-mail",
       "format": "openapi",
       "spec": "cfao-academy-mail/api/outbound/contract/mail.openapi.json",
-      "consumers": []
+      "consumers": [
+        {
+          "module": "keycloak",
+          "range": "^0.2",
+          "client_files": [
+            "keycloak/spi/src/main/java/com/cfao/academy/keycloak/hub/HubMail.java",
+            "keycloak/spi/src/main/java/com/cfao/academy/keycloak/hub/HubClient.java"
+          ],
+          "tests": ["keycloak/spi/src/test/java/com/cfao/academy/keycloak/hub/HubMailContractTest.java"]
+        }
+      ]
     },
     {
       "id": "needs-analytics",

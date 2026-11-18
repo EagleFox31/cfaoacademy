@@ -170,6 +170,13 @@ def test_job_ci_edge_filtre_sur_ses_chemins():
 
 
 MAILLAGE = "cfao-maillage"
+# Serveurs qui appellent des API du maillage sans être une API de module (liste nominative :
+# une base ou un service nouveau reste refusé tant qu'il n'est pas ajouté ici, avec sa raison).
+APPELANTS = {
+    "keycloak",          # mails de Keycloak par le hub (mail-api)
+    "needs-relay",       # pousse la copie des besoins à planning-api
+    "planning-migrate",  # premier rattrapage de la copie des besoins depuis needs-api
+}
 
 
 def _composes_du_maillage():
@@ -194,7 +201,7 @@ def _ecarts_maillage(composes):
             reseaux = service.get("networks") or []
             if MAILLAGE not in reseaux:
                 continue
-            if not nom.endswith("-api"):
+            if not nom.endswith("-api") and nom not in APPELANTS:
                 ecarts.append(f"{fichier} : {nom} n'est pas une API, il reste hors du maillage")
             options = reseaux[MAILLAGE] if isinstance(reseaux, dict) else None
             for joignable in [nom, *((options or {}).get("aliases") or [])]:
@@ -212,7 +219,8 @@ def _compose(service="a-api", cle=MAILLAGE, reseau=None):
 def test_maillage_inter_modules():
     composes = _composes_du_maillage()
     assert {"cfao-planning/docker-compose.yml", "cfao-needs/docker-compose.yml",
-            "cfao-needs/docker-compose.prod.yml", "template-service/docker-compose.yml"} <= set(composes)
+            "cfao-needs/docker-compose.prod.yml", "template-service/docker-compose.yml",
+            "cfao-academy-mail/docker-compose.yml", "edge/compose.dev.yml"} <= set(composes)
     assert _ecarts_maillage(composes) == []
 
 
@@ -221,8 +229,9 @@ def test_maillage_inter_modules():
     {"a/c.yml": _compose(reseau={"name": "cfao-maillage-2"})},
     {"a/c.yml": _compose(cle="maillage")},
     {"a/c.yml": _compose(service="a-db")},
+    {"a/c.yml": _compose(service="keycloak-db")},
     {"a/c.yml": _compose(), "b/c.yml": _compose()},
-], ids=["external", "autre-nom", "autre-cle", "base-sur-le-reseau", "nom-en-double"])
+], ids=["external", "autre-nom", "autre-cle", "base-sur-le-reseau", "base-de-keycloak", "nom-en-double"])
 def test_maillage_refuse_les_ecarts(composes):
     assert _ecarts_maillage(composes)
 

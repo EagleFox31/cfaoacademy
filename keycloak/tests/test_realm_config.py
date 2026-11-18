@@ -92,6 +92,24 @@ def test_session_huit_heures_et_inactivite_trente_minutes(realm):
     assert realm["bruteForceProtected"] is True
 
 
+def test_flux_de_connexion_mot_de_passe_ou_code_mail(realm):
+    flux = {f["alias"]: f for f in realm.get("authenticationFlows", [])}
+    assert realm.get("browserFlow") == "cfao-browser"
+    racine = flux["cfao-browser"]
+    assert racine["topLevel"] is True and racine["providerId"] == "basic-flow"
+    etapes = {e.get("authenticator") or e.get("flowAlias"): e["requirement"]
+              for e in racine["authenticationExecutions"]}
+    assert etapes == {"auth-cookie": "ALTERNATIVE",
+                      "identity-provider-redirector": "ALTERNATIVE",
+                      "cfao-browser-forms": "ALTERNATIVE"}
+    formulaires = flux["cfao-browser-forms"]
+    assert formulaires["topLevel"] is False
+    # Un seul formulaire : mot de passe ou code mail. Pas de second facteur caché
+    # ni de formulaire « username-password » d'origine qui contournerait l'extension.
+    assert [(e["authenticator"], e["requirement"]) for e in formulaires["authenticationExecutions"]] \
+        == [("cfao-password-or-email-form", "REQUIRED")]
+
+
 @pytest.mark.parametrize("module", API)
 def test_chaque_api_a_son_client_bearer_only(realm, module):
     client = _clients(realm)[f"cfao-{module}-api"]
@@ -199,7 +217,9 @@ def test_compose_de_prod_sans_secret_par_defaut():
     services = prod["services"]
     for nom, cle in (("keycloak-db", "POSTGRES_PASSWORD"), ("keycloak", "KC_DB_PASSWORD"),
                      ("keycloak", "KC_BOOTSTRAP_ADMIN_PASSWORD"), ("keycloak", "KC_HOSTNAME"),
-                     ("keycloak", "KC_HOSTNAME_ADMIN"), ("config","KEYCLOAK_PASSWORD"), ("config", "CFAO_PORTAL_SECRET"),
+                     ("keycloak", "KC_HOSTNAME_ADMIN"),
+                     ("keycloak", "KC_SPI_AUTHENTICATOR__CFAO_PASSWORD_OR_EMAIL_FORM__CODE_PEPPER"),
+                     ("config","KEYCLOAK_PASSWORD"), ("config", "CFAO_PORTAL_SECRET"),
                      ("config", "CFAO_PORTAL_REDIRECT_URIS"), ("config", "CFAO_NEEDS_REDIRECT_URIS")):
         assert re.fullmatch(r"\$\{[A-Z_]+:\?.+\}", services[nom]["environment"][cle]), f"{nom}.{cle}"
     # Émetteur canonique, chemin réseau des modules libre.
@@ -216,7 +236,8 @@ def test_image_servie_sous_auth():
     # chemin que son URL publique, aucun proxy ne retire le préfixe.
     dockerfile = (RACINE / "keycloak" / "Dockerfile").read_text(encoding="utf-8")
     etages = dockerfile.split("\nFROM ")
-    for etage in (etages[2], etages[3]):  # builder, puis image finale
+    builder = next(e for e in etages if " AS builder\n" in e)
+    for etage in (builder, etages[-1]):  # builder, puis image finale
         assert "KC_HTTP_RELATIVE_PATH=/auth" in etage
         assert "KC_HTTP_MANAGEMENT_RELATIVE_PATH=/" in etage  # healthcheck 9000/health/ready
     prod = yaml.safe_load((RACINE / "keycloak" / "compose.prod.yml").read_text(encoding="utf-8"))

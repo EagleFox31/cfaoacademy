@@ -2,3 +2,5 @@
 !Dockerfile
 !themes/
 !config/*.yaml
+!spi/pom.xml
+!spi/src/main/

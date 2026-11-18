@@ -44,6 +44,15 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
       JAVA_OPTS_KC_HEAP: "-XX:MaxRAMPercentage=70"
+      # Mails d'action et connexion par code par le hub cfao-academy-mail. URL vide =
+      # extension inactive (mails SMTP de Keycloak, pas de connexion par code).
+      KC_SPI_EMAIL_TEMPLATE__CFAO_HUB__URL: ${CFAO_HUB_URL:-}
+      KC_SPI_EMAIL_TEMPLATE__CFAO_HUB__SERVICE_KEY: ${CFAO_IDENTITY_MAIL_KEY:-}
+      # Poivre des codes (>= 32 caractères), obligatoire : un poivre tiré au hasard
+      # à chaque démarrage invaliderait les codes en cours.
+      KC_SPI_AUTHENTICATOR__CFAO_PASSWORD_OR_EMAIL_FORM__CODE_PEPPER: ${CFAO_LOGIN_CODE_PEPPER:?CFAO_LOGIN_CODE_PEPPER manquant}
+      # Destinataire des alertes « adresse inconnue » ; vide = pas d'alerte.
+      KC_SPI_AUTHENTICATOR__CFAO_PASSWORD_OR_EMAIL_FORM__SUPPORT_EMAIL: ${CFAO_LOGIN_SUPPORT_EMAIL:-}
     depends_on:
       keycloak-db: { condition: service_healthy }
     # Local par défaut : la passerelle (réseau hôte) et la migration y passent.

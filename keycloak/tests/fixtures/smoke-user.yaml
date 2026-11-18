@@ -20,3 +20,25 @@ users:
         - "groupe.afrique_ouest.cote_divoire.abidjan_plateau"
     credentials:
       - { type: password, value: demo, temporary: false }
+  # Connexion par code mail (smoke_login_mail.py) : comptes sans mot de passe.
+  - username: mail.limite
+    enabled: true
+    emailVerified: true
+    email: mail.limite@cfao.example
+    firstName: Limite
+    lastName: Smoke
+    realmRoles: [learner]
+  - username: super.admin.smoke
+    enabled: true
+    emailVerified: true
+    email: super.admin@cfao.example
+    firstName: Super
+    lastName: Admin
+    realmRoles: [superadmin]
+  - username: compte.desactive
+    enabled: false
+    emailVerified: true
+    email: compte.desactive@cfao.example
+    firstName: Compte
+    lastName: Desactive
+    realmRoles: [learner]

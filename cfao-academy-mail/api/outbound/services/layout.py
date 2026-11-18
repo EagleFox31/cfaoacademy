@@ -149,27 +149,34 @@ def shell_html(
     locale: str = "fr",
     preheader: str = "",
     kicker: str = "CFAO ACADEMY",
+    html_after_cta: list[str] | None = None,
 ) -> str:
+    """`html_after_cta` : paragraphes (déjà échappés) placés sous le bouton."""
     lang = _lang(locale)
     paragraphs = paragraphs or []
     preview = preheader.strip() or next((p.strip() for p in paragraphs if p.strip()), title)
     blocks = []
     sources = html_paragraphs if html_paragraphs is not None else [escape(p) for p in paragraphs]
-    for paragraph in sources:
-        if not str(paragraph).strip():
-            continue
-        blocks.append(
-            '<tr><td class="mail-text" style="padding:12px 32px 0;font-family:Arial,Helvetica,sans-serif;'
-            f'font-size:16px;line-height:24px;color:{INK};">\n'
-            f"{paragraph}\n"
-            "</td></tr>\n"
-        )
+
+    def _rows(items):
+        for paragraph in items:
+            if not str(paragraph).strip():
+                continue
+            blocks.append(
+                '<tr><td class="mail-text" style="padding:12px 32px 0;font-family:Arial,Helvetica,sans-serif;'
+                f'font-size:16px;line-height:24px;color:{INK};">\n'
+                f"{paragraph}\n"
+                "</td></tr>\n"
+            )
+
+    _rows(sources)
     if cta_url and cta_label:
         blocks.append(
             '<tr><td style="padding:24px 32px 8px;">\n'
             f"{button_html(cta_url, cta_label)}"
             "</td></tr>\n"
         )
+    _rows(html_after_cta or [])
     safe_title = escape(title)
     safe_footer = escape(footer)
     safe_preview = escape(preview)
@@ -235,6 +242,46 @@ def shell_html(
         "</body>\n"
         "</html>\n"
     )
+
+
+def code_display(code: str) -> str:
+    """482913 devient « 482 913 » : plus facile à recopier. Toute autre valeur reste telle quelle."""
+    value = (code or "").strip()
+    if len(value) == 6 and value.isdigit():
+        return f"{value[:3]} {value[3:]}"
+    return value
+
+
+def code_block_html(code: str, note: str = "") -> str:
+    """Code de connexion en gros, d'après le bloc MEDACAP. Tableau : Outlook ignore le padding d'un div."""
+    note_row = (
+        f'<tr><td align="center" class="mail-muted" style="padding:0 16px 14px;font-family:Arial,Helvetica,sans-serif;'
+        f'font-size:13px;line-height:18px;color:{MUTED};">{escape(note)}</td></tr>'
+        if note else ""
+    )
+    return (
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+        f'bgcolor="{PAGE}" style="background-color:{PAGE};border-radius:8px;margin:4px 0;">'
+        '<tr><td align="center" class="mail-text" style="padding:16px 16px 6px;'
+        "font-family:'Courier New',Courier,monospace;font-size:32px;line-height:38px;font-weight:bold;"
+        f'letter-spacing:8px;color:{INK};">{escape(code)}</td></tr>'
+        f"{note_row}"
+        "</table>"
+    )
+
+
+def paragraphs_html(text: str, url: str = "", code: str = "") -> list[str]:
+    """Paragraphes échappés ; le paragraphe qui commence par le code devient le bloc du code."""
+    blocks = []
+    for block in (text or "").replace("\r\n", "\n").split("\n\n"):
+        lines = [line.strip() for line in block.split("\n") if line.strip()]
+        if code and lines and lines[0] == code:
+            blocks.append(code_block_html(code, " ".join(lines[1:])))
+            continue
+        lines = [line for line in lines if line != url.strip()]
+        if lines:
+            blocks.append(escape(" ".join(lines)))
+    return blocks
 
 
 def paragraphs_from_text(text: str, url: str = "") -> list[str]:

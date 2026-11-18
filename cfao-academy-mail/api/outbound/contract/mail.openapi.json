@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "CFAO Academy Mail",
-    "version": "0.1.0",
-    "description": "Hub d'envoi. Les modules passent le contexte et l'adresse du bouton. Un champ requis manquant est refusé (400), le mail n'est pas envoyé."
+    "version": "0.2.0",
+    "description": "Hub d'envoi. Les modules passent le contexte et l'adresse du bouton. Un champ requis manquant est refusé (400), le mail n'est pas envoyé. Message sensible (x-secret-context) : les secrets ne sont jamais stockés en clair, le message part une seule fois et seule une clé liée à x-allowed-sources peut l'envoyer."
   },
   "paths": {
     "/api/v1/mail/healthz": {
@@ -75,6 +75,21 @@
                   },
                   {
                     "$ref": "#/components/schemas/EnqueueDeliveryWeeklyDevReminder"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueIdentityLoginCode"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueIdentityPasswordReset"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueIdentityExecuteActions"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueIdentityVerifyEmail"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EnqueueIdentityLoginSupportAlert"
                   }
                 ]
               }
@@ -113,7 +128,7 @@
             }
           },
           "403": {
-            "description": "Clé X-Mail-Service-Key absente ou invalide.",
+            "description": "Clé X-Mail-Service-Key absente, invalide ou non autorisée pour ce type.",
             "content": {
               "application/json": {
                 "schema": {
@@ -189,7 +204,8 @@
               "APPROVED",
               "SENT",
               "FAILED",
-              "REJECTED"
+              "REJECTED",
+              "EXPIRED"
             ]
           },
           "source_app": {
@@ -286,7 +302,8 @@
             "type": "string",
             "enum": [
               "fr",
-              "en"
+              "en",
+              "pt"
             ],
             "default": "fr"
           },
@@ -356,7 +373,8 @@
             "type": "string",
             "enum": [
               "fr",
-              "en"
+              "en",
+              "pt"
             ],
             "default": "fr"
           },
@@ -426,7 +444,8 @@
             "type": "string",
             "enum": [
               "fr",
-              "en"
+              "en",
+              "pt"
             ],
             "default": "fr"
           },
@@ -496,7 +515,8 @@
             "type": "string",
             "enum": [
               "fr",
-              "en"
+              "en",
+              "pt"
             ],
             "default": "fr"
           },
@@ -643,7 +663,8 @@
             "type": "string",
             "enum": [
               "fr",
-              "en"
+              "en",
+              "pt"
             ],
             "default": "fr"
           },
@@ -790,7 +811,8 @@
             "type": "string",
             "enum": [
               "fr",
-              "en"
+              "en",
+              "pt"
             ],
             "default": "fr"
           },
@@ -937,7 +959,8 @@
             "type": "string",
             "enum": [
               "fr",
-              "en"
+              "en",
+              "pt"
             ],
             "default": "fr"
           },
@@ -1031,7 +1054,8 @@
             "type": "string",
             "enum": [
               "fr",
-              "en"
+              "en",
+              "pt"
             ],
             "default": "fr"
           },
@@ -1101,7 +1125,8 @@
             "type": "string",
             "enum": [
               "fr",
-              "en"
+              "en",
+              "pt"
             ],
             "default": "fr"
           },
@@ -1140,6 +1165,556 @@
         "description": "Rappel jeudi — statut hebdo dev.",
         "x-required-context": [
           "display_name"
+        ]
+      },
+      "EnqueueIdentityLoginCode": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context",
+          "expires_at"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "identity.login_code"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en",
+              "pt"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name",
+              "code",
+              "code_minutes",
+              "link_minutes"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "code": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "pattern": "^[0-9]{6}$"
+              },
+              "code_minutes": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "pattern": "^[1-9][0-9]{0,3}$"
+              },
+              "link_minutes": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "pattern": "^[1-9][0-9]{0,3}$"
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Adresse absolue du bouton, choisie par le module."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Échéance du code ou du lien. Passée, le message n'est pas envoyé (EXPIRED)."
+          }
+        },
+        "description": "Connexion par mail : code à 6 chiffres et bouton de connexion.",
+        "x-required-context": [
+          "display_name",
+          "code",
+          "code_minutes",
+          "module_url",
+          "link_minutes"
+        ],
+        "x-secret-context": [
+          "code",
+          "module_url"
+        ],
+        "x-allowed-sources": [
+          "cfao-identity"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "module_url"
+            ]
+          },
+          {
+            "required": [
+              "context"
+            ],
+            "properties": {
+              "context": {
+                "required": [
+                  "module_url"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "EnqueueIdentityPasswordReset": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context",
+          "expires_at"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "identity.password_reset"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en",
+              "pt"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name",
+              "link_minutes"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "link_minutes": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "pattern": "^[1-9][0-9]{0,3}$"
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Adresse absolue du bouton, choisie par le module."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Échéance du code ou du lien. Passée, le message n'est pas envoyé (EXPIRED)."
+          }
+        },
+        "description": "Mot de passe oublié : lien pour en choisir un nouveau.",
+        "x-required-context": [
+          "display_name",
+          "module_url",
+          "link_minutes"
+        ],
+        "x-secret-context": [
+          "module_url"
+        ],
+        "x-allowed-sources": [
+          "cfao-identity"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "module_url"
+            ]
+          },
+          {
+            "required": [
+              "context"
+            ],
+            "properties": {
+              "context": {
+                "required": [
+                  "module_url"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "EnqueueIdentityExecuteActions": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context",
+          "expires_at"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "identity.execute_actions"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en",
+              "pt"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name",
+              "link_minutes"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "link_minutes": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "pattern": "^[1-9][0-9]{0,3}$"
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Adresse absolue du bouton, choisie par le module."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Échéance du code ou du lien. Passée, le message n'est pas envoyé (EXPIRED)."
+          }
+        },
+        "description": "Actions demandées par un administrateur (mot de passe, profil).",
+        "x-required-context": [
+          "display_name",
+          "module_url",
+          "link_minutes"
+        ],
+        "x-secret-context": [
+          "module_url"
+        ],
+        "x-allowed-sources": [
+          "cfao-identity"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "module_url"
+            ]
+          },
+          {
+            "required": [
+              "context"
+            ],
+            "properties": {
+              "context": {
+                "required": [
+                  "module_url"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "EnqueueIdentityVerifyEmail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context",
+          "expires_at"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "identity.verify_email"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en",
+              "pt"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "display_name",
+              "link_minutes"
+            ],
+            "properties": {
+              "display_name": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "link_minutes": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "pattern": "^[1-9][0-9]{0,3}$"
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Adresse absolue du bouton, choisie par le module."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Échéance du code ou du lien. Passée, le message n'est pas envoyé (EXPIRED)."
+          }
+        },
+        "description": "Confirmation de l'adresse mail du compte.",
+        "x-required-context": [
+          "display_name",
+          "module_url",
+          "link_minutes"
+        ],
+        "x-secret-context": [
+          "module_url"
+        ],
+        "x-allowed-sources": [
+          "cfao-identity"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "module_url"
+            ]
+          },
+          {
+            "required": [
+              "context"
+            ],
+            "properties": {
+              "context": {
+                "required": [
+                  "module_url"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "EnqueueIdentityLoginSupportAlert": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "to",
+          "context"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "identity.login_support_alert"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "cc": {
+            "$ref": "#/components/schemas/EmailList"
+          },
+          "reply_to": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en",
+              "pt"
+            ],
+            "default": "fr"
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "entered_email",
+              "request",
+              "problem"
+            ],
+            "properties": {
+              "entered_email": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "pattern": "^[^\\s@]{1,64}@[^\\s@]{1,190}$"
+              },
+              "request": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "problem": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "source_app": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "module_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "description": "Support : demande de connexion sans suite (1 par adresse et par jour via correlation_id).",
+        "x-required-context": [
+          "entered_email",
+          "request",
+          "problem"
+        ],
+        "x-allowed-sources": [
+          "cfao-identity"
         ]
       }
     }

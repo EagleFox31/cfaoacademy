@@ -32,6 +32,28 @@ supportedLocales:
   - pt
 defaultLocale: fr
 
+# ── Connexion : mot de passe ou code mail (extension cfao-password-or-email-form) ──
+# Copie du flux « browser » où le formulaire mot de passe est remplacé par celui de
+# l'extension ; sans hub configuré, ce formulaire se comporte comme l'original.
+browserFlow: cfao-browser
+authenticationFlows:
+  - alias: cfao-browser
+    description: Cookie SSO, redirection IdP, puis mot de passe ou code mail
+    providerId: basic-flow
+    topLevel: true
+    builtIn: false
+    authenticationExecutions:
+      - { authenticator: auth-cookie, requirement: ALTERNATIVE, priority: 10, authenticatorFlow: false, userSetupAllowed: false }
+      - { authenticator: identity-provider-redirector, requirement: ALTERNATIVE, priority: 25, authenticatorFlow: false, userSetupAllowed: false }
+      - { flowAlias: cfao-browser-forms, requirement: ALTERNATIVE, priority: 30, authenticatorFlow: true, userSetupAllowed: false }
+  - alias: cfao-browser-forms
+    description: Mot de passe ou code mail
+    providerId: basic-flow
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - { authenticator: cfao-password-or-email-form, requirement: REQUIRED, priority: 10, authenticatorFlow: false, userSetupAllowed: false }
+
 
 # User profile : déclare les attributs de périmètre 3D pour qu'ils soient acceptés
 # (KC 24+ rejette les attributs non déclarés). unmanagedAttributePolicy ENABLED en filet.

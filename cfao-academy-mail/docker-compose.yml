@@ -27,6 +27,8 @@ services:
       MAIL_DB_NAME: ${DB_NAME:-cfao_mail}
       MAIL_DB_USER: ${DB_USER:-cfao_mail}
       MAIL_DB_PASSWORD: ${DB_PASSWORD}
+    # cfao-maillage : Keycloak (extension cfao-hub) y dépose ses mails d'action.
+    networks: [default, cfao-maillage]
     ports:
       - "127.0.0.1:${API_PORT:-5180}:5180"
     depends_on:
@@ -52,7 +54,7 @@ services:
       MAIL_DB_NAME: ${DB_NAME:-cfao_mail}
       MAIL_DB_USER: ${DB_USER:-cfao_mail}
       MAIL_DB_PASSWORD: ${DB_PASSWORD}
-    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_email_templates"]
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_email_templates && python manage.py ensure_mail_schedules"]
     depends_on:
       mail-db: { condition: service_healthy }
 
@@ -77,6 +79,13 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+networks:
+  # Réseau de maillage inter-modules : seules les API le rejoignent, les bases
+  # restent privées. Pas `external` : le premier module démarré le crée (AGENTS.md §7).
+  # Clé et nom identiques partout (edge/tests/test_edge_config.py le vérifie).
+  cfao-maillage:
+    name: cfao-maillage
 
 volumes:
   mail-db:
