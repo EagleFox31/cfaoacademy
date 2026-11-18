@@ -863,4 +863,12 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 - **Correctif** : délai de 20 s sur ce bloc (`describe(..., { timeout: 20000 })`).
 - **Prévention** : la suite du portail passe même avec le build continu actif.
 - **Leçon généralisée** : quand une série d'échecs commence par un délai dépassé, lire d'abord ce premier échec. Les suivants n'en sont que la conséquence.
+- **Récidive** : oui, le même jour. Les 4 dossiers lancés ensemble (`src/pages src/i18n src/context src/components`) pendant un build ont donné 75 rouges, puis 6 à la relance, tous dans `TrainerHome.snapshot.test.jsx`, qui passe seul. Contrôle renforcé : sous charge, lancer les suites touchées une par une avant de conclure à une régression.
+
+### 2026-11-18 — Page blanche au clic sur « Se connecter » (frontend, connexion SSO)
+- **Contexte / symptôme** : depuis l'accueil, « Se connecter » affichait une page blanche pendant 3 à 5 s avant la page Keycloak.
+- **Cause racine** : derrière l'edge, `Login.jsx` lance la redirection vers Keycloak et rend `null`. Le premier octet de Keycloak à froid arrive au bout de 4,9 s : rien n'est affiché pendant ce temps.
+- **Correctif** : `Login.jsx` rend `PortalLoader` (le loader existant du portail) pendant la redirection. Aucun nouveau style, thème Keycloak inchangé.
+- **Prévention** : un écran qui attend une redirection ou un appel réseau ne rend jamais `null`. Il affiche le loader commun.
+- **Leçon généralisée** : un `return null` sur un chemin d'attente est une page blanche dès que le réseau est lent.
 - **Récidive** : non
