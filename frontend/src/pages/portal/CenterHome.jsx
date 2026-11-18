@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import PortalHeader from '../../components/PortalHeader'
-import PortalStickyBar from '../../components/PortalStickyBar'
 import PortalDemoBar from '../../components/PortalDemoBar'
 import PortalReveal from '../../components/PortalReveal.jsx'
 import PortalStaggerGrid from '../../components/PortalStaggerGrid.jsx'
@@ -161,7 +160,6 @@ export default function CenterHome({ mode = 'director' }) {
   return (
     <>
       <Nav notifications={notifications} hideHelp />
-      <PortalStickyBar user={user} headerRef={headerRef} />
       <main className="portal-page">
         <div ref={headerRef}>
           <PortalHeader user={user} centerHero={chiffresHero({ mode })} />

@@ -12317,6 +12317,9 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   transform: rotate(-18deg);
 }
 /* Seul le marteau bouge, et seulement quand on survole la carte. */
+/* Écran pas encore livré : le curseur dit qu'on ne peut pas l'ouvrir. */
+.pv-card:has(.portal-construction-media),
+.pv-card:has(.portal-construction-media) * { cursor: not-allowed; }
 .pv-card:hover .portal-construction-icon,
 .pv-card:focus-within .portal-construction-icon {
   animation: portal-construction-hammer 1.1s ease-in-out infinite;

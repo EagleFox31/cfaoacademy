@@ -64,7 +64,9 @@ export function syntheseAnnee(g) {
       besoins: r.needs ?? 0,
     })).sort((x, y) => ORDRE_POLES.indexOf(y.pole) - ORDRE_POLES.indexOf(x.pole)),
     places: g.total_seats ?? 0,
-    filiales: g.rows?.length ?? 0,
+    // Filiales qui reçoivent un devis : celles qui ont des places. Les lignes de
+    // la clé sans place (pays sans réponse) n'en reçoivent pas.
+    filiales: (g.rows ?? []).filter(r => r.seats > 0).length,
     marques: (g.brands ?? []).map(b => ({
       code: b.code,
       label: b.label,
