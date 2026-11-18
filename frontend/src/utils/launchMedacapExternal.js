@@ -1,3 +1,4 @@
+import { POSTE_DEV } from './posteDev.js'
 import {
   MEDACAP_API_BASE_URL,
   MEDACAP_BASE_URL,
@@ -23,7 +24,7 @@ export function isAllowedMedacapLaunchUrl(raw) {
     const url = new URL(raw, window.location.origin)
     const href = url.href.split('#')[0].replace(/\/$/, '')
     if (medacapAllowedBases().some((base) => href.startsWith(base))) return true
-    if (import.meta.env.DEV && /\/medacap(\/|$)/i.test(url.pathname)) return true
+    if (POSTE_DEV && /\/medacap(\/|$)/i.test(url.pathname)) return true
     return false
   } catch {
     return false

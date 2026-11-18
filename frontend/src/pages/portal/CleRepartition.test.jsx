@@ -11,6 +11,7 @@ vi.mock('../../components/Nav', () => ({
   default: ({ appNav, notifications, hideHelp }) => (
     <nav data-testid="portal-nav" data-hide-help={hideHelp ? 'yes' : 'no'}>
       {appNav?.items.map(i => <a key={i.key} className="app-nav-item">{i.label}</a>)}
+      {appNav?.close && <a className="app-nav-close" href={appNav.close.to}>{appNav.close.label}</a>}
       {notifications?.map(n => <button key={n.id} type="button" className="test-notif" onClick={n.onOpen}>{n.text}</button>)}
     </nav>
   ),
@@ -85,6 +86,22 @@ beforeEach(() => {
   })
 })
 afterEach(() => { act(() => root.unmount()); host.remove() })
+
+describe('Clé de répartition : écran ouvert depuis une carte du portail', () => {
+  it('seul l’écran ouvert reste au menu, la croix ramène au portail', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
+    await show('/portail/cle-repartition/country?annee=2026&pays=all&retour=/portail/centre')
+    expect(menuLabels()).toEqual([T.nav_country])
+    expect(host.querySelector('.app-nav-close').getAttribute('href')).toBe('/portail/centre')
+  })
+
+  it('un retour externe est ignoré : menu complet, pas de croix', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
+    await show('/portail/cle-repartition/country?retour=//evil.example')
+    expect(menuLabels()).toHaveLength(5)
+    expect(host.querySelector('.app-nav-close')).toBeNull()
+  })
+})
 
 describe('Clé de répartition : menu par rôle et vue tableur', () => {
   it('équipe Academy : navbar du portail, 5 entrées, tableau des filiales avec totaux', async () => {
@@ -186,6 +203,57 @@ describe('Clé de répartition : menu par rôle et vue tableur', () => {
     })
     for (let i = 0; i < 3; i += 1) await act(async () => { await new Promise(r => setTimeout(r, 0)) })
     expect(planningApi.country).toHaveBeenLastCalledWith(7, 'all', 'PLANNED')
+    expect(host.querySelector('.ck-combo-btn').getAttribute('aria-label'))
+      .toBe(`${T.pick_country} : ${T.countries_n.replace('{n}', 2)}`)
+    // Le bouton montre les drapeaux des deux filiales cochées, pas l'icône « toutes ».
+    expect(host.querySelectorAll('.ck-combo-btn .ck-flag-stack > *')).toHaveLength(2)
+  })
+
+  it('Devis : filiales cochées, puis pôle, puis marque — les filtres se cumulent', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
+    planningApi.keys = vi.fn().mockResolvedValue([KEY, { ...KEY, id: 8, pole: 'EQUIPMENT' }])
+    const sess = (country, label, brand, code) => ({ country, country_label: label, brand, brand_code: brand.toLowerCase(),
+      code, title: 'Moteur', start_date: '2026-03-02', end_date: '2026-03-06', trainers: [], location: 'Douala',
+      site: 'in_subsidiary', host: country, seats: 2, postponed: 0 })
+    planningApi.country = vi.fn().mockResolvedValue({
+      ...GLOBAL(), country: 'all', label: 'all',
+      sessions: [sess('CM', 'Cameroun', 'Toyota', 'T-1'), sess('CM', 'Cameroun', 'Fuso', 'F-1'), sess('CI', 'Côte d’Ivoire', 'Toyota', 'T-2')],
+      footer: { seats: 6, share: 1, key_cost: 1, trainee_lodging: 0, trainer_lodging: 0, total: 1, needs: 9,
+        coverage: 0.6, in_subsidiary: 6, at_academy: 0, postponed: 0,
+        needs_by_brand: { toyota: 7, fuso: 2 }, needs_by_cell: { CM: { toyota: 4, fuso: 2 }, CI: { toyota: 3 } } },
+    })
+    const rows = () => [...host.querySelectorAll('.sheet-table tbody tr')].map(tr => tr.textContent)
+    const facet = label => [...host.querySelectorAll('.ck-facet-btn')].find(b => b.querySelector('.ck-facet-label')?.textContent === label)
+    const flush = async () => { for (let i = 0; i < 5; i += 1) await act(async () => { await new Promise(r => setTimeout(r, 0)) }) }
+    const choose = async (label, val) => {
+      await act(async () => { facet(label).click() })
+      await act(async () => {
+        host.querySelector(`[role=option][data-value="${val}"]`).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
+      })
+      await act(async () => { facet(label).click() })
+      await flush()
+    }
+
+    await show('/portail/cle-repartition/country?pole=MOTORS&pays=all&filiales=CM')
+    // Cellule Filiale fusionnée : le nom n'apparaît que sur la première ligne du groupe.
+    expect(rows()[0]).toContain('Cameroun')
+    expect(rows().some(r => r.includes('Côte d’Ivoire'))).toBe(false)
+    expect(rows()).toHaveLength(2)
+
+    await choose(T.pole_label, 'EQUIPMENT')
+    expect(planningApi.country).toHaveBeenLastCalledWith(8, 'all', 'PLANNED')
+    expect(rows()).toHaveLength(2)
+    expect(rows().some(r => r.includes('Côte d’Ivoire'))).toBe(false)
+
+    await choose(T.filter_brand, 'Toyota')
+    expect(rows()).toHaveLength(1)
+    const couverture = [...host.querySelectorAll('.ck-kpi')].find(k => k.querySelector('dt').textContent === T.col_coverage)
+    expect(couverture.querySelector('dd').textContent.replace(/\s/g, ' ')).toBe('50,0 %')
+  })
+
+  it('Devis : les filiales cochées viennent de l’adresse (un changement de pôle ne les perd pas)', async () => {
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, import: true, gaps: true })
+    await show('/portail/cle-repartition/country?pays=all&filiales=CM,CI')
     expect(host.querySelector('.ck-combo-btn').getAttribute('aria-label'))
       .toBe(`${T.pick_country} : ${T.countries_n.replace('{n}', 2)}`)
   })

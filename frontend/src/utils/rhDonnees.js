@@ -165,64 +165,56 @@ export function synthesePersonnes(p = PERIMETRE_GROUPE, d = DEMO) {
  * Ce qui attend une action RH : au plus une priorite par espace, la plus
  * urgente, dans l'ordre du cycle — l'accueil montre ainsi d'un coup d'oeil
  * ou agir, sans qu'un espace charge n'en cache un autre.
+ *
+ * Chaque priorite porte un `code` et ses chiffres, sans texte : l'ecran
+ * les libelle dans la langue de l'utilisateur.
  */
 export function priorites(p = PERIMETRE_GROUPE, d = DEMO) {
   const liste = []
-  const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`
 
   const rec = syntheseRecrutement(p, d).campagnes
   const ouvertes = rec.filter(c => c.statut === 'ouverte' && c.testes < c.candidats)
   const aExploiter = rec.find(c => c.statut === 'cloturee' && c.testes > 0)
   if (ouvertes.length) {
-    const sansTest = ouvertes.reduce((n, c) => n + c.candidats - c.testes, 0)
     liste.push({
-      espace: 'recrutement',
-      nature: ouvertes.length > 1 ? 'Campagnes ouvertes' : 'Campagne ouverte',
-      titre: ouvertes.length > 1 ? `${ouvertes.length} campagnes de recrutement en cours` : ouvertes[0].intitule,
-      detail: `${pluriel(sansTest, 'candidat')} sans test`
-        + (ouvertes.length > 1 ? '' : ` · ${nomFiliale(ouvertes[0].f, d)} · ${ouvertes[0].avancement} % testés`),
+      espace: 'recrutement', code: 'rec_open',
+      nombre: ouvertes.length,
+      sansTest: ouvertes.reduce((n, c) => n + c.candidats - c.testes, 0),
+      ...(ouvertes.length === 1 && {
+        intitule: ouvertes[0].intitule,
+        filiale: nomFiliale(ouvertes[0].f, d),
+        avancement: ouvertes[0].avancement,
+      }),
     })
   } else if (aExploiter) {
     liste.push({
-      espace: 'recrutement',
-      nature: 'Résultats à exploiter',
-      titre: aExploiter.intitule,
-      detail: `${aExploiter.testes} candidats testés · moyenne ${aExploiter.moyenne ?? '—'} %`,
+      espace: 'recrutement', code: 'rec_results',
+      intitule: aExploiter.intitule, testes: aExploiter.testes, moyenne: aExploiter.moyenne,
     })
   }
 
   const enRetard = syntheseCompetences(p, d).parFiliale.filter(f => (f.couverture ?? 0) < 50)
   if (enRetard.length) {
     liste.push({
-      espace: 'competences',
-      nature: 'Mesure en retard',
-      titre: enRetard.length > 1
-        ? `${enRetard.length} filiales sous 50 % de techniciens évalués`
-        : `${enRetard[0].pays} : ${enRetard[0].couverture ?? 0} % de techniciens évalués`,
-      detail: enRetard.length > 1
-        ? enRetard.slice(0, 3).map(f => `${f.pays} ${f.couverture ?? 0} %`).join(' · ')
-        : `${enRetard[0].evalues} sur ${enRetard[0].techniciens} techniciens`,
+      espace: 'competences', code: 'measure_late',
+      nombre: enRetard.length,
+      filiales: enRetard.map(f => ({
+        pays: f.pays, couverture: f.couverture ?? 0, evalues: f.evalues, techniciens: f.techniciens,
+      })),
     })
   }
 
   const pif = synthesePIF(p, d)
   if (pif.avecPif > pif.valides) {
     liste.push({
-      espace: 'pif',
-      nature: 'PIF à valider',
-      titre: `${pif.avecPif - pif.valides} plans individuels en attente de validation`,
-      detail: `${pif.valides} validés sur ${pif.avecPif} proposés`,
+      espace: 'pif', code: 'pif_pending',
+      attente: pif.avecPif - pif.valides, valides: pif.valides, proposes: pif.avecPif,
     })
   }
 
   const pers = synthesePersonnes(p, d)
   if (pers.aCompleter) {
-    liste.push({
-      espace: 'personnes',
-      nature: 'Fiches à compléter',
-      titre: `${pluriel(pers.aCompleter, 'technicien')} sans filiale, BU ou niveau`,
-      detail: 'Exclus des statistiques tant que la fiche est incomplète.',
-    })
+    liste.push({ espace: 'personnes', code: 'records_incomplete', nombre: pers.aCompleter })
   }
   return liste
 }

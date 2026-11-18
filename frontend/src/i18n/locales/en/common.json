@@ -1,0 +1,20 @@
+{
+  "langSwitchAria": "Choose language",
+  "seeMore": "See all",
+  "seeLess": "See less",
+  "otherNews": "Other News",
+  "learnMore": "Learn more",
+  "backToTop": "Back to top",
+  "backToTopAria": "Back to top of page",
+  "brandLabel": "Brand",
+  "brandFilterAria": "Filter by brand",
+  "allBrands": "All",
+  "menuToggleAria": "Menu",
+  "mainNavAria": "Main navigation",
+  "pageLoadError": "This page could not be loaded.",
+  "pageLoadRetry": "Reload",
+  "routeLoaderAria": "Loading page",
+  "routeLoaderMsg1": "Secure connection…",
+  "routeLoaderMsg2": "Loading your space…",
+  "routeLoaderMsg3": "Preparing content…"
+}

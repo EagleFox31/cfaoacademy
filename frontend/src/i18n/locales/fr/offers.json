@@ -1,0 +1,17 @@
+{
+  "carrosserie": {
+    "kicker": "Catalogue PDF · 2026",
+    "title": "Réparation de Carrosserie tous véhicules",
+    "meta": "N1 → N5 · Présentiel"
+  },
+  "savMotors": {
+    "kicker": "Catalogue PDF · Motors",
+    "title": "Organisation SAV Motors",
+    "meta": "SAV · Pièces · Front & back office"
+  },
+  "savEquipment": {
+    "kicker": "Catalogue PDF · Equipment",
+    "title": "Organisation SAV Equipment",
+    "meta": "SAV · Pièces · Toutes marques"
+  }
+}

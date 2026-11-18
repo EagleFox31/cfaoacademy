@@ -1,6 +1,7 @@
 /**
  * Icônes de profil portail — poste (KI, chefs, DPS/DOP) + niveau Toyota Gx.
- * Fichiers : frontend/public/assets/{technicieng1…3,technicienG4,KI,chef-*,dps-*,dop-*}.png
+ * Fichiers : frontend/public/assets/{technicieng1…3,technicienG4,KI,chef-*,dps-*,dop-*}.webp
+ * (WebP 768 px tirés des PNG : scripts/icones-profil-webp.py)
  *
  * DPS/DOP : peaux `blanc` | `noir`. Défaut `blanc` (Cameroun actuel) ;
  * override via `avatarSkin: 'noir'` sur le profil si besoin.
@@ -8,22 +9,22 @@
 import { getPrimaryRole } from '../data/index.js'
 
 export const PROFILE_ICON = {
-  G1: '/assets/technicieng1.png',
-  G2: '/assets/technicieng2.png',
-  G3: '/assets/technicieng3.png',
-  G4: '/assets/technicienG4.png',
-  ki: '/assets/KI.png',
-  team_manager: '/assets/chef-equipe.png',
-  workshop_manager: '/assets/chef-atelier.png',
+  G1: '/assets/technicieng1.webp',
+  G2: '/assets/technicieng2.webp',
+  G3: '/assets/technicieng3.webp',
+  G4: '/assets/technicienG4.webp',
+  ki: '/assets/KI.webp',
+  team_manager: '/assets/chef-equipe.webp',
+  workshop_manager: '/assets/chef-atelier.webp',
   dps: {
-    blanc: '/assets/dps-blanc.png',
-    noir: '/assets/dps-noir.png',
+    blanc: '/assets/dps-blanc.webp',
+    noir: '/assets/dps-noir.webp',
   },
   dop: {
-    blanc: '/assets/dop-blanc.png',
-    noir: '/assets/dop-noir.png',
+    blanc: '/assets/dop-blanc.webp',
+    noir: '/assets/dop-noir.webp',
   },
-  fallbackTech: '/assets/icone_technicien.png',
+  fallbackTech: '/assets/icone_technicien.webp',
 }
 
 const TOYOTA_GX = new Set(['G1', 'G2', 'G3', 'G4'])

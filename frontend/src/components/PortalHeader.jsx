@@ -13,6 +13,7 @@ import { resolveCertGoalPrerequisites } from '../utils/certGoalProgress.js'
 import { formatCertLevelLabel } from '../utils/portalCertLevel.js'
 import { isPlMedacapVariant } from '../utils/portalVariant.js'
 import { computePortalGreetingKey } from '../utils/portalGreeting.js'
+import { getPrimaryRole } from '../pages/portal/portalProfiles.js'
 
 const ROLE_LABELS = {
   learner:          'Apprenant',
@@ -34,18 +35,6 @@ const ROLE_LABELS = {
   center_assistant: 'Assistante Centre de formation',
 }
 
-const ROLE_PRIORITY = [
-  'superadmin','branch_hr','branch_admin','group_hr','group_admin',
-  'workshop_manager','team_manager','ki','pic',
-  'trainer','center_director','training_coordinator','center_assistant','dop','dps','branch_director',
-]
-
-function getPrimaryRole(roles) {
-  for (const r of ROLE_PRIORITY) {
-    if (roles.includes(r)) return r
-  }
-  return 'learner'
-}
 
 /* ─── Sub-components ────────────────────────────────────────────── */
 
@@ -185,6 +174,11 @@ export default function PortalHeader({
   const showWorkshopCard = false
   const showSidePanel = showCertCard || showTeamCard || showWorkshopCard
   const [superadminStripMode, setSuperadminStripMode] = useState('marques')
+  // Équipe du centre : les marques restent fermées tant qu'on ne clique pas sur « N marques ».
+  const [centerBrandsOpen, setCenterBrandsOpen] = useState(false)
+  const centerHeroInteractive = centerHero && centerHero.brandList?.length
+    ? { ...centerHero, brandsOpen: centerBrandsOpen, onToggleBrands: () => setCenterBrandsOpen(o => !o) }
+    : centerHero
 
   const showGeoBrands = !showBrandLevels && !showDpsBrandsStrip && !showSuperAdminBrands && userBrands.length > 0
   const showBrandsBand = showBrandLevels || showDpsBrandsStrip || showSuperAdminBrands
@@ -300,7 +294,7 @@ export default function PortalHeader({
       dpsHero={dpsHero}
       superadminHero={superadminHero}
       managerHero={managerHero}
-      centerHero={centerHero}
+      centerHero={centerHeroInteractive}
     />
   )
 
@@ -318,6 +312,17 @@ export default function PortalHeader({
           mode={superadminStripMode}
           filiales={lms?.filialesLearners}
         />
+      )}
+      {centerBrandsOpen && centerHero?.brandList?.length > 0 && (
+        <div id="portal-center-brands" className="portal-header-geo-row portal-center-brands">
+          <div className="portal-header-geo-brands">
+            {centerHero.brandList.map(b => (
+              <span key={b.name} className="portal-header-brand-logo-wrap portal-header-brand-logo-wrap--geo" title={b.name}>
+                <img src={b.logo} alt={b.name} className="portal-header-brand-logo" loading="lazy" />
+              </span>
+            ))}
+          </div>
+        </div>
       )}
       {showGeoBrands && (
         <div className={`portal-header-geo-row${showBrandsBand ? ' portal-header-geo-row--grid portal-header-geo-row--below-brands' : ''}`}>

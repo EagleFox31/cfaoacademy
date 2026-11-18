@@ -5,7 +5,8 @@ import { Children, useCallback, useEffect, useRef, useState } from 'react'
  * gauche/droite (visibles seulement s'il y a débordement) et une demi-carte apparente
  * à droite pour signaler la suite.
  *
- * Paramètres pilotables via CSS custom properties (--rail-count, --rail-peek, --rail-gap).
+ * visibleCount / peek / gap règlent le grand écran (--rail-count-lg…) ; academy.css
+ * réduit à 2 cartes sous 900 px et à 1 sous 560 px.
  * Compatible avec toute carte (ArticleCard, PvCard, LearnerEvalCard, PublicCard, etc.).
  */
 export default function CardRail({
@@ -53,10 +54,12 @@ export default function CardRail({
   const items = Children.toArray(children)
   if (items.length === 0) return null
 
+  // Valeurs grand écran seulement : un `--rail-count` inline écraserait les media
+  // queries (academy.css) et laisserait 4 cartes et demie sur un téléphone.
   const style = {
-    '--rail-count': visibleCount,
-    '--rail-peek': peek,
-    '--rail-gap': `${gap}px`,
+    '--rail-count-lg': visibleCount,
+    '--rail-peek-lg': peek,
+    '--rail-gap-lg': `${gap}px`,
   }
 
   return (

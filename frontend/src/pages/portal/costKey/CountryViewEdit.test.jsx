@@ -370,7 +370,7 @@ describe('saisie dans le devis par filiale', () => {
       expect(option('in_subsidiary')).not.toBeNull()
       await toggleFacet('Lieu')
       await toggleFacet('Métier')
-      expect(option('PARTS')).toBeNull()
+      expect(option('PARTS').querySelector('.ck-facet-count').textContent).toBe('0')
       expect(option('TECHNICIAN').querySelector('.ck-facet-count').textContent).toBe('1')
     })
 
@@ -380,7 +380,40 @@ describe('saisie dans le devis par filiale', () => {
       expect([...host.querySelectorAll('[role=option]')].map(o => o.textContent)).toEqual(['Tous', 'Présentiel0', 'Distanciel0'])
       await toggleFacet('Type')
       await toggleFacet('Métier')
-      expect([...host.querySelectorAll('[role=option]')].map(o => o.textContent)).toEqual(['Tous', 'Non classé3'])
+      expect([...host.querySelectorAll('[role=option]')].map(o => o.textContent)).toEqual(['Tous', 'Techniciens0', 'SAV0', 'Carrossiers0', 'Parts0', 'Conduite0', 'Non classé3'])
+    })
+
+    it('changement de pôle : les filtres restent affichés pendant le rechargement', async () => {
+      await load()
+      let resolve
+      planningApi.country.mockReturnValue(new Promise(r => { resolve = r }))
+      await act(async () => {
+        root.render(
+          <CountryView t={T} locale="fr" fmt={makeFormatter('fr')} ckey={{ ...KEY, id: 'k2', pole: 'EQUIPMENT' }} mode="PLANNED"
+            global={COUNTRIES} code="CG" setCode={() => {}} slots={{ title: null, tools: null }} canEdit onEdited={onEdited} />,
+        )
+      })
+      expect(facet('Marque')).toBeTruthy()
+      expect(host.querySelector('.ck-sheet-busy')).not.toBeNull()
+      expect(host.querySelector('.ck-kpi')).toBeNull()
+      await act(async () => { resolve({ ...payload(rows()), footer }) })
+      await flush()
+      expect(host.querySelector('.ck-sheet-busy')).toBeNull()
+      expect(host.querySelector('.ck-kpi')).not.toBeNull()
+    })
+
+    it('le filtre Marque propose toutes les marques du pôle, à 0 sans session', async () => {
+      planningApi.country.mockResolvedValue({ ...payload([row('a1', 'Suzuki', 'suzuki', 'Douala', 'in_subsidiary', 3)]), footer })
+      await show({ global: { ...COUNTRIES, brands: [{ code: 'suzuki', label: 'Suzuki' }, { code: 'toyota', label: 'Toyota' }] } })
+      await toggleFacet('Marque')
+      expect(option('Suzuki').querySelector('.ck-facet-count').textContent).toBe('1')
+      expect(option('Toyota').querySelector('.ck-facet-count').textContent).toBe('0')
+    })
+
+    it('le filtre Lieu propose toujours Filiale et Academy, à 0 si absents', async () => {
+      await load([row('a1', 'Suzuki', 'suzuki', 'Douala', 'in_subsidiary', 3)])
+      await toggleFacet('Lieu')
+      expect([...host.querySelectorAll('[role=option]')].map(o => o.textContent)).toEqual(['Tous', 'Filiale1', 'Academy0'])
     })
 
     const type = async (input, text) => {

@@ -1,6 +1,6 @@
 /**
- * Visuel d'une carte dont l'écran n'existe pas encore : un marteau qui frappe,
- * le libellé « en construction » et une bande de chantier qui défile. À passer
+ * Visuel d'une carte dont l'écran n'existe pas encore : un marteau qui frappe
+ * au survol de la carte, le libellé « en construction » et une bande de chantier. À passer
  * dans la prop `cardMedia` d'une PvCard, à la place d'une image.
  */
 export default function PortalConstructionMedia({ label }) {

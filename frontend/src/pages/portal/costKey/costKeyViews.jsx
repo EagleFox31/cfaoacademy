@@ -16,12 +16,14 @@ import { splitTrainers, trainerInitials, trainerPhoto } from '../../../utils/tra
 const brandLogo = b => resolveCardBrandBadge(b.label || b.code).logo
   || resolveCardBrandBadge(b.code).logo || undefined
 
+const PADDED_LOGOS = new Set(['STELLANTIS', 'BYD'])
+
 function BrandMark({ brand }) {
   const [casse, setCasse] = useState(false)
   const logo = resolveCardBrandBadge(brand).logo
   if (!logo || casse) return brand
-  // Image Stellantis : grandes marges blanches, recadrée pour rester lisible.
-  const cls = brand.toUpperCase() === 'STELLANTIS' ? 'sheet-c-logo is-padded' : 'sheet-c-logo'
+  // Logos-texte noyés dans de grandes marges (images carrées ou hautes) : recadrés pour rester lisibles.
+  const cls = PADDED_LOGOS.has(brand.toUpperCase()) ? 'sheet-c-logo is-padded' : 'sheet-c-logo'
   return <img className={cls} src={logo} alt={brand} onError={() => setCasse(true)} />
 }
 
@@ -77,19 +79,24 @@ export const errText = (t, err) => (err?.code && t[`err_${err.code}`]) || err?.m
  * en-tête bleu nuit, lignes) : la page ne saute plus quand les données arrivent.
  * Réutilise le shimmer `.skel` de motion.css.
  */
+/** Les quatre cartes de chiffres clés en shimmer (seules, pendant un rechargement). */
+export function KpiSkeleton() {
+  return (
+    <div className="ck-skel-kpis" aria-hidden="true">
+      {[0, 1, 2, 3].map(i => (
+        <div key={i} className="ck-skel-kpi">
+          <span className="skel skel--text" style={{ width: '55%' }} />
+          <span className="skel skel--title" style={{ width: '70%' }} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function SheetSkeleton({ label, kpis = false, rows = 8 }) {
   return (
     <div className="ck-skel" role="status" aria-busy="true" aria-label={label}>
-      {kpis && (
-        <div className="ck-skel-kpis">
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} className="ck-skel-kpi">
-              <span className="skel skel--text" style={{ width: '55%' }} />
-              <span className="skel skel--title" style={{ width: '70%' }} />
-            </div>
-          ))}
-        </div>
-      )}
+      {kpis && <KpiSkeleton />}
       <div className="ck-skel-sheet">
         <div className="ck-skel-toolbar">
           <span className="skel ck-skel-search" />
@@ -180,6 +187,8 @@ function kpiMoney(value, fmt, t) {
 
 /** Où vont les places : le détail de l'indicateur porte les couleurs des cellules et sert de légende. */
 const PLACE_KEYS = ['in_subsidiary', 'at_academy', 'postponed']
+/** Lieux toujours proposés dans le filtre Lieu, à 0 s'ils sont absents. */
+const SITES = ['in_subsidiary', 'at_academy']
 /** Types de formation toujours proposés dans le filtre Type ; E-learning n'apparaît que s'il existe. */
 const DELIVERY_MODES = ['PRESENTIEL', 'DISTANCIEL']
 const DELIVERY_ICONS = {
@@ -329,6 +338,27 @@ function ExportMenu({ t, items }) {
  * Choix des filiales (combobox avec recherche). Un clic sur un nom ouvre cette filiale seule,
  * modifiable ; sa case (ou Maj+Entrée) en ajoute d'autres, lues ensemble en vue consolidée.
  */
+const MAX_PICKED_FLAGS = 3
+
+/** Plusieurs filiales cochées : leurs drapeaux en pile (les premiers, puis « +n »), puis « n filiales ». */
+function PickedFlags({ codes, label }) {
+  const shown = codes.slice(0, MAX_PICKED_FLAGS)
+  return (
+    <span className="ck-country">
+      <span className="ck-flag-stack" aria-hidden="true">
+        {shown.map(code => {
+          const flag = flagUrlForIso(code)
+          return flag
+            ? <img key={code} className="ck-flag" src={flag} alt="" />
+            : <span key={code} className="ck-flag-code">{code.toUpperCase()}</span>
+        })}
+        {codes.length > shown.length && <span className="ck-flag-more">+{codes.length - shown.length}</span>}
+      </span>
+      <span className="ck-country-label">{label}</span>
+    </span>
+  )
+}
+
 function CountryCombo({ t, countries, selected, onChange }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -379,7 +409,9 @@ function CountryCombo({ t, countries, selected, onChange }) {
     <div className="ck-combo" ref={boxRef}>
       <button type="button" ref={btnRef} className="ck-combo-btn" aria-haspopup="listbox" aria-expanded={open}
         aria-label={`${t.pick_country} : ${current?.label ?? ''}`} onClick={() => setOpen(o => !o)}>
-        {current && <CountryName code={current.country} label={current.label} />}
+        {selected.length > 1
+          ? <PickedFlags codes={selected} label={current.label} />
+          : current && <CountryName code={current.country} label={current.label} />}
         <Chevron />
       </button>
       {open && (
@@ -570,7 +602,40 @@ export function TableView({ t, locale, fmt, ckey, mode, global, openCountry, sim
  * que si les lignes couvrent des marques entières. Une clé à budget fixe n'a pas de montant par
  * ligne : son total partiel reste inconnu plutôt qu'inventé.
  */
-function visibleFooter(foot, all, visible) {
+/**
+ * Besoin des lignes affichées, ou null s'il ne se déduit pas. Il est connu par filiale × marque
+ * (`needs_by_cell`, devis de toutes les filiales) ou par marque (`needs_by_brand`, une filiale).
+ * 1. Filtres Filiale / Marque : le besoin de ces filiales et marques, celles sans session
+ *    comprises, pourvu qu'aucun autre filtre ne masque une de leurs lignes.
+ * 2. Sinon : le besoin des cases (filiale, marque) dont toutes les lignes sont affichées.
+ */
+export function visibleNeeds(foot, all, visible, filters = {}) {
+  const byCell = foot.needs_by_cell
+  if (!byCell && !foot.needs_by_brand) return null
+  if (visible.some(s => !s.brand_code)) return null
+  const cellNeeds = (c, b) => (byCell ? byCell[c]?.[b] : foot.needs_by_brand[b]) ?? 0
+  const shownRows = new Set(visible)
+
+  const countries = byCell && filters.country?.length ? new Set(filters.country) : null
+  const brands = filters.brand?.length
+    ? new Set(all.filter(s => filters.brand.includes(s.brand)).map(s => s.brand_code)) : null
+  if (countries || brands) {
+    const inScope = s => (!countries || countries.has(s.country)) && (!brands || brands.has(s.brand_code))
+    if (all.every(s => shownRows.has(s) || !inScope(s))) {
+      const cs = byCell ? [...(countries ?? Object.keys(byCell))] : [null]
+      const bs = c => [...(brands ?? Object.keys(byCell ? byCell[c] ?? {} : foot.needs_by_brand))]
+      return cs.reduce((n, c) => n + sumOf(bs(c), b => cellNeeds(c, b)), 0)
+    }
+  }
+
+  if (!visible.length) return null
+  const cell = s => (byCell ? `${s.country}|${s.brand_code}` : s.brand_code)
+  const cells = new Map(visible.map(s => [cell(s), s]))
+  if (!all.every(s => shownRows.has(s) || !cells.has(cell(s)))) return null
+  return sumOf([...cells.values()], s => cellNeeds(s.country, s.brand_code))
+}
+
+function visibleFooter(foot, all, visible, filters) {
   if (!foot || visible.length === all.length) return foot
   const places = Object.fromEntries(PLACE_KEYS.map(k => [k, 0]))
   for (const s of visible) {
@@ -580,11 +645,7 @@ function visibleFooter(foot, all, visible) {
   const seats = sumOf(visible, s => s.seats)
   const lodging = { trainee_lodging: sumOf(visible, s => s.trainee_lodging), trainer_lodging: sumOf(visible, s => s.trainer_lodging) }
   const costUnknown = Number(foot.key_cost) > 0 && visible.some(s => s.key_cost == null)
-  const shownRows = new Set(visible)
-  const brands = new Set(visible.map(s => s.brand_code))
-  const wholeBrands = foot.needs_by_brand && visible.length > 0 && !brands.has('')
-    && all.every(s => shownRows.has(s) || !brands.has(s.brand_code))
-  const needs = wholeBrands ? sumOf([...brands], b => foot.needs_by_brand[b]) : null
+  const needs = visibleNeeds(foot, all, visible, filters)
   return {
     ...foot, ...places, ...lodging, seats, needs,
     key_cost: costUnknown ? null : sumOf(visible, s => s.key_cost),
@@ -601,7 +662,7 @@ const editableCell = (target, field, input, extra) => ({
 
 const ALL_COUNTRIES = 'all'
 
-export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode, session, revealTick = 0, slots, canEdit = false, onEdited }) {
+export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode, picked = null, setPicked, session, revealTick = 0, slots, canEdit = false, onEdited }) {
   const [state, setState] = useState({ loading: true })
   // Le choix « toutes » n'a de sens que pour qui voit plusieurs filiales.
   const countries = useMemo(() => (global.partial || global.rows.length < 2
@@ -688,16 +749,26 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
     return () => document.removeEventListener('visibilitychange', onShow)
   }, [canEdit, refresh, onEdited])
 
-  const [filters, setFilters] = useState(NO_FILTERS)
+  // Les filiales cochées vivent dans l'adresse (`filiales`) : changer de pôle ou d'année
+  // recharge l'écran sans perdre le choix.
+  const pickedList = isAll && picked ? picked.split(',').filter(Boolean) : null
+  const fromAddress = () => (pickedList?.length ? { country: pickedList } : NO_FILTERS)
+  const [filters, setFilters] = useState(fromAddress)
   const [reveal, setReveal] = useState(0)
   // Plusieurs filiales cochées depuis une filiale : la vue consolidée s'ouvre déjà filtrée.
   const pendingCountries = useRef(null)
   useEffect(() => {
     const keep = pendingCountries.current
     pendingCountries.current = null
-    setFilters(keep ? { country: keep } : NO_FILTERS)
+    setFilters(keep ? { country: keep } : fromAddress())
     setProblem(null)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current])
+  useEffect(() => {
+    const next = isAll && filters.country?.length ? filters.country.join(',') : null
+    if (setPicked && (picked || null) !== next) setPicked(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.country, isAll])
   // Arrivée depuis la cloche : aucun filtre ni recherche ne doit cacher la session visée.
   useEffect(() => {
     if (!revealTick) return
@@ -766,7 +837,8 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
   const [sheetRows, setSheetRows] = useState(null)
   const [filtersHost, setFiltersHost] = useState(null)
   const csvRef = useRef(null)
-  const foot = useMemo(() => visibleFooter(data?.footer, sessions, sheetRows ?? sessions), [data, sessions, sheetRows])
+  const foot = useMemo(() => visibleFooter(data?.footer, sessions, sheetRows ?? sessions, filters),
+    [data, sessions, sheetRows, filters])
   const monthLabel = ym => {
     const [y, m] = ym.split('-').map(Number)
     return new Date(y, m - 1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' })
@@ -775,18 +847,22 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
   const facetDefs = useMemo(() => {
     const countryLabels = new Map(sessions.map(s => [s.country, s.country_label]))
     return [
-      { id: 'brand', label: t.filter_brand, get: s => s.brand, render: v => <BrandMark brand={v} /> },
+      // Marques du pôle (contrat et fiches besoins) toujours proposées, à 0 sans session.
+      { id: 'brand', label: t.filter_brand, get: s => s.brand, render: v => <BrandMark brand={v} />,
+        values: (global.brands ?? []).map(b => b.label) },
       ...(isAll ? [{ id: 'country', label: t.filter_country, get: s => s.country, text: v => countryLabels.get(v) ?? v,
         render: v => <CountryName code={v} label={countryLabels.get(v) ?? v} /> }] : []),
-      { id: 'job', label: t.filter_job, get: s => s.job || NO_VALUE, text: v => t[`job_${v}`], compare: byOrder(JOBS) },
+      { id: 'job', label: t.filter_job, get: s => s.job || NO_VALUE, text: v => t[`job_${v}`],
+        values: JOBS.filter(j => j !== NO_VALUE), compare: byOrder(JOBS) },
       { id: 'delivery', label: t.filter_delivery, get: s => s.delivery, text: v => t[`delivery_${v}`],
         render: v => <DeliveryMark t={t} mode={v} />, values: DELIVERY_MODES, compare: byOrder(DELIVERY_MODES) },
-      { id: 'site', label: t.filter_location, get: s => s.site, text: v => t[`site_${v}`], compare: byOrder(PLACE_KEYS) },
+      { id: 'site', label: t.filter_location, get: s => s.site, text: v => t[`site_${v}`],
+        values: SITES, compare: byOrder(PLACE_KEYS) },
       { id: 'month', label: t.filter_month, get: s => s.start_date?.slice(0, 7), text: monthLabel,
         compare: (x, y) => x.value.localeCompare(y.value) },
     ]
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t, locale, isAll, sessions])
+  }, [t, locale, isAll, sessions, global.brands])
   const facets = useMemo(() => buildFacets(sessions, facetDefs, filters), [sessions, facetDefs, filters])
   const shown = useMemo(() => applyFacets(sessions, facetDefs, filters), [sessions, facetDefs, filters])
   // Une seule ligne : la filiale se choisit à droite du titre, l'export rejoint les outils
@@ -819,8 +895,10 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
   // Les pastilles disent déjà quoi : la note ne dit que combien.
   const filterNote = hiddenRows
     && t.filter_count.replace('{n}', fmt(sheetRows.length, 'int')).replace('{total}', fmt(sessions.length, 'int'))
-  // Pendant un chargement, le squelette REMPLACE l'ancien contenu (jamais les deux à la fois).
-  const ready = !state.loading
+  // Premier chargement : le squelette remplace tout. Rechargement (pôle, filiale) : la barre de
+  // filtres reste en place et seuls les chiffres passent en shimmer (jamais d'anciens chiffres visibles).
+  const reloading = state.loading && Boolean(state.data)
+  const ready = !state.loading || reloading
   const scrollToSession = () => requestAnimationFrame(() =>
     document.querySelector('.sheet-table tr.is-focus')?.scrollIntoView?.({ block: 'center' }))
   // Une actualisation après saisie ne ramène pas l'écran sur la session de la cloche.
@@ -832,11 +910,12 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
   return (
     <section className="ck-view" aria-busy={state.loading || undefined}>
       {slots?.title ? createPortal(combo, slots.title) : combo}
-      {ready && inHeader(slots, exportBtn)}
-      {state.loading && <SheetSkeleton label={t.loading} kpis />}
+      {!state.loading && inHeader(slots, exportBtn)}
+      {state.loading && !reloading && <SheetSkeleton label={t.loading} kpis />}
       {state.error && <Banner tone="warn">{errText(t, state.error)}</Banner>}
       {ready && data && <FilterBar hostRef={setFiltersHost} note={foot && filterNote} slots={slots} />}
-      {ready && foot && (
+      {reloading && foot && <KpiSkeleton />}
+      {!state.loading && foot && (
         // Lecture par colonne : places, accommodation, puis la somme totale seule.
         <Kpis large paired items={[
           { label: foot.needs == null ? t.kpi_seats : t.kpi_seats_needs,
@@ -859,11 +938,11 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
         ]} />
       )}
       {ready && data && (
-        <div className={filtering ? 'ck-sheet-busy' : undefined} aria-busy={filtering || undefined}>
+        <div className={filtering || reloading ? 'ck-sheet-busy' : undefined} aria-busy={filtering || reloading || undefined}>
           <DataSheet id="ck-country-niveau" columns={columns} rows={shown} frozen={isAll ? 4 : 3} onViewChange={setSheetRows} filtersTarget={filtersHost} exportRef={csvRef}
             rowKey={(s, i) => s.edit?.allocation ?? `${s.code}-${s.start_date}-${i}`}
             rowClass={s => (session && s.code === session ? 'is-focus' : undefined)} revealKey={reveal}
-            onCellCommit={canEdit ? sendCell : undefined} openHint={canEdit ? t.edit_hint : undefined}
+            onCellCommit={canEdit && !reloading ? sendCell : undefined} openHint={canEdit ? t.edit_hint : undefined}
             cellError={(s, c) => (problem?.cell === `${s.edit?.allocation}|${c.id}` ? problem.text : null)}
             exportName={`cle-${ckey.year}-${current}`} emptyText={t.no_sessions} filterControls={filterBar || null} hideSearch
             controlsActive={Object.values(filters).some(list => list.length > 0)}

@@ -25,6 +25,21 @@ export function canSeePlanning(roles = []) {
 
 export const PLANNING_HOME = '/portail/cle-repartition'
 
+/** Adresse de retour acceptée : un chemin interne seulement, jamais une URL externe. */
+export function retourInterne(valeur) {
+  return typeof valeur === 'string' && /^\/(?![/\\])/.test(valeur) && !valeur.includes('\\') ? valeur : null
+}
+
+/**
+ * Lien d'une carte du portail vers un écran de la clé. Avec `retour`, l'écran
+ * s'ouvre seul : la barre ne montre que lui et une croix qui ramène au portail.
+ */
+export function lienPlanning(vue, query = {}, retour = null) {
+  const qs = new URLSearchParams(Object.entries({ ...query, retour: retourInterne(retour) })
+    .filter(([, v]) => v != null && v !== ''))
+  return `${PLANNING_HOME}/${vue}${qs.toString() ? `?${qs}` : ''}`
+}
+
 /** Équipe du centre de formation : leur portail (CenterHome) et les applications qu'il ouvre. */
 export const CENTER_ROLES = ['center_director', 'center_assistant', 'training_coordinator']
 

@@ -243,6 +243,14 @@
 }
 .ck-combo-opt.is-on .ck-facet-box { border-color: #1a56db; background: #1a56db; }
 .ck-facet-count { color: #6b7086; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+/* Logos de marque dans la liste : même boîte pour tous, logos centrés dedans (une colonne
+   régulière, quelles que soient les marges des images). Logos-texte recadrés (is-padded). */
+.ck-facet-main .sheet-c-logo,
+.ck-facet-main .sheet-c-logo.is-padded {
+  flex: none; width: 64px; height: 28px; max-width: none; max-height: none; margin: 0;
+  object-fit: contain; object-position: center;
+}
+.ck-facet-main .sheet-c-logo.is-padded { object-fit: cover; }
 
 /* ── contenu ── */
 .ck-view { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
@@ -395,6 +403,11 @@ button.ck-review-mark:focus-visible { outline: 2px solid #1a56db; outline-offset
 .ck-country-label { overflow: hidden; text-overflow: ellipsis; }
 .ck-country-label:empty { display: none; }
 .ck-flag { flex: none; width: 22px; height: 15px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px rgba(14, 17, 38, .12); }
+/* Filiales cochées : drapeaux qui se chevauchent, liseré blanc pour les détacher. */
+.ck-flag-stack { display: inline-flex; align-items: center; flex: none; }
+.ck-flag-stack > * + * { margin-left: -4px; }
+.ck-flag-stack .ck-flag, .ck-flag-stack .ck-flag-code { box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px rgba(14, 17, 38, .12); background: #fff; }
+.ck-flag-more { flex: none; position: relative; min-width: 22px; padding: 0 4px; font-size: 10.5px; font-weight: 700; line-height: 15px; text-align: center; color: #3d4257; background: #eef0f5; border-radius: 2px; box-shadow: 0 0 0 1.5px #fff; }
 .ck-flag-code { flex: none; min-width: 22px; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 15px; text-align: center; color: var(--muted); border: 1px solid #d9dbe3; border-radius: 2px; }
 .ck-filters { padding: 10px 12px; border: 1px solid #e3e5ec; border-radius: 10px; background: #fff; }
 

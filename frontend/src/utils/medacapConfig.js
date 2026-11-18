@@ -1,3 +1,4 @@
+import { POSTE_DEV } from './posteDev.js'
 /** URL MEDACAP pour lancer les QCM (portal-launch, quiz). */
 export const MEDACAP_BASE_URL = (import.meta.env.VITE_MEDACAP_URL ?? '').replace(/\/$/, '')
 
@@ -12,13 +13,13 @@ export const MEDACAP_BRIDGE_KEY = import.meta.env.VITE_MEDACAP_BRIDGE_KEY ?? 'de
 const DEV_PROXY_TARGET = import.meta.env.VITE_MEDACAP_PROXY ?? 'http://localhost/medacap'
 
 export function isMedacapEnabled() {
-  return Boolean(MEDACAP_API_BASE_URL) || import.meta.env.DEV
+  return Boolean(MEDACAP_API_BASE_URL) || POSTE_DEV
 }
 
 /** Chemin API evaluations (lecture liste tests). */
 export function medacapApiUrl(path, params = {}) {
   const qs = new URLSearchParams({ key: MEDACAP_BRIDGE_KEY, ...params })
-  if (import.meta.env.DEV && !MEDACAP_API_BASE_URL) {
+  if (POSTE_DEV && !MEDACAP_API_BASE_URL) {
     return `/medacap-api/views/measure/api/${path}?${qs}`
   }
   const base = MEDACAP_API_BASE_URL || `${DEV_PROXY_TARGET.replace(/\/medacap$/, '')}/medacap`

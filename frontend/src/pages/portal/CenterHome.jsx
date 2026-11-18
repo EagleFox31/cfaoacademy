@@ -16,18 +16,15 @@ import useLocale from '../../hooks/useLocale'
 import usePortalBackground from '../../hooks/usePortalBackground'
 import usePortalHeaderHeight from '../../hooks/usePortalHeaderHeight.js'
 import { planningApi } from '../../lib/planningApi.js'
-import { planningMenu, PLANNING_HOME } from '../../utils/planningAccess.js'
-import { baseBesoins } from '../../utils/urlBesoins.js'
-import cartographie from '../../data/academy/pays-cartographie.json'
-import { STATS } from '../../data/index.js'
-import CenterDirectorSections from './CenterDirectorSections.jsx'
+import { useLocation } from 'react-router-dom'
+import { lienPlanning, planningMenu } from '../../utils/planningAccess.js'
+import { versBesoins } from '../../utils/urlBesoins.js'
+import { BRANDS, STATS } from '../../data/index.js'
+import PortalIconMedia from '../../components/PortalIconMedia.jsx'
+import CenterDirectorSections, { PAYS_ACADEMY } from './CenterDirectorSections.jsx'
 
 const ROUGE = '#E3001B'
 
-const VISUEL_POLE = {
-  MOTORS: '/assets/img_cards/process_sav_motors.png',
-  EQUIPMENT: '/assets/img_cards/process_sav_equipment.png',
-}
 
 /** Une carte par écran de la clé : visuel et adresse (les vues de CleRepartition). */
 const OUTILS = {
@@ -46,11 +43,6 @@ const BIENTOT = {
 
 const remplir = (texte, valeurs) =>
   Object.entries(valeurs).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, String(v)), texte)
-
-function lienCle(vue, query = {}) {
-  const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v != null && v !== ''))
-  return `${PLANNING_HOME}/${vue}${qs.toString() ? `?${qs}` : ''}`
-}
 
 /** Taux de remplissage = places attribuées / places mises à disposition (null sans capacité saisie). */
 export function tauxRemplissage(places, offertes) {
@@ -115,8 +107,7 @@ function useEtatCle(detail = true) {
  * celles de la clé de l'année, tous pôles confondus, comptées une fois.
  */
 export function chiffresHero({ mode }) {
-  const countries = cartographie.regions.reduce((n, r) => n + r.countries.length, 0)
-  return { mode, countries, brands: STATS.marques }
+  return { mode, countries: PAYS_ACADEMY, brands: STATS.marques, brandList: BRANDS.map(({ name, logo }) => ({ name, logo })) }
 }
 
 /**
@@ -130,6 +121,9 @@ export default function CenterHome({ mode = 'director' }) {
   const { user } = useAuth()
   const { t } = useLocale('centerHome')
   const headerRef = useRef(null)
+  // Une carte ouvre un seul écran de la clé ; la croix de cet écran ramène ici.
+  const { pathname } = useLocation()
+  const lienCle = (vue, query) => lienPlanning(vue, query, pathname)
   usePortalBackground(user)
   usePortalHeaderHeight(headerRef)
 
@@ -180,7 +174,7 @@ export default function CenterHome({ mode = 'director' }) {
                       return (
                         <div key={p.pole} className="portal-card-anchor">
                           <PvCard
-                            img={VISUEL_POLE[p.pole]}
+                            cardMedia={<PortalIconMedia icon="devis" tone={gelee ? 'closed' : 'progress'} />}
                             kicker={
                               <span className={`portal-status-chip ${gelee ? 'closed' : 'progress'}`}>
                                 {t[`status_${p.statut}`] ?? p.statut}
@@ -210,7 +204,7 @@ export default function CenterHome({ mode = 'director' }) {
                     {access?.review && (
                       <div className="portal-card-anchor">
                         <PvCard
-                          img="/assets/img_cards/certification.jpg"
+                          cardMedia={<PortalIconMedia icon="alerte" tone={aTraiter ? 'progress' : 'done'} />}
                           kicker={
                             <span className={`portal-status-chip ${aTraiter ? 'progress' : 'done'}`}>
                               {remplir(t.review_chip, { n: aTraiter })}
@@ -273,7 +267,7 @@ export default function CenterHome({ mode = 'director' }) {
                       meta={t.tool_needs_meta}
                       cta={t.cta_open}
                       hoverHint={t.cta_open}
-                      onClick={() => window.location.assign(baseBesoins())}
+                      {...versBesoins(t.under_construction)}
                       corner
                     />
                   </div>

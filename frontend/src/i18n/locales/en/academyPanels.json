@@ -1,0 +1,80 @@
+{
+  "medacap": {
+    "title": "Developing technicians’ professional expertise",
+    "imageAlt": "MEDACAP cycle — Measure, Use, Define, Acquire, Certify, Apply, Perform",
+    "eyebrow": "Developing technicians’ professional expertise",
+    "lead": "MEDACAP is the 7-step methodology that structures technical skills development across the CFAO Mobility network.",
+    "paragraphs": [
+      "CFAO Academy supports from the Measure step: our web app lets network teams assess their skills and use data throughout the MEDACAP cycle.",
+      "We then support each subsidiary through acquisition, certification and on-the-ground performance, aligned with business goals and plans defined upstream."
+    ],
+    "steps": [
+      {
+        "num": "1",
+        "verb": "Measure",
+        "desc": "skills"
+      },
+      {
+        "num": "2",
+        "verb": "Use",
+        "desc": "assessment data"
+      },
+      {
+        "num": "3",
+        "verb": "Define",
+        "desc": "Individual & Collective plans"
+      },
+      {
+        "num": "4",
+        "verb": "Acquire",
+        "desc": "knowledge & skills (CFR / subsidiaries)"
+      },
+      {
+        "num": "5",
+        "verb": "Certify",
+        "desc": "knowledge & skills"
+      },
+      {
+        "num": "6",
+        "verb": "Apply",
+        "desc": "skills in subsidiaries"
+      },
+      {
+        "num": "7",
+        "verb": "Perform",
+        "desc": "in the workplace"
+      }
+    ]
+  },
+  "mission": {
+    "title": "Learning by doing",
+    "imageAlt": "Technicians in hands-on training on a vehicle at CFAO Academy Douala",
+    "lead": "At CFAO Academy, training is not theory only: each module alternates structured input and work on real vehicles or equipment.",
+    "paragraphs": [
+      "Our andragogical approach starts from workshop experience. In the morning, manufacturer-certified trainers set the technical framework — procedures, safety standards, diagnostic tools. In the afternoon, trainees apply on real cases: engine removal, fault codes, system adjustments.",
+      "This rhythm builds autonomy: technicians leave with repeatable actions, not slides only. Each pathway (Toyota G3, Mitsubishi Step 2, LOVOL certification…) meets manufacturer standards while adapting to African network constraints.",
+      "Final assessments combine MCQ, timed practical cases and workshop quality checks — the same level of requirement as in factory or authorised dealership."
+    ]
+  },
+  "reseau": {
+    "panelTitle": "People in the field",
+    "title": "People in the field",
+    "imageAlt": "CFAO Academy training network map across Africa",
+    "lead": "People in the field — Key Instructors and Partner Instructor Managers — deliver training close to workshops, with manufacturer standards.",
+    "paragraphs": [
+      "18 Toyota Key Instructors (G2 / Diagnostics) run Maintenance & Repair in more than ten countries. 22 multi-brand Motors PICs and 35 Equipment development PICs support Silver / Repair pathways and technicians across the continent.",
+      "Local session or Douala centre: same assessment grids, same tools, same traceability. Decentralisation does not dilute standards.",
+      "A central hub and regional relays: fewer trips, faster upskilling, harmonised practices across the CFAO Mobility network."
+    ]
+  },
+  "pays": {
+    "panelTitle": "Our countries",
+    "panelIx": "map · 35 countries",
+    "lead": "Thirty-five territories across five regions — covered countries and developing markets per Academy mapping."
+  },
+  "equipe": {
+    "panelTitle": "The team",
+    "panelIx": "core team · 26 experts",
+    "lead": "Twenty-six experts across five hubs cover all brands distributed by CFAO Mobility."
+  }
+}

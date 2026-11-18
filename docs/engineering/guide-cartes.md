@@ -19,6 +19,7 @@ composant indiqué, sans en fabriquer un autre.
 | Une marque comme porte d'entrée vers des résultats ou un plan | `PlanEntryCard` avec `logo` (grand logo centré) | Portail DPS, résultats par marque |
 | Un plan de formation (PIF) qui couvre plusieurs marques | `PlanEntryCard kind="pif"` + pastilles `PortalBrandLogo size="chip"` | Portail DPS, PIF par filiale |
 | Une campagne, une année, un écran à ouvrir | `PvCard` avec `img`, `kicker` (pastille de statut), `corner` | Portail DPS, besoins en formations |
+| Une carte de suivi annuelle (devis, recueil des besoins) qui ne diffère des autres que par l'année, le statut et les chiffres | `PvCard` avec `cardMedia={<PortalIconMedia icon=… tone=… />}` : icône métier sur la teinte du statut de la pastille, jamais une photo répétée | Portail du directeur du centre |
 | Un écran annoncé, pas encore disponible | `PvCard` sans lien, pastille `portal-status-chip todo`, `cardMedia={<PortalConstructionMedia label=… />}` (jamais l'image par défaut) | Portail du centre, « À suivre » |
 | Une formation du catalogue (carrosserie, SAV) | `CatalogTrainingCard` (PvCard `variant="doc"`) | Accueil, carrosserie et SAV |
 | La même formation dans un portail | `CatalogTrainingCard portal` : pied en icônes, œil à gauche (voir), crayon à l'extrême droite (modifier) | Portail du centre, offres |

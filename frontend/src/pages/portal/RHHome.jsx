@@ -7,9 +7,14 @@ import PortalDemoBar from '../../components/PortalDemoBar'
 import PortalReveal from '../../components/PortalReveal.jsx'
 import PortalStaggerGrid from '../../components/PortalStaggerGrid.jsx'
 import PvCard from '../../components/PvCard'
+import PortalIconMedia from '../../components/PortalIconMedia.jsx'
+import { drapeauUrl } from '../../utils/drapeau.js'
+import { PLANNING_HOME } from '../../utils/planningAccess.js'
 import useSiteEffects from '../../hooks/useSiteEffects'
 import useAuth from '../../hooks/useAuth'
+import useLocale from '../../hooks/useLocale'
 import usePortalBackground from '../../hooks/usePortalBackground'
+import { CONSULTATION_MODES } from './portalProfiles.js'
 import {
   BU, PERIMETRE_GROUPE, filiales, priorites,
   syntheseRecrutement, syntheseCompetences, synthesePIF, synthesePersonnes,
@@ -28,11 +33,56 @@ const VISUEL = {
  * done / progress / todo) et couleurs de docs/PORTAL_COLORIMETRY.md
  * (vert fait, orange en cours, rouge non fait). */
 const ETAT = [
-  [80, 'done', 'Couverte', '#1aab5b'],
-  [50, 'progress', 'En cours', '#e67e00'],
-  [0, 'todo', 'En retard', 'var(--red)'],
+  [80, 'done', 'state_done', '#1aab5b'],
+  [50, 'progress', 'state_progress', '#e67e00'],
+  [0, 'todo', 'state_late', 'var(--red)'],
 ]
 const etat = valeur => ETAT.find(([seuil]) => (valeur ?? 0) >= seuil)
+
+/** Texte traduit : remplace les {variables} et prend `cle_one` quand n <= 1
+ * (meme convention que les sections DPS). */
+function tx(t, cle, vars = {}) {
+  const modele = (vars.n != null && vars.n <= 1 && t[`${cle}_one`]) || t[cle] || ''
+  return Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v ?? '—'), modele)
+}
+
+/** Libelle une priorite de `priorites()` (code + chiffres) dans la langue. */
+function libellerPriorite(t, a) {
+  switch (a.code) {
+    case 'rec_open': return {
+      nature: tx(t, 'rec_open_nature', { n: a.nombre }),
+      titre: a.nombre > 1 ? tx(t, 'rec_open_title', { n: a.nombre }) : a.intitule,
+      detail: tx(t, 'rec_open_detail', { n: a.sansTest })
+        + (a.nombre > 1 ? '' : tx(t, 'rec_open_detail_suffix', { branch: a.filiale, pct: a.avancement })),
+    }
+    case 'rec_results': return {
+      nature: t.rec_results_nature, titre: a.intitule,
+      detail: tx(t, 'rec_results_detail', { tested: a.testes, avg: a.moyenne }),
+    }
+    case 'measure_late': {
+      const [f] = a.filiales
+      return {
+        nature: t.measure_late_nature,
+        titre: a.nombre > 1
+          ? tx(t, 'measure_late_title', { n: a.nombre })
+          : tx(t, 'measure_late_title_one', { country: f.pays, pct: f.couverture }),
+        detail: a.nombre > 1
+          ? a.filiales.slice(0, 3).map(x => `${x.pays} ${x.couverture} %`).join(' · ')
+          : tx(t, 'measure_late_detail_one', { done: f.evalues, total: f.techniciens }),
+      }
+    }
+    case 'pif_pending': return {
+      nature: t.pif_pending_nature,
+      titre: tx(t, 'pif_pending_title', { n: a.attente }),
+      detail: tx(t, 'pif_pending_detail', { done: a.valides, total: a.proposes }),
+    }
+    default: return {
+      nature: t.records_incomplete_nature,
+      titre: tx(t, 'records_incomplete_title', { n: a.nombre }),
+      detail: t.records_incomplete_detail,
+    }
+  }
+}
 
 /** Hauteur commune des visuels de carte, photos comme drapeaux. */
 const HAUTEUR_VISUEL = 150
@@ -52,8 +102,7 @@ function Photo({ src }) {
 function VisuelPays({ f }) {
   return (
     <div className="pv-card-img" style={{ position: 'relative', height: HAUTEUR_VISUEL, background: '#0e1126' }}>
-      <img src={`https://flagcdn.com/w640/${f.code}.png`}
-        srcSet={`https://flagcdn.com/w1280/${f.code}.png 2x`} alt="" loading="lazy"
+      <img src={drapeauUrl(f.code)} alt="" loading="lazy"
         style={{ filter: 'saturate(0.9)' }} />
       <span aria-hidden="true" style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
@@ -94,7 +143,7 @@ function DeuxBarres({ children }) {
  * puce de statut, titre sur deux lignes reservees, contenu sur la hauteur
  * d'une barre ou de deux lignes de texte, ligne d'action.
  */
-function Carte({ img, media, statut, titre, contenu, action, survol, accent }) {
+function Carte({ img, media, statut, titre, contenu, action, survol, accent, to }) {
   return (
     <div className="portal-card-anchor">
       <PvCard
@@ -105,6 +154,7 @@ function Carte({ img, media, statut, titre, contenu, action, survol, accent }) {
         accentColor={accent}
         cta={action}
         hoverHint={survol}
+        to={to}
         corner
       />
     </div>
@@ -116,11 +166,11 @@ const Puce = ({ cls, children }) => <span className={`portal-status-chip ${cls}`
 
 /** Carte d'un pays : drapeau en visuel, statut de couverture, chiffre cle
  * en titre, une barre de progression. */
-function CartePays({ f, titre, contenu }) {
+function CartePays({ t, f, titre, contenu }) {
   const [, cls, libelle] = etat(f.couverture)
   return (
-    <Carte media={<VisuelPays f={f} />} statut={<Puce cls={cls}>{libelle}</Puce>}
-      titre={titre} contenu={contenu} action="Voir le pays" survol="Voir le pays" />
+    <Carte media={<VisuelPays f={f} />} statut={<Puce cls={cls}>{t[libelle]}</Puce>}
+      titre={titre} contenu={contenu} action={t.cta_country} survol={t.cta_country} />
   )
 }
 
@@ -144,17 +194,28 @@ function TeteSection({ surtitre, titre }) {
  *
  * Le perimetre (filiale, BU) s'applique a toute la page. La RH groupe le
  * choisit ; la RH filiale aura sa filiale fixee (`filialeFixe`).
+ *
+ * `mode` (role) choisit les sections : RH groupe, directeur groupe, admin
+ * groupe, directeur regional, directeur de filiale (CONSULTATION_MODES).
+ * Hors perimetre groupe, resultats et PIF sont des cartes en construction.
  */
-export default function RHHome({ filialeFixe = null }) {
+export default function RHHome({ filialeFixe = null, mode = 'group_hr' }) {
   useSiteEffects()
   const { user } = useAuth()
+  const { t } = useLocale('consultation')
   const headerRef = useRef(null)
   usePortalBackground(user)
+  const { perimetre: portee, sections } = CONSULTATION_MODES[mode] ?? CONSULTATION_MODES.group_hr
+  const montre = id => sections.includes(id)
+  const groupe = portee === 'groupe'
 
   const [perimetre, setPerimetre] = useState({ ...PERIMETRE_GROUPE, filiale: filialeFixe })
   const changer = patch => setPerimetre(p => ({ ...p, ...patch }))
 
-  const aTraiter = useMemo(() => priorites(perimetre), [perimetre])
+  // Seules les priorites des sections ouvertes au role remontent.
+  const aTraiter = useMemo(() => priorites(perimetre)
+    .filter(a => sections.includes(a.espace))
+    .map(a => ({ ...a, ...libellerPriorite(t, a) })), [perimetre, sections, t])
   const recrutement = useMemo(() => syntheseRecrutement(perimetre), [perimetre])
   // Les chiffres des cartes Recrutement : ouvertes d'un cote, cloturees de l'autre.
   const { enCours, terminees } = useMemo(() => {
@@ -195,27 +256,27 @@ export default function RHHome({ filialeFixe = null }) {
         </div>
 
         {/* ── Ce qui attend une action ─────────────────────────── */}
-        <PortalReveal id="a-traiter">
+        {montre('a-traiter') && <PortalReveal id="a-traiter">
           <div className="container" style={{ padding: '16px 32px' }}>
             <div className="portal-section-head">
-              <p className="portal-section-eyebrow">Priorité — ressources humaines</p>
-              <h2 className="portal-section-title">À traiter</h2>
+              <p className="portal-section-eyebrow">{t.todo_eyebrow}</p>
+              <h2 className="portal-section-title">{t.todo_title}</h2>
             </div>
-            <div className="portal-plan-filters portal-plan-filters--compact" role="group" aria-label="Périmètre">
+            <div className="portal-plan-filters portal-plan-filters--compact" role="group" aria-label={t.scope_label}>
               {!filialeFixe && (
                 <label className="portal-plan-filter-field">
-                  <span>Filiale</span>
+                  <span>{t.filter_branch}</span>
                   <select disabled value={perimetre.filiale ?? ''}
                     onChange={e => changer({ filiale: e.target.value || null })}>
-                    <option value="">Toutes les filiales</option>
+                    <option value="">{t.filter_all_branches}</option>
                     {filiales().map(f => <option key={f.code} value={f.code}>{f.pays}</option>)}
                   </select>
                 </label>
               )}
               <label className="portal-plan-filter-field">
-                <span>BU</span>
+                <span>{t.filter_bu}</span>
                 <select disabled value={perimetre.bu ?? ''} onChange={e => changer({ bu: e.target.value || null })}>
-                  <option value="">Toutes les BU</option>
+                  <option value="">{t.filter_all_bu}</option>
                   {BU.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </label>
@@ -224,122 +285,149 @@ export default function RHHome({ filialeFixe = null }) {
             {aTraiter.length > 0 ? (
               <PortalStaggerGrid>
                 {aTraiter.map(a => (
-                  <Carte key={`${a.nature}-${a.titre}`} img={VISUEL[a.espace]}
+                  <Carte key={a.code} img={VISUEL[a.espace]}
                     statut={<Puce cls="progress">{a.nature}</Puce>}
                     titre={a.titre} contenu={a.detail} accent="#E3001B"
-                    action="Traiter" survol="Traiter la priorité" />
+                    action={t.cta_treat} survol={t.hint_treat} />
                 ))}
               </PortalStaggerGrid>
             ) : (
-              <p className="portal-plan-filter-empty">Rien en attente sur ce périmètre.</p>
+              <p className="portal-plan-filter-empty">{t.todo_empty}</p>
             )}
           </div>
-        </PortalReveal>
+        </PortalReveal>}
 
         {/* ── Recrutement : campagnes et exploitation ──────────── */}
-        <PortalReveal id="recrutement">
+        {montre('recrutement') && <PortalReveal id="recrutement">
           <div className="container" style={{ padding: '16px 32px' }}>
-            <TeteSection surtitre="Campagnes et résultats" titre="Recrutement" />
+            <TeteSection surtitre={t.rec_eyebrow} titre={t.rec_title} />
             <PortalStaggerGrid>
-              <Carte img={VISUEL.personnes} statut={<Puce cls="todo">Préparer</Puce>}
-                titre="Créer une campagne"
-                contenu="Poste, filiale, BU, dates et épreuve, puis import des candidats depuis Excel."
-                accent="#E3001B" action="Créer" survol="Nouvelle campagne" />
+              <Carte img={VISUEL.personnes} statut={<Puce cls="todo">{t.rec_new_chip}</Puce>}
+                titre={t.rec_new_title}
+                contenu={t.rec_new_card}
+                accent="#E3001B" action={t.rec_new_cta} survol={t.rec_new_hint} />
               <Carte img={VISUEL.recrutement}
                 statut={<Puce cls={enCours.nombre ? 'progress' : 'todo'}>
-                  {enCours.nombre ? `${enCours.nombre} ouverte${enCours.nombre > 1 ? 's' : ''}` : 'Aucune ouverte'}
+                  {enCours.nombre ? tx(t, 'rec_running_chip', { n: enCours.nombre }) : t.rec_running_none}
                 </Puce>}
-                titre="Campagnes en cours"
+                titre={t.rec_running_title}
                 contenu={enCours.nombre ? (
                   <DeuxBarres>
-                    <Progression libelle="Testés" valeur={enCours.avancement}
+                    <Progression libelle={t.bar_tested} valeur={enCours.avancement}
                       droite={`${enCours.testes}/${enCours.candidats}`} />
                     {/* Le score n'est publie qu'a la cloture de la campagne. */}
-                    <Progression libelle="Score" attente droite="À venir" />
+                    <Progression libelle={t.bar_score} attente droite={t.score_pending} />
                   </DeuxBarres>
-                ) : 'Aucune campagne ouverte en ce moment.'}
-                action="Suivre" survol="Suivre les campagnes" />
+                ) : t.rec_running_empty}
+                action={t.rec_running_cta} survol={t.rec_running_hint} />
               <Carte img={VISUEL.competences}
-                statut={<Puce cls="done">{terminees.nombre} clôturée{terminees.nombre > 1 ? 's' : ''}</Puce>}
-                titre="Campagnes terminées"
+                statut={<Puce cls="done">{tx(t, 'rec_closed_chip', { n: terminees.nombre })}</Puce>}
+                titre={t.rec_closed_title}
                 contenu={terminees.nombre ? (
                   <DeuxBarres>
-                    <Progression libelle="Testés"
+                    <Progression libelle={t.bar_tested}
                       valeur={Math.round(100 * terminees.testes / (terminees.candidats || 1))}
                       droite={`${terminees.testes}/${terminees.candidats}`} />
-                    <Progression libelle="Score" valeur={terminees.moyenne}
+                    <Progression libelle={t.bar_score} valeur={terminees.moyenne}
                       droite={terminees.moyenne != null ? `${terminees.moyenne} %` : '—'} />
                   </DeuxBarres>
-                ) : 'Aucune campagne clôturée.'}
-                action="Exploiter les résultats" survol="Voir les résultats" />
+                ) : t.rec_closed_empty}
+                action={t.rec_closed_cta} survol={t.rec_closed_hint} />
             </PortalStaggerGrid>
           </div>
-        </PortalReveal>
+        </PortalReveal>}
+
+        {/* ── Hors groupe : résultats et PIF en vue macro, en construction ── */}
+        {!groupe && ['results', 'pif'].map(cle => (
+          <PortalReveal key={cle} id={cle === 'results' ? 'competences' : 'pif'}>
+            <div className="container" style={{ padding: '16px 32px' }}>
+              <TeteSection surtitre={t[`${cle}_eyebrow`] ?? t[`${cle}_eyebrow_${portee}`]} titre={t[`${cle}_title`]} />
+              <PortalStaggerGrid>
+                <Carte img={cle === 'results' ? VISUEL.competences : VISUEL.pif}
+                  statut={<Puce cls="todo">{t.chip_follow}</Puce>}
+                  titre={t[`${cle}_card`]} contenu={t[`${cle}_meta_${portee}`]} action={t.chip_follow} />
+              </PortalStaggerGrid>
+            </div>
+          </PortalReveal>
+        ))}
 
         {/* ── Compétences : mesure et exploitation ─────────────── */}
-        <PortalReveal id="competences">
+        {groupe && montre('competences') && <PortalReveal id="competences">
           <div className="container" style={{ padding: '16px 32px' }}>
-            <TeteSection surtitre={competences.campagne?.intitule ?? 'Mesure des compétences'}
-              titre="Compétences" />
+            <TeteSection surtitre={competences.campagne?.intitule ?? t.comp_eyebrow}
+              titre={t.comp_title} />
             {competences.parFiliale.length > 0 && (
               <PortalStaggerGrid>
                 {competences.parFiliale.map(f => (
-                  <CartePays key={f.code} f={f}
-                    titre={f.moyenne != null ? `Maîtrise globale des compétences : ${f.moyenne} %` : 'Pas encore de score'}
-                    contenu={<Progression libelle="Techniciens évalués" valeur={f.couverture}
+                  <CartePays key={f.code} t={t} f={f}
+                    titre={f.moyenne != null ? tx(t, 'comp_score', { pct: f.moyenne }) : t.comp_no_score}
+                    contenu={<Progression libelle={t.bar_evaluated} valeur={f.couverture}
                       droite={`${f.evalues}/${f.techniciens}`} />} />
                 ))}
               </PortalStaggerGrid>
             )}
           </div>
-        </PortalReveal>
+        </PortalReveal>}
 
         {/* ── PIF : par filiale et par BU ──────────────────────── */}
-        <PortalReveal id="pif">
+        {groupe && montre('pif') && <PortalReveal id="pif">
           <div className="container" style={{ padding: '16px 32px' }}>
-            <TeteSection surtitre="Plans individuels de formation" titre="PIF par filiale et BU" />
+            <TeteSection surtitre={t.pif_eyebrow} titre={t.pif_group_title} />
             {pif.parFiliale.length > 0 && (
               <PortalStaggerGrid>
                 {pif.parFiliale.map(f => (
-                  <CartePays key={f.code} f={f}
-                    titre={f.valides ? `${f.valides} PIF validé${f.valides > 1 ? 's' : ''}` : 'Aucun PIF validé'}
-                    contenu={<Progression libelle="Techniciens avec PIF" valeur={f.couverture}
+                  <CartePays key={f.code} t={t} f={f}
+                    titre={f.valides ? tx(t, 'pif_validated', { n: f.valides }) : t.pif_none}
+                    contenu={<Progression libelle={t.bar_with_pif} valeur={f.couverture}
                       droite={`${f.avecPif}/${f.techniciens}`} />} />
                 ))}
               </PortalStaggerGrid>
             )}
           </div>
-        </PortalReveal>
+        </PortalReveal>}
 
         {/* ── Techniciens & candidats : fiches, import, corbeille ─────────────── */}
-        <PortalReveal id="personnes">
+        {montre('personnes') && <PortalReveal id="personnes">
           <div className="container" style={{ padding: '16px 32px' }}>
-            <TeteSection surtitre="Fiches, import et corbeille" titre="Techniciens & candidats" />
+            <TeteSection surtitre={t.people_eyebrow} titre={t.people_title} />
             <PortalStaggerGrid>
-              <Carte img="/assets/img_cards/test_theorie_senior.jpg" statut={<Puce cls="todo">Créer</Puce>}
-                titre="Ajouter un collaborateur"
-                contenu="Candidat ou technicien : une fiche, ou plusieurs par import Excel."
-                accent="#E3001B" action="Ajouter" survol="Nouvelle fiche" />
+              <Carte img="/assets/img_cards/test_theorie_senior.jpg" statut={<Puce cls="todo">{t.people_add_chip}</Puce>}
+                titre={t.people_add_title}
+                contenu={t.people_add_card}
+                accent="#E3001B" action={t.people_add_cta} survol={t.people_add_hint} />
               <Carte img="/assets/img_cards/test_theorie_expert.jpg"
-                statut={<Puce cls="progress">{personnes.candidats} actif{personnes.candidats > 1 ? 's' : ''}</Puce>}
-                titre="Candidats"
-                contenu="Consulter, modifier, supprimer. Un candidat retenu passe technicien."
-                action="Gérer" survol="Voir les candidats" />
+                statut={<Puce cls="progress">{tx(t, 'people_active', { n: personnes.candidats })}</Puce>}
+                titre={t.people_candidates_title}
+                contenu={t.people_candidates_card}
+                action={t.people_manage_cta} survol={t.people_candidates_hint} />
               <Carte img={VISUEL.personnes}
-                statut={<Puce cls="done">{personnes.techniciens} actif{personnes.techniciens > 1 ? 's' : ''}</Puce>}
-                titre="Techniciens"
-                contenu={<Progression libelle="Fiches complètes"
+                statut={<Puce cls="done">{tx(t, 'people_active', { n: personnes.techniciens })}</Puce>}
+                titre={t.people_techs_title}
+                contenu={<Progression libelle={t.bar_complete}
                   valeur={Math.round(100 * (personnes.techniciens - personnes.aCompleter) / (personnes.techniciens || 1))}
                   droite={`${personnes.techniciens - personnes.aCompleter}/${personnes.techniciens}`} />}
-                action="Gérer" survol="Voir les techniciens" />
+                action={t.people_manage_cta} survol={t.people_techs_hint} />
               <Carte img="/assets/img_cards/test_pratique_expert.jpg"
-                statut={<Puce cls="todo">{personnes.supprimes} fiche{personnes.supprimes > 1 ? 's' : ''}</Puce>}
-                titre="Corbeille"
-                contenu="Fiches supprimées, avec date, auteur et motif : restaurer en un clic."
-                action="Ouvrir" survol="Ouvrir la corbeille" />
+                statut={<Puce cls="todo">{tx(t, 'people_bin_chip', { n: personnes.supprimes })}</Puce>}
+                titre={t.people_bin_title}
+                contenu={t.people_bin_card}
+                action={t.people_bin_cta} survol={t.people_bin_hint} />
             </PortalStaggerGrid>
           </div>
-        </PortalReveal>
+        </PortalReveal>}
+
+        {/* ── Clé de répartition : en consultation, périmètre décidé par Cerbos ── */}
+        {montre('cle') && <PortalReveal id="cle">
+          <div className="container" style={{ padding: '16px 32px' }}>
+            <TeteSection surtitre={t.cle_eyebrow} titre={t.cle_title} />
+            <PortalStaggerGrid>
+              <Carte media={<PortalIconMedia icon="devis" tone="open" />}
+                statut={<Puce cls="open">{t.chip_read}</Puce>}
+                titre={t.cle_card} contenu={t[`cle_meta_${portee}`]}
+                action={t.cta_cle} survol={t.cta_cle} to={PLANNING_HOME} />
+            </PortalStaggerGrid>
+          </div>
+        </PortalReveal>}
 
       </main>
 

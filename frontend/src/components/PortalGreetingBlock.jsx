@@ -53,22 +53,44 @@ function CenterHeroStatsLine({ t, hero, startWi }) {
   const debut = t[`center_hero_lead_${hero.mode}`] ?? t.center_hero_lead_director
   const gabarit = `${debut} ${avecMarques ? t.center_hero_tail : t.center_hero_tail_nobrands}`
   const chiffres = { countries: hero.countries, brands: hero.loading ? null : hero.brands }
+  // « 22 marques » se clique : les logos s'ouvrent sous la phrase (hero.onToggleBrands).
+  const cliquable = jeton => jeton === 'brands' && hero.onToggleBrands && Number.isFinite(chiffres.brands)
   let wi = startWi
+  const morceaux = String(gabarit).split(/(\{\w+\})/).filter(Boolean)
+  let mangerMot = false
   return (
     <p className="portal-header-dps-stats portal-greeting-cascade">
-      {String(gabarit).split(/(\{\w+\})/).filter(Boolean).flatMap((morceau, i) => {
+      {morceaux.flatMap((morceau, i) => {
         const jeton = morceau.match(/^\{(\w+)\}$/)?.[1]
         if (jeton) {
           const v = chiffres[jeton]
+          const chiffre = (
+            <span className="portal-word portal-header-dps-stat" style={{ '--wi': wi++ }}>
+              {Number.isFinite(v) ? <AnimatedCount value={v} /> : '—'}
+            </span>
+          )
+          if (!cliquable(jeton)) return [<Fragment key={i}>{chiffre}{' '}</Fragment>]
+          // Le mot qui suit (« marques ») fait partie du bouton.
+          const [mot] = splitWords(morceaux[i + 1] ?? '')
+          mangerMot = Boolean(mot)
           return [
             <Fragment key={i}>
-              <span className="portal-word portal-header-dps-stat" style={{ '--wi': wi++ }}>
-                {Number.isFinite(v) ? <AnimatedCount value={v} /> : '—'}
-              </span>{' '}
+              <button
+                type="button"
+                className="portal-hero-interactive-trigger portal-hero-brands-trigger"
+                aria-expanded={hero.brandsOpen}
+                aria-controls="portal-center-brands"
+                onClick={hero.onToggleBrands}
+              >
+                {chiffre}
+                {mot && <span className="portal-word" style={{ '--wi': wi++ }}>{mot}</span>}
+              </button>{' '}
             </Fragment>,
           ]
         }
-        return splitWords(morceau).map((w, j) => (
+        const mots = splitWords(morceau)
+        if (mangerMot) { mots.shift(); mangerMot = false }
+        return mots.map((w, j) => (
           <Fragment key={`${i}-${j}`}>
             <span className="portal-word" style={{ '--wi': wi++ }}>{w}</span>{' '}
           </Fragment>
@@ -281,9 +303,8 @@ export default function PortalGreetingBlock({
       ? t[kiHero.kind === 'pic' ? 'pic_hero_greeting_filiale' : 'ki_hero_greeting_filiale']
         .replace('{bu}', buLabel)
         .replace('{country}', countryLabel)
-      : centerHero
-        ? t.center_hero_greeting_suffix
-        : null
+      // Centre de formation : le titre s'arrête au prénom, « À l'Academy, vous… » ouvre la ligne dessous.
+      : null
   const filialeSuffixWords = filialeSuffix ? splitWords(filialeSuffix) : []
   const [refreshSoonVisible, setRefreshSoonVisible] = useState(false)
 

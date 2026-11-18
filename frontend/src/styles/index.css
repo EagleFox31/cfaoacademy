@@ -431,6 +431,19 @@ body {
   color: var(--ink);
   background: rgba(255, 255, 255, 0.52);
 }
+/* Croix de retour d'un écran ouvert seul depuis le portail. */
+.nav--portal .nav-links a.nav-portal-pill.nav-app-close {
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.nav--portal .nav-links a.nav-portal-pill.nav-app-close:hover {
+  color: #fff;
+  background: var(--red);
+}
 .nav--portal .nav-links a.nav-portal-pill.active {
   color: var(--navy);
   background: #fff;
@@ -634,6 +647,32 @@ body {
   .brand-label {
     font-size: 15px;
     padding-left: 10px;
+  }
+}
+
+/* Téléphone : logo + menu + langues + connexion doivent tenir sans défilement
+   horizontal (467 px mesurés à 390 px avant). Le logo nomme déjà la marque. */
+@media (max-width: 480px) {
+  .nav:not(.nav--portal) .nav-shell {
+    padding: 0 12px;
+    gap: 6px;
+  }
+  .nav:not(.nav--portal) .brand-label {
+    display: none;
+  }
+  .nav:not(.nav--portal) .nav-actions {
+    gap: 6px;
+  }
+}
+@media (max-width: 360px) {
+  .nav:not(.nav--portal) .nav-shell {
+    padding: 0 8px;
+  }
+  .nav:not(.nav--portal) .locale-switch--nav {
+    gap: 2px;
+  }
+  .nav:not(.nav--portal) .brand-mark {
+    height: 30px;
   }
 }
 

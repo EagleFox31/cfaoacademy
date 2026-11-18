@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import { chiffresHero, tauxRemplissage } from './CenterHome.jsx'
-import { SECTIONS_DIRECTEUR, statutBesoins, syntheseAnnee } from './CenterDirectorSections.jsx'
+import { PAYS_ACADEMY, SECTIONS_DIRECTEUR, paysAttendus, statutBesoins, syntheseAnnee } from './CenterDirectorSections.jsx'
 import { resolveProfile } from './portalProfiles.js'
 import { getPortalNavSections } from '../../data/index.js'
 import { CENTER_HOME_COPY } from '../../i18n/centerHome.js'
@@ -42,17 +42,30 @@ describe('portail du centre de formation', () => {
     const a = syntheseAnnee({
       year: 2027, status: 'DRAFT', total_seats: 30, rows: [{}, {}, {}],
       responses: [
-        { pole: 'MOTORS', answered: ['CM', 'CI'], known: ['CM', 'CI', 'SN'] },
-        { pole: 'EQUIPMENT', answered: ['CM'], known: ['CM', 'GA'] },
+        { pole: 'EQUIPMENT', answered: ['CM'], known: ['CM', 'GA'], needs: 12 },
+        { pole: 'MOTORS', answered: ['CM', 'CI'], known: ['CM', 'CI', 'SN'], needs: 40 },
       ],
       brands: [{ code: 'toyota', label: 'TOYOTA' }, { code: 'jcb', label: 'JCB' }],
       brand_totals: { toyota: { needs: 40, seats: 20 }, jcb: { needs: 12, seats: 10 } },
     })
     expect(a).toMatchObject({ annee: 2027, gelee: false, repondu: 2, connus: 4, besoins: 52, places: 30, filiales: 3 })
+    expect(a.poles).toEqual([
+      { pole: 'MOTORS', repondu: 2, connus: 3, besoins: 40 },
+      { pole: 'EQUIPMENT', repondu: 1, connus: 2, besoins: 12 },
+    ])
     expect(a.marques).toEqual([
       { code: 'toyota', label: 'TOYOTA', besoins: 40, places: 20 },
       { code: 'jcb', label: 'JCB', besoins: 12, places: 10 },
     ])
+  })
+
+  it('pays attendus : tout le périmètre Academy pendant le recueil, la clé du pôle une fois clos', () => {
+    expect(PAYS_ACADEMY).toBe(35)
+    const ouverte = { annee: 2027, gelee: false }
+    expect(paysAttendus(ouverte, { pole: 'MOTORS', connus: 24 }, 2026)).toBe(35)
+    expect(paysAttendus(ouverte, { pole: 'EQUIPMENT', connus: 19 }, 2026)).toBe(35)
+    expect(paysAttendus({ annee: 2026, gelee: true }, { pole: 'EQUIPMENT', connus: 19 }, 2026)).toBe(19)
+    expect(paysAttendus({ annee: 2026, gelee: false }, { pole: 'MOTORS', connus: 24 }, 2026)).toBe(24)
   })
 
   it('taux de remplissage = places attribuées / places mises à disposition', () => {
@@ -62,7 +75,11 @@ describe('portail du centre de formation', () => {
   })
 
   it('hero : pays de la carte et marques du périmètre officiel', () => {
-    expect(chiffresHero({ mode: 'director' })).toEqual({ mode: 'director', countries: 35, brands: 22 })
+    const hero = chiffresHero({ mode: 'director' })
+    expect(hero).toMatchObject({ mode: 'director', countries: 35, brands: 22 })
+    // Les logos ouverts au clic sur « 22 marques » : chacun a son image.
+    expect(hero.brandList.length).toBeGreaterThan(0)
+    expect(hero.brandList.every(b => b.name && b.logo)).toBe(true)
   })
 
   it('mêmes clés de traduction en fr, en et pt', () => {

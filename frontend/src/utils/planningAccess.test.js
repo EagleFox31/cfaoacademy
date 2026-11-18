@@ -1,8 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import {
-  canSeePlanning, CENTER_ROLES, centreSeul, pageAccueil, pageCentreAutorisee,
-  planningMenu, PLANNING_HOME, PLANNING_ROLES,
+  canSeePlanning, CENTER_ROLES, centreSeul, lienPlanning, pageAccueil, pageCentreAutorisee,
+  planningMenu, PLANNING_HOME, PLANNING_ROLES, retourInterne,
 } from './planningAccess'
+
+describe('retour vers le portail', () => {
+  it('n’accepte qu’un chemin interne', () => {
+    expect(retourInterne('/portail/centre')).toBe('/portail/centre')
+    for (const v of ['//evil.example', 'https://evil.example', '/\\evil', '\\x', 'portail', '', null]) {
+      expect(retourInterne(v)).toBeNull()
+    }
+  })
+
+  it('lienPlanning ajoute le retour et ignore les valeurs vides', () => {
+    expect(lienPlanning('country', { annee: 2027, pays: 'all' }, '/portail/centre'))
+      .toBe(`${PLANNING_HOME}/country?annee=2027&pays=all&retour=%2Fportail%2Fcentre`)
+    expect(lienPlanning('table', { annee: null })).toBe(`${PLANNING_HOME}/table`)
+  })
+})
 
 const ALL = { view: true, manage: true, freeze: true, import: true, gaps: true }
 

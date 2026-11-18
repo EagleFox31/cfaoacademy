@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 288" width="512" height="288">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b192c" />
+      <stop offset="50%" stop-color="#152e52" />
+      <stop offset="100%" stop-color="#1e3a8a" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <pattern id="gridPattern" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="288" fill="url(#bgGrad)" />
+  <rect width="512" height="288" fill="url(#gridPattern)" />
+
+  <!-- Network lines connecting African hubs -->
+  <g stroke="rgba(251, 191, 36, 0.35)" stroke-width="1.5" stroke-dasharray="3,3">
+    <line x1="160" y1="130" x2="220" y2="110" />
+    <line x1="220" y1="110" x2="280" y2="140" />
+    <line x1="220" y1="110" x2="250" y2="180" />
+    <line x1="280" y1="140" x2="330" y2="150" />
+    <line x1="280" y1="140" x2="350" y2="210" />
+    <line x1="250" y1="180" x2="310" y2="200" />
+    <line x1="160" y1="130" x2="210" y2="170" />
+    <line x1="210" y1="170" x2="250" y2="180" />
+    <line x1="310" y1="200" x2="350" y2="210" />
+  </g>
+
+  <!-- Stylized Africa Silhouette in soft white/blue -->
+  <path d="M 180 80 
+           C 220 70, 310 75, 340 100
+           C 355 115, 335 140, 320 150
+           C 335 170, 350 190, 310 230
+           C 290 250, 270 240, 255 210
+           C 240 190, 210 185, 190 170
+           C 160 150, 150 120, 180 80 Z" 
+        fill="rgba(255, 255, 255, 0.08)" 
+        stroke="rgba(255, 255, 255, 0.18)" 
+        stroke-width="1.5" />
+
+  <!-- Hub Nodes (Filiales CFAO) with pulsating gold rings -->
+  <g fill="url(#goldGrad)">
+    <!-- Dakar / Sénégal -->
+    <circle cx="160" cy="130" r="4.5" />
+    <!-- Abidjan / Côte d'Ivoire -->
+    <circle cx="210" cy="170" r="5" />
+    <!-- Ouaga / Niamey -->
+    <circle cx="220" cy="110" r="4" />
+    <!-- Douala / Yaoundé Cameroun -->
+    <circle cx="250" cy="180" r="6" />
+    <circle cx="250" cy="180" r="9" fill="none" stroke="rgba(251, 191, 36, 0.5)" stroke-width="1" />
+    <!-- Kinshasa / RDC & Congo -->
+    <circle cx="280" cy="140" r="5" />
+    <!-- Kigali / Rwanda & Est -->
+    <circle cx="330" cy="150" r="4" />
+    <!-- Madagascar / Tana -->
+    <circle cx="350" cy="210" r="4.5" />
+    <!-- Libreville / Gabon & Bangui -->
+    <circle cx="310" cy="200" r="4" />
+  </g>
+
+  <!-- Central Badge Wordmark -->
+  <rect x="136" y="240" width="240" height="28" rx="14" fill="rgba(15, 23, 42, 0.85)" stroke="rgba(251, 191, 36, 0.6)" stroke-width="1" />
+  <text x="256" y="258" font-family="'Space Grotesk', system-ui, sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1.2">
+    TOUTES LES FILIALES · CFAO
+  </text>
+</svg>

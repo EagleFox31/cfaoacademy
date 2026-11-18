@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matrice des sections du portail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout : une matrice dense, sections en lignes, profils en colonnes groupés par échelon. */
+:root {
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --fg: #0e1126;
+  --muted: #5a6078;
+  --line: #dfe2ec;
+  --band: #eef0f7;
+  --read-bg: #e6eefc; --read-fg: #1a56db;
+  --write-bg: #0e1126; --write-fg: #ffffff;
+  --prop-fg: #1a56db;
+  --soon-bg: #fff3cc; --soon-fg: #996600;
+  --excl-fg: #a3263b;
+  --real: #1aab5b; --part: #e67e00; --demo: #8a90a6;
+  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d0f1a; --surface: #151827; --fg: #e8eaf3; --muted: #9aa0b8; --line: #2a2f45; --band: #1b1f33;
+  --read-bg: #1b2a4d; --read-fg: #8fb2ff; --write-bg: #e8eaf3; --write-fg: #0e1126; --prop-fg: #8fb2ff;
+  --soon-bg: #3a2f0f; --soon-fg: #f2c45a; --excl-fg: #ff8a9c; --real: #3fd17f; --part: #ffa640; --demo: #7d839a;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d0f1a; --surface: #151827; --fg: #e8eaf3; --muted: #9aa0b8; --line: #2a2f45; --band: #1b1f33;
+  --read-bg: #1b2a4d; --read-fg: #8fb2ff; --write-bg: #e8eaf3; --write-fg: #0e1126; --prop-fg: #8fb2ff;
+  --soon-bg: #3a2f0f; --soon-fg: #f2c45a; --excl-fg: #ff8a9c; --real: #3fd17f; --part: #ffa640; --demo: #7d839a;
+  color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+.wrap { max-width: 1500px; margin: 0 auto; padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 18px; }
+h1 { font-family: var(--font-display); font-size: 26px; font-weight: 600; margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 70ch; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.toggle { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; cursor: pointer; margin-left: auto; }
+.toggle input { accent-color: var(--read-fg); width: 16px; height: 16px; }
+
+.scroller { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1240px; font-size: 12.5px; }
+th, td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 7px 8px; vertical-align: middle; }
+th:last-child, td:last-child { border-right: 0; }
+thead th { background: var(--surface); font-weight: 600; text-align: center; }
+thead tr.grp th { font-family: var(--font-display); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--band); }
+thead tr.prof th { font-size: 12.5px; line-height: 1.25; }
+.src { display: flex; justify-content: center; gap: 5px; align-items: center; margin-top: 4px; font-size: 11px; font-weight: 500; color: var(--muted); }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+.dot.real { background: var(--real); } .dot.part { background: var(--part); } .dot.demo { background: var(--demo); }
+
+.sticky { position: sticky; left: 0; z-index: 2; background: var(--surface); text-align: left; min-width: 200px; max-width: 230px; }
+thead .sticky { z-index: 3; }
+tr.fam td { background: var(--band); font-family: var(--font-display); font-weight: 600; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+tr.fam td.sticky { background: var(--band); }
+td.sec { font-weight: 600; }
+td.sec small { display: block; font-weight: 400; color: var(--muted); font-size: 11.5px; }
+td.cell { text-align: center; }
+
+.chip { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 8px; border-radius: 6px; font-weight: 500; line-height: 1.25; }
+.chip b { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+.chip.L { background: var(--read-bg); color: var(--read-fg); }
+.chip.E { background: var(--write-bg); color: var(--write-fg); }
+.chip.P { border: 1.5px dashed var(--prop-fg); color: var(--prop-fg); background: transparent; }
+.chip.A { background: var(--soon-bg); color: var(--soon-fg); }
+.chip.X { color: var(--excl-fg); border: 1.5px solid var(--excl-fg); background: transparent; }
+.none { color: var(--line); }
+.hide-prop .chip.P { display: none; }
+
+.notes { display: grid; gap: 6px; color: var(--muted); font-size: 12.5px; max-width: 95ch; margin: 0; padding-left: 18px; }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:6px">
+    <h1>Sections du portail par profil</h1>
+    <p class="lede">Chaque case donne le type d'accès et le périmètre. Les cases voisines au même accès sont fusionnées. Le point sous chaque profil indique d'où viennent ses données aujourd'hui.</p>
+  </header>
+
+  <div class="bar">
+    <div class="legend">
+      <span><span class="chip L"><b>Lecture</b></span></span>
+      <span><span class="chip E"><b>Écriture</b></span></span>
+      <span><span class="chip P"><b>À étendre</b></span> proposition</span>
+      <span><span class="chip A"><b>Annoncé</b></span> en construction</span>
+      <span><span class="chip X"><b>Exclu</b></span> volontairement</span>
+      <span>· vide = absent</span>
+      <span><span class="dot real"></span>API réelle</span>
+      <span><span class="dot part"></span>partiel</span>
+      <span><span class="dot demo"></span>démo</span>
+    </div>
+    <label class="toggle" for="hideProp"><input type="checkbox" id="hideProp"> Masquer les propositions</label>
+  </div>
+
+  <div class="scroller"><table id="matrix"></table></div>
+
+  <ul class="notes">
+    <li>Relevé dans le code du frontend (routeur du portail, composants de section) et dans la politique Cerbos de la clé de répartition, au 18/11/2026. L'application n'a pas été lancée.</li>
+    <li>« Écriture » sur un profil en démo (fiches membres du chef d'équipe) n'enregistre rien côté serveur.</li>
+    <li>Clé de répartition : directeur, coordinateur et Super Admin peuvent créer, modifier et geler côté API. L'écran retire les imports et le gel au directeur seul. La revue est réservée au coordinateur et au Super Admin.</li>
+    <li>RH Filiale regroupe `branch_hr` et `branch_admin` : seul `branch_admin` voit la clé de répartition. <s>Delivery regroupe `build_team` (écriture) et `group_admin` (lecture).</s> Décidé le 18/11 : `build_team` rejoint le Super Admin ; plus de profil Delivery.</li>
+    <li>Profil Groupe en consultation (créé le 18/11, RHHome avec un mode par rôle) : RH groupe (sections inchangées), directeur groupe (résultats, PIF, clé ; sans Delivery) et admin groupe (réunion des deux, sous le Super Admin, sans recrutement ni Delivery dans son portail).</li>
+    <li>Matrice des accès (proposée le 18/11) : le Super Admin allume ou coupe une section par profil, en base et journalisé. Le plafond des droits et des périmètres reste dans Cerbos, versionné et testé ; la matrice ne peut que restreindre. Valeurs par défaut = ce tableau, donc rien à régler au départ.</li>
+    <li>Formateur : résultats en lecture sur toutes les filiales (il ne sait pas d'avance laquelle il formera), restreints aux marques où il forme et à ses domaines (carrosserie, SAV…).</li>
+    <li>Résultats de compétences : les anciennes sections « par marque » et « par palier » (Junior, Senior, Expert) portent sur les mêmes notes et deviennent une seule section avec un sélecteur de vue. Fusion décidée le 18/11, pas encore faite dans le code.</li>
+    <li>Centre de formation (validé le 18/11) : le directeur lit les résultats agrégés de toutes les filiales, le coordinateur les lit par technicien sur toutes les filiales (groupes par niveau, prérequis avant convocation). L'assistant n'y a pas accès.</li>
+    <li>Recrutement (18/11) : une seule fonctionnalité, sous des permissions différentes. Le candidat passe ses tests ; RH filiale et Admin filiale le gèrent pour leur filiale ; le Super Admin crée et administre les campagnes et a les rapports. Fermé par défaut aux RH groupe, directeur groupe et admin groupe (activable par la matrice des accès). Repris de MEDACAP 8.4 (`measure/candidatePaperHome`, `measure/manageRecruitment.php`).</li>
+    <li>Directeur de filiale (`branch_director`) = le « Directeur Général » de MEDACAP, à la tête d’une filiale. Directeur régional (`regional_director`) : encadre plusieurs filiales d’une sous-région. Depuis le 18/11, ils ont un portail (RHHome, mode par rôle) : la clé de répartition en lecture (Cerbos), et des cartes en construction pour les résultats et les PIF. Décidé le 18/11 : résultats de compétences (directeur de filiale : sa filiale, par agence ; directeur régional : ses filiales, par filiale) et PIF en vue macro, sans le détail par technicien. Le Super Admin peut couper ou rouvrir ces sections par la matrice des accès.</li>
+    <li>Fiches des techniciens (18/11) : l’écriture (marque suivie, niveau actuel, niveau visé) passe aux seuls DPS et RH filiale ; chefs d’équipe et d’atelier en lecture. Le Super Admin choisira qui peut écrire (matrice des accès). Aujourd’hui la fenêtre « Gérer » des chefs ne garde rien après rafraîchissement (démo).</li>
+    <li>DPS et DOP sont des rôles observateurs : aucun bloc d'actions ne leur est ajouté.</li>
+  </ul>
+</div>
+
+<script>
+const GROUPS = [
+  ['Individu', ['can', 'app', 'frm']],
+  ['Atelier', ['che', 'cha']],
+  ['Filiale', ['ki', 'dps', 'rhf', 'dfi']],
+  ['Région', ['dre']],
+  ['Centre de formation', ['dir', 'coo', 'ass']],
+  ['Groupe', ['rhg', 'drg', 'adg', 'sa']],
+]
+const PROFILES = {
+  can: ['Candidat', 'none'], app: ['Apprenant', 'part'], frm: ['Formateur', 'demo'],
+  che: ['Chef d’équipe', 'demo'], cha: ['Chef d’atelier', 'demo'],
+  ki: ['KI / PIC', 'real'], dps: ['DPS / DOP', 'part'], rhf: ['RH Filiale', 'demo'], dfi: ['Directeur de filiale', 'part'], dre: ['Directeur régional', 'part'],
+  dir: ['Directeur', 'real'], coo: ['Coordinateur', 'real'], ass: ['Assistant', 'real'],
+  rhg: ['RH Groupe', 'demo'], drg: ['Directeur groupe', 'part'], adg: ['Admin groupe', 'part'], sa: ['Super Admin + build_team', 'part'],
+}
+const SRC = { real: 'réelle', part: 'partiel', demo: 'démo', none: 'à créer' }
+document.head.insertAdjacentHTML('beforeend', '<style>.dot.none{background:transparent;border:1.5px solid currentColor}</style>')
+const COLS = GROUPS.flatMap(g => g[1])
+const LABEL = { L: 'Lecture', E: 'Écriture', P: 'À étendre', A: 'Annoncé', X: 'Exclu' }
+
+// [section, précision, { colonne: [type, périmètre] }]
+const ROWS = [
+  ['Mesure des compétences'],
+  ['Tests', 'passer ses tests', { app: ['E', 'soi'], frm: ['P', 'soi'], che: ['P', 'soi'], cha: ['P', 'soi'], ki: ['E', 'soi'] }],
+  ['Recrutement', 'tests des candidats, campagnes, rapports · MEDACAP 8.4 à ingérer · fermé par défaut aux autres profils', { can: ['P', 'passe ses tests'], rhf: ['P', 'sa filiale (RH et Admin filiale)'], sa: ['P', 'groupe : crée, administre, rapports'] }],
+  ['Résultats de compétences', 'vue par marque ou par palier', { app: ['L', 'soi'], frm: ['P', 'toutes filiales · ses marques et domaines'], che: ['L', 'équipe'], cha: ['L', 'atelier'], ki: ['L', 'filiale · Toyota'], dps: ['L', 'filiale'], rhf: ['P', 'filiale'], dfi: ['P', 'sa filiale, par agence'], dre: ['P', 'ses filiales, par filiale'], dir: ['P', 'toutes filiales, agrégé'], coo: ['P', 'toutes filiales, par technicien'], rhg: ['L', 'groupe'], drg: ['P', 'groupe'], adg: ['P', 'groupe'], sa: ['L', 'groupe'] }],
+
+  ['Développement'],
+  ['PIF / plans de formation', '', { app: ['L', 'son PIF'], che: ['L', 'équipe'], cha: ['L', 'atelier'], ki: ['L', 'filiale · Toyota'], dps: ['L', 'filiale'], rhf: ['P', 'filiale'], dfi: ['P', 'sa filiale, vue macro'], dre: ['P', 'ses filiales, vue macro'], rhg: ['L', 'groupe'], drg: ['P', 'groupe'], adg: ['P', 'groupe'] }],
+  ['Besoins de formation', '', { cha: ['P', 'atelier'], dps: ['L', 'filiale'], rhf: ['P', 'filiale'], dir: ['L', 'tous pays, en partie en construction'] }],
+  ['Formations', '', { app: ['L', 'les siennes'], ki: ['L', 'à dispenser'] }],
+  ['Certifications', '', { app: ['L', 'les siennes'], frm: ['P', 'les siennes'], ki: ['L', 'constructeur, les siennes'] }],
+
+  ['Personnes'],
+  ['Équipe, collaborateurs, annuaire', 'fiches et profils', { che: ['L', 'équipe'], cha: ['L', 'atelier'], dps: ['P', 'filiale, écrit marque, niveaux actuel et visé'], rhf: ['P', 'filiale, écrit marque, niveaux actuel et visé ; export prévu'], rhg: ['L', 'groupe'], adg: ['P', 'groupe'], sa: ['L', 'groupe, profils'] }],
+
+  ['Centre de formation'],
+  ['Clé de répartition', '/portail/cle-repartition', { cha: ['L', 'sa filiale'], dps: ['L', 'sa filiale'], rhf: ['L', 'sa filiale (Admin filiale)'], dfi: ['L', 'sa filiale'], dre: ['L', 'ses filiales'], dir: ['E', 'tous pays, sans imports ni gel'], coo: ['E', 'tous pays, imports, gel, revue'], ass: ['L', 'tous pays'], drg: ['L', 'groupe'], adg: ['L', 'groupe'], sa: ['E', 'tous pays, revue'] }],
+  ['Page d’un pays', 'outil', { dir: ['E', 'tous pays'], coo: ['E', 'tous pays'], ass: ['L', 'tous pays'] }],
+  ['Fiche besoins', 'outil', { dir: ['L', 'tous pays'], coo: ['L', 'tous pays'], ass: ['L', 'tous pays'] }],
+  ['Devis des filiales', '', { dir: ['L', 'toutes filiales'] }],
+  ['Offres, calendrier, rapports, ROI, plateforme', '', { dir: ['A', 'en construction'] }],
+  ['Remplissage', '', { dir: ['A', 'à venir'], coo: ['A', 'à venir'], ass: ['A', 'à venir'] }],
+  ['Sessions du centre', '', { dir: ['A', 'à venir'], coo: ['A', 'à venir'], ass: ['A', 'à venir'] }],
+  ['Convocations', '', { coo: ['A', 'à venir'], ass: ['A', 'à venir'] }],
+  ['Formateurs', '', { dir: ['A', 'à venir'], coo: ['A', 'à venir'] }],
+
+  ['Sessions et suivi'],
+  ['Sessions et comptes rendus', 'à documenter, à venir', { frm: ['E', 'ses sessions'], ki: ['P', 'sessions animées'], coo: ['P', 'toutes les sessions'] }],
+  ['À traiter, prochaines actions', '', { frm: ['E', 'ses sessions'], che: ['E', 'équipe'], cha: ['E', 'atelier'], dps: ['X', 'rôle observateur'], coo: ['P', 'centre'], rhg: ['L', 'groupe'], adg: ['P', 'groupe'] }],
+  ['Assistance', 'contacter le support', { app: ['P', 'soi'], frm: ['E', 'soi'], che: ['E', 'soi'], cha: ['E', 'soi'], dps: ['E', 'soi'] }],
+
+  ['Pilotage groupe'],
+  ['Bilan et filiales', '', { sa: ['L', 'groupe'] }],
+  ['Logs', '', { sa: ['L', 'plateforme'] }],
+  ['Delivery (roadmap, backlog, gate, reporting, Git)', 'ouvre le cockpit', { drg: ['X', 'décision 18/11'], adg: ['X', 'éteint par défaut, activable'], sa: ['E', 'projet'] }],
+
+  ['Administration'],
+  ['Matrice des accès', 'allumer ou couper une section par profil, sans dépasser Cerbos', { sa: ['P', 'tous profils, journalisé'] }],
+]
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+
+function render() {
+  const head = '<thead><tr class="grp"><th class="sticky" rowspan="2">Section</th>'
+    + GROUPS.map(([g, cols]) => `<th colspan="${cols.length}">${esc(g)}</th>`).join('')
+    + '</tr><tr class="prof">'
+    + COLS.map(c => `<th>${esc(PROFILES[c][0])}<span class="src"><span class="dot ${PROFILES[c][1]}"></span>${SRC[PROFILES[c][1]]}</span></th>`).join('')
+    + '</tr></thead>'
+  const body = ROWS.map(r => {
+    if (r.length === 1) return `<tr class="fam"><td class="sticky">${esc(r[0])}</td><td colspan="${COLS.length}"></td></tr>`
+    const [name, hint, cells] = r
+    let html = `<tr><td class="sticky sec">${esc(name)}${hint ? `<small>${esc(hint)}</small>` : ''}</td>`
+    for (let i = 0; i < COLS.length;) {
+      const v = cells[COLS[i]]
+      let span = 1
+      // Fusion des cases voisines identiques, sans franchir un changement d'échelon vide.
+      while (i + span < COLS.length && JSON.stringify(cells[COLS[i + span]]) === JSON.stringify(v)) span++
+      html += `<td class="cell"${span > 1 ? ` colspan="${span}"` : ''}>`
+        + (v ? `<span class="chip ${v[0]}"><b>${LABEL[v[0]]}</b>${esc(v[1])}</span>` : '<span class="none">·</span>')
+        + '</td>'
+      i += span
+    }
+    return html + '</tr>'
+  }).join('')
+  document.getElementById('matrix').innerHTML = head + '<tbody>' + body + '</tbody>'
+}
+render()
+
+const box = document.getElementById('hideProp')
+try { box.checked = localStorage.getItem('hideProp') === '1' } catch (e) {}
+const apply = () => document.getElementById('matrix').classList.toggle('hide-prop', box.checked)
+box.addEventListener('change', () => { apply(); try { localStorage.setItem('hideProp', box.checked ? '1' : '0') } catch (e) {} })
+apply()
+</script>
+
+</html>

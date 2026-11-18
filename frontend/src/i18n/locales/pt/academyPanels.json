@@ -1,0 +1,80 @@
+{
+  "medacap": {
+    "title": "Desenvolver a expertise profissional dos técnicos",
+    "imageAlt": "Ciclo MEDACAP — Medir, Utilizar, Definir, Adquirir, Certificar, Aplicar, Performar",
+    "eyebrow": "Desenvolver a expertise profissional dos técnicos",
+    "lead": "O MEDACAP é a metodologia em 7 etapas que estrutura o desenvolvimento de competências técnicas na rede CFAO Mobility.",
+    "paragraphs": [
+      "A CFAO Academy acompanha desde a etapa Medir: a nossa aplicação web permite às equipas da rede avaliar competências e usar os dados ao longo do ciclo MEDACAP.",
+      "Depois apoiamos cada filial na aquisição, certificação e desempenho em terreno, alinhados com os objetivos de negócio e planos definidos a montante."
+    ],
+    "steps": [
+      {
+        "num": "1",
+        "verb": "Medir",
+        "desc": "competências"
+      },
+      {
+        "num": "2",
+        "verb": "Utilizar",
+        "desc": "dados de avaliação"
+      },
+      {
+        "num": "3",
+        "verb": "Definir",
+        "desc": "planos individuais e coletivos"
+      },
+      {
+        "num": "4",
+        "verb": "Adquirir",
+        "desc": "conhecimentos e competências (CFR / filiais)"
+      },
+      {
+        "num": "5",
+        "verb": "Certificar",
+        "desc": "conhecimentos e competências"
+      },
+      {
+        "num": "6",
+        "verb": "Aplicar",
+        "desc": "competências nas filiais"
+      },
+      {
+        "num": "7",
+        "verb": "Performar",
+        "desc": "no posto de trabalho"
+      }
+    ]
+  },
+  "mission": {
+    "title": "Aprender na prática",
+    "imageAlt": "Técnicos em formação prática num veículo na CFAO Academy Douala",
+    "lead": "Na CFAO Academy, a formação não é só teoria: cada módulo alterna input estruturado e trabalho em veículos ou equipamentos reais.",
+    "paragraphs": [
+      "A nossa abordagem andragógica parte da experiência de oficina. De manhã, formadores certificados pelo construtor definem o quadro técnico — procedimentos, normas de segurança, ferramentas de diagnóstico. À tarde, os formandos aplicam em casos reais: desmontagem de motor, códigos de avaria, ajustes de sistemas.",
+      "Este ritmo desenvolve autonomia: os técnicos saem com gestos repetíveis, não apenas slides. Cada percurso (Toyota G3, Mitsubishi Step 2, certificação LOVOL…) cumpre os standards do construtor adaptados às realidades da rede africana.",
+      "As avaliações finais combinam QCM, casos práticos cronometrados e controlos de qualidade em oficina — o mesmo nível de exigência que numa fábrica ou concessionário autorizado."
+    ]
+  },
+  "reseau": {
+    "panelTitle": "Homens e mulheres de terreno",
+    "title": "Homens e mulheres de terreno",
+    "imageAlt": "Mapa da rede de formação CFAO Academy em África",
+    "lead": "Homens e mulheres de terreno — Key Instructors e gestores de formadores parceiros — dispensam formação perto das oficinas, com standards de construtor.",
+    "paragraphs": [
+      "18 Key Instructors Toyota (G2 / Diagnóstico) conduzem Manutenção e Reparação em mais de dez países. 22 PIC multi-marca Motors e 35 PIC de desenvolvimento Equipment apoiam percursos Silver / Repair e técnicos em todo o continente.",
+      "Sessão local ou centro de Douala: mesmas grelhas de avaliação, mesmas ferramentas, mesma rastreabilidade. A descentralização não dilui os standards.",
+      "Um hub central e relays regionais: menos deslocações, upskilling mais rápido, práticas harmonizadas na rede CFAO Mobility."
+    ]
+  },
+  "pays": {
+    "panelTitle": "Os nossos países",
+    "panelIx": "cartografia · 35 países",
+    "lead": "Trinta e cinco territórios em cinco regiões — países cobertos e mercados em desenvolvimento segundo a cartografia Academy."
+  },
+  "equipe": {
+    "panelTitle": "A equipa",
+    "panelIx": "equipa central · 26 especialistas",
+    "lead": "Vinte e seis especialistas em cinco pólos cobrem todas as marcas distribuídas pela CFAO Mobility."
+  }
+}

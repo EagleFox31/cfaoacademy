@@ -210,7 +210,7 @@ function NavLinkList({
     <ul className={listClass}>
       {appNav ? (
         // Écran applicatif : son propre menu remplace les sections du portail.
-        appNav.items.map((n) => {
+        [...appNav.items.map((n) => {
           const active = n.key === appNav.activeKey
           return (
             <li key={n.key}>
@@ -225,7 +225,20 @@ function NavLinkList({
               </Link>
             </li>
           )
-        })
+        }),
+        appNav.close && (
+          <li key="__close">
+            <Link
+              to={appNav.close.to}
+              className={[itemClass(false), 'nav-app-close', variant === 'mobile' ? 'nav-mobile-link' : ''].filter(Boolean).join(' ')}
+              aria-label={appNav.close.label}
+              title={appNav.close.label}
+              onClick={() => onItemActivate?.()}
+            >
+              <span aria-hidden="true">✕</span>
+            </Link>
+          </li>
+        )]
       ) : onPortal && user ? (
         portalSections.map((s) => {
           const label = portalT[s.labelKey] ?? s.key
@@ -281,7 +294,8 @@ function NavLinkList({
 }
 
 /**
- * appNav (facultatif) : menu d'un écran applicatif, { items: [{ key, to, label }], activeKey }.
+ * appNav (facultatif) : menu d'un écran applicatif, { items: [{ key, to, label }], activeKey,
+ * close?: { to, label } } ; `close` ajoute une croix de retour après les entrées.
  * Il remplace les sections du portail et la barre prend toute la largeur.
  */
 export default function Nav({ user: propUser, active: pageActive, notifications, appNav, hideHelp = false }) {

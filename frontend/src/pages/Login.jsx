@@ -10,7 +10,6 @@ import useAuthForm from '../hooks/useAuthForm.js'
 import useLocale from '../hooks/useLocale.js'
 import useAuth from '../hooks/useAuth.js'
 import { connexionKeycloakSeule } from '../lib/auth.js'
-import { getPrimaryRole } from '../data/index.js'
 
 const LOGIN_BG = '/assets/hero/default.jpg'
 
@@ -92,15 +91,10 @@ export default function Login() {
   const formSuccessMessage = auth.formSuccess ? auth.getMessage(auth.formSuccess) : null
 
   function handleDemoLogin(profileId) {
-    const profile = profiles.find(p => p.id === profileId)
     login(profileId)
     setDemoOpen(false)
-    const role = getPrimaryRole(profile?.roles ?? [])
-    if (role === 'build_team' || role === 'group_admin') {
-      navigate('/portail/delivery')
-    } else {
-      navigate('/portail')
-    }
+    // Chaque rôle a son portail : build_team arrive sur le Super Admin, qui ouvre le Delivery.
+    navigate('/portail')
   }
 
   if (keycloakSeul) return null

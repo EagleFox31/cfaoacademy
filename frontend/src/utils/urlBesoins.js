@@ -1,9 +1,15 @@
 /**
  * L'adresse du module « Recueil des besoins » (cfao-needs), servi à part du
- * portail. VITE_NEEDS_URL la fixe ; sans elle, l'adresse locale du compose.
+ * portail, fixée par VITE_NEEDS_URL. Sans elle : null, la carte qui y mène
+ * s'affiche « en construction » plutôt que d'ouvrir une adresse morte.
  */
-const DEFAUT = 'http://localhost:8080'
+export function baseBesoins(env = import.meta.env) {
+  const url = String(env?.VITE_NEEDS_URL ?? '').trim().replace(/\/+$/, '')
+  return url || null
+}
 
-export function baseBesoins() {
-  return String(import.meta.env?.VITE_NEEDS_URL || DEFAUT).replace(/\/+$/, '')
+/** Props de PvCard vers le recueil des besoins : lien s'il existe, chantier sinon. */
+export function versBesoins(enConstruction, env) {
+  const url = baseBesoins(env)
+  return url ? { onClick: () => window.location.assign(url) } : { enConstruction }
 }

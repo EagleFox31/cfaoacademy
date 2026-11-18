@@ -1,3 +1,5 @@
+import { drapeauUrl } from './drapeau.js'
+
 function norm(s) {
   return s
     .trim()
@@ -145,10 +147,11 @@ export function localFlagUrlForCountry(name) {
   return LOCAL_COUNTRY_FLAGS[norm(name)] ?? null
 }
 
+/** Drapeau hébergé localement (`drapeauUrl`) ; `width` ignoré : SVG. */
+// eslint-disable-next-line no-unused-vars
 export function flagCdnUrlForCountry(name, width = 40) {
   const code = countryCodeFromName(name)
-  if (!code) return null
-  return `https://flagcdn.com/w${width}/${code}.png`
+  return code ? drapeauUrl(code) : null
 }
 
 export function flagUrlForCountry(name, width = 64) {

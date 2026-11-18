@@ -1,0 +1,32 @@
+{
+  "badges": {
+    "allBrands": "Todas as marcas",
+    "bodywork": "Carroçaria",
+    "savMotors": "SAV Motors",
+    "savEquipment": "SAV Equipment",
+    "processSav": "Processo SAV",
+    "partsProcess": "Peças e processo",
+    "technicians": "Técnicos",
+    "equipment": "Equipamento",
+    "academy": "Academy"
+  },
+  "public": {
+    "Manager": "Gestor",
+    "Managers": "Gestores",
+    "Front Office": "Front office",
+    "Back office": "Back office",
+    "Back-office": "Back office",
+    "Techniciens": "Técnicos",
+    "Carrossier": "Carroceiro",
+    "Manager + Front Office + Back office": "Gestor + Front office + Back office",
+    "Manager + Front office + Back office": "Gestor + Front office + Back office",
+    "Manager, Back-office & Front office": "Gestor, Back office e Front office",
+    "Back-office & Front office": "Back office e Front office",
+    "Managers, Back-office, Front-Office": "Gestores, Back office, Front office",
+    "Managers, Back-office": "Gestores, Back office",
+    "Conseiller Technique et/Administrateur Garantie": "Conselheiro técnico e/ou administrador de garantia",
+    "Préparateur après-vente, contrôleurs qualité, Chef d'atelier": "Preparador pós-venda, controladores de qualidade, chefe de oficina",
+    "Carrossier-peintre, tôlier, mécanicien": "Carroceiro-pintor, funileiro, mecânico"
+  },
+  "durationEach": "cada"
+}

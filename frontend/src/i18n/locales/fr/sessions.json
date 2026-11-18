@@ -1,0 +1,23 @@
+{
+  "tabMotors": "Motors",
+  "tabEquipment": "Equipment",
+  "tabCarrosserie": "Réparation de Carrosserie",
+  "tabSavMotors": "SAV Motors",
+  "tabSavEquipment": "SAV Equipment",
+  "months": [
+    "Janvier",
+    "Février",
+    "Mars",
+    "Avril",
+    "Mai",
+    "Juin",
+    "Juillet",
+    "Août",
+    "Septembre",
+    "Octobre",
+    "Novembre",
+    "Décembre"
+  ],
+  "monthSessionOne": "Formation",
+  "monthSessionMany": "Formations"
+}

@@ -4,34 +4,33 @@ import PortalStaggerGrid from '../../components/PortalStaggerGrid.jsx'
 import PortalSectionSkeleton from '../../components/PortalSectionSkeleton.jsx'
 import PvCard from '../../components/PvCard'
 import PortalConstructionMedia from '../../components/PortalConstructionMedia.jsx'
+import PortalIconMedia from '../../components/PortalIconMedia.jsx'
 import PortalCardKpis from '../../components/PortalCardKpis.jsx'
 import HomeOfferSections from '../../components/HomeOfferSections.jsx'
 import { planningApi } from '../../lib/planningApi.js'
-import { PLANNING_HOME } from '../../utils/planningAccess.js'
-import { baseBesoins } from '../../utils/urlBesoins.js'
+import { useLocation } from 'react-router-dom'
+import { lienPlanning } from '../../utils/planningAccess.js'
+import { versBesoins } from '../../utils/urlBesoins.js'
+import cartographie from '../../data/academy/pays-cartographie.json'
+
+/** Pays du périmètre de l'Academy : ceux de la carte de la page d'accueil. */
+export const PAYS_ACADEMY = cartographie.regions.reduce((n, r) => n + r.countries.length, 0)
+
+/**
+ * Pays attendus pour un pôle : tant que le recueil est ouvert, tous les pays de
+ * l'Academy sont sollicités, Motors comme Equipment. Une fois clos, ce sont les
+ * pays de la clé du pôle.
+ */
+export function paysAttendus(a, p, anneeCourante) {
+  const clos = statutBesoins({ ...a, repondu: 0, connus: 0 }, anneeCourante).chip === 'closed'
+  return clos ? p.connus : Math.max(PAYS_ACADEMY, p.connus)
+}
 
 /** Ancres de la page, dans l'ordre : la navigation du directeur s'y aligne. */
 export const SECTIONS_DIRECTEUR = ['besoins', 'devis', 'offres', 'calendrier', 'rapports', 'roi', 'plateforme']
 
 const PLATEFORME = ['site', 'support', 'reports']
 
-/**
- * Un visuel différent par année, pour que deux cartes voisines ne se confondent
- * pas. Les visuels des besoins sont ceux des campagnes du portail DPS.
- */
-const VISUELS = {
-  besoins: [
-    '/assets/formation_motorisation_centre_formation.jpg',
-    '/assets/technicien_multibrand.jpg',
-    '/assets/technicien_equipment.jpg',
-  ],
-  devis: [
-    '/assets/img_cards/process_pieces_motors.png',
-    '/assets/img_cards/process_pieces_equipment.png',
-    '/assets/img_cards/clients-carte.jpg',
-  ],
-}
-const visuel = (rubrique, i) => VISUELS[rubrique][i % VISUELS[rubrique].length]
 
 /**
  * Titre d'une carte annuelle, l'année colorée selon le code des pastilles
@@ -44,7 +43,10 @@ function titreAnnee(texte, annee) {
   return <>{avant}<span className={`portal-card-year portal-card-year--${temps}`}>{annee}</span>{apres}</>
 }
 
-/** Ce qu'une année dit au directeur, tous pôles confondus. */
+/** Ordre d'affichage des pôles (un pôle inconnu passe en dernier). */
+const ORDRE_POLES = ['EQUIPMENT', 'MOTORS']
+
+/** Ce qu'une année dit au directeur : tous pôles confondus, puis pôle par pôle. */
 export function syntheseAnnee(g) {
   const reponses = g?.responses ?? []
   const codes = champ => new Set(reponses.flatMap(r => r[champ] ?? [])).size
@@ -55,6 +57,12 @@ export function syntheseAnnee(g) {
     repondu: codes('answered'),
     connus: codes('known'),
     besoins: totaux.reduce((n, m) => n + (m.needs ?? 0), 0),
+    poles: reponses.map(r => ({
+      pole: r.pole,
+      repondu: r.answered?.length ?? 0,
+      connus: r.known?.length ?? 0,
+      besoins: r.needs ?? 0,
+    })).sort((x, y) => ORDRE_POLES.indexOf(y.pole) - ORDRE_POLES.indexOf(x.pole)),
     places: g.total_seats ?? 0,
     filiales: g.rows?.length ?? 0,
     marques: (g.brands ?? []).map(b => ({
@@ -131,7 +139,10 @@ function Etat({ statut, t }) {
   return null
 }
 
-const aSuivre = t => <span className="portal-status-chip todo">{t.chip_follow}</span>
+/** Cartes de la largeur des rails d'offres de la même page (4 cartes et demie par ligne). */
+const GRILLE_RAIL = 'pv-grid--rail pv-grid--stretch'
+
+const aSuivre = t =><span className="portal-status-chip todo">{t.chip_follow}</span>
 
 /**
  * Les sept rubriques du directeur du centre. Les trois premières lisent les
@@ -140,49 +151,52 @@ const aSuivre = t => <span className="portal-status-chip todo">{t.chip_follow}</
  */
 export default function CenterDirectorSections({ t, access }) {
   const { statut, annees } = useAnnees()
+  const { pathname } = useLocation()
   const millesimes = annees.length ? annees.map(a => a.annee) : [new Date().getFullYear()]
 
   return (
     <>
       <Section id="besoins" t={t}>
         <Etat statut={statut} t={t} />
-        <PortalStaggerGrid>
-          {annees.map((a, i) => {
-            const etat = statutBesoins(a)
+        <PortalStaggerGrid className={GRILLE_RAIL}>
+          {annees.flatMap(a => a.poles.map(p => {
+            const attendus = paysAttendus(a, p)
+            const etat = statutBesoins({ ...a, repondu: p.repondu, connus: attendus })
+            const titre = t.dir_besoins_card_pole.replace('{pole}', t[`pole_${p.pole}`] ?? p.pole)
             return (
-              <div key={a.annee} className="portal-card-anchor">
+              <div key={`${a.annee}-${p.pole}`} className="portal-card-anchor">
                 <PvCard
-                  img={visuel('besoins', i)}
+                  cardMedia={<PortalIconMedia icon="besoins" tone={etat.chip} />}
                   kicker={
                     <span className={`portal-status-chip ${etat.chip}`}>{t[etat.cle]}</span>
                   }
-                  title={titreAnnee(t.dir_besoins_card, a.annee)}
+                  title={titreAnnee(titre, a.annee)}
                   meta={
                     <PortalCardKpis
                       items={[
-                        { value: a.repondu, total: a.connus, label: t.kpi_countries },
-                        { value: a.besoins, label: t.kpi_needs },
+                        { value: p.repondu, total: attendus, label: t.kpi_countries },
+                        { value: p.besoins, label: t.kpi_needs },
                       ]}
                     />
                   }
                   cta={t.cta_open}
                   hoverHint={t.cta_open}
-                  onClick={() => window.location.assign(baseBesoins())}
+                  {...versBesoins(t.under_construction)}
                   corner
                 />
               </div>
             )
-          })}
+          }))}
         </PortalStaggerGrid>
       </Section>
 
       <Section id="devis" t={t}>
         <Etat statut={statut} t={t} />
-        <PortalStaggerGrid>
-          {annees.map((a, i) => (
+        <PortalStaggerGrid className={GRILLE_RAIL}>
+          {annees.map(a => (
             <div key={a.annee} className="portal-card-anchor">
               <PvCard
-                img={visuel('devis', i)}
+                cardMedia={<PortalIconMedia icon="devis" tone={a.gelee ? 'closed' : 'progress'} />}
                 kicker={
                   <span className={`portal-status-chip ${a.gelee ? 'closed' : 'progress'}`}>
                       {a.gelee ? t.chip_closed : access?.edit ? t.chip_edit : t.status_DRAFT}
@@ -199,7 +213,7 @@ export default function CenterDirectorSections({ t, access }) {
                 }
                 cta={t.cta_open}
                 hoverHint={t.cta_open}
-                to={`${PLANNING_HOME}/country?annee=${a.annee}&pays=all`}
+                to={lienPlanning('country', { annee: a.annee, pays: 'all' }, pathname)}
                 corner
               />
             </div>
@@ -211,7 +225,7 @@ export default function CenterDirectorSections({ t, access }) {
 
       {['calendrier', 'rapports'].map(id => (
         <Section key={id} id={id} t={t}>
-          <PortalStaggerGrid>
+          <PortalStaggerGrid className={GRILLE_RAIL}>
             {millesimes.map(annee => (
               <div key={annee} className="portal-card-anchor">
                 <PvCard
@@ -226,7 +240,7 @@ export default function CenterDirectorSections({ t, access }) {
       ))}
 
       <Section id="roi" t={t}>
-        <PortalStaggerGrid>
+        <PortalStaggerGrid className={GRILLE_RAIL}>
           <div className="portal-card-anchor">
             <PvCard cardMedia={<PortalConstructionMedia label={t.under_construction} />} kicker={aSuivre(t)} title={t.dir_roi_card} meta={t.dir_roi_meta} />
           </div>
@@ -234,7 +248,7 @@ export default function CenterDirectorSections({ t, access }) {
       </Section>
 
       <Section id="plateforme" t={t}>
-        <PortalStaggerGrid>
+        <PortalStaggerGrid className={GRILLE_RAIL}>
           {PLATEFORME.map(id => (
             <div key={id} className="portal-card-anchor">
               <PvCard

@@ -19,7 +19,7 @@ import useMaintenance from '../../hooks/useMaintenance'
 import { isMaintenanceError } from '../../lib/api'
 import { makeFormatter } from '../../components/sheet/sheetExport'
 import { planningApi } from '../../lib/planningApi'
-import { planningMenu } from '../../utils/planningAccess'
+import { planningMenu, retourInterne } from '../../utils/planningAccess'
 import { FacetFilter } from './costKey/FacetFilter'
 import { AbcView, Banner, CountryView, SheetSkeleton, TableView, ThemesView, errText, reviewText } from './costKey/costKeyViews'
 import PrepareView from './costKey/PrepareView'
@@ -190,12 +190,14 @@ export default function CleRepartition() {
     body = <AbcView t={t} locale={locale} fmt={fmt} scope={allPoles ? scope : ckey} ckey={ckey} slots={slots} />
   } else if (view === 'themes') body = <ThemesView t={t} ckey={ckey} />
   else if (global.error) body = <Banner tone="warn">{errText(t, global.error)}</Banner>
-  // Pôle, année, mode : tout rechargement affiche le squelette à la place de l'ancien tableau.
-  else if (!global.data || global.loading) body = <SheetSkeleton label={t.loading} kpis />
+  // Pôle, année, mode : le squelette remplace l'ancien tableau. Le Devis reste monté (ses filtres
+  // aussi) et gère lui-même son rechargement en shimmer.
+  else if (!global.data || (global.loading && view !== 'country')) body = <SheetSkeleton label={t.loading} kpis />
   else if (view === 'country') {
     body = (
       <CountryView t={t} locale={locale} fmt={fmt} ckey={scope} mode={mode} global={global.data}
         code={search.get('pays')} setCode={c => setParams({ pays: c, session: null })}
+        picked={search.get('filiales')} setPicked={list => setParams({ filiales: list })}
         session={search.get('session')} revealTick={revealTick} slots={slots}
         canEdit={Boolean(boot.access?.edit)} onEdited={refreshSilently} />
     )
@@ -215,9 +217,12 @@ export default function CleRepartition() {
   const poleOptions = [...(ALL_VIEWS.has(view) ? [ALL] : []), ...POLES]
     .map(p => ({ value: p, label: t[`pole_${p}`] || p }))
   // Le menu du module vit dans la navbar : la page garde toute la largeur.
+  // Ouvert depuis une carte du portail (`retour`) : l'écran seul et une croix de retour.
+  const retour = retourInterne(search.get('retour'))
   const appNav = {
     activeKey: view,
-    items: menu.map(id => ({
+    close: retour ? { to: retour, label: t.back_portal } : undefined,
+    items: (retour ? menu.filter(id => id === view) : menu).map(id => ({
       key: id, label: itemLabel(id), hint: t[`hint_${id}`],
       to: `${BASE}/${id}${search.toString() ? `?${search}` : ''}`,
     })),

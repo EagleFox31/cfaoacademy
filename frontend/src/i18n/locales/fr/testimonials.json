@@ -1,0 +1,26 @@
+{
+  "navAria": "Navigation témoignages",
+  "prev": "Témoignage précédent",
+  "next": "Témoignage suivant",
+  "choose": "Choisir un témoignage",
+  "testimonialN": "Témoignage {n} — {name}",
+  "playVideo": "Lire le témoignage de {name}",
+  "videoTitle": "Témoignage — {name}",
+  "items": [
+    {
+      "name": "Eric N.",
+      "role": "Technicien · Douala",
+      "quote": "Avant, on nous disait surtout comment appliquer, pas pourquoi. Là, je sais pourquoi je fais le geste. Depuis la certification G3, je prends les OR châssis sans attendre qu'on vienne me débloquer."
+    },
+    {
+      "name": "Anonyme",
+      "role": "Carrossier · Abidjan",
+      "quote": "En carrosserie, le multicouche, c'est ce qui nous faisait revenir en arrière. La session nous a remis tous sur la même méthode — moins de reprises, moins de mauvaises surprises."
+    },
+    {
+      "name": "Anonyme",
+      "role": "Manager Parts · Sénégal",
+      "quote": "Au comptoir, on perdait du temps à chercher la bonne référence. Après la formation Parts, le stock et les demandes clients sont plus clairs pour toute l'équipe."
+    }
+  ]
+}

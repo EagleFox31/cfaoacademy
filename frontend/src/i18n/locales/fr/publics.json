@@ -1,0 +1,46 @@
+{
+  "Techniciens Véhicules Légers": {
+    "name": "Techniciens Véhicules Légers",
+    "meta": "Maintenance préventive, réparation et diagnostic sur véhicules légers — parcours certifiant G4 → G1 multi-marques Motors."
+  },
+  "Techniciens Voitures": {
+    "name": "Techniciens Véhicules Légers",
+    "meta": "Maintenance préventive, réparation et diagnostic sur véhicules légers — parcours certifiant G4 → G1 multi-marques Motors."
+  },
+  "Techniciens Poids lourds, Engins, Chariots & Bus": {
+    "name": "Techniciens Poids lourds, Engins, Chariots & Bus",
+    "meta": "Compétences techniciens sur poids lourds, engins de chantier, chariots élévateurs et bus — standards constructeurs Equipment."
+  },
+  "Carrossiers": {
+    "name": "Carrossiers",
+    "meta": "Redressage acier, préparation de surface, remplacement de vitrages et raccords multicouches — du débourrage N1 à la maîtrise des teintes N5."
+  },
+  "Conseillers Services": {
+    "name": "Conseillers Services",
+    "meta": "Conseillers des services administratifs et financiers — accueil, conformité et performance des fonctions support du réseau."
+  },
+  "Manager et conseillers services administratifs, financiers": {
+    "name": "Conseillers Services",
+    "meta": "Conseillers des services administratifs et financiers — accueil, conformité et performance des fonctions support du réseau."
+  },
+  "Technico-commerciaux": {
+    "name": "Technico-commerciaux",
+    "meta": "Maîtrise produit et argumentation technique de vente — pour les vendeurs qui allient connaissance véhicule et performance commerciale."
+  },
+  "Commerciaux": {
+    "name": "Commerciaux",
+    "meta": "Accueil, prise en charge et accompagnement client au SAV — du réceptionnaire au conseiller service confirmé."
+  },
+  "Managers": {
+    "name": "Managers",
+    "meta": "Managers et responsables SAV — standards constructeurs, pilotage des indicateurs et conformité réseau KI/PIC."
+  },
+  "Manager et responsables organisation SAV": {
+    "name": "Managers",
+    "meta": "Managers et responsables SAV — standards constructeurs, pilotage des indicateurs et conformité réseau KI/PIC."
+  },
+  "Clients": {
+    "name": "Clients",
+    "meta": "Techniciens, carrossiers et gestionnaires pièces des entreprises clientes — les mêmes formations, dispensées aux partenaires et flottes de CFAO Mobility et Equipment."
+  }
+}

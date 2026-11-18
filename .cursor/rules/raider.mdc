@@ -1,0 +1,25 @@
+---
+description: Standard RAIDER et mémoire des erreurs (docs/engineering/lessons-learned.md)
+alwaysApply: true
+---
+
+# RAIDER : standard d'ingénierie du projet
+
+Référence : `RAIDER.md` à la racine (Reusable, Agnostic, Idempotent, Durable, Engineering-grade, Retroactive).
+
+## Avant une tâche non triviale
+- Lire la synthèse « Règles retenues » de `docs/engineering/lessons-learned.md`, puis les entrées de la même catégorie.
+- Reuse-first : chercher ce qui existe déjà (dans le repo, puis côté bibliothèques, Actions et standards) et décider Adopt / Adapt / Learn / Build. Noter cette décision dans le walkthrough.
+- Lister les risques RAIDER du changement avant de coder (contrats existants, idempotence, rayon d'impact CI).
+
+## Après une erreur ou un near miss (revue, test, CI, prod, remarque de l'utilisateur)
+- Ajouter une entrée en haut de `docs/engineering/lessons-learned.md`. Format : Contexte / symptôme, Impact, Détection, Cause racine, Correctif, Prévention, Leçon généralisée, Catégorie, Récidive.
+- La cause racine explique **pourquoi** l'erreur est arrivée, pas seulement le symptôme.
+- La prévention doit être vérifiable : un test, une validation ou un guardrail CI, pas une bonne intention.
+- Si l'erreur était déjà documentée, mettre « Récidive : oui » et **renforcer le contrôle** au lieu de réappliquer le même correctif.
+- Si la règle est nouvelle, l'ajouter aussi à la synthèse.
+
+## Interdits
+- Déclarer « fait » ou « les tests passent » sans la sortie de la commande, lancée depuis un environnement propre. L'ancien comportement doit rester vert, pas seulement les nouveaux tests.
+- Effacer ou réécrire une entrée existante : on corrige par une nouvelle entrée.
+- Déroger à un principe RAIDER sans le justifier dans le walkthrough ou la PR.

@@ -3,6 +3,7 @@ import { isPlMedacapVariant } from '../utils/portalVariant.js'
 import { isMedacapLearner, medacapLearnerSections } from '../utils/medacapLearner.js'
 import { sessionsDuFormateur } from './mock_sessions_formateur.js'
 import { sessionsAVenir } from '../utils/sessionsAVenir.js'
+import { CONSULTATION_MODES, ROLE_PRIORITY } from '../pages/portal/portalProfiles.js'
 
 import kiNetworkPayload from './ki-network.json'
 
@@ -39,13 +40,8 @@ export const NAV = HOME_SESSIONS_SECTION_VISIBLE
   ? NAV_ITEMS
   : NAV_ITEMS.filter((n) => n.key !== 'sessions')
 
-/** Priorité de rôle portal (le plus haut gagne) */
-export const ROLE_PRIORITY = [
-  'superadmin','build_team','group_admin','group_hr',
-  'branch_director','branch_hr','branch_admin',
-  'dop','dps','workshop_manager','team_manager',
-  'ki','pic','trainer','center_director','training_coordinator','center_assistant',
-]
+/** Priorité de rôle portal (le plus haut gagne) : celle du registre des profils. */
+export { ROLE_PRIORITY }
 
 /** Sections du portail du centre de formation (CenterHome), communes aux trois rôles. */
 const DIRECTOR_NAV_SECTIONS = [
@@ -57,6 +53,15 @@ const DIRECTOR_NAV_SECTIONS = [
   { key: 'roi', id: 'roi', labelKey: 'nav_sec_dir_roi', iconKey: 'sliders' },
   { key: 'plateforme', id: 'plateforme', labelKey: 'nav_sec_dir_plateforme', iconKey: 'milestone' },
 ]
+
+/** Libellés navbar des sections du portail de consultation (RHHome). */
+const CONSULTATION_NAV = {
+  recrutement: { labelKey: 'nav_sec_rh_recrutement' },
+  competences: { labelKey: 'nav_sec_rh_competences' },
+  pif: { labelKey: 'nav_sec_rh_pif' },
+  personnes: { labelKey: 'nav_sec_rh_personnes' },
+  cle: { labelKey: 'nav_sec_centre_cle', iconKey: 'sliders' },
+}
 
 const CENTER_NAV_SECTIONS = [
   { key: 'cle',     id: 'cle',     labelKey: 'nav_sec_centre_cle',     iconKey: 'sliders' },
@@ -119,11 +124,6 @@ export const PORTAL_NAV_SECTIONS = {
     { key: 'besoins-formation', id: 'besoins-formation', labelKey: 'nav_sec_dps_needs',      iconKey: 'clipboard' },
     { key: 'assistance',       id: 'assistance',       labelKey: 'nav_sec_dps_assistance',   iconKey: 'lifebuoy' },
   ],
-  branch_director: [
-    { key: 'bilan',   id: 'bilan',   labelKey: 'nav_sec_bilan' },
-    { key: 'equipe',  id: 'equipe',  labelKey: 'nav_sec_equipe' },
-    { key: 'certifs', id: 'certifs', labelKey: 'nav_sec_certifs' },
-  ],
   branch_hr: [
     { key: 'bilan',     id: 'bilan',     labelKey: 'nav_sec_bilan' },
     { key: 'directory', id: 'directory', labelKey: 'nav_sec_directory' },
@@ -132,20 +132,12 @@ export const PORTAL_NAV_SECTIONS = {
     { key: 'bilan',     id: 'bilan',     labelKey: 'nav_sec_bilan' },
     { key: 'directory', id: 'directory', labelKey: 'nav_sec_directory' },
   ],
-  // Une entree par espace, dans l'ordre du cycle RH.
-  group_hr: [
-    { key: 'recrutement', id: 'recrutement', labelKey: 'nav_sec_rh_recrutement' },
-    { key: 'competences', id: 'competences', labelKey: 'nav_sec_rh_competences' },
-    { key: 'pif',         id: 'pif',         labelKey: 'nav_sec_rh_pif' },
-    { key: 'personnes',   id: 'personnes',   labelKey: 'nav_sec_rh_personnes' },
-  ],
-  group_admin: [
-    { key: 'bilan',       id: 'bilan',       labelKey: 'nav_sec_bilan' },
-    { key: 'branches',    id: 'branches',    labelKey: 'nav_sec_branches' },
-    { key: 'competences', id: 'competences', labelKey: 'nav_sec_competences' },
-    { key: 'logs',        id: 'logs',        labelKey: 'nav_sec_logs' },
-    { key: 'profiles',    id: 'profiles',    labelKey: 'nav_sec_profiles' },
-  ],
+  // Portail de consultation (groupe, direction) : une entree par section de la
+  // page, dans l'ordre de CONSULTATION_MODES ; « À traiter » reste hors navbar.
+  ...Object.fromEntries(Object.entries(CONSULTATION_MODES).map(([role, { sections }]) => [
+    role,
+    sections.filter(id => id in CONSULTATION_NAV).map(id => ({ key: id, id, ...CONSULTATION_NAV[id] })),
+  ])),
   superadmin: [
     { key: 'bilan',       id: 'bilan',       labelKey: 'nav_sec_bilan' },
     { key: 'branches',    id: 'branches',    labelKey: 'nav_sec_branches' },

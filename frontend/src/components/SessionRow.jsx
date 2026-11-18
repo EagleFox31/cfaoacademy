@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { fmtDay, BRANDS } from '../data/index.js'
+import { drapeauUrl } from '../utils/drapeau.js'
 
 const BRAND_LOGO = Object.fromEntries(
   BRANDS.filter(b => b.logo).map(b => [b.name.toUpperCase(), b.logo])
@@ -77,8 +78,7 @@ export default function SessionRow({ session }) {
         <span className="place-lieu">
           {flagCode && (
             <img
-              src={`https://flagcdn.com/w20/${flagCode}.png`}
-              srcSet={`https://flagcdn.com/w40/${flagCode}.png 2x`}
+              src={drapeauUrl(flagCode)}
               alt={session.lieu}
               className="session-flag"
               width="16" height="12"

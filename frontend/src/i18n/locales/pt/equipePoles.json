@@ -1,0 +1,22 @@
+{
+  "supports": {
+    "shortLabel": "Apoio",
+    "label": "Pólo apoio · 4"
+  },
+  "toyota": {
+    "shortLabel": "Toyota",
+    "label": "Pólo Toyota · 3"
+  },
+  "autres-marques": {
+    "shortLabel": "Outras marcas",
+    "label": "Pólo outras marcas · 12"
+  },
+  "equipement": {
+    "shortLabel": "Equipment",
+    "label": "Pólo Equipment · 4"
+  },
+  "autres-act": {
+    "shortLabel": "Outras atividades",
+    "label": "Pólo outras atividades · 3"
+  }
+}
