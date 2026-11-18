@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 # contracts:begin - bloc géré par contracts/sync.py, ne pas éditer
-LABEL org.cfao.contracts.consumes="needs-analytics@^1.4" \
+LABEL org.cfao.contracts.consumes="needs-analytics@^1.5" \
       org.cfao.contracts.provides="needs-snapshot-push@1.0.0" \
       org.cfao.module="cfao-planning"
 # contracts:end
@@ -35,5 +35,5 @@ EXPOSE 8000
 # Academix enchaînait `alembic upgrade head && seed_all` à chaque démarrage de
 # conteneur ; acceptable en développement, risqué en production. Ici les deux
 # tournent dans le job ponctuel `planning-migrate` du docker-compose (AGENTS.md §7).
-# 2 workers : une équipe Academy de quelques dizaines de personnes.
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]
+# 2 workers × 4 threads et préchauffage des clés OIDC : voir gunicorn.conf.py.
+CMD ["gunicorn", "config.wsgi:application"]

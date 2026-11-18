@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 # contracts:begin - bloc géré par contracts/sync.py, ne pas éditer
 LABEL org.cfao.contracts.consumes="needs-snapshot-push@^1" \
-      org.cfao.contracts.provides="needs-analytics@1.4.0" \
+      org.cfao.contracts.provides="needs-analytics@1.5.0" \
       org.cfao.module="cfao-needs"
 # contracts:end
 

@@ -66,15 +66,24 @@ ALIASES = [
 ]
 
 # ── Organisation ────────────────────────────────────────────────────────────
-# Seule la racine fait partie du référentiel : filiales et agences viennent du
-# terrain. Les unités de démonstration n'existent que pour les comptes de démo.
+# Le référentiel porte la racine et les filiales qui envoient une fiche de
+# besoins (`import_need_workbooks` les exige). Les agences viennent du terrain.
+# Les unités de démonstration n'existent que pour les comptes de démo.
+# Le pays est le libellé du planning, qui rapproche les besoins par ce nom.
 ORG_UNITS = [
     ("groupe",            "CFAO Mobility & Equipment", "",             "fr", None),
+    ("groupe.civ",        "CFAO Côte d'Ivoire",        "Côte d'Ivoire","fr", "groupe"),
+    ("groupe.cog",        "CFAO Congo",                "Congo",        "fr", "groupe"),
+    ("groupe.gab",        "CFAO Gabon",                "Gabon",        "fr", "groupe"),
+    ("groupe.gnq",        "CFAO Guinée équatoriale",   "Guinée équatoriale", "fr", "groupe"),
+    ("groupe.mdg",        "CFAO Madagascar",           "Madagascar",   "fr", "groupe"),
+    ("groupe.mar",        "CFAO Maroc",                "Maroc",        "fr", "groupe"),
+    ("groupe.tcd",        "CFAO Tchad",                "Tchad",        "fr", "groupe"),
+    ("groupe.tgo",        "CFAO Togo",                 "Togo",         "fr", "groupe"),
 ]
 DEMO_ORG_UNITS = [
     ("groupe.cmr",        "CFAO Cameroun",             "Cameroun",     "fr", "groupe"),
     ("groupe.cmr.douala", "Agence Douala",             "Cameroun",     "fr", "groupe.cmr"),
-    ("groupe.civ",        "CFAO Côte d'Ivoire",        "Côte d'Ivoire","fr", "groupe"),
     ("groupe.civ.abidjan","Agence Abidjan",            "Côte d'Ivoire","fr", "groupe.civ"),
     ("groupe.gha",        "CFAO Ghana",                "Ghana",        "en", "groupe"),
     ("groupe.gha.accra",  "Accra branch",              "Ghana",        "en", "groupe.gha"),

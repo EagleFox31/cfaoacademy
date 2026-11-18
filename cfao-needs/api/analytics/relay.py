@@ -47,6 +47,39 @@ def _send(snapshot: dict) -> str | None:
     return f"HTTP {response.status_code}"
 
 
+class StartupPush:
+    """Au démarrage du relais, pousse l'état courant une fois, même outbox vide.
+
+    L'outbox ne porte que les changements : une copie vide ou perdue côté planning
+    (planning démarré avant needs, base planning recréée, données posées avant les
+    triggers) ne serait jamais rattrapée. Planning ignore une version déjà connue :
+    sur une copie à jour, aucun effet, et rien n'est écrit ici. Relancé avec le
+    même backoff que l'outbox jusqu'à ce que planning accepte.
+    """
+
+    def __init__(self):
+        self.done, self.attempts, self.next_at = False, 0, None
+
+    def run(self, now=None) -> str:
+        now = now or timezone.now()
+        if self.done or (self.next_at is not None and now < self.next_at):
+            return "idle"
+        if not push_enabled():
+            self.done = True
+            return "disabled"
+        snapshot = build_snapshot()
+        error = _send(snapshot)
+        if error is None:
+            self.done = True
+            log.info("copie des besoins v%s poussée au démarrage du relais", snapshot["version"])
+            return "delivered"
+        self.attempts += 1
+        self.next_at = now + backoff(self.attempts)
+        log.warning("copie des besoins v%s non poussée au démarrage (%s), essai %s",
+                    snapshot["version"], error, self.attempts)
+        return "failed"
+
+
 def deliver_pending(now=None) -> str:
     """Un passage du relais. Renvoie ce qui s'est passé (journal et tests)."""
     now = now or timezone.now()

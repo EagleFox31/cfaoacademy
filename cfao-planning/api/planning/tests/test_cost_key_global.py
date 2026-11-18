@@ -140,6 +140,13 @@ def test_fiche_pays(world):
     assert country_sheet(world["key"], Mode.PLANNED, "xx") is None
 
 
+def test_prevu_en_presentiel_par_defaut_distanciel_garde(world):
+    """Le filtre Type du devis compte les sessions prévues : sans mode, il affichait 0 / 0."""
+    PlannedSession.objects.filter(code_norm="OM01").update(delivery_mode="DISTANCIEL")
+    sheet = country_sheet(world["key"], Mode.PLANNED, "ci", {"ci": 8})
+    assert {s["code"]: s["delivery"] for s in sheet["sessions"]} == {"OM01": "DISTANCIEL", "TS01": "PRESENTIEL"}
+
+
 def test_classeur_complet(world):
     table = global_table(world["key"], Mode.PLANNED, needs())
     sheets = [country_sheet(world["key"], Mode.PLANNED, c) for c in ("cm", "ci")]

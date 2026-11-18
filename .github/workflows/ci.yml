@@ -38,6 +38,11 @@ jobs:
               - '.github/workflows/ci.yml'
             realm:
               - 'keycloak/**'
+              # L'extension Keycloak consomme ce contrat (HubMailContractTest).
+              - 'cfao-academy-mail/api/outbound/contract/**'
+              # Et le smoke cfao-hub fait passer ses mails par le vrai hub.
+              - 'cfao-academy-mail/api/outbound/services/**'
+              - 'cfao-academy-mail/Dockerfile'
               - 'cerbos/policies/**'
               - 'cfao-core/identity/roles.py'
               - 'cfao-core/core/auth/jwt_verifier.py'
@@ -65,6 +70,8 @@ jobs:
               - 'cfao-planning/api/planning/contract/**'
               - 'cfao-planning/api/planning/tests/test_needs_consumer.py'
               - 'cfao-planning/api/planning/tests/test_needs_copy.py'
+              - 'keycloak/Dockerfile'
+              - 'keycloak/spi/**'
               - '.github/workflows/ci.yml'
 
   # Registre des contrats inter-modules (contracts/registry.json) : cohérence,
@@ -170,6 +177,14 @@ jobs:
       - run: pip install -r keycloak/tests/requirements.txt
       # Rôles alignés sur le catalogue core et sur Cerbos, audiences, session 8 h.
       - run: pytest -q keycloak/tests
+      # Extension cfao-hub (mails de Keycloak par le hub) : JUnit, dont le contrat mail-outbound.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: keycloak/spi/pom.xml
+      - run: mvn -B -q -f keycloak/spi/pom.xml verify
       # Vrai Keycloak : realm appliqué par config-cli, jetons obtenus par les vrais flux.
       - name: smoke sur Keycloak 26
         run: |
@@ -202,6 +217,7 @@ jobs:
           KC_DB_PASSWORD: ci-db
           KC_ADMIN_PASSWORD: ci-admin
           CFAO_PORTAL_SECRET: ci-secret-portail
+          CFAO_LOGIN_CODE_PEPPER: ci-poivre-des-codes-0123456789abcdef
           KC_IMPORT_LOCATIONS: /opt/cfao-realm/*.yaml,/fixtures/*.yaml
           # Deux hôtes à la fois : un changement d'hôte se fait sans rupture.
           CFAO_PORTAL_REDIRECT_URIS: '["http://localhost:8000/oauth2/callback","https://portail.exemple/oauth2/callback"]'
@@ -214,10 +230,19 @@ jobs:
           docker compose $p run --rm config
           KC_URL=http://localhost:18080/auth SPA_ATTENDUE=disabled DEMO_ATTENDUE=absente pytest -q keycloak/tests/smoke_realm.py
           KC_URL=http://localhost:18080/auth pytest -q keycloak/tests/smoke_migration.py
+      # Mot de passe oublié de bout en bout : image Keycloak + hub, hub coupé puis rétabli.
+      - name: smoke de l'extension cfao-hub (mails de Keycloak par le hub)
+        run: |
+          export SMOKE_FERNET_KEY=$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+          f=keycloak/tests/compose.hub.smoke.yml
+          docker compose -f $f up -d --build --wait keycloak mail-api mail-worker
+          docker compose -f $f run --rm config
+          KC_URL=http://localhost:18090/auth SMOKE_COMPOSE=$f pytest -q keycloak/tests/smoke_hub_mail.py keycloak/tests/smoke_login_mail.py
       - if: failure()
         run: |
           docker compose -f keycloak/tests/docker-compose.smoke.yml logs --tail=200
           docker compose -f keycloak/compose.prod.yml logs --tail=200 || true
+          SMOKE_FERNET_KEY=x docker compose -f keycloak/tests/compose.hub.smoke.yml logs --tail=200 || true
 
   edge:
     name: Passerelle commune (config + smoke devant Keycloak 26)
@@ -236,6 +261,7 @@ jobs:
       KC_DB_PASSWORD: ci-db
       KC_ADMIN_PASSWORD: ci-admin
       CFAO_PORTAL_SECRET: ci-secret-portail
+      CFAO_LOGIN_CODE_PEPPER: ci-poivre-des-codes-0123456789abcdef
       KC_IMPORT_LOCATIONS: /opt/cfao-realm/*.yaml,/fixtures/*.yaml
       CFAO_PORTAL_REDIRECT_URIS: '[]'
       CFAO_NEEDS_REDIRECT_URIS: '["http://localhost:18088/callback","http://localhost:18088/"]'

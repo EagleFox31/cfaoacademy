@@ -166,6 +166,35 @@ def test_relay_without_configuration_sends_nothing(monkeypatch, settings, world)
     assert relay.deliver_pending() == "disabled"
 
 
+def test_startup_push_catches_up_planning_started_before_needs(monkeypatch, pushing):
+    """Outbox vide, planning injoignable au démarrage puis disponible : l'état courant arrive."""
+    calls = []
+
+    def planning(url, json=None, headers=None, timeout=None):
+        calls.append(json["version"])
+        if len(calls) == 1:
+            raise requests.ConnectionError("refused")
+        return _Reply(200)
+
+    monkeypatch.setattr(relay.requests, "post", planning)
+    startup, now = relay.StartupPush(), timezone.now()
+    assert not NeedsOutbox.objects.exists()
+    assert relay.deliver_pending(now) == "idle"  # l'outbox seule ne pousserait rien
+    assert startup.run(now) == "failed"
+    assert startup.run(now + timedelta(seconds=1)) == "idle"  # backoff de 5 s
+    assert startup.run(now + timedelta(seconds=6)) == "delivered"
+    assert startup.run(now + timedelta(hours=1)) == "idle"  # une seule fois par démarrage
+    assert calls == [0, 0]
+    assert not NeedsOutbox.objects.exists()  # aucune écriture côté needs
+
+
+def test_startup_push_without_configuration_sends_nothing(monkeypatch, settings, world):
+    settings.PLANNING_API_URL = ""
+    monkeypatch.setattr(relay.requests, "post", lambda *a, **k: pytest.fail("envoi inattendu"))
+    startup = relay.StartupPush()
+    assert startup.run() == "disabled" and startup.run() == "idle"
+
+
 def test_relay_forgets_old_rows(world):
     old = timezone.now() - timedelta(days=31)
     NeedsOutbox.objects.create(version=1, created_at=old, next_attempt_at=old, delivered_at=old)

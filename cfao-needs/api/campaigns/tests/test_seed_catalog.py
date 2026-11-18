@@ -29,15 +29,15 @@ def seeded():
 def test_le_referentiel_charge_familles_marques_et_organisation(seeded):
     assert CatalogFamily.objects.count() == 9   # dont Conduite Equipment, lue dans les fiches 2027
     assert Brand.objects.count() == 21          # 10 Mobility + 10 Equipment + Yamaha
-    # Hors demonstration : la racine seule, aucun compte (AGENTS.md section 7).
-    assert OrgUnitRef.objects.count() == 1
+    # Hors demonstration : la racine et les 8 filiales des fiches, aucun compte (AGENTS.md section 7).
+    assert OrgUnitRef.objects.count() == 9
     assert UserProfile.objects.count() == 0
     assert seeded.status == Campaign.Status.DRAFT
 
 
 def test_la_demo_ajoute_agences_et_comptes(seeded):
     call_command("seed_referential", demo=True, verbosity=0)
-    assert OrgUnitRef.objects.count() == 7
+    assert OrgUnitRef.objects.count() == 14  # + Cameroun, Ghana et 3 agences
     # 7 comptes de demonstration : un par role du parcours, coordonnateur inclus.
     assert UserProfile.objects.count() == 7
 

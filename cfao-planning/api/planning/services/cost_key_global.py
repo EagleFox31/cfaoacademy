@@ -125,11 +125,18 @@ def review_items(key: CostKeyYear, visible: set[str] | None = None) -> list[dict
             for item in items if visible is None or item.proposed.get("country") in visible]
 
 
-def _responses(pole: str, answered, known, visible: set[str] | None) -> dict:
+def _responses(pole: str, answered, known, visible: set[str] | None, needs: int) -> dict:
     """Filiales d'un pôle ayant répondu au recueil des besoins (au moins 1 place
-    demandée), parmi celles que la clé connaît. Limité au périmètre du lecteur."""
+    demandée), parmi celles que la clé connaît, et besoins exprimés du pôle.
+    Limité au périmètre du lecteur."""
     seen = lambda codes: sorted(c for c in codes if visible is None or c in visible)
-    return {"pole": pole, "answered": seen(answered), "known": seen(known)}
+    return {"pole": pole, "answered": seen(answered), "known": seen(known), "needs": needs}
+
+
+def _row_needs(rows: list[dict], visible: set[str] | None) -> int:
+    """Besoins exprimés (somme des cellules marque) des pays visibles d'un tableau."""
+    return sum(c["needs"] or 0 for r in rows if visible is None or r["country"] in visible
+               for c in r["cells"].values())
 
 
 def global_table(key: CostKeyYear, mode: Mode, needs: NeedsData,
@@ -180,7 +187,7 @@ def global_table(key: CostKeyYear, mode: Mode, needs: NeedsData,
     known = answered | {line.code for line in report.lines}
     return {
         "year": key.year, "pole": key.pole, "mode": str(mode), "status": key.status,
-        "responses": [_responses(key.pole, answered, known, visible)],
+        "responses": [_responses(key.pole, answered, known, visible, _row_needs(rows, None))],
         "budget": _num(report.budget), "total_seats": report.total_seats,
         "hourly_cost": None if report.hourly_cost is None else round(float(report.hourly_cost), 2),
         "hourly_rate": _num(key.hourly_rate),
@@ -263,7 +270,8 @@ def consolidate(tables: list[dict], visible: set[str] | None = None) -> dict:
     return {
         "year": tables[0]["year"], "pole": ALL_POLES, "poles": [t["pole"] for t in tables],
         "mode": tables[0]["mode"],
-        "responses": [_responses(r["pole"], r["answered"], r["known"], visible)
+        "responses": [_responses(r["pole"], r["answered"], r["known"], visible,
+                                 _row_needs(t["rows"], visible))
                       for t in tables for r in t["responses"]],
         "status": "FROZEN" if all(t["status"] == "FROZEN" for t in tables) else "DRAFT",
         "budget": sum(t["budget"] or 0 for t in tables),
@@ -298,8 +306,14 @@ def consolidate_sheet(sheets: list[dict], row: dict) -> dict:
         "sessions": sessions,
         "footer": {**{k: row[k] for k in ("seats", "share", "key_cost", "trainee_lodging", "trainer_lodging",
                                           "total", "needs", "coverage", *PLACE_KEYS)},
+                   "needs_by_brand": _cell_needs(row) if row["needs"] is not None else None,
                    "unassigned": row.get("unassigned", 0)},
     }
+
+
+def _cell_needs(row: dict) -> dict[str, int]:
+    """Besoin connu de chaque marque d'une ligne du tableau global."""
+    return {b: c["needs"] for b, c in row.get("cells", {}).items() if c.get("needs") is not None}
 
 
 ALL_COUNTRIES = "all"
@@ -334,6 +348,8 @@ def all_countries_sheet(table: dict, sheets: list[dict]) -> dict:
             "coverage": _ratio(seats, needs),
             "needs_by_brand": ({b: v["needs"] for b, v in table["brand_totals"].items()}
                                if needs is not None else None),
+            # Par filiale et marque : le besoin reste juste quand l'écran filtre des filiales.
+            "needs_by_cell": ({r["country"]: _cell_needs(r) for r in rows} if needs is not None else None),
             **{k: sum(r[k] for r in rows) for k in PLACE_KEYS},
             "unassigned": sum(r.get("unassigned", 0) for r in rows),
         },
@@ -410,8 +426,7 @@ def country_sheet(key: CostKeyYear, mode: Mode, country_code: str,
             "level_order": module.order if module else NO_LEVEL_ORDER,
             "in_catalog": module is not None,
             "job": JOB_BY_FAMILY.get(module.family) if module else None,
-            # Le prévu ne porte pas ce champ, seules les sessions réalisées l'ont.
-            "delivery": getattr(s, "delivery_mode", None) or None,
+            "delivery": s.delivery_mode or None,
             "code": s.code_raw or s.code_norm,
             "title": s.title, "start_date": s.start_date, "end_date": s.end_date,
             # Une session chargée sans lien au référentiel garde le nom lu dans le classeur.

@@ -37,6 +37,9 @@ SNAPSHOT = "/api/v1/needs/analytics/snapshot"
 CATALOG_LEVEL = "/api/v1/needs/analytics/catalog-level"
 TIMEOUT_S = 5
 NO_COPY_RECHECK_S = 10  # sans copie, on retente plus souvent
+# Hors requête (job migrate, fil de fond), rien n'attend la réponse : le snapshot
+# complet prend 1 à 4 s, le délai court d'une lecture le ferait échouer à chaque fois.
+OFFLINE_TIMEOUT_S = 30
 
 _POLES = ("motors", "equipment", "all")
 _EMPTY_YEAR = {
@@ -73,8 +76,11 @@ def reset_refresh_clock() -> None:
     _clock["checked_at"], _clock["reachable"] = None, True
 
 
-def refresh_from_needs() -> str:
-    """GET conditionnel du snapshot ; applied / unchanged / unavailable / invalid / disabled."""
+def refresh_from_needs(timeout: float | None = None) -> str:
+    """GET conditionnel du snapshot ; applied / unchanged / unavailable / invalid / disabled.
+
+    `timeout` : délai de la requête ; par défaut celui d'une lecture (court).
+    """
     base = getattr(settings, "NEEDS_API_URL", "").rstrip("/")
     key = getattr(settings, "NEEDS_ANALYTICS_KEY", "")
     if not base or not key:
@@ -84,7 +90,8 @@ def refresh_from_needs() -> str:
     headers = {"X-Analytics-Key": key}
     if known is not None:
         headers["If-None-Match"] = f'"v{known}"'
-    timeout = float(getattr(settings, "NEEDS_SNAPSHOT_TIMEOUT_S", 2))
+    if timeout is None:
+        timeout = float(getattr(settings, "NEEDS_SNAPSHOT_TIMEOUT_S", 2))
     try:
         response = requests.get(f"{base}{SNAPSHOT}", headers=headers, timeout=timeout)
     except requests.RequestException as exc:
@@ -122,7 +129,7 @@ def _refresh_in_background() -> None:
 
     def run():
         try:
-            refresh_from_needs()
+            refresh_from_needs(OFFLINE_TIMEOUT_S)
         except Exception:  # un rafraîchissement raté ne doit jamais casser une lecture
             log.exception("rafraîchissement de la copie des besoins en échec")
         finally:

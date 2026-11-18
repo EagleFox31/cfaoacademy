@@ -47,11 +47,12 @@ class _Needs:
     """Faux cfao-needs : compte les appels, répond le snapshot ou une panne."""
 
     def __init__(self):
-        self.calls, self.headers, self.reply = 0, [], lambda: _Response(_snapshot())
+        self.calls, self.headers, self.timeouts, self.reply = 0, [], [], lambda: _Response(_snapshot())
 
     def __call__(self, url, params=None, headers=None, timeout=None):
         self.calls += 1
         self.headers.append(headers)
+        self.timeouts.append(timeout)
         return self.reply()
 
 
@@ -195,6 +196,14 @@ def test_sync_command_never_fails_the_migrate_job(needs, capsys):
     call_command("sync_needs_snapshot")
     call_command("sync_needs_snapshot")  # second passage : déjà à jour
     assert NeedsCopyState.objects.get(pk=1).version == 9
+    # Hors requête, le délai couvre un snapshot complet (1 à 4 s mesurés), pas celui d'une lecture.
+    assert needs.timeouts == [client.OFFLINE_TIMEOUT_S] * 3
+
+
+def test_a_read_keeps_the_short_timeout(needs, settings):
+    settings.NEEDS_SNAPSHOT_TIMEOUT_S = 2
+    client.fetch_needs(2031, "MOTORS")  # sans copie : rattrapage dans la requête
+    assert needs.timeouts == [2]
 
 
 def test_level_change_refreshes_the_copy_at_once(needs, monkeypatch, settings):

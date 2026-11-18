@@ -16,9 +16,11 @@ storage:
 schema:
   enforcement: reject
 
+# Journal d'audit sur la sortie standard (rotation : pilote de journaux Docker).
+# Pas le backend `local` : sa base Badger compacte en continu et tenait Cerbos
+# collé à son plafond CPU au repos, ce qui faisait attendre chaque décision.
 audit:
   enabled: true
-  backend: local
-  local:
-    storagePath: /tmp/cerbos/audit.log
-    retentionPeriod: 168h
+  backend: file
+  file:
+    path: stdout

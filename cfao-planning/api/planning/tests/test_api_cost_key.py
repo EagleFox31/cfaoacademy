@@ -178,6 +178,9 @@ def test_devis_de_toutes_les_filiales(key):
     assert sheet["footer"]["seats"] == sum(r["seats"] for r in table["rows"]) == sum(s["seats"] for s in sheet["sessions"])
     assert sheet["footer"]["total"] == sum(r["total"] or 0 for r in table["rows"])
     assert sheet["footer"]["needs_by_brand"]["toyota"] == table["brand_totals"]["toyota"]["needs"]
+    by_cell = sheet["footer"]["needs_by_cell"]
+    assert by_cell.keys() == {r["country"] for r in table["rows"]}
+    assert sum(n.get("toyota", 0) for n in by_cell.values()) == table["brand_totals"]["toyota"]["needs"]
     r = c.get(url(key, "/countries/all.xlsx"))
     ws = load_workbook(io.BytesIO(r.content)).active
     assert ws.title == "Toutes les filiales"
@@ -243,7 +246,9 @@ def test_tous_poles_additionne_les_cles_de_l_annee(key, equipment):
 def test_filiales_ayant_repondu_par_pole(key, equipment, monkeypatch):
     def needs(year, pole):
         counts = {"MOTORS": {"cm": 3, "ci": 0, "sn": 2}, "EQUIPMENT": {"cm": 1}}[pole]
-        return NeedsData(available=True, source="needs_api", by_country=counts)
+        cells = {"MOTORS": {("cm", "toyota"): (3, None), ("sn", "toyota"): (2, None)},
+                 "EQUIPMENT": {("cm", "jcb"): (1, None)}}[pole]
+        return NeedsData(available=True, source="needs_api", by_country=counts, by_cell=cells)
     monkeypatch.setattr("planning.views.fetch_needs", needs)
 
     single = client_for("dps").get(url(key, "/global")).json()["responses"]
@@ -254,9 +259,14 @@ def test_filiales_ayant_repondu_par_pole(key, equipment, monkeypatch):
     table = client_for("dps").get("/api/v1/planning/years/2026/global").json()
     assert {r["pole"]: r["answered"] for r in table["responses"]} == {
         "MOTORS": ["cm", "sn"], "EQUIPMENT": ["cm"]}
+    # sn n'est pas une ligne de la clé : ses besoins restent hors du tableau, comme pour les marques.
+    assert {r["pole"]: r["needs"] for r in table["responses"]} == {"MOTORS": 3, "EQUIPMENT": 1}
+    assert sum(b["needs"] for b in table["brand_totals"].values()) == 4, "aucun double compte"
+    assert single[0]["needs"] == 3
 
     scoped = client_for("workshop_manager", scope="ci").get("/api/v1/planning/years/2026/global").json()
     assert all(r["answered"] == [] and r["known"] in ([], ["ci"]) for r in scoped["responses"])
+    assert all(r["needs"] == 0 for r in scoped["responses"]), "besoins limités au périmètre"
 
 
 def test_tous_poles_une_seule_cle_egale_la_cle(key):

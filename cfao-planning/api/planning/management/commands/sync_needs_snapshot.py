@@ -6,7 +6,7 @@ son relais poussera la copie dès qu'il sera là.
 """
 from django.core.management.base import BaseCommand
 
-from planning.clients.needs import refresh_from_needs
+from planning.clients.needs import OFFLINE_TIMEOUT_S, refresh_from_needs
 
 
 class Command(BaseCommand):
@@ -14,7 +14,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            outcome = refresh_from_needs()
+            outcome = refresh_from_needs(OFFLINE_TIMEOUT_S)
         except Exception as exc:  # démarrage jamais bloqué par un module voisin
             outcome = f"erreur ({type(exc).__name__})"
         self.stdout.write(f"copie des besoins : {outcome}")

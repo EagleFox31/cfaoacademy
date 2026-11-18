@@ -12,7 +12,8 @@ from django.test.utils import CaptureQueriesContext
 from campaigns.models import Campaign, CatalogLine
 from outbound.management.commands.seed_email_templates import LOCALES, TEMPLATES
 from outbound.models import EmailTemplate
-from referential.models import Brand, BrandAlias, CatalogFamily, UserProfile
+from campaigns.imports.need_workbooks import ORG_BY_FILE
+from referential.models import Brand, BrandAlias, CatalogFamily, OrgUnitRef, UserProfile
 
 pytestmark = pytest.mark.django_db
 
@@ -37,6 +38,14 @@ def test_base_vide_complete_sans_compte():
     assert not CatalogLine.objects.filter(family__key="techniques-yamaha").exists()
     assert EmailTemplate.objects.count() == len(TEMPLATES) * len(LOCALES) == 28
     assert UserProfile.objects.count() == 0
+
+
+def test_base_vide_connait_chaque_filiale_des_fiches():
+    call_command("bootstrap", verbosity=0)
+    attendues = {org for _, org in ORG_BY_FILE}
+    assert attendues <= set(OrgUnitRef.objects.values_list("code", flat=True))
+    rge = OrgUnitRef.objects.get(code="groupe.gnq")
+    assert (rge.country, rge.org_path, rge.parent.code) == ("Guinée équatoriale", ["groupe", "groupe.gnq"], "groupe")
 
 
 def test_second_passage_zero_ecriture():

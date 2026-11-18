@@ -33,6 +33,7 @@ services:
   needs-keycloak:
     # JVM bridee a 256 Mio de tas (JAVA_OPTS_KC_HEAP)
     mem_limit: 768m
+    restart: unless-stopped
     build:
       context: ./keycloak
     image: antifragile237/cfao-needs-keycloak:v0.1.2

@@ -286,6 +286,12 @@ class PlannedSession(UUIDModel, TimeStampedModel):
     source_start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     location = models.CharField(max_length=96, blank=True)
+    # Même nom et même défaut que `Session.delivery_mode` : le classeur clé ne porte pas
+    # le mode, et toute session retenue en 2027 se tient en salle. Une session passe à
+    # distance seulement si elle vient d'un besoin dont le lieu est « Distanciel ».
+    delivery_mode = models.CharField(
+        max_length=16, choices=DeliveryMode.choices, default=DeliveryMode.PRESENTIEL
+    )
     # Pays hôte. Même nom que `Session.country` : le calcul de la clé les lit pareil.
     country = models.ForeignKey(Country, on_delete=models.PROTECT,
                                 related_name="planned_sessions")
