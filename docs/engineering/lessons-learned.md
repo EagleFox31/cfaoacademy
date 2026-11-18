@@ -872,3 +872,11 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 - **Prévention** : un écran qui attend une redirection ou un appel réseau ne rend jamais `null`. Il affiche le loader commun.
 - **Leçon généralisée** : un `return null` sur un chemin d'attente est une page blanche dès que le réseau est lent.
 - **Récidive** : non
+
+### 2026-11-18 — Filiales des devis recomptées contre une règle déjà décidée (erreur, portail du directeur)
+- **Contexte / symptôme** : l'utilisateur demandait si « 24 filiales » était exact sur les cartes Devis. Je l'ai remplacé par les filiales qui ont des places (6 en 2027). La règle était pourtant déjà fixée : le périmètre attendu, 35 pendant le recueil et la clé une fois close.
+- **Cause racine** : j'ai répondu à partir des données, sans chercher la règle existante (`paysAttendus`), qu'emploie déjà la carte des besoins voisine.
+- **Correctif** : les cartes Devis affichent `paysAttendus` (35 en 2027, 24 en 2026).
+- **Prévention** : avant de changer un chiffre d'une carte, chercher la fonction qui calcule le même chiffre sur les cartes voisines et la réutiliser.
+- **Leçon généralisée** : une question sur un chiffre ne vaut pas demande de nouvelle règle. On applique d'abord la règle déjà décidée.
+- **Récidive** : non
