@@ -1,6 +1,7 @@
 import PvCard from './PvCard.jsx'
 
 import FormateurDisplay from './FormateurDisplay.jsx'
+import PortalEditAction from './PortalEditAction.jsx'
 
 import { fichePath, formationFicheRoute } from '../utils/formationFiche.js'
 
@@ -39,12 +40,7 @@ function ActionsPortail({ voir, modifier }) {
           <circle cx="12" cy="12" r="3" />
         </svg>
       </span>
-      <span className="pv-card-action pv-card-action--soon" title={modifier} aria-label={modifier}>
-        <svg {...ICONE}>
-          <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-          <path d="m15 5 4 4" />
-        </svg>
-      </span>
+      <PortalEditAction label={modifier} />
     </>
   )
 }

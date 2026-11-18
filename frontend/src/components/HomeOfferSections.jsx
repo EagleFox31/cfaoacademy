@@ -45,6 +45,7 @@ const equipmentSavTabs = [
  * page qui a déjà le sien.
  */
 export default function HomeOfferSections({ backdrop = true }) {
+  const portal = !backdrop
   const { locale, t: homeT } = useLocale('home')
   const { t: commonT } = useLocale('common')
   const { t: cardsT } = useLocale('cards')
@@ -56,6 +57,10 @@ export default function HomeOfferSections({ backdrop = true }) {
     () => equipmentSavTabs.map((t) => ({ id: t.id, label: homeT[t.labelKey], count: t.count })),
     [homeT],
   )
+  // Portail : le catalogue se modifie (édition à venir) ; accueil : il s'ouvre en PDF.
+  const catalogue = (offre) => (portal
+    ? { label: cardsT.editCatalogue, title: cardsT.editCatalogueSoon, soon: true, filled: true }
+    : { href: getOfferCataloguePdf(offre, locale), label: cardsT.openCatalogue, filled: true })
   const carrosserieTabsLocalized = useMemo(
     () => carrosserieTabDefs.map((t) => ({
       id: t.id,
@@ -78,6 +83,7 @@ export default function HomeOfferSections({ backdrop = true }) {
         bgWordSide="right"      >
         <BrandOfferGrid
           brands={MOTORS_BRANDS}
+          portal={portal}
         />
       </PreviewSection>
 
@@ -90,7 +96,7 @@ export default function HomeOfferSections({ backdrop = true }) {
         headClass="pv-head--compact-line"
         bgWord="equipment"
         bgWordSide="left"      >
-        <BrandOfferGrid brands={EQUIPMENT_BRANDS} showAll />
+        <BrandOfferGrid brands={EQUIPMENT_BRANDS} showAll portal={portal} />
       </PreviewSection>
 
       {/* ── 06 · FORMATIONS CARROSSERIE ── */}
@@ -103,11 +109,7 @@ export default function HomeOfferSections({ backdrop = true }) {
         bgWord="carrosserie"
         bgWordSide="left"
         tabs={carrosserieTabsLocalized}
-        voir={{
-          href: getOfferCataloguePdf('carrosserie', locale),
-          label: cardsT.openCatalogue,
-          filled: true,
-        }}
+        voir={catalogue('carrosserie')}
       >
         {(active) => {
           const group = CATALOG.CARROSSERIE.find((g) => g.level === active)
@@ -118,7 +120,7 @@ export default function HomeOfferSections({ backdrop = true }) {
               arrowLabelNext={commonT.next ?? 'Suivant'}
             >
               {group?.trainings.map((f) => (
-                <CatalogTrainingCard portal={!backdrop} key={f.code} folder="carrosserie" training={f} />
+                <CatalogTrainingCard portal={portal} key={f.code} folder="carrosserie" training={f} />
               ))}
             </CardRail>
           )
@@ -134,17 +136,14 @@ export default function HomeOfferSections({ backdrop = true }) {
         headClass="pv-head--compact-line"
         bgWord="sav"
         bgWordSide="right"        tabs={motorsSavTabsLocalized}
-        voir={{
-          href: getOfferCataloguePdf('savMotors', locale),
-          label: cardsT.openCatalogue,
-          filled: true,
-        }}
+        voir={catalogue('savMotors')}
       >
         {(active) => (
           <ProcessSavHomeGrid
             key={active}
             items={getMotorsSavTrainings(active)}
             folder={MOTORS_SAV_FOLDER[active]}
+            portal={portal}
           />
         )}
       </PreviewSection>
@@ -158,17 +157,14 @@ export default function HomeOfferSections({ backdrop = true }) {
         headClass="pv-head--compact-line"
         bgWord="sav"
         bgWordSide="right"        tabs={equipmentSavTabsLocalized}
-        voir={{
-          href: getOfferCataloguePdf('savEquipment', locale),
-          label: cardsT.openCatalogue,
-          filled: true,
-        }}
+        voir={catalogue('savEquipment')}
       >
         {(active) => (
           <ProcessSavHomeGrid
             key={active}
             items={getEquipmentSavTrainings(active)}
             folder={EQUIPMENT_SAV_FOLDER[active]}
+            portal={portal}
           />
         )}
       </PreviewSection>

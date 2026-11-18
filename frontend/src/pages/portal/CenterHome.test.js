@@ -40,7 +40,7 @@ describe('portail du centre de formation', () => {
 
   it('synthèse d’une année : pays comptés une fois, besoins et places par marque', () => {
     const a = syntheseAnnee({
-      year: 2027, status: 'DRAFT', total_seats: 30, rows: [{ seats: 12 }, { seats: 18 }, { seats: 0 }, {}],
+      year: 2027, status: 'DRAFT', total_seats: 30, rows: [{}, {}, {}],
       responses: [
         { pole: 'EQUIPMENT', answered: ['CM'], known: ['CM', 'GA'], needs: 12 },
         { pole: 'MOTORS', answered: ['CM', 'CI'], known: ['CM', 'CI', 'SN'], needs: 40 },
@@ -48,7 +48,7 @@ describe('portail du centre de formation', () => {
       brands: [{ code: 'toyota', label: 'TOYOTA' }, { code: 'jcb', label: 'JCB' }],
       brand_totals: { toyota: { needs: 40, seats: 20 }, jcb: { needs: 12, seats: 10 } },
     })
-    expect(a).toMatchObject({ annee: 2027, gelee: false, repondu: 2, connus: 4, besoins: 52, places: 30, filiales: 2 })
+    expect(a).toMatchObject({ annee: 2027, gelee: false, repondu: 2, connus: 4, besoins: 52, places: 30, filiales: 3 })
     expect(a.poles).toEqual([
       { pole: 'MOTORS', repondu: 2, connus: 3, besoins: 40 },
       { pole: 'EQUIPMENT', repondu: 1, connus: 2, besoins: 12 },

@@ -2,10 +2,11 @@ import { Link } from 'react-router-dom'
 import { getBrandCataloguePdf, isBrandCatalogueComingSoon } from '../utils/brandCatalogues.js'
 import { resolveBrandFormateurDisplay } from '../utils/catalogFormateur.js'
 import FormateurDisplay from './FormateurDisplay.jsx'
+import PortalEditAction from './PortalEditAction.jsx'
 import useLocale from '../hooks/useLocale.js'
 import { localizedBrandCat } from '../utils/localizeCard.js'
 
-export default function BrandCard({ brand, onBrandHover, onBrandHoverEnd }) {
+export default function BrandCard({ brand, onBrandHover, onBrandHoverEnd, portal = false }) {
   const { locale } = useLocale('cards')
   const { t: cardsT } = useLocale('cards')
   const comingSoon = isBrandCatalogueComingSoon(brand.name)
@@ -71,9 +72,15 @@ export default function BrandCard({ brand, onBrandHover, onBrandHoverEnd }) {
             className="pv-brand-formateur"
           />
         )}
-        {cataloguePdf && (
+        {cataloguePdf && (portal ? (
+          // Portail : le catalogue PDF de la marque se modifiera d'ici (crayon).
+          <div className="pv-brand-portal-foot">
+            <span className="pv-brand-pdf-hint">{cardsT.cataloguePdf}</span>
+            <PortalEditAction label={cardsT.editCatalogueSoon} />
+          </div>
+        ) : (
           <div className="pv-brand-pdf-hint">{cardsT.cataloguePdf}</div>
-        )}
+        ))}
       </div>
     </>
   )

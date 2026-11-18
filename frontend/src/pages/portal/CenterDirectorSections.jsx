@@ -64,9 +64,7 @@ export function syntheseAnnee(g) {
       besoins: r.needs ?? 0,
     })).sort((x, y) => ORDRE_POLES.indexOf(y.pole) - ORDRE_POLES.indexOf(x.pole)),
     places: g.total_seats ?? 0,
-    // Filiales qui reçoivent un devis : celles qui ont des places. Les lignes de
-    // la clé sans place (pays sans réponse) n'en reçoivent pas.
-    filiales: (g.rows ?? []).filter(r => r.seats > 0).length,
+    filiales: g.rows?.length ?? 0,
     marques: (g.brands ?? []).map(b => ({
       code: b.code,
       label: b.label,
@@ -209,7 +207,8 @@ export default function CenterDirectorSections({ t, access }) {
                 meta={
                   <PortalCardKpis
                     items={[
-                      { value: a.filiales, label: t.kpi_branches },
+                      // Périmètre attendu, comme la carte des besoins : 35 pendant le recueil, la clé une fois close.
+                      { value: paysAttendus(a, a), label: t.kpi_branches },
                       { value: a.places, label: t.kpi_seats },
                     ]}
                   />

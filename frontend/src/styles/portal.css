@@ -12421,3 +12421,15 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   border-style: dashed;
   cursor: not-allowed;
 }
+/* Carte de marque au portail : mention du PDF à gauche, crayon à droite. */
+.pv-brand-portal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+.pv-brand-portal-foot .pv-brand-pdf-hint { margin-top: 0; }
+/* « Modifier le catalogue » tant que l'édition n'existe pas. */
+.pv-voir--soon { gap: 8px; cursor: not-allowed; opacity: 0.85; }
+.pv-voir--soon:hover { transform: none; }
