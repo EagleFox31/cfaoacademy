@@ -138,8 +138,7 @@ def _refresh_in_background() -> None:
     threading.Thread(target=run, name="needs-snapshot-refresh", daemon=True).start()
 
 
-def _year_copy(year: int) -> tuple[dict | None, list[dict]]:
-    """Lectures de l'année dans la copie, et l'avertissement à joindre."""
+def _refresh_if_due() -> None:
     has_copy = known_version() is not None
     if _due(has_copy):
         if has_copy and getattr(settings, "NEEDS_SNAPSHOT_BACKGROUND", True):
@@ -147,6 +146,11 @@ def _year_copy(year: int) -> tuple[dict | None, list[dict]]:
         else:
             with _refresh_lock:
                 refresh_from_needs()
+
+
+def _year_copy(year: int) -> tuple[dict | None, list[dict]]:
+    """Lectures de l'année dans la copie, et l'avertissement à joindre."""
+    _refresh_if_due()
     state = NeedsCopyState.objects.filter(pk=1).first()
     if state is None or state.version is None:
         return None, [{"code": "needs_unavailable"}]
@@ -162,17 +166,23 @@ def _by_pole(year_payload: dict, kind: str, pole: str) -> dict:
 
 
 def fetch_needs(year: int, pole: str) -> NeedsData:
-    year_payload, warnings = _year_copy(year)
-    if year_payload is None:
-        return NeedsData(warnings=warnings)
-    data = _parse_needs(_by_pole(year_payload, "needs_by_branch_brand", pole))
-    data.warnings = warnings + data.warnings
+    """Besoins résolus, lus dans les lignes rangées à la réception de la copie."""
+    from ..services.needs_lines import resolved_needs
+
+    _refresh_if_due()
+    data = resolved_needs(year, pole)
+    if data.available and not _clock["reachable"]:
+        state = NeedsCopyState.objects.filter(pk=1).first()
+        data.warnings = [{"code": "needs_snapshot_stale", "value": state.generated_at.isoformat()},
+                         *data.warnings]
     return data
 
 
-def _parse_needs(payload: dict) -> NeedsData:
+def _parse_needs(payload: dict, resolver: Resolver | None = None) -> NeedsData:
+    """Résout les libellés d'un (année, pôle) de la copie. Seul `sync_needs_lines` l'appelle :
+    les lectures passent par les lignes déjà résolues (`resolved_needs`)."""
     data = NeedsData(available=True, source=payload["source"])
-    resolver = Resolver()
+    resolver = resolver or Resolver()
     unknown: set[tuple[str, str]] = set()
     for row in payload["rows"]:
         country = resolver.country(row["country"])

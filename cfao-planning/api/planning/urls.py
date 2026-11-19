@@ -20,6 +20,8 @@ urlpatterns = [
     path("cost-keys/<uuid:pk>/countries/<slug:code>.xlsx", v.CountrySheetXlsxView.as_view()),
     path("cost-keys/<uuid:pk>/export.xlsx", v.CostKeyExportView.as_view()),
     path("cost-keys/<uuid:pk>/unchosen-modules", v.UnchosenModulesView.as_view()),
+    path("years/summary", v.YearSummaryView.as_view()),
+    path("years/<int:year>/review-items", v.YearReviewItemsView.as_view()),
     path("years/<int:year>/global", v.YearGlobalView.as_view()),
     path("years/<int:year>/global.xlsx", v.YearGlobalXlsxView.as_view()),
     path("years/<int:year>/abc", v.YearAbcView.as_view()),

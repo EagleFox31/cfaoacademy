@@ -7,10 +7,10 @@ calendrier n'écrit que des absences, des statuts déduits de la couleur, et des
 """
 from django.db import models
 from django.db.models import F, Q
-from django.db.models.signals import m2m_changed
+from django.db.models.signals import m2m_changed, post_delete, post_save
 
 from core.models import TimeStampedModel, UUIDModel
-from referential.models import AbsenceKeyword, Brand, Country, Pole, Service, Trainer
+from referential.models import AbsenceKeyword, Brand, BrandAlias, Country, CountryAlias, Pole, Service, Trainer
 
 
 class SessionStatus(models.TextChoices):
@@ -578,3 +578,153 @@ class NeedsCopyYear(models.Model):
 
     def __str__(self) -> str:
         return f"besoins {self.year} v{self.version}"
+
+
+# ── Besoins rangés en lignes (dérivés de la copie, à la réception) ────────────
+# La copie JSON reste le reçu de ce que cfao-needs a envoyé. Ces tables en sont la
+# lecture résolue (libellés → pays et marques du référentiel), écrite par
+# `services.needs_lines.sync_needs_lines` dans la transaction de `apply_snapshot`,
+# et refaite quand un alias change. Les calculs ne relisent plus le JSON.
+
+class NeedsPole(models.Model):
+    """En-tête d'un (année, pôle) de la copie : source et libellés non reconnus."""
+
+    year = models.IntegerField()
+    pole = models.CharField(max_length=16)  # motors / equipment / all (clés de la copie)
+    source = models.CharField(max_length=32)
+    warnings = models.JSONField(default=list)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["year", "pole"], name="needs_pole_unique")]
+
+    def __str__(self) -> str:
+        return f"besoins {self.year} {self.pole}"
+
+
+class NeedsLine(models.Model):
+    """Besoins d'une filiale pour une marque, un pôle et une année."""
+
+    year = models.IntegerField()
+    pole = models.CharField(max_length=16)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE, related_name="+")
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="+")
+    needs = models.IntegerField()
+    technicians = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["year", "pole", "country", "brand"],
+                                               name="needs_line_unique")]
+        indexes = [models.Index(fields=["year", "pole"])]
+
+    def __str__(self) -> str:
+        return f"besoins {self.year} {self.pole} {self.country_id} {self.brand_id}"
+
+
+class NeedsModuleLine(models.Model):
+    """Places d'un module reportées ou exprimées sans attribution (cellule sans couleur)."""
+
+    class Kind(models.TextChoices):
+        POSTPONED = "postponed", "Reportées"
+        UNASSIGNED = "unassigned", "Sans attribution"
+
+    year = models.IntegerField()
+    pole = models.CharField(max_length=16)
+    kind = models.CharField(max_length=16, choices=Kind.choices)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE, related_name="+")
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="+")
+    code_norm = models.CharField(max_length=48)
+    places = models.IntegerField()
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["year", "pole", "kind", "country", "brand", "code_norm"],
+                                               name="needs_module_line_unique")]
+        indexes = [models.Index(fields=["year", "pole"])]
+
+    def __str__(self) -> str:
+        return f"{self.kind} {self.year} {self.pole} {self.code_norm}"
+
+
+class YearSummary(models.Model):
+    """Chiffres d'une année tous pôles, tels que les cartes du centre les affichent.
+
+    Écrits quand une donnée source change (`services.year_summary`), avec le calcul
+    du tableau global : l'écran ne fait que les lire, aucun calcul à l'affichage.
+    """
+
+    year = models.IntegerField(primary_key=True)
+    status = models.CharField(max_length=16)
+    answered = models.IntegerField()  # filiales ayant demandé au moins une place
+    known = models.IntegerField()  # filiales que les clés de l'année connaissent
+    needs = models.IntegerField()
+    seats = models.IntegerField()
+    seats_offered = models.IntegerField(null=True, blank=True)
+    fill_rate = models.IntegerField(null=True, blank=True)  # % places / places offertes
+    computed_at = models.DateTimeField()
+
+    class Meta:
+        db_table = "planning_year_summary"
+
+    def __str__(self) -> str:
+        return f"résumé {self.year}"
+
+
+# ── Résumé annuel : recalcul de l'année touchée, après le commit ─────────────
+# Une écriture en masse (`bulk_create`, `update()`) ne déclenche aucun signal :
+# elle appelle `services.year_summary.schedule(...)` elle-même.
+
+def _schedule(**kwargs):
+    from .services.year_summary import schedule
+    schedule(**kwargs)
+
+
+def _on_key(sender, instance, **kwargs):
+    _schedule(years={instance.year})
+
+
+def _on_key_child(sender, instance, **kwargs):
+    _schedule(keys={instance.cost_key_id})
+
+
+def _on_allocation(sender, instance, **kwargs):
+    _schedule(sessions={instance.planned_session_id})
+
+
+def _on_m2m(target: str):
+    """Pays enrôlés (`target="keys"`) ou formateurs d'une session (`"sessions"`) : aucune
+    requête ici, la clé est retrouvée au recalcul."""
+    def handler(sender, instance, action, reverse, pk_set, **kwargs):
+        if action not in ("post_add", "post_remove", "post_clear"):
+            return
+        if not reverse:
+            _schedule(**{target: {instance.pk}})
+        elif pk_set:
+            _schedule(**{target: set(pk_set)})
+        elif action == "post_clear":
+            _schedule(all_years=True)
+    return handler
+
+
+def _on_referential(sender, instance, **kwargs):
+    _schedule(all_years=True, needs_lines=True)
+
+
+def _on_trainer(sender, instance, **kwargs):
+    _schedule(all_years=True)
+
+
+for _signal in (post_save, post_delete):
+    _signal.connect(_on_key, sender=CostKeyYear, dispatch_uid=f"summary_key_{_signal is post_save}", weak=False)
+    _signal.connect(_on_key_child, sender=PlannedSession,
+                    dispatch_uid=f"summary_session_{_signal is post_save}", weak=False)
+    _signal.connect(_on_allocation, sender=PlannedAllocation,
+                    dispatch_uid=f"summary_allocation_{_signal is post_save}", weak=False)
+    _signal.connect(_on_trainer, sender=Trainer, dispatch_uid=f"summary_trainer_{_signal is post_save}",
+                    weak=False)
+    for _model in (Country, CountryAlias, Brand, BrandAlias):
+        _signal.connect(_on_referential, sender=_model,
+                        dispatch_uid=f"summary_{_model.__name__}_{_signal is post_save}", weak=False)
+post_save.connect(_on_key_child, sender=CostKeySnapshot, dispatch_uid="summary_snapshot", weak=False)
+m2m_changed.connect(_on_m2m("keys"), sender="planning.CostKeyYear_enrolled_countries",
+                    dispatch_uid="summary_enrolled", weak=False)
+m2m_changed.connect(_on_m2m("sessions"), sender="planning.PlannedSession_trainers",
+                    dispatch_uid="summary_trainers", weak=False)

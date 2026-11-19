@@ -87,9 +87,15 @@ TRAINERS = [
 # des formateurs. Chaque marque a son nom pour ce rôle ; le classeur n'écrit que
 # le nom du rôle, sans personne. Les instructeurs nommés s'ajoutent comme données.
 # (nom, service, externe, alias, code marque)
-# Formateurs basés en filiale (les autres sont à l'Academy). Confirmé par le métier ;
-# la formule RCI du classeur clé 2026 l'exclut aussi de l'hébergement formateurs.
-TRAINER_HOME = {"Coulibaly BOMBA": "civ"}
+# Formateurs basés en filiale (les autres sont à l'Academy), d'après la page Équipe du site.
+# La formule RCI du classeur clé 2026 exclut aussi Coulibaly BOMBA de l'hébergement formateurs.
+TRAINER_HOME = {
+    "Coulibaly BOMBA": "civ",
+    "Hatem BEN ABID": "civ",
+    "Alassane DIALLO": "sen",
+    "Mohammed COLY": "sen",
+    "Jacques MAVILA": "cod",
+}
 
 TECH_INSTRUCTORS = [
     ("PIC", "MOTORS", False, ["PIC SUZUKI"], "suzuki"),

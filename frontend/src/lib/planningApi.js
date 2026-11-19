@@ -41,6 +41,9 @@ export const planningApi = {
   match: id => http.get(`/cost-keys/${id}/match`),
   unchosen: id => http.get(`/cost-keys/${id}/unchosen-modules`),
   yearGlobal: (year, mode) => http.get(`/years/${year}/global${qs({ mode })}`),
+  /** Chiffres des cartes du centre, une ligne par année, déjà calculés côté serveur. */
+  yearSummary: () => http.get('/years/summary'),
+  reviewItems: year => http.get(`/years/${year}/review-items`),
   trainerLoad: year => http.get(`/years/${year}/trainer-load`),
   yearCountry: (year, code, mode) => http.get(`/years/${year}/countries/${code}${qs({ mode })}`),
   abc: id => http.get(`/cost-keys/${id}/abc`),

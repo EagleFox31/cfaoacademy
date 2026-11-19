@@ -97,6 +97,11 @@ def apply_snapshot(payload, mode: str) -> bool:
         NeedsCopyYear.objects.exclude(year__in=years).delete()
         for year, body in years.items():
             NeedsCopyYear.objects.update_or_create(year=year, defaults={"version": version, "payload": body})
+        # Rangée en lignes dans la même transaction : jamais une copie sans ses lignes.
+        from .needs_lines import sync_needs_lines
+        from .year_summary import schedule
+        sync_needs_lines()
+        schedule(all_years=True)
         state.version, state.generated_at, state.received_at = version, generated_at, timezone.now()
         state.save()
     return True

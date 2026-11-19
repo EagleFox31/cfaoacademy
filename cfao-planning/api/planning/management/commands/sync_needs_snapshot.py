@@ -7,6 +7,8 @@ son relais poussera la copie dès qu'il sera là.
 from django.core.management.base import BaseCommand
 
 from planning.clients.needs import OFFLINE_TIMEOUT_S, refresh_from_needs
+from planning.services.needs_lines import ensure_needs_lines
+from planning.services.year_summary import ensure_year_summaries
 
 
 class Command(BaseCommand):
@@ -18,3 +20,12 @@ class Command(BaseCommand):
         except Exception as exc:  # démarrage jamais bloqué par un module voisin
             outcome = f"erreur ({type(exc).__name__})"
         self.stdout.write(f"copie des besoins : {outcome}")
+        # Rattrapage (AGENTS.md §7) : base existante ou donnée écrite sans signal.
+        # Sur une base à jour, zéro écriture.
+        try:
+            lines = ensure_needs_lines()
+            summaries = ensure_year_summaries()
+        except Exception as exc:
+            self.stdout.write(f"lignes de besoins et résumés : erreur ({type(exc).__name__})")
+            return
+        self.stdout.write(f"lignes de besoins écrites : {lines} ; résumés annuels écrits : {summaries}")

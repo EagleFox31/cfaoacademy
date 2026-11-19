@@ -33,13 +33,14 @@ from .exports import xlsx
 from .imports.calendar_grid import CalendarGridImporter
 from .imports.data_sheet import COLUMNS as DATA_COLUMNS, DataSheetImporter
 from .imports.seat_sheets import COLUMNS as SEAT_COLUMNS, SeatSheetsImporter
-from .models import CostKeyYear, FrozenKeyError
+from .models import CostKeyYear, FrozenKeyError, YearSummary
 from .services.cost_key import Mode, compare
 from .services.cost_key_abc import abc_table, consolidate_abc
 from .services.cost_key_cells import MISSING, CellConflict, CellGone, CellInvalid, edit_cell
 from .services.cost_key_freeze import UNCHECKED, FreezeRefused, FreezeStale, freeze, last_edit_at
 from .services.cost_key_global import (
     ALL_COUNTRIES, all_countries_sheet, consolidate, consolidate_sheet, country_sheet, global_table, report_for,
+    review_items,
 )
 from .services.cost_key_setup import SetupError, bootstrap, update
 from .services.plan_match import match
@@ -507,6 +508,37 @@ class YearExportView(APIView):
         scope = _YearScope(request, year)
         sheets = [scope.sheet(r["country"]) for r in scope.table["rows"] if r["seats"]]
         return _xlsx(xlsx.full_workbook(scope.table, sheets, _lang(request)), f"cle-tous-{year}.xlsx")
+
+
+class YearSummaryView(APIView):
+    """Chiffres des cartes du centre, une ligne par année : lus tels quels, rien n'est
+    calculé ici (`services.year_summary` les écrit quand les données changent).
+
+    Le résumé couvre tous les pays : un lecteur limité à certains pays garde le
+    tableau global, filtré pour lui."""
+
+    def get(self, request):
+        allow(request, "planning_cost_key", "list", attr=_key_attr(None))
+        keys = list(CostKeyYear.objects.all())
+        readable = cerbos.check_many(_principal(request), "planning_cost_key",
+                                     [(str(k.pk), _key_attr(k)) for k in keys], "view")
+        if readable < {str(k.pk) for k in keys} or visible_countries(request, None) is not None:
+            raise PermissionDenied()
+        rows = YearSummary.objects.order_by("-year")
+        return Response({"years": [
+            {"year": r.year, "status": r.status, "answered": r.answered, "known": r.known,
+             "needs": r.needs, "seats": r.seats, "seats_offered": r.seats_offered,
+             "fill_rate": r.fill_rate, "computed_at": r.computed_at}
+            for r in rows]})
+
+
+class YearReviewItemsView(APIView):
+    """Points à traiter de l'année (la cloche du centre), sans le tableau global."""
+
+    def get(self, request, year):
+        keys = _year_keys(request, year)
+        visible = _year_visible(request, keys)
+        return Response([item for k in keys for item in review_items(k, visible)])
 
 
 class YearTrainerLoadView(APIView):
