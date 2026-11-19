@@ -7,8 +7,7 @@ LABEL org.cfao.contracts.consumes="needs-snapshot-push@^1" \
 
 LABEL org.opencontainers.image.title="CFAO Needs API" \
       org.opencontainers.image.description="API backend Django pour CFAO Needs" \
-      org.opencontainers.image.vendor="CFAO Mobility" \
-      org.opencontainers.image.version="0.1.0"
+      org.opencontainers.image.vendor="CFAO Mobility"
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
@@ -38,3 +37,7 @@ EXPOSE 8000
 # compose (AGENTS.md §7) : l'API et le worker l'attendent, une seule exécution.
 # 2 workers : ~100 utilisateurs sur une campagne de six semaines, pas un site public.
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]
+
+# Version posée au build (scripts/build_image.py) ; en fin de fichier pour garder le cache.
+ARG VERSION=dev
+LABEL org.opencontainers.image.version="${VERSION}"

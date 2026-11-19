@@ -14,14 +14,20 @@ services:
   needs-cerbos:
     mem_limit: 256m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-cerbos:v0.1.0
-    command: ["server", "--config=/config/cerbos.yaml"]
+    # PDP commun de la plateforme (bundle cerbos/, mêmes règles que les comptes
+    # rendus) ; remplace l'ancienne image cfao-needs-cerbos.
+    image: antifragile237/cfao-cerbos:v0.2.0
     environment:
       CERBOS_NO_TELEMETRY: "1"
+    # Joint aussi par planning et core, sous le nom `cerbos`.
+    networks:
+      default: {}
+      cfao-maillage:
+        aliases: [cerbos]
     volumes:
       - needs-cerbos-audit:/audit
     healthcheck:
-      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/cerbos.yaml"]
+      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/config.yaml"]
       interval: 30s
       timeout: 5s
       retries: 10
@@ -45,7 +51,7 @@ services:
   needs-api:
     mem_limit: 512m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-api:v0.1.4
+    image: antifragile237/cfao-needs-api:v0.2.1
     environment: &api_env
       DJANGO_SETTINGS_MODULE: config.settings.dev
       NEEDS_SECRET_KEY: ${NEEDS_SECRET_KEY:-ueDBVqGE8R7OzHALv+e5Hnp710zP2xf1A4uWlC+7oPA5pxtctl3LmKPzo01PYrbf}
@@ -66,6 +72,13 @@ services:
       NEEDS_TEAM_RECIPIENTS: ${NEEDS_TEAM_RECIPIENTS:-academy@cfao.com}
       NEEDS_EMAIL_BACKEND: ${NEEDS_EMAIL_BACKEND:-console}
       NEEDS_SMTP_HOST: ${NEEDS_SMTP_HOST:-}
+      # Lecture des besoins par planning et core (en-tête X-Analytics-Key).
+      NEEDS_ANALYTICS_INBOUND_KEY: ${NEEDS_ANALYTICS_INBOUND_KEY:?NEEDS_ANALYTICS_INBOUND_KEY manquant}
+      # Absente = écriture du niveau de catalogue refusée.
+      NEEDS_CATALOG_WRITE_INBOUND_KEY: ${NEEDS_CATALOG_WRITE_INBOUND_KEY:-}
+      # Copie des besoins poussée à cfao-planning par needs-relay.
+      PLANNING_API_URL: ${PLANNING_API_URL:-http://planning-api:8000}
+      NEEDS_SNAPSHOT_PUSH_KEY: ${NEEDS_SNAPSHOT_PUSH_KEY:?NEEDS_SNAPSHOT_PUSH_KEY manquant}
     # cfao-maillage : lu par planning-api (GET analytics, clé partagée).
     networks: [default, identite, cfao-maillage]
     depends_on:
@@ -88,7 +101,7 @@ services:
   needs-migrate:
     mem_limit: 384m
     restart: "no"
-    image: antifragile237/cfao-needs-api:v0.1.4
+    image: antifragile237/cfao-needs-api:v0.2.1
     command: ["python", "manage.py", "bootstrap"]
     environment: *api_env
     networks: [default]
@@ -100,9 +113,22 @@ services:
   needs-worker:
     mem_limit: 384m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-api:v0.1.4
+    image: antifragile237/cfao-needs-api:v0.2.1
     command: ["python", "manage.py", "qcluster"]
     environment: *api_env
+    depends_on:
+      needs-migrate:
+        condition: service_completed_successfully
+
+  # Relais : à chaque version des besoins, pousse une copie complète à
+  # cfao-planning ; reprise avec backoff si planning est arrêté.
+  needs-relay:
+    mem_limit: 256m
+    restart: unless-stopped
+    image: antifragile237/cfao-needs-api:v0.2.1
+    command: ["python", "manage.py", "relay_needs_snapshot"]
+    environment: *api_env
+    networks: [default, cfao-maillage]
     depends_on:
       needs-migrate:
         condition: service_completed_successfully
@@ -110,7 +136,7 @@ services:
   needs-gateway:
     mem_limit: 64m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-gateway:v0.2.0
+    image: antifragile237/cfao-needs-gateway:v0.3.0
     environment:
       # Absolu : le LAN (sans /auth) se connecte aussi sur l'émetteur public.
       NEEDS_OIDC_ISSUER: ${OIDC_ISSUER:?OIDC_ISSUER manquant}
