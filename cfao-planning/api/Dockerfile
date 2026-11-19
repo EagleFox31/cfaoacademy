@@ -7,8 +7,7 @@ LABEL org.cfao.contracts.consumes="needs-analytics@^1.5" \
 
 LABEL org.opencontainers.image.title="CFAO Planning API" \
       org.opencontainers.image.description="API backend Django pour CFAO Planning (planning des formateurs)" \
-      org.opencontainers.image.vendor="CFAO Mobility" \
-      org.opencontainers.image.version="0.1.0"
+      org.opencontainers.image.vendor="CFAO Mobility"
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
@@ -37,3 +36,7 @@ EXPOSE 8000
 # tournent dans le job ponctuel `planning-migrate` du docker-compose (AGENTS.md §7).
 # 2 workers × 4 threads et préchauffage des clés OIDC : voir gunicorn.conf.py.
 CMD ["gunicorn", "config.wsgi:application"]
+
+# Version posée au build (scripts/build_image.py) ; en fin de fichier pour garder le cache.
+ARG VERSION=dev
+LABEL org.opencontainers.image.version="${VERSION}"

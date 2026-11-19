@@ -58,3 +58,7 @@ EXPOSE 5175
 # un rapport complet produit sans tache de fond. Schema et compte technique :
 # job `migrate` du compose (AGENTS.md section 7), jamais au demarrage de l'API.
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:5175", "--workers", "1", "--threads", "8", "--timeout", "300", "--access-logfile", "-"]
+
+# Version posée au build (scripts/build_image.py) ; en fin de fichier pour garder le cache.
+ARG VERSION=dev
+LABEL org.opencontainers.image.version="${VERSION}"

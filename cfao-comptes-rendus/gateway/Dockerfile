@@ -16,3 +16,7 @@ FROM nginx:1.27-alpine
 COPY gateway/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=web /web/dist /usr/share/nginx/html/cr
 EXPOSE 80
+
+# Version posée au build (scripts/build_image.py) ; en fin de fichier pour garder le cache.
+ARG VERSION=dev
+LABEL org.opencontainers.image.version="${VERSION}"
