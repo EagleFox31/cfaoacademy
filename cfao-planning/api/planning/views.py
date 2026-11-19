@@ -44,7 +44,7 @@ from .services.cost_key_global import (
 )
 from .services.cost_key_setup import SetupError, bootstrap, update
 from .services.plan_match import match
-from .services.trainer_load import trainer_load
+from .services.trainer_load import my_sessions, my_trainer, trainer_load
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -547,6 +547,24 @@ class YearTrainerLoadView(APIView):
     def get(self, request, year):
         allow(request, "planning_trainer_load", "view", str(year), {"orgPath": ["groupe"], "year": year})
         return Response(trainer_load(year))
+
+
+class MySessionsView(APIView):
+    """Prochaines sessions du formateur connecté (portail formateur), en lecture seule."""
+
+    def get(self, request):
+        sub = str(request.user.id)
+        allow(request, "planning_my_sessions", "view", sub, {"ownerSub": sub, "orgPath": ["groupe"]})
+        return Response(my_sessions(sub))
+
+
+class MyTrainerView(APIView):
+    """Fiche du formateur connecté (pays, marques), pour sa page profil."""
+
+    def get(self, request):
+        sub = str(request.user.id)
+        allow(request, "planning_my_trainer", "view", sub, {"ownerSub": sub, "orgPath": ["groupe"]})
+        return Response(my_trainer(sub))
 
 
 class UnchosenModulesView(APIView):

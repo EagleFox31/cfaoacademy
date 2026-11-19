@@ -98,6 +98,23 @@ TRAINER_HOME = {
 }
 
 TECH_INSTRUCTORS = [
+# Marques animées par chaque formateur, d'après la page Équipe du site
+# (frontend/src/data/academy/equipe-poles.json). Carrosserie et process ne sont
+# pas des marques : ces formateurs n'en ont pas.
+TRAINER_BRANDS = {
+    "Eugène EBENE": ["toyota"],
+    "Alassane DIALLO": ["toyota"],
+    "Jacques MAVILA": ["toyota", "suzuki"],
+    "Cédric PAKO": ["suzuki", "byd", "omoda-jaecoo"],
+    "Hatem BEN ABID": ["mercedes"],
+    "Mohammed COLY": ["suzuki"],
+    "Coulibaly BOMBA": ["mitsubishi", "suzuki", "byd"],
+    "Thierry KOUGHA": ["toyota-forklift", "jcb", "lovol"],
+    "Lucien GAGNE": ["renault-trucks", "hino", "fuso"],
+    "Idris NKOA": ["bt", "king-long", "sinotruk"],
+    "Roland NENDA": ["jcb", "lovol"],
+}
+
     ("PIC", "MOTORS", False, ["PIC SUZUKI"], "suzuki"),
     ("Key Instructor", "MOTORS", False, ["KI", "KEY INSTRUCTOR TOYOTA"], "toyota"),
 ]
@@ -169,6 +186,10 @@ class Command(BaseCommand):
             if brand and created:
                 trainer.brands.add(brands[brand])
             for alias in aliases:
+            # Rétroactif : une fiche sans marque reçoit les siennes ; une fiche
+            # qui en a déjà (saisie ou revue en prod) n'est pas touchée.
+            if name in TRAINER_BRANDS and not trainer.brands.exists():
+                trainer.brands.add(*(brands[c] for c in TRAINER_BRANDS[name]))
                 TrainerAlias.objects.get_or_create(
                     alias_norm=norm_key(alias), defaults={"trainer": trainer, "added_by": "seed"}
                 )

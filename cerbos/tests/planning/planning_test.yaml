@@ -74,6 +74,30 @@ resources:
     attr:
       orgPath: ["groupe"]
       year: 2027
+  mes_sessions:
+    kind: planning_my_sessions
+    id: u_trainer
+    attr:
+      orgPath: ["groupe"]
+      ownerSub: u_trainer
+  sessions_autre_formateur:
+    kind: planning_my_sessions
+    id: u_autre
+    attr:
+      orgPath: ["groupe"]
+      ownerSub: u_autre
+  ma_fiche:
+    kind: planning_my_trainer
+    id: u_trainer
+    attr:
+      orgPath: ["groupe"]
+      ownerSub: u_trainer
+  fiche_autre_formateur:
+    kind: planning_my_trainer
+    id: u_autre
+    attr:
+      orgPath: ["groupe"]
+      ownerSub: u_autre
   thematiques:
     kind: planning_catalog_gap
     id: k_2026
@@ -107,6 +131,55 @@ tests:
         actions: {view: EFFECT_DENY}
       - principal: dps_cmr
         resource: charge_2027
+        actions: {view: EFFECT_DENY}
+
+  - name: un formateur ne lit que sa propre fiche
+    input:
+      principals: ["formateur", "coordonnateur"]
+      resources: ["ma_fiche", "fiche_autre_formateur"]
+      actions: ["view"]
+    expected:
+      - principal: formateur
+        resource: ma_fiche
+        actions: {view: EFFECT_ALLOW}
+      - principal: formateur
+        resource: fiche_autre_formateur
+        actions: {view: EFFECT_DENY}
+      - principal: coordonnateur
+        resource: ma_fiche
+        actions: {view: EFFECT_DENY}
+      - principal: coordonnateur
+        resource: fiche_autre_formateur
+        actions: {view: EFFECT_DENY}
+  - name: un formateur ne lit que ses propres sessions
+    input:
+      principals: ["formateur", "coordonnateur", "directeur_centre", "assistante"]
+      resources: ["mes_sessions", "sessions_autre_formateur"]
+      actions: ["view"]
+    expected:
+      - principal: formateur
+        resource: mes_sessions
+        actions: {view: EFFECT_ALLOW}
+      - principal: formateur
+        resource: sessions_autre_formateur
+        actions: {view: EFFECT_DENY}
+      - principal: coordonnateur
+        resource: mes_sessions
+        actions: {view: EFFECT_DENY}
+      - principal: coordonnateur
+        resource: sessions_autre_formateur
+        actions: {view: EFFECT_DENY}
+      - principal: directeur_centre
+        resource: mes_sessions
+        actions: {view: EFFECT_DENY}
+      - principal: directeur_centre
+        resource: sessions_autre_formateur
+        actions: {view: EFFECT_DENY}
+      - principal: assistante
+        resource: mes_sessions
+        actions: {view: EFFECT_DENY}
+      - principal: assistante
+        resource: sessions_autre_formateur
         actions: {view: EFFECT_DENY}
 
   - name: les points a traiter sont reserves au coordinateur

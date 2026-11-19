@@ -5,6 +5,8 @@ from . import internal_views, views as v
 
 urlpatterns = [
     path("access", v.AccessView.as_view()),
+    path("me/sessions", v.MySessionsView.as_view()),
+    path("me/trainer", v.MyTrainerView.as_view()),
     path("internal/needs-snapshot", internal_views.NeedsSnapshotPushView.as_view()),
     path("cost-keys/", v.CostKeyListView.as_view()),
     path("cost-keys/<uuid:pk>", v.CostKeyDetailView.as_view()),

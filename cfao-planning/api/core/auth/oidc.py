@@ -24,6 +24,16 @@ from .principal import build_principal
 logger = logging.getLogger(__name__)
 
 
+def _link_trainer(principal, claims) -> None:
+    """Relie un formateur à sa fiche à la connexion ; n'empêche jamais l'accès."""
+    from referential.trainer_accounts import link_trainer_account  # import tardif (cycle core↔referential)
+
+    try:
+        link_trainer_account(principal.id, claims, principal.roles)
+    except Exception:  # noqa: BLE001 — le lien est un confort, l'authentification prime
+        logger.exception("Lien formateur ↔ compte non posé.")
+
+
 class KeycloakJWTAuthentication(authentication.BaseAuthentication):
     """Authentifie via `Authorization: Bearer <JWT>` ; ne fixe jamais de scope lui-même."""
 
@@ -52,6 +62,7 @@ class KeycloakJWTAuthentication(authentication.BaseAuthentication):
         principal = build_principal(claims)
         principal.raw_token = token
         get_identity_provider().resolve(principal)
+        _link_trainer(principal, claims)
         return principal, token
 
     def authenticate_header(self, request):

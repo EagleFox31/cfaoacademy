@@ -5,7 +5,7 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
 from planning.models import CostKeyYear
-from referential.models import Brand, BrandAlias
+from referential.models import Brand, BrandAlias, Trainer
 
 ECRITURES = ("INSERT", "UPDATE", "DELETE")
 
@@ -37,3 +37,19 @@ def test_donnees_revues_preservees_et_absentes_recreees():
     assert Brand.objects.get(code="toyota").label == "TOYOTA (revu)"
     assert CostKeyYear.objects.get(year=2026, pole="MOTORS").budget == 1
     assert BrandAlias.objects.filter(alias_norm=alias_norm).count() == 1
+
+
+@pytest.mark.django_db
+def test_marques_des_formateurs_retroactives_sans_ecrasement():
+    _seeds()
+    eugene = Trainer.objects.get(full_name="Eugène EBENE")
+    lucien = Trainer.objects.get(full_name="Lucien GAGNE")
+    assert list(eugene.brands.values_list("code", flat=True)) == ["toyota"]
+    # Base existante : une fiche sans marque les reçoit, une fiche revue garde les siennes.
+    eugene.brands.clear()
+    lucien.brands.set([Brand.objects.get(code="jcb")])
+
+    _seeds()
+
+    assert list(eugene.brands.values_list("code", flat=True)) == ["toyota"]
+    assert list(lucien.brands.values_list("code", flat=True)) == ["jcb"]

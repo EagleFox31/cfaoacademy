@@ -14,7 +14,10 @@ from __future__ import annotations
 
 import datetime as dt
 
-from referential.models import Trainer
+from django.db.models import Q
+
+from referential.models import Country, Trainer
+from referential.trainer_accounts import ACADEMY_SCOPE
 
 from ..models import PlannedSession
 
@@ -58,6 +61,43 @@ def _mark_close(sessions: list[dict]) -> int:
         if (nxt["start_date"] - prev["end_date"]).days < MIN_GAP_DAYS:
             prev["close"] = nxt["close"] = True
     return sum(s["close"] for s in sessions)
+
+
+def my_sessions(sub: str, today: dt.date | None = None) -> dict:
+    """Sessions pas encore terminées du formateur relié au compte `sub`, par date.
+
+    Toutes années confondues. Sans fiche reliée au compte : `linked=False` et
+    liste vide (le lien se pose à la connexion, voir `trainer_accounts`).
+    """
+    today = today or dt.date.today()
+    trainer = Trainer.objects.filter(keycloak_sub=sub).first() if sub else None
+    if trainer is None:
+        return {"linked": False, "sessions": []}
+    planned = (trainer.planned_sessions
+               .filter(Q(end_date__gte=today) | Q(end_date__isnull=True, start_date__gte=today))
+               .select_related("brand", "country", "cost_key").order_by("start_date", "code_norm"))
+    return {"linked": True, "sessions": [
+        {**_session_json(s), "location": s.location, "delivery_mode": s.delivery_mode}
+        for s in planned]}
+
+
+def my_trainer(sub: str) -> dict:
+    """Fiche du formateur relié au compte `sub` : pays où il est basé et marques.
+
+    Sans pays sur la fiche, le formateur est à l'Academy. Sans fiche reliée :
+    `linked=False` (le lien se pose à la connexion, voir `trainer_accounts`).
+    """
+    trainer = (Trainer.objects.filter(keycloak_sub=sub).select_related("home_country").first()
+               if sub else None)
+    if trainer is None:
+        return {"linked": False, "trainer": None}
+    country = trainer.home_country or Country.objects.filter(code__iexact=ACADEMY_SCOPE).first()
+    return {"linked": True, "trainer": {
+        "name": trainer.full_name,
+        "country": {"code": country.code, "label": country.label} if country else None,
+        "brands": [{"code": b.code, "label": b.label}
+                   for b in trainer.brands.order_by("pole", "sort_order", "code")],
+    }}
 
 
 def trainer_load(year: int, today: dt.date | None = None) -> dict:
