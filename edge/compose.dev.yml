@@ -59,6 +59,8 @@ services:
       # vide = pas d'alerte. Poivre vide = tiré au hasard à chaque démarrage (codes en cours perdus).
       KC_SPI_AUTHENTICATOR__CFAO_PASSWORD_OR_EMAIL_FORM__SUPPORT_EMAIL: ${CFAO_LOGIN_SUPPORT_EMAIL:-}
       KC_SPI_AUTHENTICATOR__CFAO_PASSWORD_OR_EMAIL_FORM__CODE_PEPPER: ${CFAO_LOGIN_CODE_PEPPER:-}
+      # Lien « Accueil » de la page de connexion : la landing de la recette.
+      CFAO_LANDING_URL: ${CFAO_LANDING_URL:-http://localhost:8088/}
     networks: [default, cfao-maillage]
     depends_on:
       keycloak-db: { condition: service_healthy }

@@ -53,6 +53,9 @@ services:
       KC_SPI_AUTHENTICATOR__CFAO_PASSWORD_OR_EMAIL_FORM__CODE_PEPPER: ${CFAO_LOGIN_CODE_PEPPER:?CFAO_LOGIN_CODE_PEPPER manquant}
       # Destinataire des alertes « adresse inconnue » ; vide = pas d'alerte.
       KC_SPI_AUTHENTICATOR__CFAO_PASSWORD_OR_EMAIL_FORM__SUPPORT_EMAIL: ${CFAO_LOGIN_SUPPORT_EMAIL:-}
+      # Lien « Accueil » de la page de connexion = la landing d'Academy ;
+      # vide = accueil de l'application qui demande la connexion.
+      CFAO_LANDING_URL: ${CFAO_LANDING_URL:-}
     depends_on:
       keycloak-db: { condition: service_healthy }
     # Local par défaut : la passerelle (réseau hôte) et la migration y passent.

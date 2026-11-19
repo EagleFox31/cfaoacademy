@@ -121,6 +121,25 @@ def test_messages_de_connexion_par_mail_dans_les_trois_langues():
         assert "{0}" in re.search(r"^cfaoCodeSent=(.*)$", texte, re.M).group(1)
 
 
+def test_lien_accueil_de_la_connexion_vers_la_landing():
+    import yaml
+
+    # Variable d'environnement -> propriété du thème -> balise de login.ftl -> lien de login.js.
+    assert "cfaoAccueilUrl=${env.CFAO_LANDING_URL:}" in _texte(THEME / "theme.properties")
+    assert 'id="cfao-accueil" data-href="${properties.cfaoAccueilUrl!' in _texte(THEME / "login.ftl")
+    script = _texte(THEME / "resources" / "js" / "login.js")
+    assert "getElementById('cfao-accueil')" in script
+    # La landing passe avant l'origine de l'application appelante ; plusieurs adresses
+    # possibles (zrok, IP) : celle du même hôte que l'application appelante.
+    assert script.index("getElementById('cfao-accueil')") < script.index("new URL(retour).origin")
+    assert "split(/\\s+/)" in script and ".hostname === hote" in script
+    recette = yaml.safe_load(_texte(RACINE / "edge" / "compose.dev.yml"))["services"]["keycloak"]["environment"]
+    assert recette["CFAO_LANDING_URL"] == "${CFAO_LANDING_URL:-http://localhost:8088/}"
+    prod = yaml.safe_load(_texte(KEYCLOAK / "compose.prod.yml"))["services"]["keycloak"]["environment"]
+    assert prod["CFAO_LANDING_URL"] == "${CFAO_LANDING_URL:-}"
+    assert 'CFAO_LANDING_URL="https://' in _texte(KEYCLOAK / ".env.prod.example")
+
+
 def test_poivre_et_support_hors_du_depot():
     import yaml
 

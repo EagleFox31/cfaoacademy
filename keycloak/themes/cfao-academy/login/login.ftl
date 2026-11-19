@@ -85,6 +85,8 @@
                     <button class="cfao-btn-secondary cfao-btn-wide" id="cfao-mail-login-start" name="cfao_action" value="email" type="submit">${msg("cfaoLoginByEmail")}</button>
                 </form>
             </#if>
+            <#-- Cible du lien « Accueil » de la barre (login.js) : la landing, réglée par CFAO_LANDING_URL. -->
+            <span id="cfao-accueil" data-href="${properties.cfaoAccueilUrl!''}" hidden></span>
             <#-- cfao:end mail-login -->
             </div>
         </div>
