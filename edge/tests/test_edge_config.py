@@ -23,7 +23,7 @@ def test_liste_blanche_des_routes():
     # Toute nouvelle route publique doit modifier ce test, donc être relue.
     trouvees = sorted(loc for m in MODELES for loc in _locations(_texte(m)))
     assert trouvees == sorted(["/", "/", "/auth/", "/auth", r"^/auth/(realms/cfao|resources)/", "/cr", "/cr/", "/api/v1/planning/",
-                                 "/api/v1/planning/internal/"])
+                                 "/api/v1/planning/internal/", "/api/v1/core/"])
 
 
 def test_routes_internes_jamais_publiees():
@@ -85,9 +85,10 @@ def test_page_d_attente_dans_chaque_bloc_server():
 
 def test_api_garde_ses_propres_erreurs():
     # Un 503 de l'API garde son corps ; les routes HTML relaient la page d'attente.
-    assert "proxy_intercept_errors" not in "\n".join(
-        ligne for ligne in _texte(EDGE / "templates" / "routes" / "planning.conf.template").splitlines()
-        if not ligne.lstrip().startswith("#"))
+    for api in ("planning", "core"):
+        assert "proxy_intercept_errors" not in "\n".join(
+            ligne for ligne in _texte(EDGE / "templates" / "routes" / f"{api}.conf.template").splitlines()
+            if not ligne.lstrip().startswith("#")), api
     for modele in ("routes/cr.conf.template", "routes/auth.conf.template", "racine/needs.conf.template"):
         assert "proxy_intercept_errors on;" in _texte(EDGE / "templates" / modele), modele
 
@@ -121,7 +122,7 @@ def test_variables_declarees_partout():
     compose = yaml.safe_load(_texte(EDGE / "compose.prod.yml"))["services"]["edge"]["environment"]
     exemple = _texte(EDGE / ".env.prod.example")
     exiger = _texte(EDGE / "entrypoint.d" / "05-exiger-variables.sh")
-    optionnelles = {"EDGE_KEYCLOAK_UPSTREAM", "EDGE_CR_UPSTREAM", "EDGE_PLANNING_UPSTREAM"}
+    optionnelles = {"EDGE_KEYCLOAK_UPSTREAM", "EDGE_CR_UPSTREAM", "EDGE_PLANNING_UPSTREAM", "EDGE_CORE_UPSTREAM"}
     for v in utilisees:
         assert v in compose, v
         assert re.search(rf"^{v}=", exemple, re.M), v

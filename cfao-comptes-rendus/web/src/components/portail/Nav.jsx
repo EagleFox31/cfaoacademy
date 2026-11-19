@@ -12,7 +12,6 @@ import { PORTAIL_URL, adressePortail } from '../../lib/portail'
 
 /** Sections du menu formateur ; « sessions » n'existe que s'il y en a à venir. */
 const SECTIONS_FORMATEUR = [
-  { key: 'a-documenter', id: 'a-documenter', libelle: 'Priorités' },
   { key: 'comptes-rendus', id: 'comptes-rendus', libelle: 'Vos comptes rendus' },
   { key: 'sessions-a-venir', id: 'sessions-a-venir', libelle: 'Vos sessions de formation' },
 ]

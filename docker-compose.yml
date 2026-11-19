@@ -135,7 +135,8 @@ services:
       OIDC_JWKS_URL: http://keycloak:8080/realms/${OIDC_REALM:-cfao}/protocol/openid-connect/certs
       OIDC_ISSUER: http://keycloak:8080/realms/${OIDC_REALM:-cfao}
       # Sans KC_HOSTNAME, l'émetteur suit l'hôte appelé : le navigateur voit localhost.
-      OIDC_TRUSTED_ISSUERS: ${OIDC_TRUSTED_ISSUERS:-http://localhost:8080/realms/${OIDC_REALM:-cfao}=http://keycloak:8080/realms/${OIDC_REALM:-cfao}/protocol/openid-connect/certs}
+      # Seconde entrée : Keycloak de recette derrière cfao-edge (edge/compose.dev.yml).
+      OIDC_TRUSTED_ISSUERS: ${OIDC_TRUSTED_ISSUERS:-http://localhost:8080/realms/${OIDC_REALM:-cfao}=http://keycloak:8080/realms/${OIDC_REALM:-cfao}/protocol/openid-connect/certs;http://localhost:8088/auth/realms/cfao=http://host.docker.internal:8088/auth/realms/cfao/protocol/openid-connect/certs}
       # Audience verifiee : client API de core dans le realm commun.
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-cfao-core-api}
       # Dev uniquement : permet au seed de récupérer les vrais `sub` via l'API admin Keycloak.
@@ -151,6 +152,10 @@ services:
       NEEDS_ANALYTICS_KEY: ${NEEDS_ANALYTICS_KEY:-dev-analytics-shared-secret}
     # Le schéma est posé par le job core-migrate (AGENTS.md §7).
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    # Poste local seulement : amont de cfao-edge en recette (EDGE_CORE_UPSTREAM).
+    ports: ["127.0.0.1:8006:8000"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - default
       - cfao-needs

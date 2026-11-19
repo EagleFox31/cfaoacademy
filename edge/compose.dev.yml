@@ -113,6 +113,8 @@ services:
       EDGE_NEEDS_UPSTREAM: host.docker.internal:5173
       EDGE_KEYCLOAK_UPSTREAM: keycloak:8080
       EDGE_PLANNING_UPSTREAM: host.docker.internal:8005
+      # cfao-core du compose racine, publié sur 127.0.0.1:8006 (voir docker-compose.yml).
+      EDGE_CORE_UPSTREAM: host.docker.internal:8006
       EDGE_CR_UPSTREAM: ""
       EDGE_LAN: ""
     extra_hosts:
