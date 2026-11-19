@@ -11,3 +11,7 @@ COPY policies /policies
 COPY config.yaml /config/config.yaml
 
 CMD ["server", "--config=/config/config.yaml"]
+
+# Version posée au build (scripts/build_image.py) ; en fin de fichier pour garder le cache.
+ARG VERSION=dev
+LABEL org.opencontainers.image.version="${VERSION}"

@@ -1,0 +1,84 @@
+# Tests policies cfao-supervision : seul l'exploitant (et le super admin) lit ;
+# personne n'écrit ; un rôle métier, même cumulé ailleurs, n'ouvre rien.
+name: SupervisionSuite
+description: Lecture réservée à platform_ops et superadmin, aucune autre action
+
+principals:
+  exploitant:
+    id: u_ops
+    roles: ["platform_ops"]
+  exploitant_apprenant:
+    id: u_ops_learner
+    roles: ["learner", "platform_ops"]
+  superadmin:
+    id: u_superadmin
+    roles: ["superadmin"]
+  build:
+    id: u_build
+    roles: ["build_team"]
+  admin_groupe:
+    id: u_group_admin
+    roles: ["group_admin"]
+  admin_filiale:
+    id: u_branch_admin
+    roles: ["branch_admin"]
+  directeur_centre:
+    id: u_dc
+    roles: ["center_director"]
+  formateur:
+    id: u_trainer
+    roles: ["trainer"]
+  apprenant:
+    id: u_learner
+    roles: ["learner"]
+  partenaire:
+    id: u_b2b
+    roles: ["b2b_partner"]
+  sans_role:
+    id: u_none
+    roles: ["user"]
+
+resources:
+  tableau:
+    kind: supervision_board
+    id: board
+  connexions:
+    kind: supervision_connections
+    id: connections
+
+tests:
+  - name: l exploitant et le super admin lisent, personne n ecrit
+    input:
+      principals: ["exploitant", "exploitant_apprenant", "superadmin"]
+      resources: ["tableau", "connexions"]
+      actions: ["read", "update", "delete"]
+    expected:
+      - { principal: exploitant, resource: tableau, actions: { read: EFFECT_ALLOW, update: EFFECT_DENY, delete: EFFECT_DENY } }
+      - { principal: exploitant, resource: connexions, actions: { read: EFFECT_ALLOW, update: EFFECT_DENY, delete: EFFECT_DENY } }
+      - { principal: exploitant_apprenant, resource: tableau, actions: { read: EFFECT_ALLOW, update: EFFECT_DENY, delete: EFFECT_DENY } }
+      - { principal: exploitant_apprenant, resource: connexions, actions: { read: EFFECT_ALLOW, update: EFFECT_DENY, delete: EFFECT_DENY } }
+      - { principal: superadmin, resource: tableau, actions: { read: EFFECT_ALLOW, update: EFFECT_DENY, delete: EFFECT_DENY } }
+      - { principal: superadmin, resource: connexions, actions: { read: EFFECT_ALLOW, update: EFFECT_DENY, delete: EFFECT_DENY } }
+
+  - name: aucun autre role ne voit la supervision
+    input:
+      principals: ["build", "admin_groupe", "admin_filiale", "directeur_centre", "formateur", "apprenant", "partenaire", "sans_role"]
+      resources: ["tableau", "connexions"]
+      actions: ["read"]
+    expected:
+      - { principal: build, resource: tableau, actions: { read: EFFECT_DENY } }
+      - { principal: build, resource: connexions, actions: { read: EFFECT_DENY } }
+      - { principal: admin_groupe, resource: tableau, actions: { read: EFFECT_DENY } }
+      - { principal: admin_groupe, resource: connexions, actions: { read: EFFECT_DENY } }
+      - { principal: admin_filiale, resource: tableau, actions: { read: EFFECT_DENY } }
+      - { principal: admin_filiale, resource: connexions, actions: { read: EFFECT_DENY } }
+      - { principal: directeur_centre, resource: tableau, actions: { read: EFFECT_DENY } }
+      - { principal: directeur_centre, resource: connexions, actions: { read: EFFECT_DENY } }
+      - { principal: formateur, resource: tableau, actions: { read: EFFECT_DENY } }
+      - { principal: formateur, resource: connexions, actions: { read: EFFECT_DENY } }
+      - { principal: apprenant, resource: tableau, actions: { read: EFFECT_DENY } }
+      - { principal: apprenant, resource: connexions, actions: { read: EFFECT_DENY } }
+      - { principal: partenaire, resource: tableau, actions: { read: EFFECT_DENY } }
+      - { principal: partenaire, resource: connexions, actions: { read: EFFECT_DENY } }
+      - { principal: sans_role, resource: tableau, actions: { read: EFFECT_DENY } }
+      - { principal: sans_role, resource: connexions, actions: { read: EFFECT_DENY } }

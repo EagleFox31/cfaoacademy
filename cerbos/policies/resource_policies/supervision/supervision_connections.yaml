@@ -1,0 +1,13 @@
+# Ressource « supervision_connections » — Connexions nominatives aux modules (qui, quand) : donnée personnelle, ressource séparée
+# pour pouvoir la restreindre sans toucher au tableau.
+# Réservée à l'exploitant de la plateforme ; aucune écriture (lecture seule).
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: supervision_connections
+  rules:
+    - actions: ["read"]
+      effect: EFFECT_ALLOW
+      roles:
+        - platform_ops
+        - superadmin
