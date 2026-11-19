@@ -7,7 +7,27 @@ import LocaleSwitch from '../components/LocaleSwitch.jsx'
 import { GlobeIcon, LockIcon, UserIcon } from '../components/portalSectionIcons.jsx'
 import useAuth from '../hooks/useAuth.js'
 import useLocale from '../hooks/useLocale.js'
+import useMaFicheFormateur from '../hooks/useMaFicheFormateur.js'
+import { resolveBrandLogo } from '../components/PortalBrandLogo.jsx'
 import { OIDC_ACTIF, changePassword } from '../lib/auth.js'
+
+/** Marques du formateur : logo + nom, l'un à côté de l'autre. */
+function MesMarques({ marques }) {
+  if (!marques.length) return null
+  return (
+    <ul className="profile-brands">
+      {marques.map(m => {
+        const logo = resolveBrandLogo(m.code)
+        return (
+          <li key={m.code} className="profile-brand">
+            {logo ? <img src={logo} alt="" className="profile-brand-logo" loading="lazy" decoding="async" /> : null}
+            <span>{m.label}</span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
 
 /** Une ligne de rubrique : libellé à gauche, valeur (ou réglage) à droite. */
 function Row({ label, children }) {
@@ -30,10 +50,15 @@ export default function Profil() {
   const location = useLocation()
   const [params, setParams] = useSearchParams()
   const { t, locale, setLocale } = useLocale('profile')
-  const account = useAccountSummary(user)
+  const fiche = useMaFicheFormateur(user)
+  const account = useAccountSummary(user, fiche?.pays)
   const returnTo = location.state?.from || '/portail'
 
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />
+
+  // Formateur : pays et marques viennent de sa fiche du planning.
+  const ficheEnCours = fiche?.etat === 'loading'
+  const enAttente = valeur => (ficheEnCours ? t.loading : valeur)
 
   const rubriques = [
     {
@@ -42,10 +67,11 @@ export default function Profil() {
       label: t.account_title,
       rows: [
         { label: t.card_role, value: account.roleLabel },
-        { label: t.card_country, value: account.paysLabel },
+        { label: t.card_country, value: fiche ? enAttente(account.paysLabel) : account.paysLabel },
+        fiche && { label: t.card_brands, value: enAttente(<MesMarques marques={fiche.marques} />), vide: !ficheEnCours && !fiche.marques.length },
         { label: t.card_email, value: account.email },
         { label: t.card_login, value: user.username || user.compte },
-      ],
+      ].filter(Boolean),
     },
     {
       id: 'langue',
@@ -141,7 +167,7 @@ export default function Profil() {
                   <h2 className="profile-panel-title">{active.label}</h2>
                   <dl className="profile-list">
                     {active.rows.map(row => (
-                      <Row key={row.label} label={row.label}>{row.value || t.not_set}</Row>
+                      <Row key={row.label} label={row.label}>{(!row.vide && row.value) || t.not_set}</Row>
                     ))}
                   </dl>
                 </section>

@@ -447,6 +447,11 @@ exports[`portails validés : sections et libellés figés > formateur (en) 1`] =
       "titre": "Your training session reports",
     },
     {
+      "ancre": "sessions-a-venir",
+      "surtitre": "Schedule — teaching",
+      "titre": "Your next training sessions",
+    },
+    {
       "ancre": "formations",
       "surtitre": "What you teach",
       "titre": "Trainings to deliver",
@@ -485,6 +490,11 @@ exports[`portails validés : sections et libellés figés > formateur (fr) 1`] =
       "titre": "Vos comptes rendus de sessions de formation",
     },
     {
+      "ancre": "sessions-a-venir",
+      "surtitre": "Planning — animation",
+      "titre": "Vos prochaines sessions de formation",
+    },
+    {
       "ancre": "formations",
       "surtitre": "Ce que vous enseignez",
       "titre": "Formations à dispenser",
@@ -521,6 +531,11 @@ exports[`portails validés : sections et libellés figés > formateur (pt) 1`] =
       "ancre": "comptes-rendus",
       "surtitre": "Após cada sessão",
       "titre": "Os seus relatórios de sessões de formação",
+    },
+    {
+      "ancre": "sessions-a-venir",
+      "surtitre": "Planeamento — animação",
+      "titre": "As suas próximas sessões de formação",
     },
     {
       "ancre": "formations",

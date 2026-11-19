@@ -22,6 +22,9 @@ vi.mock('../../hooks/usePortalHeaderHeight.js', () => ({ default: () => {} }))
 vi.mock('../../hooks/useAjustementEcran.js', () => ({ default: () => {} }))
 const USER = { id: 'f1', roles: ['trainer'], prenom: 'Test', nom: 'Formateur' }
 vi.mock('../../hooks/useAuth', () => ({ default: () => ({ user: USER, status: 'ready' }) }))
+vi.mock('../../lib/planningApi.js', () => ({
+  planningApi: { mySessions: () => Promise.resolve({ linked: true, sessions: [] }) },
+}))
 const LANGUE = { code: 'fr' }
 vi.mock('../../hooks/useLocale', () => ({
   default: s => ({ t: getCopy(s, LANGUE.code), locale: LANGUE.code }),

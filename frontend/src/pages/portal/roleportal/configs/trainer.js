@@ -4,7 +4,7 @@
  *   1. Comptes rendus : les entrées du module servi à part.
  *   2. Vos prochaines sessions : ce qu'il anime bientôt (section riche).
  *   3. Formations, Tests et résultats, Certifications : en construction.
- *   4. Assistance : les demandes des techniciens sur ses marques (section riche).
+ *   4. Assistance : les demandes des techniciens sur ses marques (en construction).
  *
  * Pas de section « Vos priorités » (retirée le 18/11 à la demande).
  *
@@ -44,7 +44,7 @@ export default {
       ] },
     { id: 'sessions-a-venir', kind: 'rich', render: 'sessions', etape: 'acquerir',
       head: { eyebrow: 'sessions_eyebrow', title: 'sessions_title' },
-      nav: { labelKey: 'nav_sec_sessions_animees' }, visibleIf: { selector: 'aVenir' } },
+      nav: { labelKey: 'nav_sec_sessions_animees' } },
     { id: 'formations', kind: 'construction', etape: 'acquerir',
       head: { eyebrow: 'formations_eyebrow', title: 'formations_title' },
       nav: { labelKey: 'nav_sec_formations' },
@@ -63,9 +63,11 @@ export default {
       head: { eyebrow: 'certifs_eyebrow', title: 'certifs_title' },
       nav: { labelKey: 'nav_sec_certifs' },
       cards: [{ id: 'certifs', title: 'certifs_card', meta: 'certifs_meta' }] },
-    // Demandes des techniciens sur ses marques : la section porte son ancre.
-    { id: 'assistance', kind: 'rich', render: 'assistance', wrap: false, etape: 'appliquer',
+    // Demandes des techniciens sur ses marques : pas encore de module
+    // d'assistance, donc une carte en construction et aucune demande inventée.
+    { id: 'assistance', kind: 'construction', etape: 'appliquer',
       head: { eyebrow: 'portal:dps_assistance_eyebrow', title: 'prio_assist_title' },
-      nav: { labelKey: 'nav_sec_assistance', iconKey: 'lifebuoy' } },
+      nav: { labelKey: 'nav_sec_assistance', iconKey: 'lifebuoy' },
+      cards: [{ id: 'assistance', title: 'assist_card', meta: 'assist_meta' }] },
   ],
 }

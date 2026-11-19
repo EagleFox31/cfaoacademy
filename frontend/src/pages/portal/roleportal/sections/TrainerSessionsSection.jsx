@@ -14,7 +14,7 @@ const VISUEL_POLE = {
   Carrosserie: '/assets/publics/carrossiers.jpg',
 }
 
-function visuelSession(session) {
+export function visuelSession(session) {
   const { logo, label } = resolvePortalCardBrand(session.marque)
   return {
     img: VISUEL_POLE[session.pole] ?? '/assets/img_cards/techniciens-carte.jpg',
@@ -24,24 +24,39 @@ function visuelSession(session) {
 }
 
 /** « 12–14 mars 2027 » dans la langue de l'interface. */
-function periode(locale, debut, fin) {
+export function periode(locale, debut, fin) {
   const d = new Date(debut)
   const f = new Date(fin)
   if (Number.isNaN(d.getTime()) || Number.isNaN(f.getTime())) return ''
   return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).formatRange(d, f)
 }
 
-/** Nombre de stagiaires, au singulier jusqu'à 1. */
-function stagiaires(t, n) {
+/** Nombre de stagiaires, au singulier jusqu'à 1 ; rien si les inscrits sont inconnus. */
+function stagiaires(t, participants) {
+  if (!participants) return ''
+  const n = participants.length
   return ((n <= 1 && t.session_trainees_one) || t.session_trainees).replace('{n}', n)
 }
 
-/** Les sessions que le formateur anime bientôt. La fiche de session
- * n'existe pas encore : visuel gardé, chantier au survol, aucun lien. */
+/** Ligne d'information de la carte : période · stagiaires · lieu, sans trou. */
+export function metaSession(t, locale, s) {
+  return [periode(locale, s.debut, s.fin), stagiaires(t, s.participants), s.lieu].filter(Boolean).join(' · ')
+}
+
+const MESSAGE = { loading: 'sessions_loading', error: 'sessions_error', unlinked: 'sessions_unlinked' }
+
+/** Les sessions que le formateur anime bientôt, lues dans le planning. La
+ * fiche de session n'existe pas encore : visuel gardé, chantier au survol,
+ * aucun lien. */
 export default function TrainerSessionsSection({ t, locale, values }) {
+  const { etat, sessions } = values.sessions ?? { etat: 'loading', sessions: [] }
+  const message = MESSAGE[etat] ?? (sessions.length ? null : 'sessions_empty')
+  if (message) {
+    return <p className="portal-empty-panel" role={etat === 'loading' ? 'status' : undefined}>{t[message]}</p>
+  }
   return (
     <PortalStaggerGrid>
-      {values.aVenir.map(s => (
+      {sessions.map(s => (
         <div key={s.id} className="portal-card-anchor">
           <PvCard
             {...visuelSession(s)}
@@ -51,7 +66,7 @@ export default function TrainerSessionsSection({ t, locale, values }) {
               </span>
             }
             title={s.moduleFormation}
-            meta={`${periode(locale, s.debut, s.fin)} · ${stagiaires(t, s.participants.length)} · ${s.lieu}`}
+            meta={metaSession(t, locale, s)}
             enConstruction={t.under_construction}
           />
         </div>

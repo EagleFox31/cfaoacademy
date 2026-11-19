@@ -10898,6 +10898,14 @@ body[data-portal-bg="rh"] .portal-page #pif {
 
 #niveaux.portal-dps-tier-section .portal-section-title {
   color: #ffffff;
+/* Section paire : bande sombre du zébrage, comme les autres sections. Sans
+   elle, le texte blanc des sections paires (« Filtrer ») tombe sur la photo. */
+section#assistance:nth-of-type(even) {
+  background: rgba(26, 31, 60, 0.72) !important;
+}
+section#assistance:nth-of-type(even) .portal-section-title {
+  color: #fff !important;
+}
 }
 
 #niveaux.portal-dps-tier-section .portal-section-eyebrow {

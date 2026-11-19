@@ -19,14 +19,16 @@ const ICONS = { user: UserIcon, bell: BellIcon, lifebuoy: LifeBuoyIcon, mileston
  * Ce qu'on affiche du compte : nom, e-mail, fonction, pays et drapeau. Repris par
  * le menu du compte, la carte du menu mobile et la page Profil.
  */
-export function useAccountSummary(user) {
+export function useAccountSummary(user, paysConnu = null) {
+ * `paysConnu` : pays tiré d'une source qui fait foi (ex. fiche formateur du
+ * planning), prioritaire sur celui du compte.
   const { locale, t } = useLocale('portal')
   const { t: heroT } = useLocale('hero')
   const { t: publicsT } = useLocale('publics')
   if (!user) return null
   const primaryRole = getPrimaryRole(user.roles)
   const baseRoleLabel = t[`role_${primaryRole}`] || primaryRole
-  const pays = resolveProfilePays(user)
+  const pays = paysConnu || resolveProfilePays(user)
   return {
     fullName: [user.firstName, user.lastName].filter(Boolean).join(' '),
     email: user.email || (user.username ? `${user.username}@cfao.com` : ''),

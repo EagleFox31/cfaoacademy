@@ -3003,6 +3003,27 @@ body.editorial-page-bg .nav .nav-cta:not(.nav-cta--primary)::after {
   color: var(--ink);
   overflow-wrap: anywhere;
 }
+.profile-brands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.profile-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid rgba(26, 31, 60, 0.14);
+  border-radius: 999px;
+}
+.profile-brand-logo {
+  width: 32px;
+  height: 20px;
+  object-fit: contain;
+}
 .profile-locale-switch {
   flex-wrap: wrap;
   gap: 8px;

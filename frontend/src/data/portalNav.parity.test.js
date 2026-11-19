@@ -12,9 +12,9 @@ describe('onglets des portails par rôle', () => {
     expect(PORTAL_NAV_SECTIONS).toMatchSnapshot()
   })
 
-  it('formateur : onglet des sessions selon ses sessions à venir', () => {
+  it('formateur : onglet des sessions toujours présent (la section dit s’il n’y en a pas)', () => {
     const ids = user => resolvePortalNavSections(['trainer'], null, user).map(s => s.id)
-    expect(ids({ firstName: 'Test', lastName: 'Formateur' })).not.toContain('sessions-a-venir')
+    expect(ids({ firstName: 'Test', lastName: 'Formateur' })).toContain('sessions-a-venir')
     expect(ids({ firstName: 'Eugène', lastName: 'EBENE' })).toEqual(PORTAL_NAV_SECTIONS.trainer.map(s => s.id))
   })
 })

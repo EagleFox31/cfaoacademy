@@ -45,6 +45,10 @@ export const planningApi = {
   yearSummary: () => http.get('/years/summary'),
   reviewItems: year => http.get(`/years/${year}/review-items`),
   trainerLoad: year => http.get(`/years/${year}/trainer-load`),
+  /** Sessions pas encore terminées du formateur connecté : `{ linked, sessions }`. */
+  mySessions: () => http.get('/me/sessions'),
+  /** Fiche du formateur connecté : `{ linked, trainer: { name, country, brands } }`. */
+  myTrainer: () => http.get('/me/trainer'),
   yearCountry: (year, code, mode) => http.get(`/years/${year}/countries/${code}${qs({ mode })}`),
   abc: id => http.get(`/cost-keys/${id}/abc`),
   yearAbc: year => http.get(`/years/${year}/abc`),
