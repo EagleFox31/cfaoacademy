@@ -21,6 +21,8 @@ import {
 import { loadBuildState, buildStateKey } from '../../config/profileBuildStatus.js'
 import TrainerHome from './TrainerHome'
 import { OIDC_ACTIF } from '../../lib/auth.js'
+import PvCard from '../../components/PvCard.jsx'
+import { ADMIN_HOME, ADMIN_NAV, adminPath, canAccessAdminConsole } from '../../utils/adminAccess.js'
 
 export const CFAO_ACADEMY_APPS_CONFIG = [
   {
@@ -518,6 +520,7 @@ function SuperAdminGroupe() {
   const { user } = useAuth()
   const { t } = useLocale('portal')
   const { t: td } = useLocale('delivery')
+  const { t: ta } = useLocale('admin')
   const navigate = useNavigate()
   const mockLms = LMS_BY_USER[user?.demoKey]
   // BU active du switcher hero. Remontée ici pour piloter le refetch du hook
@@ -915,6 +918,38 @@ function SuperAdminGroupe() {
           </PortalStaggerGrid>
         </div>
       </PortalReveal>
+
+      {/* ═════════════ #console — Administration de la plateforme (super admin) ═════════════ */}
+      {canAccessAdminConsole(user?.roles) && (
+        <PortalReveal id="console">
+          <div className="container" style={{ padding: '16px 32px' }}>
+            <PortalSectionHead
+              eyebrow={<PortalSectionEyebrow icon="cog" label={t.sa_console_eyebrow} />}
+              title={t.sa_console_title}
+              methodText={t.sa_console_lead}
+              t={t}
+            />
+            <PortalStaggerGrid className="cols-3 pv-grid--stretch">
+              {[ADMIN_HOME, ...ADMIN_NAV.flatMap(g => g.items.map(i => i.id))].map(id => {
+                const pending = ADMIN_NAV.some(g => g.items.some(i => i.id === id && i.status === 'construction'))
+                return (
+                  <PvCard
+                    key={id}
+                    noMedia
+                    kicker={<span className={`portal-status-chip ${pending ? 'todo' : 'open'}`}>{pending ? ta.under_construction : t.sa_console_chip_readonly}</span>}
+                    title={ta[`title_${id}`]}
+                    meta={ta[`lead_${id}`]}
+                    to={adminPath(id)}
+                    cta={t.sa_console_cta}
+                    enConstruction={pending ? ta.under_construction : undefined}
+                    corner
+                  />
+                )
+              })}
+            </PortalStaggerGrid>
+          </div>
+        </PortalReveal>
+      )}
 
       {/* ═════════════ #branches — Réalisation des plans de formation ═════════════ */}
       <PortalReveal id="branches">

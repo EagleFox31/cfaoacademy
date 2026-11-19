@@ -24,8 +24,10 @@ function initialPosterSrc(preview, siteFallback) {
     return preview?.image || siteFallback
   }
   if (preview.thumbnail) return preview.thumbnail
+  const articleImage = preview.fallbackImage || preview.image
+  if (articleImage) return articleImage
   if (isVideoFile(preview.videoUrl)) return null
-  return preview.fallbackImage || preview.image || siteFallback
+  return siteFallback
 }
 
 /** Visuel carte article : vignette + ~5 s de vidéo au survol (muet), avec repli image article. */
@@ -40,13 +42,15 @@ export default function ArticleCardMedia({ preview, fallback = '/assets/logo-cfa
   const isVideo = preview?.type === 'video'
   const videoUrl = preview?.videoUrl
   const frameSec = preview?.framePosterSec ?? VIDEO_FRAME_POSTER_SEC
+  const { remoteThumb, articleImage, siteFallback } = resolvePosterChain(preview, fallback)
+  // Image tirée du MP4 local (le serveur doit accepter les requêtes partielles pour
+  // atteindre la seconde visée) ; la couverture de l'article s'affiche en attendant.
   const needsLocalFrame = isVideo && !preview?.thumbnail && isVideoFile(videoUrl)
   const { poster: framePoster, failed: frameFailed } = useVideoFramePoster(
     videoUrl,
     frameSec,
     needsLocalFrame,
   )
-  const { remoteThumb, articleImage, siteFallback } = resolvePosterChain(preview, fallback)
   const hoverPreview = isVideo && videoUrl && hoverEnabled
     ? getCardHoverPreview(videoUrl)
     : null

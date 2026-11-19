@@ -149,6 +149,7 @@ export default function PortalHeader({
   onBuChange,
   managerHeroCard,
   centerHero,
+  statsHero,
 }) {
   const { t } = useLocale('portal')
   const { t: heroT } = useLocale('hero')
@@ -271,8 +272,9 @@ export default function PortalHeader({
       firstName={user.firstName}
       user={user}
       primaryRole={primaryRole}
-      hideOrient={showBrandLevels || showDpsBrandsStrip || isSuperAdmin || isManager || Boolean(centerHero)}
+      hideOrient={showBrandLevels || showDpsBrandsStrip || isSuperAdmin || isManager || Boolean(centerHero) || Boolean(statsHero)}
       dpsHero={dpsHero}
+      statsHero={statsHero}
       superadminHero={superadminHero}
       managerHero={managerHero}
       centerHero={centerHeroInteractive}
@@ -306,7 +308,7 @@ export default function PortalHeader({
         </div>
       )}
       {showGeoBrands && (
-        <div className={`portal-header-geo-row${showBrandsBand ? ' portal-header-geo-row--grid portal-header-geo-row--below-brands' : ''}`}>
+        <div className={`portal-header-geo-row${showBrandsBand ? ' portal-header-geo-row--grid portal-header-geo-row--below-brands' : ''}${primaryRole === 'trainer' ? ' portal-header-geo-row--instructor' : ''}`}>
           <div className="portal-header-geo-brands">
             {userBrands.map(brand => (
               <BrandLogo key={brand} brand={brand} size="geo" />

@@ -66,3 +66,9 @@ vite.config.js.timestamp-*.mjs
 docs/etude-si-suivi-techniciens-*/as_is_*.json
 scripts/inspect-ngasseu-*.php
 scripts/compare-pif-pluriannuel.php
+
+# Médias et copies lourdes, hors dépôt (GitHub refuse > 100 Mo)
+/assets/videos_articles/
+/frontend/public/assets/videos_articles/
+/catalogues/
+/KI-Cursor/

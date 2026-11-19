@@ -21,6 +21,64 @@ function serializeRect(rect) {
   }
 }
 
+/**
+ * Carte d'un niveau (Maintenance, Réparation, Diagnostic) : maîtrise moyenne
+ * en grand, puis techniciens évalués sur le total. Sans `onOpen`, la carte
+ * montre les chiffres sans lien (pas de chantier : la donnée est là).
+ */
+export function TierScoreCard({
+  tierKey, label, avgScore, evaluatedCount, techniciansCount,
+  avgLabel, noScoreLabel, evaluatedLabel, onOpen, cta,
+}) {
+  const accent = evalScoreAccentColor(avgScore)
+  return (
+    <PlanEntryCard
+      kind="results"
+      className={`portal-plan-entry-card--tier-${tierKey}`}
+      onOpen={onOpen}
+      muted={avgScore == null && evaluatedCount === 0}
+      brandLabel={label}
+      accentColor={accent}
+      meta={(
+        <div className="portal-dps-tier-card-content">
+          <div className="portal-dps-tier-score-display">
+            <div className="portal-dps-tier-score-main">
+              <span className="portal-dps-tier-score-val" style={{ color: accent }}>
+                {avgScore != null ? `${avgScore}%` : '—'}
+              </span>
+              <span className="portal-dps-tier-score-caption">
+                {avgScore != null ? avgLabel : noScoreLabel}
+              </span>
+            </div>
+            {avgScore != null ? (
+              <div className="portal-dps-tier-score-progress-bar">
+                <div
+                  className="portal-dps-tier-score-progress-fill"
+                  style={{
+                    width: `${Math.min(100, Math.max(0, avgScore))}%`,
+                    backgroundColor: accent,
+                  }}
+                />
+              </div>
+            ) : null}
+          </div>
+          <div className="portal-dps-tier-card-footer">
+            <span className="portal-dps-tier-evaluated-badge">
+              <strong className="portal-dps-tier-evaluated-count">
+                {evaluatedCount}/{techniciansCount}
+              </strong>
+              {' '}
+              {evaluatedLabel}
+            </span>
+          </div>
+        </div>
+      )}
+      cta={onOpen ? cta : undefined}
+      hoverHint={onOpen ? cta : undefined}
+    />
+  )
+}
+
 export default function DpsTierResultsSection({
   user,
   lms,
@@ -72,59 +130,21 @@ export default function DpsTierResultsSection({
           />
         ) : (
           <PortalStaggerGrid className="cols-3 pv-grid--stretch portal-dps-tier-results">
-            {tierSummaries.map(({ tierKey, labelKey, avgScore, techniciansCount, evaluatedCount }) => {
-              const label = t[labelKey] || tierKey
-              const muted = avgScore == null && evaluatedCount === 0
-              const accent = evalScoreAccentColor(avgScore)
-
-              return (
-                <PlanEntryCard
-                  key={tierKey}
-                  kind="results"
-                  className={`portal-plan-entry-card--tier-${tierKey}`}
-                  onOpen={(e) => openTierDetail(tierKey, e)}
-                  muted={muted}
-                  brandLabel={label}
-                  accentColor={accent}
-                  meta={(
-                    <div className="portal-dps-tier-card-content">
-                      <div className="portal-dps-tier-score-display">
-                        <div className="portal-dps-tier-score-main">
-                          <span className="portal-dps-tier-score-val" style={{ color: accent }}>
-                            {avgScore != null ? `${avgScore}%` : '—'}
-                          </span>
-                          <span className="portal-dps-tier-score-caption">
-                            {avgScore != null ? (t.dps_results_tier_avg_label || 'Maîtrise moyenne') : (t.dps_results_brand_no_score || 'Mesure en cours')}
-                          </span>
-                        </div>
-                        {avgScore != null ? (
-                          <div className="portal-dps-tier-score-progress-bar">
-                            <div
-                              className="portal-dps-tier-score-progress-fill"
-                              style={{
-                                width: `${Math.min(100, Math.max(0, avgScore))}%`,
-                                backgroundColor: accent,
-                              }}
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                      <div className="portal-dps-tier-card-footer">
-                        <span className="portal-dps-tier-evaluated-badge">
-                          <strong className="portal-dps-tier-evaluated-count">
-                            {evaluatedCount}/{techniciansCount}
-                          </strong>
-                          {' '}
-                          techniciens évalués
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  cta={t.dps_results_tier_cta || 'Voir le détail par niveau'}
-                  hoverHint={t.dps_results_tier_cta || 'Voir le détail par niveau'}
-                />
-              )
-            })}
+            {tierSummaries.map(({ tierKey, labelKey, avgScore, techniciansCount, evaluatedCount }) => (
+              <TierScoreCard
+                key={tierKey}
+                tierKey={tierKey}
+                label={t[labelKey] || tierKey}
+                avgScore={avgScore}
+                evaluatedCount={evaluatedCount}
+                techniciansCount={techniciansCount}
+                avgLabel={t.dps_results_tier_avg_label || 'Maîtrise moyenne'}
+                noScoreLabel={t.dps_results_brand_no_score || 'Mesure en cours'}
+                evaluatedLabel="techniciens évalués"
+                onOpen={(e) => openTierDetail(tierKey, e)}
+                cta={t.dps_results_tier_cta || 'Voir le détail par niveau'}
+              />
+            ))}
           </PortalStaggerGrid>
         )}
       </div>

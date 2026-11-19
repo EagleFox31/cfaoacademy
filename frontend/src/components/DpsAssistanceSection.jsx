@@ -8,13 +8,16 @@ import PortalReveal from './PortalReveal.jsx'
 import PortalStaggerGrid from './PortalStaggerGrid.jsx'
 import PvCard from './PvCard.jsx'
 import DpsTicketCardMedia from './DpsTicketCardMedia.jsx'
+import { resolveBrandLogo } from './PortalBrandLogo.jsx'
 import { resolveBrandFormateurDisplay } from '../utils/catalogFormateur.js'
+import { TEAM_BRAND_DEFS } from '../utils/teamBrands.js'
 import { flagCdnUrlForCountry } from '../utils/countryFlag.js'
 
 const TAB_ALL = 'all'
 const TAB_OPEN = 'open'
 const TAB_PROGRESS = 'progress'
 const TAB_CLOSED = 'resolved'
+const BRAND_ALL = 'all'
 
 const TICKET_STATUS_TABS = [TAB_ALL, TAB_OPEN, TAB_PROGRESS, TAB_CLOSED]
 
@@ -38,6 +41,31 @@ const TICKET_TAB_EMPTY_KEY = {
     [TAB_PROGRESS]: 'learner_assistance_empty_progress',
     [TAB_CLOSED]: 'learner_assistance_empty_closed',
   },
+  trainer: {
+    [TAB_ALL]: 'trainer_assistance_empty_all',
+    [TAB_OPEN]: 'trainer_assistance_empty_open',
+    [TAB_PROGRESS]: 'trainer_assistance_empty_progress',
+    [TAB_CLOSED]: 'trainer_assistance_empty_closed',
+  },
+}
+
+/** Une puce par marque présente dans les tickets, logo compris ; rien sous deux marques. */
+function brandFilterOptions(tickets, t) {
+  const counts = new Map()
+  for (const ticket of tickets) counts.set(ticket.brand, (counts.get(ticket.brand) ?? 0) + 1)
+  if (counts.size < 2) return null
+  return [
+    { id: BRAND_ALL, label: t.dps_filter_all_brands, count: tickets.length },
+    ...[...counts].map(([id, count]) => {
+      const logo = resolveBrandLogo(id)
+      return {
+        id,
+        label: TEAM_BRAND_DEFS[id]?.label ?? id,
+        count,
+        icon: logo ? <img src={logo} alt="" className="chip-icon-logo" /> : null,
+      }
+    }),
+  ]
 }
 
 function ticketTabLabel(tabId, t) {
@@ -96,14 +124,15 @@ function TicketPersonBadge({ label, name, agency, country, className = '' }) {
   )
 }
 
-function DpsTicketCard({ ticket, t, showDemandeur = true }) {
-  const expert = resolveBrandFormateurDisplay(ticket.brand)
+function DpsTicketCard({ ticket, t, showDemandeur = true, showIntervenant = true, enConstruction = null }) {
+  const expert = showIntervenant ? resolveBrandFormateurDisplay(ticket.brand) : null
   const expertName = expert?.kind === 'single' ? expert.name : expert?.primary
 
   return (
     <PvCard
       className="portal-team-member-card portal-dps-ticket-card"
-      to="/portail/assistance"
+      to={enConstruction ? undefined : '/portail/assistance'}
+      enConstruction={enConstruction ?? undefined}
       cardMedia={<DpsTicketCardMedia ticket={ticket} />}
       kicker={(
         <span className={`portal-status-chip ${ticketStatusClass(ticket.status)}`}>
@@ -186,33 +215,46 @@ export default function DpsAssistanceSection({
   variant = 'dps',
   title = null,
   eyebrow = null,
+  enConstruction = null,
 }) {
   const isLearner = variant === 'learner'
+  const isTrainer = variant === 'trainer'
   const [tab, setTab] = useState(TAB_ALL)
+  const [brand, setBrand] = useState(BRAND_ALL)
+
+  // Filtre par marque : formateur seulement, il couvre parfois plusieurs marques.
+  const brandOptions = useMemo(
+    () => (isTrainer ? brandFilterOptions(tickets, t) : null),
+    [isTrainer, tickets, t],
+  )
+  const brandTickets = useMemo(
+    () => (brandOptions && brand !== BRAND_ALL ? tickets.filter(ticket => ticket.brand === brand) : tickets),
+    [brandOptions, brand, tickets],
+  )
 
   const statusCounts = useMemo(() => {
     const counts = { [TAB_OPEN]: 0, [TAB_PROGRESS]: 0, [TAB_CLOSED]: 0 }
-    for (const ticket of tickets) {
+    for (const ticket of brandTickets) {
       if (counts[ticket.status] != null) counts[ticket.status] += 1
     }
     return counts
-  }, [tickets])
+  }, [brandTickets])
 
   const visibleTickets = useMemo(
-    () => (tab === TAB_ALL ? tickets : tickets.filter(ticket => ticket.status === tab)),
-    [tickets, tab],
+    () => (tab === TAB_ALL ? brandTickets : brandTickets.filter(ticket => ticket.status === tab)),
+    [brandTickets, tab],
   )
 
   const filterOptions = useMemo(
     () => TICKET_STATUS_TABS.map(id => ({
       id,
       label: ticketTabLabel(id, t),
-      count: id === TAB_ALL ? tickets.length : (statusCounts[id] ?? 0),
+      count: id === TAB_ALL ? brandTickets.length : (statusCounts[id] ?? 0),
     })),
-    [t, statusCounts, tickets.length],
+    [t, statusCounts, brandTickets.length],
   )
 
-  const emptyKeys = TICKET_TAB_EMPTY_KEY[isLearner ? 'learner' : 'dps']
+  const emptyKeys = TICKET_TAB_EMPTY_KEY[isLearner || isTrainer ? variant : 'dps']
 
   return (
     <PortalReveal id="assistance">
@@ -223,6 +265,17 @@ export default function DpsAssistanceSection({
             {title ?? (isLearner ? t.nav_sec_assistance : t.nav_sec_dps_assistance)}
           </h2>
         </div>
+
+        {brandOptions ? (
+          <ChipFilterBar
+            portal
+            label={t.dps_filter_brand}
+            ariaLabel={t.dps_filter_brand}
+            value={brand}
+            onChange={setBrand}
+            options={brandOptions}
+          />
+        ) : null}
 
         <ChipFilterBar
           portal
@@ -242,12 +295,15 @@ export default function DpsAssistanceSection({
         <PortalStaggerGrid className="cols-4 pv-grid--stretch portal-dps-assistance-tickets">
           {visibleTickets.map(ticket => (
             <div key={ticket.id} className="portal-card-anchor">
-              <DpsTicketCard ticket={ticket} t={t} showDemandeur={!isLearner} />
+              <DpsTicketCard ticket={ticket} t={t} showDemandeur={!isLearner} showIntervenant={!isTrainer} enConstruction={enConstruction} />
             </div>
           ))}
-          <div key="dps-assistance-contact" className="portal-card-anchor" data-portal-support>
-            <DpsAssistanceContactCard t={t} variant={variant} />
-          </div>
+          {/* Le formateur est l'expert : pas de carte « Contacter un expert ». */}
+          {isTrainer ? null : (
+            <div key="dps-assistance-contact" className="portal-card-anchor" data-portal-support>
+              <DpsAssistanceContactCard t={t} variant={variant} />
+            </div>
+          )}
         </PortalStaggerGrid>
       </div>
     </PortalReveal>

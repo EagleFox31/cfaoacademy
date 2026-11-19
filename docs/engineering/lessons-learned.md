@@ -44,6 +44,17 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 
 <!-- Plus récentes en haut. On n'efface ni ne réécrit une entrée : on corrige par une nouvelle entrée qui la référence. -->
 
+### 2026-11-19 — Build continu de la recette arrêté comme « orphelin » (conteneur front partagé)
+- **Contexte / symptôme** : après un `vite build` de contrôle resté bloqué, un second `vite build --outDir /tmp/front-dist` tournait depuis 1 h dans `cfao-front-front-1`. Il a été pris pour un orphelin et arrêté, avec l'accord de l'utilisateur. La recette 8088 ne s'est plus mise à jour (étiquette retirée toujours affichée).
+- **Impact** : recette figée jusqu'au redémarrage du conteneur ; l'utilisateur a cru le correctif inopérant.
+- **Détection** : capture de l'utilisateur, puis lecture de `frontend/compose.dev.yml`.
+- **Cause racine** : le processus a été jugé sur sa durée et sur l'avis des autres sessions (« pas à moi »), sans lire la commande du conteneur. Ce build est lancé en `&` par la commande de service (`compose.dev.yml` l. 29), avant `vite preview` ; il est propre au conteneur, à aucune session. Le piège était noté dans `PASSATION.md` (17/11, 18/11) mais pas dans une passation lue par cette session.
+- **Correctif** : redémarrage de `cfao-front-front-1`.
+- **Prévention** : avant d'arrêter un processus d'un conteneur, lire sa commande de service (`docker inspect` ou le compose) ; un processus lancé par elle n'est jamais un orphelin. Ne pas lancer de `vite build` de contrôle parallèle dans ce conteneur : la preuve de build est le build continu (`docker logs -t` montre un « built in » postérieur à la modification).
+- **Leçon généralisée** : un processus long dans un conteneur partagé appartient d'abord au conteneur ; on vérifie son origine dans la définition du service avant de demander « à qui est-il ».
+- **Catégorie** : outillage / conteneur partagé
+- **Récidive** : non
+
 ### 2026-11-17 — Rails de cartes illisibles sur téléphone, page plus large que l'écran (accueil public, portail)
 - **Contexte / symptôme** : sur téléphone, les cartes de marques de l'accueil étaient écrasées (4,5 cartes par écran, texte coupé), le bouton « Retour en haut » sortait à droite. Mesure à 390 px : page de 448 px.
 - **Impact** : accueil public inutilisable sur mobile ; détecté par l'utilisateur.
@@ -887,4 +898,24 @@ Une correction n'est complète que si elle s'accompagne d'une **prévention** pr
 - **Correctif** : `docker restart cfaoacademy-cerbos-1` (23 politiques chargées), puis le directeur reçoit 200.
 - **Prévention** : après tout ajout ou changement de politique, redémarrer le PDP et faire un appel `check` direct sur la nouvelle ressource avant de tester l'écran.
 - **Leçon généralisée** : des tests de politique verts prouvent la règle, pas son chargement. Vérifier aussi ce que le PDP qui tourne a réellement en mémoire.
+- **Récidive** : non
+
+### 2026-11-18 — Portail RH migré à l'identique, wording et filtre mort compris (erreur, fabrique de portails, étape 3)
+- **Contexte / symptôme** : après la migration du portail de consultation vers `RolePortal`, la RH filiale voyait une phrase d'accueil générique, un filtre « Toutes les BU » sans effet, des résultats par pays au lieu de ses niveaux et des mots internes (« palier », « actifs »).
+- **Cause racine** : j'ai pris « rendu identique » au pied de la lettre. L'écran a été recopié sans relecture profil par profil (AGENTS.md §6b), et ses défauts ont été transportés avec lui.
+- **Correctif** : une phrase d'accueil propre à chaque rôle (`portalOrient.js`), le filtre supprimé, les résultats par niveau pour la filiale (vraies données MEDACAP), le PIF pluriannuel puis une carte par année et les besoins par année. Sans donnée, la carte reste en construction. Le wording des collaborateurs a été revu.
+- **Prévention** : avant de livrer chaque écran migré, relire chaque libellé à la place de chaque profil et vérifier que chaque contrôle a un effet. Un test exige une phrase d'accueil distincte par rôle de consultation, dans les 3 langues (`RHHome.test.jsx`).
+- **Leçon généralisée** : une migration iso-fonctionnelle ne dispense pas de la relecture métier. Ce qu'on recopie, on le valide.
+- **Récidive** : oui, le même jour. Le premier correctif donnait une petite phrase d'orientation au lieu de la norme du hero DPS / centre / formateur (titre « au sein de votre filiale », grande phrase chiffrée du métier). Les cartes PIF étaient aussi décalées, à cause d'enveloppes différentes dans une même rangée. Contrôle renforcé :
+  - `ConsultationHeader.jsx` passe par `statsHero` / `PhraseChiffree`.
+  - Les tests exigent une phrase `consult_hero_<rôle>` distincte par rôle, dans les 3 langues, chiffrée avec l'extrait MEDACAP, et aucun chiffre sans donnée.
+  - Règle : tout nouveau hero de rôle part de celui du DPS.
+- **Near miss (même jour)** : pour « travaillant sur N marques », j'ai d'abord réutilisé `useDpsFilialeScope`. Ce hook ajoute toujours les marques du planning CMR de démo (`mergeCmrEquipmentPlanningSummary`), donc 8 marques inventées pour toute filiale. Le test l'a détecté (`marques: null` attendu). Correctif : `useMarquesFiliale` lit seulement `fetchDpsScope`, sinon null (« — »). Leçon : avant de réutiliser un hook de données, vérifier qu'il ne mêle pas de démo, et le prouver par un test « sans donnée → rien ».
+
+### 2026-11-18 — Cartes du directeur : sommes refaites dans le navigateur, puis une vue SQL proposée contre la consigne (near miss, cfao-planning)
+- **Contexte / symptôme** : les cartes Besoins et Devis appelaient le tableau global de chaque année et faisaient leurs sommes dans le navigateur. Pour corriger, j'ai d'abord proposé une vue SQL simple, qui refait le calcul à chaque lecture, alors que la consigne était « aucun calcul à l'affichage ».
+- **Cause racine** : j'ai raisonné « une requête au lieu de N », pas « où le calcul a lieu ». En plus, les besoins restaient en JSON brut, résolus (alias pays et marques) à chaque lecture.
+- **Correctif** : les besoins sont rangés en lignes résolues à la réception de la copie (`NeedsPole`, `NeedsLine`, `NeedsModuleLine`). Une table `planning_year_summary` est recalculée après le commit de toute écriture qui touche l'année, avec le calcul du tableau global (chiffres identiques par construction). `GET /years/summary` lit tel quel. Le rattrapage au démarrage (`sync_needs_snapshot`) écrit seulement ce qui manque. `check_year_summary` compare le stocké au calcul, en lecture seule.
+- **Prévention** : `test_year_summary.py` prouve que le résumé égale le tableau global, que l'endpoint ne lance aucun calcul (`global_table` piégé) et que le second démarrage n'écrit rien. En recette : `check_year_summary` OK sur 2026 et 2027.
+- **Leçon généralisée** : « pas de calcul à l'affichage » veut dire « calculé à l'écriture et stocké ». Une vue simple ne fait que déplacer le calcul. Toute donnée reçue brute (JSON) est ingérée en lignes dès sa réception.
 - **Récidive** : non

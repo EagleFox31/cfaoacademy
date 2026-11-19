@@ -32,9 +32,25 @@ function envoyer(req, res, fichier) {
   res.setHeader('Content-Type', MIME[path.extname(fichier).toLowerCase()] ?? 'application/octet-stream')
   res.setHeader('Cache-Control', 'no-cache')
   res.setHeader('Last-Modified', date)
+  res.setHeader('Accept-Ranges', 'bytes')
   if (req.headers['if-modified-since'] === date) {
     res.statusCode = 304
     return res.end()
+  }
+  // Requêtes partielles : sans elles, le navigateur ne peut pas avancer dans une vidéo.
+  const plage = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '')
+  if (plage && (plage[1] || plage[2])) {
+    const fin = plage[1] && plage[2] ? Math.min(Number(plage[2]), st.size - 1) : st.size - 1
+    const debut = plage[1] ? Number(plage[1]) : Math.max(0, st.size - Number(plage[2]))
+    if (debut > fin) {
+      res.statusCode = 416
+      res.setHeader('Content-Range', `bytes */${st.size}`)
+      return res.end()
+    }
+    res.statusCode = 206
+    res.setHeader('Content-Range', `bytes ${debut}-${fin}/${st.size}`)
+    res.setHeader('Content-Length', fin - debut + 1)
+    return fs.createReadStream(fichier, { start: debut, end: fin }).pipe(res)
   }
   res.setHeader('Content-Length', st.size)
   return fs.createReadStream(fichier).pipe(res)
@@ -85,9 +101,7 @@ function cataloguesFallbackPlugin() {
         const repoPath = path.join(repoCatalogues, rel)
         if (!fs.existsSync(repoPath) || !fs.statSync(repoPath).isFile()) return next()
 
-        const ext = path.extname(repoPath).toLowerCase()
-        res.setHeader('Content-Type', MIME[ext] ?? 'application/octet-stream')
-        fs.createReadStream(repoPath).pipe(res)
+        return envoyer(req, res, repoPath)
       })
     },
   }

@@ -198,6 +198,22 @@ export const api = {
   auditLogs: () => request('/audit/'),
 
   /**
+   * Comptes (filtrés par périmètre via query plan Cerbos). Retour paginé par
+   * curseur : { next, previous, results: [{ id, email, first_name, last_name,
+   * scope_paths, roles }] }. `cursor` = valeur de `next` (URL complète ou curseur).
+   */
+  users: (cursor) => request(`/users/${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
+
+  /** Catalogue des rôles : [{ code, description }]. Superadmin / admin groupe. */
+  systemRoles: () => request('/roles'),
+
+  /** Unités de l'organisation (groupe, filiales, sites) : [{ id, kind, code, name, path }], paginé. */
+  orgUnits: (cursor) => request(`/org/units/${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
+
+  /** Affectations d'un compte : [{ id, role, scope_unit, brands, active }]. */
+  userAssignments: (id) => request(`/users/${encodeURIComponent(id)}/assignments`),
+
+  /**
    * Scope équipe du chef d'équipe connecté (ou d'un username donné pour demo).
    * Retour : { subsidiary, agencyName, technicianCount, brandCount,
    *            members[], brandMatrix[], kpis{}, manager{} }
