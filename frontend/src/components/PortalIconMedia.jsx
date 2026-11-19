@@ -22,6 +22,14 @@ const ICONES = {
       <path d="M12 17h.01" />
     </>
   ),
+  // Tableau de présentation : un formateur et ses sessions.
+  formateur: (
+    <>
+      <path d="M2 3h20" />
+      <path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" />
+      <path d="m7 21 5-5 5 5" />
+    </>
+  ),
   // Liste à cocher : le recueil des besoins.
   besoins: (
     <>
@@ -31,6 +39,20 @@ const ICONES = {
       <path d="M12 16h4" />
       <path d="M8 11h.01" />
       <path d="M8 16h.01" />
+    </>
+  ),
+  // Livre ouvert : le catalogue des offres de formation.
+  offres: (
+    <>
+      <path d="M12 7v14" />
+      <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+    </>
+  ),
+  // Étiquette de prix : les tarifs.
+  tarif: (
+    <>
+      <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
+      <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
     </>
   ),
 }

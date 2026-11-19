@@ -21,7 +21,7 @@ import { reviewText } from './costKey/reviewText.js'
 import { versBesoins } from '../../utils/urlBesoins.js'
 import { BRANDS, STATS } from '../../data/index.js'
 import PortalIconMedia from '../../components/PortalIconMedia.jsx'
-import CenterDirectorSections, { PAYS_ACADEMY, paysAttendus, syntheseAnnee } from './CenterDirectorSections.jsx'
+import CenterDirectorSections, { PAYS_ACADEMY, SECTIONS_COORDINATEUR, anneeDuResume, paysAttendus } from './CenterDirectorSections.jsx'
 
 const ROUGE = '#E3001B'
 
@@ -37,36 +37,27 @@ const OUTILS = {
 
 const BIENTOT = {
   director: ['fill', 'sessions', 'trainers'],
-  coordinator: ['fill', 'sessions', 'convocations', 'trainers'],
   assistant: ['sessions', 'convocations', 'fill'],
 }
 
 const remplir = (texte, valeurs) =>
   Object.entries(valeurs).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, String(v)), texte)
 
-/** Taux de remplissage = places attribuées / places mises à disposition (null sans capacité saisie). */
-export function tauxRemplissage(places, offertes) {
-  if (!offertes) return null
-  return Math.round((places / offertes) * 100)
-}
-
 /**
- * La clé d'une année, tous pôles confondus : une seule carte par année.
- * Places et places offertes s'additionnent ; une filiale qui a répondu pour
- * Motors et pour Equipment ne compte qu'une fois (syntheseAnnee).
- * `g` : synthèse de l'année (/years/{année}/global), null si elle n'a pas pu être lue.
+ * La clé d'une année, tous pôles confondus : une seule carte par année. Les
+ * chiffres viennent tels quels du résumé serveur (/years/summary) ; `points` :
+ * points à traiter de l'année (/years/{année}/review-items).
  */
-export function etatAnnee(clesAnnee, g) {
-  const offres = clesAnnee.map(c => c.seats_offered).filter(v => v != null)
-  const synthese = g ? syntheseAnnee(g) : null
-  const toutesGelees = clesAnnee.length > 0 && clesAnnee.every(c => c.status === 'FROZEN')
+export function etatAnnee(ligne, points = []) {
+  const a = anneeDuResume(ligne)
   return {
-    statut: g?.status ?? (toutesGelees ? 'FROZEN' : 'DRAFT'),
-    places: g?.total_seats ?? 0,
-    offertes: offres.length ? offres.reduce((n, v) => n + v, 0) : null,
-    repondu: synthese?.repondu ?? 0,
-    connues: synthese?.connus ?? 0,
-    points: g?.review_items ?? [],
+    statut: a.statut,
+    places: a.places,
+    offertes: a.offertes,
+    taux: a.taux,
+    repondu: a.repondu,
+    connues: a.connus,
+    points,
   }
 }
 
@@ -95,15 +86,14 @@ function useEtatCle() {
     let actif = true
     ;(async () => {
       try {
-        const [access, cles] = await Promise.all([planningApi.access(), planningApi.keys()])
-        const liste = Array.isArray(cles) ? cles : cles?.results ?? []
-        if (!liste.length) {
+        const [access, { years = [] }] = await Promise.all([planningApi.access(), planningApi.yearSummary()])
+        if (!years.length) {
           if (actif) setEtat({ statut: 'vide', access, annee: null, cle: null })
           return
         }
-        const annee = Math.max(...liste.map(c => c.year))
-        const g = await planningApi.yearGlobal(annee).catch(() => null)
-        if (actif) setEtat({ statut: 'pret', access, annee, cle: etatAnnee(liste.filter(c => c.year === annee), g) })
+        const [derniere] = years // le serveur les range de la plus récente à la plus ancienne
+        const points = await planningApi.reviewItems(derniere.year).catch(() => [])
+        if (actif) setEtat({ statut: 'pret', access, annee: derniere.year, cle: etatAnnee(derniere, points) })
       } catch {
         if (actif) setEtat({ statut: 'erreur', access: null, annee: null, cle: null })
       }
@@ -144,6 +134,7 @@ export default function CenterHome({ mode = 'director' }) {
   usePortalHeaderHeight(headerRef)
 
   const directeur = mode === 'director'
+  const coordinateur = mode === 'coordinator'
   const { statut, access, annee, cle } = useEtatCle()
 
   if (!user) return null
@@ -167,7 +158,36 @@ export default function CenterHome({ mode = 'director' }) {
 
         {directeur && <CenterDirectorSections t={t} access={access} />}
 
-        {!directeur && (
+        {/* Coordinateur : les rubriques annuelles du directeur ; en tête des besoins,
+            le rapprochement de l'année et les corrections qu'il reste à faire. */}
+        {coordinateur && (
+          <CenterDirectorSections
+            t={t}
+            access={access}
+            sections={SECTIONS_COORDINATEUR}
+            corrections={statut === 'pret' && access?.review && (
+              <div className="portal-card-anchor">
+                <PvCard
+                  cardMedia={<PortalIconMedia icon="alerte" tone={aTraiter ? 'progress' : 'done'} />}
+                  kicker={
+                    <span className={`portal-status-chip ${aTraiter ? 'progress' : 'done'}`}>
+                      {aTraiter ? remplir(t.review_chip, { n: aTraiter }) : t.coord_corrections_ok}
+                    </span>
+                  }
+                  title={remplir(t.coord_corrections_card, { year: annee })}
+                  meta={aTraiter ? t.review_meta : t.review_empty}
+                  cta={t.cta_open}
+                  hoverHint={t.cta_open}
+                  accentColor={aTraiter ? ROUGE : undefined}
+                  to={lienCle('prepare', { annee })}
+                  corner
+                />
+              </div>
+            )}
+          />
+        )}
+
+        {!directeur && !coordinateur && (
           <>
             {/* ── 1. La clé de répartition : état et remplissage par pôle ── */}
             <PortalReveal id="cle">
@@ -188,7 +208,7 @@ export default function CenterHome({ mode = 'director' }) {
                 {statut === 'pret' && (
                   <PortalStaggerGrid>
                     {cle && (() => {
-                      const taux = tauxRemplissage(cle.places, cle.offertes)
+                      const taux = cle.taux
                       const gelee = cle.statut === 'FROZEN'
                       return (
                         <div className="portal-card-anchor">
