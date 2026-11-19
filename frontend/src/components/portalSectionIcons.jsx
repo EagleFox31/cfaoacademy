@@ -209,6 +209,26 @@ export function BellIcon(props) {
   )
 }
 
+/** Compte de la personne — silhouette. */
+export function UserIcon(props) {
+  return (
+    <IconBase {...props}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </IconBase>
+  )
+}
+
+/** Connexion et sécurité du compte — cadenas. */
+export function LockIcon(props) {
+  return (
+    <IconBase {...props}>
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </IconBase>
+  )
+}
+
 /** Technicien atelier — casque / outil. */
 export function TechnicianIcon(props) {
   return (

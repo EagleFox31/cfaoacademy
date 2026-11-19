@@ -7,23 +7,12 @@ import useNavScrollSpy from '../hooks/useNavScrollSpy.js'
 import useLocale from '../hooks/useLocale.js'
 import LocaleSwitch from './LocaleSwitch.jsx'
 import useAuth from '../hooks/useAuth.js'
-import { canSeePlanning, centreSeul } from '../utils/planningAccess.js'
 import { usePortalOnboarding } from '../context/PortalOnboardingContext.jsx'
 import PortalHelpMenu from './PortalHelpMenu.jsx'
 import PortalNotificationsBell from './PortalNotificationsBell.jsx'
-import { formatLearnerRoleBadge } from '../utils/portalPersona.js'
-import { resolveProfilePays } from '../utils/profileOrg.js'
-import { countryCodeFromName, flagCdnUrlForCountry } from '../utils/countryFlag.js'
-import { localizedCountryName } from '../utils/localizeGeo.js'
-import {
-  ChevronIcon,
-  PortalNavSectionIcon,
-  LogOutIcon,
-  MilestoneIcon,
-  LifeBuoyIcon,
-  GlobeIcon,
-} from './portalSectionIcons.jsx'
+import { PortalNavSectionIcon, LogOutIcon } from './portalSectionIcons.jsx'
 import ProfileAvatar from './ProfileAvatar.jsx'
+import UserMenu, { AccountBadges, UserMenuItems, useAccountSummary } from './UserMenu.jsx'
 
 function scrollToSection(hash) {
   if (!hash) {
@@ -39,150 +28,6 @@ function scrollToSection(hash) {
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-function UserMenu({ user, onLogout, t, onPortal = false }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-  const { locale } = useLocale()
-  const { t: heroT } = useLocale('hero')
-  const { t: publicsT } = useLocale('publics')
-
-  const primaryRole = getPrimaryRole(user.roles)
-  const baseRoleLabel = t[`role_${primaryRole}`] || primaryRole
-  const roleLabel = primaryRole === 'learner'
-    ? formatLearnerRoleBadge(baseRoleLabel, user, heroT, publicsT)
-    : baseRoleLabel
-  const pays = resolveProfilePays(user)
-  const paysLabel = pays
-    ? localizedCountryName(pays, locale, countryCodeFromName(pays))
-    : null
-  const flagUrl = pays ? flagCdnUrlForCountry(pays, 40) : null
-  const userEmail = user.email || (user.username ? `${user.username}@cfao.com` : '')
-  const isAdminOrSuper = ['superadmin', 'build_team', 'group_admin', 'group_hr'].some(r => user.roles?.includes(r))
-  const isLearner = user.roles?.includes('learner')
-
-  useEffect(() => {
-    function onClickOutside(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onClickOutside)
-    return () => document.removeEventListener('mousedown', onClickOutside)
-  }, [])
-
-  return (
-    <div className="nav-user-menu" ref={ref}>
-      <button
-        type="button"
-        className="nav-user-btn"
-        onClick={() => setOpen(v => !v)}
-        aria-expanded={open}
-        aria-haspopup="true"
-      >
-        <ProfileAvatar
-          person={user}
-          name={`${user.firstName} ${user.lastName}`}
-          className="nav-user-avatar"
-          imgClassName="nav-user-avatar-img"
-        />
-        <span className="nav-user-name">{user.firstName}</span>
-        <ChevronIcon open={open} className="nav-user-chevron" />
-      </button>
-
-      {open && (
-        <div className="nav-user-dropdown" role="menu">
-          <div className="nav-user-dropdown-head">
-            <span className="nav-user-dropdown-name">{user.firstName} {user.lastName}</span>
-            {userEmail && <span className="nav-user-dropdown-email">{userEmail}</span>}
-            <div className="nav-user-dropdown-meta">
-              <span className="nav-user-dropdown-role">{roleLabel}</span>
-              {flagUrl && paysLabel ? (
-                <span className="nav-user-dropdown-pays">
-                  <img
-                    src={flagUrl}
-                    srcSet={`${flagCdnUrlForCountry(pays, 80)} 2x`}
-                    alt=""
-                    className="nav-user-dropdown-flag"
-                    width={20}
-                    height={15}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <span>{paysLabel}</span>
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="nav-user-dropdown-section" role="group" aria-label="Espaces">
-            {isAdminOrSuper && (
-              <Link
-                to="/portail/delivery"
-                className="nav-user-dropdown-item"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                <MilestoneIcon size={16} className="nav-user-dropdown-item-icon" />
-                <span className="nav-user-dropdown-item-label">{t.nav_delivery_cockpit || 'Cockpit Projets & Delivery'}</span>
-                <span className="nav-user-dropdown-arrow">→</span>
-              </Link>
-            )}
-
-            {!centreSeul(user.roles ?? []) && (
-              <Link
-                to="/portail/assistance"
-                className="nav-user-dropdown-item"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                <LifeBuoyIcon size={16} className="nav-user-dropdown-item-icon" />
-                <span className="nav-user-dropdown-item-label">{t.nav_tech_assistance || 'Assistance technique'}</span>
-                <span className="nav-user-dropdown-arrow">→</span>
-              </Link>
-            )}
-
-            {canSeePlanning(user.roles ?? []) && (
-              <Link
-                to="/portail/cle-repartition"
-                className="nav-user-dropdown-item"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                <GlobeIcon size={16} className="nav-user-dropdown-item-icon" />
-                <span className="nav-user-dropdown-item-label">{t.nav_cost_key}</span>
-                <span className="nav-user-dropdown-arrow">→</span>
-              </Link>
-            )}
-
-            {(user.roles ?? []).includes('superadmin') && (
-              <Link
-                to="/portail/journal-erreurs"
-                className="nav-user-dropdown-item"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                <LifeBuoyIcon size={16} className="nav-user-dropdown-item-icon" />
-                <span className="nav-user-dropdown-item-label">{t.nav_error_log || 'Journal des erreurs'}</span>
-                <span className="nav-user-dropdown-arrow">→</span>
-              </Link>
-            )}
-          </div>
-
-          <div className="nav-user-dropdown-divider" />
-
-          <button
-            type="button"
-            className="nav-user-dropdown-item nav-user-dropdown-logout"
-            role="menuitem"
-            onClick={() => { setOpen(false); onLogout() }}
-          >
-            <LogOutIcon size={16} className="nav-user-dropdown-item-icon" />
-            <span className="nav-user-dropdown-item-label">{t.nav_logout || 'Se déconnecter'}</span>
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
 function NavLinkList({
   variant,
   onPortal,
@@ -195,6 +40,7 @@ function NavLinkList({
   handleNavClick,
   onItemActivate,
   appNav,
+  sectionHrefPrefix = '',
 }) {
   const listClass = [
     variant === 'mobile' ? 'nav-mobile-links' : 'nav-links',
@@ -249,7 +95,7 @@ function NavLinkList({
           return (
             <li key={s.key}>
               <a
-                href={`#${s.id}`}
+                href={`${sectionHrefPrefix}#${s.id}`}
                 className={[
                   itemClass(active),
                   variant === 'mobile' ? 'nav-mobile-link' : '',
@@ -304,6 +150,9 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
   const onHome    = pathname === '/'
   const onLogin   = pathname === '/login'
   const onPortal  = pathname.startsWith('/portail')
+  // Le profil fait partie de l'espace connecté : même navbar que le portail,
+  // ses onglets ramènent aux sections du portail.
+  const portalNav = onPortal || pathname === '/profil'
 
   const { user: authUser, login, logout } = useAuth()
   const user = propUser ?? authUser
@@ -353,6 +202,10 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
 
   const handlePortalNavClick = (section) => (e) => {
     e.preventDefault()
+    if (!onPortal) {
+      navigate(`/portail#${section.id}`)
+      return
+    }
     setActiveKey(section.key)
     scrollToSection(section.id)
     window.history.pushState(null, '', `#${section.id}`)
@@ -420,7 +273,8 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
     : undefined
 
   const linkListProps = {
-    onPortal,
+    onPortal: portalNav,
+    sectionHrefPrefix: onPortal ? '' : '/portail',
     user,
     portalSections,
     portalT,
@@ -431,26 +285,13 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
     appNav,
   }
 
-  const { t: heroT } = useLocale('hero')
-  const { t: publicsT } = useLocale('publics')
-
+  const account = useAccountSummary(user)
   const primaryRole = user ? getPrimaryRole(user.roles) : 'learner'
-  const baseRoleLabel = user ? (portalT[`role_${primaryRole}`] || primaryRole) : ''
-  const roleLabel = primaryRole === 'learner' && user
-    ? formatLearnerRoleBadge(baseRoleLabel, user, heroT, publicsT)
-    : baseRoleLabel
-  const pays = user ? resolveProfilePays(user) : null
-  const paysLabel = pays
-    ? localizedCountryName(pays, locale, countryCodeFromName(pays))
-    : null
-  const flagUrl = pays ? flagCdnUrlForCountry(pays, 40) : null
-  const userEmail = user?.email || (user?.username ? `${user.username}@cfao.com` : '')
-  const isAdminOrSuper = user ? ['superadmin', 'build_team', 'group_admin', 'group_hr'].some(r => user.roles?.includes(r)) : false
   const isDpsRole = user ? (['dps', 'dop'].includes(primaryRole) || Boolean(user.roles?.some(r => ['dps', 'dop'].includes(r)))) : false
 
   return (
     <nav
-      className={`nav${onHome ? ' nav--home' : ''}${onLogin ? ' nav--login' : ''}${onPortal ? ' nav--portal' : ''}${appNav ? ' nav--wide' : ''}${menuOpen ? ' nav--menu-open' : ''}`}
+      className={`nav${onHome ? ' nav--home' : ''}${onLogin ? ' nav--login' : ''}${portalNav ? ' nav--portal' : ''}${appNav ? ' nav--wide' : ''}${menuOpen ? ' nav--menu-open' : ''}`}
       aria-label={commonT.mainNavAria}
     >
       <div className="nav-shell">
@@ -483,14 +324,15 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
             onChange={setLocale}
             ariaLabel={commonT.langSwitchAria}
             className="locale-switch--nav"
-            portalMarker={onPortal}
+            // Connecté : la même navbar partout (langues en menu déroulant), portail ou non.
+            portalMarker={portalNav || Boolean(user)}
           />
 
-          {onPortal && user && notifications != null && (
+          {portalNav && user && notifications != null && (
             <PortalNotificationsBell t={portalT} alerts={notifications} />
           )}
 
-          {onPortal && user && !isDpsRole && !hideHelp && (
+          {portalNav && user && !isDpsRole && !hideHelp && (
             <PortalHelpMenu
               t={portalT}
               hasTour={hasTour}
@@ -501,7 +343,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
             />
           )}
 
-          {onPortal && user && (
+          {portalNav && user && (
             <>
               <span className="nav-actions-sep nav-actions-sep--account" aria-hidden="true" />
               <Link to="/#actualites" className="nav-cta nav-cta--ghost nav-home-btn">
@@ -510,7 +352,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
             </>
           )}
 
-          {!onPortal && user && (
+          {!portalNav && user && (
             <>
               <span className="nav-actions-sep" aria-hidden="true" />
               <Link to="/portail" className="nav-cta nav-cta--ghost nav-myspace-btn">
@@ -520,7 +362,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
           )}
 
           {user ? (
-            <UserMenu user={user} onLogout={handleLogout} t={portalT} onPortal={onPortal} />
+            <UserMenu user={user} onLogout={handleLogout} notifications={notifications} />
           ) : (
             <>
               <Link
@@ -561,27 +403,15 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
             <div className="nav-mobile-user-card">
               <ProfileAvatar
                 person={user}
-                name={`${user.firstName} ${user.lastName}`}
+                name={account.fullName}
                 className="nav-mobile-user-avatar"
                 imgClassName="nav-user-avatar-img"
               />
               <div className="nav-mobile-user-info">
-                <span className="nav-mobile-user-name">{user.firstName} {user.lastName}</span>
-                {userEmail && <span className="nav-mobile-user-email">{userEmail}</span>}
+                <span className="nav-mobile-user-name">{account.fullName}</span>
+                {account.email && <span className="nav-mobile-user-email">{account.email}</span>}
                 <div className="nav-mobile-user-badges">
-                  <span className="nav-user-dropdown-role">{roleLabel}</span>
-                  {flagUrl && paysLabel ? (
-                    <span className="nav-user-dropdown-pays">
-                      <img
-                        src={flagUrl}
-                        alt=""
-                        className="nav-user-dropdown-flag"
-                        width={18}
-                        height={13}
-                      />
-                      <span>{paysLabel}</span>
-                    </span>
-                  ) : null}
+                  <AccountBadges summary={account} />
                 </div>
               </div>
             </div>
@@ -594,7 +424,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
           />
 
           <div className="nav-mobile-foot">
-            {onPortal && user && notifications != null && (
+            {portalNav && user && notifications != null && (
               <PortalNotificationsBell
                 variant="mobile"
                 t={portalT}
@@ -602,7 +432,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
                 onMenuAction={closeMenu}
               />
             )}
-            {onPortal && user && !isDpsRole && !hideHelp && (
+            {portalNav && user && !isDpsRole && !hideHelp && (
               <PortalHelpMenu
                 variant="mobile"
                 t={portalT}
@@ -614,27 +444,25 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
                 onMenuAction={closeMenu}
               />
             )}
-            {onPortal && user && (
+            {portalNav && user && (
               <Link to="/#actualites" className="nav-mobile-foot-link" onClick={closeMenu}>
                 {portalT.nav_public_site || portalT.nav_home}
               </Link>
             )}
-            {onPortal && user && (
+            {portalNav && user && (
               <Link to="/#offres" className="nav-mobile-foot-link" onClick={closeMenu}>
                 {portalT.nav_training_catalog || 'Catalogue des formations'}
               </Link>
             )}
-            {onPortal && user && !centreSeul(user.roles ?? []) && (
-              <Link to="/portail/assistance" className="nav-mobile-foot-link" onClick={closeMenu}>
-                {portalT.nav_tech_assistance || 'Assistance technique'}
-              </Link>
+            {user && (
+              <UserMenuItems
+                user={user}
+                notifications={notifications}
+                onNavigate={closeMenu}
+                variant="mobile"
+              />
             )}
-            {onPortal && user && isAdminOrSuper && (
-              <Link to="/portail/delivery" className="nav-mobile-foot-link" onClick={closeMenu}>
-                {portalT.nav_delivery_cockpit || 'Cockpit Projets & Delivery'}
-              </Link>
-            )}
-            {!onPortal && user && (
+            {!portalNav && user && (
               <Link to="/portail" className="nav-mobile-foot-link" onClick={closeMenu}>
                 {portalT.nav_my_space} →
               </Link>

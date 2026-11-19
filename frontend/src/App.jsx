@@ -30,6 +30,7 @@ const KiTeamgpDetail = lazy(() => import('./pages/portal/KiTeamgpDetail.jsx'))
 const Delivery = lazy(() => import('./pages/portal/Delivery.jsx'))
 const MedacapLaunch = lazy(() => import('./pages/portal/MedacapLaunch.jsx'))
 const KIGeminiDashboard = lazy(() => import('./pages/portal/KI-Gemini/KIGeminiDashboard.jsx'))
+const AdminConsole = lazy(() => import('./pages/portal/admin/AdminConsole.jsx'))
 const SuperAdminBuilderDashboard = lazy(() => import('./pages/portal/SuperAdminBuilderDashboard.jsx'))
 const MedacapProfilePreview = lazy(() => import('./pages/portal/MedacapProfilePreview.jsx'))
 const HelpCenterPreview = lazy(() => import('./help/pages/HelpCenterPreview.jsx'))
@@ -45,6 +46,7 @@ const Contact = lazy(() => import('./pages/Contact.jsx'))
 const MentionsLegales = lazy(() => import('./pages/MentionsLegales.jsx'))
 const Confidentialite = lazy(() => import('./pages/Confidentialite.jsx'))
 const APropos = lazy(() => import('./pages/APropos.jsx'))
+const Profil = lazy(() => import('./pages/Profil.jsx'))
 
 // Chacun ne voit, dans l'annonce, que les changements qui le concernent.
 function AnnonceSelonRole() {
@@ -79,6 +81,7 @@ export default function App() {
           <Route path="/mentions-legales" element={<MentionsLegales />} />
           <Route path="/confidentialite" element={<Confidentialite />} />
           <Route path="/a-propos" element={<APropos />} />
+          <Route path="/profil" element={<Profil />} />
           <Route path="/portail/competences/:brandId" element={<DpsBrandCompetencyDetail />} />
           <Route path="/portail/niveaux/:tierId" element={<DpsTierCompetencyDetail />} />
           <Route path="/portail/teamgp" element={<KiTeamgpDetail />} />
@@ -92,6 +95,8 @@ export default function App() {
           <Route path="/portail/medacap-launch" element={<MedacapLaunch />} />
           <Route path="/portail/ki-gemini" element={<KIGeminiDashboard />} />
           <Route path="/portail/admin/builder" element={<SuperAdminBuilderDashboard />} />
+          <Route path="/portail/admin" element={<AdminConsole />} />
+          <Route path="/portail/admin/:module" element={<AdminConsole />} />
           <Route path="/portail/preview/:profileKey" element={<MedacapProfilePreview />} />
           <Route path="/portail/aide" element={<HelpCenterPreview />} />
           <Route path="/portail/formateur" element={<TrainerHome />} />

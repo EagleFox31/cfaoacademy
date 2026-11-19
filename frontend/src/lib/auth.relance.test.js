@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { CALLBACK_INVALID, handleCallback, relancerConnexionUneFois } from './auth'
+import { CALLBACK_INVALID, changePassword, consumeAuthReturnPath, handleCallback, relancerConnexionUneFois } from './auth'
 
 describe('retour Keycloak dont le state ne correspond plus', () => {
   let assign
@@ -31,6 +31,19 @@ describe('retour Keycloak dont le state ne correspond plus', () => {
     expect(assign.mock.calls[0][0]).toContain('/protocol/openid-connect/auth?')
     expect(relancerConnexionUneFois()).toBe(false)
     expect(assign).toHaveBeenCalledTimes(1)
+  })
+
+  it('changer son mot de passe ouvre l’écran Keycloak dédié, puis revient sur le profil', async () => {
+    await changePassword('/profil')
+    expect(assign).toHaveBeenCalledTimes(1)
+    const url = new URL(assign.mock.calls[0][0], 'http://localhost')
+    expect(url.searchParams.get('kc_action')).toBe('UPDATE_PASSWORD')
+    expect(consumeAuthReturnPath()).toBe('/profil')
+  })
+
+  it('un retour hors du site est ignoré', async () => {
+    await changePassword('//ailleurs.example')
+    expect(consumeAuthReturnPath()).toBe('/')
   })
 
   it('autorise une nouvelle relance passé deux minutes', () => {

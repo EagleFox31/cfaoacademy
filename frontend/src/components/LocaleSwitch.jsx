@@ -3,7 +3,7 @@ import { LOCALES } from '../i18n/index.js'
 import { flagCdnUrl } from '../utils/sessionLieuFlag.js'
 import { ChevronIcon } from './portalSectionIcons.jsx'
 
-const LOCALE_META = {
+export const LOCALE_META = {
   fr: { flag: 'fr', label: 'Français' },
   en: { flag: 'gb', label: 'English' },
   pt: { flag: 'pt', label: 'Português' },
@@ -90,7 +90,7 @@ function CollapsedLocaleSwitch({ locale, onChange, ariaLabel, className }) {
   )
 }
 
-export default function LocaleSwitch({ locale, onChange, ariaLabel, className = '', portalMarker = false }) {
+export default function LocaleSwitch({ locale, onChange, ariaLabel, className = '', portalMarker = false, withLabels = false }) {
   if (portalMarker) {
     return (
       <CollapsedLocaleSwitch
@@ -122,6 +122,7 @@ export default function LocaleSwitch({ locale, onChange, ariaLabel, className = 
             title={meta.label}
           >
             <Flag flag={meta.flag} />
+            {withLabels ? <span className="locale-switch-label">{meta.label}</span> : null}
           </button>
         )
       })}

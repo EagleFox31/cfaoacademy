@@ -137,7 +137,7 @@ function storeSession(payload) {
 
 // ── Login flows ────────────────────────────────────────────────────────────────
 
-export async function login() {
+export async function login({ action } = {}) {
   const verifier = randomString()
   const state = randomString(16)
   sessionStorage.setItem(VERIFIER_KEY, verifier)
@@ -152,7 +152,26 @@ export async function login() {
     code_challenge: await challengeFrom(verifier),
     code_challenge_method: 'S256',
   })
+  // Action demandée par l'application (ex. UPDATE_PASSWORD) : Keycloak ouvre
+  // directement l'écran correspondant, puis revient sur /callback.
+  if (action) params.set('kc_action', action)
   window.location.assign(`${ISSUER}/protocol/openid-connect/auth?${params}`)
+}
+
+/**
+ * Changer son mot de passe : l'écran sécurisé de Keycloak s'ouvre, puis on
+ * revient sur `returnTo` (la page Profil). Le mot de passe ne transite jamais
+ * par le portail.
+ */
+export function changePassword(returnTo) {
+  try {
+    if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+      sessionStorage.setItem(RETURN_KEY, returnTo)
+    }
+  } catch {
+    /* private mode */
+  }
+  return login({ action: 'UPDATE_PASSWORD' })
 }
 
 /**
