@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import smtplib
+import ssl
 from email.message import EmailMessage
 from email.policy import SMTP
 from typing import Protocol
@@ -71,7 +72,9 @@ class SmtpBackend:
         )
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=settings.SMTP_TIMEOUT) as client:
             if settings.SMTP_USE_TLS:
-                client.starttls()
+                # Contexte par défaut : certificat et nom d'hôte vérifiés.
+                # Sans contexte, smtplib chiffre sans authentifier le serveur.
+                client.starttls(context=ssl.create_default_context())
             if settings.SMTP_USERNAME:
                 client.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD or "")
             client.send_message(message)
