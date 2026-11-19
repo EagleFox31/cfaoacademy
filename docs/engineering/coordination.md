@@ -13,6 +13,8 @@ Plusieurs sessions travaillent en même temps sur ce dépôt. Cette règle évit
 - Pas de « c'est fait » sans sortie de test ou capture.
 
 ## 3. Builds : un à la fois, seulement ce qui a changé
+**Accord préalable de la session `manitou`** pour toute image versionnée (`build_image.py`) et tout geste sur le serveur : on lui écrit l'image et le motif, elle répond « go » ou « attends » en citant le travail qui finit bientôt, pour le grouper dans le même build. Sans réponse au bout de 10 minutes, on construit. Une reconstruction locale en recette (aucune version publiée) ne demande que le verrou et un message d'information. Une correction urgente passe hors procédure, avec le verrou et un message après coup.
+
 1. `python scripts/coord.py impact` : liste les images touchées. On ne reconstruit que celles-là.
 2. `python scripts/coord.py lock build:<image> --who <session> --why <motif>`. Si c'est occupé, on attend : pas de build en parallèle sur la même image.
 3. Build (`scripts/build_image.py ... --who <session>` pour une image versionnée), puis `unlock`. Le script refuse de construire sans ce verrou (ou si une autre session le tient) ; `--dry-run` n'en a pas besoin.
