@@ -67,6 +67,7 @@ services:
       IMPORT_FILES_LOCATIONS: /opt/cfao-realm/*.yaml,/fixtures/*.yaml
       IMPORT_VARSUBSTITUTION_ENABLED: "true"
       CFAO_PORTAL_SECRET: smoke-portal-secret
+      CFAO_SUPERVISION_COLLECTOR_SECRET: smoke-supervision-collector-secret
       CFAO_SPA_ENABLED: "false"
     volumes: ["./fixtures:/fixtures:ro"]
 
@@ -80,9 +81,11 @@ services:
     image: cfao-academy-mail:hub-smoke
     environment: *hub_env
     command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_email_templates && python manage.py ensure_mail_schedules"]
+    restart: "no"
     depends_on: { mail-db: { condition: service_healthy } }
 
   mail-api:
+    build: ../../cfao-academy-mail
     image: cfao-academy-mail:hub-smoke
     environment: *hub_env
     depends_on:
@@ -95,7 +98,10 @@ services:
       retries: 20
 
   mail-worker:
+    build: ../../cfao-academy-mail
     image: cfao-academy-mail:hub-smoke
     environment: *hub_env
     command: ["python", "manage.py", "qcluster"]
-    depends_on: { mail-api: { condition: service_healthy } }
+    depends_on:
+      mail-migrate: { condition: service_completed_successfully }
+      mail-api: { condition: service_healthy }

@@ -71,6 +71,20 @@ users:
     credentials:
       - { type: password, value: demo, temporary: false }
 
+  - username: exploitant
+    id: "11111111-1111-1111-1111-000000000099"
+    enabled: true
+    emailVerified: true
+    email: exploitant@cfao.example
+    firstName: Exploitant
+    lastName: Plateforme
+    realmRoles: [platform_ops]
+    attributes:
+      scopeNode: ["groupe"]
+      orgPath: ["groupe"]
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
   - username: admin.groupe
     id: "11111111-1111-1111-1111-000000000005"
     enabled: true

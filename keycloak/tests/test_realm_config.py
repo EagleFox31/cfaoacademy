@@ -17,13 +17,14 @@ DEMO = RACINE / "keycloak" / "config" / "dev" / "cfao-demo-users.yaml"
 POLICIES = RACINE / "cerbos" / "policies"
 CATALOGUE = RACINE / "cfao-core" / "identity" / "roles.py"
 
-API = ("core", "needs", "cr", "planning", "operations")
+API = ("core", "needs", "cr", "planning", "operations", "supervision")
 SESSION_MAX = 8 * 3600
 INACTIVITE_MAX = 30 * 60  # ASVS niveau 2, 3.3.2
 # Scopes fournis par Keycloak lui-même (non déclarés dans le fichier).
 SCOPES_NATIFS = {"basic", "web-origins", "profile", "roles", "email", "acr", "address", "phone",
                  "offline_access", "microprofile-jwt", "organization"}
-_API_PORTAIL = {"cfao-core-api", "cfao-cr-api", "cfao-planning-api", "cfao-operations-api"}
+_API_PORTAIL = {"cfao-core-api", "cfao-cr-api", "cfao-planning-api", "cfao-operations-api",
+                "cfao-supervision-api"}
 SUBSTITUTION = re.compile(r"^\$\(env:[A-Z0-9_]+(:-.*)?\)$")
 
 
@@ -148,6 +149,7 @@ def test_scopes_par_defaut_declares(realm):
 @pytest.mark.parametrize("client_id, attendues", [
     ("cfao-portal", _API_PORTAIL),
     ("cfao-spa", _API_PORTAIL),
+    ("cfao-portail-web", _API_PORTAIL),
     ("cfao-needs-web", {"cfao-needs-api"}),
 ])
 def test_audiences_par_client(realm, client_id, attendues):
@@ -167,9 +169,11 @@ def test_aucun_secret_litteral(realm):
     for client in realm["clients"]:
         if "secret" in client:
             assert SUBSTITUTION.match(client["secret"]), client["clientId"]
+            # Un défaut écrit ici partirait en prod si la variable manquait.
+            assert ":-" not in client["secret"], client["clientId"]
 
 
-@pytest.mark.parametrize("client_id", ["cfao-portal", "cfao-needs-web"])
+@pytest.mark.parametrize("client_id", ["cfao-portal", "cfao-needs-web", "cfao-portail-web"])
 def test_hotes_des_clients_de_prod_fournis_par_l_environnement(realm, client_id):
     # Aucun hôte codé : la même image sert dev, LAN, zrok ou un futur domaine.
     client = _clients(realm)[client_id]
@@ -183,8 +187,32 @@ def test_spa_de_dev_desactivable(realm):
 
 def test_realm_de_prod_sans_aucun_compte(realm):
     # Les comptes de démo (mot de passe « demo ») ne doivent jamais atteindre la prod.
-    assert "users" not in realm
+    # Seuls des comptes de service y figurent : rattachés à un client, sans mot de passe
+    # ni rôle de realm.
+    for u in realm.get("users", []):
+        assert u["username"] == f"service-account-{u['serviceAccountClientId']}", u["username"]
+        assert not ({"credentials", "realmRoles", "email"} & set(u)), u["username"]
     assert "credentials" not in REALM.read_text(encoding="utf-8")
+
+
+def test_compte_de_service_supervision_droits_minimaux(realm):
+    (compte,) = [u for u in realm["users"] if u["serviceAccountClientId"] == "cfao-supervision-collector"]
+    assert compte["clientRoles"] == {"realm-management": ["view-events"]}
+
+
+def test_collecteur_sans_flux_utilisateur(realm):
+    c = _clients(realm)["cfao-supervision-collector"]
+    assert c["serviceAccountsEnabled"] is True and c["publicClient"] is False
+    for flux in ("standardFlowEnabled", "implicitFlowEnabled", "directAccessGrantsEnabled"):
+        assert c[flux] is False, flux
+    assert c["defaultClientScopes"] == ["basic"]
+
+
+def test_evenements_de_connexion_seuls_et_courts(realm):
+    assert realm["eventsEnabled"] is True
+    assert realm["enabledEventTypes"] == ["LOGIN"]
+    assert realm["eventsExpiration"] <= 7 * 24 * 3600
+    assert realm["adminEventsEnabled"] is False
 
 
 def test_comptes_de_demo_isoles_dans_dev(realm):
@@ -220,7 +248,9 @@ def test_compose_de_prod_sans_secret_par_defaut():
                      ("keycloak", "KC_HOSTNAME_ADMIN"),
                      ("keycloak", "KC_SPI_AUTHENTICATOR__CFAO_PASSWORD_OR_EMAIL_FORM__CODE_PEPPER"),
                      ("config","KEYCLOAK_PASSWORD"), ("config", "CFAO_PORTAL_SECRET"),
-                     ("config", "CFAO_PORTAL_REDIRECT_URIS"), ("config", "CFAO_NEEDS_REDIRECT_URIS")):
+                     ("config", "CFAO_PORTAL_REDIRECT_URIS"), ("config", "CFAO_NEEDS_REDIRECT_URIS"),
+                     ("config", "CFAO_PORTAIL_WEB_REDIRECT_URIS"),
+                     ("config", "CFAO_SUPERVISION_COLLECTOR_SECRET")):
         assert re.fullmatch(r"\$\{[A-Z_]+:\?.+\}", services[nom]["environment"][cle]), f"{nom}.{cle}"
     # Émetteur canonique, chemin réseau des modules libre.
     assert services["keycloak"]["environment"]["KC_HOSTNAME_BACKCHANNEL_DYNAMIC"] == "true"

@@ -74,6 +74,7 @@ services:
       # En prod, les secrets (client BFF, IdP) viennent de l'environnement (Key Vault).
       IMPORT_VARSUBSTITUTION_ENABLED: "true"
       CFAO_PORTAL_SECRET: ${OAUTH2_PROXY_CLIENT_SECRET:-dev-portal-secret}
+      CFAO_SUPERVISION_COLLECTOR_SECRET: ${CFAO_SUPERVISION_COLLECTOR_SECRET:-dev-supervision-collector-secret}
       CFAO_SPA_ENABLED: ${CFAO_SPA_ENABLED:-true}
     volumes:
       - ./keycloak/config:/config:ro

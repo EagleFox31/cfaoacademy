@@ -93,6 +93,7 @@ services:
       IMPORT_VARSUBSTITUTION_ENABLED: "true"
       IMPORT_CACHE_ENABLED: "true"
       CFAO_PORTAL_SECRET: dev-portal-secret
+      CFAO_SUPERVISION_COLLECTOR_SECRET: dev-supervision-collector-secret
       CFAO_SPA_ENABLED: "true"
     volumes:
       - ../keycloak/config:/config:ro

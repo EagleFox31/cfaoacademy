@@ -25,6 +25,7 @@ ROLE_CATALOG = [
     {"code": "group_hr", "description": "RH Groupe"},
     {"code": "superadmin", "description": "Super Admin"},
     {"code": "build_team", "description": "Équipe build (app 15)"},
+    {"code": "platform_ops", "description": "Exploitant de la plateforme (supervision technique)"},
     {"code": "candidate", "description": "Candidat"},
     {"code": "b2b_partner", "description": "Partenaire B2B"},
 ]
