@@ -7,6 +7,7 @@ la file (architecture.md §7).
 from __future__ import annotations
 
 import smtplib
+import ssl
 from email.message import EmailMessage
 from typing import Protocol
 
@@ -49,7 +50,9 @@ class SmtpBackend:
 
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as client:
             if settings.SMTP_USE_TLS:
-                client.starttls()
+                # Contexte par défaut : certificat et nom d'hôte vérifiés.
+                # Sans contexte, smtplib chiffre sans authentifier le serveur.
+                client.starttls(context=ssl.create_default_context())
             client.send_message(message)
 
 
