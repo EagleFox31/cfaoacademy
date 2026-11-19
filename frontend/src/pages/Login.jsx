@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import FormAlert, { FormFieldError } from '../components/FormAlert.jsx'
 import PageCloseButton from '../components/PageCloseButton.jsx'
@@ -10,7 +10,7 @@ import useSiteEffects from '../hooks/useSiteEffects.js'
 import useAuthForm from '../hooks/useAuthForm.js'
 import useLocale from '../hooks/useLocale.js'
 import useAuth from '../hooks/useAuth.js'
-import { connexionKeycloakSeule } from '../lib/auth.js'
+import { connexionKeycloakSeule, consumeAuthReturnPath, memoriserRetour } from '../lib/auth.js'
 
 const LOGIN_BG = '/assets/hero/default.jpg'
 
@@ -71,9 +71,21 @@ export default function Login() {
   const { locale, t } = useLocale('login')
   const { login, connexion, connexionSso, oidc, profiles } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = location.state?.from
+  const pageDemandee = from?.pathname ? `${from.pathname}${from.search || ''}${from.hash || ''}` : null
+  // Retenue avant tout départ vers Keycloak : /callback la rouvrira.
+  useEffect(() => {
+    memoriserRetour(pageDemandee)
+  }, [pageDemandee])
+  /** Page demandée avant la connexion, sinon l'accueil du portail. */
+  function allerApresConnexion() {
+    const cible = consumeAuthReturnPath()
+    navigate(cible === '/' ? '/portail' : cible)
+  }
   const auth = useAuthForm(locale, async (identifiant, motDePasse, seSouvenir) => {
     const refus = await connexion(identifiant, motDePasse, seSouvenir)
-    if (!refus) navigate('/portail')
+    if (!refus) allerApresConnexion()
     return refus
   })
   const [demoOpen, setDemoOpen] = useState(() => {
@@ -95,7 +107,7 @@ export default function Login() {
     login(profileId)
     setDemoOpen(false)
     // Chaque rôle a son portail : build_team arrive sur le Super Admin, qui ouvre le Delivery.
-    navigate('/portail')
+    allerApresConnexion()
   }
 
   // Keycloak peut mettre plusieurs secondes à répondre : le loader du portail

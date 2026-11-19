@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import VersConnexion from '../../components/VersConnexion.jsx'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import PortalDemoBar from '../../components/PortalDemoBar'
@@ -58,7 +59,7 @@ export default function Assistance() {
   }, [lms, user])
 
   if (status === "loading") return null
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <VersConnexion />
 
   return (
     <>

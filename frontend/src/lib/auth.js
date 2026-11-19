@@ -490,19 +490,33 @@ export function reauthenticate(returnTo) {
   if (reauthInFlight) return
   reauthInFlight = true
 
-  const path =
+  memoriserRetour(
     returnTo ??
-    `${window.location.pathname}${window.location.search}${window.location.hash}`
+      `${window.location.pathname}${window.location.search}${window.location.hash}`,
+  )
+  clearLocalSession()
+  login()
+}
+
+/**
+ * Page à rouvrir après la connexion (lien profond). Seuls les chemins internes
+ * sont retenus : ni `/`, ni `/callback`, ni `/login`, ni une URL d'un autre site.
+ */
+export function memoriserRetour(path) {
   try {
-    if (path && path !== '/' && !path.startsWith('/callback')) {
+    if (
+      path &&
+      path.startsWith('/') &&
+      !path.startsWith('//') &&
+      path !== '/' &&
+      !path.startsWith('/callback') &&
+      !path.startsWith('/login')
+    ) {
       sessionStorage.setItem(RETURN_KEY, path)
     }
   } catch {
     /* private mode */
   }
-
-  clearLocalSession()
-  login()
 }
 
 export function consumeAuthReturnPath() {

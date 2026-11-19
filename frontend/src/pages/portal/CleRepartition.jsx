@@ -8,7 +8,8 @@
  * L'état est dans l'URL (vue, clé, mode, pays) : un lien copié rouvre le même écran.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import VersConnexion from '../../components/VersConnexion.jsx'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import PortalDemoBar from '../../components/PortalDemoBar'
@@ -157,7 +158,7 @@ export default function CleRepartition() {
     if (key?.id) setParams({ cle: null, annee: key.year, pole: key.pole })
   }
 
-  if (authStatus !== 'loading' && !user) return <Navigate to="/login" replace />
+  if (authStatus !== 'loading' && !user) return <VersConnexion />
 
   // Lecteur (ni préparation, ni import, ni gel) : écran réduit à l'essentiel.
   const simple = !(boot.access?.manage || boot.access?.import || boot.access?.freeze)

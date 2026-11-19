@@ -43,6 +43,7 @@ services:
       GATEWAY_SERVICE: http://host.docker.internal:8000
       KEYCLOAK_SERVICE: http://host.docker.internal:8080
       PLANNING_SERVICE: http://host.docker.internal:8005
+      SUPERVISION_SERVICE: http://host.docker.internal:8007
       CR_SERVICE: http://host.docker.internal:5175
       MEDACAP_SERVICE: http://host.docker.internal
     extra_hosts:

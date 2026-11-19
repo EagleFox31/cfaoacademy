@@ -10,18 +10,20 @@ import { localizedCountryName } from '../utils/localizeGeo.js'
 import { NotificationItems } from './PortalNotificationsBell.jsx'
 import ProfileAvatar from './ProfileAvatar.jsx'
 import {
-  BellIcon, ChevronIcon, GlobeIcon, LifeBuoyIcon, LogOutIcon, MilestoneIcon, UserIcon,
+  ActivityIcon, BellIcon, ChevronIcon, GlobeIcon, LifeBuoyIcon, LogOutIcon, MilestoneIcon, UserIcon,
 } from './portalSectionIcons.jsx'
 
-const ICONS = { user: UserIcon, bell: BellIcon, lifebuoy: LifeBuoyIcon, milestone: MilestoneIcon, globe: GlobeIcon }
+const ICONS = {
+  user: UserIcon, bell: BellIcon, lifebuoy: LifeBuoyIcon, milestone: MilestoneIcon, globe: GlobeIcon, activity: ActivityIcon,
+}
 
 /**
  * Ce qu'on affiche du compte : nom, e-mail, fonction, pays et drapeau. Repris par
  * le menu du compte, la carte du menu mobile et la page Profil.
- */
-export function useAccountSummary(user, paysConnu = null) {
  * `paysConnu` : pays tiré d'une source qui fait foi (ex. fiche formateur du
  * planning), prioritaire sur celui du compte.
+ */
+export function useAccountSummary(user, paysConnu = null) {
   const { locale, t } = useLocale('portal')
   const { t: heroT } = useLocale('hero')
   const { t: publicsT } = useLocale('publics')

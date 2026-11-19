@@ -238,6 +238,10 @@
   border-top: 3px solid var(--dlv-navy);
 }
 .dlv-node.crit { border-top-color: var(--dlv-red); }
+/* Carte cliquable (supervision : un module ouvre sa fiche). */
+a.dlv-node--link { text-decoration: none; color: inherit; transition: border-color 0.15s; }
+a.dlv-node--link:hover, a.dlv-node--link:focus-visible { border-color: var(--dlv-navy); }
+.dlv-changelog { white-space: pre-wrap; color: var(--dlv-navy); }
 .dlv-node-head { display: flex; align-items: center; gap: 10px; }
 .dlv-node-id {
   width: 34px; height: 34px; flex: none; border-radius: 9px;
@@ -344,6 +348,7 @@
 .dlv-status.in_progress { background: #e9edff; color: #2a3b9e; }
 .dlv-status.done { background: #e2f6ea; color: var(--dlv-green); }
 .dlv-status.blocked { background: #ffe3e6; color: var(--dlv-red); }
+.dlv-status.warn { background: #fff3cc; color: #996600; }
 
 /* ── Tables (gate matrix, events) ────────────────── */
 .dlv-table { width: 100%; border-collapse: collapse; font-size: 12.5px; background: var(--dlv-panel); border: 1px solid var(--dlv-rule); border-radius: var(--dlv-radius); overflow: hidden; }

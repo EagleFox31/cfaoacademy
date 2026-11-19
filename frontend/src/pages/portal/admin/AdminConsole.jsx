@@ -1,4 +1,5 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
+import VersConnexion from '../../../components/VersConnexion.jsx'
 import AppShell from '../../../components/app/AppShell'
 import LocaleSwitch from '../../../components/LocaleSwitch'
 import useSiteEffects from '../../../hooks/useSiteEffects'
@@ -49,7 +50,7 @@ export default function AdminConsole() {
   const units = useAdminResource(() => (allowed ? fetchAllPages(api.orgUnits) : Promise.resolve([])), [allowed])
 
   if (status === 'loading') return null
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <VersConnexion />
   if (!allowed) return <Navigate to="/portail" replace />
   if (!ADMIN_MODULE_IDS.includes(module)) return <Navigate to={adminPath()} replace />
 

@@ -198,6 +198,10 @@ export default defineConfig(({ mode }) => ({
         target: process.env.PLANNING_SERVICE || 'http://localhost:8005',
         changeOrigin: true,
       },
+      '/api/v1/supervision': {
+        target: process.env.SUPERVISION_SERVICE || 'http://localhost:8007',
+        changeOrigin: true,
+      },
       '/api/v1': {
         target: process.env.GATEWAY_SERVICE || 'http://localhost:8000',
         changeOrigin: true,

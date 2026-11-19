@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
+import VersConnexion from '../../components/VersConnexion.jsx'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import PortalDemoBar from '../../components/PortalDemoBar'
@@ -70,7 +71,7 @@ export default function DpsBrandCompetencyDetail() {
   useBrandDetailEntrance(shellRef, originRect, ready)
 
   if (status === "loading") return null
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <VersConnexion />
   if (!access.allowed) return <Navigate to="/portail" replace />
   if (!scopeLoading && lms && !brandItem) {
     return <Navigate to={`/portail#${listHash}`} replace />
