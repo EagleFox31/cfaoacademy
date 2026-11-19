@@ -21,7 +21,8 @@ import { reviewText } from './costKey/reviewText.js'
 import { versBesoins } from '../../utils/urlBesoins.js'
 import { BRANDS, STATS } from '../../data/index.js'
 import PortalIconMedia from '../../components/PortalIconMedia.jsx'
-import CenterDirectorSections, { PAYS_ACADEMY, SECTIONS_COORDINATEUR, anneeDuResume, paysAttendus } from './CenterDirectorSections.jsx'
+import PortalHeroKpis from '../../components/PortalHeroKpis.jsx'
+import CenterDirectorSections, { GRILLE_RAIL, PAYS_ACADEMY, SECTIONS_COORDINATEUR, anneeDuResume, paysAttendus, statutBesoins } from './CenterDirectorSections.jsx'
 
 const ROUGE = '#E3001B'
 
@@ -104,6 +105,32 @@ function useEtatCle() {
   return etat
 }
 
+/** Chiffres cliquables du hero du coordinateur : une rubrique de sa page chacun. */
+export const KPIS_COORDINATEUR = [
+  { id: 'a-relancer', valeur: 'aRelancer', label: 'hero_kpi_relance', cible: 'besoins' },
+  { id: 'a-corriger', valeur: 'aCorriger', label: 'hero_kpi_corriger', cible: 'devis' },
+  { id: 'rapprochees', valeur: 'rapprochees', label: 'hero_kpi_rapprochees', cible: 'calendrier' },
+  { id: 'rapports', valeur: 'rapportsAttendus', label: 'hero_kpi_rapports', cible: 'rapports' },
+]
+
+/**
+ * Valeurs de ces chiffres, depuis la clé de la dernière année. Filiales à
+ * relancer : seulement pendant le recueil (clos, il n'y a plus personne à
+ * relancer). Sessions rapprochées et rapports : pas encore de source (« — »).
+ */
+export function chiffresCoordinateur({ statut, access, annee, cle }) {
+  const sans = { aRelancer: null, aCorriger: null, rapprochees: null, rapportsAttendus: null }
+  if (statut !== 'pret' || !cle) return sans
+  const gelee = cle.statut === 'FROZEN'
+  const attendus = paysAttendus({ annee, gelee }, { connus: cle.connues })
+  const recueil = statutBesoins({ annee, gelee, repondu: cle.repondu, connus: attendus })
+  return {
+    ...sans,
+    aRelancer: recueil.chip === 'progress' ? Math.max(0, attendus - cle.repondu) : 0,
+    aCorriger: access?.review ? cle.points.length : null,
+  }
+}
+
 /**
  * Chiffres du hero : le périmètre de l'Academy. Les pays sont ceux de la carte
  * de la page d'accueil (même source, pas un second chiffre) ; les marques sont
@@ -135,7 +162,8 @@ export default function CenterHome({ mode = 'director' }) {
 
   const directeur = mode === 'director'
   const coordinateur = mode === 'coordinator'
-  const { statut, access, annee, cle } = useEtatCle()
+  const etatCle = useEtatCle()
+  const { statut, access, annee, cle } = etatCle
 
   if (!user) return null
 
@@ -153,7 +181,10 @@ export default function CenterHome({ mode = 'director' }) {
       <Nav notifications={notifications} hideHelp />
       <main className="portal-page">
         <div ref={headerRef}>
-          <PortalHeader user={user} centerHero={chiffresHero({ mode })} />
+          <PortalHeader user={user} centerHero={chiffresHero({ mode })}
+            belowGreeting={coordinateur
+              ? <PortalHeroKpis kpis={KPIS_COORDINATEUR} t={t} values={chiffresCoordinateur(etatCle)} grille={GRILLE_RAIL} />
+              : null} />
         </div>
 
         {directeur && <CenterDirectorSections t={t} access={access} />}

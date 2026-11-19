@@ -150,6 +150,8 @@ export default function PortalHeader({
   managerHeroCard,
   centerHero,
   statsHero,
+  // Bloc posé sous la phrase d'accueil (ex. chiffres cliquables d'un rôle).
+  belowGreeting = null,
 }) {
   const { t } = useLocale('portal')
   const { t: heroT } = useLocale('hero')
@@ -329,6 +331,7 @@ export default function PortalHeader({
       <PortalHeroShell aside={aside} className={heroClassName}>
         <div className="portal-header-role-line">{roleBadge}</div>
         {greetingBlock}
+        {belowGreeting}
         {brandsBand}
       </PortalHeroShell>
     )
@@ -339,6 +342,7 @@ export default function PortalHeader({
       <div className="portal-header-main">
         <div className="page-header-eyebrow portal-header-eyebrow">{roleBadge}</div>
         {greetingBlock}
+        {belowGreeting}
         {brandsBand}
       </div>
     </PortalHeroShell>

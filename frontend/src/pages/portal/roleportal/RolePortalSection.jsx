@@ -29,6 +29,8 @@ export default function RolePortalSection({ config, section, env, texte, values,
   const construction = section.kind === 'construction'
     ? { ...config.construction, ...section.construction }
     : null
+  // Une carte `construction: true` est annoncée seule, dans une section de cartes actives.
+  const chantier = card => construction ?? (card.construction ? config.construction : null)
   const cartes = (section.cards ?? []).filter(c => isVisible(c, env))
   return (
     <PortalReveal id={section.id} className={viewport ? 'portal-next-actions-viewport' : undefined}>
@@ -37,10 +39,10 @@ export default function RolePortalSection({ config, section, env, texte, values,
         {Riche ? <Riche section={section} {...richProps} /> : (
           <PortalStaggerGrid>
             {cartes.map(card => (
-              <div key={card.id} className="portal-card-anchor">
+              <div key={card.id} className="portal-card-anchor" id={card.ancre ? `${section.id}-${card.id}` : undefined}>
                 <RolePortalCard
                   card={card}
-                  construction={construction}
+                  construction={chantier(card)}
                   texte={texte}
                   value={card.count == null ? null
                     : typeof card.count === 'number' ? card.count : values?.[card.count]}

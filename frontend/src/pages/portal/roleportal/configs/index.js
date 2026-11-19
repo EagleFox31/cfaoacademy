@@ -4,10 +4,12 @@
  */
 import trainer from './trainer.js'
 import consultation from './consultation.js'
+import assistant from './assistant.js'
 import { CONSULTATION_MODES } from '../../portalProfiles.js'
 
 export const PORTAL_CONFIGS = {
   trainer,
+  center_assistant: assistant,
   // Un seul portail de consultation, décliné par rôle (mode = rôle).
   ...Object.fromEntries(Object.keys(CONSULTATION_MODES).map(role => [role, consultation])),
 }

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
+import VersConnexion from '../../components/VersConnexion.jsx'
 import useAuth from '../../hooks/useAuth'
 import usePortalBackground from '../../hooks/usePortalBackground'
 import usePortalHashScroll from '../../hooks/usePortalHashScroll'
@@ -19,6 +20,7 @@ const VUES = {
   ki: () => import('./KIDashboard'),
   trainer: () => import('./TrainerHome'),
   center: () => import('./CenterHome'),
+  assistant: () => import('./AssistantHome'),
   learner: () => import('./LearnerDashboard'),
 }
 const COMPOSANTS = Object.fromEntries(Object.entries(VUES).map(([k, charger]) => [k, lazy(charger)]))
@@ -31,6 +33,8 @@ export function resolveView(roles = []) {
   if (['group', 'direction', 'branch_hr'].includes(profile.key)) return { vue: 'consultation', props: { mode: profile.mode } }
   if (['superadmin', 'dps', 'ki'].includes(profile.key)) return { vue: profile.key }
   if (roles.includes('trainer')) return { vue: 'trainer' }
+  // L'assistante a son portail par configuration ; directeur et coordinateur gardent CenterHome.
+  if (profile.key === 'center' && profile.mode === 'assistant') return { vue: 'assistant' }
   if (profile.key === 'center') return { vue: 'center', props: { mode: profile.mode } }
   return { vue: 'learner' }
 }
@@ -63,7 +67,7 @@ export default function Portal() {
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [])
 
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <VersConnexion />
   if (vue.redirect) return <Navigate to={vue.redirect} replace />
 
   const Vue = COMPOSANTS[vue.vue]

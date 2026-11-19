@@ -265,12 +265,24 @@ body.portal-bg-active .nav {
 }
 .portal-kpi-value.accent { color: var(--red); }
 .portal-kpi-value.green  { color: #1aab5b; }
+.portal-kpi-value.progress { color: #996600; }
 .portal-kpi-label {
   font-size: 13px;
   color: var(--muted);
   margin-top: 6px;
   font-weight: 500;
 }
+
+/* Chiffres cliquables sous la phrase du hero : la carte mène à l'action. */
+.portal-hero-kpis { margin: 20px 0 0; }
+.portal-hero-kpis .portal-kpi-value { font-size: 52px; }
+button.portal-hero-kpi {
+  display: flex; flex-direction: column; align-items: flex-start;
+  text-align: left; font: inherit; cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+button.portal-hero-kpi:hover { transform: translateY(-2px); border-color: var(--navy); box-shadow: 0 6px 18px rgba(14,17,38,0.12); }
+button.portal-hero-kpi:focus-visible { outline: 2px solid #1a56db; outline-offset: 2px; }
 
 /* KPI row on dark section */
 section:nth-of-type(even) .portal-kpi-card {
@@ -10886,6 +10898,14 @@ body[data-portal-bg="rh"] .portal-page #pif {
 #assistance .portal-section-title {
   color: var(--navy) !important;
 }
+/* Section paire : bande sombre du zébrage, comme les autres sections. Sans
+   elle, le texte blanc des sections paires (« Filtrer ») tombe sur la photo. */
+section#assistance:nth-of-type(even) {
+  background: rgba(26, 31, 60, 0.72) !important;
+}
+section#assistance:nth-of-type(even) .portal-section-title {
+  color: #fff !important;
+}
 
 /* Nouvelle section DPS: Compétences des techniciens par niveau (#niveaux) */
 #niveaux.portal-dps-tier-section {
@@ -10898,14 +10918,6 @@ body[data-portal-bg="rh"] .portal-page #pif {
 
 #niveaux.portal-dps-tier-section .portal-section-title {
   color: #ffffff;
-/* Section paire : bande sombre du zébrage, comme les autres sections. Sans
-   elle, le texte blanc des sections paires (« Filtrer ») tombe sur la photo. */
-section#assistance:nth-of-type(even) {
-  background: rgba(26, 31, 60, 0.72) !important;
-}
-section#assistance:nth-of-type(even) .portal-section-title {
-  color: #fff !important;
-}
 }
 
 #niveaux.portal-dps-tier-section .portal-section-eyebrow {

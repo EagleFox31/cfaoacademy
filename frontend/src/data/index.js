@@ -3,6 +3,7 @@ import { isPlMedacapVariant } from '../utils/portalVariant.js'
 import { isMedacapLearner, medacapLearnerSections } from '../utils/medacapLearner.js'
 import trainerPortal from '../pages/portal/roleportal/configs/trainer.js'
 import consultationPortal from '../pages/portal/roleportal/configs/consultation.js'
+import assistantPortal from '../pages/portal/roleportal/configs/assistant.js'
 import { trainerSelectors } from '../pages/portal/roleportal/sources/trainer.js'
 import { navFromConfig } from '../pages/portal/roleportal/visibility.js'
 import { CONSULTATION_MODES, ROLE_PRIORITY } from '../pages/portal/portalProfiles.js'
@@ -60,12 +61,6 @@ const DIRECTOR_NAV_SECTIONS = [
 const COORDINATOR_NAV_SECTIONS = [
   ...DIRECTOR_NAV_SECTIONS.filter(s => ['besoins', 'devis', 'calendrier', 'rapports'].includes(s.key)),
   { key: 'administration', id: 'administration', labelKey: 'nav_sec_dir_administration', iconKey: 'sliders' },
-]
-
-const CENTER_NAV_SECTIONS = [
-  { key: 'cle',     id: 'cle',     labelKey: 'nav_sec_centre_cle',     iconKey: 'sliders' },
-  { key: 'outils',  id: 'outils',  labelKey: 'nav_sec_centre_outils',  iconKey: 'clipboard' },
-  { key: 'bientot', id: 'bientot', labelKey: 'nav_sec_centre_bientot', iconKey: 'milestone' },
 ]
 
 export function getPrimaryRole(roles = []) {
@@ -148,7 +143,8 @@ export const PORTAL_NAV_SECTIONS = {
   trainer: navFromConfig(trainerPortal),
   center_director: DIRECTOR_NAV_SECTIONS,
   training_coordinator: COORDINATOR_NAV_SECTIONS,
-  center_assistant: CENTER_NAV_SECTIONS,
+  // Assistante du centre : onglets dérivés de la config de son portail.
+  center_assistant: navFromConfig(assistantPortal),
 }
 
 export function getPortalNavSections(roles) {

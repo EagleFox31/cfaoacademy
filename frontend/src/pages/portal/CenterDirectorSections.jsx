@@ -120,7 +120,7 @@ function Etat({ statut, t }) {
 }
 
 /** Cartes de la largeur des rails d'offres de la même page (4 cartes et demie par ligne). */
-const GRILLE_RAIL = 'pv-grid--rail pv-grid--stretch'
+export const GRILLE_RAIL = 'pv-grid--rail pv-grid--stretch'
 
 const aSuivre = t =><span className="portal-status-chip todo">{t.chip_follow}</span>
 

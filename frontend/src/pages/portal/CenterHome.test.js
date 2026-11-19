@@ -1,10 +1,35 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { alertesCle, chiffresHero, etatAnnee } from './CenterHome.jsx'
+import { KPIS_COORDINATEUR, alertesCle, chiffresCoordinateur, chiffresHero, etatAnnee } from './CenterHome.jsx'
 import { PAYS_ACADEMY, SECTIONS_COORDINATEUR, SECTIONS_DIRECTEUR, anneeDuResume, paysAttendus, statutBesoins } from './CenterDirectorSections.jsx'
 import { resolveProfile } from './portalProfiles.js'
 import { getPortalNavSections } from '../../data/index.js'
 import { CENTER_HOME_COPY } from '../../i18n/centerHome.js'
+
+describe('chiffres du hero du coordinateur', () => {
+  const cle = { statut: 'DRAFT', connues: 20, repondu: 30, points: [{ id: 1 }, { id: 2 }] }
+  const futur = new Date().getFullYear() + 1
+
+  it('pendant le recueil : filiales sans réponse et points à corriger', () => {
+    expect(chiffresCoordinateur({ statut: 'pret', access: { review: true }, annee: futur, cle }))
+      .toEqual({ aRelancer: PAYS_ACADEMY - 30, aCorriger: 2, rapprochees: null, rapportsAttendus: null })
+  })
+
+  it('recueil clos : plus personne à relancer ; sans droit de revue : « — »', () => {
+    expect(chiffresCoordinateur({ statut: 'pret', access: {}, annee: futur, cle: { ...cle, statut: 'FROZEN' } }))
+      .toMatchObject({ aRelancer: 0, aCorriger: null })
+  })
+
+  it('sans clé chargée, aucun chiffre inventé', () => {
+    expect(Object.values(chiffresCoordinateur({ statut: 'erreur', cle: null }))).toEqual([null, null, null, null])
+  })
+
+  it('chaque chiffre vise une rubrique de sa page et a ses 3 libellés', () => {
+    expect(KPIS_COORDINATEUR.map(k => k.cible).every(id => SECTIONS_COORDINATEUR.includes(id))).toBe(true)
+    for (const { label } of KPIS_COORDINATEUR)
+      for (const s of ['', '_one', '_zero']) expect(CENTER_HOME_COPY.fr[label + s]).toBeTruthy()
+  })
+})
 
 describe('portail du centre de formation', () => {
   it.each([
@@ -24,7 +49,7 @@ describe('portail du centre de formation', () => {
   })
 
   it('sections de navigation alignées sur les ancres de la page', () => {
-    expect(getPortalNavSections(['center_assistant']).map(s => s.id)).toEqual(['cle', 'outils', 'bientot'])
+    expect(getPortalNavSections(['center_assistant']).map(s => s.id)).toEqual(['prochaines-sessions', 'dossiers', 'a-consulter'])
     expect(getPortalNavSections(['training_coordinator']).map(s => s.id)).toEqual(SECTIONS_COORDINATEUR)
     expect(getPortalNavSections(['center_director']).map(s => s.id)).toEqual(SECTIONS_DIRECTEUR)
   })

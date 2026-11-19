@@ -68,7 +68,9 @@ export default function RolePortal({
 
   return (
     <>
-      <Nav />
+      {/* `config.cloche` : la cloche des alertes (`values.notifications`)
+          remplace le menu d'aide, comme au portail du centre. */}
+      {config.cloche ? <Nav notifications={values.notifications ?? []} hideHelp /> : <Nav />}
       <PortalStickyBar user={user} headerRef={headerRef} />
       <main className="portal-page">
         <div ref={headerRef}>

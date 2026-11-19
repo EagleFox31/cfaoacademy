@@ -121,22 +121,22 @@ exports[`onglets des portails par rôle > liste figée pour tous les rôles 1`] 
   ],
   "center_assistant": [
     {
-      "iconKey": "sliders",
-      "id": "cle",
-      "key": "cle",
-      "labelKey": "nav_sec_centre_cle",
+      "iconKey": "graduationcap",
+      "id": "prochaines-sessions",
+      "key": "prochaines-sessions",
+      "labelKey": "nav_sec_assist_sessions",
     },
     {
       "iconKey": "clipboard",
-      "id": "outils",
-      "key": "outils",
-      "labelKey": "nav_sec_centre_outils",
+      "id": "dossiers",
+      "key": "dossiers",
+      "labelKey": "nav_sec_assist_dossiers",
     },
     {
-      "iconKey": "milestone",
-      "id": "bientot",
-      "key": "bientot",
-      "labelKey": "nav_sec_centre_bientot",
+      "iconKey": "sliders",
+      "id": "a-consulter",
+      "key": "a-consulter",
+      "labelKey": "nav_sec_assist_consulter",
     },
   ],
   "center_director": [

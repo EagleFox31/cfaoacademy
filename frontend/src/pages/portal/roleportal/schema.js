@@ -22,6 +22,7 @@ function textRefs(config, section) {
   }
   for (const card of section.cards ?? []) {
     refs.push(card.chip?.key, card.title, card.meta, card.metaEmpty, card.cta, card.hint)
+    if (card.construction) refs.push(config.construction?.label, config.construction?.chip)
   }
   return refs.filter(r => r != null)
 }
@@ -67,6 +68,8 @@ export function validateConfig(config, { copy, locales = [] } = {}) {
       if (cardIds.has(c.id)) err(`${s.id} : carte en double ${c.id}`)
       cardIds.add(c.id)
       if (config.observer && (c.link || c.cta)) err(`${s.id}/${c.id} : un observateur n'a ni lien ni CTA`)
+      if (c.construction && !config.construction) err(`${s.id}/${c.id} : carte en construction sans config.construction`)
+      if (c.construction && c.link) err(`${s.id}/${c.id} : une carte en construction n'a pas de lien`)
       if (c.link && !LINK_KEYS.some(k => k in c.link)) err(`${s.id}/${c.id} : lien sans destination`)
       if (c.link?.section && !config.sections.some(x => x.id === c.link.section)) {
         err(`${s.id}/${c.id} : section cible inconnue ${c.link.section}`)
