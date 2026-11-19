@@ -158,34 +158,8 @@ export default function CenterHome({ mode = 'director' }) {
 
         {directeur && <CenterDirectorSections t={t} access={access} />}
 
-        {/* Coordinateur : les rubriques annuelles du directeur ; en tête des besoins,
-            le rapprochement de l'année et les corrections qu'il reste à faire. */}
-        {coordinateur && (
-          <CenterDirectorSections
-            t={t}
-            access={access}
-            sections={SECTIONS_COORDINATEUR}
-            corrections={statut === 'pret' && access?.review && (
-              <div className="portal-card-anchor">
-                <PvCard
-                  cardMedia={<PortalIconMedia icon="alerte" tone={aTraiter ? 'progress' : 'done'} />}
-                  kicker={
-                    <span className={`portal-status-chip ${aTraiter ? 'progress' : 'done'}`}>
-                      {aTraiter ? remplir(t.review_chip, { n: aTraiter }) : t.coord_corrections_ok}
-                    </span>
-                  }
-                  title={remplir(t.coord_corrections_card, { year: annee })}
-                  meta={aTraiter ? t.review_meta : t.review_empty}
-                  cta={t.cta_open}
-                  hoverHint={t.cta_open}
-                  accentColor={aTraiter ? ROUGE : undefined}
-                  to={lienCle('prepare', { annee })}
-                  corner
-                />
-              </div>
-            )}
-          />
-        )}
+        {/* Coordinateur : les rubriques annuelles du directeur ; les points à traiter vont dans la cloche. */}
+        {coordinateur && <CenterDirectorSections t={t} access={access} sections={SECTIONS_COORDINATEUR} />}
 
         {!directeur && !coordinateur && (
           <>

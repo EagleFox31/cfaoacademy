@@ -126,12 +126,11 @@ const aSuivre = t =><span className="portal-status-chip todo">{t.chip_follow}</s
 
 /**
  * Les rubriques annuelles du centre de formation. Directeur : les sept, dans
- * l'ordre de SECTIONS_DIRECTEUR. Coordinateur : SECTIONS_COORDINATEUR, avec en
- * tête des besoins la carte des corrections à faire (`corrections`).
+ * l'ordre de SECTIONS_DIRECTEUR. Coordinateur : SECTIONS_COORDINATEUR.
  * Les rubriques qui lisent une application existante ouvrent un écran ; les
  * autres annoncent ce qui reste à construire, sans lien.
  */
-export default function CenterDirectorSections({ t, access, sections = SECTIONS_DIRECTEUR, corrections = null }) {
+export default function CenterDirectorSections({ t, access, sections = SECTIONS_DIRECTEUR }) {
   const { statut, annees } = useAnnees()
   const { pathname } = useLocation()
   const millesimes = annees.length ? annees.map(a => a.annee) : [new Date().getFullYear()]
@@ -143,7 +142,6 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
       {avec('besoins') && <Section id="besoins" t={t}>
         <Etat statut={statut} t={t} />
         <PortalStaggerGrid className={GRILLE_RAIL}>
-          {corrections}
           {/* Une carte par année, tous pôles confondus : une filiale qui a répondu
               pour Motors et pour Equipment ne compte qu'une fois. */}
           {annees.map(a => {
