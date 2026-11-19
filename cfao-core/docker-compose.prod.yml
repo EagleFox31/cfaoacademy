@@ -1,0 +1,83 @@
+# cfao-core (identité applicative, /me, LMS, tableaux) — production, derrière cfao-edge.
+# Image Docker Hub, aucun code source sur le serveur :
+#   docker compose --env-file .env -f docker-compose.prod.yml up -d
+# Prérequis : PDP commun (projet cfao-pdp) et Keycloak commun (projet cfao-identity).
+# Le job core-migrate crée ou complète la base à chaque `up` (AGENTS.md §7) ;
+# s'il échoue, l'API ne démarre pas : `docker compose logs core-migrate`.
+
+name: cfao-core
+
+services:
+  core-db:
+    mem_limit: 256m
+    restart: unless-stopped
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${CORE_DB_NAME:-core}
+      POSTGRES_USER: ${CORE_DB_USER:-core}
+      POSTGRES_PASSWORD: ${CORE_DB_PASSWORD:?CORE_DB_PASSWORD est obligatoire}
+    volumes:
+      - core-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CORE_DB_USER:-core}"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+
+  core-migrate:
+    mem_limit: 384m
+    restart: "no"
+    image: antifragile237/cfao-core-api:${CORE_VERSION:-v0.1.0}
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    environment: &core_env
+      # base : DEBUG à False par défaut, hôtes explicites.
+      DJANGO_SETTINGS_MODULE: config.settings.base
+      DJANGO_SECRET_KEY: ${CORE_SECRET_KEY:?CORE_SECRET_KEY est obligatoire}
+      DJANGO_ALLOWED_HOSTS: ${CORE_ALLOWED_HOSTS:?CORE_ALLOWED_HOSTS manquant (hôtes publics + core-api)}
+      CORE_DB_HOST: core-db
+      CORE_DB_NAME: ${CORE_DB_NAME:-core}
+      CORE_DB_USER: ${CORE_DB_USER:-core}
+      CORE_DB_PASSWORD: ${CORE_DB_PASSWORD:?}
+      CERBOS_HTTP: ${CERBOS_HTTP:-http://cerbos:3592}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/cfao/protocol/openid-connect/certs}
+      OIDC_ISSUER: ${OIDC_ISSUER:?OIDC_ISSUER manquant (ex. https://<hote>/auth/realms/cfao)}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-cfao-core-api}
+      # Base MEDACAP (lecture seule) ; injoignable = indicateurs MEDACAP vides.
+      MEDACAP_MONGO_URI: ${MEDACAP_MONGO_URI:-mongodb://medacap-indisponible:27017/academy}
+      MEDACAP_MONGO_DB: ${MEDACAP_MONGO_DB:-academy}
+      NEEDS_API_URL: ${NEEDS_API_URL:-http://needs-api:8000}
+      NEEDS_ANALYTICS_KEY: ${NEEDS_ANALYTICS_KEY:?NEEDS_ANALYTICS_KEY manquant (= NEEDS_ANALYTICS_INBOUND_KEY de needs)}
+    depends_on:
+      core-db:
+        condition: service_healthy
+
+  core-api:
+    mem_limit: 512m
+    restart: unless-stopped
+    image: antifragile237/cfao-core-api:${CORE_VERSION:-v0.1.0}
+    command: ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "--timeout", "60"]
+    environment: *core_env
+    # cfao-maillage : needs-api et le PDP ; identite : clés du Keycloak commun.
+    networks: [default, cfao-maillage, identite]
+    depends_on:
+      core-migrate:
+        condition: service_completed_successfully
+    # Local seulement : cfao-edge est la seule entrée.
+    ports:
+      - "${CORE_BIND:-127.0.0.1}:${CORE_PORT:-8006}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/core/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  cfao-maillage:
+    name: cfao-maillage
+  identite:
+    name: ${IDENTITY_NETWORK:-cfao-identity_default}
+    external: true
+
+volumes:
+  core-db-data:

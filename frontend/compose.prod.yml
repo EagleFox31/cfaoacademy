@@ -1,0 +1,32 @@
+# Portail CFAO Academy — production, derrière la passerelle commune cfao-edge.
+# Image Docker Hub, aucun code source sur le serveur :
+#   docker compose --env-file .env -f compose.prod.yml up -d
+# Pas de base : rien à migrer. Les API (planning, core) ont leurs propres projets.
+
+name: cfao-portail
+
+services:
+  portail:
+    image: antifragile237/cfao-portail:${PORTAIL_VERSION:-v0.1.0}
+    restart: unless-stopped
+    mem_limit: 64m
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      # Émetteur public du Keycloak commun (KC_HOSTNAME + /realms/cfao).
+      PORTAIL_OIDC_ISSUER: ${PORTAIL_OIDC_ISSUER:?PORTAIL_OIDC_ISSUER manquant (ex. https://<hote>/auth/realms/cfao)}
+      PORTAIL_OIDC_CLIENT_ID: ${PORTAIL_OIDC_CLIENT_ID:-cfao-portail-web}
+      PORTAIL_CR_URL: ${PORTAIL_CR_URL:-}
+      PORTAIL_MEDACAP_URL: ${PORTAIL_MEDACAP_URL:-}
+      PORTAIL_NEEDS_URL: ${PORTAIL_NEEDS_URL:-}
+    # Local seulement : cfao-edge est la seule entrée.
+    ports:
+      - "${PORTAIL_BIND:-127.0.0.1}:${PORTAIL_PORT:-8095}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/config.js"]
+      interval: 30s
+      timeout: 5s
+      retries: 5

@@ -1,0 +1,104 @@
+# Planning des formateurs & clé de répartition — production, derrière cfao-edge.
+# Image Docker Hub, aucun code source sur le serveur :
+#   docker compose --env-file .env -f docker-compose.prod.yml up -d
+# Prérequis : le PDP commun (cerbos/compose.prod.yml, projet cfao-pdp) et le
+# Keycloak commun (projet cfao-identity) tournent.
+# Le job planning-migrate crée ou complète la base à chaque `up` (AGENTS.md §7) :
+# migrations + référentiel manquant, jamais d'écrasement. S'il échoue, l'API ne
+# démarre pas : lire `docker compose logs planning-migrate`.
+
+name: cfao-planning
+
+services:
+  planning-db:
+    mem_limit: 512m
+    restart: unless-stopped
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${PLANNING_DB_NAME:-planning}
+      POSTGRES_USER: ${PLANNING_DB_USER:-planning}
+      POSTGRES_PASSWORD: ${PLANNING_DB_PASSWORD:?PLANNING_DB_PASSWORD est obligatoire}
+    volumes:
+      - planning-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PLANNING_DB_USER:-planning}"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+
+  # Job ponctuel sur l'image de l'API : le code qui migre est celui qui sert.
+  planning-migrate:
+    # Marge pour lire les classeurs du partage (jusqu'à ~20 Mo).
+    mem_limit: 768m
+    restart: "no"
+    image: antifragile237/cfao-planning-api:${PLANNING_VERSION:-v0.1.2}
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_referential && python manage.py seed_cost_key && python manage.py sync_needs_snapshot && python manage.py load_workbooks"]
+    networks: [default, cfao-maillage, identite]
+    # Classeurs lus au démarrage (load_workbooks), jamais modifiés : le partage de
+    # l'équipe et un dossier de compléments sur le serveur.
+    volumes:
+      - ${PLANNING_SHARE_DIR:-/srv/partage/users/academy}:/classeurs/partage:ro
+      - ${PLANNING_EXTRA_WORKBOOKS_DIR:-./classeurs}:/classeurs/complements:ro
+    environment: &api_env
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_ALLOWED_HOSTS: ${PLANNING_ALLOWED_HOSTS:?PLANNING_ALLOWED_HOSTS manquant (hôtes publics + planning-api)}
+      PLANNING_SECRET_KEY: ${PLANNING_SECRET_KEY:?PLANNING_SECRET_KEY est obligatoire}
+      PLANNING_DEPLOYMENT_MODE: ${PLANNING_DEPLOYMENT_MODE:-standalone}
+      PLANNING_DB_HOST: planning-db
+      PLANNING_DB_NAME: ${PLANNING_DB_NAME:-planning}
+      PLANNING_DB_USER: ${PLANNING_DB_USER:-planning}
+      PLANNING_DB_PASSWORD: ${PLANNING_DB_PASSWORD:?}
+      # PDP commun, joint sur cfao-maillage.
+      CERBOS_HTTP: ${CERBOS_HTTP:-http://cerbos:3592}
+      # Clés lues en interne, sur le réseau du Keycloak commun.
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/cfao/protocol/openid-connect/certs}
+      OIDC_ISSUER: ${OIDC_ISSUER:?OIDC_ISSUER manquant (ex. https://<hote>/auth/realms/cfao)}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-cfao-planning-api}
+      NEEDS_API_URL: ${NEEDS_API_URL:-http://needs-api:8000}
+      NEEDS_ANALYTICS_KEY: ${NEEDS_ANALYTICS_KEY:?NEEDS_ANALYTICS_KEY manquant (= NEEDS_ANALYTICS_INBOUND_KEY de needs)}
+      # Absente = niveau du catalogue en lecture seule.
+      NEEDS_CATALOG_WRITE_KEY: ${NEEDS_CATALOG_WRITE_KEY:-}
+      # Copie des besoins poussée par needs-relay (= NEEDS_SNAPSHOT_PUSH_KEY de needs).
+      NEEDS_SNAPSHOT_INBOUND_KEY: ${NEEDS_SNAPSHOT_INBOUND_KEY:?NEEDS_SNAPSHOT_INBOUND_KEY manquant}
+      NEEDS_SNAPSHOT_RECHECK_S: ${NEEDS_SNAPSHOT_RECHECK_S:-300}
+      NEEDS_SNAPSHOT_TIMEOUT_S: ${NEEDS_SNAPSHOT_TIMEOUT_S:-2}
+      PLANNING_ACADEMY_SITE: ${PLANNING_ACADEMY_SITE:-DOUALA}
+      PLANNING_ACADEMY_COUNTRY: ${PLANNING_ACADEMY_COUNTRY:-cmr}
+      PLANNING_WORKBOOKS_DIRS: /classeurs/partage:/classeurs/complements
+      # Exercices clos : prévu gelé une fois chargé.
+      PLANNING_CLOSED_YEARS: ${PLANNING_CLOSED_YEARS:-2026}
+    depends_on:
+      planning-db:
+        condition: service_healthy
+
+  planning-api:
+    mem_limit: 512m
+    restart: unless-stopped
+    image: antifragile237/cfao-planning-api:${PLANNING_VERSION:-v0.1.2}
+    environment: *api_env
+    # cfao-maillage : needs-api et le PDP ; identite : clés du Keycloak commun.
+    networks: [default, cfao-maillage, identite]
+    depends_on:
+      planning-migrate:
+        condition: service_completed_successfully
+    # Local seulement : cfao-edge est la seule entrée.
+    ports:
+      - "${PLANNING_BIND:-127.0.0.1}:${PLANNING_PORT:-8005}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-S", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/planning/healthz', timeout=5).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  # Clé et nom identiques dans chaque compose (edge/tests/test_edge_config.py).
+  cfao-maillage:
+    name: cfao-maillage
+  identite:
+    name: ${IDENTITY_NETWORK:-cfao-identity_default}
+    external: true
+
+volumes:
+  planning-db-data:
