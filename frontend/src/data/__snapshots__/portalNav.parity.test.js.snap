@@ -523,6 +523,12 @@ exports[`onglets des portails par rôle > liste figée pour tous les rôles 1`] 
       "labelKey": "nav_sec_dir_calendrier",
     },
     {
+      "iconKey": "clipboard",
+      "id": "rapports",
+      "key": "rapports",
+      "labelKey": "nav_sec_dir_rapports",
+    },
+    {
       "iconKey": "sliders",
       "id": "administration",
       "key": "administration",

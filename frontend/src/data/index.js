@@ -58,7 +58,7 @@ const DIRECTOR_NAV_SECTIONS = [
 
 /** Coordinateur : les ancres de SECTIONS_COORDINATEUR (CenterDirectorSections), dans le même ordre. */
 const COORDINATOR_NAV_SECTIONS = [
-  ...DIRECTOR_NAV_SECTIONS.filter(s => ['besoins', 'devis', 'calendrier'].includes(s.key)),
+  ...DIRECTOR_NAV_SECTIONS.filter(s => ['besoins', 'devis', 'calendrier', 'rapports'].includes(s.key)),
   { key: 'administration', id: 'administration', labelKey: 'nav_sec_dir_administration', iconKey: 'sliders' },
 ]
 
