@@ -15,7 +15,6 @@ const VUES = {
   superadmin: () => import('./SuperAdminDashboard'),
   consultation: () => import('./RHHome'),
   dps: () => import('./DpsDashboard'),
-  branch_hr: () => import('./BranchHRDashboard'),
   team: () => import('./TeamManagerDashboard'),
   ki: () => import('./KIDashboard'),
   trainer: () => import('./TrainerHome'),
@@ -29,8 +28,8 @@ export function resolveView(roles = []) {
   if (profile.redirectTo) return { redirect: profile.redirectTo }
   if (profile.key === 'workshop_manager') return { vue: 'team', props: { mode: 'workshop' } }
   if (profile.key === 'team_manager') return { vue: 'team', props: { mode: 'team' } }
-  if (profile.key === 'group' || profile.key === 'direction') return { vue: 'consultation', props: { mode: profile.mode } }
-  if (['superadmin', 'dps', 'branch_hr', 'ki'].includes(profile.key)) return { vue: profile.key }
+  if (['group', 'direction', 'branch_hr'].includes(profile.key)) return { vue: 'consultation', props: { mode: profile.mode } }
+  if (['superadmin', 'dps', 'ki'].includes(profile.key)) return { vue: profile.key }
   if (roles.includes('trainer')) return { vue: 'trainer' }
   if (profile.key === 'center') return { vue: 'center', props: { mode: profile.mode } }
   return { vue: 'learner' }

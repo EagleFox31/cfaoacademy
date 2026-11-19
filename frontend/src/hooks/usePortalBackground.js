@@ -19,12 +19,17 @@ export default function usePortalBackground(user, { requireUser = false } = {}) 
     body.classList.add('portal-bg-active')
     body.style.setProperty('--portal-page-bg', fond.image)
     body.style.setProperty('--portal-page-bg-position', background.position)
+    if (background.veil != null) body.style.setProperty('--portal-page-veil', String(background.veil))
+    // Permet d'ajuster en CSS une section selon la photo de fond (ex. body[data-portal-bg="rh"]).
+    body.dataset.portalBg = background.key
 
     return () => {
+      delete body.dataset.portalBg
       retirerPrechargement()
       body.classList.remove('portal-bg-active')
       body.style.removeProperty('--portal-page-bg')
       body.style.removeProperty('--portal-page-bg-position')
+      body.style.removeProperty('--portal-page-veil')
     }
   }, [background, requireUser, user])
 

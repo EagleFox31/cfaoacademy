@@ -1,0 +1,547 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`portails validés : sections et libellés figés > DPS (en) 1`] = `
+{
+  "accueil": "Good morning Jacques, within your Equipment branch in Cameroon",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Parts & Services Dir.",
+      "titre": null,
+    },
+    {
+      "ancre": "besoins-formation",
+      "surtitre": "MESURE DES BESOINS EN FORMATION",
+      "titre": "Identification Annuelle des besoins en formations de votre filiale",
+    },
+    {
+      "ancre": "resultats",
+      "surtitre": "Skills",
+      "titre": "Competencies of your Teams by brand",
+    },
+    {
+      "ancre": "niveaux",
+      "surtitre": "Skills",
+      "titre": "Technician competencies by level",
+    },
+    {
+      "ancre": "pif",
+      "surtitre": "Training plans",
+      "titre": "Multi-year training plans for your technicians",
+    },
+    {
+      "ancre": "assistance",
+      "surtitre": "Academy support",
+      "titre": "Assistance",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > DPS (fr) 1`] = `
+{
+  "accueil": "Bonjour Jacques, au sein de votre filiale equipment Cameroun",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Dir. Pièces & Services",
+      "titre": null,
+    },
+    {
+      "ancre": "besoins-formation",
+      "surtitre": "MESURE DES BESOINS EN FORMATION",
+      "titre": "Identification Annuelle des besoins en formations de votre filiale",
+    },
+    {
+      "ancre": "resultats",
+      "surtitre": "Compétences",
+      "titre": "Compétences de vos Equipes par marques",
+    },
+    {
+      "ancre": "niveaux",
+      "surtitre": "Compétences",
+      "titre": "Compétences des techniciens par niveau",
+    },
+    {
+      "ancre": "pif",
+      "surtitre": "Plans de formation",
+      "titre": "Plans de formations pluriannuels de vos techniciens",
+    },
+    {
+      "ancre": "assistance",
+      "surtitre": "Assistance Academy",
+      "titre": "Assistance",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > DPS (pt) 1`] = `
+{
+  "accueil": "Bom dia Jacques, na sua filial Equipment do Camarões",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Dir. Peças e Serviços",
+      "titre": null,
+    },
+    {
+      "ancre": "besoins-formation",
+      "surtitre": "MESURE DES BESOINS EN FORMATION",
+      "titre": "Identification Annuelle des besoins en formations de votre filiale",
+    },
+    {
+      "ancre": "resultats",
+      "surtitre": "Competências",
+      "titre": "Competências das suas Equipas por marca",
+    },
+    {
+      "ancre": "niveaux",
+      "surtitre": "Competências",
+      "titre": "Compétences des techniciens par niveau",
+    },
+    {
+      "ancre": "pif",
+      "surtitre": "Planos de formação",
+      "titre": "Planos de formação plurianuais dos seus técnicos",
+    },
+    {
+      "ancre": "assistance",
+      "surtitre": "Apoio Academy",
+      "titre": "Assistência",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > RH filiale (en) 1`] = `
+{
+  "accueil": "Good morning Aminata, within your Motors branch in Ivory Coast",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Branch HR",
+      "titre": null,
+    },
+    {
+      "ancre": "recrutement",
+      "surtitre": "Campaigns and results",
+      "titre": "Recruitment",
+    },
+    {
+      "ancre": "competences",
+      "surtitre": "Mesure des compétences techniciens",
+      "titre": "Your technicians' results by level",
+    },
+    {
+      "ancre": "pif",
+      "surtitre": "Training plans",
+      "titre": "Multi-year training plans for your technicians",
+    },
+    {
+      "ancre": "besoins",
+      "surtitre": "Training needs",
+      "titre": "Annual training needs identification",
+    },
+    {
+      "ancre": "personnes",
+      "surtitre": "Your staff",
+      "titre": "Technicians and candidates",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > RH filiale (fr) 1`] = `
+{
+  "accueil": "Bonjour Aminata, au sein de votre filiale motors Côte d'Ivoire",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "RH Filiale",
+      "titre": null,
+    },
+    {
+      "ancre": "recrutement",
+      "surtitre": "Campagnes et résultats",
+      "titre": "Recrutement",
+    },
+    {
+      "ancre": "competences",
+      "surtitre": "Mesure des compétences techniciens",
+      "titre": "Résultats de vos techniciens par niveau",
+    },
+    {
+      "ancre": "pif",
+      "surtitre": "Plans de formation",
+      "titre": "Plans de formations pluriannuels de vos techniciens",
+    },
+    {
+      "ancre": "besoins",
+      "surtitre": "Besoins en formation",
+      "titre": "Identification annuelle des besoins en formation",
+    },
+    {
+      "ancre": "personnes",
+      "surtitre": "Vos collaborateurs",
+      "titre": "Techniciens et candidats",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > RH filiale (pt) 1`] = `
+{
+  "accueil": "Bom dia Aminata, na sua filial Motors do Costa do Marfim",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "RH Filial",
+      "titre": null,
+    },
+    {
+      "ancre": "recrutement",
+      "surtitre": "Campanhas e resultados",
+      "titre": "Recrutamento",
+    },
+    {
+      "ancre": "competences",
+      "surtitre": "Mesure des compétences techniciens",
+      "titre": "Resultados dos seus técnicos por nível",
+    },
+    {
+      "ancre": "pif",
+      "surtitre": "Planos de formação",
+      "titre": "Planos de formação plurianuais dos seus técnicos",
+    },
+    {
+      "ancre": "besoins",
+      "surtitre": "Necessidades de formação",
+      "titre": "Identificação anual das necessidades de formação",
+    },
+    {
+      "ancre": "personnes",
+      "surtitre": "Os seus colaboradores",
+      "titre": "Técnicos e candidatos",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > directeur du centre de formation (en) 1`] = `
+{
+  "accueil": "Good morning Test,",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Training Centre Dir.",
+      "titre": null,
+    },
+    {
+      "ancre": "besoins",
+      "surtitre": "Needs assessment",
+      "titre": "Annual identification of training needs",
+    },
+    {
+      "ancre": "devis",
+      "surtitre": "Cost allocation",
+      "titre": "Branch quotes",
+    },
+    {
+      "ancre": "offres",
+      "surtitre": null,
+      "titre": "Our technical training offers in light vehicles.",
+    },
+    {
+      "ancre": "formations-equipment",
+      "surtitre": null,
+      "titre": "Our technical training offers in trucks, machinery, buses & forklifts.",
+    },
+    {
+      "ancre": "formations-carrosserie",
+      "surtitre": null,
+      "titre": "Body shop repair — all vehicles.",
+    },
+    {
+      "ancre": "formations-sav-motors",
+      "surtitre": null,
+      "titre": "Our Motors aftersales organisation training.",
+    },
+    {
+      "ancre": "formations-sav-equipment",
+      "surtitre": null,
+      "titre": "Our Equipment aftersales organisation training.",
+    },
+    {
+      "ancre": "calendrier",
+      "surtitre": "Planning",
+      "titre": "Annual training calendar",
+    },
+    {
+      "ancre": "rapports",
+      "surtitre": "Training review",
+      "titre": "Training reports",
+    },
+    {
+      "ancre": "roi",
+      "surtitre": "Performance",
+      "titre": "Return on investment of the Academy",
+    },
+    {
+      "ancre": "plateforme",
+      "surtitre": "Digital tools",
+      "titre": "Platform progress",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > directeur du centre de formation (fr) 1`] = `
+{
+  "accueil": "Bonjour Test,",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Dir. Centre de formation",
+      "titre": null,
+    },
+    {
+      "ancre": "besoins",
+      "surtitre": "Mesure des besoins",
+      "titre": "Identification annuelle des besoins en formations",
+    },
+    {
+      "ancre": "devis",
+      "surtitre": "Répartition des coûts",
+      "titre": "Devis filiale",
+    },
+    {
+      "ancre": "offres",
+      "surtitre": null,
+      "titre": "Nos offres de formations techniques en Véhicules Légers.",
+    },
+    {
+      "ancre": "formations-equipment",
+      "surtitre": null,
+      "titre": "Nos offres de formations techniques en Engins, Camions, Bus et Chariots.",
+    },
+    {
+      "ancre": "formations-carrosserie",
+      "surtitre": null,
+      "titre": "Nos offres de formations en Réparation de Carrosserie tous véhicules.",
+    },
+    {
+      "ancre": "formations-sav-motors",
+      "surtitre": null,
+      "titre": "Nos Offres de Formations en Organisation SAV Motors.",
+    },
+    {
+      "ancre": "formations-sav-equipment",
+      "surtitre": null,
+      "titre": "Nos Offres de Formations en Organisation SAV Equipment.",
+    },
+    {
+      "ancre": "calendrier",
+      "surtitre": "Planification",
+      "titre": "Calendrier annuel de formation",
+    },
+    {
+      "ancre": "rapports",
+      "surtitre": "Bilan des formations",
+      "titre": "Rapports de formations",
+    },
+    {
+      "ancre": "roi",
+      "surtitre": "Performance",
+      "titre": "Retour sur investissement de l’Academy",
+    },
+    {
+      "ancre": "plateforme",
+      "surtitre": "Outils numériques",
+      "titre": "État d’avancement de la plateforme",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > directeur du centre de formation (pt) 1`] = `
+{
+  "accueil": "Bom dia Test,",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Dir. Centro de formação",
+      "titre": null,
+    },
+    {
+      "ancre": "besoins",
+      "surtitre": "Levantamento das necessidades",
+      "titre": "Identificação anual das necessidades de formação",
+    },
+    {
+      "ancre": "devis",
+      "surtitre": "Repartição dos custos",
+      "titre": "Orçamento da filial",
+    },
+    {
+      "ancre": "offres",
+      "surtitre": null,
+      "titre": "As nossas ofertas de formação técnica em Veículos Ligeiros.",
+    },
+    {
+      "ancre": "formations-equipment",
+      "surtitre": null,
+      "titre": "As nossas ofertas de formação técnica em Engins, Camiões, Autocarros e Empilhadores.",
+    },
+    {
+      "ancre": "formations-carrosserie",
+      "surtitre": null,
+      "titre": "As nossas ofertas de formação em Reparação de Carroçaria — todos os veículos.",
+    },
+    {
+      "ancre": "formations-sav-motors",
+      "surtitre": null,
+      "titre": "As nossas ofertas de formação em Organização SAV Motors.",
+    },
+    {
+      "ancre": "formations-sav-equipment",
+      "surtitre": null,
+      "titre": "As nossas ofertas de formação em Organização SAV Equipment.",
+    },
+    {
+      "ancre": "calendrier",
+      "surtitre": "Planeamento",
+      "titre": "Calendário anual de formação",
+    },
+    {
+      "ancre": "rapports",
+      "surtitre": "Balanço das formações",
+      "titre": "Relatórios de formação",
+    },
+    {
+      "ancre": "roi",
+      "surtitre": "Desempenho",
+      "titre": "Retorno do investimento da Academy",
+    },
+    {
+      "ancre": "plateforme",
+      "surtitre": "Ferramentas digitais",
+      "titre": "Estado de avanço da plataforma",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > formateur (en) 1`] = `
+{
+  "accueil": "Good morning, Test!",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Trainer",
+      "titre": null,
+    },
+    {
+      "ancre": "comptes-rendus",
+      "surtitre": "After each session",
+      "titre": "Your training session reports",
+    },
+    {
+      "ancre": "formations",
+      "surtitre": "What you teach",
+      "titre": "Trainings to deliver",
+    },
+    {
+      "ancre": "competences",
+      "surtitre": "Competency measurement",
+      "titre": "Technician results",
+    },
+    {
+      "ancre": "certifs",
+      "surtitre": "Certification",
+      "titre": "Your trainees’ certifications",
+    },
+    {
+      "ancre": "assistance",
+      "surtitre": "Academy support",
+      "titre": "Technician support",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > formateur (fr) 1`] = `
+{
+  "accueil": "Bonjour, Test!",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Formateur",
+      "titre": null,
+    },
+    {
+      "ancre": "comptes-rendus",
+      "surtitre": "Après chaque session",
+      "titre": "Vos comptes rendus de sessions de formation",
+    },
+    {
+      "ancre": "formations",
+      "surtitre": "Ce que vous enseignez",
+      "titre": "Formations à dispenser",
+    },
+    {
+      "ancre": "competences",
+      "surtitre": "Mesure des compétences",
+      "titre": "Résultats des techniciens",
+    },
+    {
+      "ancre": "certifs",
+      "surtitre": "Certification",
+      "titre": "Certifications de vos stagiaires",
+    },
+    {
+      "ancre": "assistance",
+      "surtitre": "Assistance Academy",
+      "titre": "Assistance aux techniciens",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > formateur (pt) 1`] = `
+{
+  "accueil": "Bom dia, Test!",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Formador",
+      "titre": null,
+    },
+    {
+      "ancre": "comptes-rendus",
+      "surtitre": "Após cada sessão",
+      "titre": "Os seus relatórios de sessões de formação",
+    },
+    {
+      "ancre": "formations",
+      "surtitre": "O que ensina",
+      "titre": "Formações a ministrar",
+    },
+    {
+      "ancre": "competences",
+      "surtitre": "Medição de competências",
+      "titre": "Resultados dos técnicos",
+    },
+    {
+      "ancre": "certifs",
+      "surtitre": "Certificação",
+      "titre": "Certificações dos seus formandos",
+    },
+    {
+      "ancre": "assistance",
+      "surtitre": "Apoio Academy",
+      "titre": "Assistência aos técnicos",
+    },
+  ],
+}
+`;

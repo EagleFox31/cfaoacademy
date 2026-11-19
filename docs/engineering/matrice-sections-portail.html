@@ -74,6 +74,13 @@ td.cell { text-align: center; }
 .chip.A { background: var(--soon-bg); color: var(--soon-fg); }
 .chip.X { color: var(--excl-fg); border: 1.5px solid var(--excl-fg); background: transparent; }
 .none { color: var(--line); }
+thead tr.prog th { font-weight: 600; vertical-align: top; }
+thead tr.prog th.sticky { font-family: var(--font-display); font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+thead tr.prog th.sticky small { display: block; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 400; font-size: 11px; }
+.pct { font-family: var(--font-display); font-size: 17px; font-variant-numeric: tabular-nums; }
+.gauge { height: 5px; border-radius: 3px; background: var(--band); margin: 5px auto 0; max-width: 64px; overflow: hidden; }
+.gauge i { display: block; height: 100%; background: var(--real); border-radius: 3px; }
+.prog-detail { display: block; margin-top: 4px; font-size: 10.5px; font-weight: 400; color: var(--muted); line-height: 1.25; }
 .hide-prop .chip.P { display: none; }
 
 .notes { display: grid; gap: 6px; color: var(--muted); font-size: 12.5px; max-width: 95ch; margin: 0; padding-left: 18px; }
@@ -109,12 +116,13 @@ td.cell { text-align: center; }
     <li>RH Filiale regroupe `branch_hr` et `branch_admin` : seul `branch_admin` voit la clé de répartition. <s>Delivery regroupe `build_team` (écriture) et `group_admin` (lecture).</s> Décidé le 18/11 : `build_team` rejoint le Super Admin ; plus de profil Delivery.</li>
     <li>Profil Groupe en consultation (créé le 18/11, RHHome avec un mode par rôle) : RH groupe (sections inchangées), directeur groupe (résultats, PIF, clé ; sans Delivery) et admin groupe (réunion des deux, sous le Super Admin, sans recrutement ni Delivery dans son portail).</li>
     <li>Matrice des accès (proposée le 18/11) : le Super Admin allume ou coupe une section par profil, en base et journalisé. Le plafond des droits et des périmètres reste dans Cerbos, versionné et testé ; la matrice ne peut que restreindre. Valeurs par défaut = ce tableau, donc rien à régler au départ.</li>
-    <li>Formateur : résultats en lecture sur toutes les filiales (il ne sait pas d'avance laquelle il formera), restreints aux marques où il forme et à ses domaines (carrosserie, SAV…).</li>
+    <li>Formateur : résultats en lecture sur toutes les filiales (il ne sait pas d'avance laquelle il formera), restreints aux marques où il forme et à ses domaines (carrosserie, SAV…). Portail du formateur passé sur la fabrique le 18/11 : haut de page « vous formez les techniciens CFAO sur N marques » avec les logos de ses marques ; comptes rendus branchés (rédiger, reprendre, terminés) ; formations, résultats par niveau et certifications de ses stagiaires annoncés en construction ; « Vos priorités » retiré.</li>
     <li>Résultats de compétences : les anciennes sections « par marque » et « par palier » (Junior, Senior, Expert) portent sur les mêmes notes et deviennent une seule section avec un sélecteur de vue. Fusion décidée le 18/11, pas encore faite dans le code.</li>
     <li>Centre de formation (validé le 18/11) : le directeur lit les résultats agrégés de toutes les filiales, le coordinateur les lit par technicien sur toutes les filiales (groupes par niveau, prérequis avant convocation). L'assistant n'y a pas accès.</li>
     <li>Recrutement (18/11) : une seule fonctionnalité, sous des permissions différentes. Le candidat passe ses tests ; RH filiale et Admin filiale le gèrent pour leur filiale ; le Super Admin crée et administre les campagnes et a les rapports. Fermé par défaut aux RH groupe, directeur groupe et admin groupe (activable par la matrice des accès). Repris de MEDACAP 8.4 (`measure/candidatePaperHome`, `measure/manageRecruitment.php`).</li>
     <li>Directeur de filiale (`branch_director`) = le « Directeur Général » de MEDACAP, à la tête d’une filiale. Directeur régional (`regional_director`) : encadre plusieurs filiales d’une sous-région. Depuis le 18/11, ils ont un portail (RHHome, mode par rôle) : la clé de répartition en lecture (Cerbos), et des cartes en construction pour les résultats et les PIF. Décidé le 18/11 : résultats de compétences (directeur de filiale : sa filiale, par agence ; directeur régional : ses filiales, par filiale) et PIF en vue macro, sans le détail par technicien. Le Super Admin peut couper ou rouvrir ces sections par la matrice des accès.</li>
     <li>Fiches des techniciens (18/11) : l’écriture (marque suivie, niveau actuel, niveau visé) passe aux seuls DPS et RH filiale ; chefs d’équipe et d’atelier en lecture. Le Super Admin choisira qui peut écrire (matrice des accès). Aujourd’hui la fenêtre « Gérer » des chefs ne garde rien après rafraîchissement (démo).</li>
+    <li>Avancement (ligne sous les profils) : 10 % quand les sections sont posées, puis 90 % répartis sur les sections prévues (hors « Exclu »). Une section livrée compte plein si les données du profil viennent de l'API, moitié si elles sont partielles, rien en démo. Une section annoncée ou à étendre ne compte pas. Le chiffre se recalcule seul quand on change une case ou la source d'un profil.</li>
     <li>DPS et DOP sont des rôles observateurs : aucun bloc d'actions ne leur est ajouté.</li>
   </ul>
 </div>
@@ -129,7 +137,7 @@ const GROUPS = [
   ['Groupe', ['rhg', 'drg', 'adg', 'sa']],
 ]
 const PROFILES = {
-  can: ['Candidat', 'none'], app: ['Apprenant', 'part'], frm: ['Formateur', 'demo'],
+  can: ['Candidat', 'none'], app: ['Apprenant', 'part'], frm: ['Formateur', 'part'],
   che: ['Chef d’équipe', 'demo'], cha: ['Chef d’atelier', 'demo'],
   ki: ['KI / PIC', 'real'], dps: ['DPS / DOP', 'part'], rhf: ['RH Filiale', 'demo'], dfi: ['Directeur de filiale', 'part'], dre: ['Directeur régional', 'part'],
   dir: ['Directeur', 'real'], coo: ['Coordinateur', 'real'], ass: ['Assistant', 'real'],
@@ -143,15 +151,15 @@ const LABEL = { L: 'Lecture', E: 'Écriture', P: 'À étendre', A: 'Annoncé', X
 // [section, précision, { colonne: [type, périmètre] }]
 const ROWS = [
   ['Mesure des compétences'],
-  ['Tests', 'passer ses tests', { app: ['E', 'soi'], frm: ['P', 'soi'], che: ['P', 'soi'], cha: ['P', 'soi'], ki: ['E', 'soi'] }],
+  ['Tests', 'passer ses tests', { app: ['E', 'soi'], frm: ['X', 'ne passe pas de tests'], che: ['P', 'soi'], cha: ['P', 'soi'], ki: ['E', 'soi'] }],
   ['Recrutement', 'tests des candidats, campagnes, rapports · MEDACAP 8.4 à ingérer · fermé par défaut aux autres profils', { can: ['P', 'passe ses tests'], rhf: ['P', 'sa filiale (RH et Admin filiale)'], sa: ['P', 'groupe : crée, administre, rapports'] }],
-  ['Résultats de compétences', 'vue par marque ou par palier', { app: ['L', 'soi'], frm: ['P', 'toutes filiales · ses marques et domaines'], che: ['L', 'équipe'], cha: ['L', 'atelier'], ki: ['L', 'filiale · Toyota'], dps: ['L', 'filiale'], rhf: ['P', 'filiale'], dfi: ['P', 'sa filiale, par agence'], dre: ['P', 'ses filiales, par filiale'], dir: ['P', 'toutes filiales, agrégé'], coo: ['P', 'toutes filiales, par technicien'], rhg: ['L', 'groupe'], drg: ['P', 'groupe'], adg: ['P', 'groupe'], sa: ['L', 'groupe'] }],
+  ['Résultats de compétences', 'vue par marque ou par niveau', { app: ['L', 'soi'], frm: ['A', 'toutes filiales · ses marques, une carte par niveau'], che: ['L', 'équipe'], cha: ['L', 'atelier'], ki: ['L', 'filiale · Toyota'], dps: ['L', 'filiale'], rhf: ['P', 'filiale'], dfi: ['P', 'sa filiale, par agence'], dre: ['P', 'ses filiales, par filiale'], dir: ['P', 'toutes filiales, agrégé'], coo: ['P', 'toutes filiales, par technicien'], rhg: ['L', 'groupe'], drg: ['P', 'groupe'], adg: ['P', 'groupe'], sa: ['L', 'groupe'] }],
 
   ['Développement'],
   ['PIF / plans de formation', '', { app: ['L', 'son PIF'], che: ['L', 'équipe'], cha: ['L', 'atelier'], ki: ['L', 'filiale · Toyota'], dps: ['L', 'filiale'], rhf: ['P', 'filiale'], dfi: ['P', 'sa filiale, vue macro'], dre: ['P', 'ses filiales, vue macro'], rhg: ['L', 'groupe'], drg: ['P', 'groupe'], adg: ['P', 'groupe'] }],
   ['Besoins de formation', '', { cha: ['P', 'atelier'], dps: ['L', 'filiale'], rhf: ['P', 'filiale'], dir: ['L', 'tous pays, en partie en construction'] }],
-  ['Formations', '', { app: ['L', 'les siennes'], ki: ['L', 'à dispenser'] }],
-  ['Certifications', '', { app: ['L', 'les siennes'], frm: ['P', 'les siennes'], ki: ['L', 'constructeur, les siennes'] }],
+  ['Formations', '', { app: ['L', 'les siennes'], frm: ['A', 'en construction'], ki: ['L', 'à dispenser'] }],
+  ['Certifications', '', { app: ['L', 'les siennes'], frm: ['A', 'ses stagiaires, par niveau et marque'], ki: ['L', 'constructeur, les siennes'] }],
 
   ['Personnes'],
   ['Équipe, collaborateurs, annuaire', 'fiches et profils', { che: ['L', 'équipe'], cha: ['L', 'atelier'], dps: ['P', 'filiale, écrit marque, niveaux actuel et visé'], rhf: ['P', 'filiale, écrit marque, niveaux actuel et visé ; export prévu'], rhg: ['L', 'groupe'], adg: ['P', 'groupe'], sa: ['L', 'groupe, profils'] }],
@@ -168,9 +176,9 @@ const ROWS = [
   ['Formateurs', '', { dir: ['A', 'à venir'], coo: ['A', 'à venir'] }],
 
   ['Sessions et suivi'],
-  ['Sessions et comptes rendus', 'à documenter, à venir', { frm: ['E', 'ses sessions'], ki: ['P', 'sessions animées'], coo: ['P', 'toutes les sessions'] }],
-  ['À traiter, prochaines actions', '', { frm: ['E', 'ses sessions'], che: ['E', 'équipe'], cha: ['E', 'atelier'], dps: ['X', 'rôle observateur'], coo: ['P', 'centre'], rhg: ['L', 'groupe'], adg: ['P', 'groupe'] }],
-  ['Assistance', 'contacter le support', { app: ['P', 'soi'], frm: ['E', 'soi'], che: ['E', 'soi'], cha: ['E', 'soi'], dps: ['E', 'soi'] }],
+  ['Sessions et comptes rendus', 'à documenter, à venir', { frm: ['E', 'rédiger · reprendre · terminés ; sessions à venir'], ki: ['P', 'sessions animées'], coo: ['P', 'toutes les sessions'] }],
+  ['À traiter, prochaines actions', '', { frm: ['X', 'retiré le 18/11'], che: ['E', 'équipe'], cha: ['E', 'atelier'], dps: ['X', 'rôle observateur'], coo: ['P', 'centre'], rhg: ['L', 'groupe'], adg: ['P', 'groupe'] }],
+  ['Assistance', 'contacter le support', { app: ['P', 'soi'], frm: ['E', 'demandes des techniciens sur ses marques'], che: ['E', 'soi'], cha: ['E', 'soi'], dps: ['E', 'soi'] }],
 
   ['Pilotage groupe'],
   ['Bilan et filiales', '', { sa: ['L', 'groupe'] }],
@@ -183,11 +191,33 @@ const ROWS = [
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 
+// Avancement d'un portail, calculé à partir du tableau (rien à saisir à la main) :
+//   10 % dès que les sections sont posées (le profil a un portail) ;
+//   90 % répartis sur les sections prévues (tout sauf « Exclu ») : une section
+//   livrée (Lecture ou Écriture) compte plein si les données du profil viennent
+//   de l'API, moitié si partielles, zéro en démo ; annoncée ou à étendre = zéro.
+const DATA_FACTOR = { real: 1, part: 0.5, demo: 0, none: 0 }
+function progress(col) {
+  const src = PROFILES[col][1]
+  const cells = ROWS.filter(r => r.length > 1).map(r => r[2][col]).filter(v => v && v[0] !== 'X')
+  const delivered = cells.filter(v => v[0] === 'L' || v[0] === 'E').length
+  if (src === 'none' || cells.length === 0) return { pct: 0, delivered, planned: cells.length }
+  const pct = Math.round(10 + 90 * delivered * DATA_FACTOR[src] / cells.length)
+  return { pct, delivered, planned: cells.length }
+}
+
 function render() {
   const head = '<thead><tr class="grp"><th class="sticky" rowspan="2">Section</th>'
     + GROUPS.map(([g, cols]) => `<th colspan="${cols.length}">${esc(g)}</th>`).join('')
     + '</tr><tr class="prof">'
     + COLS.map(c => `<th>${esc(PROFILES[c][0])}<span class="src"><span class="dot ${PROFILES[c][1]}"></span>${SRC[PROFILES[c][1]]}</span></th>`).join('')
+    + '</tr><tr class="prog"><th class="sticky">Avancement<small>estimé à partir du tableau</small></th>'
+    + COLS.map(c => {
+      const p = progress(c)
+      return `<th title="${p.delivered} section(s) livrée(s) sur ${p.planned} prévue(s) · données ${SRC[PROFILES[c][1]]}">`
+        + `<span class="pct">${p.pct} %</span><div class="gauge"><i style="width:${p.pct}%"></i></div>`
+        + `<span class="prog-detail">${p.delivered} / ${p.planned} livrées<br>données ${SRC[PROFILES[c][1]]}</span></th>`
+    }).join('')
     + '</tr></thead>'
   const body = ROWS.map(r => {
     if (r.length === 1) return `<tr class="fam"><td class="sticky">${esc(r[0])}</td><td colspan="${COLS.length}"></td></tr>`

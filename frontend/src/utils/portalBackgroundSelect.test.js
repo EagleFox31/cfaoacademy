@@ -14,3 +14,14 @@ describe('fond du portail du centre de formation', () => {
     }
   })
 })
+
+describe('fond du portail des RH', () => {
+  it('les rôles RH ont leur photo de réunion de travail, les directeurs gardent celle des administrateurs', () => {
+    for (const role of ['group_hr', 'group_admin', 'branch_hr', 'branch_admin']) {
+      expect(resolvePortalBackgroundSelection({ roles: [role] }).src).toBe('/assets/img_cards/devis_filiale.jpg')
+    }
+    for (const role of ['group_director', 'regional_director', 'branch_director', 'superadmin']) {
+      expect(resolvePortalBackgroundSelection({ roles: [role] }).key).toBe('b2b')
+    }
+  })
+})

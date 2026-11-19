@@ -4,6 +4,7 @@ import { resolveView } from './Portal.jsx'
 import { getPortalNavSections, ROLE_PRIORITY as NAV_PRIORITY } from '../../data/index.js'
 import { canAccessDelivery } from '../../utils/deliveryAccess.js'
 import { pageAccueil } from '../../utils/planningAccess.js'
+import { codeFiliale } from '../../utils/rhDonnees.js'
 
 describe('aiguillage des rôles sans portail', () => {
   it('build_team arrive sur le Super Admin, sans redirection vers le Delivery', () => {
@@ -17,6 +18,8 @@ describe('aiguillage des rôles sans portail', () => {
     ['group_admin', 'group'],
     ['regional_director', 'direction'],
     ['branch_director', 'direction'],
+    ['branch_hr', 'branch_hr'],
+    ['branch_admin', 'branch_hr'],
   ])('%s : profil %s, portail de consultation dans son mode', (role, key) => {
     expect(resolveProfile([role])).toMatchObject({ key, mode: role })
     expect(resolveView([role])).toEqual({ vue: 'consultation', props: { mode: role } })
@@ -45,6 +48,20 @@ describe('aiguillage des rôles sans portail', () => {
       const ids = getPortalNavSections([role]).map(s => s.id)
       expect(ids).toEqual(sections.filter(s => s !== 'a-traiter'))
     }
+  })
+
+  it('RH filiale : ses 5 sections (recrutement, résultats, PIF, besoins, fiches), clé en plus pour l\'admin filiale', () => {
+    const { branch_hr, branch_admin } = CONSULTATION_MODES
+    expect(branch_hr.sections).toEqual(expect.arrayContaining(['recrutement', 'competences', 'pif', 'besoins', 'personnes']))
+    expect(branch_hr.sections).not.toContain('cle')
+    expect(branch_admin.sections).toEqual([...branch_hr.sections, 'cle'])
+  })
+
+  it('la filiale de l\'utilisateur se retrouve malgré accents et apostrophe', () => {
+    expect(codeFiliale("Côte d'Ivoire")).toBe('ci')
+    expect(codeFiliale('senegal')).toBe('sn')
+    expect(codeFiliale('Atlantide')).toBeNull()
+    expect(codeFiliale(undefined)).toBeNull()
   })
 
   it('pas de Delivery pour le directeur groupe', () => {

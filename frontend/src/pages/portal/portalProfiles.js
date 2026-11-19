@@ -46,10 +46,17 @@ const CENTER_MODES = {
 export const CONSULTATION_MODES = {
   // Recrutement fermé par défaut à la RH groupe (18/11) : il s'ouvrira depuis la
   // plateforme (matrice d'accès du Super Admin). La section reste dans RHHome.
-  group_hr: { perimetre: 'groupe', sections: ['a-traiter', 'competences', 'pif', 'personnes'] },
-  group_admin: { perimetre: 'groupe', sections: ['a-traiter', 'competences', 'pif', 'personnes', 'cle'] },
+  group_hr: { perimetre: 'groupe', sections: ['competences', 'pif', 'personnes'] },
+  group_admin: { perimetre: 'groupe', sections: ['competences', 'pif', 'personnes', 'cle'] },
   group_director: { perimetre: 'groupe', sections: ['competences', 'pif', 'cle'] },
   regional_director: { perimetre: 'region', sections: ['competences', 'pif', 'cle'] },
+  // RH filiale (matrice : en ecriture sur sa filiale). `detail` : chiffres du jeu
+  // RH filtres sur la filiale de l'utilisateur, au lieu des cartes macro.
+  // Admin filiale = RH filiale + cle de repartition en consultation.
+  branch_hr: { perimetre: 'filiale', detail: true, profil: 'branch_hr',
+    sections: ['recrutement', 'competences', 'pif', 'besoins', 'personnes'] },
+  branch_admin: { perimetre: 'filiale', detail: true, profil: 'branch_hr',
+    sections: ['recrutement', 'competences', 'pif', 'besoins', 'personnes', 'cle'] },
   branch_director: { perimetre: 'filiale', sections: ['competences', 'pif', 'cle'] },
 }
 
@@ -140,14 +147,13 @@ export function resolveProfile(roles = []) {
     return PORTAL_PROFILES.superadmin
   }
   if (CONSULTATION_MODES[primary]) {
-    const profil = primary.startsWith('group_') ? PORTAL_PROFILES.group : PORTAL_PROFILES.direction
-    return { ...profil, mode: primary }
+    const { profil } = CONSULTATION_MODES[primary]
+    const base = profil ? PORTAL_PROFILES[profil]
+      : primary.startsWith('group_') ? PORTAL_PROFILES.group : PORTAL_PROFILES.direction
+    return { ...base, mode: primary }
   }
   if (primary === 'dps' || primary === 'dop') {
     return PORTAL_PROFILES.dps
-  }
-  if (primary === 'branch_hr' || primary === 'branch_admin') {
-    return PORTAL_PROFILES.branch_hr
   }
   if (primary === 'workshop_manager') {
     return PORTAL_PROFILES.workshop_manager

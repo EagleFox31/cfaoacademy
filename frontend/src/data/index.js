@@ -1,8 +1,10 @@
 // Source de vérité unique — catalogue CFAO Academy 2026
 import { isPlMedacapVariant } from '../utils/portalVariant.js'
 import { isMedacapLearner, medacapLearnerSections } from '../utils/medacapLearner.js'
-import { sessionsDuFormateur } from './mock_sessions_formateur.js'
-import { sessionsAVenir } from '../utils/sessionsAVenir.js'
+import trainerPortal from '../pages/portal/roleportal/configs/trainer.js'
+import consultationPortal from '../pages/portal/roleportal/configs/consultation.js'
+import { trainerSelectors } from '../pages/portal/roleportal/sources/trainer.js'
+import { navFromConfig } from '../pages/portal/roleportal/visibility.js'
 import { CONSULTATION_MODES, ROLE_PRIORITY } from '../pages/portal/portalProfiles.js'
 
 import kiNetworkPayload from './ki-network.json'
@@ -54,14 +56,11 @@ const DIRECTOR_NAV_SECTIONS = [
   { key: 'plateforme', id: 'plateforme', labelKey: 'nav_sec_dir_plateforme', iconKey: 'milestone' },
 ]
 
-/** Libellés navbar des sections du portail de consultation (RHHome). */
-const CONSULTATION_NAV = {
-  recrutement: { labelKey: 'nav_sec_rh_recrutement' },
-  competences: { labelKey: 'nav_sec_rh_competences' },
-  pif: { labelKey: 'nav_sec_rh_pif' },
-  personnes: { labelKey: 'nav_sec_rh_personnes' },
-  cle: { labelKey: 'nav_sec_centre_cle', iconKey: 'sliders' },
-}
+/** Coordinateur : les ancres de SECTIONS_COORDINATEUR (CenterDirectorSections), dans le même ordre. */
+const COORDINATOR_NAV_SECTIONS = [
+  ...DIRECTOR_NAV_SECTIONS.filter(s => ['besoins', 'devis', 'calendrier'].includes(s.key)),
+  { key: 'administration', id: 'administration', labelKey: 'nav_sec_dir_administration', iconKey: 'sliders' },
+]
 
 const CENTER_NAV_SECTIONS = [
   { key: 'cle',     id: 'cle',     labelKey: 'nav_sec_centre_cle',     iconKey: 'sliders' },
@@ -124,22 +123,15 @@ export const PORTAL_NAV_SECTIONS = {
     { key: 'besoins-formation', id: 'besoins-formation', labelKey: 'nav_sec_dps_needs',      iconKey: 'clipboard' },
     { key: 'assistance',       id: 'assistance',       labelKey: 'nav_sec_dps_assistance',   iconKey: 'lifebuoy' },
   ],
-  branch_hr: [
-    { key: 'bilan',     id: 'bilan',     labelKey: 'nav_sec_bilan' },
-    { key: 'directory', id: 'directory', labelKey: 'nav_sec_directory' },
-  ],
-  branch_admin: [
-    { key: 'bilan',     id: 'bilan',     labelKey: 'nav_sec_bilan' },
-    { key: 'directory', id: 'directory', labelKey: 'nav_sec_directory' },
-  ],
-  // Portail de consultation (groupe, direction) : une entree par section de la
-  // page, dans l'ordre de CONSULTATION_MODES ; « À traiter » reste hors navbar.
-  ...Object.fromEntries(Object.entries(CONSULTATION_MODES).map(([role, { sections }]) => [
+  // Portail de consultation (groupe, direction) : derive de sa config, comme
+  // la page ; « À traiter » reste hors navbar. Vue detaillee : toutes les ancres.
+  ...Object.fromEntries(Object.keys(CONSULTATION_MODES).map(role => [
     role,
-    sections.filter(id => id in CONSULTATION_NAV).map(id => ({ key: id, id, ...CONSULTATION_NAV[id] })),
+    navFromConfig(consultationPortal, { ctx: { roles: [role] }, mode: role, detail: true }),
   ])),
   superadmin: [
     { key: 'bilan',       id: 'bilan',       labelKey: 'nav_sec_bilan' },
+    { key: 'console',     id: 'console',     labelKey: 'nav_sec_console' },
     { key: 'branches',    id: 'branches',    labelKey: 'nav_sec_branches' },
     { key: 'competences', id: 'competences', labelKey: 'nav_sec_competences' },
     { key: 'logs',        id: 'logs',        labelKey: 'nav_sec_logs' },
@@ -152,16 +144,10 @@ export const PORTAL_NAV_SECTIONS = {
     { key: 'logs',        id: 'logs',        labelKey: 'nav_sec_logs' },
     { key: 'profiles',    id: 'profiles',    labelKey: 'nav_sec_profiles' },
   ],
-  trainer: [
-    { key: 'a-documenter',     id: 'a-documenter',     labelKey: 'nav_sec_a_documenter' },
-    { key: 'comptes-rendus',   id: 'comptes-rendus',   labelKey: 'nav_sec_comptes_rendus' },
-    { key: 'sessions-a-venir', id: 'sessions-a-venir', labelKey: 'nav_sec_sessions_animees' },
-    { key: 'formations',       id: 'formations',       labelKey: 'nav_sec_formations' },
-    { key: 'competences',      id: 'competences',      labelKey: 'nav_sec_competences' },
-    { key: 'certifs',          id: 'certifs',          labelKey: 'nav_sec_certifs' },
-  ],
+  // Formateur : onglets dérivés de la config de son portail (fabrique de portails).
+  trainer: navFromConfig(trainerPortal),
   center_director: DIRECTOR_NAV_SECTIONS,
-  training_coordinator: CENTER_NAV_SECTIONS,
+  training_coordinator: COORDINATOR_NAV_SECTIONS,
   center_assistant: CENTER_NAV_SECTIONS,
 }
 
@@ -191,10 +177,9 @@ const LEARNER_SECTION_VISIBILITY = {
  */
 export function resolvePortalNavSections(roles, lms, user) {
   const sections = getPortalNavSections(roles)
-  // Formateur : l'onglet des sessions suit la section, absente sans session a venir.
+  // Formateur : mêmes règles de visibilité que la page (config du portail).
   if (getPrimaryRole(roles) === 'trainer') {
-    const aVenir = sessionsAVenir(sessionsDuFormateur(user)).length > 0
-    return aVenir ? sections : sections.filter(s => s.key !== 'sessions-a-venir')
+    return navFromConfig(trainerPortal, { ctx: { user, roles: roles ?? [], lms }, selectors: trainerSelectors })
   }
   if (getPrimaryRole(roles) !== 'learner' || !lms) return sections
   return sections.filter(section => {

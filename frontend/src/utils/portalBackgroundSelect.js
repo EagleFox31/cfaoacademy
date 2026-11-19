@@ -13,6 +13,7 @@ export const PORTAL_BACKGROUND_IMAGES = {
   dpsEquipment: '/assets/directeur_op_engins.jpg',
   trainer: '/assets/formation_motorisation_centre_formation.jpg',
   centerDirector: '/assets/directeur_centre_formation.jpg',
+  rh: '/assets/img_cards/devis_filiale.jpg',
   yamahaTechnician: '/assets/hover_section_motors/08_hover_yamaha_bg.png',
   mercedesTechnician: '/assets/hover_section_motors/02_hover_mercedes_bg.png',
   equipmentTechnician: '/assets/hero/cta_hover_pl.jpg',
@@ -30,16 +31,27 @@ export const PORTAL_BACKGROUND_POSITIONS = {
   dpsEquipment: '58% 12%',
   trainer: '55% 22%',
   centerDirector: '80% 20%',
+  rh: '50% 30%',
   yamahaTechnician: '70% 8%',
   mercedesTechnician: '70% 8%',
   equipmentTechnician: '74% 5%',
   motorsDefault: '70% 8%',
 }
 
+/**
+ * Voile blanc des sections claires (impaires), si la photo est trop sombre
+ * pour que deux sections qui se suivent se distinguent. Défaut : 0.32 (portal.css).
+ */
+export const PORTAL_BACKGROUND_VEILS = {
+  rh: 0.62,
+}
+
 const ADMIN_ROLES = new Set([
   'superadmin', 'build_team', 'group_admin', 'group_director', 'group_hr',
   'regional_director', 'branch_director', 'branch_hr', 'branch_admin',
 ])
+// RH et administrateurs : leur photo (réunion de travail), pas le chantier des autres rôles d'administration.
+const RH_ROLES = new Set(['group_hr', 'group_admin', 'branch_hr', 'branch_admin'])
 const MANAGER_ROLES = new Set(['dps', 'dop'])
 // Le visuel « trainer » est la photo du centre de formation : toute l'équipe du centre l'a.
 const TRAINER_ROLES = new Set(['trainer', 'ki', 'pic', 'center_director', 'training_coordinator', 'center_assistant'])
@@ -88,6 +100,7 @@ function pack(key) {
     key,
     src: PORTAL_BACKGROUND_IMAGES[key] ?? PORTAL_BACKGROUND_IMAGES.default,
     position: PORTAL_BACKGROUND_POSITIONS[key] ?? PORTAL_BACKGROUND_POSITIONS.default,
+    veil: PORTAL_BACKGROUND_VEILS[key] ?? null,
     isAdminView: key === 'b2b',
   }
 }
@@ -98,6 +111,10 @@ function pack(key) {
  */
 export function resolvePortalBackgroundSelection(user) {
   if (!user) return pack('default')
+
+  if (user.roles?.some(role => RH_ROLES.has(role)) && !user.roles.includes('superadmin')) {
+    return pack('rh')
+  }
 
   if (user.roles?.some(role => ADMIN_ROLES.has(role))) {
     return pack('b2b')

@@ -59,7 +59,7 @@ describe('portail du formateur', () => {
     }
     const titres = [...host.querySelectorAll('section#competences .pv-card-title, section#competences h3')]
       .map(n => n.textContent)
-    expect(titres.join(' ')).toContain(t.results_card)
+    for (const p of ['junior', 'senior', 'expert']) expect(titres.join(' ')).toContain(t[`results_${p}_card`])
     expect(host.textContent).not.toContain('undefined')
   })
 

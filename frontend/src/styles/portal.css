@@ -8,7 +8,8 @@
 body.portal-bg-active {
   background-color: var(--paper-3);
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.32)),
+    /* Voile renforcé par photo trop sombre : PORTAL_BACKGROUND_VEILS. */
+    linear-gradient(rgba(255, 255, 255, var(--portal-page-veil, 0.32)), rgba(255, 255, 255, var(--portal-page-veil, 0.32))),
     var(--portal-page-bg);
   background-size: cover;
   background-position: var(--portal-page-bg-position, center);
@@ -10812,6 +10813,10 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 28px;
   padding-bottom: 40px;
+}
+/* Photo RH sombre : la section des plans passe en bleu gris plus clair pour se détacher. */
+body[data-portal-bg="rh"] .portal-page #pif {
+  background: rgba(84, 100, 138, 0.82) !important;
 }
 .portal-page #pif .portal-section-title,
 #pif.portal-pif-filiale-section .portal-section-title,

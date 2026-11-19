@@ -27,6 +27,15 @@ export function filiales(d = DEMO) {
   return [...d.filiales].sort((a, b) => a.pays.localeCompare(b.pays, 'fr'))
 }
 
+/** Code de la filiale d'un pays (`user.pays`), sans tenir compte des accents
+ * ni de la forme de l'apostrophe ; null si le pays n'est pas dans le jeu. */
+export function codeFiliale(pays, d = DEMO) {
+  const norme = s => (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\u2019']/g, "'").toLowerCase().trim()
+  if (!norme(pays)) return null
+  return d.filiales.find(f => norme(f.pays) === norme(pays))?.code ?? null
+}
+
 export function nomFiliale(code, d = DEMO) {
   return d.filiales.find(f => f.code === code)?.pays ?? 'Filiale non renseignée'
 }
@@ -105,7 +114,13 @@ export function syntheseCompetences(p = PERIMETRE_GROUPE, d = DEMO) {
     })
     .filter(l => l.techniciens > 0)
     .sort((a, b) => (a.couverture ?? 0) - (b.couverture ?? 0))
-  return { campagne: d.campagnesMesure[0], ...bilan(actifs), parFiliale }
+  // Par niveau du technicien (Maintenance, Réparation, Diagnostic).
+  const parNiveau = NIVEAUX.map(niveau => {
+    const ici = actifs.filter(t => t.niveau === niveau)
+    const evalues = ici.filter(t => t.evalue)
+    return { niveau, techniciens: ici.length, evalues: evalues.length, moyenne: moyenne(evalues.map(t => t.score)) }
+  })
+  return { campagne: d.campagnesMesure[0], ...bilan(actifs), parFiliale, parNiveau }
 }
 
 /** PIF : techniciens evalues, avec un plan, plan valide — par filiale et BU. */
