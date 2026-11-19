@@ -23,7 +23,10 @@ def test_la_barre_du_haut_echappe_a_la_regle_des_liens_de_la_carte():
     assert "document.body.insertBefore(barre" in js
     assert ".login-pf-page .cfao-topbar" not in _css()
     # Sortie vers l'accueil en texte visible ; un seul logo, celui de la carte.
-    assert "home.href = '/'" in js and "Accueil" in js
+    assert "home.href = accueilApplication()" in js and "Accueil" in js
+    # Keycloak peut vivre sur un autre hôte que l'application : l'accueil suit le
+    # redirect_uri validé, jamais la racine de l'hôte de Keycloak seule.
+    assert "get('redirect_uri')" in js and "kc-form-login" in js
     assert "logo" not in _css().split(".cfao-topbar-home")[1].split("}")[0]
 
 
