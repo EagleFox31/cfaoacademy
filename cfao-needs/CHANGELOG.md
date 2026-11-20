@@ -7,3 +7,8 @@ version sans sa section. L'API et la passerelle ont des numéros distincts : pr�
 chaque puce par « API : » ou « Passerelle : ».
 
 ## [Unreleased]
+
+## [0.4.0] - 2026-11-20
+
+- Passerelle : l'application s'ouvre désormais à l'adresse `/besoins/`, comme les autres applications CFAO Academy. Les anciens liens à la racine redirigent vers `/besoins/`.
+- Passerelle : la page d'accueil n'est plus gardée en cache par le navigateur ; une nouvelle version s'affiche sans vider le cache.
