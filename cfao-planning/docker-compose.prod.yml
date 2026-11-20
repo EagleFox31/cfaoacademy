@@ -42,6 +42,7 @@ services:
     environment: &api_env
       DJANGO_SETTINGS_MODULE: config.settings.prod
       DJANGO_ALLOWED_HOSTS: ${PLANNING_ALLOWED_HOSTS:?PLANNING_ALLOWED_HOSTS manquant (hôtes publics + planning-api)}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${PLANNING_CSRF_TRUSTED_ORIGINS:-}
       PLANNING_SECRET_KEY: ${PLANNING_SECRET_KEY:?PLANNING_SECRET_KEY est obligatoire}
       PLANNING_DEPLOYMENT_MODE: ${PLANNING_DEPLOYMENT_MODE:-standalone}
       PLANNING_DB_HOST: planning-db
