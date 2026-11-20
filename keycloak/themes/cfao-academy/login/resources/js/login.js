@@ -64,6 +64,8 @@ document.addEventListener('DOMContentLoaded', function () {
     document.body.insertBefore(barre, document.body.firstChild);
   }
 
+  relancerAvantExpiration();
+
   // Chaque langue écrite dans sa propre langue (« English », pas « Anglais (English) »),
   // avec son attribut lang pour les lecteurs d'écran.
   var endonymes = { fr: 'Français', en: 'English', pt: 'Português' };
@@ -76,3 +78,84 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 });
+
+// Page de connexion laissée ouverte : la tentative de connexion de Keycloak expire
+// au bout de 30 min (délai par défaut du realm). Avant cela, la page relance la
+// connexion d'elle-même (même adresse que le lien « Recommencer » de Keycloak),
+// sans message ni clic : l'utilisateur ne voit jamais « délai expiré ». Pas de
+// relance pendant la saisie ; l'identifiant (jamais le mot de passe) est reporté.
+var CFAO_RELANCE_MS = 25 * 60 * 1000;
+var CFAO_INACTIF_MS = 60 * 1000;
+var CFAO_EXPIRE_MS = 29 * 60 * 1000;
+
+function adresseRelance(formulaire) {
+  try {
+    var action = new URL(formulaire.action, window.location.href);
+    if (!/\/login-actions\/authenticate$/.test(action.pathname)) return null;
+    var relance = new URL(action.pathname.replace(/authenticate$/, 'restart'), action.origin);
+    ['client_id', 'tab_id', 'client_data'].forEach(function (cle) {
+      var valeur = action.searchParams.get(cle);
+      if (valeur) relance.searchParams.set(cle, valeur);
+    });
+    relance.searchParams.set('skip_logout', 'true');
+    return relance.searchParams.get('client_id') ? relance.href : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function relancerAvantExpiration() {
+  var formulaire = document.getElementById('kc-form-login');
+  var identifiant = document.getElementById('username');
+  if (!formulaire) return;
+  var cible = adresseRelance(formulaire);
+  if (!cible) return;
+
+  try {
+    var reporte = window.sessionStorage.getItem('cfaoIdentifiant');
+    var relancee = window.sessionStorage.getItem('cfaoRelance') === '1';
+    window.sessionStorage.removeItem('cfaoIdentifiant');
+    window.sessionStorage.removeItem('cfaoRelance');
+    if (reporte && identifiant && !identifiant.value) identifiant.value = reporte;
+    // Relance après une expiration déjà passée (poste en veille) : Keycloak sert un
+    // formulaire neuf et valable mais y joint « délai expiré ». Message sans objet ici :
+    // retiré, seulement quand c'est cette page qui a relancé.
+    if (relancee) {
+      document.querySelectorAll('.alert-error').forEach(function (alerte) {
+        if (!alerte.closest('form')) alerte.remove();
+      });
+    }
+  } catch (e) { /* stockage indisponible : rien à reporter */ }
+
+  var debut = Date.now();
+  var derniereSaisie = 0;
+  ['input', 'keydown'].forEach(function (evenement) {
+    formulaire.addEventListener(evenement, function () { derniereSaisie = Date.now(); });
+  });
+
+  function relancer() {
+    try {
+      window.sessionStorage.setItem('cfaoRelance', '1');
+      if (identifiant && identifiant.value) window.sessionStorage.setItem('cfaoIdentifiant', identifiant.value);
+    } catch (e) { /* stockage indisponible : l'identifiant sera ressaisi */ }
+    window.location.replace(cible);
+  }
+
+  function verifier() {
+    var maintenant = Date.now();
+    var inactif = document.hidden || maintenant - derniereSaisie > CFAO_INACTIF_MS;
+    if (maintenant - debut > CFAO_RELANCE_MS && inactif) relancer();
+  }
+
+  // Envoi d'un formulaire déjà expiré (poste resté en veille) : relance plutôt qu'erreur.
+  formulaire.addEventListener('submit', function (evenement) {
+    if (Date.now() - debut > CFAO_EXPIRE_MS) {
+      evenement.preventDefault();
+      relancer();
+    }
+  });
+  // Les minuteries sont ralenties en arrière-plan ou en veille : contrôle aussi au retour.
+  document.addEventListener('visibilitychange', verifier);
+  window.addEventListener('focus', verifier);
+  window.setInterval(verifier, 30 * 1000);
+}
