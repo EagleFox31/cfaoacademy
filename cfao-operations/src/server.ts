@@ -10,6 +10,19 @@ app.use(express.json())
 // En-têtes de sécurité de base.
 app.disable('x-powered-by')
 
+// Journal d'accès sur la sortie standard, lu par `docker logs`.
+// Chemin sans la chaîne de requête : rien de sensible dans le journal.
+app.use((req, res, next) => {
+  const debut = process.hrtime.bigint()
+  const chemin = req.path
+  res.on('finish', () => {
+    const ms = Number(process.hrtime.bigint() - debut) / 1e6
+    // eslint-disable-next-line no-console
+    console.log(`${req.ip} "${req.method} ${chemin}" ${res.statusCode} ${ms.toFixed(1)}ms`)
+  })
+  next()
+})
+
 const api = express.Router()
 api.use(healthRouter)
 
