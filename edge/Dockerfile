@@ -15,6 +15,7 @@ LABEL org.opencontainers.image.title="CFAO Edge" \
 ENV NGINX_ENVSUBST_OUTPUT_DIR=/tmp/conf.d NGINX_ENVSUBST_FILTER=^EDGE_
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY snippets/ /etc/nginx/snippets/
+COPY njs/ /etc/nginx/njs/
 COPY templates/ /etc/nginx/templates/
 COPY pages/ /usr/share/nginx/edge/
 # Le bit exécutable ne survit pas à un poste Windows : il est posé ici.

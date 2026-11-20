@@ -30,6 +30,7 @@ services:
       EDGE_CR_UPSTREAM: ${EDGE_CR_UPSTREAM:-}
       EDGE_PLANNING_UPSTREAM: ${EDGE_PLANNING_UPSTREAM:-}
       EDGE_CORE_UPSTREAM: ${EDGE_CORE_UPSTREAM:-}
+      EDGE_SUPERVISION_UPSTREAM: ${EDGE_SUPERVISION_UPSTREAM:-}
       # Vide : aucune écoute directe du LAN.
       EDGE_LAN: ${EDGE_LAN:-}
     healthcheck:

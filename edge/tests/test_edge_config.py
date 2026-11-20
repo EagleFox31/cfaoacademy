@@ -23,7 +23,7 @@ def test_liste_blanche_des_routes():
     # Toute nouvelle route publique doit modifier ce test, donc être relue.
     trouvees = sorted(loc for m in MODELES for loc in _locations(_texte(m)))
     assert trouvees == sorted(["/", "/", "/auth/", "/auth", r"^/auth/(realms/cfao|resources)/", "/cr", "/cr/", "/api/v1/planning/",
-                                 "/api/v1/planning/internal/", "/api/v1/core/"])
+                                 "/api/v1/planning/internal/", "/api/v1/core/", "/api/v1/supervision/"])
 
 
 def test_routes_internes_jamais_publiees():
@@ -85,7 +85,7 @@ def test_page_d_attente_dans_chaque_bloc_server():
 
 def test_api_garde_ses_propres_erreurs():
     # Un 503 de l'API garde son corps ; les routes HTML relaient la page d'attente.
-    for api in ("planning", "core"):
+    for api in ("planning", "core", "supervision"):
         assert "proxy_intercept_errors" not in "\n".join(
             ligne for ligne in _texte(EDGE / "templates" / "routes" / f"{api}.conf.template").splitlines()
             if not ligne.lstrip().startswith("#")), api
@@ -105,6 +105,17 @@ def test_journal_sans_donnee_sensible():
                      "$http_cookie", "$http_authorization", "$request "):
         assert interdit not in format_, interdit
     assert "server_tokens off" in conf
+    # Du jeton, seuls `sub` et `azp` sont journalisés (supervision des connexions).
+    assert re.findall(r"\$edge_(sub|azp)\b", format_) == ["sub", "azp"]
+    assert re.findall(r"^\s*js_set \$(\w+) jeton\.(\w+);", conf, re.M) == [("edge_sub", "sub"), ("edge_azp", "azp")]
+    njs = _texte(EDGE / "njs" / "sub.js")
+    assert re.findall(r"pick\(r, '(\w+)'", njs) == ["sub", "azp"]
+    assert "COPY njs/ /etc/nginx/njs/" in _texte(EDGE / "Dockerfile")
+
+
+def test_route_supervision_optionnelle():
+    actifs = _texte(EDGE / "entrypoint.d" / "25-modules-actifs.sh")
+    assert 'EDGE_SUPERVISION_UPSTREAM:-' in actifs and 'rm -f "$routes/supervision.conf"' in actifs
 
 
 def test_directives_de_securite():
@@ -122,7 +133,8 @@ def test_variables_declarees_partout():
     compose = yaml.safe_load(_texte(EDGE / "compose.prod.yml"))["services"]["edge"]["environment"]
     exemple = _texte(EDGE / ".env.prod.example")
     exiger = _texte(EDGE / "entrypoint.d" / "05-exiger-variables.sh")
-    optionnelles = {"EDGE_KEYCLOAK_UPSTREAM", "EDGE_CR_UPSTREAM", "EDGE_PLANNING_UPSTREAM", "EDGE_CORE_UPSTREAM"}
+    optionnelles = {"EDGE_KEYCLOAK_UPSTREAM", "EDGE_CR_UPSTREAM", "EDGE_PLANNING_UPSTREAM", "EDGE_CORE_UPSTREAM",
+                    "EDGE_SUPERVISION_UPSTREAM"}
     for v in utilisees:
         assert v in compose, v
         assert re.search(rf"^{v}=", exemple, re.M), v
