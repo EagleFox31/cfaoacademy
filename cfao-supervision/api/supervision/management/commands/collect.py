@@ -14,7 +14,7 @@ from django.core.management.base import BaseCommand
 from django.db import connection
 from django.utils import timezone
 
-from supervision.collectors import activity, docker_collector
+from supervision.collectors import activity, docker_collector, firewall
 from supervision.models import CollectRun
 
 log = logging.getLogger("supervision.collect")
@@ -23,12 +23,16 @@ RETENTION_INTERVAL_S = 86400
 
 
 def sources() -> dict:
-    return {
+    found = {
         "docker": (settings.DOCKER_INTERVAL_S, docker_collector.collect),
         "edge": (settings.EDGE_INTERVAL_S, activity.collect_edge),
         "keycloak": (settings.KEYCLOAK_INTERVAL_S, activity.collect_keycloak),
         "retention": (RETENTION_INTERVAL_S, activity.purge),
     }
+    # Sans journal du pare-feu (recette), la source n'existe pas : l'écran le dit.
+    if settings.UFW_LOG_PATH:
+        found[firewall.SOURCE] = (settings.UFW_INTERVAL_S, firewall.collect)
+    return found
 
 
 def run_source(name: str, func) -> bool:

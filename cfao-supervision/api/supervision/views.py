@@ -3,7 +3,8 @@
 Accès : ressource Cerbos `supervision_board` (état, versions, dépendances) et
 `supervision_connections` (qui s'est connecté), action `read`, rôles platform_ops
 et superadmin. Jamais exposés : identifiant Docker, identifiant d'image,
-identifiant Keycloak d'un compte, adresse IP.
+identifiant Keycloak d'un compte, adresse IP (sauf celle d'un poste refusé par le
+pare-feu, vue `refused`, ressource `supervision_connections`).
 """
 from __future__ import annotations
 
@@ -21,6 +22,7 @@ from core.authz.permissions import CerbosPermission
 
 from . import contracts
 from . import status as rules
+from .collectors import firewall
 from .models import CollectRun, Container, ContainerEvent, Module, UserModuleAccess
 
 UNKNOWN_USER = None  # le front affiche « Compte pas encore identifié »
@@ -172,9 +174,13 @@ class OverviewView(BoardView):
             for summary in summaries:
                 row = latest.get(summary["project"])
                 summary["last_connection"] = _access_row(*row) if row else None
+            refused = firewall.summary(hours=1)
+            body_refused = {"alerts": refused["alerts"], "recent": sum(n["recent"] for n in refused["networks"])}
+        else:
+            body_refused = None
         counts = {key: sum(1 for s in summaries if s["status"] == key)
                   for key in ("ok", "done", "starting", "degraded", "crashloop", "down")}
-        return Response({**_collect_state(), "counts": counts, "modules": summaries})
+        return Response({**_collect_state(), "counts": counts, "modules": summaries, "refused": body_refused})
 
 
 def _get_module(project: str) -> Module:
@@ -276,3 +282,17 @@ class ConnectionsView(APIView):
     def get(self, request):
         return Response({"retention_days": settings.ACCESS_RETENTION_DAYS,
                          "connections": [_access_row(*row) for row in _accesses()[:CONNECTIONS_LIMIT]]})
+
+
+class RefusedView(ConnectionsView):
+    """Postes refusés par le pare-feu du serveur. Seule vue qui montre une adresse IP
+    (celle du poste, pour le retrouver), d'où la même ressource que les connexions."""
+
+    def get(self, request):
+        try:
+            hours = min(max(int(request.query_params.get("hours", 24)), 1), 24 * 7)
+        except ValueError:
+            hours = 24
+        run = CollectRun.objects.filter(source=firewall.SOURCE).first()
+        source = None if run is None else {"ok": run.ok, "last_success_at": _iso(run.last_success_at)}
+        return Response({**firewall.summary(hours=hours), "source": source})
