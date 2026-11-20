@@ -1,6 +1,6 @@
 // CFAO Academy - Keycloak Login Enhancements
 // Ajoute des placeholders accessibles aux champs de saisie
-document.addEventListener('DOMContentLoaded', function () {
+if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', function () {
   var lang = (document.documentElement.lang || 'fr').slice(0, 2);
   var exemples = { fr: 'ex. prenom.nom@cfao.com', pt: 'ex. nome.apelido@cfao.com' };
   var usernameInput = document.getElementById('username') || document.querySelector('input[name="username"]');
@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   relancerAvantExpiration();
+  jaugeMotDePasse(lang);
 
   // Chaque langue écrite dans sa propre langue (« English », pas « Anglais (English) »),
   // avec son attribut lang pour les lecteurs d'écran.
@@ -159,3 +160,109 @@ function relancerAvantExpiration() {
   window.addEventListener('focus', verifier);
   window.setInterval(verifier, 30 * 1000);
 }
+
+// Jauge de force du nouveau mot de passe (pages « mettre à jour » et « réinitialiser »
+// le mot de passe, champ #password-new). Indicative : la règle qui fait foi est la
+// politique de mot de passe du realm. Rien n'est envoyé, tout se calcule dans la page.
+var CFAO_MOTS_FAIBLES = ['cfao', 'academy', 'password', 'motdepasse', 'senha', 'azerty', 'qwerty',
+  'admin', 'demo', 'welcome', 'bienvenue', 'soleil', 'toyota', 'mobility'];
+
+/** Force de 0 (très faible) à 4 (très fort) ; null si vide. `interdits` : identifiant, e-mail. */
+function forceMotDePasse(mdp, interdits) {
+  if (!mdp) return null;
+  var bas = mdp.toLowerCase();
+  var classes = [/[a-z]/, /[A-Z]/, /[0-9]/, /[^A-Za-z0-9]/]
+    .filter(function (motif) { return motif.test(mdp); }).length;
+  var score = mdp.length < 8 ? 0 : mdp.length < 12 ? 1 : mdp.length < 16 ? 2 : 3;
+  if (classes >= 3) score += 1;
+  if (classes === 1 && mdp.length < 20) score -= 1;
+  // Même caractère 3 fois de suite, ou suite évidente (abc, 123, azerty).
+  if (/(.)\1\1/.test(mdp) || /(abc|bcd|cde|123|234|345|456|567|678|789|890|987|321)/.test(bas)) score -= 1;
+  var mots = CFAO_MOTS_FAIBLES.concat((interdits || []).reduce(function (liste, valeur) {
+    return liste.concat(String(valeur || '').toLowerCase().split(/[@._\-\s]+/));
+  }, []));
+  var contientMot = mots.some(function (mot) { return mot.length >= 4 && bas.indexOf(mot) !== -1; });
+  if (contientMot) score = Math.min(score, 1);
+  // Refusé par la politique du realm (12 caractères, une majuscule, un chiffre, un
+  // caractère spécial) : jamais au-dessus de « faible ».
+  if (!respectePolitique(mdp)) score = Math.min(score, 1);
+  return Math.max(0, Math.min(4, score));
+}
+
+/** Miroir de `passwordPolicy` dans keycloak/config/cfao-realm.yaml. */
+function respectePolitique(mdp) {
+  return mdp.length >= 12 && /[A-Z]/.test(mdp) && /[0-9]/.test(mdp) && /[^A-Za-z0-9]/.test(mdp);
+}
+
+function jaugeMotDePasse(lang) {
+  var champ = document.getElementById('password-new');
+  if (!champ || document.querySelector('.cfao-jauge')) return;
+  var textes = {
+    fr: { niveaux: ['Très faible', 'Faible', 'Moyen', 'Fort', 'Très fort'], titre: 'Force du mot de passe',
+      conseil: 'Au moins 12 caractères, dont une majuscule, un chiffre et un caractère spécial (! ? # …). Évitez votre nom et « cfao ».' },
+    en: { niveaux: ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong'], titre: 'Password strength',
+      conseil: 'At least 12 characters, including an uppercase letter, a digit and a special character (! ? # …). Avoid your name and "cfao".' },
+    pt: { niveaux: ['Muito fraca', 'Fraca', 'Média', 'Forte', 'Muito forte'], titre: 'Força da senha',
+      conseil: 'Pelo menos 12 caracteres, com uma maiúscula, um número e um caractere especial (! ? # …). Evite seu nome e "cfao".' },
+  }[lang] || null;
+  if (!textes) textes = { niveaux: ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong'], titre: 'Password strength',
+    conseil: 'At least 12 characters, including an uppercase letter, a digit and a special character (! ? # …).' };
+  var couleurs = ['#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#15803d'];
+
+  if (!document.getElementById('cfao-jauge-style')) {
+    var style = document.createElement('style');
+    style.id = 'cfao-jauge-style';
+    style.textContent =
+      '.cfao-jauge{margin:8px 0 4px}' +
+      '.cfao-jauge-barres{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}' +
+      '.cfao-jauge-barres span{height:6px;border-radius:3px;background:#e5e7eb;transition:background .2s}' +
+      '.cfao-jauge-ligne{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:13px}' +
+      '.cfao-jauge-niveau{font-weight:600}' +
+      '.cfao-jauge-conseil{margin:4px 0 0;font-size:12px;color:#6b7280}';
+    document.head.appendChild(style);
+  }
+
+  var jauge = document.createElement('div');
+  jauge.className = 'cfao-jauge';
+  var barres = document.createElement('div');
+  barres.className = 'cfao-jauge-barres';
+  barres.setAttribute('aria-hidden', 'true');
+  for (var i = 0; i < 4; i++) barres.appendChild(document.createElement('span'));
+  var ligne = document.createElement('div');
+  ligne.className = 'cfao-jauge-ligne';
+  var titre = document.createElement('span');
+  titre.textContent = textes.titre;
+  var niveau = document.createElement('span');
+  niveau.className = 'cfao-jauge-niveau';
+  niveau.setAttribute('aria-live', 'polite');
+  ligne.appendChild(titre);
+  ligne.appendChild(niveau);
+  var conseil = document.createElement('p');
+  conseil.className = 'cfao-jauge-conseil';
+  conseil.textContent = textes.conseil;
+  jauge.appendChild(barres);
+  jauge.appendChild(ligne);
+  jauge.appendChild(conseil);
+
+  // Sous le groupe champ + bouton « afficher », pas entre les deux.
+  var ancre = champ.closest('.pf-c-input-group, .pf-v5-c-input-group, .kc-input-group') || champ;
+  ancre.insertAdjacentElement('afterend', jauge);
+
+  var identifiant = document.getElementById('username');
+  var interdits = [identifiant && identifiant.value];
+
+  function majJauge() {
+    var force = forceMotDePasse(champ.value, interdits);
+    var pleines = force === null ? 0 : Math.max(1, force);
+    Array.prototype.forEach.call(barres.children, function (barre, rang) {
+      barre.style.background = rang < pleines ? couleurs[force] : '';
+    });
+    niveau.textContent = force === null ? '' : textes.niveaux[force];
+    niveau.style.color = force === null ? '' : couleurs[force];
+  }
+  champ.addEventListener('input', majJauge);
+  majJauge();
+}
+
+// Tests (node) : le calcul de la force, sans navigateur.
+if (typeof module !== 'undefined' && module.exports) module.exports = { forceMotDePasse: forceMotDePasse };

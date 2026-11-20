@@ -43,3 +43,15 @@ def test_exemple_du_champ_traduit():
     for exemple in ("prenom.nom@", "nome.apelido@", "firstname.lastname@"):
         assert exemple in js
     assert "setAttribute('placeholder', 'ex. prenom" not in js
+
+
+def test_jauge_du_nouveau_mot_de_passe_branchee_et_traduite():
+    """Calcul testé par node (jauge_mot_de_passe.test.cjs) ; ici le branchement."""
+    js = JS.read_text(encoding="utf-8")
+    assert "jaugeMotDePasse(lang);" in js
+    assert "getElementById('password-new')" in js
+    for niveau in ("Très fort", "Very strong", "Muito forte"):
+        assert niveau in js
+    # Rien ne part du navigateur : pas d'appel réseau dans la jauge.
+    jauge = js.split("function jaugeMotDePasse")[1]
+    assert "fetch(" not in jauge and "XMLHttpRequest" not in jauge

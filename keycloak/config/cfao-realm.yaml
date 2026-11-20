@@ -13,6 +13,10 @@ loginWithEmailAllowed: true
 duplicateEmailsAllowed: false
 resetPasswordAllowed: true
 bruteForceProtected: true
+# Mot de passe (décision de l'utilisateur, 20/11) : 12 caractères au moins, dont une
+# majuscule, un chiffre et un caractère spécial. Vérifié à chaque création ou
+# changement de mot de passe ; la jauge du thème (login.js) en est le miroir.
+passwordPolicy: "length(12) and upperCase(1) and digits(1) and specialChars(1)"
 # ── Durées de session (décision fédération : session de 8 h) ──
 # JWT court : 15 minutes. La continuité est assurée par le Silent Refresh côté SPA.
 accessTokenLifespan: 900
