@@ -20,7 +20,7 @@ Le dépôt est public jusqu'au début de décembre : les valeurs par défaut éc
 | Clé secrète et mot de passe de base du service mail | keycloak/tests/compose.hub.smoke.yml l.12, 24, 75 | Test seulement ; même vérification que le hub mail en prod |
 | Mots de passe de dev du compose edge (base, Keycloak, admin, secret du portail) | edge/compose.dev.yml l.28, 44, 46, 89, 95 | Dev seulement ; vérifier que la prod ne les reprend pas |
 | Mot de passe de la base core et du service comptes rendus | aucun défaut | Relu le 19/11 : core, comptes rendus, supervision et planning exigent déjà chaque secret (`${X:?...}`), sauf la clé d'écriture du catalogue (défaut vide, voir ci-dessous) |
-| Clé d'écriture du catalogue (`NEEDS_CATALOG_WRITE_KEY` côté planning l.60, `NEEDS_CATALOG_WRITE_INBOUND_KEY` côté needs l.78) | défaut **vide** des deux côtés | Pas une valeur connue, mais un défaut vide laisse l'échange sans clé : à rendre obligatoire avec les autres |
+| Clé d'écriture du catalogue (`NEEDS_CATALOG_WRITE_KEY` côté planning l.60, `NEEDS_CATALOG_WRITE_INBOUND_KEY` côté needs l.78) | défaut **vide** des deux côtés | Pas un risque : clé vide = écriture refusée des deux côtés (needs `analytics/views.py:269`, planning `clients/needs.py:312`). Effet : la modification du niveau d'un module depuis la clé de répartition des coûts (planning) est désactivée en prod. Rien à changer vendredi ; à créer seulement si l'on veut cette fonction |
 
 **Relevé du 19/11 (lecture des compose de prod, valeurs non recopiées)** : seul cfao-needs a des valeurs par défaut réelles, aux lignes 42 (mot de passe base, 24 caractères), 57 (clé Django, 64 caractères) et 62 (mot de passe base). Les autres modules sont déjà conformes : le travail dans le dépôt se limite à needs et à la clé du catalogue.
 
@@ -46,7 +46,32 @@ Les lignes dev et test ne sont un risque que si le serveur utilise les mêmes va
 - Les clés partagées entre deux fichiers (analytics core/needs/planning, snapshot needs/planning) sont les clés d'échange, voulues identiques.
 - Tous les autres secrets sont propres (longueur suffisante, valeurs propres au serveur).
 
-## À décider par l'utilisateur (reste)
-- Purge de l'historique : non (recommandé).
-- Fenêtre de changement : jour et heure.
-- Accord pour l'inventaire en lecture seule sur le serveur (étape 1).
+## Fait le 19/11 vers 18 h 30 (avancé par l'utilisateur, GO de manitou, verrou sentinelle)
+- Sauvegarde dans `/home/academy/backups/needs-20261119-18xx` : dump de la base, les deux .env, archive du volume de l'ancien Keycloak.
+- NEEDS_DB_PASSWORD changé (64 caractères) dans Postgres et dans le .env. L'API se connecte ; l'ancien défaut public est refusé à l'authentification.
+- KC_* retirés du .env de needs, volume `cfao-needs_needs-kc-db-data` supprimé après archive.
+- Handshake actif : les deux clés font 64 caractères ; test depuis planning-api : 400 / 403 / 403.
+- Les deux .env en 600. Needs répond via edge (200) ; aucune erreur dans les journaux de l'API, du worker et du relay.
+- Reste : l'utilisateur change le niveau d'un module à l'écran, puis le remet.
+- La fenêtre de vendredi 18 h n'a plus d'objet pour needs.
+
+## Fenêtre retenue (prévue au départ)
+- **Vendredi 20/11 à 18 h** (décision de l'utilisateur, 19/11). L'inventaire étant déjà fait, pas de nouveau passage le matin.
+- À changer : **NEEDS_DB_PASSWORD** (vide dans cfao-needs/.env, donc le compose de prod retombe sur sa valeur par défaut publique). Changer dans Postgres puis dans le .env.
+- KC_ADMIN_PASSWORD, KC_DB_PASSWORD : **pas à changer**, à supprimer du .env. Le Keycloak de needs ne sert plus (décision de l'utilisateur, 19/11) et le compose de prod ne le déclare plus ; ces variables ne sont lues par rien. Le 20/11 à 18 h, vérifier sur le serveur qu'aucun conteneur `needs-keycloak` / `needs-kc-db` d'un ancien déploiement ne tourne encore ; s'il en reste, sauvegarder puis arrêter et supprimer conteneurs et volume. Retrait côté dépôt : cfao-needs/A-CORRIGER.md point KC (autre machine).
+- **Handshake planning → needs** (nom donné par l'utilisateur à la clé d'écriture du catalogue) : à **activer** vendredi (décision du 19/11).
+  - Recette 8088 : déjà active, la même clé des deux côtés (comparée par empreinte). Preuve du 19/11, faite depuis le conteneur planning-api : bonne clé avec un corps vide → 400 (clé acceptée, rien d'écrit) ; mauvaise clé → 403 ; sans clé → 403.
+  - Prod, sur le serveur : générer **une** clé, la même dans les deux .env, sans jamais l'afficher. Copier le .env avant :
+    ```sh
+    K=$(openssl rand -hex 32)
+    for p in /srv/apps/cfao-planning/.env:NEEDS_CATALOG_WRITE_KEY /srv/apps/cfao-needs/.env:NEEDS_CATALOG_WRITE_INBOUND_KEY; do
+      f=${p%%:*}; v=${p##*:}; cp -p "$f" "$f.avant-2011"
+      if grep -q "^$v=" "$f"; then sed -i "s|^$v=.*|$v=$K|" "$f"; else echo "$v=$K" >> "$f"; fi
+      chmod 600 "$f"
+    done; unset K
+    ```
+    Chemins et droits relevés par manitou le 19/11 : planning est en 600 ; needs est en 660 (academy:academy) et le `chmod 600` de la boucle le corrige. Le projet compose de planning se relit sur le serveur au moment du geste.
+    Puis relancer planning-api et needs-api (`up -d`, needs redémarre déjà pour son mot de passe). Relancer ne suffit pas à prouver que planning a repris la clé : le test à 3 appels le prouve, depuis planning-api.
+  - Ordre : verrou `deploy:serveur` posé par manitou à 18 h ; aucune action avant son « go ».
+  - Preuve après : le même test à 3 appels depuis planning-api (400 / 403 / 403), puis l'utilisateur change le niveau d'un module à l'écran et le remet.
+  - Ancien constat, pour l'historique : NEEDS_CATALOG_WRITE_KEY vide côté planning (lu le 19/11). Vide = écriture refusée, donc aucun risque ; seule conséquence, la modification du niveau d'un module depuis planning ne marche pas en prod. Si l'utilisateur la veut : générer une clé et la poser, identique, dans les deux .env (planning : NEEDS_CATALOG_WRITE_KEY ; needs : NEEDS_CATALOG_WRITE_INBOUND_KEY). Les deux compose la transmettent déjà (planning l.58, needs l.78).
