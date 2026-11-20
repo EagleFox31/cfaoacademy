@@ -11,6 +11,10 @@ RUN /opt/venv/bin/pip install -r /tmp/requirements.txt
 
 # -- Image d'execution.
 FROM python:3.12-slim
+# contracts:begin - bloc géré par contracts/sync.py, ne pas éditer
+LABEL org.cfao.contracts.consumes="cr-sessions@^1" \
+      org.cfao.module="cfao-comptes-rendus"
+# contracts:end
 
 # LibreOffice convertit les diapositives ; Calc rend les classeurs embarques
 # (graphiques et tableaux), sans lui leurs images restent celles du modele.

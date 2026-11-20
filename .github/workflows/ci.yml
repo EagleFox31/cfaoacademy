@@ -62,6 +62,10 @@ jobs:
               - 'cfao-planning/api/Dockerfile'
               - 'cfao-planning/api/planning/clients/**'
               - 'cfao-planning/api/planning/tests/test_needs_consumer.py'
+              - 'cfao-planning/api/planning/contract/cr-sessions.openapi.json'
+              - 'cfao-comptes-rendus/api/Dockerfile'
+              - 'cfao-comptes-rendus/api/comptes_rendus/planning.py'
+              - 'cfao-comptes-rendus/api/comptes_rendus/tests/test_planning_copie.py'
               - '.github/workflows/ci.yml'
 
   # Registre des contrats inter-modules (contracts/registry.json) : cohérence,

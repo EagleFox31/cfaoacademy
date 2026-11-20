@@ -62,4 +62,5 @@ echo " Cookie Secure    : $COOKIE_SECURE"
 echo "=========================================================="
 
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" pull
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d
+# --remove-orphans : retire l'ancien conteneur `api` (service renomme cr-api) ; volumes gardes.
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --remove-orphans

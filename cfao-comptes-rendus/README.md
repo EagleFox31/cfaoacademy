@@ -50,7 +50,7 @@ Dans `.env` : `DEPLOYMENT_MODE=local`, `DEBUG=False`, `SECRET_KEY=<longue valeur
 
 ```bash
 docker compose up -d
-docker compose exec api python manage.py mot_de_passe <identifiant> [mot de passe]
+docker compose exec cr-api python manage.py mot_de_passe <identifiant> [mot de passe]
 ```
 
 Sans mot de passe, la commande en génère un et l'affiche une seule fois. L'identifiant doit

@@ -103,9 +103,9 @@ compte technique. L'image Cerbos porte déjà la nouvelle règle du journal.
 ### 6. Contrôler, puis annoncer la fin
 
 ```sh
-dc ps                                   # cerbos, api, gateway : running ou healthy
-dc logs --tail 30 api                   # « compte technique : … cree » au premier démarrage
-dc exec api curl -fsS http://localhost:5175/apercu/sante
+dc ps                                   # cerbos, cr-api, gateway : running ou healthy
+dc logs --tail 30 cr-api                   # « compte technique : … cree » au premier démarrage
+dc exec cr-api curl -fsS http://localhost:5175/apercu/sante
 # Connexion par l'origine réelle : 400 ou 401 attendu, jamais 403
 curl -s -o /dev/null -w "%{http_code}\n" -X POST http://127.0.0.1:8092/cr-donnees/connexion \
   -H "Origin: http://192.168.10.155:8092" -H "Content-Type: application/json" -d '{}'
@@ -149,6 +149,45 @@ chaque utilisateur clique sur « Compris ». Personne n'a à recharger la page :
 Le fichier repart à
 `{"id": null, "etat": "aucune"}` au prochain redémarrage de la passerelle.
 
+## Passage au service `cr-api` (après le lot 2, sur le go de manitou)
+
+Le service `api` s'appelle désormais `cr-api` et rejoint le réseau `cfao-maillage` pour
+lire les sessions du planning (contrat `cr-sessions`). La passerelle le joint toujours
+sous le nom `api` (alias sur le réseau du module) : mêmes images, mêmes tags.
+
+Prérequis : le lot 2 et la fenêtre « une adresse » sont passés, et manitou a donné son go.
+
+0. Lister les conteneurs du projet sur le serveur, en lecture seule : `dc ps -a` et
+   `docker ps -a --filter label=com.docker.compose.project=cfao-comptes-rendus`. Seul
+   l'ancien `api` doit apparaître comme service absent du nouveau compose, donc retiré
+   par `--remove-orphans`. Sinon, arrêter.
+1. Sauvegarder (étape 2 ci-dessus), plus le `.env` (`cp .env sauvegardes/$ID.env`) et
+   les tags en service (`dc images > sauvegardes/$ID.images`). Ne pas continuer si un
+   fichier est vide.
+2. Mettre à jour `docker-compose.prod.yml`, `deploy.*`, `reprise.*`.
+3. Clé de la copie (manitou, dans cette fenêtre) : sauvegarder les `.env` du planning et
+   du module, poser la même `CR_SESSIONS_KEY` dans les deux sans l'afficher, contrôler
+   par `grep -c '^CR_SESSIONS_KEY=.\+' .env` (1 attendu dans chaque fichier), puis
+   redémarrer `planning-api` pour qu'il la lise.
+   Clé laissée vide : la copie reste coupée, le module marche comme avant.
+   `PLANNING_API_URL` vaut `http://planning-api:8000` par défaut.
+4. `./deploy.sh` (ou `.\deploy.ps1`) : il lance `up -d --remove-orphans`, qui retire
+   l'ancien conteneur `api`. Sans cette option, les deux conteneurs répondraient au nom
+   `api`. Aucun volume n'est supprimé (jamais `down -v`).
+5. Contrôler :
+
+   ```sh
+   dc ps                                   # cr-api healthy, plus aucun conteneur api
+   dc exec cr-api curl -fsS http://localhost:5175/apercu/sante
+   docker network inspect cfao-maillage --format '{{range .Containers}}{{.Name}} {{end}}'
+   dc exec cr-api python manage.py copier_planning   # si la clé est posée
+   ```
+
+Retour arrière : remettre les fichiers sauvegardés (`docker-compose.prod.yml`,
+`deploy.*`, `reprise.*`) puis `dc up -d --remove-orphans` : `cr-api` est retiré, `api`
+revient sur les mêmes volumes. La migration `0005` n'ajoute que des colonnes vides :
+l'ancienne version les ignore.
+
 ## Revenir à la version précédente
 
 1. Remettre `CR_VERSION=v0.3.0` dans le `.env` (valeur notée dans
@@ -160,7 +199,7 @@ Le fichier repart à
    dc exec -T db psql -U comptes_rendus -c "DROP DATABASE comptes_rendus WITH (FORCE)" postgres
    dc exec -T db psql -U comptes_rendus -c "CREATE DATABASE comptes_rendus" postgres
    dc exec -T db psql -U comptes_rendus comptes_rendus < sauvegardes/$ID.sql
-   dc restart api
+   dc restart cr-api
    ```
 
 Les photos et les rapports se restaurent depuis `sauvegardes/$ID-donnees.tgz` si besoin.
