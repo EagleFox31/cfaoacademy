@@ -117,6 +117,7 @@ jobs:
       - run: pip install pytest==8.2.2 PyYAML==6.0.2
       - run: pytest -q scripts/ci
       - run: python scripts/ci/compose_bootstrap.py
+      - run: python scripts/ci/compose_secrets.py
 
   cerbos:
     name: Policies Cerbos (compile + tests)
