@@ -112,6 +112,8 @@ services:
   needs-worker:
     # Django-Q — mesure 89 Mio
     mem_limit: 384m
+    # init (tini) en PID 1 : relaie SIGTERM, arrêt propre sans attendre le kill à 10 s.
+    init: true
     restart: unless-stopped
     build: ./api
     # Même image que l'API : sans root (uid 10001).
@@ -129,6 +131,8 @@ services:
   # une copie complète à cfao-planning ; reprise avec backoff si planning est arrêté.
   needs-relay:
     mem_limit: 256m
+    # init (tini) en PID 1 : relaie SIGTERM, arrêt propre sans attendre le kill à 10 s.
+    init: true
     restart: unless-stopped
     build: ./api
     # Même image que l'API : sans root (uid 10001).
