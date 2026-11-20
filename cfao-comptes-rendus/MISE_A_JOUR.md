@@ -165,10 +165,12 @@ Prérequis : le lot 2 et la fenêtre « une adresse » sont passés, et manitou 
    les tags en service (`dc images > sauvegardes/$ID.images`). Ne pas continuer si un
    fichier est vide.
 2. Mettre à jour `docker-compose.prod.yml`, `deploy.*`, `reprise.*`.
-3. Copie du planning : laisser `CR_SESSIONS_KEY` vide pour couper la copie, ou y poser la
-   même valeur que `CR_SESSIONS_KEY` du `.env` du planning (posée par l'exploitant, jamais
-   écrite dans le dépôt ni affichée). `PLANNING_API_URL` vaut `http://planning-api:8000`
-   par défaut.
+3. Clé de la copie (manitou, dans cette fenêtre) : sauvegarder les `.env` du planning et
+   du module, poser la même `CR_SESSIONS_KEY` dans les deux sans l'afficher, contrôler
+   par `grep -c '^CR_SESSIONS_KEY=.\+' .env` (1 attendu dans chaque fichier), puis
+   redémarrer `planning-api` pour qu'il la lise.
+   Clé laissée vide : la copie reste coupée, le module marche comme avant.
+   `PLANNING_API_URL` vaut `http://planning-api:8000` par défaut.
 4. `./deploy.sh` (ou `.\deploy.ps1`) : il lance `up -d --remove-orphans`, qui retire
    l'ancien conteneur `api`. Sans cette option, les deux conteneurs répondraient au nom
    `api`. Aucun volume n'est supprimé (jamais `down -v`).
