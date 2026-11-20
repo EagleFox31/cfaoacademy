@@ -10,10 +10,6 @@ RUN npm ci --no-audit --no-fund
 COPY web/ ./
 # Préfixe de service, le même que la route de cfao-edge (nginx.conf le suppose).
 ENV CR_BASE=/cr/
-# Adresse du portail (accueil formateur) : le port du portail sur l'IP du serveur par défaut ;
-# `--build-arg PORTAIL_URL=...` pour une autre (ex. l'adresse publique).
-ARG PORTAIL_URL=https://192.168.10.155:8446/
-ENV VITE_PORTAIL_URL=$PORTAIL_URL
 RUN npm run build
 
 FROM nginx:1.27-alpine
