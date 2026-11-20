@@ -202,8 +202,15 @@ export default defineConfig(({ mode }) => ({
         target: process.env.SUPERVISION_SERVICE || 'http://localhost:8007',
         changeOrigin: true,
       },
+      // cfao-needs, par sa passerelle (compose cfao-needs, port 8082).
+      '/api/v1/needs': {
+        target: process.env.NEEDS_SERVICE || 'http://localhost:8082',
+        changeOrigin: true,
+      },
+      // Le reste de /api/v1 : cfao-core (/api/v1/core/…). L'ancienne passerelle
+      // du port 8000 est retirée.
       '/api/v1': {
-        target: process.env.GATEWAY_SERVICE || 'http://localhost:8000',
+        target: process.env.CORE_SERVICE || 'http://localhost:8006',
         changeOrigin: true,
       },
       '/realms': {

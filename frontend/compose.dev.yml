@@ -40,7 +40,8 @@ services:
       VITE_OIDC_ISSUER: ${VITE_OIDC_ISSUER:-http://localhost:8088/auth/realms/cfao}
       # host.docker.internal a aussi une adresse IPv6 injoignable : sans cela, le proxy expire au hasard.
       NODE_OPTIONS: --dns-result-order=ipv4first
-      GATEWAY_SERVICE: http://host.docker.internal:8000
+      CORE_SERVICE: http://host.docker.internal:8006
+      NEEDS_SERVICE: http://host.docker.internal:8082
       KEYCLOAK_SERVICE: http://host.docker.internal:8080
       PLANNING_SERVICE: http://host.docker.internal:8005
       SUPERVISION_SERVICE: http://host.docker.internal:8007
