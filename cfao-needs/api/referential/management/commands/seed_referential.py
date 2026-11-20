@@ -95,7 +95,8 @@ DEMO_ORG_UNITS = [
 # Le premier champ est le `sub` OIDC, et c'est la SEULE jointure avec Keycloak :
 # `LocalIdentityProvider` cherche le profil par `keycloak_sub`, sans repli sur
 # l'email (core/auth/identity.py). Ces valeurs sont donc les `id` fixes des
-# comptes déclarés dans keycloak/cfao-needs-realm.json — les deux fichiers se
+# comptes de démo du realm commun (keycloak/config/dev/cfao-demo-users.yaml, à la
+# racine du dépôt) — les deux fichiers se
 # modifient ensemble. Un sub qui ne correspond pas produit une connexion réussie
 # suivie d'un refus sur tout : périmètre vide, policies en default-deny.
 PROFILES = [

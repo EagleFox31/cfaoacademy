@@ -1,8 +1,8 @@
 # cfao-needs — Identification des Besoins en Formations (app 16)
 
-> **Module détachable.** Tout ce dont il a besoin est dans ce dossier : sa base, son
-> Keycloak, son Cerbos, son worker, sa passerelle. `docker compose up` ici suffit,
-> sur une machine vierge, sans le reste du dépôt.
+> **Module détachable.** Sa base, son Cerbos, son worker et sa passerelle sont dans ce
+> dossier. L'identité vient du Keycloak commun (realm `cfao`, client `cfao-needs-web`),
+> en dev comme en prod : en local, celui de la recette (`edge/compose.dev.yml`).
 >
 > Spécification : [`../docs/SPEC_RECUEIL_BESOINS_2027.md`](../docs/SPEC_RECUEIL_BESOINS_2027.md)
 > · Stories : [`../backlog.md`](../backlog.md) §16 · PERT : nœud **N**
@@ -12,8 +12,8 @@
 ## Démarrer
 
 ```bash
-cp .env.example .env         # puis remplir les 5 secrets — aucun n'a de défaut
-cp web/.env.example web/.env # Vite lit ces valeurs AU BUILD, pas au runtime
+# Prérequis : la recette tourne (Keycloak commun sur http://localhost:8088/auth).
+cp .env.example .env         # puis remplir les secrets — aucun n'a de défaut
 make build-web               # la passerelle sert web/dist, elle ne le construit pas
 make up                      # le job needs-migrate crée la base : schéma, référentiel, démo
 ```
@@ -23,18 +23,16 @@ Aucune commande de migration ni de seed à lancer : à chaque `up`, le job ponct
 l'API et le worker l'attendent. Rejoué sur une base à jour, il n'écrit rien ; sur une
 base existante, il n'ajoute que ce qui manque. En production : `bootstrap` sans `--demo`.
 
-Interface sur `http://localhost:8080`, Keycloak sur `http://localhost:8081`.
-
-> `web/.env` est requis avant `make build-web`. Sans lui, `VITE_OIDC_ISSUER` vaut la
-> chaîne vide et le bouton « Se connecter » pointe sur l'origine du SPA : nginx renvoie
-> `index.html`, l'écran de connexion se réaffiche et **aucune erreur n'apparaît**.
+Interface sur `http://localhost:8082/besoins/` (les anciens liens à la racine sont
+redirigés en 308). Émetteur et client OIDC sont écrits au démarrage de la passerelle
+dans `/besoins/config.js` : aucun `web/.env` n'est requis pour le build.
 
 ### Comptes de recette
 
-Six comptes, un par rôle du parcours, déclarés dans le realm. Mot de passe commun :
-`NEEDS_DEMO_PASSWORD` — un placeholder `${...}` résolu à l'import, jamais une valeur
-dans le dépôt (interdit n° 2). La substitution vient de
-`-Dkeycloak.migration.replace-placeholders=true`, passé par `JAVA_OPTS_APPEND`.
+Un compte par rôle du parcours, déclarés dans les comptes de démo du realm commun
+(`../keycloak/config/dev/cfao-demo-users.yaml`, importés par `keycloak-config` de la
+recette, mot de passe de démo de ce fichier). Jamais en prod : le dossier `dev/` n'est
+pas importé.
 
 | Compte | Rôle | Périmètre | Écrans |
 |---|---|---|---|
@@ -47,54 +45,22 @@ dans le dépôt (interdit n° 2). La substitution vient de
 
 Trois couplages à ne pas casser :
 
-- **`users[].id` du realm ↔ `PROFILES` de `seed_referential`.** Le `sub` OIDC est la
-  seule jointure avec `referential.UserProfile` ; `LocalIdentityProvider` ne se rabat
-  jamais sur l'email. Un `id` modifié d'un côté seulement donne une connexion réussie
-  puis un refus sur tout : périmètre vide, policies en default-deny.
-- **Le mapper d'audience du client `needs-web`.** L'API valide `aud = needs-web`
-  (`OIDC_AUDIENCE`) ; sans ce mapper, Keycloak n'émet que `aud: account` et tout appel
-  authentifié repart en 401.
-- **`unmanagedAttributePolicy: ENABLED`** dans le composant user-profile. Depuis
-  Keycloak 24, un attribut non déclaré est supprimé à l'import : `scopeNode`, `brands`
-  et `locale` disparaîtraient du jeton en silence.
-
-Le realm n'accepte aucune clé hors schéma — pas de commentaire possible dans le JSON,
-d'où cette section.
+- **`id` des comptes de démo ↔ `PROFILES` de `seed_referential`.** Le `sub` OIDC est
+  la seule jointure avec `referential.UserProfile` ; `LocalIdentityProvider` ne se
+  rabat jamais sur l'email. Un `id` modifié d'un côté seulement donne une connexion
+  réussie puis un refus sur tout : périmètre vide, policies en default-deny
+  (test `edge/tests/test_needs_federation.py`).
+- **Le scope d'audience du client `cfao-needs-web`.** L'API valide
+  `aud = cfao-needs-api` (`OIDC_AUDIENCE`) ; sans ce scope, Keycloak n'émet que
+  `aud: account` et tout appel authentifié repart en 401.
+- **Les redirections du client** couvrent `/besoins/*` (`CFAO_NEEDS_REDIRECT_URIS`).
 
 ### Écran de connexion
 
 Le mot de passe se saisit chez Keycloak, jamais dans le SPA : c'est le flow
 Authorization Code + PKCE, et c'est ce qui rend vraie la phrase « aucun mot de passe
-côté application ». La redirection n'est donc pas contournable — le client a
-`directAccessGrantsEnabled: false`, il n'a même pas le droit d'envoyer un mot de passe.
-Le BFF prévu en R1 ne la supprime pas non plus : il déplace le jeton dans un cookie.
-
-L'écran reprend en revanche la page `/login` du site vitrine : photo `hero/default.jpg`
-et vignette, carte de verre, logo CFAO Mobility, bouton rouge en pilule. Le thème est
-dans `keycloak/themes/cfao-needs/login` ; il hérite du thème Keycloak et surcharge le
-CSS. Le realm est en `defaultLocale: fr` avec FR/EN au choix — sans
-`internationalizationEnabled`, Keycloak sert l'anglais quoi qu'il arrive.
-
-Les images et les polices sont **copiées** dans le thème, pas référencées dans
-`frontend/` : le module doit rester montable seul. Space Grotesk et DM Sans sont
-embarquées en woff2 (96 Ko, polices variables, un fichier par sous-ensemble) plutôt que
-servies par Google — la page de connexion d'un outil interne n'appelle pas l'extérieur,
-même raisonnement que `CERBOS_NO_TELEMETRY`.
-
-Le favicon est fourni par le thème (`resources/img/favicon.ico`, la sphère du logo).
-Sans ce fichier, l'héritage de thème sert celui du parent et l'onglet affiche le logo
-Keycloak — ce n'est pas réglable en CSS, il faut le fichier.
-
-Deux écarts avec la vitrine, imposés par le gabarit FreeMarker de Keycloak : les
-libellés restent au-dessus des champs, le label flottant supposant un `<label>` placé
-après l'`<input>`, et il n'y a pas de particules animées. Le logo est injecté en
-`::before` sur l'en-tête de la carte — aucun template n'est surchargé, ce qui évite
-d'avoir à le rejouer à chaque montée de version de Keycloak.
-
-`start-dev` désactive le cache de thèmes : une retouche de `resources/css/cfao.css` est
-visible au rechargement de la page, sans redémarrer le conteneur. Les libellés vivent
-dans `messages/messages_fr.properties`, limités à ceux que l'utilisateur relit ensuite
-dans le SPA.
+côté application ». Le client a `directAccessGrantsEnabled: false`. L'écran est celui
+du thème commun `cfao-academy` (`../keycloak/themes/`).
 
 Enfin, le job laisse la campagne en brouillon, comme en production où l'ouverture
 est un geste tracé du directeur du centre. Pour une recette immédiatement saisissable :
@@ -167,8 +133,6 @@ cfao-needs/
 │   ├── policies/           needs_campaign · needs_line · needs_submission · needs_outbound
 │   └── tests/              positifs + négatifs (obligatoires)
 │
-├── keycloak/               realm en config-as-code
-│   └── themes/cfao-needs/  écran de connexion — port du /login de la vitrine
 ├── gateway/                nginx : sert la SPA, route l'API
 └── web/                    SPA React/Vite
 ```
@@ -230,7 +194,7 @@ Un seul point du code connaît la différence entre les deux modes :
 
 | | `standalone` | `integrated` |
 |---|---|---|
-| Identité | Keycloak embarqué, realm `cfao-needs` | Keycloak plateforme |
+| Identité | Keycloak commun, realm `cfao` | Keycloak commun, realm `cfao` |
 | Autorisation | Cerbos embarqué | Cerbos plateforme, mêmes policies |
 | Périmètre | `referential.UserProfile` (import) | `identity` plateforme (`GET /me`, cache 60 s) |
 | Catalogue | table locale (import) | synchronisé depuis `lms.Course` |
@@ -249,22 +213,20 @@ ment d'un ordre de grandeur).
 
 | Service | CPU | Mémoire | Plafond |
 |---------|----:|--------:|--------:|
-| needs-keycloak | 0,3 % | 337 Mio | 768 Mio |
 | needs-api | 0,01 % | 103 Mio | 512 Mio |
 | needs-worker | 0,9 % | 82 Mio | 384 Mio |
 | needs-cerbos | 1,5 % | 38 Mio | 256 Mio |
 | needs-db | 0,9 % | 23 Mio | 512 Mio |
-| needs-kc-db | 0,1 % | 19 Mio | 256 Mio |
 | needs-gateway | 0 % | 3 Mio | 64 Mio |
-| **Total** | **~3,7 %** | **~605 Mio** | 2,7 Gio |
+| **Total** | **~3,3 %** | **~250 Mio** | 1,7 Gio |
 
-**Avant réglages : ~950 Mio et ~11 % de CPU, avec des pics à 165 %.**
+Le Keycloak propre au module (~360 Mio avec sa base) a été retiré : l'identité est
+celle du Keycloak commun.
 
-Quatre valeurs par défaut ramenées à l'usage réel :
+Trois valeurs par défaut ramenées à l'usage réel :
 
 | Réglage | Défaut | Ici | Gain |
 |---|---|---|---|
-| Tas JVM Keycloak | libre (524 Mio) | `-Xmx256m` | −190 Mio |
 | Workers gunicorn | 3 | 2 | −60 Mio |
 | Django-Q `guard_cycle` | 0,5 s | 5 s | 4 % → 0,9 % |
 | Sondes de santé | 10–15 s | 20–30 s, `python -S` | pics 165 % → 0 |

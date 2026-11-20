@@ -19,7 +19,7 @@ function resolveIssuer() {
   if (RUNTIME.oidcIssuer) return RUNTIME.oidcIssuer
   const customIssuer = (import.meta.env.VITE_OIDC_ISSUER || '').trim()
   if (customIssuer) {
-    // Override explicite (ex. dev local direct sur http://localhost:8081/realms/cfao-needs)
+    // Override explicite (ex. Vite isolé sur http://localhost:8088/auth/realms/cfao)
     return customIssuer.startsWith('http')
       ? customIssuer.replace('localhost', window.location.hostname)
       : `${window.location.origin}${customIssuer.startsWith('/') ? '' : '/'}${customIssuer}`
