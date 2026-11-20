@@ -1,7 +1,8 @@
 # CFAO Needs — production, derrière la passerelle commune cfao-edge.
 # Toutes les images proviennent directement de votre Docker Hub (antifragile237).
-# Prérequis : le Keycloak commun (keycloak/compose.prod.yml, projet cfao-identity)
-# tourne, et cfao-edge publie needs et /auth. Puis :
+# Prérequis : le PDP commun (cerbos/compose.prod.yml, projet cfao-pdp) et le
+# Keycloak commun (keycloak/compose.prod.yml, projet cfao-identity) tournent, et
+# cfao-edge publie needs et /auth. Puis :
 #   docker compose -f docker-compose.prod.yml up -d
 # Le job needs-migrate crée ou complète la base à chaque `up` (AGENTS.md §7) :
 # migrations + référentiel manquant, jamais d'écrasement. S'il échoue, l'API et
@@ -11,27 +12,6 @@
 name: cfao-needs
 
 services:
-  needs-cerbos:
-    mem_limit: 256m
-    restart: unless-stopped
-    # PDP commun de la plateforme (bundle cerbos/, mêmes règles que les comptes
-    # rendus) ; remplace l'ancienne image cfao-needs-cerbos.
-    image: antifragile237/cfao-cerbos:v0.2.0
-    environment:
-      CERBOS_NO_TELEMETRY: "1"
-    # Joint aussi par planning et core, sous le nom `cerbos`.
-    networks:
-      default: {}
-      cfao-maillage:
-        aliases: [cerbos]
-    volumes:
-      - needs-cerbos-audit:/audit
-    healthcheck:
-      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/config.yaml"]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-
   needs-db:
     mem_limit: 512m
     restart: unless-stopped
@@ -60,7 +40,8 @@ services:
       NEEDS_DB_NAME: ${NEEDS_DB_NAME:-needs}
       NEEDS_DB_USER: ${NEEDS_DB_USER:-needs}
       NEEDS_DB_PASSWORD: ${NEEDS_DB_PASSWORD:-ZyHDiHqm8UMIbsNy5Hmoi2Cl}
-      CERBOS_HTTP: http://needs-cerbos:3592
+      # PDP commun (cerbos/compose.prod.yml, projet cfao-pdp), sur cfao-maillage.
+      CERBOS_HTTP: ${CERBOS_HTTP:-http://cerbos:3592}
       # Clés lues en interne, sur le réseau du Keycloak commun.
       OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/cfao/protocol/openid-connect/certs}
       # Émetteur canonique : KC_HOSTNAME du Keycloak commun + /realms/cfao.
@@ -86,8 +67,6 @@ services:
         condition: service_healthy
       needs-migrate:
         condition: service_completed_successfully
-      needs-cerbos:
-        condition: service_started
     healthcheck:
       test: ["CMD", "python", "-S", "-c",
              "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/needs/healthz', timeout=5).status==200 else 1)"]
@@ -163,4 +142,3 @@ networks:
 
 volumes:
   needs-db-data:
-  needs-cerbos-audit:
