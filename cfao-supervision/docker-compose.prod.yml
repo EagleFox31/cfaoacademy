@@ -86,7 +86,15 @@ services:
     restart: unless-stopped
     image: antifragile237/cfao-supervision-api:${SUPERVISION_VERSION:-v0.1.0}
     command: ["python", "manage.py", "collect"]
-    environment: *api_env
+    environment:
+      <<: *api_env
+      SUPERVISION_UFW_LOG_PATH: /var/log/cfao-ufw/ufw.log
+    # Copie du journal ufw faite par rsyslog (/etc/rsyslog.d/19-cfao-ufw.conf),
+    # syslog:adm 0750 : le DOSSIER en lecture seule (un fichier monté garderait
+    # l'ancien après la rotation), lu grâce au groupe adm (gid 4).
+    volumes:
+      - ${SUPERVISION_UFW_DIR:-/var/log/cfao-ufw}:/var/log/cfao-ufw:ro
+    group_add: ["4"]
     # identite : journal des connexions ; supervision-docker : le proxy du socket.
     networks: [default, identite, supervision-docker]
     depends_on:

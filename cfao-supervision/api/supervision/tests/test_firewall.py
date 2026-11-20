@@ -165,3 +165,19 @@ def test_source_only_when_log_configured(settings):
     assert "firewall" not in sources()
     settings.UFW_LOG_PATH = "/host/log/ufw.log"
     assert "firewall" in sources()
+
+
+def test_compose_prod_journal_ufw_en_lecture_seule_pour_le_collecteur_seul():
+    """Le dossier ufw : lecture seule, groupe adm, et uniquement dans le collecteur."""
+    from pathlib import Path
+    import re
+
+    text = (Path(__file__).resolve().parents[3] / "docker-compose.prod.yml").read_text(encoding="utf-8")
+    services = dict(re.findall(r"(?m)^  ([a-z-]+):\n((?:(?:    .*)?\n)+)", text))
+    collector = services["supervision-collector"]
+    assert "SUPERVISION_UFW_LOG_PATH: /var/log/cfao-ufw/ufw.log" in collector
+    assert re.search(r"(?m)^      - \$\{SUPERVISION_UFW_DIR:-/var/log/cfao-ufw\}:/var/log/cfao-ufw:ro$", collector)
+    assert 'group_add: ["4"]' in collector
+    for name, body in services.items():
+        if name != "supervision-collector":
+            assert "cfao-ufw" not in body and "group_add" not in body, name
