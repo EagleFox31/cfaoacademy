@@ -105,6 +105,10 @@ NEEDS_SNAPSHOT_RECHECK_S = env.int("NEEDS_SNAPSHOT_RECHECK_S", default=300)
 NEEDS_SNAPSHOT_TIMEOUT_S = env.float("NEEDS_SNAPSHOT_TIMEOUT_S", default=2.0)
 NEEDS_SNAPSHOT_BACKGROUND = True  # revérification hors requête quand une copie existe
 
+# Sessions à documenter, lues par le module Comptes rendus (contrat `cr-sessions`) :
+# clé `X-Cr-Sessions-Key`, absente = lecture refusée.
+CR_SESSIONS_KEY = env("CR_SESSIONS_KEY", default="")
+
 # ── Plateforme (mode integrated uniquement) ──
 PLATFORM_CORE_HTTP = env("PLATFORM_CORE_HTTP", default="")
 

@@ -62,6 +62,7 @@ services:
       # Copie des besoins poussée par needs-relay. Vide = push refusé (403),
       # la copie se rattrape alors seule toutes les NEEDS_SNAPSHOT_RECHECK_S secondes.
       NEEDS_SNAPSHOT_INBOUND_KEY: ${NEEDS_SNAPSHOT_INBOUND_KEY:-dev-needs-snapshot-secret}
+      CR_SESSIONS_KEY: ${CR_SESSIONS_KEY:-dev-cr-sessions-secret}
       NEEDS_SNAPSHOT_RECHECK_S: ${NEEDS_SNAPSHOT_RECHECK_S:-300}
       NEEDS_SNAPSHOT_TIMEOUT_S: ${NEEDS_SNAPSHOT_TIMEOUT_S:-2}
       PLANNING_ACADEMY_SITE: ${PLANNING_ACADEMY_SITE:-DOUALA}

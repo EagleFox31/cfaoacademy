@@ -1,0 +1,330 @@
+{
+  "components": {
+    "schemas": {
+      "Error": {
+        "properties": {
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "type": "object"
+      },
+      "Session": {
+        "properties": {
+          "brand": {
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "type": "object"
+          },
+          "code": {
+            "description": "Code tel que saisi au planning.",
+            "type": "string"
+          },
+          "code_norm": {
+            "type": "string"
+          },
+          "country": {
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "type": "object"
+          },
+          "days": {
+            "description": "Jours ouvrés.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "delivery_mode": {
+            "type": "string"
+          },
+          "end_date": {
+            "description": "Égale au début pour une session d'un jour.",
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "description": "Identifiant stable de la session au planning.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "pole": {
+            "type": "string"
+          },
+          "revision": {
+            "description": "Empreinte du contenu : change dès qu'un champ change.",
+            "type": "string"
+          },
+          "start_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "trainers": {
+            "items": {
+              "$ref": "#/components/schemas/Trainer"
+            },
+            "type": "array"
+          },
+          "year": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "year",
+          "code",
+          "code_norm",
+          "title",
+          "brand",
+          "pole",
+          "country",
+          "location",
+          "delivery_mode",
+          "start_date",
+          "end_date",
+          "days",
+          "trainers"
+        ],
+        "type": "object"
+      },
+      "SessionsToDocument": {
+        "examples": [
+          {
+            "revision": "9a8b7c6d5e4f3a2b1c0d",
+            "sessions": [
+              {
+                "brand": {
+                  "code": "marque-a",
+                  "label": "Marque A"
+                },
+                "code": "TS03",
+                "code_norm": "TS03",
+                "country": {
+                  "code": "cm",
+                  "label": "Cameroun"
+                },
+                "days": 5,
+                "delivery_mode": "PRESENTIEL",
+                "end_date": "2026-11-13",
+                "id": "6f1c2a9e-1b7d-4c55-9a3e-2f0d8c4b7a10",
+                "location": "Douala",
+                "pole": "EQUIPMENT",
+                "revision": "3b9f0c1d2e4a5b6c7d8e",
+                "start_date": "2026-11-09",
+                "title": "Systèmes hydrauliques",
+                "trainers": [
+                  {
+                    "id": "0d4e8b2a-5c1f-4e7a-9b3d-6a2c1f0e9d84",
+                    "is_external": false,
+                    "kind": "TRAINER",
+                    "name": "Formateur A",
+                    "sub": null
+                  }
+                ],
+                "year": 2026
+              }
+            ],
+            "window": {
+              "ended_from": "2026-09-21",
+              "ended_to": "2026-11-20"
+            }
+          }
+        ],
+        "properties": {
+          "revision": {
+            "description": "Empreinte de la liste ; même valeur que l'ETag.",
+            "type": "string"
+          },
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/Session"
+            },
+            "type": "array"
+          },
+          "window": {
+            "properties": {
+              "ended_from": {
+                "format": "date",
+                "type": "string"
+              },
+              "ended_to": {
+                "format": "date",
+                "type": "string"
+              }
+            },
+            "required": [
+              "ended_from",
+              "ended_to"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "revision",
+          "window",
+          "sessions"
+        ],
+        "type": "object"
+      },
+      "Trainer": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "is_external": {
+            "type": "boolean"
+          },
+          "kind": {
+            "description": "TRAINER ou TECH_INSTRUCTOR (liste ouverte).",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sub": {
+            "description": "Compte Keycloak relié ; null tant qu'il ne s'est pas connecté.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "is_external",
+          "sub"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "CrSessionsKey": {
+        "in": "header",
+        "name": "X-Cr-Sessions-Key",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "description": "Le planning fait foi pour les sessions ; le module Comptes rendus en garde une copie locale et la rafraîchit par GET conditionnel (If-None-Match). Réseau interne seulement : l'edge ne publie pas `/internal/`.",
+    "title": "CFAO Planning — sessions à documenter",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/planning/internal/cr-sessions": {
+      "get": {
+        "operationId": "listSessionsToDocument",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 60,
+              "maximum": 400,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Compte Keycloak du formateur ; non relié = liste vide.",
+            "in": "query",
+            "name": "trainer",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsToDocument"
+                }
+              }
+            },
+            "description": "Liste à jour ; en-tête `ETag` = `revision`.",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Rien n'a changé depuis l'ETag fourni."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Paramètre invalide."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Clé `X-Cr-Sessions-Key` absente ou invalide."
+          }
+        },
+        "summary": "Sessions terminées dans les `days` derniers jours, aujourd'hui compris."
+      }
+    }
+  },
+  "security": [
+    {
+      "CrSessionsKey": []
+    }
+  ]
+}

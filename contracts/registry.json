@@ -73,6 +73,13 @@
           "tests": ["cfao-needs/api/analytics/tests/test_snapshot.py"]
         }
       ]
+    },
+    {
+      "id": "cr-sessions",
+      "provider": "cfao-planning",
+      "format": "openapi",
+      "spec": "cfao-planning/api/planning/contract/cr-sessions.openapi.json",
+      "consumers": []
     }
   ]
 }

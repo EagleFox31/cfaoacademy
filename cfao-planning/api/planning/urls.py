@@ -8,6 +8,7 @@ urlpatterns = [
     path("me/sessions", v.MySessionsView.as_view()),
     path("me/trainer", v.MyTrainerView.as_view()),
     path("internal/needs-snapshot", internal_views.NeedsSnapshotPushView.as_view()),
+    path("internal/cr-sessions", internal_views.CrSessionsView.as_view()),
     path("cost-keys/", v.CostKeyListView.as_view()),
     path("cost-keys/<uuid:pk>", v.CostKeyDetailView.as_view()),
     path("cost-keys/<uuid:pk>/report", v.CostKeyReportView.as_view()),
