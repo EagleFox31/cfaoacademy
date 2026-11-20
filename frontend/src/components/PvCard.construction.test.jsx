@@ -64,4 +64,10 @@ describe('recueil des besoins : lien seulement s’il est configuré', () => {
     expect(baseBesoins({ VITE_NEEDS_URL: 'https://needs.example/' })).toBe('https://needs.example')
     expect(typeof versBesoins('x', { VITE_NEEDS_URL: 'https://needs.example' }).onClick).toBe('function')
   })
+
+  it('avec un chemin /besoins sur la même adresse, la carte ouvre le module', () => {
+    expect(baseBesoins({ VITE_NEEDS_URL: '/besoins' })).toBe('/besoins')
+    expect(baseBesoins({ VITE_NEEDS_URL: '/besoins/' })).toBe('/besoins')
+    expect(typeof versBesoins('x', { VITE_NEEDS_URL: '/besoins' }).onClick).toBe('function')
+  })
 })

@@ -9,10 +9,17 @@ cr="${PORTAIL_CR_URL:-}"
 medacap="${PORTAIL_MEDACAP_URL:-}"
 besoins="${PORTAIL_NEEDS_URL:-}"
 
-for valeur in "$emetteur" "$cr" "$medacap" "$besoins"; do
+case "$emetteur" in
+  "" | http://* | https://*) ;;
+  *) echo "Adresse http(s) attendue : « $emetteur »" >&2; exit 1 ;;
+esac
+# Applications : adresse http(s) complète ou chemin sur la même origine (/cr, /besoins).
+for valeur in "$cr" "$medacap" "$besoins"; do
   case "$valeur" in
     "" | http://* | https://*) ;;
-    *) echo "Adresse http(s) attendue : « $valeur »" >&2; exit 1 ;;
+    //*) echo "Chemin attendu sans « // » : « $valeur »" >&2; exit 1 ;;
+    /*) ;;
+    *) echo "Adresse http(s) ou chemin « /… » attendu : « $valeur »" >&2; exit 1 ;;
   esac
 done
 # Écrites telles quelles dans du JavaScript : ni guillemet, ni espace, ni chevron.
