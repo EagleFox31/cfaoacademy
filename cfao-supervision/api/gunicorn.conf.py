@@ -15,9 +15,9 @@ threads = 4
 def post_worker_init(worker):
     from django.conf import settings
 
-    from core.auth import jwt_verifier
+    from core.auth import jwt_verifier, prechauffage
 
     emetteurs = jwt_verifier.trusted_issuers(
         settings.OIDC_TRUSTED_ISSUERS, settings.OIDC_ISSUER, settings.OIDC_JWKS_URL
     )
-    threading.Thread(target=jwt_verifier.prechauffer, args=(emetteurs,), daemon=True).start()
+    threading.Thread(target=prechauffage.prechauffer, args=(emetteurs,), daemon=True).start()

@@ -414,6 +414,23 @@ jobs:
         env:
           PLANNING_TEST_PG_HOST: localhost
 
+  supervision:
+    name: cfao-supervision (Django · pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cfao-supervision/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: cfao-supervision/api/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      # Tests en SQLite mémoire ; Docker est simulé, y compris la liste blanche du proxy du socket.
+      - run: pytest -q
+
   needs-web:
     name: cfao-needs (app 16 · Vite · test + build)
     runs-on: ubuntu-latest

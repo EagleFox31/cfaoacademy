@@ -55,22 +55,6 @@ def _client(jwks_url: str) -> jwt.PyJWKClient:
     return _clients[jwks_url]
 
 
-def prechauffer(issuers: dict[str, str]) -> list[str]:
-    """Charge les clés de chaque émetteur, pour que la première requête n'attende pas.
-
-    Une clé injoignable n'empêche rien : la vérification la retentera à la demande.
-    Renvoie les URL chargées.
-    """
-    chargees = []
-    for url in dict.fromkeys(issuers.values()):
-        try:
-            _client(url).get_jwk_set()
-            chargees.append(url)
-        except Exception:  # noqa: BLE001 — simple anticipation, jamais bloquante
-            pass
-    return chargees
-
-
 def verify(
     token: str,
     issuers: Mapping[str, str],
