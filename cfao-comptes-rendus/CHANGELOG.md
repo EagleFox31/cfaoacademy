@@ -6,3 +6,7 @@ l'image (label `org.cfao.changelog`), affichée dans l'écran de supervision, et
 version sans sa section. L'API et la passerelle partagent `CR_VERSION`.
 
 ## [Unreleased]
+
+## [0.5.1] - 2026-11-20
+
+- Connexion : l'écran ne reste plus blanc ; l'ouverture du module renvoie vers l'accueil formateur du portail, ou vers la liste à documenter si le portail est introuvable.
