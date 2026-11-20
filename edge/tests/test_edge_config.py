@@ -22,7 +22,7 @@ def _locations(texte):
 def test_liste_blanche_des_routes():
     # Toute nouvelle route publique doit modifier ce test, donc être relue.
     trouvees = sorted(loc for m in MODELES for loc in _locations(_texte(m)))
-    assert trouvees == sorted(["/", "/", "/auth/", "/auth", r"^/auth/(realms/cfao|resources)/", "/cr", "/cr/", "/api/v1/planning/",
+    assert trouvees == sorted(["/", "/", "/", "/auth/", "/auth", r"^/auth/(realms/cfao|resources)/", "/cr", "/cr/", "/api/v1/planning/",
                                  "/api/v1/planning/internal/", "/api/v1/core/", "/api/v1/supervision/"])
 
 
@@ -41,7 +41,7 @@ def test_needs_transparent():
 def test_ecoutes_lan_sans_auth_ni_hsts():
     # Le LAN est en http direct : ni Keycloak (URL publique seule), ni HSTS.
     lan = sorted((EDGE / "templates" / "lan").glob("*.conf.template"))
-    assert [m.name for m in lan] == ["cr.conf.template", "needs.conf.template"]
+    assert [m.name for m in lan] == ["cr.conf.template", "needs.conf.template", "portail.conf.template"]
     for m in lan:
         code = "\n".join(ligne for ligne in _texte(m).splitlines() if not ligne.lstrip().startswith("#"))
         for interdit in ("auth", "edge_hsts", "EDGE_PUBLIC"):
@@ -50,6 +50,15 @@ def test_ecoutes_lan_sans_auth_ni_hsts():
     assert "set $edge_fwd_proto http;" in cr
     generateur = _texte(EDGE / "entrypoint.d" / "26-ecoutes-lan.sh")
     assert "absolute_redirect off" in generateur and "location" not in generateur
+
+
+def test_ecoutes_lan_suivent_le_proxy_https_devant():
+    # Caddy (HTTPS sur l'IP) ou zrok devant une écoute LAN : schéma et port déclarés
+    # par le proxy, sinon le retour OIDC du CR et les URL du portail sont faux.
+    for nom in ("cr.conf.template", "portail.conf.template"):
+        code = _texte(EDGE / "templates" / "lan" / nom)
+        assert "if ($http_x_forwarded_proto = https)" in code, nom
+        assert "set $edge_fwd_port $http_x_forwarded_port;" in code, nom
 
 
 def test_modules_sous_prefixe_recoivent_l_url_du_bloc_server():
@@ -113,9 +122,10 @@ def test_journal_sans_donnee_sensible():
     assert "COPY njs/ /etc/nginx/njs/" in _texte(EDGE / "Dockerfile")
 
 
-def test_route_supervision_optionnelle():
+def test_route_supervision_optionnelle_et_servie_sur_le_portail():
     actifs = _texte(EDGE / "entrypoint.d" / "25-modules-actifs.sh")
     assert 'EDGE_SUPERVISION_UPSTREAM:-' in actifs and 'rm -f "$routes/supervision.conf"' in actifs
+    assert "include /tmp/conf.d/routes/supervision.con[f];" in _texte(EDGE / "templates" / "lan" / "portail.conf.template")
 
 
 def test_directives_de_securite():
@@ -134,7 +144,7 @@ def test_variables_declarees_partout():
     exemple = _texte(EDGE / ".env.prod.example")
     exiger = _texte(EDGE / "entrypoint.d" / "05-exiger-variables.sh")
     optionnelles = {"EDGE_KEYCLOAK_UPSTREAM", "EDGE_CR_UPSTREAM", "EDGE_PLANNING_UPSTREAM", "EDGE_CORE_UPSTREAM",
-                    "EDGE_SUPERVISION_UPSTREAM"}
+                    "EDGE_PORTAIL_UPSTREAM", "EDGE_SUPERVISION_UPSTREAM"}
     for v in utilisees:
         assert v in compose, v
         assert re.search(rf"^{v}=", exemple, re.M), v
@@ -189,6 +199,7 @@ APPELANTS = {
     "keycloak",          # mails de Keycloak par le hub (mail-api)
     "needs-relay",       # pousse la copie des besoins à planning-api
     "planning-migrate",  # premier rattrapage de la copie des besoins depuis needs-api
+    "cerbos",            # PDP commun en prod (cerbos/compose.prod.yml), joint par toutes les API
 }
 
 

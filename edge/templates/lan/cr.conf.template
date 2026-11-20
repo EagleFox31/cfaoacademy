@@ -1,8 +1,16 @@
-# Écoute directe du LAN (http) : les comptes rendus seuls, sous /cr/ comme sur
-# l'URL publique. L'URL vue des navigateurs est celle de la requête.
+# Écoute directe du LAN : les comptes rendus seuls, sous /cr/ comme sur l'URL
+# publique. L'URL vue des navigateurs est celle de la requête, ou celle que
+# déclare le proxy HTTPS placé devant (Caddy sur l'IP du serveur).
 set $edge_fwd_proto http;
 set $edge_fwd_host  $host;
 set $edge_fwd_port  $server_port;
+if ($http_x_forwarded_proto = https) {
+    set $edge_fwd_proto https;
+    set $edge_fwd_port  443;
+}
+if ($http_x_forwarded_port) {
+    set $edge_fwd_port $http_x_forwarded_port;
+}
 
 include /tmp/conf.d/routes/cr.conf;
 
