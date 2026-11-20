@@ -165,6 +165,21 @@ function probeState(p) {
   return p.alert ? { tone: 'blocked', key: 'probe_state_alert' } : { tone: 'warn', key: 'probe_state_once' }
 }
 
+// Constaté : le titre lu tel quel, sinon le motif (code de l'API) traduit ;
+// la classe d'erreur technique reste en infobulle pour le diagnostic.
+function probeSeen(p, t, timeoutS) {
+  switch (p.reason) {
+    case '': return { text: p.detail || '—' }
+    case 'moved': return { text: fill(t.probe_expect_redirect, { value: p.detail }) }
+    case 'http':
+      return { text: fill(p.kind === 'redirect' ? t.probe_seen_no_redirect : t.probe_seen_http, { status: p.status_code }) }
+    case 'no_title': return { text: t.probe_seen_no_title }
+    case 'tls': case 'timeout': case 'connection': case 'error':
+      return { text: fill(t[`probe_seen_${p.reason}`], { n: timeoutS }), hint: p.detail }
+    default: return { text: '—' }
+  }
+}
+
 function ProbesSection({ probes, t, locale }) {
   return (
     <section id="adresses">
@@ -181,12 +196,13 @@ function ProbesSection({ probes, t, locale }) {
           <tbody>
             {probes.items.map(p => {
               const s = probeState(p)
+              const seen = probeSeen(p, t, probes.timeout_s)
               return (
                 <tr key={p.url}>
                   <td><code>{p.url}</code></td>
                   <td><span className={`dlv-status ${s.tone}`}>{t[s.key]}</span></td>
                   <td>{fill(p.kind === 'redirect' ? t.probe_expect_redirect : t.probe_expect_title, { value: p.expected })}</td>
-                  <td>{p.detail || '—'}</td>
+                  <td title={seen.hint}>{seen.text}</td>
                   <td>{p.latency_ms == null ? '—' : fill(t.probe_ms, { n: p.latency_ms })}</td>
                   <td><When iso={p.last_ok_at} locale={locale} /></td>
                 </tr>

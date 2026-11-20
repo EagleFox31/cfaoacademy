@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 import requests
+import urllib3
 
 from supervision.collectors import probes
 from supervision.models import PublicProbe
@@ -94,18 +95,18 @@ def test_200_with_another_title_fails(settings):
     settings.PROBE_TIMEOUT_S = 5
     session = FakeSession({PORTAIL: page("Identification des Besoins")})
     result = probes.check(probes.Probe(PORTAIL, "Excellence Technique", False), session)
-    assert result == {**result, "ok": False, "status_code": 200, "detail": "Identification des Besoins"}
+    assert result == {**result, "ok": False, "status_code": 200, "reason": "", "detail": "Identification des Besoins"}
 
 
-@pytest.mark.parametrize("response,detail", [
-    (FakeResponse(200, b"<html><body>repli</body></html>"), "page sans titre"),
-    (FakeResponse(502, b"<title>Excellence Technique</title>"), "HTTP 502"),
-    (FakeResponse(307, headers={"Location": "https://h:8444/"}), "-> https://h:8444/"),
+@pytest.mark.parametrize("response,reason,detail", [
+    (FakeResponse(200, b"<html><body>repli</body></html>"), "no_title", ""),
+    (FakeResponse(502, b"<title>Excellence Technique</title>"), "http", ""),
+    (FakeResponse(307, headers={"Location": "https://h:8444/"}), "moved", "https://h:8444/"),
 ])
-def test_title_probe_needs_a_200_with_the_title(settings, response, detail):
+def test_title_probe_needs_a_200_with_the_title(settings, response, reason, detail):
     settings.PROBE_TIMEOUT_S = 5
     result = probes.check(probes.Probe(PORTAIL, "Excellence Technique", False), FakeSession({PORTAIL: response}))
-    assert (result["ok"], result["detail"]) == (False, detail)
+    assert (result["ok"], result["reason"], result["detail"]) == (False, reason, detail)
 
 
 @pytest.mark.parametrize("response,ok", [
@@ -119,11 +120,44 @@ def test_redirect_probe_checks_exact_location(settings, response, ok):
     assert probes.check(probes.Probe(ANCIEN, "https://h/cr/x", True), FakeSession({ANCIEN: response}))["ok"] is ok
 
 
-def test_network_error_is_a_failure_not_a_crash(settings):
+@pytest.mark.parametrize("exc,reason", [
+    (requests.exceptions.SSLError("handshake"), "tls"),
+    (requests.exceptions.ConnectTimeout("lent"), "timeout"),
+    (requests.exceptions.ReadTimeout("lent"), "timeout"),
+    (requests.exceptions.ConnectionError("refusé"), "connection"),
+    (requests.exceptions.TooManyRedirects("?"), "error"),
+])
+def test_network_error_is_a_failure_with_a_reason(settings, exc, reason):
     settings.PROBE_TIMEOUT_S = 5
-    session = FakeSession({PORTAIL: requests.exceptions.SSLError("handshake")})
-    result = probes.check(probes.Probe(PORTAIL, "x", False), session)
-    assert result["ok"] is False and result["status_code"] is None and result["detail"] == "SSLError"
+    result = probes.check(probes.Probe(PORTAIL, "x", False), FakeSession({PORTAIL: exc}))
+    assert (result["ok"], result["status_code"], result["reason"]) == (False, None, reason)
+    assert result["detail"] == exc.__class__.__name__  # gardé pour le diagnostic
+
+
+@pytest.mark.parametrize("exc,reason", [
+    (urllib3.exceptions.ReadTimeoutError(None, "/", "lent"), "timeout"),
+    (urllib3.exceptions.ProtocolError("coupé"), "connection"),
+    (urllib3.exceptions.DecodeError("gzip"), "error"),
+])
+def test_body_read_error_does_not_escape(settings, exc, reason):
+    """La lecture du corps passe par urllib3, dont les exceptions ne sont pas celles de requests."""
+    settings.PROBE_TIMEOUT_S = 5
+    response = FakeResponse(200)
+
+    def broken(n, decode_content=True):
+        raise exc
+    response.raw.read = broken
+    result = probes.check(probes.Probe(PORTAIL, "x", False), FakeSession({PORTAIL: response}))
+    assert (result["ok"], result["reason"]) == (False, reason)
+
+
+def test_redirect_probe_reason(settings):
+    settings.PROBE_TIMEOUT_S = 5
+    probe = probes.Probe(ANCIEN, "https://h/cr/x", True)
+    moved = probes.check(probe, FakeSession({ANCIEN: FakeResponse(308, headers={"Location": "https://autre/"})}))
+    assert (moved["reason"], moved["detail"]) == ("moved", "https://autre/")
+    served = probes.check(probe, FakeSession({ANCIEN: FakeResponse(200, b"<title>x</title>")}))
+    assert (served["reason"], served["detail"], served["status_code"]) == ("http", "", 200)
 
 
 # ── Collecte et alerte ──
@@ -174,9 +208,9 @@ def test_summary_none_without_configuration(settings):
 def test_overview_carries_probes(ops, configured):
     probes.collect(now=NOW, session=table(page("Excellence Technique")))
     body = ops.get("/api/v1/supervision/overview").json()["probes"]
-    assert body["alerts"] == 0 and body["alert_after"] == 2
-    assert [(i["url"], i["kind"], i["ok"]) for i in body["items"]] == [(PORTAIL, "title", True),
-                                                                       (ANCIEN, "redirect", True)]
+    assert body["alerts"] == 0 and body["alert_after"] == 2 and body["timeout_s"] == 5
+    assert [(i["url"], i["kind"], i["ok"], i["reason"]) for i in body["items"]] == [
+        (PORTAIL, "title", True, ""), (ANCIEN, "redirect", True, "moved")]
 
 
 @pytest.mark.django_db

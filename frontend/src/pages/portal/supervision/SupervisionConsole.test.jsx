@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getCopy } from '../../../i18n/index.js'
 import { ApiError } from '../../../lib/api.js'
+import { fill } from '../../../utils/supervisionStatus'
 
 vi.mock('../../../hooks/useSiteEffects', () => ({ default: () => {} }))
 vi.mock('../../../hooks/usePortalBackground', () => ({ default: () => {} }))
@@ -246,18 +247,19 @@ describe('supervision', () => {
 
   const PROBES = {
     alert_after: 2,
+    timeout_s: 5,
     alerts: 1,
     items: [
-      { url: 'https://h:8444/', expected: 'Excellence', kind: 'title', ok: true, status_code: 200,
+      { url: 'https://h:8444/', expected: 'Excellence', kind: 'title', ok: true, status_code: 200, reason: '',
         detail: 'CFAO Academy — Excellence', latency_ms: 42, checked_at: '2026-11-20T14:00:00Z',
         last_ok_at: '2026-11-20T14:00:00Z', fails: 0, alert: false },
       { url: 'http://h:8092/x', expected: 'https://h:8444/cr/x', kind: 'redirect', ok: false, status_code: null,
-        detail: 'ConnectionError', latency_ms: 5001, checked_at: '2026-11-20T14:00:00Z',
+        reason: 'connection', detail: 'ConnectionError', latency_ms: 5001, checked_at: '2026-11-20T14:00:00Z',
         last_ok_at: null, fails: 3, alert: true },
-      { url: 'https://h:8445/cr/', expected: 'Comptes rendus', kind: 'title', ok: false, status_code: 200,
+      { url: 'https://h:8445/cr/', expected: 'Comptes rendus', kind: 'title', ok: false, status_code: 200, reason: '',
         detail: 'Autre page', latency_ms: 30, checked_at: '2026-11-20T14:00:00Z',
         last_ok_at: null, fails: 1, alert: false },
-      { url: 'https://h/', expected: 'Nextcloud', kind: 'title', ok: null, status_code: null,
+      { url: 'https://h/', expected: 'Nextcloud', kind: 'title', ok: null, status_code: null, reason: '',
         detail: '', latency_ms: null, checked_at: null, last_ok_at: null, fails: 0, alert: false },
     ],
   }
@@ -273,12 +275,36 @@ describe('supervision', () => {
       [t.probe_state_ok, t.probe_state_alert, t.probe_state_once, t.probe_state_pending])
     expect(rows.map(r => r.querySelector('.dlv-status').className.split(' ')[1])).toEqual(['done', 'blocked', 'warn', 'todo'])
     expect(rows[1].textContent).toContain('https://h:8444/cr/x')
-    expect(rows[1].textContent).toContain('ConnectionError')
+    // Erreur technique : libellé métier à l'écran, classe en infobulle seulement.
+    expect(rows[1].querySelectorAll('td')[3].textContent).toBe(t.probe_seen_connection)
+    expect(rows[1].querySelectorAll('td')[3].getAttribute('title')).toBe('ConnectionError')
+    expect(rows[1].textContent).not.toContain('ConnectionError')
     expect(rows[2].textContent).toContain('Autre page')
     const alert = host.querySelector('a.dlv-alert')
     expect(alert.getAttribute('href')).toBe('#adresses')
     expect(alert.textContent).toContain(t.probes_alert_link)
     expect(host.textContent).not.toMatch(/undefined|NaN|\{\w+\}/)
+  })
+
+  it.each(['fr', 'en', 'pt'])('adresses : chaque motif d\'échec a son libellé (%s)', async lang => {
+    const t = getCopy('supervision', lang)
+    const base = { expected: 'x', ok: false, latency_ms: 10, checked_at: '2026-11-20T14:00:00Z',
+      last_ok_at: null, fails: 1, alert: false }
+    const cases = [
+      [{ kind: 'title', reason: 'http', status_code: 502, detail: '' }, fill(t.probe_seen_http, { status: 502 })],
+      [{ kind: 'redirect', reason: 'http', status_code: 200, detail: '' }, fill(t.probe_seen_no_redirect, { status: 200 })],
+      [{ kind: 'title', reason: 'moved', status_code: 307, detail: 'https://h/cr/' }, fill(t.probe_expect_redirect, { value: 'https://h/cr/' })],
+      [{ kind: 'title', reason: 'no_title', status_code: 200, detail: '' }, t.probe_seen_no_title],
+      [{ kind: 'title', reason: 'tls', status_code: null, detail: 'SSLError' }, t.probe_seen_tls],
+      [{ kind: 'title', reason: 'timeout', status_code: null, detail: 'ReadTimeout' }, fill(t.probe_seen_timeout, { n: 5 })],
+      [{ kind: 'title', reason: 'error', status_code: null, detail: 'DecodeError' }, t.probe_seen_error],
+    ]
+    const items = cases.map(([c], i) => ({ ...base, ...c, url: `https://h:${8000 + i}/` }))
+    stub({ overview: { ...OVERVIEW, probes: { ...PROBES, alerts: 0, items } } })
+    await show('/portail/supervision', { lang })
+    const seen = [...host.querySelectorAll('#adresses tbody tr')].map(r => r.querySelectorAll('td')[3].textContent)
+    expect(seen).toEqual(cases.map(([, label]) => label))
+    expect(host.querySelector('#adresses').textContent).not.toMatch(/\w+(Error|Timeout)\b|undefined|\{\w+\}/)
   })
 
   it('adresses : ni bloc ni pastille sans sonde configurée ; pas de pastille sans alerte', async () => {

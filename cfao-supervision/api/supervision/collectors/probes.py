@@ -17,12 +17,14 @@ from __future__ import annotations
 
 import html
 import re
+import ssl
 import time
 import warnings
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
 import requests
+import urllib3
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone as djtz
@@ -81,8 +83,29 @@ def read_title(body: bytes) -> str | None:
     return _clean(html.unescape(match.group(1).decode("utf-8", errors="replace")))
 
 
+def failure_reason(exc: BaseException) -> str:
+    """Motif d'un échec réseau, traduit par l'écran ; l'ordre compte (SSLError est
+    une ConnectionError, ConnectTimeout aussi)."""
+    if isinstance(exc, (requests.exceptions.SSLError, urllib3.exceptions.SSLError, ssl.SSLError)):
+        return "tls"
+    if isinstance(exc, (requests.exceptions.Timeout, urllib3.exceptions.TimeoutError, TimeoutError)):
+        return "timeout"
+    if isinstance(exc, (requests.exceptions.ConnectionError, urllib3.exceptions.ProtocolError)):
+        return "connection"
+    # Toute exception de requests est aussi un OSError : seul un OSError « nu » est réseau.
+    if isinstance(exc, OSError) and not isinstance(exc, requests.RequestException):
+        return "connection"
+    return "error"
+
+
 def check(probe: Probe, session: requests.Session) -> dict:
-    """{ok, status_code, detail, latency_ms} ; ne lève jamais."""
+    """{ok, status_code, reason, detail, latency_ms} ; ne lève jamais.
+
+    `reason` (traduit par l'écran) : "" = `detail` est le titre lu ; "moved" =
+    `detail` est l'adresse de redirection ; "http", "no_title", "tls", "timeout",
+    "connection", "error". Sur une erreur réseau, `detail` garde la classe de
+    l'exception pour le diagnostic.
+    """
     started = time.monotonic()
     try:
         with warnings.catch_warnings():
@@ -91,25 +114,26 @@ def check(probe: Probe, session: requests.Session) -> dict:
                                    timeout=settings.PROBE_TIMEOUT_S, headers={"User-Agent": "cfao-supervision-sonde"})
             with response:
                 body = response.raw.read(MAX_BODY, decode_content=True) if not probe.redirect else b""
-    except requests.RequestException as exc:
+    # La lecture du corps (urllib3) lève ses propres exceptions, hors de requests.
+    except (requests.RequestException, urllib3.exceptions.HTTPError, OSError) as exc:
         return {"ok": False, "status_code": None, "latency_ms": int((time.monotonic() - started) * 1000),
-                "detail": _clean(f"{exc.__class__.__name__}")}
+                "reason": failure_reason(exc), "detail": _clean(exc.__class__.__name__)}
     latency = int((time.monotonic() - started) * 1000)
     status = response.status_code
+    location = _clean(response.headers.get("Location", ""))
     if probe.redirect:
-        location = response.headers.get("Location", "")
         ok = status in REDIRECTS and location == probe.expected
         return {"ok": ok, "status_code": status, "latency_ms": latency,
-                "detail": _clean(location) if location else f"HTTP {status}"}
+                "reason": "moved" if location else "http", "detail": location}
     title = read_title(body) if status == 200 else None
     ok = title is not None and probe.expected.casefold() in title.casefold()
     if status in REDIRECTS:
-        detail = _clean(f"-> {response.headers.get('Location', '')}")
+        reason, detail = "moved", location
     elif title is None:
-        detail = f"HTTP {status}" if status != 200 else "page sans titre"
+        reason, detail = ("http" if status != 200 else "no_title"), ""
     else:
-        detail = title
-    return {"ok": ok, "status_code": status, "latency_ms": latency, "detail": detail}
+        reason, detail = "", title
+    return {"ok": ok, "status_code": status, "latency_ms": latency, "reason": reason, "detail": detail}
 
 
 def collect(now=None, session: requests.Session | None = None) -> dict:
@@ -129,6 +153,7 @@ def collect(now=None, session: requests.Session | None = None) -> dict:
             row.redirect = probe.redirect
             row.ok = result["ok"]
             row.status_code = result["status_code"]
+            row.reason = result["reason"]
             row.detail = result["detail"]
             row.latency_ms = result["latency_ms"]
             row.checked_at = now
@@ -154,6 +179,7 @@ def summary() -> dict | None:
         "kind": "redirect" if row.redirect else "title",
         "ok": row.ok,
         "status_code": row.status_code,
+        "reason": row.reason,
         "detail": row.detail,
         "latency_ms": row.latency_ms,
         "checked_at": row.checked_at.isoformat() if row.checked_at else None,
@@ -161,4 +187,4 @@ def summary() -> dict | None:
         "fails": row.fails,
         "alert": row.fails >= threshold,
     } for row in PublicProbe.objects.order_by("position", "url")]
-    return {"alert_after": threshold, "alerts": sum(1 for i in items if i["alert"]), "items": items}
+    return {"alert_after": threshold, "timeout_s": settings.PROBE_TIMEOUT_S, "alerts": sum(1 for i in items if i["alert"]), "items": items}

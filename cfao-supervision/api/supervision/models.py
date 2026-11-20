@@ -144,7 +144,9 @@ class PublicProbe(models.Model):
     redirect = models.BooleanField(default=False)
     ok = models.BooleanField(null=True)
     status_code = models.PositiveIntegerField(null=True, blank=True)
-    detail = models.CharField(max_length=200, blank=True, default="")  # titre lu, redirection ou erreur
+    # Motif traduit par l'écran (collectors/probes.py:check) ; vide = detail est le titre lu.
+    reason = models.CharField(max_length=20, blank=True, default="")
+    detail = models.CharField(max_length=200, blank=True, default="")  # titre lu, redirection ou classe d'erreur
     latency_ms = models.PositiveIntegerField(null=True, blank=True)
     checked_at = models.DateTimeField(null=True, blank=True)
     last_ok_at = models.DateTimeField(null=True, blank=True)
