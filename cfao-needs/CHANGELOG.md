@@ -9,6 +9,9 @@ chaque puce par « API : » ou « Passerelle : ».
 ## [Unreleased]
 
 - Production : réglages dédiés (`config.settings.prod`) — débogage coupé, hôtes servis listés dans `NEEDS_ALLOWED_HOSTS` (obligatoire, `*` refusé au démarrage). Un en-tête Host inconnu reçoit 400.
+
+## [0.4.1] - 2026-11-20
+
 - Passerelle : une ancienne version de l'application restée dans le navigateur recharge toute seule la nouvelle, au lieu d'une page blanche. Les anciens liens à la racine redirigent toujours vers `/besoins/`, sans que le navigateur garde cette redirection en mémoire.
 
 ## [0.4.0] - 2026-11-20
