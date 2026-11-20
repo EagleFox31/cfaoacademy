@@ -224,7 +224,10 @@ clientScopes:
 # ── Clients OAuth ──
 # Convention : cfao-<module>-web (interface qui obtient le jeton) et
 # cfao-<module>-api (API qui le vérifie : bearer-only, aucun flux, sert de cible d'audience).
-# Le portail (BFF) et la SPA de dev servent core, comptes rendus, planning et operations.
+# Le portail (BFF, PKCE) et la SPA de dev n'envoient leur jeton qu'à core, planning et
+# supervision : ce sont les seules audiences par défaut (constat 13, moindre privilège).
+# Les comptes rendus (cookie, mode local) et operations ne reçoivent pas ce jeton ; un
+# futur client qui les appelle ajoutera aud-cfao-cr-api / aud-cfao-operations-api.
 clients:
   # BFF (oauth2-proxy) — confidentiel. La SPA passe par lui ; elle ne voit jamais le JWT.
   - clientId: cfao-portal
@@ -249,29 +252,22 @@ clients:
       - email
       - cfao-scope
       - aud-cfao-core-api
-      - aud-cfao-cr-api
       - aud-cfao-planning-api
-      - aud-cfao-operations-api
       - aud-cfao-supervision-api
 
   # SPA dev (PKCE public) — pour obtenir un token côté dev et tester /me sans le BFF complet.
-  # Désactivée en prod (CFAO_SPA_ENABLED=false) : grant password et redirections larges.
+  # Désactivée en prod (CFAO_SPA_ENABLED=false). Sans grant password (constat 14) : le
+  # jeton de dev passe par le code + PKCE (`make token`, scripts/jeton_dev.py).
+  # Redirections exactes par hôte : un poste en accès LAN ajoute son IP dans
+  # CFAO_SPA_REDIRECT_URIS (.env), jamais de joker dans l'hôte.
   - clientId: cfao-spa
     name: CFAO Academy — SPA (dev, PKCE)
     enabled: $(env:CFAO_SPA_ENABLED:-true)
     protocol: openid-connect
     publicClient: true
     standardFlowEnabled: true
-    directAccessGrantsEnabled: true
-    redirectUris:
-      - "http://localhost:5173/*"
-      - "http://localhost:8000/*"
-      # Pile de recette derrière cfao-edge (edge/compose.dev.yml).
-      - "http://localhost:8088/*"
-      - "http://192.168.1.126:5173/*"
-      - "http://192.168.1.126:8000/*"
-      - "http://192.168.*:5173/*"
-      - "http://192.168.*:8000/*"
+    directAccessGrantsEnabled: false
+    redirectUris: $(env:CFAO_SPA_REDIRECT_URIS:-["http://localhost:5173/*","http://localhost:8000/*","http://localhost:8088/*"])
     webOrigins:
       - "+"
     attributes:
@@ -284,13 +280,11 @@ clients:
       - email
       - cfao-scope
       - aud-cfao-core-api
-      - aud-cfao-cr-api
       - aud-cfao-planning-api
-      - aud-cfao-operations-api
       - aud-cfao-supervision-api
 
   # Portail par rôle (PKCE public), servi sur son origine derrière cfao-edge.
-  # Mêmes audiences que cfao-spa, sans grant password ni redirections larges.
+  # Mêmes audiences que cfao-spa, redirections fournies par l'environnement.
   - clientId: cfao-portail-web
     name: CFAO Academy — Portail (PKCE)
     enabled: true
@@ -312,9 +306,7 @@ clients:
       - email
       - cfao-scope
       - aud-cfao-core-api
-      - aud-cfao-cr-api
       - aud-cfao-planning-api
-      - aud-cfao-operations-api
       - aud-cfao-supervision-api
 
   # SPA needs (PKCE public), successeur de `needs-web` du realm cfao-needs.

@@ -23,8 +23,8 @@ INACTIVITE_MAX = 30 * 60  # ASVS niveau 2, 3.3.2
 # Scopes fournis par Keycloak lui-même (non déclarés dans le fichier).
 SCOPES_NATIFS = {"basic", "web-origins", "profile", "roles", "email", "acr", "address", "phone",
                  "offline_access", "microprofile-jwt", "organization"}
-_API_PORTAIL = {"cfao-core-api", "cfao-cr-api", "cfao-planning-api", "cfao-operations-api",
-                "cfao-supervision-api"}
+# Constat 13 : le portail n'envoie son jeton qu'à core, planning et supervision.
+_API_PORTAIL = {"cfao-core-api", "cfao-planning-api", "cfao-supervision-api"}
 SUBSTITUTION = re.compile(r"^\$\(env:[A-Z0-9_]+(:-.*)?\)$")
 
 
@@ -159,7 +159,7 @@ def test_audiences_par_client(realm, client_id, attendues):
 
 def test_clients_publics_en_pkce_sans_mot_de_passe(realm):
     for client in realm["clients"]:
-        if not client.get("publicClient") or client["clientId"] == "cfao-spa":
+        if not client.get("publicClient"):
             continue
         assert client["attributes"]["pkce.code.challenge.method"] == "S256", client["clientId"]
         assert client["directAccessGrantsEnabled"] is False, client["clientId"]
@@ -173,12 +173,26 @@ def test_aucun_secret_litteral(realm):
             assert ":-" not in client["secret"], client["clientId"]
 
 
-@pytest.mark.parametrize("client_id", ["cfao-portal", "cfao-needs-web", "cfao-portail-web"])
-def test_hotes_des_clients_de_prod_fournis_par_l_environnement(realm, client_id):
+@pytest.mark.parametrize("client_id", ["cfao-portal", "cfao-needs-web", "cfao-portail-web", "cfao-spa"])
+def test_hotes_des_clients_fournis_par_l_environnement(realm, client_id):
     # Aucun hôte codé : la même image sert dev, LAN, zrok ou un futur domaine.
     client = _clients(realm)[client_id]
     assert SUBSTITUTION.match(client["redirectUris"]), client_id
     assert client["webOrigins"] == ["+"], client_id
+
+
+def test_aucune_redirection_avec_joker_dans_l_hote():
+    # Constat 14 : « http://192.168.*:5173/* » acceptait tout hôte du LAN.
+    # Le joker n'est permis qu'en fin de chemin.
+    texte = REALM.read_text(encoding="utf-8")
+    assert not re.findall(r"://[^/\"\s]*\*", texte)
+
+
+def test_aucun_client_ne_vise_cr_ni_operations_par_defaut(realm):
+    # Constat 13 : un jeton volé du portail ne doit pas ouvrir les comptes rendus ni operations.
+    for client in realm["clients"]:
+        scopes = set(client.get("defaultClientScopes", []))
+        assert not scopes & {"aud-cfao-cr-api", "aud-cfao-operations-api"}, client["clientId"]
 
 
 def test_spa_de_dev_desactivable(realm):

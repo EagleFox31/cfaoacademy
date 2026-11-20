@@ -228,6 +228,7 @@ jobs:
           # Deux hôtes à la fois : un changement d'hôte se fait sans rupture.
           CFAO_PORTAL_REDIRECT_URIS: '["http://localhost:8000/oauth2/callback","https://portail.exemple/oauth2/callback"]'
           CFAO_NEEDS_REDIRECT_URIS: '["http://localhost:8082/*","https://needs.exemple/*"]'
+          CFAO_PORTAIL_WEB_REDIRECT_URIS: '["http://localhost:8088/*","https://portail.exemple/*"]'
           EMETTEUR_ATTENDU: http://localhost:18080/auth/realms/cfao
         run: |
           docker build -q -t antifragile237/cfao-keycloak:smoke keycloak

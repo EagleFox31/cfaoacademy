@@ -180,46 +180,6 @@ export function changePassword(returnTo) {
   return login({ action: 'UPDATE_PASSWORD' })
 }
 
-/**
- * Authentification directe par identifiant et mot de passe (Direct Access Grant).
- * Permet au formulaire CFAO natif dans la SPA de s'authentifier directement
- * auprès de Keycloak sans quitter la page ni perdre le visuel de la plateforme.
- */
-export async function loginWithCredentials(username, password) {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 2500)
-
-  try {
-    const response = await fetch(`${ISSUER}/protocol/openid-connect/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'password',
-        client_id: CLIENT_ID,
-        username: username.trim(),
-        password,
-        scope: 'openid profile email cfao-scope',
-      }),
-      signal: controller.signal,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      const err = new Error(errorData.error_description || errorData.error || 'invalid_credentials')
-      err.code = errorData.error
-      throw err
-    }
-
-    const payload = await response.json()
-    storeSession(payload)
-    const session = readSession()
-    scheduleSilentRefresh(session)
-    return session
-  } finally {
-    clearTimeout(timeoutId)
-  }
-}
-
 export const CALLBACK_INVALID = 'callback_invalid'
 /** Horodatage de la dernière relance automatique depuis `/callback`. */
 const RELANCE_KEY = 'cfao.auth.relance'

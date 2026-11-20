@@ -14,10 +14,10 @@ docker compose up -d --build          # 9 services
 docker compose up -d keycloak-config-cli   # applique le realm (itératif)
 
 # Test d'auth depuis le conteneur core (issuer keycloak:8080 == ce que core valide)
-docker compose exec -T core sh -c '
- TOKEN=$(curl -s -X POST http://keycloak:8080/realms/cfao/protocol/openid-connect/token \
-   -d grant_type=password -d client_id=cfao-spa -d username=kouame.assi -d password=demo -d scope=openid \
-   | sed -n "s/.*\"access_token\":\"\([^\"]*\)\".*/\1/p")
+# (20/11 : plus de grant password, jeton par code + PKCE via scripts/jeton_dev.py ;
+#  le jeton du portail ne vise plus operations, /ops/me répond donc 401.)
+TOKEN=$(make -s token U=kouame.assi)
+docker compose exec -T -e TOKEN="$TOKEN" core sh -c '
  curl -s -w "%{http_code}" -H "Authorization: Bearer $TOKEN" http://gateway/api/v1/core/me
  curl -s -w "%{http_code}" -H "Authorization: Bearer $TOKEN" http://gateway/api/v1/ops/me
  curl -s -w "%{http_code}" -H "Authorization: Bearer bad"   http://gateway/api/v1/core/me

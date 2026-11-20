@@ -135,7 +135,6 @@ rapports-importer:
 restart:
 	$(COMPOSE) restart $(S)
 
+# Jeton de dev par code + PKCE (cfao-spa n'a plus de grant password, constat 14).
 token:
-	@$(COMPOSE) exec -T core sh -c 'curl -s -X POST http://keycloak:8080/realms/cfao/protocol/openid-connect/token \
-	  -d grant_type=password -d client_id=cfao-spa -d username=$(U) -d password=demo -d scope=openid \
-	  | sed -n "s/.*\"access_token\":\"\([^\"]*\)\".*/\1/p"'
+	@$(COMPOSE) exec -T core python - $(U) < scripts/jeton_dev.py

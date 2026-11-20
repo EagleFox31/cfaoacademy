@@ -4,7 +4,8 @@
     KC_URL=http://localhost:18080 pytest -q tests/smoke_realm.py
 Variables : KC_ADMIN / KC_ADMIN_PASSWORD (admin/admin), SPA_ATTENDUE (enabled|disabled),
 DEMO_ATTENDUE (presente|absente), EMETTEUR_ATTENDU (prod : KC_HOSTNAME + /realms/cfao),
-CFAO_PORTAL_REDIRECT_URIS / CFAO_NEEDS_REDIRECT_URIS (listes JSON passées au job config).
+CFAO_PORTAL_REDIRECT_URIS / CFAO_NEEDS_REDIRECT_URIS / CFAO_SPA_REDIRECT_URIS (listes JSON
+passées au job config), PORTAIL_WEB_RAPPEL (rappel autorisé de cfao-portail-web).
 
 Les jetons sont obtenus par les vrais flux (code + secret pour le BFF, PKCE pour
 la SPA needs) et vérifiés par la lib commune `core/auth/jwt_verifier.py`.
@@ -28,8 +29,10 @@ KC_URL = os.environ.get("KC_URL", "").rstrip("/")
 REALM = f"{KC_URL}/realms/cfao"
 OIDC = f"{REALM}/protocol/openid-connect"
 UTILISATEUR, MOT_DE_PASSE = "kouame.assi", "demo"
-API_PORTAIL = ("cfao-core-api", "cfao-cr-api", "cfao-planning-api", "cfao-operations-api")
-TOUTES_API = {*API_PORTAIL, "cfao-needs-api"}
+# Constat 13 : le portail n'envoie son jeton qu'à core, planning et supervision.
+API_PORTAIL = ("cfao-core-api", "cfao-planning-api", "cfao-supervision-api")
+HORS_PORTAIL = ("cfao-needs-api", "cfao-cr-api", "cfao-operations-api")
+TOUTES_API = {*API_PORTAIL, *HORS_PORTAIL}
 
 if not KC_URL:
     pytest.fail("KC_URL est obligatoire (Keycloak démarré, realm appliqué).", pytrace=False)
@@ -38,7 +41,8 @@ _spec = importlib.util.spec_from_file_location(
     "jwt_verifier", RACINE / "cfao-core" / "core" / "auth" / "jwt_verifier.py")
 jwt_verifier = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(jwt_verifier)
-EMETTEURS = {REALM: f"{OIDC}/certs"}
+# Hostname fixé (recette, prod) : l'émetteur des jetons est l'URL publique, pas KC_URL.
+EMETTEURS = {os.environ.get("EMETTEUR_ATTENDU") or REALM: f"{OIDC}/certs"}
 
 
 def _formulaire(page, ident):
@@ -91,17 +95,28 @@ def jeton_portail():
     return r.json()
 
 
-@pytest.fixture(scope="module")
-def jeton_needs():
-    redirect = "http://localhost:8082/cb"
+def _jeton_pkce(client_id, redirect):
+    """Flux code + PKCE d'un client public : réponse du point /token."""
     verif = secrets.token_urlsafe(48)
     defi = base64.urlsafe_b64encode(hashlib.sha256(verif.encode()).digest()).rstrip(b"=").decode()
-    code = _code("cfao-needs-web", redirect, code_challenge=defi, code_challenge_method="S256")
+    code = _code(client_id, redirect, code_challenge=defi, code_challenge_method="S256")
     r = requests.post(f"{OIDC}/token", data={
         "grant_type": "authorization_code", "code": code, "redirect_uri": redirect,
-        "client_id": "cfao-needs-web", "code_verifier": verif})
+        "client_id": client_id, "code_verifier": verif})
     assert r.status_code == 200, r.text
     return r.json()
+
+
+@pytest.fixture(scope="module")
+def jeton_needs():
+    return _jeton_pkce("cfao-needs-web", "http://localhost:8082/cb")
+
+
+@pytest.fixture(scope="module")
+def jeton_portail_web():
+    # Le portail réellement servi (prod : cfao-portail-web derrière edge).
+    return _jeton_pkce("cfao-portail-web", os.environ.get(
+        "PORTAIL_WEB_RAPPEL", "http://localhost:8088/callback"))
 
 
 @pytest.fixture(scope="module")
@@ -123,14 +138,21 @@ def test_portail_vise_les_api_du_portail(jeton_portail):
     assert claims["scopeNode"] == "groupe.afrique_ouest.cote_divoire.abidjan_plateau"
 
 
+def test_portail_web_vise_les_api_du_portail(jeton_portail_web):
+    claims = jwt_verifier.verify(jeton_portail_web["access_token"], EMETTEURS, API_PORTAIL)
+    assert _aud(claims) & TOUTES_API == set(API_PORTAIL)
+
+
 @pytest.mark.parametrize("api", API_PORTAIL)
 def test_chaque_api_accepte_le_jeton_du_portail(jeton_portail, api):
     jwt_verifier.verify(jeton_portail["access_token"], EMETTEURS, (api,))
 
 
-def test_api_needs_refuse_le_jeton_du_portail(jeton_portail):
-    with pytest.raises(jwt_verifier.TokenRejected):
-        jwt_verifier.verify(jeton_portail["access_token"], EMETTEURS, ("cfao-needs-api",))
+@pytest.mark.parametrize("api", HORS_PORTAIL)
+def test_api_hors_portail_refusent_le_jeton_du_portail(jeton_portail, jeton_portail_web, api):
+    for jeton in (jeton_portail, jeton_portail_web):
+        with pytest.raises(jwt_verifier.TokenRejected):
+            jwt_verifier.verify(jeton["access_token"], EMETTEURS, (api,))
 
 
 def test_spa_needs_vise_needs_seulement(jeton_needs):
@@ -157,15 +179,37 @@ def test_spa_needs_refuse_le_grant_password():
     assert r.status_code in (400, 401), r.text
 
 
-def test_spa_de_dev_selon_l_environnement():
+SPA_ACTIVE = os.environ.get("SPA_ATTENDUE", "enabled") == "enabled"
+
+
+def test_spa_de_dev_refuse_le_grant_password():
+    # Constat 14 : plus de grant password, même en dev.
     r = requests.post(f"{OIDC}/token", data={"grant_type": "password", "client_id": "cfao-spa",
                                               "username": UTILISATEUR, "password": MOT_DE_PASSE})
-    if os.environ.get("SPA_ATTENDUE", "enabled") == "enabled":
-        assert r.status_code == 200, r.text
-        claims = jwt_verifier.verify(r.json()["access_token"], EMETTEURS, ("cfao-core-api",))
-        assert "cfao-cr-api" in _aud(claims)
-    else:
-        assert r.status_code in (400, 401), r.text
+    assert r.status_code in (400, 401), r.text
+
+
+@pytest.mark.skipif(not SPA_ACTIVE, reason="cfao-spa désactivée (prod)")
+def test_spa_de_dev_par_pkce():
+    jeton = _jeton_pkce("cfao-spa", "http://localhost:5173/callback")
+    claims = jwt_verifier.verify(jeton["access_token"], EMETTEURS, ("cfao-core-api",))
+    assert _aud(claims) & TOUTES_API == set(API_PORTAIL)
+
+
+@pytest.mark.skipif(not SPA_ACTIVE, reason="cfao-spa désactivée (prod)")
+def test_spa_de_dev_refuse_un_hote_du_lan_non_liste():
+    # Constat 14 : l'ancien « http://192.168.*:5173/* » acceptait tout le LAN.
+    r = requests.get(f"{OIDC}/auth", params={"client_id": "cfao-spa", "response_type": "code",
+                                             "scope": "openid", "redirect_uri": "http://192.168.50.1:5173/x"})
+    assert r.status_code == 400 and "redirect_uri" in r.text
+
+
+def test_spa_de_dev_desactivee_en_prod():
+    if SPA_ACTIVE:
+        pytest.skip("cfao-spa active (dev)")
+    r = requests.get(f"{OIDC}/auth", params={"client_id": "cfao-spa", "response_type": "code",
+                                             "scope": "openid", "redirect_uri": "http://localhost:5173/x"})
+    assert r.status_code in (400, 401), r.status_code
 
 
 def test_comptes_de_demo_selon_l_environnement(admin):
@@ -190,7 +234,10 @@ def test_secret_du_portail_injecte(admin):
 @pytest.mark.parametrize("client_id, variable, defaut", [
     ("cfao-portal", "CFAO_PORTAL_REDIRECT_URIS", ["http://localhost:8000/oauth2/callback"]),
     ("cfao-needs-web", "CFAO_NEEDS_REDIRECT_URIS",
-     ["http://localhost:8082/*", "http://localhost:5174/*", "http://127.0.0.1:8082/*"]),
+     ["http://localhost:8082/*", "http://localhost:5174/*", "http://127.0.0.1:8082/*",
+      "http://localhost:8088/besoins/*"]),
+    ("cfao-spa", "CFAO_SPA_REDIRECT_URIS",
+     ["http://localhost:5173/*", "http://localhost:8000/*", "http://localhost:8088/*"]),
 ])
 def test_redirections_issues_de_l_environnement(admin, client_id, variable, defaut):
     # La liste JSON devient une vraie liste (plusieurs hôtes pendant une transition).

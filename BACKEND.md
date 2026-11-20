@@ -80,7 +80,7 @@ et des **users de démo** (mot de passe `demo`).
 # Appliqué automatiquement au `docker compose up`. Réappliquer après modif du YAML :
 docker compose up keycloak-config-cli
 # Obtenir un token de dev (client public PKCE) puis tester la chaîne /me :
-#   réaliser le flow sur http://localhost:8080/realms/cfao  (client cfao-spa)
+#   make token U=kouame.assi   (code + PKCE du client cfao-spa, scripts/jeton_dev.py)
 #   puis : curl -H "Authorization: Bearer <token>" http://localhost:8000/api/v1/core/me
 ```
 
