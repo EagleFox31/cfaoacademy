@@ -1,0 +1,3 @@
+# Racine = needs (EDGE_RACINE=needs, défaut) : comportement d'avant le portail
+# à la racine. Supprimé par 25-modules-actifs.sh si EDGE_RACINE=portail.
+include /tmp/conf.d/needs/relais.conf;

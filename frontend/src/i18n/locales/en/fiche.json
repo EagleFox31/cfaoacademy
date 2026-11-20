@@ -1,0 +1,12 @@
+{
+  "notFoundTitle": "Training sheet not found",
+  "notFoundLead": "This sheet is not yet available or is currently being updated.",
+  "closeNotFound": "Close and return to sessions",
+  "closeBack": "Close and return to upcoming sessions",
+  "metaAria": "Session information",
+  "sheetTag": "Training sheet",
+  "targetAudience": "Target audience",
+  "level": "Level",
+  "trainer": "Trainer",
+  "sheetImageAlt": "Training sheet {code} — {title}"
+}

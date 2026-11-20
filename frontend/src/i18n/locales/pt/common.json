@@ -1,0 +1,20 @@
+{
+  "langSwitchAria": "Escolher idioma",
+  "seeMore": "Ver tudo",
+  "seeLess": "Ver menos",
+  "otherNews": "Outras Notícias",
+  "learnMore": "Saber mais",
+  "backToTop": "Voltar ao topo",
+  "backToTopAria": "Voltar ao topo da página",
+  "brandLabel": "Marca",
+  "brandFilterAria": "Filtrar por marca",
+  "allBrands": "Todas",
+  "menuToggleAria": "Menu",
+  "mainNavAria": "Navegação principal",
+  "pageLoadError": "Não foi possível carregar esta página.",
+  "pageLoadRetry": "Recarregar",
+  "routeLoaderAria": "A carregar a página",
+  "routeLoaderMsg1": "Ligação segura…",
+  "routeLoaderMsg2": "A carregar o seu espaço…",
+  "routeLoaderMsg3": "A preparar conteúdos…"
+}

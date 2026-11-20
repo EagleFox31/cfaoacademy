@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  // Une adresse, applications par chemin (PLAN-chemins-edge.md) : needs vit sous /besoins/.
+  base: '/besoins/',
   plugins: [react()],
   server: {
     port: 5174,

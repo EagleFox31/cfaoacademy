@@ -1,0 +1,45 @@
+# needs sous /besoins/ quand le portail tient la racine (EDGE_RACINE=portail) :
+# préfixe conservé, la passerelle needs le sert tel quel. L'API reste sous
+# /api/v1/needs/. Supprimé par 25-modules-actifs.sh si EDGE_RACINE=needs.
+
+location = /besoins {
+    set $edge_module needs;
+    return 308 /besoins/;
+}
+
+location /besoins/ {
+    set $edge_module needs;
+    client_max_body_size 12m;   # aligné sur NEEDS_IMPORT_MAX_FILE_MB
+    include /etc/nginx/snippets/proxy-commun.conf;
+    proxy_set_header Host $http_host;
+    # URL vue des navigateurs, posée par le bloc server (liste blanche d'origines).
+    proxy_set_header X-Forwarded-Proto $edge_fwd_proto;
+    proxy_set_header X-Forwarded-Host $edge_fwd_host;
+    proxy_set_header X-Forwarded-Port $edge_fwd_port;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_read_timeout 120s;
+    # Passerelle needs arrêtée (502/503/504) : page d'attente.
+    proxy_intercept_errors on;
+    proxy_pass http://${EDGE_NEEDS_UPSTREAM};
+}
+
+location /api/v1/needs/ {
+    set $edge_module needs;
+    client_max_body_size 12m;
+    include /etc/nginx/snippets/proxy-commun.conf;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-Proto $edge_fwd_proto;
+    proxy_set_header X-Forwarded-Host $edge_fwd_host;
+    proxy_set_header X-Forwarded-Port $edge_fwd_port;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_read_timeout 120s;    # imports needs
+    # Pas de proxy_intercept_errors : un 503 de l'API garde son corps.
+    proxy_pass http://${EDGE_NEEDS_UPSTREAM};
+}
+
+# Anciens liens du SPA needs servi à la racine : redirigés sous /besoins/.
+# /, /profil, /callback, /catalogues/, /assets/, /config.js restent au portail.
+location ~ ^/(marque/|relecture(/|$)|a-envoyer(/|$)|fiche/|campagnes/) {
+    set $edge_module needs;
+    return 308 /besoins$request_uri;
+}

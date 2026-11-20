@@ -8,7 +8,8 @@
 body.portal-bg-active {
   background-color: var(--paper-3);
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.32)),
+    /* Voile renforcé par photo trop sombre : PORTAL_BACKGROUND_VEILS. */
+    linear-gradient(rgba(255, 255, 255, var(--portal-page-veil, 0.32)), rgba(255, 255, 255, var(--portal-page-veil, 0.32))),
     var(--portal-page-bg);
   background-size: cover;
   background-position: var(--portal-page-bg-position, center);
@@ -27,16 +28,10 @@ body.portal-bg-define-tech {
     var(--portal-page-bg);
 }
 
-body.portal-bg-define-tech .nav {
-  background: rgba(255, 255, 255, 0.52);
-  backdrop-filter: saturate(160%) blur(12px);
-  -webkit-backdrop-filter: saturate(160%) blur(12px);
-}
-
+/* Fond photo du portail : même verre que la barre de l'accueil (flou défini sur .nav). */
+body.portal-bg-define-tech .nav,
 body.portal-bg-active .nav {
-  background: rgba(255, 255, 255, 0.52);
-  backdrop-filter: saturate(160%) blur(12px);
-  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  background: var(--nav-bg-glass);
 }
 
 /* ── Sticky context bar ─────────────────────────── */
@@ -234,6 +229,16 @@ body.portal-bg-active .nav {
   .portal-sticky-bar-goal,
   .portal-sticky-bar-certs { display: none; }
   .portal-sticky-bar-track { width: 80px; }
+  .portal-sticky-bar-inner { min-width: 0; }
+  /* 8 marques ne tiennent pas sur un téléphone : ruban qui défile dans la barre. */
+  .portal-sticky-bar-brands {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .portal-sticky-bar-brands::-webkit-scrollbar { display: none; }
+  .portal-sticky-bar-brand-tile { flex-shrink: 0; }
 }
 
 /* ── KPI row ─────────────────────────────────────── */
@@ -260,12 +265,24 @@ body.portal-bg-active .nav {
 }
 .portal-kpi-value.accent { color: var(--red); }
 .portal-kpi-value.green  { color: #1aab5b; }
+.portal-kpi-value.progress { color: #996600; }
 .portal-kpi-label {
   font-size: 13px;
   color: var(--muted);
   margin-top: 6px;
   font-weight: 500;
 }
+
+/* Chiffres cliquables sous la phrase du hero : la carte mène à l'action. */
+.portal-hero-kpis { margin: 20px 0 0; }
+.portal-hero-kpis .portal-kpi-value { font-size: 52px; }
+button.portal-hero-kpi {
+  display: flex; flex-direction: column; align-items: flex-start;
+  text-align: left; font: inherit; cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+button.portal-hero-kpi:hover { transform: translateY(-2px); border-color: var(--navy); box-shadow: 0 6px 18px rgba(14,17,38,0.12); }
+button.portal-hero-kpi:focus-visible { outline: 2px solid #1a56db; outline-offset: 2px; }
 
 /* KPI row on dark section */
 section:nth-of-type(even) .portal-kpi-card {
@@ -3139,6 +3156,30 @@ button.pv-card {
 }
 
 /* ── Toast de notification "Bientôt disponible" ── */
+/* Fenêtre d'aperçu du super admin (components/ApercuProvider.jsx) */
+.portal-apercu-bandeau {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 8px 8px 20px;
+  border: 1px solid #fcd34d;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #78350f;
+  font-size: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+.portal-apercu-bandeau .portal-btn { white-space: nowrap; }
+@media (max-width: 720px) {
+  .portal-apercu-bandeau-note { display: none; }
+}
+
 .portal-coming-soon-toast {
   position: fixed;
   bottom: 24px;
@@ -7515,6 +7556,20 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   word-break: break-word;
 }
 
+/* Cases qui portent un chiffre (PortalCardKpis) : la valeur en grand */
+/* Un chiffre (« 19 / 24 ») ne se coupe jamais : il rétrécit avec sa case. */
+.portal-team-member-subcards--chiffres .portal-team-member-subcard { container-type: inline-size; }
+.portal-team-member-subcards--chiffres .portal-team-member-subcard-val {
+  white-space: nowrap;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(16px, 26cqi, 24px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--navy);
+  margin-top: auto; /* libellé sur une ou deux lignes : les chiffres restent sur la même ligne */
+}
+
 .portal-team-member-subcard-bar {
   display: flex;
   align-items: center;
@@ -10795,6 +10850,10 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
   padding-top: 28px;
   padding-bottom: 40px;
 }
+/* Photo RH sombre : la section des plans passe en bleu gris plus clair pour se détacher. */
+body[data-portal-bg="rh"] .portal-page #pif {
+  background: rgba(84, 100, 138, 0.82) !important;
+}
 .portal-page #pif .portal-section-title,
 #pif.portal-pif-filiale-section .portal-section-title,
 .portal-pif-filiale-section .portal-section-title {
@@ -10862,6 +10921,14 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
 }
 #assistance .portal-section-title {
   color: var(--navy) !important;
+}
+/* Section paire : bande sombre du zébrage, comme les autres sections. Sans
+   elle, le texte blanc des sections paires (« Filtrer ») tombe sur la photo. */
+section#assistance:nth-of-type(even) {
+  background: rgba(26, 31, 60, 0.72) !important;
+}
+section#assistance:nth-of-type(even) .portal-section-title {
+  color: #fff !important;
 }
 
 /* Nouvelle section DPS: Compétences des techniciens par niveau (#niveaux) */
@@ -12259,3 +12326,153 @@ section:nth-of-type(even) .portal-results-subsection-brand .portal-brand-logo--s
 :root[data-bas~="720"] .portal-page .portal-next-actions-viewport {
   min-height: 0;
 }
+
+/* ── Lisibilité des portails : tailles minimales des textes ──────────────
+   Un seul endroit pour les régler. Aucun texte utile sous 11 px. */
+.portal-page .portal-section-eyebrow { font-size: 13px; }
+.portal-page .portal-section-title { font-size: 28px; }
+.portal-page .portal-status-chip { font-size: 12px; }
+.portal-page .portal-campaign-year-chip { font-size: 12px; }
+.portal-page .pv-card h3 { font-size: 20px; }
+.portal-page .pv-card .meta { font-size: 14.5px; }
+.portal-page .pv-cta-link { font-size: 15px; }
+.portal-page .portal-team-member-subcard-lbl { font-size: 11px; }
+.portal-page .portal-team-member-subcard-val { font-size: 14px; }
+.portal-page .portal-team-member-subcards--chiffres .portal-team-member-subcard-val { font-size: clamp(18px, 28cqi, 28px); }
+
+/* ── Carte d'un écran en construction (PortalConstructionMedia) ─────────── */
+.portal-construction-media {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 16px 30px;
+  background: #fff8e6;
+  color: #996600;
+  overflow: hidden;
+}
+.portal-construction-icon {
+  width: 64px;
+  height: 64px;
+  transform-origin: 20% 85%;
+  transform: rotate(-18deg);
+}
+/* Seul le marteau bouge, et seulement quand on survole la carte. */
+/* Écran pas encore livré : le curseur dit qu'on ne peut pas l'ouvrir. */
+.pv-card:has(.portal-construction-media),
+.pv-card:has(.portal-construction-media) * { cursor: not-allowed; }
+.pv-card:hover .portal-construction-icon,
+.pv-card:focus-within .portal-construction-icon {
+  animation: portal-construction-hammer 1.1s ease-in-out infinite;
+}
+.portal-construction-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--navy);
+  text-align: center;
+}
+.portal-construction-tape {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 14px;
+  background: repeating-linear-gradient(-45deg, #f5b400 0 14px, #0e1126 14px 28px);
+  background-size: 39.6px 100%;
+}
+@keyframes portal-construction-hammer {
+  0%, 100% { transform: rotate(-18deg); }
+  45% { transform: rotate(14deg); }
+  55% { transform: rotate(10deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pv-card:hover .portal-construction-icon,
+  .pv-card:focus-within .portal-construction-icon { animation: none; }
+}
+
+/* ── Hero du centre : « 22 marques » se clique, les logos s'ouvrent dessous ── */
+.portal-hero-brands-trigger .portal-word:last-child {
+  text-decoration: underline dotted rgba(14, 17, 38, 0.35) !important;
+  text-underline-offset: 4px;
+}
+.portal-hero-brands-trigger:hover .portal-word:last-child,
+.portal-hero-brands-trigger[aria-expanded='true'] .portal-word:last-child {
+  text-decoration-color: currentColor !important;
+}
+.portal-center-brands {
+  margin-top: 14px;
+  animation: portal-center-brands-in 0.22s ease-out;
+}
+@keyframes portal-center-brands-in {
+  from { opacity: 0; transform: translateY(-4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-center-brands { animation: none; }
+}
+
+/* ── Carte de suivi à icône (PortalIconMedia) : teinte = statut de la pastille ── */
+.portal-icon-media {
+  --icon-media-bg: #f1f2f4;
+  --icon-media-fg: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.55) 0 38%, transparent 62%),
+    var(--icon-media-bg);
+  color: var(--icon-media-fg);
+}
+.portal-icon-media--done { --icon-media-bg: #e3f5eb; --icon-media-fg: #1aab5b; }
+.portal-icon-media--progress { --icon-media-bg: #fff3cc; --icon-media-fg: #996600; }
+.portal-icon-media--open { --icon-media-bg: #e6edfc; --icon-media-fg: #1a56db; }
+.portal-icon-media--closed { --icon-media-bg: #e4e5eb; --icon-media-fg: #0e1126; }
+.portal-icon-media__disc {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(14, 17, 38, 0.08);
+}
+.portal-icon-media__disc svg { width: 40px; height: 40px; }
+
+/* ── Pied de carte en icônes (portails) : voir à gauche, modifier à droite ── */
+.pv-card-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: #fff;
+  color: var(--navy);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.pv-card:hover .pv-card-action:not(.pv-card-action--soon) {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+.pv-card-action--soon {
+  color: var(--muted);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+/* Carte de marque au portail : mention du PDF à gauche, crayon à droite. */
+.pv-brand-portal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+.pv-brand-portal-foot .pv-brand-pdf-hint { margin-top: 0; }
+/* « Modifier le catalogue » tant que l'édition n'existe pas. */
+.pv-voir--soon { gap: 8px; cursor: not-allowed; opacity: 0.85; }
+.pv-voir--soon:hover { transform: none; }

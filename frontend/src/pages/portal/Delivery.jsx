@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
+import VersConnexion from '../../components/VersConnexion.jsx'
 import LocaleSwitch from '../../components/LocaleSwitch'
 import PortalDemoBar from '../../components/PortalDemoBar'
 import CockpitSkeleton from '../../components/delivery/CockpitSkeleton'
@@ -153,7 +154,7 @@ export default function Delivery() {
   }, [stories, epicFilter, statusFilter, phaseFilter, search, locale])
 
   if (status === "loading") return null
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <VersConnexion />
   if (!canAccessDelivery(user.roles)) return <Navigate to="/portail" replace />
 
   const navCount = {

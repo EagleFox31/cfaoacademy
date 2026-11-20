@@ -1,0 +1,576 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`onglets des portails par rôle > liste figée pour tous les rôles 1`] = `
+{
+  "branch_admin": [
+    {
+      "iconKey": "star",
+      "id": "recrutement",
+      "key": "recrutement",
+      "labelKey": "nav_sec_rh_recrutement",
+    },
+    {
+      "iconKey": "award",
+      "id": "competences",
+      "key": "competences",
+      "labelKey": "nav_sec_rh_competences",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "pif",
+      "key": "pif",
+      "labelKey": "nav_sec_rh_pif",
+    },
+    {
+      "iconKey": "listtodo",
+      "id": "besoins",
+      "key": "besoins",
+      "labelKey": "nav_sec_dir_besoins",
+    },
+    {
+      "iconKey": "users",
+      "id": "personnes",
+      "key": "personnes",
+      "labelKey": "nav_sec_rh_personnes",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "cle",
+      "key": "cle",
+      "labelKey": "nav_sec_centre_cle",
+    },
+  ],
+  "branch_director": [
+    {
+      "iconKey": "award",
+      "id": "competences",
+      "key": "competences",
+      "labelKey": "nav_sec_rh_competences",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "pif",
+      "key": "pif",
+      "labelKey": "nav_sec_rh_pif",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "cle",
+      "key": "cle",
+      "labelKey": "nav_sec_centre_cle",
+    },
+  ],
+  "branch_hr": [
+    {
+      "iconKey": "star",
+      "id": "recrutement",
+      "key": "recrutement",
+      "labelKey": "nav_sec_rh_recrutement",
+    },
+    {
+      "iconKey": "award",
+      "id": "competences",
+      "key": "competences",
+      "labelKey": "nav_sec_rh_competences",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "pif",
+      "key": "pif",
+      "labelKey": "nav_sec_rh_pif",
+    },
+    {
+      "iconKey": "listtodo",
+      "id": "besoins",
+      "key": "besoins",
+      "labelKey": "nav_sec_dir_besoins",
+    },
+    {
+      "iconKey": "users",
+      "id": "personnes",
+      "key": "personnes",
+      "labelKey": "nav_sec_rh_personnes",
+    },
+  ],
+  "build_team": [
+    {
+      "id": "bilan",
+      "key": "bilan",
+      "labelKey": "nav_sec_bilan",
+    },
+    {
+      "id": "branches",
+      "key": "branches",
+      "labelKey": "nav_sec_branches",
+    },
+    {
+      "id": "competences",
+      "key": "competences",
+      "labelKey": "nav_sec_competences",
+    },
+    {
+      "id": "logs",
+      "key": "logs",
+      "labelKey": "nav_sec_logs",
+    },
+    {
+      "id": "profiles",
+      "key": "profiles",
+      "labelKey": "nav_sec_profiles",
+    },
+  ],
+  "center_assistant": [
+    {
+      "iconKey": "graduationcap",
+      "id": "prochaines-sessions",
+      "key": "prochaines-sessions",
+      "labelKey": "nav_sec_assist_sessions",
+    },
+    {
+      "iconKey": "clipboard",
+      "id": "dossiers",
+      "key": "dossiers",
+      "labelKey": "nav_sec_assist_dossiers",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "a-consulter",
+      "key": "a-consulter",
+      "labelKey": "nav_sec_assist_consulter",
+    },
+  ],
+  "center_director": [
+    {
+      "iconKey": "clipboard",
+      "id": "besoins",
+      "key": "besoins",
+      "labelKey": "nav_sec_dir_besoins",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "devis",
+      "key": "devis",
+      "labelKey": "nav_sec_dir_devis",
+    },
+    {
+      "iconKey": "clipboard",
+      "id": "offres",
+      "key": "offres",
+      "labelKey": "nav_sec_dir_offres",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "calendrier",
+      "key": "calendrier",
+      "labelKey": "nav_sec_dir_calendrier",
+    },
+    {
+      "iconKey": "clipboard",
+      "id": "rapports",
+      "key": "rapports",
+      "labelKey": "nav_sec_dir_rapports",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "roi",
+      "key": "roi",
+      "labelKey": "nav_sec_dir_roi",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "plateforme",
+      "key": "plateforme",
+      "labelKey": "nav_sec_dir_plateforme",
+    },
+  ],
+  "dop": [
+    {
+      "iconKey": "award",
+      "id": "resultats",
+      "key": "resultats",
+      "labelKey": "nav_sec_dps_results",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "niveaux",
+      "key": "niveaux",
+      "labelKey": "nav_sec_dps_tier_results",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "pif",
+      "key": "pif",
+      "labelKey": "nav_sec_dps_plans",
+    },
+    {
+      "iconKey": "clipboard",
+      "id": "besoins-formation",
+      "key": "besoins-formation",
+      "labelKey": "nav_sec_dps_needs",
+    },
+    {
+      "iconKey": "lifebuoy",
+      "id": "assistance",
+      "key": "assistance",
+      "labelKey": "nav_sec_dps_assistance",
+    },
+  ],
+  "dps": [
+    {
+      "iconKey": "award",
+      "id": "resultats",
+      "key": "resultats",
+      "labelKey": "nav_sec_dps_results",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "niveaux",
+      "key": "niveaux",
+      "labelKey": "nav_sec_dps_tier_results",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "pif",
+      "key": "pif",
+      "labelKey": "nav_sec_dps_plans",
+    },
+    {
+      "iconKey": "clipboard",
+      "id": "besoins-formation",
+      "key": "besoins-formation",
+      "labelKey": "nav_sec_dps_needs",
+    },
+    {
+      "iconKey": "lifebuoy",
+      "id": "assistance",
+      "key": "assistance",
+      "labelKey": "nav_sec_dps_assistance",
+    },
+  ],
+  "group_admin": [
+    {
+      "iconKey": "award",
+      "id": "competences",
+      "key": "competences",
+      "labelKey": "nav_sec_rh_competences",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "pif",
+      "key": "pif",
+      "labelKey": "nav_sec_rh_pif",
+    },
+    {
+      "iconKey": "users",
+      "id": "personnes",
+      "key": "personnes",
+      "labelKey": "nav_sec_rh_personnes",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "cle",
+      "key": "cle",
+      "labelKey": "nav_sec_centre_cle",
+    },
+  ],
+  "group_director": [
+    {
+      "iconKey": "award",
+      "id": "competences",
+      "key": "competences",
+      "labelKey": "nav_sec_rh_competences",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "pif",
+      "key": "pif",
+      "labelKey": "nav_sec_rh_pif",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "cle",
+      "key": "cle",
+      "labelKey": "nav_sec_centre_cle",
+    },
+  ],
+  "group_hr": [
+    {
+      "iconKey": "award",
+      "id": "competences",
+      "key": "competences",
+      "labelKey": "nav_sec_rh_competences",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "pif",
+      "key": "pif",
+      "labelKey": "nav_sec_rh_pif",
+    },
+    {
+      "iconKey": "users",
+      "id": "personnes",
+      "key": "personnes",
+      "labelKey": "nav_sec_rh_personnes",
+    },
+  ],
+  "ki": [
+    {
+      "id": "fad",
+      "key": "fad",
+      "labelKey": "nav_sec_fad",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "toyota-resultats",
+      "key": "toyota-resultats",
+      "labelKey": "nav_sec_ki_tech_results",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "toyota-pif",
+      "key": "toyota-pif",
+      "labelKey": "nav_sec_ki_tech_pif",
+    },
+    {
+      "id": "parcours",
+      "key": "parcours",
+      "labelKey": "nav_sec_ki_path",
+    },
+  ],
+  "learner": [
+    {
+      "iconKey": "clipboard",
+      "id": "tests",
+      "key": "tests",
+      "labelKey": "nav_sec_tests",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "resultats",
+      "key": "resultats",
+      "labelKey": "nav_sec_resultats",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "pifs",
+      "key": "pifs",
+      "labelKey": "nav_sec_pif",
+    },
+    {
+      "iconKey": "graduationcap",
+      "id": "formations",
+      "key": "formations",
+      "labelKey": "nav_sec_formations",
+    },
+    {
+      "iconKey": "award",
+      "id": "certifications",
+      "key": "certifications",
+      "labelKey": "nav_sec_certifs",
+    },
+  ],
+  "pic": [
+    {
+      "id": "bilan",
+      "key": "bilan",
+      "labelKey": "nav_sec_bilan",
+    },
+    {
+      "id": "fad",
+      "key": "fad",
+      "labelKey": "nav_sec_fad",
+    },
+    {
+      "id": "apprenants",
+      "key": "apprenants",
+      "labelKey": "nav_sec_apprenants",
+    },
+  ],
+  "regional_director": [
+    {
+      "iconKey": "award",
+      "id": "competences",
+      "key": "competences",
+      "labelKey": "nav_sec_rh_competences",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "pif",
+      "key": "pif",
+      "labelKey": "nav_sec_rh_pif",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "cle",
+      "key": "cle",
+      "labelKey": "nav_sec_centre_cle",
+    },
+  ],
+  "superadmin": [
+    {
+      "id": "bilan",
+      "key": "bilan",
+      "labelKey": "nav_sec_bilan",
+    },
+    {
+      "id": "console",
+      "key": "console",
+      "labelKey": "nav_sec_console",
+    },
+    {
+      "id": "apercus",
+      "key": "apercus",
+      "labelKey": "nav_sec_apercus",
+    },
+    {
+      "id": "branches",
+      "key": "branches",
+      "labelKey": "nav_sec_branches",
+    },
+    {
+      "id": "competences",
+      "key": "competences",
+      "labelKey": "nav_sec_competences",
+    },
+    {
+      "id": "logs",
+      "key": "logs",
+      "labelKey": "nav_sec_logs",
+    },
+    {
+      "id": "profiles",
+      "key": "profiles",
+      "labelKey": "nav_sec_profiles",
+    },
+  ],
+  "team_manager": [
+    {
+      "iconKey": "sliders",
+      "id": "mesurer",
+      "key": "mesurer",
+      "labelKey": "nav_sec_manager_mesurer",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "pif",
+      "key": "pif",
+      "labelKey": "nav_sec_tm_plans",
+    },
+    {
+      "iconKey": "graduationcap",
+      "id": "formations",
+      "key": "formations",
+      "labelKey": "nav_sec_formations",
+    },
+    {
+      "iconKey": "award",
+      "id": "certifications",
+      "key": "certifications",
+      "labelKey": "nav_sec_certifs",
+    },
+    {
+      "iconKey": "lifebuoy",
+      "id": "assistance",
+      "key": "assistance",
+      "labelKey": "nav_sec_assistance",
+    },
+  ],
+  "trainer": [
+    {
+      "id": "comptes-rendus",
+      "key": "comptes-rendus",
+      "labelKey": "nav_sec_comptes_rendus",
+    },
+    {
+      "id": "sessions-a-venir",
+      "key": "sessions-a-venir",
+      "labelKey": "nav_sec_sessions_animees",
+    },
+    {
+      "id": "formations",
+      "key": "formations",
+      "labelKey": "nav_sec_formations",
+    },
+    {
+      "id": "competences",
+      "key": "competences",
+      "labelKey": "nav_sec_competences",
+    },
+    {
+      "id": "certifs",
+      "key": "certifs",
+      "labelKey": "nav_sec_certifs",
+    },
+    {
+      "iconKey": "lifebuoy",
+      "id": "assistance",
+      "key": "assistance",
+      "labelKey": "nav_sec_assistance",
+    },
+  ],
+  "training_coordinator": [
+    {
+      "iconKey": "clipboard",
+      "id": "besoins",
+      "key": "besoins",
+      "labelKey": "nav_sec_dir_besoins",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "devis",
+      "key": "devis",
+      "labelKey": "nav_sec_dir_devis",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "calendrier",
+      "key": "calendrier",
+      "labelKey": "nav_sec_dir_calendrier",
+    },
+    {
+      "iconKey": "clipboard",
+      "id": "rapports",
+      "key": "rapports",
+      "labelKey": "nav_sec_dir_rapports",
+    },
+    {
+      "iconKey": "sliders",
+      "id": "administration",
+      "key": "administration",
+      "labelKey": "nav_sec_dir_administration",
+    },
+  ],
+  "workshop_manager": [
+    {
+      "iconKey": "sliders",
+      "id": "mesurer",
+      "key": "mesurer",
+      "labelKey": "nav_sec_manager_mesurer",
+    },
+    {
+      "iconKey": "milestone",
+      "id": "pif",
+      "key": "pif",
+      "labelKey": "nav_sec_tm_plans",
+    },
+    {
+      "iconKey": "graduationcap",
+      "id": "formations",
+      "key": "formations",
+      "labelKey": "nav_sec_formations",
+    },
+    {
+      "iconKey": "award",
+      "id": "certifications",
+      "key": "certifications",
+      "labelKey": "nav_sec_certifs",
+    },
+    {
+      "iconKey": "lifebuoy",
+      "id": "assistance",
+      "key": "assistance",
+      "labelKey": "nav_sec_assistance",
+    },
+  ],
+}
+`;

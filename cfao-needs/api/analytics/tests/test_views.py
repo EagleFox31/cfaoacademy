@@ -4,6 +4,8 @@ import importlib
 from datetime import date
 
 import pytest
+
+from analytics.tests.test_contract import _validator
 from django.apps import apps
 from django.db import connection
 from rest_framework.test import APIClient
@@ -79,3 +81,153 @@ def test_migration_adopts_tables_already_created_by_ingestion():
         migration.adopt_or_create(apps, editor)  # tables présentes : aucune création, aucune erreur
     assert {"campaigns_branchbrandquota", "campaigns_courseallocation", "campaigns_trainingsession"} <= set(
         connection.introspection.table_names())
+
+
+# ── Clé de répartition (cfao-planning) ─────────────────────────────────────────
+
+from campaigns.models import CatalogLine, NeedLine, Submission  # noqa: E402
+from referential.models import Brand, CatalogFamily, OrgUnitRef  # noqa: E402
+
+
+def _catalog(campaign, code, brand=None, pole="MOBILITY"):
+    family, _ = CatalogFamily.objects.get_or_create(key=f"f-{pole}", defaults={"label": pole, "pole": pole})
+    return CatalogLine.objects.create(campaign=campaign, family=family, brand=brand, code=code, title=code)
+
+
+def _submission(campaign, country, status=Submission.Status.VALIDATED):
+    unit, _ = OrgUnitRef.objects.get_or_create(code=f"ou-{country.lower()}", defaults={"label": country})
+    return Submission.objects.create(campaign=campaign, org_unit=unit, country=country, status=status)
+
+
+def test_needs_fall_back_to_quota_import(client, campaign):
+    BranchBrandQuota.objects.create(campaign=campaign, pole="MOTORS", country="BENIN", brand="TOYOTA",
+                                    brand_tech_count=22, requested_needs=34)
+    BranchBrandQuota.objects.create(campaign=campaign, pole="EQUIPMENT", country="BENIN", brand="CAT",
+                                    brand_tech_count=5, requested_needs=9)
+    body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2026, "pole": "motors"}).json()
+    assert body["source"] == "quota_import"
+    assert body["rows"] == [{"country": "BENIN", "brand": "TOYOTA", "needs": 34, "technicians": 22}]
+
+
+def test_validated_submissions_replace_imported_needs(client, campaign):
+    BranchBrandQuota.objects.create(campaign=campaign, pole="MOTORS", country="BENIN", brand="Toyota",
+                                    brand_tech_count=22, requested_needs=34)
+    toyota = Brand.objects.create(code="toyota", label="Toyota", pole="MOBILITY")
+    line = _catalog(campaign, "TS01", toyota)
+    NeedLine.objects.create(submission=_submission(campaign, "BENIN"), catalog_line=line, q1=3, q3=2)
+    # Une fiche non validée ne compte pas.
+    NeedLine.objects.create(submission=_submission(campaign, "TOGO", Submission.Status.SUBMITTED),
+                            catalog_line=line, q1=50)
+    body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2026}).json()
+    assert body["source"] == "submissions"
+    assert body["rows"] == [{"country": "BENIN", "brand": "Toyota", "needs": 5, "technicians": 22}]
+
+
+def test_needs_empty_year_says_none(client, campaign):
+    body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2030}).json()
+    assert body == {"year": 2030, "pole": "all", "source": "none", "rows": [], "postponed": [],
+                    "unassigned": []}
+
+
+def test_unchosen_modules_lists_catalog_without_validated_demand(client, campaign):
+    toyota = Brand.objects.create(code="toyota", label="Toyota", pole="MOBILITY")
+    chosen, idle, zero = (_catalog(campaign, c, toyota) for c in ("TS01", "TS02", "TS03"))
+    _catalog(campaign, "EQ01", pole="EQUIPMENT")
+    sub = _submission(campaign, "BENIN")
+    NeedLine.objects.create(submission=sub, catalog_line=chosen, q2=1)
+    NeedLine.objects.create(submission=sub, catalog_line=zero)  # ligne à 0 : non choisie
+    body = client.get("/api/v1/needs/analytics/unchosen-modules", {"year": 2026, "pole": "motors"}).json()
+    assert body["catalog_available"] is True
+    assert [m["code"] for m in body["modules"]] == ["TS02", "TS03"]
+    assert body["modules"][0] == {"pole": "MOBILITY", "brand": "Toyota", "tier": None, "code": "TS02",
+                                  "title": "TS02"}
+
+
+def test_unchosen_modules_without_catalog(client, campaign):
+    body = client.get("/api/v1/needs/analytics/unchosen-modules", {"year": 2026}).json()
+    assert body["catalog_available"] is False and body["modules"] == []
+
+
+# ── Niveau des modules, source unique : le catalogue ───────────────────────────
+
+CATALOG_LEVEL = "/api/v1/needs/analytics/catalog-level"
+WRITE_KEY = {"HTTP_X_CATALOG_WRITE_KEY": "write-key"}
+
+
+@pytest.fixture
+def scale(campaign, settings):
+    settings.CATALOG_WRITE_INBOUND_KEY = "write-key"
+    toyota = Brand.objects.create(code="toyota", label="TOYOTA", pole="MOBILITY")
+    lines = {}
+    for code, label, tier in (("TS01", "G4", "JUNIOR"), ("TS03", "G3", "SENIOR"), ("TS04", "", "")):
+        lines[code] = _catalog(campaign, code, toyota)
+        CatalogLine.objects.filter(pk=lines[code].pk).update(level_label=label, tier=tier)
+        lines[code].refresh_from_db()
+    return lines
+
+
+def _set_level(client, ids, expected, label, **extra):
+    return client.post(CATALOG_LEVEL, {"line_ids": ids, "expected": expected, "level_label": label},
+                       format="json", **extra)
+
+
+def test_catalog_levels_gives_the_brand_scale(client, scale):
+    body = client.get("/api/v1/needs/analytics/catalog-levels", {"year": 2026}).json()
+    assert body["catalog_available"] is True
+    assert {(l["code"], l["level_label"], l["tier"]) for l in body["lines"]} == {
+        ("TS01", "G4", "JUNIOR"), ("TS03", "G3", "SENIOR"), ("TS04", "", None)}
+    assert all(l["family"] == scale[l["code"]].family.key for l in body["lines"])
+
+
+def test_level_is_written_with_the_tier_of_the_scale(client, scale):
+    res = _set_level(client, [str(scale["TS04"].pk)], "", "G3", **WRITE_KEY)
+    assert res.status_code == 200 and res.json() == {"changed": True, "level_label": "G3", "tier": "SENIOR"}
+    scale["TS04"].refresh_from_db()
+    assert (scale["TS04"].level_label, scale["TS04"].tier) == ("G3", "SENIOR")
+
+
+def test_level_outside_the_brand_scale_is_refused(client, scale):
+    res = _set_level(client, [str(scale["TS01"].pk)], "G4", "Bronze", **WRITE_KEY)
+    assert res.status_code == 400 and res.json()["detail"] == "label_not_in_scale"
+
+
+def test_stale_level_is_a_conflict_and_writes_nothing(client, scale):
+    res = _set_level(client, [str(scale["TS01"].pk)], "G3", "G3-bis", **WRITE_KEY)
+    assert res.status_code == 409 and res.json()["current"] == "G4"
+    scale["TS01"].refresh_from_db()
+    assert scale["TS01"].level_label == "G4"
+
+
+def test_level_can_be_cleared(client, scale):
+    res = _set_level(client, [str(scale["TS03"].pk)], "G3", "", **WRITE_KEY)
+    assert res.status_code == 200 and res.json()["tier"] is None
+
+
+def test_level_write_matches_the_published_contract(client, scale):
+    res = _set_level(client, [str(scale["TS04"].pk)], "", "G4", **WRITE_KEY)
+    assert res.status_code == 200
+    assert list(_validator(CATALOG_LEVEL, 200, "post").iter_errors(res.json())) == []
+
+
+def test_level_write_refuses_the_read_key(client, scale):
+    res = _set_level(client, [str(scale["TS01"].pk)], "G4", "G3", HTTP_X_ANALYTICS_KEY="anything")
+    assert res.status_code in (401, 403)
+
+
+def test_postponed_seats_stay_in_the_needs(client, campaign):
+    toyota = Brand.objects.create(code="toyota", label="Toyota", pole="MOBILITY")
+    line = _catalog(campaign, "TS11", toyota)
+    NeedLine.objects.create(submission=_submission(campaign, "BENIN"), catalog_line=line, q1=2, q4=3, postponed=3)
+    body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2026}).json()
+    assert body["rows"][0]["needs"] == 5
+    assert body["postponed"] == [{"country": "BENIN", "brand": "Toyota", "code": "TS11", "places": 3}]
+
+
+def test_unassigned_seats_stay_in_the_needs(client, campaign):
+    toyota = Brand.objects.create(code="toyota", label="Toyota", pole="MOBILITY")
+    line = _catalog(campaign, "TS06", toyota)
+    NeedLine.objects.create(submission=_submission(campaign, "BENIN"), catalog_line=line, q2=4, unassigned=4)
+    body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2026}).json()
+    assert body["rows"][0]["needs"] == 4
+    assert body["unassigned"] == [{"country": "BENIN", "brand": "Toyota", "code": "TS06", "places": 4}]
+    assert body["postponed"] == []

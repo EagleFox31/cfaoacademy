@@ -1,0 +1,24 @@
+# Relevé le 19/11 sur le serveur, avant la bascule vers le PDP commun.
+# À venir : le service cerbos disparaît (PDP commun, projet cfao-pdp, réseau
+# cfao-maillage) et la gateway passe en 127.0.0.1:8092 (edge seule entrée).
+services:
+  api:
+    environment:
+      CERBOS_HTTP: http://cerbos:3592
+    depends_on:
+      - cerbos
+
+  cerbos:
+    image: antifragile237/cfao-comptes-rendus-cerbos:v0.5.0
+    restart: unless-stopped
+    volumes:
+      - ./cerbos/config/cerbos.yaml:/config/cerbos.yaml:ro
+      - ./cerbos/policies:/policies:ro
+
+  gateway:
+    image: antifragile237/cfao-comptes-rendus-gateway:v0.5.0
+    restart: unless-stopped
+    ports:
+      - "8092:80"
+    depends_on:
+      - api

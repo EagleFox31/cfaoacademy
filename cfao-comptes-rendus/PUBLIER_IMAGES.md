@@ -31,7 +31,7 @@ git diff --stat <commit de la version précédente> origin/main -- cfao-comptes-
 |---|---|
 | `web/` ou `gateway/` | `gateway` |
 | `api/` | `api` |
-| `cerbos/` | `cerbos` |
+| `../cerbos/` (bundle commun de la plateforme) | `cerbos` |
 | autre (scripts, compose, docs) | aucune |
 
 ## 2a. Reconstruction complète (cas normal)
@@ -42,7 +42,8 @@ Contexte : dossier `cfao-comptes-rendus/`. `V` est le nouveau tag, par exemple `
 V=v0.4.0
 docker build -t antifragile237/cfao-comptes-rendus-gateway:$V -f gateway/Dockerfile .
 docker build -t antifragile237/cfao-comptes-rendus-api:$V api
-docker build -t antifragile237/cfao-comptes-rendus-cerbos:$V cerbos
+# Bundle Cerbos commun (socle, needs, comptes rendus) : un seul jeu de policies.
+docker build -t antifragile237/cfao-comptes-rendus-cerbos:$V ../cerbos
 ```
 
 Il faut que Docker accède à Docker Hub (images de base `python`, `node`, `nginx`, `cerbos`).

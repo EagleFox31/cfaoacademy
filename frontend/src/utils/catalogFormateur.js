@@ -153,6 +153,23 @@ export function isEquipmentCatalogBrand(brandKey) {
   return folder ? Boolean(lookupEquipmentBrand(folder)) : false
 }
 
+const nomCompare = v => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase()
+
+/** Marques d'un formateur selon l'équipe des pôles (slugs de `TEAM_BRAND_DEFS`). */
+export function marquesDuFormateur(nom) {
+  const cle = nomCompare(nom)
+  if (!cle) return []
+  const marques = new Set()
+  for (const pole of EQUIPE.poles) {
+    for (const member of pole.members) {
+      if (Array.isArray(member.brands) && nomCompare(member.name) === cle) {
+        member.brands.forEach(b => marques.add(b))
+      }
+    }
+  }
+  return [...marques]
+}
+
 function sortWithPrimary(names, primary) {
   if (!primary || !names.includes(primary)) return [...names]
   return [primary, ...names.filter((n) => n !== primary)]

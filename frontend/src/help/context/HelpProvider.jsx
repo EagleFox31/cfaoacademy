@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth.js'
 import useLocale from '../../hooks/useLocale.js'
@@ -13,8 +13,7 @@ import {
 import { resolveHelpContext } from '../context/routes.js'
 import { searchHelpArticles, rankHelpArticles } from '../search.js'
 import { HELP_TOUR_IDS, listHelpTours } from '../tours/index.js'
-
-const HelpContext = createContext(null)
+import { HelpContext } from './helpContext.js'
 
 export function HelpProvider({
   children,
@@ -142,16 +141,4 @@ export function HelpProvider({
       {children}
     </HelpContext.Provider>
   )
-}
-
-export function useHelp() {
-  const ctx = useContext(HelpContext)
-  if (!ctx) {
-    throw new Error('useHelp must be used within HelpProvider')
-  }
-  return ctx
-}
-
-export function useHelpOptional() {
-  return useContext(HelpContext)
 }

@@ -1,0 +1,9 @@
+# Smoke de l'image de prod, avec le compose de prod lui-même : ce fichier n'ajoute
+# que le compte du smoke (fixtures), importé en plus du realm embarqué.
+#   docker build -t antifragile237/cfao-keycloak:smoke keycloak
+#   KC_VERSION=smoke ... docker compose -f keycloak/compose.prod.yml -f keycloak/tests/compose.prod.smoke.yml ...
+# Chemins relatifs au premier fichier (keycloak/).
+services:
+  config:
+    volumes:
+      - ./tests/fixtures:/fixtures:ro

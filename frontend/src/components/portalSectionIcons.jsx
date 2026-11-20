@@ -33,6 +33,14 @@ export function MilestoneIcon(props) {
   )
 }
 
+export function ActivityIcon(props) {
+  return (
+    <IconBase {...props}>
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+    </IconBase>
+  )
+}
+
 export function AwardIcon(props) {
   return (
     <IconBase {...props}>
@@ -205,6 +213,26 @@ export function BellIcon(props) {
     <IconBase {...props}>
       <path d="M10.268 21a2 2 0 0 0 3.464 0" />
       <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+    </IconBase>
+  )
+}
+
+/** Compte de la personne — silhouette. */
+export function UserIcon(props) {
+  return (
+    <IconBase {...props}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </IconBase>
+  )
+}
+
+/** Connexion et sécurité du compte — cadenas. */
+export function LockIcon(props) {
+  return (
+    <IconBase {...props}>
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
     </IconBase>
   )
 }

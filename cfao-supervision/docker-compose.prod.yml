@@ -1,0 +1,151 @@
+# Supervision (cockpit d'exploitation) — production, derrière cfao-edge.
+# Image Docker Hub, aucun code source sur le serveur :
+#   docker compose --env-file .env -f docker-compose.prod.yml up -d
+# Prérequis : le PDP commun (projet cfao-pdp, réseau cfao-maillage) et le Keycloak
+# commun (projet cfao-identity) tournent.
+# Le job supervision-migrate crée ou complète la base à chaque `up` (AGENTS.md §7) :
+# migrations + modules absents du référentiel, jamais d'écrasement. S'il échoue,
+# l'API ne démarre pas : lire `docker compose logs supervision-migrate`.
+# Lecture seule sur la machine : seul le collecteur parle à Docker, à travers un
+# proxy de socket qui n'autorise que quelques lectures, sur un réseau sans sortie.
+
+name: cfao-supervision
+
+services:
+  supervision-db:
+    mem_limit: 256m
+    restart: unless-stopped
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${SUPERVISION_DB_NAME:-supervision}
+      POSTGRES_USER: ${SUPERVISION_DB_USER:-supervision}
+      POSTGRES_PASSWORD: ${SUPERVISION_DB_PASSWORD:?SUPERVISION_DB_PASSWORD est obligatoire}
+    volumes:
+      - supervision-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SUPERVISION_DB_USER:-supervision}"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+
+  # Job ponctuel sur l'image de l'API : le code qui migre est celui qui sert.
+  # Pas de --demo en production.
+  supervision-migrate:
+    mem_limit: 256m
+    restart: "no"
+    image: antifragile237/cfao-supervision-api:${SUPERVISION_VERSION:-v0.1.0}
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py bootstrap"]
+    environment: &api_env
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_ALLOWED_HOSTS: ${SUPERVISION_ALLOWED_HOSTS:?SUPERVISION_ALLOWED_HOSTS manquant (hôtes publics + supervision-api)}
+      SUPERVISION_SECRET_KEY: ${SUPERVISION_SECRET_KEY:?SUPERVISION_SECRET_KEY est obligatoire}
+      SUPERVISION_DB_HOST: supervision-db
+      SUPERVISION_DB_NAME: ${SUPERVISION_DB_NAME:-supervision}
+      SUPERVISION_DB_USER: ${SUPERVISION_DB_USER:-supervision}
+      SUPERVISION_DB_PASSWORD: ${SUPERVISION_DB_PASSWORD:?}
+      # PDP commun, joint sur cfao-maillage.
+      CERBOS_HTTP: ${CERBOS_HTTP:-http://cerbos:3592}
+      # Clés lues en interne, sur le réseau du Keycloak commun.
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/cfao/protocol/openid-connect/certs}
+      OIDC_ISSUER: ${OIDC_ISSUER:?OIDC_ISSUER manquant (ex. https://<hote>/auth/realms/cfao)}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-cfao-supervision-api}
+      # Liste blanche des projets compose lus ; tout le reste de la machine est ignoré.
+      SUPERVISION_PROJECTS: ${SUPERVISION_PROJECTS:-cfao-edge,cfao-portail,cfao-core,cfao-needs,cfao-identity,cfao-compte-rendus,cfao-planning,cfao-supervision}
+      SUPERVISION_EDGE_CONTAINER: ${SUPERVISION_EDGE_CONTAINER:-cfao-edge-edge-1}
+      DOCKER_PROXY_URL: http://supervision-socket:2375
+      # Journal des connexions : compte de service limité à view-events.
+      KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080/auth}
+      KEYCLOAK_COLLECTOR_SECRET: ${KEYCLOAK_COLLECTOR_SECRET:?KEYCLOAK_COLLECTOR_SECRET manquant (= CFAO_SUPERVISION_COLLECTOR_SECRET du realm)}
+      # Sondes des adresses publiques (collecteur ; l'API s'en sert pour l'écran).
+      # « url|fragment du titre » ou « url|-> redirection », séparées par « ; ».
+      SUPERVISION_PROBES: ${SUPERVISION_PROBES:-}
+    depends_on:
+      supervision-db:
+        condition: service_healthy
+
+  supervision-api:
+    mem_limit: 256m
+    restart: unless-stopped
+    image: antifragile237/cfao-supervision-api:${SUPERVISION_VERSION:-v0.1.0}
+    environment: *api_env
+    # cfao-maillage : le PDP ; identite : clés du Keycloak commun.
+    networks: [default, cfao-maillage, identite]
+    depends_on:
+      supervision-migrate:
+        condition: service_completed_successfully
+    # Local seulement : cfao-edge est la seule entrée.
+    ports:
+      - "${SUPERVISION_BIND:-127.0.0.1}:${SUPERVISION_PORT:-8097}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-S", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/supervision/healthz', timeout=5).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  supervision-collector:
+    mem_limit: 192m
+    restart: unless-stopped
+    image: antifragile237/cfao-supervision-api:${SUPERVISION_VERSION:-v0.1.0}
+    command: ["python", "manage.py", "collect"]
+    environment:
+      <<: *api_env
+      SUPERVISION_UFW_LOG_PATH: /var/log/cfao-ufw/ufw.log
+    # Copie du journal ufw faite par rsyslog (/etc/rsyslog.d/19-cfao-ufw.conf),
+    # syslog:adm 0750 : le DOSSIER en lecture seule (un fichier monté garderait
+    # l'ancien après la rotation), lu grâce au groupe adm (gid 4).
+    volumes:
+      - ${SUPERVISION_UFW_DIR:-/var/log/cfao-ufw}:/var/log/cfao-ufw:ro
+    group_add: ["4"]
+    # identite : journal des connexions ; supervision-docker : le proxy du socket.
+    networks: [default, identite, supervision-docker]
+    depends_on:
+      supervision-migrate:
+        condition: service_completed_successfully
+      supervision-socket:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "manage.py", "collect", "--check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  supervision-socket:
+    # Proxy du socket Docker : lecture seule, liste blanche d'URL, seul le
+    # collecteur peut l'appeler (réseau interne sans sortie). Jamais
+    # containers/<id>/json : l'inspect renvoie l'Env (secrets) de tout conteneur.
+    image: wollomatic/socket-proxy:1.10.0
+    mem_limit: 32m
+    restart: unless-stopped
+    command:
+      - "-loglevel=info"
+      - "-listenip=0.0.0.0"
+      - "-allowfrom=supervision-collector"
+      - "-allowGET=^/(v[0-9.]+/)?(_ping|version|containers/json|containers/${SUPERVISION_EDGE_CONTAINER:-cfao-edge-edge-1}/logs)$"
+      - "-allowHEAD=^/(v[0-9.]+/)?_ping$"
+      - "-watchdoginterval=3600"
+      - "-stoponwatchdog"
+      - "-shutdowngracetime=5"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    # Groupe propriétaire de /var/run/docker.sock sur le serveur (stat -c %g).
+    user: "65534:${DOCKER_GID:-988}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [supervision-docker]
+
+networks:
+  supervision-docker:
+    internal: true
+  # Clé et nom identiques dans chaque compose (edge/tests/test_edge_config.py).
+  cfao-maillage:
+    name: cfao-maillage
+  identite:
+    name: ${IDENTITY_NETWORK:-cfao-identity_default}
+    external: true
+
+volumes:
+  supervision-db-data:

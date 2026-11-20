@@ -76,4 +76,20 @@ describe('RedirectionExterne', () => {
       'http://portail.exemple.test/comptes-rendus/portail/compte-rendu/nouveau?session=ses-1')
     vi.unstubAllEnvs()
   })
+
+  it("redirige quand le module est donné par un chemin /cr sur l'origine du portail", () => {
+    vi.stubEnv('VITE_CR_URL', '/cr')
+    const aller = vi.fn()
+    afficher(aller, 'http://portail.exemple.test')
+    expect(aller).toHaveBeenCalledWith('/cr/portail/compte-rendu/nouveau?session=ses-1')
+    vi.unstubAllEnvs()
+  })
+
+  it('ne redirige pas quand le chemin relatif vise la page courante (pas de boucle)', () => {
+    vi.stubEnv('VITE_CR_URL', '/')
+    const aller = vi.fn()
+    afficher(aller, 'http://portail.exemple.test')
+    expect(aller).not.toHaveBeenCalled()
+    vi.unstubAllEnvs()
+  })
 })

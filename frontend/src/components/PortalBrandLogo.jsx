@@ -16,8 +16,14 @@ const BRAND_LOGOS = {
   'king-long': '/assets/logos/kinglong.png',
 }
 
+/** Codes du planning qui diffèrent de ceux du site. */
+const BRAND_ALIASES = {
+  'omoda-jaecoo': 'omoda',
+}
+
 export function resolveBrandLogo(brand) {
-  return BRAND_LOGOS[brand] ?? TEAM_BRAND_DEFS[brand]?.logo ?? null
+  const code = BRAND_ALIASES[brand] ?? brand
+  return BRAND_LOGOS[code] ?? TEAM_BRAND_DEFS[code]?.logo ?? null
 }
 
 export default function PortalBrandLogo({ brand, size = 'default', title }) {

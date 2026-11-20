@@ -1,0 +1,83 @@
+{
+  "veilScrubberAria": "Ajustar o véu sobre a imagem do hero",
+  "prevSlideAria": "Diapositivo anterior",
+  "nextSlideAria": "Diapositivo seguinte",
+  "defaultTitleBefore": "Desenvolva as suas competências ",
+  "defaultTitleEm": "em mecânica automóvel",
+  "defaultTitleAfter": " com a ",
+  "defaultTitleBrand": "CFAO Academy",
+  "headlineTemplateBefore": "Desenvolva as suas competências ",
+  "lead": "Formações e certificações de construtor — para as equipas CFAO e parceiros.",
+  "cardScrollHint": "Descobrir as ofertas de formação",
+  "personasNavAria": "Escolher o seu perfil",
+  "whoAreYou": "Quem é?",
+  "formationOffer": "Oferta de formação",
+  "hintSep": " · ",
+  "b2bSectionLabel": "Empresas e parceiros",
+  "b2bEyebrow": "Representa uma empresa?",
+  "b2bAction": "Forme as suas equipas",
+  "tags": {
+    "motors": "Motors",
+    "equipment": "Equipment",
+    "carrosserie": "Carroçaria",
+    "sav": "Organização SAV"
+  },
+  "personas": {
+    "vl": {
+      "label": "Técnico VL",
+      "title": "Veículos ligeiros · Motors",
+      "headlineBefore": "em",
+      "headlineHighlight": "reparação de veículos ligeiros",
+      "headlineAfter": " com a CFAO Academy",
+      "headlineAfterBlock": true,
+      "loggedHeadlineHighlight": "competências em reparação de veículos ligeiros"
+    },
+    "pl": {
+      "label": "Técnico PL",
+      "title": "Pesados, engins e autocarros · Equipment",
+      "headlineBefore": "em",
+      "headlineHighlight": "reparação de engins, camiões e empilhadores",
+      "headlineAfter": " com a CFAO Academy",
+      "headlineAfterBlock": true,
+      "loggedHeadlineHighlight": "competências em reparação de engins, camiões e empilhadores"
+    },
+    "carrossier": {
+      "label": "Carroçaria",
+      "title": "Percursos N1 → N5",
+      "headlineBefore": "em",
+      "headlineHighlight": "reparação de carroçaria — todos os veículos",
+      "headlineAfter": " com a CFAO Academy",
+      "headlineAfterBlock": true,
+      "loggedHeadlineHighlight": "competências em reparação de carroçaria"
+    },
+    "savParts": {
+      "label": "SAV e Peças",
+      "title": "SAV, balcão e stock · Organização SAV",
+      "headlineBefore": "em",
+      "headlineHighlight": "organização SAV e peças",
+      "headlineAfter": " com a CFAO Academy",
+      "headlineAfterBlock": true,
+      "loggedHeadlineHighlight": "competências em organização SAV e peças"
+    }
+  },
+  "b2b": {
+    "label": "Cliente B2B",
+    "title": "Parceiros e frotas",
+    "headlineBefore": "em",
+    "headlineHighlight": "condução de engins",
+    "headlineAfter": " com a CFAO Academy"
+  },
+  "logged_greeting": "Bem-vindo de volta",
+  "logged_learner_headline_prefix": "Desenvolva as suas ",
+  "logged_manager_headline_before": "Desenvolva as competências dos seus colaboradores ",
+  "logged_goal": "Objetivo {level}",
+  "logged_cta_continue": "Continuar o seu percurso",
+  "logged_cta_portal": "Aceder ao seu espaço",
+  "logged_browse": "Ver as formações",
+  "logged_certs": "certificação obtida",
+  "logged_certs_pl": "certificações obtidas",
+  "logged_avg_progress": "progresso méd.",
+  "newsEyebrow": "Destaque",
+  "newsRead": "Ler o artigo",
+  "newsNavAria": "Notícias em destaque"
+}

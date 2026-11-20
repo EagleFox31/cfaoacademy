@@ -1,5 +1,7 @@
 const DELIVERY_RW = new Set(['superadmin', 'build_team'])
-const DELIVERY_READ = new Set(['superadmin', 'build_team', 'group_admin', 'group_director'])
+// Pas de Delivery pour le directeur groupe (décision du 18/11). Admin groupe :
+// éteint dans son portail, l'accès direct reste en lecture en attendant la matrice des accès.
+const DELIVERY_READ = new Set(['superadmin', 'build_team', 'group_admin'])
 
 export function canAccessDelivery(roles = []) {
   return roles.some(r => DELIVERY_READ.has(r))
@@ -10,7 +12,7 @@ export function canEditDelivery(roles = []) {
 }
 
 export function isExecutiveDeliveryView(roles = []) {
-  return roles.includes('group_admin') || roles.includes('group_director')
+  return roles.includes('group_admin')
 }
 
 export function computeDeliveryKpis(stories) {

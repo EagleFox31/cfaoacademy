@@ -57,6 +57,8 @@ Les départements ne sont pas standardisés — ils varient selon la filiale :
 |------|------|-------------|
 | **Formateur** | `trainer` | Formateur **certifié constructeur** — accrédité par la marque (ex. Toyota Master Trainer). Intervient en présentiel ou distanciel au centre Academy. Différent du KI/PIC : expert Academy ou externe, pas technicien terrain ; scope flottant multi-filiales selon les sessions. Le KI/PIC est le **formateur suppléant** interne. |
 | **Assistante du centre** | `center_assistant` | Support administratif et logistique du centre de formation Academy. Gère les inscriptions, planning salles, convocations. |
+| **Coordinateur formation** | `training_coordinator` | Coordonne le plan de formation : relit et consolide les besoins (module needs), prépare le planning des sessions. Rôle interne CFAO (derived roles `internal_staff`, revue needs). |
+| **Lecteur clé de répartition** | `planning_viewer` | Consulte la clé de répartition (cfao-planning) dans son périmètre, sans aucun autre module ni portail : arrive directement sur `/portail/cle-repartition` après connexion (derived roles `planning_reader`, `planning_scoped_reader`). |
 | **Directeur du centre de formation** | `center_director` | Dirige le centre de formation CFAO Academy. Supervise formateurs, assistante, planning pédagogique. |
 | **Éditeur de contenu** | `content_editor` | Rédige, édite et publie les articles du site vitrine via Wagtail (actualités, événements, certifications, nouveautés). Workflow brouillon → relecture → publication. Scope = groupe (contenu global). Réservé à l'équipe Academy et aux référents communication filiale désignés. Cumul courant : `content_editor` + `learner` ou `center_assistant`. |
 
@@ -70,6 +72,7 @@ Les départements ne sont pas standardisés — ils varient selon la filiale :
 | **RH Groupe** | `group_hr` | RH centrale. Accès aux données formation/certification de tous les collaborateurs du groupe. Scope = groupe. |
 | **Super Admin** | `superadmin` | Accès total sans restriction. Réservé équipe technique CFAO Academy. |
 | **Équipe build** | `build_team` | Compte technique projet plateforme. App **15** : backlog delivery, statut tests, preview digest Git. Pas d'accès admin org (app 12) ni données formation terrain. Scope = groupe / projet. |
+| **Exploitant** | `platform_ops` | Équipe d'exploitation. App **17** (supervision) en **lecture seule** : état des modules, versions, ports, dépendances, dernières connexions. Aucune donnée formation, aucune action sur les modules. Scope = plateforme. Guide : `docs/exploitation/supervision.md`. |
 
 ### 2.4 Rôles externes / candidats
 
@@ -273,6 +276,7 @@ Un compte cumulatif voit dans le portail **toutes les apps** auxquelles au moins
 | Partenaire B2B | ✓ | — | — | — | — |
 | Éditeur contenu | — | — | — | — | — |
 | Équipe build (`build_team`) | — | — | — | — | ✓ (app 15) |
+| Exploitant (`platform_ops`) | — | — | — | — | ✓ (app 17, lecture seule) |
 
 > `content_editor` n'apparaît pas dans cette matrice car ses permissions concernent le CMS Wagtail (app 13), non les données de formation. Dans Wagtail : RW articles + médias dans le workflow éditorial.
 

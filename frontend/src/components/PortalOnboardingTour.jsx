@@ -1,11 +1,25 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { echelle } from '../utils/echelle.js'
 
 const DEFAULT_PADDING = 10
 const NAV_CLEARANCE = 84
 const VIEWPORT_MARGIN = 12
 
 const NAV_TARGET_SELECTORS = new Set(['[data-portal-help]', '[data-portal-locale]'])
+
+// La racine peut être dézoomée (utils/echelle.js) : les mesures du navigateur
+// sont en pixels d'écran, la bulle et le cadre se placent en pixels CSS.
+function rectCss(el) {
+  const z = echelle()
+  const r = el.getBoundingClientRect()
+  return { top: r.top / z, left: r.left / z, right: r.right / z, bottom: r.bottom / z, width: r.width / z, height: r.height / z }
+}
+
+function viewportCss() {
+  const z = echelle()
+  return { vw: window.innerWidth / z, vh: window.innerHeight / z }
+}
 
 function isNavBarTarget(selector) {
   return NAV_TARGET_SELECTORS.has(selector)
@@ -22,7 +36,7 @@ function scrollToSection(id, scrollToTop = false) {
   }
   const el = document.getElementById(id)
   if (!el) return
-  const top = el.getBoundingClientRect().top + window.scrollY - NAV_CLEARANCE
+  const top = el.getBoundingClientRect().top + window.scrollY - NAV_CLEARANCE * echelle()
   window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
 }
 
@@ -42,18 +56,19 @@ function measureTarget(selector, padding = DEFAULT_PADDING, mode = 'element') {
   const el = resolveTargetElement(selector)
   if (!el) return null
 
-  const rect = el.getBoundingClientRect()
+  const rect = rectCss(el)
   if (rect.width < 1 && rect.height < 1) return null
 
   const isNavTarget = isNavBarTarget(selector)
   const topFloor = isNavTarget ? VIEWPORT_MARGIN : NAV_CLEARANCE
 
   if (mode === 'section') {
+    const { vw, vh } = viewportCss()
     const top = Math.max(NAV_CLEARANCE, rect.top - padding)
-    const bottom = Math.min(window.innerHeight - VIEWPORT_MARGIN, rect.bottom + padding)
+    const bottom = Math.min(vh - VIEWPORT_MARGIN, rect.bottom + padding)
     const height = Math.max(160, bottom - top)
     const left = Math.max(VIEWPORT_MARGIN, rect.left - padding)
-    const right = Math.min(window.innerWidth - VIEWPORT_MARGIN, rect.right + padding)
+    const right = Math.min(vw - VIEWPORT_MARGIN, rect.right + padding)
     return {
       top,
       left,
@@ -72,8 +87,7 @@ function measureTarget(selector, padding = DEFAULT_PADDING, mode = 'element') {
 
 function placeTooltip(rect, placement, tooltipSize) {
   const margin = 14
-  const vw = window.innerWidth
-  const vh = window.innerHeight
+  const { vw, vh } = viewportCss()
 
   if (!rect) {
     return {

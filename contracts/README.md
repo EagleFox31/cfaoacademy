@@ -17,8 +17,9 @@ nouvelle image ne casse pas en silence un module déjà en service.
 
 | Contrat | Fournisseur | Consommateurs |
 |---|---|---|
-| `mail-outbound` 0.1.0 | cfao-academy-mail | aucun pour l'instant |
+| `mail-outbound` 0.2.0 | cfao-academy-mail | aucun pour l'instant |
 | `needs-analytics` 1.0.0 | cfao-needs | cfao-core `^1` |
+| `cr-sessions` 1.0.0 | cfao-planning | aucun pour l'instant (module Comptes rendus, copie locale) |
 
 Les scripts ne contiennent aucun nom de projet, de branche ou de module : tout
 vient du registre.

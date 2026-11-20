@@ -42,6 +42,82 @@ function DpsHeroStatsLine({ t, technicianCount, brandCount, startWi }) {
   )
 }
 
+/**
+ * Phrase chiffrée du centre de formation, même rendu que celle du DPS.
+ * Le début dit ce que fait le rôle (`mode`), la fin donne le périmètre : jetons
+ * {countries} et {brands} (chiffres animés, « — » pendant le chargement).
+ * Sans marques connues (aucune clé, erreur), la fin ne cite que les pays.
+ */
+function CenterHeroStatsLine({ t, hero, startWi }) {
+  const avecMarques = hero.loading || hero.brands > 0
+  const debut = t[`center_hero_lead_${hero.mode}`] ?? t.center_hero_lead_director
+  // Un rôle peut avoir sa propre fin (formateur : « sur 2 marques », sans pays).
+  const finDuRole = t[`center_hero_tail_${hero.mode}${hero.brands === 1 ? '_one' : ''}`]
+  const gabarit = `${debut} ${finDuRole ?? (avecMarques ? t.center_hero_tail : t.center_hero_tail_nobrands)}`
+  const chiffres = { countries: hero.countries, brands: hero.loading ? null : hero.brands }
+  // « 22 marques » se clique : les logos s'ouvrent sous la phrase (hero.onToggleBrands).
+  const cliquable = jeton => jeton === 'brands' && hero.onToggleBrands && Number.isFinite(chiffres.brands)
+  return <PhraseChiffree gabarit={gabarit} chiffres={chiffres} cliquable={cliquable} hero={hero} startWi={startWi} />
+}
+
+/**
+ * Phrase chiffrée du haut de page (norme DPS / centre) : `gabarit` porte des
+ * jetons {x}. Un jeton numérique s'affiche en grand chiffre animé (« — » sans
+ * valeur) ; un jeton texte (le nom accordé au chiffre) s'affiche en mots.
+ */
+function PhraseChiffree({ gabarit, chiffres, cliquable = () => false, hero = {}, startWi }) {
+  let wi = startWi
+  const morceaux = String(gabarit).split(/(\{\w+\})/).filter(Boolean)
+  let mangerMot = false
+  return (
+    <p className="portal-header-dps-stats portal-greeting-cascade">
+      {morceaux.flatMap((morceau, i) => {
+        const jeton = morceau.match(/^\{(\w+)\}$/)?.[1]
+        if (jeton && typeof chiffres[jeton] === 'string') {
+          return splitWords(chiffres[jeton]).map((w, j) => (
+            <Fragment key={`${i}-${j}`}>
+              <span className="portal-word" style={{ '--wi': wi++ }}>{w}</span>{' '}
+            </Fragment>
+          ))
+        }
+        if (jeton) {
+          const v = chiffres[jeton]
+          const chiffre = (
+            <span className="portal-word portal-header-dps-stat" style={{ '--wi': wi++ }}>
+              {Number.isFinite(v) ? <AnimatedCount value={v} /> : '—'}
+            </span>
+          )
+          if (!cliquable(jeton)) return [<Fragment key={i}>{chiffre}{' '}</Fragment>]
+          // Le mot qui suit (« marques ») fait partie du bouton.
+          const [mot] = splitWords(morceaux[i + 1] ?? '')
+          mangerMot = Boolean(mot)
+          return [
+            <Fragment key={i}>
+              <button
+                type="button"
+                className="portal-hero-interactive-trigger portal-hero-brands-trigger"
+                aria-expanded={hero.brandsOpen}
+                aria-controls="portal-center-brands"
+                onClick={hero.onToggleBrands}
+              >
+                {chiffre}
+                {mot && <span className="portal-word" style={{ '--wi': wi++ }}>{mot}</span>}
+              </button>{' '}
+            </Fragment>,
+          ]
+        }
+        const mots = splitWords(morceau)
+        if (mangerMot) { mots.shift(); mangerMot = false }
+        return mots.map((w, j) => (
+          <Fragment key={`${i}-${j}`}>
+            <span className="portal-word" style={{ '--wi': wi++ }}>{w}</span>{' '}
+          </Fragment>
+        ))
+      })}
+    </p>
+  )
+}
+
 function SuperAdminHeroStatsLine({
   t,
   learnerCount,
@@ -221,6 +297,8 @@ export default function PortalGreetingBlock({
   kiHero,
   superadminHero,
   managerHero,
+  centerHero,
+  statsHero,
 }) {
   const { t, locale } = useLocale('portal')
   const orientKey = resolvePortalOrientKey(primaryRole)
@@ -229,14 +307,16 @@ export default function PortalGreetingBlock({
 
   const greetingWords = splitWords(greetingKey)
   let wi = 0
-  const showPill = Boolean(filialeLabel && user && !dpsHero && !kiHero && !superadminHero && !managerHero)
+  const showPill = Boolean(filialeLabel && user && !dpsHero && !kiHero && !superadminHero && !managerHero && !centerHero && !statsHero)
+  // Rôles dont la phrase chiffrée suit le prénom (« Bonsoir, Aminata, … »).
+  const titreAvecSuite = Boolean(dpsHero || kiHero || managerHero || centerHero || statsHero)
 
   const pays = user ? resolveProfilePays(user) : null
   const countryLabel = pays
     ? localizedCountryName(pays, locale, countryCodeFromName(pays))
     : null
   const buLabel = user ? resolveProfileBuShortLabel(user, locale) : null
-  const filialeSuffix = dpsHero && countryLabel && buLabel
+  const filialeSuffix = (dpsHero || statsHero?.filiale) && countryLabel && buLabel
     ? t.dps_hero_greeting_filiale
       .replace('{bu}', buLabel)
       .replace('{country}', countryLabel)
@@ -244,6 +324,7 @@ export default function PortalGreetingBlock({
       ? t[kiHero.kind === 'pic' ? 'pic_hero_greeting_filiale' : 'ki_hero_greeting_filiale']
         .replace('{bu}', buLabel)
         .replace('{country}', countryLabel)
+      // Centre de formation : le titre s'arrête au prénom, « À l'Academy, vous… » ouvre la ligne dessous.
       : null
   const filialeSuffixWords = filialeSuffix ? splitWords(filialeSuffix) : []
   const [refreshSoonVisible, setRefreshSoonVisible] = useState(false)
@@ -262,7 +343,7 @@ export default function PortalGreetingBlock({
           const node = (
             <Fragment key={`g-${idx}`}>
               <span className="portal-word" style={{ '--wi': wi }}>
-                {isLast && !dpsHero && !kiHero && !managerHero ? `${w},` : w}
+                {isLast && !titreAvecSuite ? `${w},` : w}
               </span>{' '}
             </Fragment>
           )
@@ -272,7 +353,7 @@ export default function PortalGreetingBlock({
         <span className="portal-word portal-header-firstname" style={{ '--wi': wi++ }}>
           {firstName}
         </span>
-        {dpsHero || kiHero || managerHero ? (
+        {titreAvecSuite ? (
           <>
             <span className="portal-word" style={{ '--wi': wi++ }}>,</span>{' '}
             {filialeSuffixWords.map((w, idx) => (
@@ -344,6 +425,16 @@ export default function PortalGreetingBlock({
             loading={kiHero.loading}
             startWi={wi}
           />
+        </div>
+      )}
+      {centerHero && (
+        <div className="portal-header-dps-stats-row">
+          <CenterHeroStatsLine t={t} hero={centerHero} startWi={wi} />
+        </div>
+      )}
+      {statsHero && (
+        <div className="portal-header-dps-stats-row">
+          <PhraseChiffree gabarit={statsHero.gabarit} chiffres={statsHero.chiffres} startWi={wi} />
         </div>
       )}
       {superadminHero && (

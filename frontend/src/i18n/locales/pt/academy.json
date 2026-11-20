@@ -1,0 +1,30 @@
+{
+  "medacap": {
+    "kicker": "MEDACAP",
+    "title": "Desenvolver a expertise profissional dos técnicos",
+    "meta": "Metodologia de rede"
+  },
+  "mission": {
+    "kicker": "Andragogia",
+    "title": "Aprender na prática",
+    "meta": "Gestos profissionais em oficina"
+  },
+  "equipe": {
+    "kicker": "26 especialistas",
+    "title": "5 pólos · multi-marca",
+    "meta": "Camarões · 9+ países",
+    "panelTitle": "A equipa"
+  },
+  "reseau": {
+    "kicker": "Rede",
+    "title": "Homens e mulheres de terreno",
+    "meta": "18 KI + 22 PIC Multi + 35 PIC Equip.",
+    "panelTitle": "Homens e mulheres de terreno"
+  },
+  "pays": {
+    "kicker": "Países",
+    "title": "35 países",
+    "meta": "África",
+    "panelTitle": "Os nossos países"
+  }
+}

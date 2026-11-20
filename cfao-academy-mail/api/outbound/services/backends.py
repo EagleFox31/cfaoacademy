@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import smtplib
+import ssl
 from email.message import EmailMessage
 from email.policy import SMTP
 from typing import Protocol
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
 
 class EmailBackend(Protocol):
@@ -15,8 +17,10 @@ class EmailBackend(Protocol):
 
 
 class ConsoleBackend:
+    """Développement : le texte entier, liens compris (un lien tronqué ne s'ouvre pas)."""
+
     def send(self, *, to, cc, subject, text, html, reply_to="") -> None:
-        print(f"[mail] to={to} cc={cc} reply_to={reply_to or '-'}\n  {subject}\n{text[:500]}")
+        print(f"[mail] to={to} cc={cc} reply_to={reply_to or '-'}\n  {subject}\n{text}")
 
 
 class LocMemBackend:
@@ -68,7 +72,9 @@ class SmtpBackend:
         )
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=settings.SMTP_TIMEOUT) as client:
             if settings.SMTP_USE_TLS:
-                client.starttls()
+                # Contexte par défaut : certificat et nom d'hôte vérifiés.
+                # Sans contexte, smtplib chiffre sans authentifier le serveur.
+                client.starttls(context=ssl.create_default_context())
             if settings.SMTP_USERNAME:
                 client.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD or "")
             client.send_message(message)
@@ -82,4 +88,8 @@ _BACKENDS = {
 
 
 def get_backend() -> EmailBackend:
-    return _BACKENDS.get(settings.EMAIL_BACKEND_KIND, ConsoleBackend)()
+    # Pas de repli sur la console : une faute de frappe en prod y écrirait les liens secrets.
+    try:
+        return _BACKENDS[settings.EMAIL_BACKEND_KIND]()
+    except KeyError:
+        raise ImproperlyConfigured(f"MAIL_EMAIL_BACKEND inconnu : {settings.EMAIL_BACKEND_KIND!r}") from None

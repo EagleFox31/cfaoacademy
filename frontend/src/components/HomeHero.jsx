@@ -9,6 +9,7 @@ import { ARTICLES } from '../data/articles/index.js'
 import { localizedArticleFields } from '../utils/localizeCard.js'
 import { resolveHeroNewsGallery, heroNewsGalleryStaticSrcs } from '../utils/heroNewsSlides.js'
 import { resolvePortalBackgroundSelection } from '../utils/portalBackgroundSelect.js'
+import { fondResponsive, prechargerImage } from '../utils/imageResponsive.js'
 import {
   resolveLoggedHeroVisualId,
   resolveLoggedLearnerHeroHeadline,
@@ -147,7 +148,7 @@ function HeroBackground({ activeId, loggedBackground }) {
         <div
           className="hero-home-bg-layer is-active"
           style={{
-            backgroundImage: `url(${loggedBackground.src})`,
+            backgroundImage: fondResponsive(loggedBackground.src).image,
             backgroundPosition: loggedBackground.position,
           }}
         />
@@ -162,7 +163,7 @@ function HeroBackground({ activeId, loggedBackground }) {
           key={id}
           className={`hero-home-bg-layer${activeId === id ? ' is-active' : ''}`}
           style={{
-            backgroundImage: `url(${HERO_IMAGES[id] ?? HERO_DEFAULT})`,
+            backgroundImage: fondResponsive(HERO_IMAGES[id] ?? HERO_DEFAULT).image,
             backgroundPosition: HERO_BG_POSITION[id] ?? HERO_BG_POSITION.default,
           }}
         />
@@ -355,14 +356,21 @@ export default function HomeHero({ onVisualChange }) {
     window.addEventListener('pointerup', onUp)
   }
 
+  // Le visuel affiché d'abord passe en priorité haute (LCP) ; les autres du cycle se chargent après.
   useEffect(() => {
-    const sources = loggedBackground
-      ? [loggedBackground.src]
-      : Object.values(HERO_IMAGES)
-    sources.forEach((src) => {
-      const img = new Image()
-      img.src = src
-    })
+    const premier = loggedBackground?.src ?? HERO_IMAGES[activeVisual] ?? HERO_DEFAULT
+    const retirer = prechargerImage(fondResponsive(premier).url)
+    if (!loggedBackground) {
+      Object.values(HERO_IMAGES)
+        .filter((src) => src !== premier)
+        .forEach((src) => {
+          const img = new Image()
+          img.fetchPriority = 'low'
+          img.src = fondResponsive(src).url
+        })
+    }
+    return retirer
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seul le premier visuel compte
   }, [loggedBackground])
 
   return (

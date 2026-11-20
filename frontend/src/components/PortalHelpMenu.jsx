@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronIcon, GuideTourIcon, HelpBookIcon, HelpCircleIcon, LifeBuoyIcon } from './portalSectionIcons.jsx'
 import { goToPortalQuestion, portalHasAssistance } from '../utils/portalHelp.js'
-import { useHelpOptional } from '../help/context/HelpProvider.jsx'
+import { useHelpOptional } from '../help/context/helpContext.js'
 import useLocale from '../hooks/useLocale.js'
 import { getHelpCopy } from '../help/i18n.js'
 

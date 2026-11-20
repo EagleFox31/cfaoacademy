@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { resolveSectionBackdrop } from '../data/homeSectionBg.js'
 import { normalizeSectionVeil } from '../data/sectionBackdropVeils.js'
+import { IconeCrayon } from './PortalEditAction.jsx'
 
 export default function PreviewSection({
   id, ix, title, voir, tabs, filters,
@@ -9,6 +10,7 @@ export default function PreviewSection({
   sectionBg,
   sectionBgPosition,
   sectionVeil,
+  noBackdrop = false,
   activeTab: controlledActive,
   onTabChange,
   headClass,
@@ -21,7 +23,7 @@ export default function PreviewSection({
     else setInternalActive(tabId)
   }
 
-  const autoBackdrop = resolveSectionBackdrop(id)
+  const autoBackdrop = noBackdrop ? null : resolveSectionBackdrop(id)
   const bgImage = sectionBg ?? autoBackdrop?.image ?? null
   const bgPosition = sectionBg
     ? (sectionBgPosition ?? 'center')
@@ -93,7 +95,13 @@ export default function PreviewSection({
 
         {voir && (
           <div className="pv-foot">
-            {voir.href ? (
+            {voir.soon ? (
+              // Action annoncée mais pas encore livrée : visible, non cliquable.
+              <button type="button" disabled title={voir.title}
+                className={`pv-voir pv-voir--soon${voir.filled ? ' pv-voir--filled' : ''}`}>
+                <IconeCrayon width="16" height="16" /> {voir.label}
+              </button>
+            ) : voir.href ? (
               <a
                 className={`pv-voir${voir.filled ? ' pv-voir--filled' : ''}`}
                 href={voir.href}

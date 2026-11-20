@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
+import VersConnexion from '../../components/VersConnexion.jsx'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import PortalDemoBar from '../../components/PortalDemoBar'
@@ -40,7 +41,7 @@ export default function DpsTierCompetencyDetail() {
   useBrandDetailEntrance(shellRef, originRect, ready)
 
   if (status === "loading") return null
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <VersConnexion />
   if (!scopeLoading && !lms) {
     return <Navigate to="/portail#niveaux" replace />
   }

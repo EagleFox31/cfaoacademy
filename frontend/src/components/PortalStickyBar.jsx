@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react'
 import { resolveCertGoalPrerequisites } from '../utils/certGoalProgress.js'
 import { TEAM_BRAND_DEFS } from '../utils/teamBrands.js'
 import useLocale from '../hooks/useLocale.js'
+import { getPrimaryRole } from '../data/index.js'
+
+/**
+ * Rôles qui passent des tests, donc qui ont une progression vers la
+ * certification : techniciens et candidats (rôle principal `learner`), Key
+ * Instructors et PIC. Les experts techniques du pôle Equipment s'y ajouteront
+ * quand leur rôle existera.
+ */
+const PASSENT_DES_TESTS = new Set(['learner', 'ki', 'pic'])
 
 const BRAND_LOGOS = {
   toyota:          '/assets/logos/toyota.png',
@@ -62,6 +71,9 @@ export default function PortalStickyBar({ user, lms, headerRef, variant, filiale
       })()
 
   const goalLabel = goal ? `${goal.currentLevel ?? '—'} → ${goal.targetLevel}` : null
+  const progression = !isDps && PASSENT_DES_TESTS.has(getPrimaryRole(user.roles ?? []))
+  const sansContenu = !isDps && brands.length === 0 && Object.keys(certLevels).length === 0 && !progression
+  if (sansContenu) return null
 
   return (
     <div
@@ -104,7 +116,7 @@ export default function PortalStickyBar({ user, lms, headerRef, variant, filiale
           </div>
         ) : null}
 
-        {!isDps && (
+        {progression && (
           <div className="portal-sticky-bar-progress">
             {goalLabel && <span className="portal-sticky-bar-goal">{goalLabel}</span>}
             <div className="portal-sticky-bar-track">

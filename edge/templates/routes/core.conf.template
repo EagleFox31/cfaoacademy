@@ -1,0 +1,16 @@
+# API cfao-core sous /api/v1/core/ : chemin conservé, l'API le sert tel quel.
+# Le jeton Bearer du realm cfao est vérifié par l'API (audience cfao-core-api).
+
+location /api/v1/core/ {
+    set $edge_module core;
+    client_max_body_size 25m;
+    include /etc/nginx/snippets/proxy-commun.conf;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-Proto $edge_fwd_proto;
+    proxy_set_header X-Forwarded-Host $edge_fwd_host;
+    proxy_set_header X-Forwarded-Port $edge_fwd_port;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    # Pas de proxy_intercept_errors : un 503 de l'API garde son corps. Seules les
+    # erreurs de la passerelle (API arrêtée) deviennent {"detail":"maintenance"}.
+    proxy_pass http://${EDGE_CORE_UPSTREAM};
+}

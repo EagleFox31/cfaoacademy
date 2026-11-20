@@ -115,7 +115,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAuthenticated, CerbosPermission]
     cerbos_resource_kind = "user_account"
-    queryset = User.objects.all()
+    queryset = User.objects.prefetch_related("assignments")
     serializer_class = UserSerializer
 
     def get_cerbos_object(self, obj):

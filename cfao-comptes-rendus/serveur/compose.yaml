@@ -1,0 +1,15 @@
+# Comptes rendus : ce qui tourne sur le serveur (/srv/apps/cfao-compte-rendus),
+# relevé le 19/11, sans valeurs. Les secrets sont dans le .env du serveur.
+#   docker compose up -d   (lit compose.yaml puis compose.override.yaml)
+# La cible est ../docker-compose.prod.yml (Postgres dédié, job migrate, /donnees) ;
+# l'écart est à résorber avant Azure (docs/azure/inventaire.md, point 3).
+services:
+  api:
+    image: antifragile237/cfao-comptes-rendus-api:v0.5.0
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:8091:5175"
+    volumes:
+      - ./data:/data

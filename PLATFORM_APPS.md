@@ -274,31 +274,46 @@
 
 ---
 
+## 17 · Supervision de la plateforme
+*Cockpit d'exploitation : modules en marche ou arrêtés et depuis quand, version installée et nouveautés, ports, dépendances entre modules, dernières connexions. **Lecture seule** : l'écran n'agit sur aucun module. Module `cfao-supervision`, portail `/portail/supervision`.*
+
+| Profil | Fonctionnalité | Accès |
+|--------|---------------|-------|
+| Exploitant (`platform_ops`) | Vue d'ensemble, détail et historique d'un module, dépendances, connexions | R |
+| Super Admin | Idem | R |
+
+**Scope :** plateforme entière — ni filiale ni marque. Aucun autre profil, même directeur ou admin groupe : Cerbos refuse (`supervision_board`, `supervision_connections`).
+
+> Guide d'exploitation : **`docs/exploitation/supervision.md`** · Module : `cfao-supervision/README.md`
+
+---
+
 ## Synthèse — Qui accède à quoi
 
 > Les lignes sont **cumulatives** par personne. Ex. un chef d'atelier KI Toyota : union de « Chef atelier » + « KI/PIC » + « Apprenant » (via `learner`).
 
-| | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 15 | 16 |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Candidat | R | — | — | — | — | — | — | — | RW | — | — | — | — | — |
-| Apprenant | R | RW | — | — | — | — | — | — | — | — | — | — | — | — |
-| KI / PIC *(cumule `learner`)* | R | RW | RW | RW† | RW | RW | R | R | — | — | — | — | — | — |
-| Chef équipe | R | — | — | — | — | — | R | W | — | R | — | — | — | **RW** |
-| Chef atelier | R | — | R | — | R | — | R | W | R | R | — | — | — | **RW** |
-| DPS / DOP | R | — | — | — | — | — | R | — | — | R | — | — | — | **R+W** |
-| Formateur | R | R | R | RW | RW | RW | R | R+W | W | R | — | — | — | — |
-| Assistante centre | R | R | — | RW | RW | RW | — | RW | — | — | R+W | — | — | **RW** |
-| Dir. centre | R | R | R | RW | RW | RW | R | RW | — | R | RW | R | — | **RW** |
-| Admin Filiale | R | R | R | R | R | R | R | RW | R | R | RW | — | — | **RW** |
-| RH Filiale | R | R | — | — | — | — | R | RW | RW | R | R+W | — | — | **RW** |
-| Dir. Filiale | R | R | — | — | — | — | R | R | R | R | R | — | — | **RW** |
-| Dir. Régional | R | R | — | — | — | — | R | — | — | R | — | — | — | **R** |
-| Admin Groupe | R | R | — | — | — | — | R | RW | — | R | RW | RW | R | **R** |
-| RH Groupe | R | R | — | — | — | — | R | — | RW | R | R+W | — | — | **R** |
-| Dir. Groupe | R | R | — | — | — | — | R | — | — | R | — | — | R | **R** |
-| Partenaire B2B | R | RW | — | — | — | — | — | — | — | — | — | — | — | — |
-| Super Admin | R | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW |
-| Équipe build *(compte technique)* | — | — | — | — | — | — | — | — | — | — | — | — | RW | — |
+| | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 15 | 16 | 17 |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Candidat | R | — | — | — | — | — | — | — | RW | — | — | — | — | — | — |
+| Apprenant | R | RW | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| KI / PIC *(cumule `learner`)* | R | RW | RW | RW† | RW | RW | R | R | — | — | — | — | — | — | — |
+| Chef équipe | R | — | — | — | — | — | R | W | — | R | — | — | — | **RW** | — |
+| Chef atelier | R | — | R | — | R | — | R | W | R | R | — | — | — | **RW** | — |
+| DPS / DOP | R | — | — | — | — | — | R | — | — | R | — | — | — | **R+W** | — |
+| Formateur | R | R | R | RW | RW | RW | R | R+W | W | R | — | — | — | — | — |
+| Assistante centre | R | R | — | RW | RW | RW | — | RW | — | — | R+W | — | — | **RW** | — |
+| Dir. centre | R | R | R | RW | RW | RW | R | RW | — | R | RW | R | — | **RW** | — |
+| Admin Filiale | R | R | R | R | R | R | R | RW | R | R | RW | — | — | **RW** | — |
+| RH Filiale | R | R | — | — | — | — | R | RW | RW | R | R+W | — | — | **RW** | — |
+| Dir. Filiale | R | R | — | — | — | — | R | R | R | R | R | — | — | **RW** | — |
+| Dir. Régional | R | R | — | — | — | — | R | — | — | R | — | — | — | **R** | — |
+| Admin Groupe | R | R | — | — | — | — | R | RW | — | R | RW | RW | R | **R** | — |
+| RH Groupe | R | R | — | — | — | — | R | — | RW | R | R+W | — | — | **R** | — |
+| Dir. Groupe | R | R | — | — | — | — | R | — | — | R | — | — | R | **R** | — |
+| Partenaire B2B | R | RW | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| Super Admin | R | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW | RW | R |
+| Équipe build *(compte technique)* | — | — | — | — | — | — | — | — | — | — | — | — | RW | — | — |
+| Exploitant (`platform_ops`) | — | — | — | — | — | — | — | — | — | — | — | — | — | — | R |
 
 † KI/PIC : RW app 04 limité aux **sessions internes** animées en formateur suppléant (pas l'espace formateur constructeur complet).
 

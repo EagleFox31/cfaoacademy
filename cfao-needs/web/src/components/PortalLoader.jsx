@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocale } from '../i18n'
+import { asset } from '../lib/base'
 
 /** Écran de chargement premium multilingue (FR / EN / PT) CFAO Academy */
 export default function PortalLoader({
@@ -58,12 +59,12 @@ export default function PortalLoader({
     >
       <div
         className="portal-loader-bg"
-        style={{ backgroundImage: "url('/assets/cfao-academy-douala.jpg')" }}
+        style={{ backgroundImage: `url('${asset('assets/cfao-academy-douala.jpg')}')` }}
       />
       <div className="portal-loader-inner">
         <div className="portal-loader-brand">
           <img
-            src="/assets/favicon.svg"
+            src={asset('assets/favicon.svg')}
             alt="CFAO"
             className="portal-loader-logo"
             width={54}

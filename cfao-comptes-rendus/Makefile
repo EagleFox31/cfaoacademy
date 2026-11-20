@@ -29,17 +29,18 @@ test:
 	cd api && python -m pytest -q
 	cd web && npm test
 
+# Bundle commun de la plateforme (../cerbos).
 # Binaire local s'il existe, sinon l'image officielle.
 policy-test:
 	@if command -v $(CERBOS) >/dev/null 2>&1; then \
-		$(CERBOS) compile --tests=cerbos/tests cerbos/policies; \
+		$(CERBOS) compile --tests=../cerbos/tests ../cerbos/policies; \
 	else \
-		MSYS_NO_PATHCONV=1 docker run --rm -v "$(CURDIR)/cerbos:/work" $(CERBOS_IMAGE) \
+		MSYS_NO_PATHCONV=1 docker run --rm -v "$(CURDIR)/../cerbos:/work" $(CERBOS_IMAGE) \
 			compile --tests=/work/tests /work/policies; \
 	fi
 
 migrate:
-	docker compose exec api python manage.py migrate
+	docker compose run --rm migrate
 
 shell:
 	docker compose exec api python manage.py shell

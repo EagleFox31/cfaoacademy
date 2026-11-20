@@ -19,6 +19,12 @@ from analytics import services  # noqa: E402
 
 BASE = "http://needs.test"
 SPEC = kit.load_spec("needs-analytics")
+# Le contrat sert aussi cfao-planning : core n'en consomme que ces routes.
+CONSUMED = {
+    "/api/v1/needs/analytics/total-technicians",
+    "/api/v1/needs/analytics/allocations-per-branch",
+    "/api/v1/needs/analytics/scheduled-trainings",
+}
 
 
 class _Response:
@@ -52,7 +58,7 @@ def calls(monkeypatch, settings):
 
 
 def test_examples_are_valid_responses():
-    for path in SPEC["paths"]:
+    for path in CONSUMED:
         assert list(kit.response_validator(SPEC, path, 200).iter_errors(kit.response_example(SPEC, path))) == []
 
 
@@ -77,4 +83,5 @@ def test_every_consumed_route_is_exercised(calls):
     services.count_technicians("all")
     services.fetch_allocations_per_branch(2026)
     services.count_scheduled_trainings(2026)
-    assert {call["path"] for call in calls} == set(SPEC["paths"])
+    assert CONSUMED <= set(SPEC["paths"])
+    assert {call["path"] for call in calls} == CONSUMED

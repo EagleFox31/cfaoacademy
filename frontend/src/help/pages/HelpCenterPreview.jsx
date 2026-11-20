@@ -1,4 +1,5 @@
-import { Link, Navigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import VersConnexion from '../../components/VersConnexion.jsx'
 import Nav from '../../components/Nav.jsx'
 import Footer from '../../components/Footer.jsx'
 import PortalDemoBar from '../../components/PortalDemoBar.jsx'
@@ -15,7 +16,7 @@ export default function HelpCenterPreview() {
   const copy = useHelpCopy()
 
   if (status === "loading") return null
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <VersConnexion />
 
   return (
     <>

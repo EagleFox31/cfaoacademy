@@ -15,6 +15,7 @@
 - **Réutiliser avant de dupliquer** :
   - Toute UI doit réutiliser `PvCard`, `PreviewSection`, `.pv-grid`, `.portal-status-chip`.
   - Pas de cartes ad-hoc ou styles custom redondants.
+  - Avant de poser une carte, consulter [docs/engineering/guide-cartes.md](docs/engineering/guide-cartes.md) : il dit quel composant reprendre pour chaque type de contenu (une marque se montre avec `BrandCard` ou `PlanEntryCard`, jamais avec une `PvCard` et un petit logo).
 - **Colorimétrie & Statuts** :
   - Pastilles de statut (`portal-status-chip`) :
     - `done` : vert (`#1aab5b`)
@@ -79,3 +80,28 @@
 - **Avant** : lire la synthèse de [docs/engineering/lessons-learned.md](docs/engineering/lessons-learned.md), puis faire la recherche reuse-first (Adopt / Adapt / Learn / Build).
 - **Après** toute erreur ou near miss : y ajouter une entrée avec cause racine, prévention vérifiable et leçon généralisée. En cas de récidive, renforcer le contrôle.
 - Toute exception à RAIDER est justifiée dans le walkthrough ou la PR.
+
+---
+
+## 6b. RÈGLE STRICTE : LE WORDING EST PRIMORDIAL (ÉCRANS ET RÉPONSES)
+
+> **DÉCISION UTILISATEUR (18/11/2026), VALABLE POUR TOUTES LES SESSIONS :**
+>
+> - **Zéro friction de lecture ou d'interprétation.** Si quelqu'un qui fait son travail se demande ce qu'un mot veut dire, ce mot doit changer.
+> - **Chaque portail sert un profil métier précis.** On écrit dans les mots de ce métier, pas dans ceux de l'équipe technique ni du modèle de données (pas de « GF », « palier », « charge », « couverture », « scope », sigles internes...).
+> - **Le lecteur est pressé, paresseux et ne veut pas réfléchir.** Chaque titre, carte ou chiffre doit se comprendre en une lecture, sans contexte : une question qu'il se pose, une réponse directe.
+> - **Test avant de livrer** : relire chaque libellé en se mettant à la place du profil. Un mot qui demande une explication = un mot à remplacer, pas une explication à ajouter.
+> - S'applique aussi aux propositions faites à l'utilisateur (maquettes, plans, réponses) : phrases simples, exemples concrets.
+
+---
+
+## 7. RÈGLE STRICTE : CRÉATION DE BASE AUTOMATIQUE, IDEMPOTENTE, RÉTROACTIVE ET AGNOSTIQUE
+
+> **DÉCISION UTILISATEUR (31/10/2026), POUR CHAQUE MODULE QUI POSSÈDE UNE BASE :**
+>
+> - **Automatique** : un `docker compose up` sur une base vide aboutit à une application utilisable (schéma + référentiel), sans commande manuelle (`make migrate`, `manage.py migrate`, `seed`…).
+> - **Idempotente** : chaque démarrage relance la création ; sur une base à jour, c'est un no-op (zéro écriture).
+> - **Rétroactive** : sur une base existante (prod), seules les migrations manquantes et les lignes de référentiel absentes sont ajoutées. Une donnée modifiée en prod (statut de campagne, libellé, compte) n'est jamais écrasée.
+> - **Agnostique** : même patron pour tous les modules, quelle que soit la stack. Un job ponctuel `migrate` dans le compose, sur l'image de l'API, dont l'API et les workers dépendent (`service_completed_successfully`). Jamais dans l'entrypoint de l'API, pour éviter les migrations concurrentes entre répliques et workers.
+> - Les données de démo ne passent jamais par ce chemin en prod.
+> - **Preuve** : smoke sur une base vide (l'API répond), second démarrage = zéro écriture, rejeu sur une copie d'une base existante.

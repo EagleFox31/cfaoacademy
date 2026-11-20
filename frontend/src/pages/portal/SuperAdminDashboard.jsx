@@ -21,6 +21,9 @@ import {
 import { loadBuildState, buildStateKey } from '../../config/profileBuildStatus.js'
 import TrainerHome from './TrainerHome'
 import { OIDC_ACTIF } from '../../lib/auth.js'
+import PvCard from '../../components/PvCard.jsx'
+import { ADMIN_HOME, ADMIN_NAV, adminPath, canAccessAdminConsole } from '../../utils/adminAccess.js'
+import { ROLES_APERCU, ouvrirApercu, peutOuvrirApercu } from '../../utils/apercuPortail.js'
 
 export const CFAO_ACADEMY_APPS_CONFIG = [
   {
@@ -404,7 +407,7 @@ export const OPERATIONAL_PROFILES_CONFIG = [
     role: 'ki',
     title: 'Key Instructor & PIC',
     kicker: 'FORMATION · TERRAIN FILIALE',
-    image: '/assets/KI.png',
+    image: '/assets/KI.webp',
     scope: 'Filiale / Ateliers',
     desc: 'Animation des formations internes filiales, accompagnement terrain des techniciens et validation des évaluations.',
     status: 'OPÉRATIONNEL',
@@ -432,7 +435,7 @@ export const OPERATIONAL_PROFILES_CONFIG = [
     role: 'team_manager',
     title: 'Chef d’équipe & Atelier',
     kicker: 'MANAGEMENT · ATELIER',
-    image: '/assets/chef-equipe.png',
+    image: '/assets/chef-equipe.webp',
     scope: 'Équipe / Atelier',
     desc: 'Attribution des ordres de réparation, suivi du PIF individuel et validation des acquis opérationnels de l’équipe.',
     status: 'OPÉRATIONNEL',
@@ -446,7 +449,7 @@ export const OPERATIONAL_PROFILES_CONFIG = [
     role: 'dps',
     title: 'Directeur Pièces & Services (DPS)',
     kicker: 'DIRECTION · APRÈS-VENTE FILIALE',
-    image: '/assets/dps-noir.png',
+    image: '/assets/dps-noir.webp',
     scope: 'Filiale entière',
     desc: 'Pilotage global de l’après-vente filiale, matrice des compétences atelier, plan de formation et reporting DOP.',
     status: 'OPÉRATIONNEL',
@@ -460,7 +463,7 @@ export const OPERATIONAL_PROFILES_CONFIG = [
     role: 'dop',
     title: 'Directeur des Opérations (DOP)',
     kicker: 'DIRECTION · PÔLE RÉGIONAL',
-    image: '/assets/dop-noir.png',
+    image: '/assets/dop-noir.webp',
     scope: 'Zone régionale',
     desc: 'Supervision transversale multi-filiales (Equipment & Mobility), allocation des quotas et gouvernance réseau.',
     status: 'OPÉRATIONNEL',
@@ -518,6 +521,7 @@ function SuperAdminGroupe() {
   const { user } = useAuth()
   const { t } = useLocale('portal')
   const { t: td } = useLocale('delivery')
+  const { t: ta } = useLocale('admin')
   const navigate = useNavigate()
   const mockLms = LMS_BY_USER[user?.demoKey]
   // BU active du switcher hero. Remontée ici pour piloter le refetch du hook
@@ -915,6 +919,64 @@ function SuperAdminGroupe() {
           </PortalStaggerGrid>
         </div>
       </PortalReveal>
+
+      {/* ═════════════ #console — Administration de la plateforme (super admin) ═════════════ */}
+      {canAccessAdminConsole(user?.roles) && (
+        <PortalReveal id="console">
+          <div className="container" style={{ padding: '16px 32px' }}>
+            <PortalSectionHead
+              eyebrow={<PortalSectionEyebrow icon="cog" label={t.sa_console_eyebrow} />}
+              title={t.sa_console_title}
+              methodText={t.sa_console_lead}
+              t={t}
+            />
+            <PortalStaggerGrid className="cols-3 pv-grid--stretch">
+              {[ADMIN_HOME, ...ADMIN_NAV.flatMap(g => g.items.map(i => i.id))].map(id => {
+                const pending = ADMIN_NAV.some(g => g.items.some(i => i.id === id && i.status === 'construction'))
+                return (
+                  <PvCard
+                    key={id}
+                    noMedia
+                    kicker={<span className={`portal-status-chip ${pending ? 'todo' : 'open'}`}>{pending ? ta.under_construction : t.sa_console_chip_readonly}</span>}
+                    title={ta[`title_${id}`]}
+                    meta={ta[`lead_${id}`]}
+                    to={adminPath(id)}
+                    cta={t.sa_console_cta}
+                    enConstruction={pending ? ta.under_construction : undefined}
+                    corner
+                  />
+                )
+              })}
+            </PortalStaggerGrid>
+          </div>
+        </PortalReveal>
+      )}
+
+      {/* ═════════════ #apercus — Portail de chaque profil, dans une fenêtre à part ═════════════ */}
+      {peutOuvrirApercu(user?.roles) && (
+        <PortalReveal id="apercus">
+          <div className="container" style={{ padding: '16px 32px' }}>
+            <PortalSectionHead
+              eyebrow={<PortalSectionEyebrow icon="users" label={t.sa_apercu_eyebrow} />}
+              title={t.sa_apercu_title}
+              methodText={t.sa_apercu_lead}
+              t={t}
+            />
+            <PortalStaggerGrid className="cols-4 pv-grid--stretch">
+              {ROLES_APERCU.map(role => (
+                <PvCard
+                  key={role}
+                  noMedia
+                  title={t[`role_${role}`] ?? role}
+                  onClick={() => ouvrirApercu(role)}
+                  cta={t.sa_apercu_cta}
+                  corner
+                />
+              ))}
+            </PortalStaggerGrid>
+          </div>
+        </PortalReveal>
+      )}
 
       {/* ═════════════ #branches — Réalisation des plans de formation ═════════════ */}
       <PortalReveal id="branches">

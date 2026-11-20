@@ -1,0 +1,12 @@
+# Ressource « supervision_board » — Tableau de supervision technique (état, versions, ports, liens entre modules).
+# Réservée à l'exploitant de la plateforme ; aucune écriture (lecture seule).
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: supervision_board
+  rules:
+    - actions: ["read"]
+      effect: EFFECT_ALLOW
+      roles:
+        - platform_ops
+        - superadmin

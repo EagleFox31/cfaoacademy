@@ -1,0 +1,12 @@
+{
+  "notFoundTitle": "Fiche de formation introuvable",
+  "notFoundLead": "Cette fiche n'est pas encore disponible ou est en cours de modification.",
+  "closeNotFound": "Fermer et revenir aux sessions",
+  "closeBack": "Fermer et revenir aux sessions à venir",
+  "metaAria": "Informations sur la session",
+  "sheetTag": "Fiche de formation",
+  "targetAudience": "Public cible",
+  "level": "Niveau",
+  "trainer": "Formateur",
+  "sheetImageAlt": "Fiche de formation {code} — {title}"
+}

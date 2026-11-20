@@ -17,7 +17,8 @@ def test_roles_superadmin_ok(monkeypatch):
     c = APIClient(); c.force_authenticate(Principal(id="s", roles=["superadmin"], attr={}))
     r = c.get(URL)
     assert r.status_code == 200
-    assert len(r.json()) == 22
+    from identity.roles import ROLE_CATALOG
+    assert len(r.json()) == len(ROLE_CATALOG) >= 23
     assert any(x["code"] == "learner" for x in r.json())
 
 

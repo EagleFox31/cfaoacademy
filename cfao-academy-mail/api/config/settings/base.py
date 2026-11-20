@@ -50,6 +50,23 @@ REST_FRAMEWORK = {
 }
 
 MAIL_INBOUND_KEY = env("MAIL_INBOUND_KEY", default="")
+
+
+def _inbound_keys(raw: str) -> dict[str, str]:
+    """`source=clé,source2=clé2` → {clé: source}. Une clé liée impose sa source."""
+    keys: dict[str, str] = {}
+    for item in raw.split(","):
+        source, _, key = item.strip().partition("=")
+        if source.strip() and key.strip():
+            keys[key.strip()] = source.strip()
+    return keys
+
+
+MAIL_INBOUND_KEYS = _inbound_keys(env("MAIL_INBOUND_KEYS", default=""))
+# Clé Fernet des champs secrets des messages sensibles. Vide = messages sensibles refusés.
+MAIL_SEALED_CONTEXT_KEY = env("MAIL_SEALED_CONTEXT_KEY", default="")
+# Durée de vie maximale qu'un producteur peut demander pour un message sensible.
+MAIL_SENSITIVE_MAX_TTL_MINUTES = env.int("MAIL_SENSITIVE_MAX_TTL_MINUTES", default=24 * 60)
 ACADEMY_INTERNAL_DOMAINS = env.list("MAIL_INTERNAL_DOMAINS", default=["cfao.com"])
 ACADEMY_TEAM_RECIPIENTS = env.list("MAIL_TEAM_RECIPIENTS", default=[])
 

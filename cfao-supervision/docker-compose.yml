@@ -1,0 +1,137 @@
+# Module « Supervision » : cockpit d'exploitation de la plateforme.
+#
+#   docker compose -f cfao-supervision/docker-compose.yml up -d
+#
+# Lecture seule sur la machine : le collecteur ne parle à Docker qu'à travers un
+# proxy de socket qui n'autorise que quelques lectures (liste, détail, journaux de
+# la passerelle). Aucun autre conteneur n'est relié à ce proxy.
+# Base vide -> application utilisable sans commande manuelle : le job
+# supervision-migrate applique les migrations puis ajoute les modules absents du
+# référentiel (AGENTS.md §7). Sur une base à jour, il n'écrit rien.
+# Autorisation : le PDP Cerbos unique de la plateforme (compose racine, port 3592).
+
+name: cfao-supervision
+
+services:
+  supervision-db:
+    mem_limit: 256m
+    restart: unless-stopped
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${SUPERVISION_DB_NAME:-supervision}
+      POSTGRES_USER: ${SUPERVISION_DB_USER:-supervision}
+      POSTGRES_PASSWORD: ${SUPERVISION_DB_PASSWORD:?SUPERVISION_DB_PASSWORD est obligatoire}
+    volumes:
+      - supervision-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SUPERVISION_DB_USER:-supervision}"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+
+  supervision-migrate:
+    # Job ponctuel sur l'image de l'API ; jamais dans l'entrypoint.
+    mem_limit: 256m
+    restart: "no"
+    build: ./api
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py bootstrap --demo"]
+    environment: &api_env
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
+      SUPERVISION_SECRET_KEY: ${SUPERVISION_SECRET_KEY:?SUPERVISION_SECRET_KEY est obligatoire}
+      SUPERVISION_DB_HOST: supervision-db
+      SUPERVISION_DB_NAME: ${SUPERVISION_DB_NAME:-supervision}
+      SUPERVISION_DB_USER: ${SUPERVISION_DB_USER:-supervision}
+      SUPERVISION_DB_PASSWORD: ${SUPERVISION_DB_PASSWORD:?}
+      CERBOS_HTTP: ${CERBOS_HTTP:-http://host.docker.internal:3592}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-}
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-cfao-supervision-api}
+      OIDC_TRUSTED_ISSUERS: ${OIDC_TRUSTED_ISSUERS:-}
+      # Projets compose du poste de développement (recette 8088).
+      SUPERVISION_PROJECTS: ${SUPERVISION_PROJECTS:-cfao-recette,cfao-front,cfao-planning,cfaoacademy,cfao-needs,cfao-academy-mail,cfao-supervision}
+      SUPERVISION_EDGE_CONTAINER: ${SUPERVISION_EDGE_CONTAINER:-cfao-recette-edge-1}
+      DOCKER_PROXY_URL: http://supervision-socket:2375
+      # Keycloak en direct (port d'administration de la recette), comme en
+      # prod : edge renvoie 404 sur /auth/admin, et le collecteur n'est pas
+      # une API, il reste hors du maillage.
+      KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://host.docker.internal:8083/auth}
+      KEYCLOAK_COLLECTOR_SECRET: ${KEYCLOAK_COLLECTOR_SECRET:-dev-supervision-collector-secret}
+      # Sondes : « url|fragment du titre » ou « url|-> redirection », séparées par « ; ».
+      SUPERVISION_PROBES: ${SUPERVISION_PROBES:-http://recette.localhost:8088/|Excellence Technique}
+    depends_on:
+      supervision-db:
+        condition: service_healthy
+
+  supervision-api:
+    mem_limit: 256m
+    restart: unless-stopped
+    build: ./api
+    environment: *api_env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      supervision-migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${SUPERVISION_PORT:-8007}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-S", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/supervision/healthz', timeout=5).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  supervision-collector:
+    mem_limit: 192m
+    restart: unless-stopped
+    build: ./api
+    command: ["python", "manage.py", "collect"]
+    environment: *api_env
+    networks: [default, supervision-docker]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      # Nom des sondes : le front de dev (vite) refuse un hôte inconnu (403) mais
+      # accepte *.localhost.
+      - "recette.localhost:host-gateway"
+    depends_on:
+      supervision-migrate:
+        condition: service_completed_successfully
+      supervision-socket:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "manage.py", "collect", "--check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  supervision-socket:
+    # Proxy du socket Docker : lecture seule, liste blanche d'URL, seul le
+    # collecteur peut l'appeler (réseau interne sans sortie).
+    image: wollomatic/socket-proxy:1.10.0
+    mem_limit: 32m
+    restart: unless-stopped
+    command:
+      - "-loglevel=info"
+      - "-listenip=0.0.0.0"
+      - "-allowfrom=supervision-collector"
+      - "-allowGET=^/(v[0-9.]+/)?(_ping|version|containers/json|containers/${SUPERVISION_EDGE_CONTAINER:-cfao-recette-edge-1}/logs)$"
+      - "-allowHEAD=^/(v[0-9.]+/)?_ping$"
+      - "-watchdoginterval=3600"
+      - "-stoponwatchdog"
+      - "-shutdowngracetime=5"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    user: "65534:${DOCKER_GID:-0}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [supervision-docker]
+
+networks:
+  supervision-docker:
+    internal: true
+volumes:
+  supervision-db-data:

@@ -1,15 +1,16 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import FormAlert, { FormFieldError } from '../components/FormAlert.jsx'
 import PageCloseButton from '../components/PageCloseButton.jsx'
 import LoginDemoDrawer from '../components/LoginDemoDrawer.jsx'
 import LoginParticles from '../components/LoginParticles.jsx'
+import PortalLoader from '../components/PortalLoader.jsx'
 import useSiteEffects from '../hooks/useSiteEffects.js'
 import useAuthForm from '../hooks/useAuthForm.js'
 import useLocale from '../hooks/useLocale.js'
 import useAuth from '../hooks/useAuth.js'
-import { getPrimaryRole } from '../data/index.js'
+import { connexionKeycloakSeule, consumeAuthReturnPath, memoriserRetour } from '../lib/auth.js'
 
 const LOGIN_BG = '/assets/hero/default.jpg'
 
@@ -70,9 +71,21 @@ export default function Login() {
   const { locale, t } = useLocale('login')
   const { login, connexion, connexionSso, oidc, profiles } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = location.state?.from
+  const pageDemandee = from?.pathname ? `${from.pathname}${from.search || ''}${from.hash || ''}` : null
+  // Retenue avant tout départ vers Keycloak : /callback la rouvrira.
+  useEffect(() => {
+    memoriserRetour(pageDemandee)
+  }, [pageDemandee])
+  /** Page demandée avant la connexion, sinon l'accueil du portail. */
+  function allerApresConnexion() {
+    const cible = consumeAuthReturnPath()
+    navigate(cible === '/' ? '/portail' : cible)
+  }
   const auth = useAuthForm(locale, async (identifiant, motDePasse, seSouvenir) => {
     const refus = await connexion(identifiant, motDePasse, seSouvenir)
-    if (!refus) navigate('/portail')
+    if (!refus) allerApresConnexion()
     return refus
   })
   const [demoOpen, setDemoOpen] = useState(() => {
@@ -80,20 +93,26 @@ export default function Login() {
     return window.matchMedia('(min-width: 961px)').matches
   })
 
+  // Derrière cfao-edge : la page de connexion est celle de Keycloak.
+  const keycloakSeul = connexionKeycloakSeule()
+  useEffect(() => {
+    if (keycloakSeul) connexionSso()
+    // connexionSso change à chaque rendu : seul le mode compte.
+  }, [keycloakSeul])
+
   const formErrorMessage = auth.formError ? auth.getMessage(auth.formError) : null
   const formSuccessMessage = auth.formSuccess ? auth.getMessage(auth.formSuccess) : null
 
   function handleDemoLogin(profileId) {
-    const profile = profiles.find(p => p.id === profileId)
     login(profileId)
     setDemoOpen(false)
-    const role = getPrimaryRole(profile?.roles ?? [])
-    if (role === 'build_team' || role === 'group_admin') {
-      navigate('/portail/delivery')
-    } else {
-      navigate('/portail')
-    }
+    // Chaque rôle a son portail : build_team arrive sur le Super Admin, qui ouvre le Delivery.
+    allerApresConnexion()
   }
+
+  // Keycloak peut mettre plusieurs secondes à répondre : le loader du portail
+  // plutôt qu'une page blanche pendant la redirection.
+  if (keycloakSeul) return <PortalLoader messages={[t.loaderRedirect]} ariaLabel={t.loaderRedirect} />
 
   return (
     <div className="login-page">

@@ -39,12 +39,23 @@ if [ -z "$NEEDS_PUBLIC_BASE_URL" ]; then
 fi
 export NEEDS_PUBLIC_BASE_URL
 
-# 4. Issuer OIDC : valeur explicite > .env > dérivé de NEEDS_PUBLIC_BASE_URL
+# 4. Issuer OIDC : valeur explicite > .env. Jamais déduit de l'hôte : c'est
+#    l'émetteur du Keycloak commun (KC_HOSTNAME + /realms/cfao).
 OIDC_ISSUER="${OIDC_ISSUER:-$(env_value OIDC_ISSUER)}"
 if [ -z "$OIDC_ISSUER" ]; then
-  OIDC_ISSUER="${NEEDS_PUBLIC_BASE_URL}/realms/cfao-needs"
+  echo "[deploy] OIDC_ISSUER manquant (ex. https://<hote>/auth/realms/cfao)" >&2
+  exit 1
 fi
 export OIDC_ISSUER
+
+# Audience : vide = défaut du compose (cfao-needs-api). Un reste du realm de
+# module (needs-web) ferait refuser tous les jetons par l'API.
+OIDC_AUDIENCE="${OIDC_AUDIENCE:-$(env_value OIDC_AUDIENCE)}"
+case ",${OIDC_AUDIENCE}," in
+  ,,|*,cfao-needs-api,*) ;;
+  *) echo "[deploy] OIDC_AUDIENCE=${OIDC_AUDIENCE} : doit être vide ou contenir cfao-needs-api" >&2
+     exit 1 ;;
+esac
 
 echo "=========================================================="
 echo " CFAO Needs - Déploiement Conteneurs"

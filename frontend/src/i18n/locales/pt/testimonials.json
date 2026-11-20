@@ -1,0 +1,26 @@
+{
+  "navAria": "Navegação de testemunhos",
+  "prev": "Testemunho anterior",
+  "next": "Testemunho seguinte",
+  "choose": "Escolher um testemunho",
+  "testimonialN": "Testemunho {n} — {name}",
+  "playVideo": "Reproduzir testemunho de {name}",
+  "videoTitle": "Testemunho — {name}",
+  "items": [
+    {
+      "name": "Eric N.",
+      "role": "Técnico · Douala",
+      "quote": "Antes diziam-nos sobretudo como aplicar, não porquê. Agora sei por que faço cada gesto. Desde a certificação G3, trato das OR de chassis sem esperar que alguém me desbloqueie."
+    },
+    {
+      "name": "Anónimo",
+      "role": "Carroçeiro · Abidjan",
+      "quote": "Em carroçaria, o multicamada era o que nos fazia recuar. A sessão pôs-nos todos no mesmo método — menos retrabalhos, menos más surpresas."
+    },
+    {
+      "name": "Anónimo",
+      "role": "Gestor Peças · Senegal",
+      "quote": "No balcão, perdíamos tempo a encontrar a referência certa. Depois da formação Peças, o stock e os pedidos de clientes estão mais claros para toda a equipa."
+    }
+  ]
+}

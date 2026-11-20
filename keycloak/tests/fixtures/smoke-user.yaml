@@ -1,0 +1,44 @@
+# Compte unique du smoke en mode prod : le realm est chargé sans les comptes de démo.
+realm: cfao
+users:
+  - username: kouame.assi
+    id: "11111111-1111-1111-1111-000000000001"
+    enabled: true
+    emailVerified: true
+    email: kouame.assi@cfao.example
+    firstName: Kouamé
+    lastName: Assi
+    realmRoles: [learner]
+    attributes:
+      scopeNode: ["groupe.afrique_ouest.cote_divoire.abidjan_plateau"]
+      departments: ["motors"]
+      brands: ["toyota"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_ouest"
+        - "groupe.afrique_ouest.cote_divoire"
+        - "groupe.afrique_ouest.cote_divoire.abidjan_plateau"
+    credentials:
+      - { type: password, value: demo, temporary: false }
+  # Connexion par code mail (smoke_login_mail.py) : comptes sans mot de passe.
+  - username: mail.limite
+    enabled: true
+    emailVerified: true
+    email: mail.limite@cfao.example
+    firstName: Limite
+    lastName: Smoke
+    realmRoles: [learner]
+  - username: super.admin.smoke
+    enabled: true
+    emailVerified: true
+    email: super.admin@cfao.example
+    firstName: Super
+    lastName: Admin
+    realmRoles: [superadmin]
+  - username: compte.desactive
+    enabled: false
+    emailVerified: true
+    email: compte.desactive@cfao.example
+    firstName: Compte
+    lastName: Desactive
+    realmRoles: [learner]

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { signalerErreur } from '../../utils/journalErreurs'
+import { adresse } from '../../lib/adresse'
 
 /**
  * L'image reelle de la diapositive, convertie depuis le modele.
@@ -43,7 +44,7 @@ export default function ApercuReel({ diapo, valeurs, voisines, secours }) {
     // caractere lancerait une conversion.
     const minuteur = setTimeout(async () => {
       try {
-        const r = await fetch('/apercu/page', {
+        const r = await fetch(adresse('/apercu/page'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ diapo, valeurs, voisines: voisines || [] }),

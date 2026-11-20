@@ -3,12 +3,12 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import AnnonceMaintenance from './components/AnnonceMaintenance'
 import AppShell from './components/AppShell'
 import { AuthProvider, useAuth } from './lib/auth'
-import Accueil from './pages/Accueil'
 import Connexion from './pages/Connexion'
 import JournalErreurs from './pages/JournalErreurs'
 import TrainerReportNew from './pages/TrainerReportNew'
 import TrainerReportsEnCours from './pages/TrainerReportsEnCours'
 import TrainerReportsTermines from './pages/TrainerReportsTermines'
+import VersPortail from './pages/VersPortail'
 
 /** Tout sauf la connexion demande un compte ouvert ; on y revient ensuite. */
 function Protege({ avecBarre = true }) {
@@ -18,7 +18,7 @@ function Protege({ avecBarre = true }) {
     const retour = `${lieu.pathname}${lieu.search}${lieu.hash}`
     return <Navigate to="/connexion" replace state={{ retour }} />
   }
-  // L'accueil porte sa propre barre, comme l'accueil formateur du portail.
+  // La racine renvoie au portail : pas de barre à poser.
   if (!avecBarre) return <Outlet />
   return (
     <AppShell>
@@ -42,7 +42,8 @@ export default function App() {
       <Routes>
         <Route path="/connexion" element={<Connexion />} />
         <Route element={<Protege avecBarre={false} />}>
-          <Route path="/" element={<Accueil />} />
+          {/* L'accueil formateur est celui du portail Academy. */}
+          <Route path="/" element={<VersPortail />} />
         </Route>
         <Route element={<Protege />}>
           <Route path="/portail/compte-rendu/nouveau" element={<TrainerReportNew />} />

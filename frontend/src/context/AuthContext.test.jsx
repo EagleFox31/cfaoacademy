@@ -58,6 +58,9 @@ let monte
 beforeEach(() => {
   sessionStorage.clear()
   vi.unstubAllEnvs()
+  // Indépendant du frontend/.env local (qui définit l'émetteur et l'URL d'API).
+  vi.stubEnv('VITE_OIDC_ISSUER', '')
+  vi.stubEnv('VITE_API_URL', '')
 })
 afterEach(async () => {
   if (monte) await act(async () => monte.racine.unmount())

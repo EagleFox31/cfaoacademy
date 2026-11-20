@@ -12,6 +12,14 @@
     "cfao-needs": {
       "dockerfile": "cfao-needs/api/Dockerfile",
       "images": ["antifragile237/cfao-needs-api"]
+    },
+    "cfao-planning": {
+      "dockerfile": "cfao-planning/api/Dockerfile",
+      "images": []
+    },
+    "keycloak": {
+      "dockerfile": "keycloak/Dockerfile",
+      "images": ["antifragile237/cfao-keycloak"]
     }
   },
   "contracts": [
@@ -20,7 +28,17 @@
       "provider": "cfao-academy-mail",
       "format": "openapi",
       "spec": "cfao-academy-mail/api/outbound/contract/mail.openapi.json",
-      "consumers": []
+      "consumers": [
+        {
+          "module": "keycloak",
+          "range": "^0.2",
+          "client_files": [
+            "keycloak/spi/src/main/java/com/cfao/academy/keycloak/hub/HubMail.java",
+            "keycloak/spi/src/main/java/com/cfao/academy/keycloak/hub/HubClient.java"
+          ],
+          "tests": ["keycloak/spi/src/test/java/com/cfao/academy/keycloak/hub/HubMailContractTest.java"]
+        }
+      ]
     },
     {
       "id": "needs-analytics",
@@ -33,8 +51,35 @@
           "range": "^1",
           "client_files": ["cfao-core/analytics/services.py"],
           "tests": ["cfao-core/analytics/tests/test_needs_analytics_consumer.py"]
+        },
+        {
+          "module": "cfao-planning",
+          "range": "^1.5",
+          "client_files": ["cfao-planning/api/planning/clients/needs.py"],
+          "tests": ["cfao-planning/api/planning/tests/test_needs_consumer.py"]
         }
       ]
+    },
+    {
+      "id": "needs-snapshot-push",
+      "provider": "cfao-planning",
+      "format": "openapi",
+      "spec": "cfao-planning/api/planning/contract/needs-snapshot.openapi.json",
+      "consumers": [
+        {
+          "module": "cfao-needs",
+          "range": "^1",
+          "client_files": ["cfao-needs/api/analytics/relay.py"],
+          "tests": ["cfao-needs/api/analytics/tests/test_snapshot.py"]
+        }
+      ]
+    },
+    {
+      "id": "cr-sessions",
+      "provider": "cfao-planning",
+      "format": "openapi",
+      "spec": "cfao-planning/api/planning/contract/cr-sessions.openapi.json",
+      "consumers": []
     }
   ]
 }

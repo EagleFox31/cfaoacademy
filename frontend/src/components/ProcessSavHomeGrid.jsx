@@ -3,7 +3,7 @@ import CatalogTrainingCard from './CatalogTrainingCard.jsx'
 import useLocale from '../hooks/useLocale.js'
 
 /** Grille formations process SAV sur l'accueil — rail horizontal. */
-export default function ProcessSavHomeGrid({ items, folder }) {
+export default function ProcessSavHomeGrid({ items, folder, portal = false }) {
   const { t: commonT } = useLocale('common')
 
   if (!items?.length) {
@@ -17,7 +17,7 @@ export default function ProcessSavHomeGrid({ items, folder }) {
       arrowLabelNext={commonT.next ?? 'Suivant'}
     >
       {items.map((training) => (
-        <CatalogTrainingCard key={training.code} folder={folder} training={training} />
+        <CatalogTrainingCard key={training.code} folder={folder} training={training} portal={portal} />
       ))}
     </CardRail>
   )

@@ -1,0 +1,10 @@
+# Racine = portail (EDGE_RACINE=portail) : une adresse, applications par chemin.
+# needs passe sous /besoins/ (routes/needs.conf). Supprimé si EDGE_RACINE=needs.
+location / {
+    set $edge_module portail;
+    include /etc/nginx/snippets/proxy-commun.conf;
+    proxy_set_header Host $http_host;
+    # Portail arrêté (502/503/504) : page d'attente.
+    proxy_intercept_errors on;
+    proxy_pass http://${EDGE_PORTAIL_UPSTREAM};
+}

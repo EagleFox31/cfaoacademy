@@ -1,10 +1,44 @@
 import { useEffect, useRef, useState } from 'react'
 import { BellIcon } from './portalSectionIcons.jsx'
 
+/**
+ * Les alertes, une par ligne : reprise par la cloche et par le menu du compte.
+ * Avec onOpen, l'alerte devient un lien d'action ; onClose ferme le menu porteur.
+ */
+export function NotificationItems({ alerts = [], onClose, menu = true, className }) {
+  function renderAlert(alert) {
+    const content = (
+      <>
+        <span className="nav-notif-item-label">{alert.label}</span>
+        <span className="nav-notif-item-text">{alert.text}</span>
+        {alert.onOpen && alert.cta ? <span className="nav-notif-item-cta">{alert.cta}</span> : null}
+      </>
+    )
+    if (!alert.onOpen) {
+      return <li key={alert.id} className="nav-notif-item" role={menu ? 'menuitem' : undefined}>{content}</li>
+    }
+    return (
+      <li key={alert.id} role={menu ? 'none' : undefined}>
+        <button
+          type="button"
+          className="nav-notif-item nav-notif-item--link"
+          role={menu ? 'menuitem' : undefined}
+          onClick={() => { onClose?.(); alert.onOpen() }}
+        >
+          {content}
+        </button>
+      </li>
+    )
+  }
+  return <ul className={className}>{alerts.map(renderAlert)}</ul>
+}
+
+/** alerts : [{ id, label, text, onOpen?, cta? }] ; avec onOpen, l'alerte devient un lien d'action. */
 export default function PortalNotificationsBell({ alerts = [], t, onMenuAction, variant = 'desktop' }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const count = alerts.length
+  const mobile = variant === 'mobile'
 
   useEffect(() => {
     if (!open) return undefined
@@ -27,21 +61,14 @@ export default function PortalNotificationsBell({ alerts = [], t, onMenuAction, 
     onMenuAction?.()
   }
 
-  if (variant === 'mobile') {
+  if (mobile) {
     return (
       <div className="nav-mobile-foot-notif-group">
         <p className="nav-mobile-foot-help-title">{t.notifications_title}</p>
         {count === 0 ? (
           <p className="nav-mobile-foot-notif-empty">{t.notifications_empty}</p>
         ) : (
-          <ul className="nav-mobile-foot-notif-list">
-            {alerts.map(alert => (
-              <li key={alert.id} className="nav-notif-item">
-                <span className="nav-notif-item-label">{alert.label}</span>
-                <span className="nav-notif-item-text">{alert.text}</span>
-              </li>
-            ))}
-          </ul>
+          <NotificationItems alerts={alerts} onClose={close} menu={false} className="nav-mobile-foot-notif-list" />
         )}
       </div>
     )
@@ -79,14 +106,7 @@ export default function PortalNotificationsBell({ alerts = [], t, onMenuAction, 
           {count === 0 ? (
             <p className="nav-notif-dropdown-empty">{t.notifications_empty}</p>
           ) : (
-            <ul className="nav-notif-dropdown-list">
-              {alerts.map(alert => (
-                <li key={alert.id} className="nav-notif-item" role="menuitem">
-                  <span className="nav-notif-item-label">{alert.label}</span>
-                  <span className="nav-notif-item-text">{alert.text}</span>
-                </li>
-              ))}
-            </ul>
+            <NotificationItems alerts={alerts} onClose={close} className="nav-notif-dropdown-list" />
           )}
         </div>
       ) : null}

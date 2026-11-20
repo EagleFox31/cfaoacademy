@@ -5,9 +5,14 @@
 #
 # Plus besoin de `--build` pour un simple changement de code.
 # (Rebuild encore nécessaire si on change les DÉPENDANCES — requirements.txt / package.json.
-#  Nouvelles migrations : `docker compose exec core python manage.py migrate`.)
+#  Nouvelles migrations : `docker compose up` relance le job core-migrate, ou
+#  `docker compose run --rm core-migrate`.)
 services:
   core:
+    volumes:
+      - ./cfao-core:/app
+
+  core-migrate:
     volumes:
       - ./cfao-core:/app
 

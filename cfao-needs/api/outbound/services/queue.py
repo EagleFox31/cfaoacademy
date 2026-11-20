@@ -98,7 +98,7 @@ def schedule_internal_summary(submission) -> None:
             "author": getattr(submission.submitted_by, "display_name", ""),
             "summary": submission_summary(submission),
             # Le détail se lit dans l'outil, là où la correction est possible.
-            "review_url": submission_url(submission),
+            "review_url": review_url(submission),
             "submitted_at": timezone.now().isoformat(),
         },
     )
@@ -150,5 +150,13 @@ def prepare_submission_reopened(submission) -> OutboundMessage | None:
 
 
 def submission_url(submission) -> str:
-    base = settings.PUBLIC_BASE_URL.rstrip("/")
-    return f"{base}/campagnes/{submission.campaign.year}/fiches/{submission.id}"
+    """Saisie de l'auteur : l'accueil du SPA ouvre sa propre Identification des Besoins.
+
+    `PUBLIC_BASE_URL` porte le préfixe de l'application (ex. « https://<hôte>/besoins »).
+    """
+    return f"{settings.PUBLIC_BASE_URL.rstrip('/')}/"
+
+
+def review_url(submission) -> str:
+    """Relecture par l'équipe Academy (route `/relecture/:id` du SPA)."""
+    return f"{settings.PUBLIC_BASE_URL.rstrip('/')}/relecture/{submission.id}"

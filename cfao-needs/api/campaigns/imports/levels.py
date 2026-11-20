@@ -22,6 +22,8 @@ _SEPARATORS = re.compile(r"[\s&_]")
 _HYPHENS = re.compile(r"-+")
 _SUZUKI = re.compile(r"^(.+)-(BRONZE|SILVER|GOLD)$", re.I)
 _TOYOTA_G = re.compile(r"^(.+)-(G[1-4])$", re.I)
+# Marques dont le barème a ses propres noms pour les paliers MEDACAP.
+_BRAND_TIERS = {"SUZUKI": {"JUNIOR": "Bronze", "SENIOR": "Silver", "EXPERT": "Gold"}}
 
 
 def normalize_code(code: str | None) -> str:
@@ -48,7 +50,11 @@ def levels() -> dict[str, str]:
     }
 
 
-def level_label(code: str | None, *, tier: str = "") -> str:
+def _in_brand_scale(label: str, brand: str) -> str:
+    return _BRAND_TIERS.get(brand.upper(), {}).get(label.upper(), label)
+
+
+def level_label(code: str | None, *, tier: str = "", brand: str = "") -> str:
     """Libellé constructeur pour un code, avec repli sur le palier MEDACAP."""
     key = normalize_code(code)
     if not key:
@@ -56,7 +62,7 @@ def level_label(code: str | None, *, tier: str = "") -> str:
     table = levels()
     found = table.get(key) or table.get(_fiche_code(code))
     if found:
-        return found
+        return _in_brand_scale(found, brand)
 
     suzuki = _SUZUKI.match(key)
     if suzuki:
@@ -66,5 +72,5 @@ def level_label(code: str | None, *, tier: str = "") -> str:
         return toyota.group(2).upper()
 
     if tier and tier.upper() in {"JUNIOR", "SENIOR", "EXPERT"}:
-        return tier.capitalize()
+        return _in_brand_scale(tier.capitalize(), brand)
     return ""

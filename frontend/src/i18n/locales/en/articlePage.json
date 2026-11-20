@@ -1,0 +1,14 @@
+{
+  "notFoundTitle": "Article not found",
+  "notFoundLead": "This article does not exist or is no longer published.",
+  "closeHome": "Close and return to home",
+  "closeArticle": "Close and return to home",
+  "relatedIx": "continue",
+  "relatedTitleBefore": "Related ",
+  "relatedTitleEm": "articles",
+  "relatedTitleAfter": ".",
+  "tabAll": "All",
+  "tabParts": "Parts",
+  "metaAria": "Article information",
+  "readTimeSuffix": "read"
+}

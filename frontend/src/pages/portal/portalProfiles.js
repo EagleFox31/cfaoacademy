@@ -4,11 +4,18 @@
  * ses métadonnées et sa stratégie d'affichage.
  */
 
+/**
+ * Priorité des rôles (le plus haut gagne). Source unique : la navbar, la pastille
+ * de rôle et le portail affiché en dérivent, pour désigner toujours le même rôle.
+ */
 export const ROLE_PRIORITY = [
   'superadmin',
   'build_team',
   'group_admin',
+  'group_director',
   'group_hr',
+  'regional_director',
+  'branch_director',
   'dps',
   'dop',
   'branch_hr',
@@ -19,7 +26,39 @@ export const ROLE_PRIORITY = [
   'pic',
   'trainer',
   'center_director',
+  'training_coordinator',
+  'center_assistant',
 ]
+
+/** Mode du portail du centre de formation, par rôle. */
+const CENTER_MODES = {
+  center_director: 'director',
+  training_coordinator: 'coordinator',
+  center_assistant: 'assistant',
+}
+
+/**
+ * Portail de consultation (RHHome) : sections affichées par rôle, dans l'ordre de
+ * la page (docs/engineering/matrice-sections-portail.html). La navbar s'y aligne.
+ * Hors périmètre groupe, les jeux de démo ne s'appliquent pas : résultats et PIF
+ * restent en construction jusqu'à leur branchement.
+ */
+export const CONSULTATION_MODES = {
+  // Recrutement fermé par défaut à la RH groupe (18/11) : il s'ouvrira depuis la
+  // plateforme (matrice d'accès du Super Admin). La section reste dans RHHome.
+  group_hr: { perimetre: 'groupe', sections: ['competences', 'pif', 'personnes'] },
+  group_admin: { perimetre: 'groupe', sections: ['competences', 'pif', 'personnes', 'cle'] },
+  group_director: { perimetre: 'groupe', sections: ['competences', 'pif', 'cle'] },
+  regional_director: { perimetre: 'region', sections: ['competences', 'pif', 'cle'] },
+  // RH filiale (matrice : en ecriture sur sa filiale). `detail` : chiffres du jeu
+  // RH filtres sur la filiale de l'utilisateur, au lieu des cartes macro.
+  // Admin filiale = RH filiale + cle de repartition en consultation.
+  branch_hr: { perimetre: 'filiale', detail: true, profil: 'branch_hr',
+    sections: ['recrutement', 'competences', 'pif', 'besoins', 'personnes'] },
+  branch_admin: { perimetre: 'filiale', detail: true, profil: 'branch_hr',
+    sections: ['recrutement', 'competences', 'pif', 'besoins', 'personnes', 'cle'] },
+  branch_director: { perimetre: 'filiale', sections: ['competences', 'pif', 'cle'] },
+}
 
 export const PORTAL_PROFILES = {
   learner: {
@@ -54,11 +93,17 @@ export const PORTAL_PROFILES = {
     description: 'Pilotage RH filiale, taux de certification, alertes et annuaire collaborateurs.',
     roles: ['branch_hr', 'branch_admin'],
   },
-  group_hr: {
-    key: 'group_hr',
-    label: 'RH Groupe',
-    description: 'Vue groupe en consultation : recrutement, mesure des compétences, PIF, techniciens et candidats.',
-    roles: ['group_hr'],
+  group: {
+    key: 'group',
+    label: 'Groupe',
+    description: 'Vue groupe en consultation : RH groupe, directeur groupe, admin groupe (réunion des deux).',
+    roles: ['group_hr', 'group_director', 'group_admin'],
+  },
+  direction: {
+    key: 'direction',
+    label: 'Direction filiale / région',
+    description: 'Résultats de compétences et PIF en vue macro, clé de répartition de son périmètre.',
+    roles: ['branch_director', 'regional_director'],
   },
   ki: {
     key: 'ki',
@@ -69,15 +114,14 @@ export const PORTAL_PROFILES = {
   superadmin: {
     key: 'superadmin',
     label: 'Super Administrateur',
-    description: 'Pilotage global groupe, indicateurs multi-filiales et monitoring.',
-    roles: ['superadmin'],
+    description: 'Pilotage global groupe, indicateurs multi-filiales, monitoring et Delivery.',
+    roles: ['superadmin', 'build_team'],
   },
-  delivery: {
-    key: 'delivery',
-    label: 'Delivery & Projets Groupe',
-    description: 'Gestion de projet, catalogue et déploiement.',
-    roles: ['build_team', 'group_admin'],
-    redirectTo: '/portail/delivery',
+  center: {
+    key: 'center',
+    label: 'Centre de formation',
+    description: 'Clé de répartition, devis des filiales, besoins et taux de remplissage.',
+    roles: ['center_director', 'training_coordinator', 'center_assistant'],
   },
 }
 
@@ -98,20 +142,18 @@ export function getPrimaryRole(roles = []) {
 export function resolveProfile(roles = []) {
   const primary = getPrimaryRole(roles)
 
-  if (primary === 'build_team' || primary === 'group_admin') {
-    return PORTAL_PROFILES.delivery
-  }
-  if (primary === 'superadmin') {
+  // Le Delivery est le Super Admin : build_team y arrive, section Delivery comprise.
+  if (primary === 'superadmin' || primary === 'build_team') {
     return PORTAL_PROFILES.superadmin
   }
-  if (primary === 'group_hr') {
-    return PORTAL_PROFILES.group_hr
+  if (CONSULTATION_MODES[primary]) {
+    const { profil } = CONSULTATION_MODES[primary]
+    const base = profil ? PORTAL_PROFILES[profil]
+      : primary.startsWith('group_') ? PORTAL_PROFILES.group : PORTAL_PROFILES.direction
+    return { ...base, mode: primary }
   }
   if (primary === 'dps' || primary === 'dop') {
     return PORTAL_PROFILES.dps
-  }
-  if (primary === 'branch_hr' || primary === 'branch_admin') {
-    return PORTAL_PROFILES.branch_hr
   }
   if (primary === 'workshop_manager') {
     return PORTAL_PROFILES.workshop_manager
@@ -121,6 +163,9 @@ export function resolveProfile(roles = []) {
   }
   if (primary === 'ki' || primary === 'pic') {
     return PORTAL_PROFILES.ki
+  }
+  if (CENTER_MODES[primary]) {
+    return { ...PORTAL_PROFILES.center, mode: CENTER_MODES[primary] }
   }
 
   return PORTAL_PROFILES.learner

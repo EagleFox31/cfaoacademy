@@ -1,0 +1,374 @@
+/**
+ * « Préparer l'année » : charger les fichiers Excel pas à pas, puis valider les montants.
+ *   - Créer la clé de l'année (s'il n'y en a pas) ; ses montants se règlent dans « Gestion des tarifs »
+ *   - Importer un fichier : Vérifier (aperçu, rien n'est écrit) puis Enregistrer
+ *   - Geler (coordinateur de formation)
+ * Seules les étapes autorisées par /access sont affichées.
+ */
+import { useEffect, useMemo, useState } from 'react'
+import DataSheet from '../../../components/sheet/DataSheet'
+import { planningApi } from '../../../lib/planningApi'
+import { Banner, errText } from './costKeyViews'
+
+const KINDS = ['sessions', 'calendar_grid', 'seat_allocations']
+const HAS_TEMPLATE = { sessions: true, calendar_grid: false, seat_allocations: true }
+const POLES = ['MOTORS', 'EQUIPMENT']
+const HISTORY_SHORT = 5
+const WIZARD = ['kind', 'template', 'file', 'check']
+
+function Step({ n, title, lead, children }) {
+  return (
+    // Sans pastille numérotée : la numérotation appartient au fil d'étapes de l'import.
+    <section className="ck-step" aria-labelledby={`ck-step-${n}`}>
+      <header className="ck-step-head">
+        <div>
+          <h2 id={`ck-step-${n}`}>{title}</h2>
+          {lead && <p>{lead}</p>}
+        </div>
+      </header>
+      <div className="ck-step-body">{children}</div>
+    </section>
+  )
+}
+
+/* ── 1a. Créer une clé ── */
+function CreateKey({ t, onCreated }) {
+  const [year, setYear] = useState(new Date().getFullYear())
+  const [pole, setPole] = useState('MOTORS')
+  const [budget, setBudget] = useState('')
+  const [msg, setMsg] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const submit = async e => {
+    e.preventDefault()
+    setBusy(true); setMsg(null)
+    try {
+      const body = { year: Number(year), pole }
+      if (budget !== '') body.budget = Number(budget)
+      const key = await planningApi.bootstrap(body)
+      onCreated(key)
+    } catch (err) {
+      setMsg({ tone: 'warn', text: errText(t, err) })
+    } finally { setBusy(false) }
+  }
+  return (
+    <form className="ck-form" onSubmit={submit}>
+      <p className="ck-lead">{t.create_lead}</p>
+      <label className="ck-field"><span>{t.year}</span>
+        <input type="number" min="2020" max="2100" value={year} onChange={e => setYear(e.target.value)} required />
+      </label>
+      <label className="ck-field"><span>{t.pole}</span>
+        <select value={pole} onChange={e => setPole(e.target.value)}>
+          {POLES.map(p => <option key={p} value={p}>{t[`pole_${p}`]}</option>)}
+        </select>
+      </label>
+      <label className="ck-field"><span>{t.f_budget}</span>
+        <input type="number" min="0" step="1" value={budget} onChange={e => setBudget(e.target.value)} />
+      </label>
+      <div className="ck-form-actions">
+        <button type="submit" className="ck-btn ck-btn--primary" disabled={busy}>{t.create}</button>
+      </div>
+      {msg && <Banner tone={msg.tone}>{msg.text}</Banner>}
+    </form>
+  )
+}
+
+/* Les derniers imports se lisent d'un coup d'œil : pas de tableur ici. */
+function ImportHistory({ t, fmt, history }) {
+  const [all, setAll] = useState(false)
+  if (history.length === 0) return <p className="ck-muted">{t.empty}</p>
+  const shown = all ? history : history.slice(0, HISTORY_SHORT)
+  return (
+    <>
+      <div className="ck-hist-wrap">
+        <table className="ck-hist">
+          <thead>
+            <tr>
+              <th>{t.col_date}</th><th>{t.col_kind}</th><th>{t.col_status}</th>
+              <th className="is-num">{t.col_written}</th><th className="is-num">{t.col_rejected}</th><th>{t.col_by}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map(h => (
+              <tr key={h.id}>
+                <td>{h.created_at ? new Date(h.created_at).toLocaleString() : ''}</td>
+                <td>{t[`kind_${h.kind}`] || h.kind}</td>
+                <td><span className={`portal-status-chip ${h.status === 'APPLIED' ? 'done' : 'progress'}`}>{t[`st_${h.status}`] || h.status}</span></td>
+                <td className="is-num">{fmt(h.rows_written, 'int')}</td>
+                <td className="is-num">{fmt(h.rows_rejected ?? 0, 'int')}</td>
+                <td>{h.actor_name || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {history.length > HISTORY_SHORT && (
+        <button type="button" className="ck-link-btn" onClick={() => setAll(v => !v)}>
+          {all ? t.hist_less : t.hist_all.replace('{n}', fmt(history.length, 'int'))}
+        </button>
+      )}
+    </>
+  )
+}
+
+/* ── 2. Importer ── */
+function ImportStep({ t, fmt, ckey, onApplied, canOverwrite }) {
+  const [kind, setKind] = useState('sessions')
+  const [file, setFile] = useState(null)
+  const [year, setYear] = useState(ckey?.year ?? new Date().getFullYear())
+  const [replace, setReplace] = useState(false)
+  const [overwrite, setOverwrite] = useState(false)
+  const [busy, setBusy] = useState(null)
+  const [report, setReport] = useState(null)
+  const [outcome, setOutcome] = useState(null)
+  const [error, setError] = useState(null)
+  const [history, setHistory] = useState([])
+  const [inputKey, setInputKey] = useState(0)
+  const [step, setStep] = useState(0)
+
+  const loadHistory = () => planningApi.imports().then(setHistory).catch(() => setHistory([]))
+  useEffect(() => { loadHistory() }, [])
+
+  const reset = () => { setReport(null); setOutcome(null); setError(null) }
+  const params = () => {
+    if (kind === 'calendar_grid') return { year }
+    if (kind === 'seat_allocations') {
+      return { ...(replace && { replace: 'true' }), ...(overwrite && canOverwrite && { overwrite_manual: 'true' }) }
+    }
+    return {}
+  }
+
+  const run = async which => {
+    if (!file) { setError(t.err_FILE_REQUIRED); return }
+    setBusy(which); setError(null); setOutcome(null)
+    try {
+      if (which === 'check') {
+        setReport(await planningApi.preview(kind, file, params()))
+      } else {
+        const log = await planningApi.apply(kind, file, params())
+        setReport(log.report ?? null)
+        setOutcome({ tone: 'ok', text: `${t.r_applied} ${t.r_written} : ${fmt(log.rows_written, 'int')}` })
+        setFile(null); setInputKey(k => k + 1)
+        loadHistory(); onApplied()
+      }
+    } catch (err) {
+      // 422 : le journal complet (avec les erreurs ligne par ligne) est dans payload
+      if (err?.payload?.report) setReport(err.payload.report)
+      else if (err?.payload?.errors) setReport(err.payload)
+      setError(errText(t, err))
+    } finally { setBusy(null) }
+  }
+
+  const errCols = useMemo(() => [
+    { id: 'sheet', header: t.col_sheet, type: 'text', width: 110, value: e => e.sheet ?? '' },
+    { id: 'row', header: t.col_row, type: 'int', width: 70, value: e => e.row },
+    { id: 'column', header: t.col_column, type: 'text', width: 150, value: e => e.column },
+    { id: 'value', header: t.col_value, type: 'text', width: 150, value: e => (e.value == null ? '' : String(e.value)) },
+    { id: 'message', header: t.col_message, type: 'text', width: 380, value: e => e.message },
+  ], [t])
+
+  // Un fichier déposé mène tout de suite à la vérification.
+  const pickFile = picked => { setFile(picked ?? null); reset(); if (picked) setStep(3) }
+  const drop = e => {
+    e.preventDefault()
+    const picked = e.dataTransfer.files?.[0]
+    if (picked?.name.toLowerCase().endsWith('.xlsx')) pickFile(picked)
+  }
+
+  const manualField = { seats: t.col_allocated, end_date: t.col_end, location: t.col_location, title: t.col_title }
+  const manualCols = useMemo(() => [
+    { id: 'session', header: t.col_session, type: 'text', width: 300, value: m => m.session },
+    { id: 'country', header: t.col_country, type: 'text', width: 90, value: m => m.country ?? '' },
+    { id: 'field', header: t.col_column, type: 'text', width: 130, value: m => manualField[m.field] || m.field },
+    { id: 'current', header: t.col_manual_current, type: 'text', width: 150, value: m => (m.current == null ? '' : String(m.current)) },
+    { id: 'file', header: t.col_manual_file, type: 'text', width: 150, value: m => (m.file == null ? '' : String(m.file)) },
+  ], [t]) // eslint-disable-line react-hooks/exhaustive-deps
+  const manualKept = report?.manual_kept ?? []
+
+  const ok = report?.status === 'OK'
+  // Une étape à la fois : on n'avance au fichier qu'avec le type choisi, à la vérification
+  // qu'avec un fichier. Les étapes passées restent cliquables pour revenir en arrière.
+  const reachable = i => i <= 2 || Boolean(file)
+  const goTo = i => { if (reachable(i)) { setStep(i); setError(null) } }
+  const restart = () => { reset(); setStep(0) }
+  const last = WIZARD.length - 1
+  return (
+    <div className="ck-import">
+      <ol className="ck-wiz" aria-label={t.step2}>
+        {WIZARD.map((id, i) => {
+          const state = i < step ? 'done' : i === step ? 'current' : 'todo'
+          return (
+            <li key={id} className={`ck-wiz-item is-${state}`}>
+              <button type="button" className="ck-wiz-btn" onClick={() => goTo(i)}
+                disabled={!reachable(i) || i === step} aria-current={i === step ? 'step' : undefined}>
+                <span className="ck-wiz-num" aria-hidden="true">{state === 'done' ? '✓' : i + 1}</span>
+                <span className="ck-wiz-label">{t[`wiz_${id}`]}</span>
+              </button>
+            </li>
+          )
+        })}
+      </ol>
+
+      <div className="ck-wiz-panel">
+        {step === 0 && (
+          <>
+            <div className="ck-kinds" role="radiogroup" aria-label={t.col_kind}>
+              {KINDS.map(k => (
+                <button key={k} type="button" role="radio" aria-checked={kind === k}
+                  className={`ck-kind${kind === k ? ' is-on' : ''}`}
+                  onClick={() => { setKind(k); reset() }}>
+                  <strong>{t[`kind_${k}`]}</strong>
+                  <span>{t[`kind_${k}_hint`]}</span>
+                </button>
+              ))}
+            </div>
+            <div className="ck-import-options">
+              {kind === 'calendar_grid' && (
+                <label className="ck-field"><span>{t.year}</span>
+                  <input type="number" min="2020" max="2100" value={year}
+                    onChange={e => { setYear(e.target.value); reset() }} />
+                </label>
+              )}
+              {kind === 'seat_allocations' && (
+                <label className="ck-check">
+                  <input type="checkbox" checked={replace} onChange={e => { setReplace(e.target.checked); reset() }} />
+                  <span>{t.replace}</span>
+                </label>
+              )}
+              {kind === 'seat_allocations' && canOverwrite && (
+                <label className="ck-check">
+                  <input type="checkbox" checked={overwrite} onChange={e => { setOverwrite(e.target.checked); reset() }} />
+                  <span>{t.overwrite_manual}</span>
+                </label>
+              )}
+            </div>
+          </>
+        )}
+        {step === 1 && (
+          <>
+            <p className="ck-wiz-lead">{t.wiz_template_lead.replace('{kind}', t[`kind_${kind}`])}</p>
+            {HAS_TEMPLATE[kind]
+              ? <button type="button" className="ck-btn" onClick={() => planningApi.downloadTemplate(kind).catch(e => setError(errText(t, e)))}>
+                  {t.template}
+                </button>
+              : <span className="ck-muted">{t.no_template}</span>}
+          </>
+        )}
+        {step === 2 && (
+          <label className={`ck-drop${file ? ' has-file' : ''}`} onDragOver={e => e.preventDefault()} onDrop={drop}>
+            <input key={inputKey} type="file" accept=".xlsx" onChange={e => pickFile(e.target.files?.[0])} />
+            <span>{file ? file.name : t.drop_file}</span>
+          </label>
+        )}
+        {step === 3 && (
+          <>
+            <p className="ck-wiz-lead">{file ? `${t[`kind_${kind}`]} · ${file.name}` : t[`kind_${kind}`]}</p>
+            {!outcome && (
+              <div className="ck-form-actions">
+                <button type="button" className="ck-btn" disabled={!!busy || !file} onClick={() => run('check')}>
+                  {busy === 'check' ? t.checking : t.check}
+                </button>
+                <button type="button" className="ck-btn ck-btn--primary" disabled={!!busy || !ok}
+                  title={ok ? undefined : t.check_first} onClick={() => run('apply')}>
+                  {busy === 'apply' ? t.applying : t.apply}
+                </button>
+              </div>
+            )}
+            {!outcome && <small className="ck-muted">{t.flow_check_hint}</small>}
+          </>
+        )}
+      </div>
+
+      <div className="ck-wiz-nav">
+        {step > 0 && !outcome && (
+          <button type="button" className="ck-btn" onClick={() => goTo(step - 1)}>{t.wiz_prev}</button>
+        )}
+        {step < last && (
+          <button type="button" className="ck-btn ck-btn--primary" disabled={!reachable(step + 1)}
+            title={reachable(step + 1) ? undefined : t.err_FILE_REQUIRED} onClick={() => goTo(step + 1)}>
+            {t.wiz_next}
+          </button>
+        )}
+        {outcome && <button type="button" className="ck-btn ck-btn--primary" onClick={restart}>{t.wiz_again}</button>}
+      </div>
+
+      {error && <Banner tone="warn">{error}</Banner>}
+      {outcome && <Banner tone={outcome.tone}>{outcome.text}</Banner>}
+      {report && !outcome && <Banner tone={ok ? 'ok' : 'warn'}>{ok ? t.r_ok : t.r_ko}</Banner>}
+      {report && (
+        <dl className="ck-kpis ck-kpis--small">
+          <div className="ck-kpi"><dt>{t.r_read}</dt><dd>{fmt(report.rows_read, 'int')}</dd></div>
+          <div className="ck-kpi"><dt>{t.r_valid}</dt><dd>{fmt(report.rows_valid, 'int')}</dd></div>
+          <div className="ck-kpi"><dt>{t.r_rejected}</dt><dd>{fmt(report.rows_rejected, 'int')}</dd></div>
+        </dl>
+      )}
+      {report?.errors?.length > 0 && (
+        <DataSheet id="ck-import-errors" columns={errCols} rows={report.errors} frozen={2}
+          exportName={`erreurs-${kind}`} />
+      )}
+      {manualKept.length > 0 && (
+        <>
+          <Banner tone="warn">
+            {(overwrite ? t.manual_overwritten : t.manual_kept).replace('{n}', fmt(manualKept.length, 'int'))}
+          </Banner>
+          <DataSheet id="ck-import-manual" columns={manualCols} rows={manualKept} frozen={1}
+            exportName={`saisies-${kind}`} />
+        </>
+      )}
+
+      <h3 className="ck-subtitle">{t.history}</h3>
+      <ImportHistory t={t} fmt={fmt} history={history} />
+    </div>
+  )
+}
+
+/* ── 3. Geler ── */
+function FreezeStep({ t, ckey, canFreeze, onFrozen, onStale }) {
+  const [msg, setMsg] = useState(null)
+  const [busy, setBusy] = useState(false)
+  if (ckey.status === 'FROZEN') {
+    const date = ckey.frozen_at ? new Date(ckey.frozen_at).toLocaleDateString() : ''
+    return <Banner tone="info">{t.already_frozen.replace('{date}', date).replace('{by}', ckey.frozen_by || '')}</Banner>
+  }
+  if (!canFreeze) return <p className="ck-muted">{t.freeze_only_pilot}</p>
+  const click = async () => {
+    if (!window.confirm(t.freeze_confirm.replace('{year}', ckey.year))) return
+    setBusy(true); setMsg(null)
+    try {
+      onFrozen(await planningApi.freeze(ckey.id, ckey.last_edit_at))
+      setMsg({ tone: 'ok', text: t.freeze_done })
+    } catch (err) {
+      setMsg({ tone: 'warn', text: errText(t, err) })
+      if (err?.code === 'FREEZE_STALE') onStale?.() // le prochain clic part des chiffres à jour
+    } finally { setBusy(false) }
+  }
+  return (
+    <>
+      <button type="button" className="ck-btn ck-btn--danger" onClick={click} disabled={busy}>{t.freeze.replace('{year}', ckey.year)}</button>
+      {msg && <Banner tone={msg.tone}>{msg.text}</Banner>}
+    </>
+  )
+}
+
+export default function PrepareView({ t, fmt, access, ckey, onKeyChange, onDataChanged, onRefresh }) {
+  // Les montants de l'année se règlent dans « Gestion des tarifs » ; ici : créer, importer, geler.
+  const create = access.manage && !ckey
+  return (
+    <div className="ck-view ck-view--center ck-steps">
+      {create && (
+        <Step n={1} title={t.create_title}>
+          <CreateKey t={t} onCreated={onKeyChange} />
+        </Step>
+      )}
+      {access.import && (
+        <Step n={create ? 2 : 1} title={t.step2} lead={t.step2_lead}>
+          <ImportStep t={t} fmt={fmt} ckey={ckey} onApplied={onDataChanged} canOverwrite={Boolean(access.edit)} />
+        </Step>
+      )}
+      {ckey && (access.freeze || access.manage) && (
+        <Step n={access.import ? 2 : 1} title={t.step3} lead={t.step3_lead}>
+          <FreezeStep t={t} ckey={ckey} canFreeze={access.freeze} onFrozen={onKeyChange} onStale={onRefresh} />
+        </Step>
+      )}
+    </div>
+  )
+}

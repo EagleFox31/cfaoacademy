@@ -6,6 +6,7 @@ export default function BrandOfferGrid({
   brands,
   onBrandHover,
   onBrandHoverEnd,
+  portal = false,
 }) {
   const { t: commonT } = useLocale('common')
 
@@ -23,6 +24,7 @@ export default function BrandOfferGrid({
             brand={b}
             onBrandHover={onBrandHover}
             onBrandHoverEnd={onBrandHoverEnd}
+            portal={portal}
           />
         ))}
       </CardRail>

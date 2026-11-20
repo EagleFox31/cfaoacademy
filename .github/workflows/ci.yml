@@ -24,6 +24,8 @@ jobs:
       pull-requests: read
     outputs:
       mail: ${{ steps.filter.outputs.mail }}
+      realm: ${{ steps.filter.outputs.realm }}
+      edge: ${{ steps.filter.outputs.edge }}
       contracts: ${{ steps.filter.outputs.contracts }}
     steps:
       - uses: actions/checkout@v4
@@ -34,6 +36,26 @@ jobs:
             mail:
               - 'cfao-academy-mail/**'
               - '.github/workflows/ci.yml'
+            realm:
+              - 'keycloak/**'
+              # L'extension Keycloak consomme ce contrat (HubMailContractTest).
+              - 'cfao-academy-mail/api/outbound/contract/**'
+              # Et le smoke cfao-hub fait passer ses mails par le vrai hub.
+              - 'cfao-academy-mail/api/outbound/services/**'
+              - 'cfao-academy-mail/Dockerfile'
+              - 'cerbos/policies/**'
+              - 'cfao-core/identity/roles.py'
+              - 'cfao-core/core/auth/jwt_verifier.py'
+              - '.github/workflows/ci.yml'
+            edge:
+              - 'edge/**'
+              - 'keycloak/**'
+              - 'cfao-needs/gateway/**'
+              - 'cfao-needs/docker-compose*.yml'
+              - 'cfao-needs/.env.example'
+              - 'cfao-needs/web/index.html'
+              - 'cfao-needs/web/src/lib/auth.js'
+              - '.github/workflows/ci.yml'
             contracts:
               - 'contracts/**'
               - 'cfao-academy-mail/Dockerfile'
@@ -42,6 +64,17 @@ jobs:
               - 'cfao-core/analytics/**'
               - 'cfao-needs/api/Dockerfile'
               - 'cfao-needs/api/analytics/**'
+              - 'cfao-planning/api/Dockerfile'
+              - 'cfao-planning/api/planning/clients/**'
+              - 'cfao-planning/api/planning/contract.py'
+              - 'cfao-planning/api/planning/contract_cr.py'
+              - 'cfao-planning/api/planning/services/cr_sessions.py'
+              - 'cfao-planning/api/planning/tests/test_cr_sessions.py'
+              - 'cfao-planning/api/planning/contract/**'
+              - 'cfao-planning/api/planning/tests/test_needs_consumer.py'
+              - 'cfao-planning/api/planning/tests/test_needs_copy.py'
+              - 'keycloak/Dockerfile'
+              - 'keycloak/spi/**'
               - '.github/workflows/ci.yml'
 
   # Registre des contrats inter-modules (contracts/registry.json) : cohérence,
@@ -73,6 +106,22 @@ jobs:
       - run: python contracts/sync.py --check
       - run: python contracts/check.py --require-oasdiff
 
+  # AGENTS.md section 7 : chaque base se cree par un job *-migrate ponctuel que
+  # l'API et les workers attendent. Sans filtre de chemins : un compose, un
+  # Dockerfile ou la garde elle-meme peuvent casser la regle.
+  composes:
+    name: Composes (base automatique, section 7)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest==8.2.2 PyYAML==6.0.2
+      - run: pytest -q scripts/ci
+      - run: python scripts/ci/compose_bootstrap.py
+      - run: python scripts/ci/compose_secrets.py
+
   cerbos:
     name: Policies Cerbos (compile + tests)
     runs-on: ubuntu-latest
@@ -80,20 +129,225 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
-      - name: cerbos compile --tests (plateforme)
+      # Bundle unique (socle, needs, comptes rendus) : un PDP, une compilation.
+      # Un set de derived roles en double ou un schema introuvable y echoue.
+      - name: cerbos compile --tests (bundle plateforme)
         run: |
           docker run --rm -v "${{ github.workspace }}/cerbos:/work" \
             ghcr.io/cerbos/cerbos:0.40.0 compile --tests=/work/tests /work/policies
-      # Le module detachable a ses propres policies : sans cette etape, une
-      # regression sur needs_submission / needs_outbound passerait en vert.
-      - name: cerbos compile --tests (app 16 · recueil des besoins)
+      # Un seul bundle : aucun module ne doit recreer son propre dossier de policies.
+      # Exception : le gabarit garde un exemple autonome, jamais deploye.
+      - name: aucun bundle Cerbos de module
         run: |
-          docker run --rm -v "${{ github.workspace }}/cfao-needs/cerbos:/work" \
-            ghcr.io/cerbos/cerbos:0.40.0 compile --tests=/work/tests /work/policies
-      - name: cerbos compile --tests (comptes rendus)
+          ecarts=$(find . \( -path ./cerbos -o -path ./template-service \) -prune -o -path '*/cerbos/policies' -type d -print)
+          if [ -n "$ecarts" ]; then
+            echo "$ecarts"
+            echo "Les policies vivent dans cerbos/ a la racine." >&2
+            exit 1
+          fi
+
+  auth-commune:
+    name: Vérification JWT commune (copies identiques)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Reference : cfao-core/core/auth/jwt_verifier.py et son test. Chaque module
+      # en garde une copie (modules detachables) : une copie divergente echoue ici.
+      - name: copies identiques a la reference
         run: |
-          docker run --rm -v "${{ github.workspace }}/cfao-comptes-rendus/cerbos:/work" \
-            ghcr.io/cerbos/cerbos:0.40.0 compile --tests=/work/tests /work/policies
+          ecart=0
+          for ref in cfao-core/core/auth/jwt_verifier.py cfao-core/core/tests/test_jwt_verifier.py; do
+            for copie in $(find . -name "$(basename "$ref")" -not -path "./$ref" -not -path '*/node_modules/*'); do
+              cmp -s "$ref" "$copie" && echo "ok $copie" || { echo "::error file=$copie::differe de $ref"; ecart=1; }
+            done
+          done
+          exit $ecart
+
+  realm:
+    name: Realm Keycloak commun (cohérence + smoke KC 26)
+    needs: changes
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_call' ||
+      needs.changes.outputs.realm == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: keycloak/tests/requirements.txt
+      - run: pip install -r keycloak/tests/requirements.txt
+      # Rôles alignés sur le catalogue core et sur Cerbos, audiences, session 8 h.
+      - run: pytest -q keycloak/tests
+      # Extension cfao-hub (mails de Keycloak par le hub) : JUnit, dont le contrat mail-outbound.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: keycloak/spi/pom.xml
+      - run: mvn -B -q -f keycloak/spi/pom.xml verify
+      # Vrai Keycloak : realm appliqué par config-cli, jetons obtenus par les vrais flux.
+      - name: smoke sur Keycloak 26
+        run: |
+          f=keycloak/tests/docker-compose.smoke.yml
+          docker compose -f $f up -d keycloak
+          docker compose -f $f run --rm config
+          KC_URL=http://localhost:18080 pytest -q keycloak/tests/smoke_realm.py
+      # Keycloak neuf (H2 en mémoire), realm sans les comptes de démo.
+      - name: smoke en configuration prod (SPA de dev coupée, secret injecté, sans démo)
+        env:
+          CFAO_SPA_ENABLED: "false"
+          CFAO_PORTAL_SECRET: ci-secret-portail
+          CFAO_SUPERVISION_COLLECTOR_SECRET: ci-secret-collecteur
+          SMOKE_IMPORT: /config/*.yaml,/fixtures/*.yaml
+        run: |
+          f=keycloak/tests/docker-compose.smoke.yml
+          docker compose -f $f up -d --force-recreate keycloak
+          docker compose -f $f run --rm config
+          KC_URL=http://localhost:18080 SPA_ATTENDUE=disabled DEMO_ATTENDUE=absente pytest -q keycloak/tests/smoke_realm.py
+          # Migration des comptes de module (L5) : vrais flux de connexion, rejeu sans effet.
+          KC_URL=http://localhost:18080 pytest -q keycloak/tests/smoke_migration.py
+          docker compose -f $f down -v
+      # L'image publiée et son compose de prod, tels quels : build optimisé, Postgres,
+      # realm embarqué (sans dev/), aucun secret par défaut.
+      - name: smoke de l'image de prod (compose.prod.yml)
+        env:
+          KC_VERSION: smoke
+          KC_PORT: "18080"
+          KC_HOSTNAME: http://localhost:18080/auth
+          KC_HOSTNAME_ADMIN: http://localhost:18080/auth
+          KC_DB_PASSWORD: ci-db
+          KC_ADMIN_PASSWORD: ci-admin
+          CFAO_PORTAL_SECRET: ci-secret-portail
+          CFAO_SUPERVISION_COLLECTOR_SECRET: ci-secret-collecteur
+          CFAO_LOGIN_CODE_PEPPER: ci-poivre-des-codes-0123456789abcdef
+          KC_IMPORT_LOCATIONS: /opt/cfao-realm/*.yaml,/fixtures/*.yaml
+          # Deux hôtes à la fois : un changement d'hôte se fait sans rupture.
+          CFAO_PORTAL_REDIRECT_URIS: '["http://localhost:8000/oauth2/callback","https://portail.exemple/oauth2/callback"]'
+          CFAO_NEEDS_REDIRECT_URIS: '["http://localhost:8082/*","https://needs.exemple/*"]'
+          EMETTEUR_ATTENDU: http://localhost:18080/auth/realms/cfao
+        run: |
+          docker build -q -t antifragile237/cfao-keycloak:smoke keycloak
+          p="-f keycloak/compose.prod.yml -f keycloak/tests/compose.prod.smoke.yml"
+          docker compose $p up -d --wait keycloak
+          docker compose $p run --rm config
+          KC_URL=http://localhost:18080/auth SPA_ATTENDUE=disabled DEMO_ATTENDUE=absente pytest -q keycloak/tests/smoke_realm.py
+          KC_URL=http://localhost:18080/auth pytest -q keycloak/tests/smoke_migration.py
+      # Mot de passe oublié de bout en bout : image Keycloak + hub, hub coupé puis rétabli.
+      - name: smoke de l'extension cfao-hub (mails de Keycloak par le hub)
+        run: |
+          export SMOKE_FERNET_KEY=$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+          f=keycloak/tests/compose.hub.smoke.yml
+          docker compose -f $f up -d --build --wait keycloak mail-api mail-worker
+          docker compose -f $f run --rm config
+          KC_URL=http://localhost:18090/auth SMOKE_COMPOSE=$f pytest -q keycloak/tests/smoke_hub_mail.py keycloak/tests/smoke_login_mail.py
+      - if: failure()
+        run: |
+          docker compose -f keycloak/tests/docker-compose.smoke.yml logs --tail=200
+          docker compose -f keycloak/compose.prod.yml logs --tail=200 || true
+          SMOKE_FERNET_KEY=x docker compose -f keycloak/tests/compose.hub.smoke.yml logs --tail=200 || true
+
+  edge:
+    name: Passerelle commune (config + smoke devant Keycloak 26)
+    needs: changes
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_call' ||
+      needs.changes.outputs.edge == 'true'
+    runs-on: ubuntu-latest
+    env:
+      # Keycloak commun, servi sous /auth derrière la passerelle (18088).
+      KC_VERSION: smoke
+      KC_PORT: "18080"
+      KC_HOSTNAME: http://localhost:18088/auth
+      KC_HOSTNAME_ADMIN: http://localhost:18080/auth
+      KC_DB_PASSWORD: ci-db
+      KC_ADMIN_PASSWORD: ci-admin
+      CFAO_PORTAL_SECRET: ci-secret-portail
+      CFAO_SUPERVISION_COLLECTOR_SECRET: ci-secret-collecteur
+      CFAO_LOGIN_CODE_PEPPER: ci-poivre-des-codes-0123456789abcdef
+      KC_IMPORT_LOCATIONS: /opt/cfao-realm/*.yaml,/fixtures/*.yaml
+      CFAO_PORTAL_REDIRECT_URIS: '[]'
+      CFAO_NEEDS_REDIRECT_URIS: '["http://localhost:18088/callback","http://localhost:18088/"]'
+      # Passerelle et modules factices.
+      EDGE_VERSION: smoke
+      EDGE_LISTEN: 127.0.0.1:18088
+      EDGE_PUBLIC_PROTO: http
+      EDGE_PUBLIC_HOST: localhost
+      EDGE_PUBLIC_PORT: "18088"
+      EDGE_NEEDS_UPSTREAM: 127.0.0.1:18081
+      EDGE_KEYCLOAK_UPSTREAM: 127.0.0.1:18080
+      EDGE_CR_UPSTREAM: 127.0.0.1:18092
+      EDGE_LAN: needs@127.0.0.1:18093 cr@127.0.0.1:18094
+      # Tests.
+      EDGE_URL: http://localhost:18088
+      EDGE_LAN_NEEDS_URL: http://127.0.0.1:18093
+      EDGE_LAN_CR_URL: http://127.0.0.1:18094
+      EDGE_HTTPS_URL: http://localhost:18089
+      EDGE_ATTENTE_URL: http://localhost:18090
+      EDGE_PORTAIL_URL: http://localhost:18091
+      KC_INTERNE: http://localhost:18080/auth
+      EMETTEUR_ATTENDU: http://localhost:18088/auth/realms/cfao
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: keycloak/tests/requirements.txt
+      - run: pip install -r keycloak/tests/requirements.txt
+      - run: pytest -q edge/tests/test_edge_config.py edge/tests/test_needs_federation.py
+      - name: passerelle needs, config OIDC écrite au démarrage
+        run: |
+          mkdir -p cfao-needs/web/dist
+          docker build -q -t needs-gateway:ci -f cfao-needs/gateway/Dockerfile cfao-needs
+          lancer() { docker run --rm --network none --add-host needs-api:127.0.0.1 -e NEEDS_OIDC_ISSUER="$1" -e NEEDS_OIDC_CLIENT_ID=cfao-needs-web needs-gateway:ci "${@:2}"; }
+          lancer https://h.exemple/auth/realms/cfao sh -c '/docker-entrypoint.sh nginx -t && cat /etc/nginx/needs-config.js' \
+            | grep -F '{"oidcIssuer": "https://h.exemple/auth/realms/cfao", "oidcClientId": "cfao-needs-web"}'
+          if lancer 'javascript:alert(1)' /docker-entrypoint.sh nginx -t; then exit 1; fi
+      - name: image + nginx -t avec les valeurs du modèle de prod
+        run: |
+          docker build -q -t antifragile237/cfao-edge:smoke edge
+          docker run --rm --network none --env-file edge/.env.prod.example antifragile237/cfao-edge:smoke nginx -t
+      - name: Keycloak commun (image de prod) + realm
+        run: |
+          docker build -q -t antifragile237/cfao-keycloak:smoke keycloak
+          p="-f keycloak/compose.prod.yml -f keycloak/tests/compose.prod.smoke.yml"
+          docker compose $p up -d --wait keycloak
+          docker compose $p run --rm config
+      - name: passerelle + modules factices
+        run: |
+          docker compose -p cfao-edge-smoke -f edge/compose.prod.yml -f edge/tests/compose.smoke.yml up -d --wait
+          # Même image, sans Keycloak ni CR, en https : HSTS et retour sur needs.
+          docker run -d --name edge-https --network host \
+            -e EDGE_LISTEN=127.0.0.1:18089 -e EDGE_PUBLIC_PROTO=https \
+            -e EDGE_PUBLIC_HOST=localhost -e EDGE_PUBLIC_PORT=443 \
+            -e EDGE_NEEDS_UPSTREAM=127.0.0.1:18081 \
+            antifragile237/cfao-edge:smoke
+          # Modules arrêtés (aucun service sur ces ports) : page d'attente.
+          docker run -d --name edge-attente --network host \
+            -e EDGE_LISTEN=127.0.0.1:18090 -e EDGE_PUBLIC_PROTO=http \
+            -e EDGE_PUBLIC_HOST=localhost -e EDGE_PUBLIC_PORT=18090 \
+            -e EDGE_NEEDS_UPSTREAM=127.0.0.1:18097 -e EDGE_PLANNING_UPSTREAM=127.0.0.1:18098 \
+            antifragile237/cfao-edge:smoke
+          # Une adresse : portail à la racine, needs sous /besoins/, liste blanche d'origines.
+          docker run -d --name edge-portail --network host \
+            -e EDGE_LISTEN=127.0.0.1:18091 -e EDGE_PUBLIC_PROTO=https \
+            -e EDGE_PUBLIC_HOST=academy.exemple -e EDGE_PUBLIC_PORT=443 \
+            -e EDGE_NEEDS_UPSTREAM=127.0.0.1:18081 -e EDGE_PORTAIL_UPSTREAM=127.0.0.1:18095 \
+            -e EDGE_RACINE=portail -e EDGE_ORIGINES=https://192.168.10.155:8444 \
+            antifragile237/cfao-edge:smoke
+          sleep 3
+      - run: pytest -q edge/tests/smoke_edge.py
+      - if: failure()
+        run: |
+          docker compose -p cfao-edge-smoke -f edge/compose.prod.yml -f edge/tests/compose.smoke.yml logs --tail=200 || true
+          docker logs --tail=100 edge-https || true
+          docker logs --tail=100 edge-portail || true
+          docker compose -f keycloak/compose.prod.yml logs --tail=200 || true
 
   core:
     name: cfao-core (Django · pytest)
@@ -119,6 +373,15 @@ jobs:
     defaults:
       run:
         working-directory: cfao-needs/api
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -129,6 +392,56 @@ jobs:
           cache: pip
           cache-dependency-path: cfao-needs/api/requirements-dev.txt
       - run: pip install -r requirements-dev.txt
+      - run: pytest -q
+      # Trigger de version, outbox et NOTIFY : Postgres seulement.
+      - run: pytest analytics -q --ds=config.settings.test_pg
+
+  planning:
+    name: cfao-planning (app 05 · Django · pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cfao-planning/api
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: cfao-planning/api/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q
+      # Écritures concurrentes : SQLite ne verrouille pas les lignes, seul Postgres le prouve.
+      - run: pytest planning/tests/test_cost_key_cells_pg.py -q --ds=config.settings.test_pg
+        env:
+          PLANNING_TEST_PG_HOST: localhost
+
+  supervision:
+    name: cfao-supervision (Django · pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cfao-supervision/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: cfao-supervision/api/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      # Tests en SQLite mémoire ; Docker est simulé, y compris la liste blanche du proxy du socket.
       - run: pytest -q
 
   needs-web:
@@ -143,7 +456,7 @@ jobs:
           lfs: true
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22.23.4"
           cache: npm
           cache-dependency-path: cfao-needs/web/package-lock.json
       - run: npm ci
@@ -162,7 +475,7 @@ jobs:
           lfs: true
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22.23.4"
           cache: npm
           cache-dependency-path: cfao-operations/package-lock.json
       - run: npm ci
@@ -208,7 +521,7 @@ jobs:
           lfs: true
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22.23.4"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
@@ -225,7 +538,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22.23.4"
           cache: npm
           cache-dependency-path: cfao-comptes-rendus/web/package-lock.json
       - run: npm ci

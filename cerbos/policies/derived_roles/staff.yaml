@@ -1,0 +1,35 @@
+# Rôles dérivés transverses — appartenance au personnel CFAO.
+#
+# Dans un realm commun, `roles: ["*"]` ouvre aussi la ressource aux comptes
+# externes (apprenants, candidats, partenaires B2B). Toute lecture « large »
+# réservée aux collaborateurs passe donc par `internal_staff`, liste explicite.
+# Un nouveau rôle realm n'y entre que par décision : default-deny.
+apiVersion: api.cerbos.dev/v1
+derivedRoles:
+  name: staff
+  definitions:
+    - name: internal_staff
+      parentRoles:
+        - ki
+        - pic
+        - team_manager
+        - workshop_manager
+        - dps
+        - dop
+        - branch_director
+        - regional_director
+        - group_director
+        - trainer
+        - center_assistant
+        - center_director
+        - training_coordinator
+        - content_editor
+        - branch_admin
+        - branch_hr
+        - group_admin
+        - group_hr
+        - superadmin
+        - build_team
+      condition:
+        match:
+          expr: "true"

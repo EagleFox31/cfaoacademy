@@ -1,9 +1,10 @@
 /**
- * Chemins fiches PNG / PDF sous `/catalogues/`.
+ * Chemins fiches PNG / PDF sous `catalogues/` (dans le préfixe de l'application).
  *
  * Aligné sur la vitrine (`formationFiche.js` / `BRAND_FOLDER`) sans charger
  * tout le training-catalog : Needs connaît déjà `brand_code` et `family_key`.
  */
+import { asset } from './base'
 import { ficheFileCode } from './trainingCode'
 
 /** code marque Needs (slug) → dossier sous catalogues/ */
@@ -46,7 +47,7 @@ function encodeCatalogPath(folder, fileName) {
     .split('/')
     .map(encodeURIComponent)
     .join('/')
-  return `/catalogues/${encodedFolder}/${encodeURIComponent(fileName)}`
+  return asset(`catalogues/${encodedFolder}/${encodeURIComponent(fileName)}`)
 }
 
 /**
@@ -82,7 +83,7 @@ export function ficheUrlsForLine(line) {
   }
 }
 
-/** URL de la page viewer (nouvelle fenêtre). */
+/** URL de la page viewer (nouvelle fenêtre), sous le préfixe de l'application. */
 export function ficheViewerPath(line, { title } = {}) {
   const code = encodeURIComponent(String(line?.code || '').trim())
   const params = new URLSearchParams()
@@ -90,7 +91,7 @@ export function ficheViewerPath(line, { title } = {}) {
   if (line?.family_key) params.set('family', line.family_key)
   if (title) params.set('title', title)
   const qs = params.toString()
-  return `/fiche/${code}${qs ? `?${qs}` : ''}`
+  return asset(`fiche/${code}${qs ? `?${qs}` : ''}`)
 }
 
 export function openFicheWindow(line, { title } = {}) {

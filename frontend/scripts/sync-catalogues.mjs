@@ -11,6 +11,14 @@ if (!fs.existsSync(src)) {
   process.exit(0)
 }
 
+// Lien posé sur le poste (chemin Windows absolu) et monté dans un conteneur Linux :
+// sa cible n'existe pas ici. On ne l'écrase pas ; vite sert ../catalogues en repli.
+const destLink = fs.lstatSync(dest, { throwIfNoEntry: false })
+if (destLink?.isSymbolicLink() && !fs.existsSync(dest)) {
+  console.warn('[sync-catalogues] Lien cassé ignoré (repli vite sur ../catalogues) :', dest)
+  process.exit(0)
+}
+
 try {
   const srcReal = fs.realpathSync(src)
   const destReal = fs.existsSync(dest) ? fs.realpathSync(dest) : null

@@ -25,10 +25,26 @@
  * portail garde son modèle : profils de démonstration et comptes formateurs
  * servis par `/cr-donnees`. Aucun appel ne part alors vers Keycloak.
  */
-export const OIDC_ACTIF = Boolean((import.meta.env.VITE_OIDC_ISSUER || '').trim())
+import { drapeauConfig, valeurConfig } from './configExecution'
+
+const EMETTEUR_CONFIGURE = valeurConfig('oidcIssuer', import.meta.env.VITE_OIDC_ISSUER)
+
+export const OIDC_ACTIF = Boolean(EMETTEUR_CONFIGURE)
+
+/**
+ * Portail servi derrière cfao-edge : Keycloak est sur la même origine, sous
+ * /auth/. La connexion passe alors uniquement par la page Keycloak (pas de
+ * modale du portail, ni comptes CR, ni « se souvenir de moi »).
+ */
+export function connexionKeycloakSeule() {
+  if (!OIDC_ACTIF || typeof window === 'undefined') return false
+  // Image de prod : le portail a son origine, Keycloak est sur celle de la plateforme.
+  if (drapeauConfig('keycloakSeul')) return true
+  return resolveIssuer().startsWith(`${window.location.origin}/auth/`)
+}
 
 function resolveIssuer() {
-  const envIssuer = (import.meta.env.VITE_OIDC_ISSUER || '').trim()
+  const envIssuer = EMETTEUR_CONFIGURE
   if (!envIssuer) return ''
   if (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     return envIssuer
@@ -39,7 +55,7 @@ function resolveIssuer() {
 }
 
 const ISSUER = resolveIssuer()
-const CLIENT_ID = import.meta.env.VITE_OIDC_CLIENT_ID || 'cfao-spa'
+const CLIENT_ID = valeurConfig('oidcClientId', import.meta.env.VITE_OIDC_CLIENT_ID) || 'cfao-spa'
 const REDIRECT_URI = typeof window !== 'undefined' ? `${window.location.origin}/callback` : 'http://localhost:5173/callback'
 
 const VERIFIER_KEY = 'cfao.pkce.verifier'
@@ -127,7 +143,7 @@ function storeSession(payload) {
 
 // ── Login flows ────────────────────────────────────────────────────────────────
 
-export async function login() {
+export async function login({ action } = {}) {
   const verifier = randomString()
   const state = randomString(16)
   sessionStorage.setItem(VERIFIER_KEY, verifier)
@@ -142,7 +158,26 @@ export async function login() {
     code_challenge: await challengeFrom(verifier),
     code_challenge_method: 'S256',
   })
+  // Action demandée par l'application (ex. UPDATE_PASSWORD) : Keycloak ouvre
+  // directement l'écran correspondant, puis revient sur /callback.
+  if (action) params.set('kc_action', action)
   window.location.assign(`${ISSUER}/protocol/openid-connect/auth?${params}`)
+}
+
+/**
+ * Changer son mot de passe : l'écran sécurisé de Keycloak s'ouvre, puis on
+ * revient sur `returnTo` (la page Profil). Le mot de passe ne transite jamais
+ * par le portail.
+ */
+export function changePassword(returnTo) {
+  try {
+    if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+      sessionStorage.setItem(RETURN_KEY, returnTo)
+    }
+  } catch {
+    /* private mode */
+  }
+  return login({ action: 'UPDATE_PASSWORD' })
 }
 
 /**
@@ -185,6 +220,31 @@ export async function loginWithCredentials(username, password) {
   }
 }
 
+export const CALLBACK_INVALID = 'callback_invalid'
+/** Horodatage de la dernière relance automatique depuis `/callback`. */
+const RELANCE_KEY = 'cfao.auth.relance'
+const RELANCE_FENETRE_MS = 2 * 60_000
+
+/**
+ * Retour de Keycloak dont le `state` ne correspond plus à cet onglet : page de
+ * connexion restée ouverte au-delà du délai Keycloak (`expired_code`,
+ * `restart_after_timeout`), connexion lancée depuis un autre onglet, ou
+ * `/callback` rechargé. La session Keycloak est en général déjà ouverte : un
+ * nouveau flux revient aussitôt, sans ressaisie. Une seule relance par fenêtre
+ * de deux minutes, pour ne jamais boucler.
+ */
+export function relancerConnexionUneFois() {
+  try {
+    const derniere = Number(sessionStorage.getItem(RELANCE_KEY) || 0)
+    if (Date.now() - derniere < RELANCE_FENETRE_MS) return false
+    sessionStorage.setItem(RELANCE_KEY, String(Date.now()))
+  } catch {
+    return false
+  }
+  login()
+  return true
+}
+
 export async function handleCallback() {
   const url = new URL(window.location.href)
   const code = url.searchParams.get('code')
@@ -193,10 +253,11 @@ export async function handleCallback() {
   const verifier = sessionStorage.getItem(VERIFIER_KEY)
 
   if (!code || !state || state !== expected || !verifier) {
-    throw new Error('callback_invalid')
+    throw new Error(CALLBACK_INVALID)
   }
   sessionStorage.removeItem(STATE_KEY)
   sessionStorage.removeItem(VERIFIER_KEY)
+  sessionStorage.removeItem(RELANCE_KEY)
 
   const response = await fetch(`${ISSUER}/protocol/openid-connect/token`, {
     method: 'POST',
@@ -435,19 +496,33 @@ export function reauthenticate(returnTo) {
   if (reauthInFlight) return
   reauthInFlight = true
 
-  const path =
+  memoriserRetour(
     returnTo ??
-    `${window.location.pathname}${window.location.search}${window.location.hash}`
+      `${window.location.pathname}${window.location.search}${window.location.hash}`,
+  )
+  clearLocalSession()
+  login()
+}
+
+/**
+ * Page à rouvrir après la connexion (lien profond). Seuls les chemins internes
+ * sont retenus : ni `/`, ni `/callback`, ni `/login`, ni une URL d'un autre site.
+ */
+export function memoriserRetour(path) {
   try {
-    if (path && path !== '/' && !path.startsWith('/callback')) {
+    if (
+      path &&
+      path.startsWith('/') &&
+      !path.startsWith('//') &&
+      path !== '/' &&
+      !path.startsWith('/callback') &&
+      !path.startsWith('/login')
+    ) {
       sessionStorage.setItem(RETURN_KEY, path)
     }
   } catch {
     /* private mode */
   }
-
-  clearLocalSession()
-  login()
 }
 
 export function consumeAuthReturnPath() {

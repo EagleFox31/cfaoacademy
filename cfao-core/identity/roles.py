@@ -15,6 +15,8 @@ ROLE_CATALOG = [
     {"code": "group_director", "description": "Directeur Groupe"},
     {"code": "trainer", "description": "Formateur certifié constructeur"},
     {"code": "center_assistant", "description": "Assistante du centre"},
+    {"code": "training_coordinator", "description": "Coordinateur formation"},
+    {"code": "planning_viewer", "description": "Lecteur de la clé de répartition (planning seul)"},
     {"code": "center_director", "description": "Directeur du centre de formation"},
     {"code": "content_editor", "description": "Éditeur de contenu (Wagtail)"},
     {"code": "branch_admin", "description": "Admin Filiale"},
@@ -23,6 +25,7 @@ ROLE_CATALOG = [
     {"code": "group_hr", "description": "RH Groupe"},
     {"code": "superadmin", "description": "Super Admin"},
     {"code": "build_team", "description": "Équipe build (app 15)"},
+    {"code": "platform_ops", "description": "Exploitant de la plateforme (supervision technique)"},
     {"code": "candidate", "description": "Candidat"},
     {"code": "b2b_partner", "description": "Partenaire B2B"},
 ]
