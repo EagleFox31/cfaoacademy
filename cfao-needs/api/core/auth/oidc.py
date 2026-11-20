@@ -18,10 +18,13 @@ from django.conf import settings
 from rest_framework import authentication, exceptions
 
 from . import jwt_verifier
-from .identity import get_identity_provider
+from .identity import EN_TETE_VU_COMME, VuCommeRefuse, get_identity_provider
 from .principal import build_principal
 
 logger = logging.getLogger(__name__)
+audit = logging.getLogger("needs.audit")
+
+LECTURES = frozenset({"GET", "HEAD"})
 
 
 class KeycloakJWTAuthentication(authentication.BaseAuthentication):
@@ -53,7 +56,23 @@ class KeycloakJWTAuthentication(authentication.BaseAuthentication):
 
         principal = build_principal(claims)
         principal.raw_token = token
-        get_identity_provider().resolve(principal)
+        vu_comme = request.headers.get(EN_TETE_VU_COMME, "").strip() or None
+        if vu_comme and request.method not in LECTURES:
+            raise exceptions.PermissionDenied("vu_comme_lecture_seule")
+        try:
+            get_identity_provider().resolve(principal, vu_comme)
+        except VuCommeRefuse as exc:
+            audit.info("apercu.vu_comme refuse statut=%s vu_par=%s cible=%s %s %s",
+                       exc.statut, claims.get("sub"), vu_comme, request.method, request.path)
+            if exc.statut == 404:
+                raise exceptions.NotFound("vu_comme_cible_introuvable")
+            if exc.statut == 503:
+                raise exceptions.APIException("vu_comme_indisponible")  # 500 → jamais de repli
+            raise exceptions.PermissionDenied("vu_comme_refuse")
+        if vu_comme:
+            # Ni jeton ni donnée personnelle : des identifiants techniques seulement.
+            audit.info("apercu.vu_comme vu_par=%s cible=%s %s %s",
+                       principal.attr.get("vu_par"), vu_comme, request.method, request.path)
         return principal, token
 
     def authenticate_header(self, request):
