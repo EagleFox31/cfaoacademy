@@ -112,7 +112,7 @@ services:
       - "-loglevel=info"
       - "-listenip=0.0.0.0"
       - "-allowfrom=supervision-collector"
-      - "-allowGET=^/(v[0-9.]+/)?(_ping|version|containers/json|containers/[a-zA-Z0-9_.-]+/json|containers/${SUPERVISION_EDGE_CONTAINER:-cfao-recette-edge-1}/logs)$"
+      - "-allowGET=^/(v[0-9.]+/)?(_ping|version|containers/json|containers/${SUPERVISION_EDGE_CONTAINER:-cfao-recette-edge-1}/logs)$"
       - "-allowHEAD=^/(v[0-9.]+/)?_ping$"
       - "-watchdoginterval=3600"
       - "-stoponwatchdog"

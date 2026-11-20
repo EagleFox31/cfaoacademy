@@ -1,15 +1,18 @@
 """Collecte de l'état des conteneurs (toutes les 15 s).
 
 Seuls les projets compose de SUPERVISION_PROJECTS sont lus ; le reste de la machine
-est ignoré. Un `inspect` n'est fait que pour un conteneur nouveau ou qui a changé.
-Jamais lus : variables d'environnement (Config.Env), volumes (Mounts), commande.
+est ignoré. Seule la liste des conteneurs est lue (GET /containers/json), jamais
+leur `inspect` : celui-ci renvoie les variables d'environnement (secrets) de tous
+les conteneurs, et le proxy du socket le refuse. Code de sortie et horodatages sont
+tirés du texte `Status` (« Up 3 minutes », « Exited (1) 5 seconds ago »), relu à
+chaque changement, donc précis à la collecte près.
 Un événement n'est écrit que sur un changement : une collecte sans changement
 n'écrit que l'heure de dernière vue.
 """
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from django.conf import settings
 from django.db import transaction
@@ -32,6 +35,11 @@ LABEL_CONSUMES = "org.cfao.contracts.consumes"
 
 _HEALTH_IN_STATUS = re.compile(r"\((healthy|unhealthy|health: starting)\)")
 _FRACTION = re.compile(r"\.(\d{6})\d+")
+_EXIT_CODE = re.compile(r"^(?:Exited|Restarting) \((-?\d+)\)")
+# Durées de Docker (go-units HumanDuration) : « 5 seconds », « About a minute », « 3 hours »…
+_AGE = re.compile(r"^(?:Up|Exited \(-?\d+\)|Restarting \(-?\d+\)) (.+?)(?: ago)?(?: \(.*\))?$")
+_UNIT_S = {"second": 1, "minute": 60, "hour": 3600, "day": 86400, "week": 604800,
+           "month": 2_592_000, "year": 31_536_000}
 
 
 def parse_time(value: str | None) -> datetime | None:
@@ -70,11 +78,34 @@ def ports_of(summary: dict) -> list[dict]:
     return sorted(ports, key=lambda p: (p["public"], p["host"]))
 
 
-def exposed_of(summary: dict, inspected: dict | None) -> list[str]:
+def exit_code_from_status(status_text: str) -> int | None:
+    match = _EXIT_CODE.search(status_text or "")
+    return int(match.group(1)) if match else None
+
+
+def age_from_status(status_text: str) -> int | None:
+    """Âge en secondes de l'état courant d'après `Status` ; None si illisible."""
+    match = _AGE.search((status_text or "").strip())
+    if not match:
+        return None
+    text = match.group(1).lower()
+    if text.startswith("less than a second"):
+        return 0
+    words = text.removeprefix("about ").split()
+    if len(words) != 2:
+        return None
+    count, unit = words
+    count = 1 if count in ("a", "an") else count
+    try:
+        number = int(count)
+    except ValueError:
+        return None
+    seconds = _UNIT_S.get(unit.rstrip("s"))
+    return None if seconds is None else number * seconds
+
+
+def exposed_of(summary: dict) -> list[str]:
     """Ports écoutés dans le réseau Docker (non publiés sur l'hôte)."""
-    if inspected:
-        keys = ((inspected.get("Config") or {}).get("ExposedPorts") or {}).keys()
-        return sorted(keys)
     return sorted({f"{p['PrivatePort']}/{p.get('Type', 'tcp')}" for p in summary.get("Ports") or []
                    if p.get("PrivatePort") and not p.get("PublicPort")})
 
@@ -126,14 +157,14 @@ def _version_text(container: Container) -> str:
 
 
 def collect(now=None) -> dict:
-    """Une collecte. Renvoie un résumé (vus, inspectés, événements)."""
+    """Une collecte. Renvoie un résumé (vus, changés, événements)."""
     now = now or djtz.now()
     summaries = docker_client.list_containers()
     picked = _pick(summaries)
     modules = {m.project: m for m in Module.objects.all()}
     existing = {(c.module.project, c.service, c.number): c
                 for c in Container.objects.select_related("module").filter(module__project__in=settings.SUPERVISION_PROJECTS)}
-    inspected_count = 0
+    changed_count = 0
     events_before = ContainerEvent.objects.count()
 
     with transaction.atomic():
@@ -147,6 +178,7 @@ def collect(now=None) -> dict:
                 container.docker_id, container.state, container.health)
             before_state, before_health = container.state, container.health
             before_version, before_image = _version_text(container), container.image_id
+            same_instance = not is_new and container.docker_id == summary.get("Id", "")
 
             labels = summary.get("Labels") or {}
             container.name = ((summary.get("Names") or [""])[0]).lstrip("/")
@@ -171,16 +203,21 @@ def collect(now=None) -> dict:
             container.last_seen_at = now
 
             if changed:
-                inspected_count += 1
-                details = docker_client.inspect(container.docker_id)
-                state = details.get("State") or {}
-                container.started_at = parse_time(state.get("StartedAt"))
-                container.finished_at = parse_time(state.get("FinishedAt"))
-                container.exit_code = state.get("ExitCode")
-                container.restart_count = details.get("RestartCount") or 0
-                container.restart_policy = (((details.get("HostConfig") or {}).get("RestartPolicy") or {})
-                                            .get("Name") or "")[:40]
-                container.exposed = exposed_of(summary, details)
+                changed_count += 1
+                status_text = summary.get("Status", "")
+                age = age_from_status(status_text)
+                since = now - timedelta(seconds=age) if age is not None else None
+                container.exit_code = exit_code_from_status(status_text)
+                if container.state == "running":
+                    container.started_at = since or container.created_at_docker
+                elif container.state in ("exited", "dead"):
+                    container.finished_at = since
+                if not same_instance:
+                    container.restart_count = 0
+                elif container.state == "restarting" or (container.state == "running"
+                                                         and before_state in ("exited", "dead")):
+                    container.restart_count += 1
+                container.exposed = exposed_of(summary)
             container.save()
 
             if not is_new:
@@ -197,5 +234,5 @@ def collect(now=None) -> dict:
                 container.docker_id = ""
                 container.save(update_fields=["state", "health", "docker_id"])
 
-    return {"seen": len(picked), "inspected": inspected_count,
+    return {"seen": len(picked), "changed": changed_count,
             "events": ContainerEvent.objects.count() - events_before}

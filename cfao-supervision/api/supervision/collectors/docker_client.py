@@ -1,7 +1,8 @@
 """Client Docker en lecture seule, derrière le proxy de socket.
 
 Seules des requêtes GET partent d'ici ; le proxy (wollomatic/socket-proxy) refuse de
-toute façon le reste. Les journaux ne sont lus que pour le conteneur de la passerelle.
+toute façon le reste. Pas d'`inspect` (/containers/<id>/json) : il expose l'Env de
+chaque conteneur. Les journaux ne sont lus que pour le conteneur de la passerelle.
 """
 from __future__ import annotations
 
@@ -30,10 +31,6 @@ def _get(path: str, params: dict | None = None, raw: bool = False):
 
 def list_containers() -> list[dict]:
     return _get("/containers/json", {"all": "1"})
-
-
-def inspect(container_id: str) -> dict:
-    return _get(f"/containers/{container_id}/json")
 
 
 def edge_logs(since: int) -> list[str]:

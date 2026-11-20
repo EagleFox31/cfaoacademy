@@ -8,11 +8,11 @@ from rest_framework.test import APIClient
 from supervision.collectors import docker_client, docker_collector
 from supervision.models import KnownUser, Module, UserModuleAccess
 
-from .conftest import client_for, inspect_of, summary
+from .conftest import client_for, summary
 
 pytestmark = pytest.mark.django_db
 BASE = "/api/v1/supervision"
-PRIVATE = ("docker_id", "image_id", "sha256:", "u-1", "10.0.0.1", "ne-doit-jamais-sortir")
+PRIVATE = ("docker_id", "image_id", "sha256:", "u-1", "10.0.0.1")
 
 
 @pytest.fixture
@@ -24,14 +24,11 @@ def world(monkeypatch):
                 labels={"org.cfao.changelog": "## 1.4.0\n- Export Excel",
                         "org.cfao.contracts.provides": "needs-analytics@1.5.0"},
                 ports=[{"IP": "127.0.0.1", "PrivatePort": 8000, "PublicPort": 8092, "Type": "tcp"}]),
-        summary("cfao-needs", "needs-migrate", state="exited", status="Exited (0)"),
-        summary("cfao-edge", "edge", state="exited", status="Exited (137)",
+        summary("cfao-needs", "needs-migrate", state="exited", status="Exited (0) 3 hours ago"),
+        summary("cfao-edge", "edge", state="exited", status="Exited (137) 2 hours ago",
                 labels={"org.cfao.contracts.consumes": "needs-analytics@^1,mail-outbound@^0.2"}),
     ])
-    monkeypatch.setattr(docker_client, "inspect", lambda cid: inspect_of(
-        "exited" if "edge" in cid or "migrate" in cid else "running",
-        exit_code=137 if "edge" in cid else 0, finished="2026-11-19T07:00:00Z"))
-    docker_collector.collect()
+    docker_collector.collect(now=datetime(2026, 11, 19, 9, 0, tzinfo=timezone.utc))
     user = KnownUser.objects.create(subject="u-1", username="jdupont")
     UserModuleAccess.objects.create(user=user, module=Module.objects.get(project="cfao-needs"),
                                     last_login_at=datetime.now(timezone.utc) - timedelta(minutes=5))
@@ -83,7 +80,6 @@ def test_detail_d_un_module(world, ops):
 
 def test_dependances(world, ops, monkeypatch):
     # Edge relancé : ses besoins en API sont lus sur les conteneurs qui tournent.
-    monkeypatch.setattr(docker_client, "inspect", lambda cid: inspect_of())
     monkeypatch.setattr(docker_client, "list_containers", lambda: [
         summary("cfao-needs", "needs-api", labels={"org.cfao.contracts.provides": "needs-analytics@1.5.0"}),
         summary("cfao-edge", "edge", labels={"org.cfao.contracts.consumes": "needs-analytics@^1,mail-outbound@^0.2"}),

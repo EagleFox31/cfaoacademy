@@ -103,7 +103,8 @@ services:
 
   supervision-socket:
     # Proxy du socket Docker : lecture seule, liste blanche d'URL, seul le
-    # collecteur peut l'appeler (réseau interne sans sortie).
+    # collecteur peut l'appeler (réseau interne sans sortie). Jamais
+    # containers/<id>/json : l'inspect renvoie l'Env (secrets) de tout conteneur.
     image: wollomatic/socket-proxy:1.10.0
     mem_limit: 32m
     restart: unless-stopped
@@ -111,7 +112,7 @@ services:
       - "-loglevel=info"
       - "-listenip=0.0.0.0"
       - "-allowfrom=supervision-collector"
-      - "-allowGET=^/(v[0-9.]+/)?(_ping|version|containers/json|containers/[a-zA-Z0-9_.-]+/json|containers/${SUPERVISION_EDGE_CONTAINER:-cfao-edge-edge-1}/logs)$"
+      - "-allowGET=^/(v[0-9.]+/)?(_ping|version|containers/json|containers/${SUPERVISION_EDGE_CONTAINER:-cfao-edge-edge-1}/logs)$"
       - "-allowHEAD=^/(v[0-9.]+/)?_ping$"
       - "-watchdoginterval=3600"
       - "-stoponwatchdog"

@@ -46,8 +46,3 @@ def summary(project, service, state="running", status="Up 2 minutes", number=1, 
             "NetworkSettings": {"Networks": {f"{project}_default": {}}}}
 
 
-def inspect_of(state="running", exit_code=0, started="2026-11-19T08:00:00.123456789Z",
-               finished="0001-01-01T00:00:00Z", restart_policy="unless-stopped", restarts=0):
-    return {"State": {"Status": state, "ExitCode": exit_code, "StartedAt": started, "FinishedAt": finished},
-            "RestartCount": restarts, "HostConfig": {"RestartPolicy": {"Name": restart_policy}},
-            "Config": {"ExposedPorts": {"8000/tcp": {}}, "Env": ["SECRET=ne-doit-jamais-sortir"]}}
