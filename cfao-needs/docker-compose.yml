@@ -114,6 +114,8 @@ services:
     mem_limit: 384m
     restart: unless-stopped
     build: ./api
+    # Même image que l'API : sans root (uid 10001).
+    image: antifragile237/cfao-needs-api:v0.1.2
     # Le schéma est en place : le worker attend la fin du job needs-migrate.
     command: ["python", "manage.py", "qcluster"]
     environment: *api_env
@@ -129,6 +131,8 @@ services:
     mem_limit: 256m
     restart: unless-stopped
     build: ./api
+    # Même image que l'API : sans root (uid 10001).
+    image: antifragile237/cfao-needs-api:v0.1.2
     volumes:
       - ./api:/app
     command: ["python", "manage.py", "relay_needs_snapshot"]
