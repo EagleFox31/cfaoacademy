@@ -7,4 +7,7 @@ version sans sa section.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-20
+
+- Super admin : section « Voir les portails des profils », une carte par profil ; chaque portail s'ouvre dans une fenêtre à part, en aperçu lecture seule, avec ses propres droits.
 - Les applications (comptes rendus, besoins, MEDACAP) peuvent être données par un chemin sur la même adresse que le portail (`/cr`, `/besoins`) en plus d'une adresse complète.
