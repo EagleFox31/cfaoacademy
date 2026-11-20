@@ -112,6 +112,13 @@ REFUSED_RETENTION_DAYS = env.int("SUPERVISION_REFUSED_RETENTION_DAYS", default=7
 # Alerte : au moins N refus pour une adresse (ou un /24) sur la dernière fenêtre.
 REFUSED_ALERT_THRESHOLD = env.int("SUPERVISION_REFUSED_ALERT_THRESHOLD", default=10)
 REFUSED_ALERT_WINDOW_MIN = env.int("SUPERVISION_REFUSED_ALERT_WINDOW_MIN", default=60)
+# Sondes des adresses publiques, depuis le serveur : « url|fragment du titre » ou
+# « url|-> adresse de redirection », séparées par « ; ». Vide = source désactivée.
+PROBES = env("SUPERVISION_PROBES", default="")
+PROBE_INTERVAL_S = env.int("SUPERVISION_PROBE_INTERVAL_S", default=60)
+PROBE_TIMEOUT_S = env.int("SUPERVISION_PROBE_TIMEOUT_S", default=5)
+# Alerte après N échecs consécutifs (un seul échec peut être un redémarrage).
+PROBE_ALERT_AFTER = env.int("SUPERVISION_PROBE_ALERT_AFTER", default=2)
 # Au-delà, l'écran signale que la surveillance ne remonte plus.
 STALE_AFTER_S = env.int("SUPERVISION_STALE_AFTER_S", default=90)
 

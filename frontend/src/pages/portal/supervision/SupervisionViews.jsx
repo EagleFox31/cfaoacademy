@@ -119,6 +119,13 @@ export function OverviewView({ t, locale }) {
           <b>{t.refused_alert_link} →</b>
         </Link>
       )}
+      {d.probes?.alerts > 0 && (
+        <a href="#adresses" className="dlv-alert">
+          <span className="dlv-status blocked">{fill(t.probes_alert_badge, { n: d.probes.alerts })}</span>
+          <span>{t.probes_alert_text}</span>
+          <b>{t.probes_alert_link} ↓</b>
+        </a>
+      )}
       <div className="dlv-kpis">
         <div className="dlv-kpi">
           <div className="dlv-kpi-k">{t.kpi_up}</div>
@@ -145,7 +152,50 @@ export function OverviewView({ t, locale }) {
       <div className="dlv-nodes-grid">
         {modules.map(m => <ModuleCard key={m.project} m={m} t={t} locale={locale} />)}
       </div>
+      {d.probes && <ProbesSection probes={d.probes} t={t} locale={locale} />}
     </>
+  )
+}
+
+// ── Adresses publiques (sondes depuis le serveur) ──
+
+function probeState(p) {
+  if (p.ok === null) return { tone: 'todo', key: 'probe_state_pending' }
+  if (p.ok) return { tone: 'done', key: 'probe_state_ok' }
+  return p.alert ? { tone: 'blocked', key: 'probe_state_alert' } : { tone: 'warn', key: 'probe_state_once' }
+}
+
+function ProbesSection({ probes, t, locale }) {
+  return (
+    <section id="adresses">
+      <h2 className="dlv-section-title">{t.section_probes}</h2>
+      <p className="dlv-section-sub">{fill(t.probes_rule, { n: probes.alert_after })}</p>
+      {probes.items.length ? (
+        <table className="dlv-table">
+          <thead>
+            <tr>
+              <th>{t.col_address}</th><th>{t.col_probe_state}</th><th>{t.col_expected}</th>
+              <th>{t.col_seen}</th><th>{t.col_response_time}</th><th>{t.col_last_ok}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {probes.items.map(p => {
+              const s = probeState(p)
+              return (
+                <tr key={p.url}>
+                  <td><code>{p.url}</code></td>
+                  <td><span className={`dlv-status ${s.tone}`}>{t[s.key]}</span></td>
+                  <td>{fill(p.kind === 'redirect' ? t.probe_expect_redirect : t.probe_expect_title, { value: p.expected })}</td>
+                  <td>{p.detail || '—'}</td>
+                  <td>{p.latency_ms == null ? '—' : fill(t.probe_ms, { n: p.latency_ms })}</td>
+                  <td><When iso={p.last_ok_at} locale={locale} /></td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      ) : <p className="dlv-hint">{t.probes_pending}</p>}
+    </section>
   )
 }
 

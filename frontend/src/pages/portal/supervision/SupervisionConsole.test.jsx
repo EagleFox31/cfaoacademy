@@ -244,6 +244,55 @@ describe('supervision', () => {
     await show('/portail/supervision')
   })
 
+  const PROBES = {
+    alert_after: 2,
+    alerts: 1,
+    items: [
+      { url: 'https://h:8444/', expected: 'Excellence', kind: 'title', ok: true, status_code: 200,
+        detail: 'CFAO Academy — Excellence', latency_ms: 42, checked_at: '2026-11-20T14:00:00Z',
+        last_ok_at: '2026-11-20T14:00:00Z', fails: 0, alert: false },
+      { url: 'http://h:8092/x', expected: 'https://h:8444/cr/x', kind: 'redirect', ok: false, status_code: null,
+        detail: 'ConnectionError', latency_ms: 5001, checked_at: '2026-11-20T14:00:00Z',
+        last_ok_at: null, fails: 3, alert: true },
+      { url: 'https://h:8445/cr/', expected: 'Comptes rendus', kind: 'title', ok: false, status_code: 200,
+        detail: 'Autre page', latency_ms: 30, checked_at: '2026-11-20T14:00:00Z',
+        last_ok_at: null, fails: 1, alert: false },
+      { url: 'https://h/', expected: 'Nextcloud', kind: 'title', ok: null, status_code: null,
+        detail: '', latency_ms: null, checked_at: null, last_ok_at: null, fails: 0, alert: false },
+    ],
+  }
+
+  it.each(['fr', 'en', 'pt'])('adresses ouvertes aux utilisateurs : état, attendu, constaté, aucun texte manquant (%s)', async lang => {
+    const t = getCopy('supervision', lang)
+    stub({ overview: { ...OVERVIEW, probes: PROBES } })
+    await show('/portail/supervision', { lang })
+    const section = host.querySelector('#adresses')
+    expect(section.querySelector('h2').textContent).toBe(t.section_probes)
+    const rows = [...section.querySelectorAll('tbody tr')]
+    expect(rows.map(r => r.querySelector('.dlv-status').textContent)).toEqual(
+      [t.probe_state_ok, t.probe_state_alert, t.probe_state_once, t.probe_state_pending])
+    expect(rows.map(r => r.querySelector('.dlv-status').className.split(' ')[1])).toEqual(['done', 'blocked', 'warn', 'todo'])
+    expect(rows[1].textContent).toContain('https://h:8444/cr/x')
+    expect(rows[1].textContent).toContain('ConnectionError')
+    expect(rows[2].textContent).toContain('Autre page')
+    const alert = host.querySelector('a.dlv-alert')
+    expect(alert.getAttribute('href')).toBe('#adresses')
+    expect(alert.textContent).toContain(t.probes_alert_link)
+    expect(host.textContent).not.toMatch(/undefined|NaN|\{\w+\}/)
+  })
+
+  it('adresses : ni bloc ni pastille sans sonde configurée ; pas de pastille sans alerte', async () => {
+    stub({ overview: { ...OVERVIEW, probes: null } })
+    await show('/portail/supervision')
+    expect(host.querySelector('#adresses')).toBeNull()
+    act(() => root.unmount()); host.remove()
+
+    stub({ overview: { ...OVERVIEW, probes: { ...PROBES, alerts: 0, items: [] } } })
+    await show('/portail/supervision')
+    expect(host.querySelector('#adresses').textContent).toContain(getCopy('supervision', 'fr').probes_pending)
+    expect(host.querySelector('a.dlv-alert')).toBeNull()
+  })
+
   it.each(['fr', 'en', 'pt'])('connexions refusées : par réseau, poste insistant signalé, aucun texte manquant (%s)', async lang => {
     const t = getCopy('supervision', lang)
     stub()

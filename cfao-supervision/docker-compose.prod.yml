@@ -56,6 +56,9 @@ services:
       # Journal des connexions : compte de service limité à view-events.
       KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080/auth}
       KEYCLOAK_COLLECTOR_SECRET: ${KEYCLOAK_COLLECTOR_SECRET:?KEYCLOAK_COLLECTOR_SECRET manquant (= CFAO_SUPERVISION_COLLECTOR_SECRET du realm)}
+      # Sondes des adresses publiques (collecteur ; l'API s'en sert pour l'écran).
+      # « url|fragment du titre » ou « url|-> redirection », séparées par « ; ».
+      SUPERVISION_PROBES: ${SUPERVISION_PROBES:-}
     depends_on:
       supervision-db:
         condition: service_healthy

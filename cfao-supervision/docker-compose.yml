@@ -57,6 +57,8 @@ services:
       # une API, il reste hors du maillage.
       KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://host.docker.internal:8083/auth}
       KEYCLOAK_COLLECTOR_SECRET: ${KEYCLOAK_COLLECTOR_SECRET:-dev-supervision-collector-secret}
+      # Sondes : « url|fragment du titre » ou « url|-> redirection », séparées par « ; ».
+      SUPERVISION_PROBES: ${SUPERVISION_PROBES:-http://recette.localhost:8088/|Excellence Technique}
     depends_on:
       supervision-db:
         condition: service_healthy
@@ -90,6 +92,9 @@ services:
     networks: [default, supervision-docker]
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      # Nom des sondes : le front de dev (vite) refuse un hôte inconnu (403) mais
+      # accepte *.localhost.
+      - "recette.localhost:host-gateway"
     depends_on:
       supervision-migrate:
         condition: service_completed_successfully

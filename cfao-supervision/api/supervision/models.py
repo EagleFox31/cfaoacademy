@@ -132,6 +132,25 @@ class RefusedAttempt(models.Model):
         ]
 
 
+class PublicProbe(models.Model):
+    """Dernier résultat de chaque sonde d'adresse publique (SUPERVISION_PROBES).
+
+    Une sonde retirée de la configuration est effacée à la passe suivante.
+    """
+
+    url = models.CharField(max_length=300, unique=True)
+    position = models.PositiveIntegerField(default=0)
+    expected = models.CharField(max_length=300)  # fragment du titre, ou adresse de redirection
+    redirect = models.BooleanField(default=False)
+    ok = models.BooleanField(null=True)
+    status_code = models.PositiveIntegerField(null=True, blank=True)
+    detail = models.CharField(max_length=200, blank=True, default="")  # titre lu, redirection ou erreur
+    latency_ms = models.PositiveIntegerField(null=True, blank=True)
+    checked_at = models.DateTimeField(null=True, blank=True)
+    last_ok_at = models.DateTimeField(null=True, blank=True)
+    fails = models.PositiveIntegerField(default=0)  # échecs consécutifs
+
+
 class UserModuleAccess(models.Model):
     """Dernière connexion et dernière activité d'un compte sur un module. Aucune IP."""
 

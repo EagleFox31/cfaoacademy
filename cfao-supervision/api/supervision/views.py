@@ -22,7 +22,7 @@ from core.authz.permissions import CerbosPermission
 
 from . import contracts
 from . import status as rules
-from .collectors import firewall
+from .collectors import firewall, probes
 from .models import CollectRun, Container, ContainerEvent, Module, UserModuleAccess
 
 UNKNOWN_USER = None  # le front affiche « Compte pas encore identifié »
@@ -180,7 +180,8 @@ class OverviewView(BoardView):
             body_refused = None
         counts = {key: sum(1 for s in summaries if s["status"] == key)
                   for key in ("ok", "done", "starting", "degraded", "crashloop", "down")}
-        return Response({**_collect_state(), "counts": counts, "modules": summaries, "refused": body_refused})
+        return Response({**_collect_state(), "counts": counts, "modules": summaries, "refused": body_refused,
+                         "probes": probes.summary()})
 
 
 def _get_module(project: str) -> Module:
