@@ -2,8 +2,7 @@
 
 Aucune donnée n'est saisie à la main : le référentiel `Module` vient de
 `inventory/modules.json` (commande bootstrap, jamais d'écrasement), le reste est
-écrit par le collecteur. Seule adresse IP conservée : celle d'un poste refusé
-par le pare-feu (RefusedAttempt, 7 jours).
+écrit par le collecteur. Aucune adresse IP n'est conservée.
 """
 from django.db import models
 
@@ -108,28 +107,6 @@ class KnownUser(models.Model):
     subject = models.CharField(max_length=64, primary_key=True)
     username = models.CharField(max_length=150, blank=True, default="")
     last_seen_at = models.DateTimeField(null=True, blank=True)
-
-
-class RefusedAttempt(models.Model):
-    """Refus du pare-feu du serveur, regroupés par poste, port et tranche de 5 min.
-
-    Seule table qui garde une adresse IP : celle du poste refusé, pour le retrouver.
-    Oubliée après REFUSED_RETENTION_DAYS.
-    """
-
-    src_ip = models.GenericIPAddressField()
-    dst_port = models.PositiveIntegerField(null=True, blank=True)
-    proto = models.CharField(max_length=10, blank=True, default="")
-    bucket = models.DateTimeField(db_index=True)  # début de la tranche (UTC)
-    count = models.PositiveIntegerField(default=0)
-    first_at = models.DateTimeField()
-    last_at = models.DateTimeField()
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["src_ip", "dst_port", "proto", "bucket"],
-                                    name="supervision_refused_unique"),
-        ]
 
 
 class UserModuleAccess(models.Model):
