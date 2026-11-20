@@ -25,10 +25,10 @@ def _rules():
     AbsenceKeyword.objects.create(pattern_norm="CONGE", kind="LEAVE")
 
 
-def _grid():
+def _grid(title="Calendrier-Motors"):
     wb = Workbook()
     ws = wb.active
-    ws.title = "Calendrier-Motors"
+    ws.title = title
     ws["A3"], ws["B3"], ws["C3"] = "Mois", "Marques", "Formateurs"
     for day in range(1, 32):
         ws.cell(3, 3 + day, day)
@@ -124,3 +124,11 @@ def test_reimport_ne_duplique_pas_la_revue_ni_l_absence(referential):
     second.apply(second.parse(_grid()), actor="tester")
     assert ReviewItem.objects.count() == reviews
     assert Absence.objects.count() == 1
+
+
+def test_onglet_mobility_2027_lu_casse_ignoree(referential):
+    """À partir du classeur 2027, « Calendrier-MOBILITY » remplace « Calendrier-Motors »."""
+    _rules()
+    result = CalendarGridImporter(2026).parse(_grid("Calendrier-MOBILITY"))
+    assert result.ok, result.as_report()
+    assert result.extra["sheets"] == ["Calendrier-MOBILITY"]

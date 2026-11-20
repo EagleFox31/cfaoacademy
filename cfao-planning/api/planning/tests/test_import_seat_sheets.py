@@ -244,7 +244,7 @@ def test_seed_cost_key_idempotent():
     call_command("seed_cost_key")
     call_command("seed_cost_key")
     key = CostKeyYear.objects.get(year=2026, pole="MOTORS")
-    assert CostKeyYear.objects.count() == 1
+    assert CostKeyYear.objects.count() == 2  # MOTORS et EQUIPMENT 2026
     assert key.budget == 300_000_000
     assert key.enrolled_countries.count() == 24
 
@@ -252,3 +252,17 @@ def test_seed_cost_key_idempotent():
 def test_seed_cost_key_exige_le_referentiel():
     with pytest.raises(CommandError, match="seed_referential"):
         call_command("seed_cost_key")
+
+
+def test_deux_feuilles_d_un_meme_pays_additionnent_les_places(world):
+    """RDC-KINSHASA et RDC-LUBUMBASHI : deux sites, un pays, places additionnées."""
+    result, log = run({"RCI": [TS03[:7] + [2]], "ABIDJAN": [TS03[:7] + [3]]})
+
+    assert result.ok, result.as_report()
+    assert seats() == {("TS03-G3", "ci"): 5}
+    assert "same_country_sites" in [n.rule for n in result.normalizations]
+
+
+def test_doublon_sur_la_meme_feuille_reste_refuse(world):
+    result, _ = run({"RCI": [TS03, TS03]})
+    assert [e.code for e in result.errors] == ["DUPLICATE_KEY"]

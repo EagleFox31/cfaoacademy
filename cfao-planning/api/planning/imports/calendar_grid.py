@@ -1,4 +1,5 @@
-"""Import B — grilles « Calendrier-Motors » et « Calendrier-Equipment ».
+"""Import B — grilles « Calendrier-Motors » (« Calendrier-Mobility » dès 2027) et
+« Calendrier-Equipment ».
 
 La grille ne crée jamais de session (SPEC §4). Elle écrit :
 
@@ -43,7 +44,8 @@ _MONTHS = {
     "DECEMBRE": 12,
 }
 _CODE = re.compile(r"[A-Z]{1,8}\d{2,}(?:\s*-\s*[A-Z0-9]+)?")
-_SHEETS = ("Calendrier-Motors", "Calendrier-Equipment")
+# Onglets lus, casse ignorée ; « Mobility » remplace « Motors » à partir du classeur 2027.
+_SHEETS = ("calendrier-motors", "calendrier-mobility", "calendrier-equipment")
 _TITLE = "TITLE"
 _HOLIDAY = "HOLIDAY"
 
@@ -124,7 +126,7 @@ class CalendarGridImporter(TabularImporter):
         self._keywords = {k.pattern_norm: k.kind for k in AbsenceKeyword.objects.all()}
         self._colors = {c.fill_key: c for c in ColorRule.objects.all()}
         workbook = load_workbook(stream, data_only=False)
-        names = [name for name in _SHEETS if name in workbook.sheetnames]
+        names = [name for name in workbook.sheetnames if name.strip().lower() in _SHEETS]
         if not names:
             result.fatal = "NO_CALENDAR"
             return result

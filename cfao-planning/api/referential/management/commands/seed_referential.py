@@ -27,6 +27,7 @@ BRAND_ALIASES = [
     ("OMODA & JAECCO", "omoda-jaecoo"), ("OMODA & JAEECO", "omoda-jaecoo"),
     ("SINOTRUCK", "sinotruk"), ("SINOTRUCK HOHAN", "sinotruk"), ("HOHAN", "sinotruk"),
     ("SINO", "sinotruk"), ("RENAULT TRUCK", "renault-trucks"), ("RT", "renault-trucks"),
+    ("RENAULT TUCKS", "renault-trucks"),  # coquille de la clé Equipment 2026
     ("KL", "king-long"), ("TOY", "toyota"),
     # Le catalogue de formation liste ces quatre marques, la clé les regroupe.
     ("CITROEN", "stellantis"), ("FIAT", "stellantis"), ("JEEP", "stellantis"), ("PEUGEOT", "stellantis"),
@@ -97,7 +98,6 @@ TRAINER_HOME = {
     "Jacques MAVILA": "cod",
 }
 
-TECH_INSTRUCTORS = [
 # Marques animées par chaque formateur, d'après la page Équipe du site
 # (frontend/src/data/academy/equipe-poles.json). Carrosserie et process ne sont
 # pas des marques : ces formateurs n'en ont pas.
@@ -115,6 +115,7 @@ TRAINER_BRANDS = {
     "Roland NENDA": ["jcb", "lovol"],
 }
 
+TECH_INSTRUCTORS = [
     ("PIC", "MOTORS", False, ["PIC SUZUKI"], "suzuki"),
     ("Key Instructor", "MOTORS", False, ["KI", "KEY INSTRUCTOR TOYOTA"], "toyota"),
 ]
@@ -185,11 +186,11 @@ class Command(BaseCommand):
             )
             if brand and created:
                 trainer.brands.add(brands[brand])
-            for alias in aliases:
             # Rétroactif : une fiche sans marque reçoit les siennes ; une fiche
             # qui en a déjà (saisie ou revue en prod) n'est pas touchée.
             if name in TRAINER_BRANDS and not trainer.brands.exists():
                 trainer.brands.add(*(brands[c] for c in TRAINER_BRANDS[name]))
+            for alias in aliases:
                 TrainerAlias.objects.get_or_create(
                     alias_norm=norm_key(alias), defaults={"trainer": trainer, "added_by": "seed"}
                 )

@@ -248,7 +248,16 @@ class SeatSheetsImporter(TabularImporter):
 
             identity = cleaned["identity"]
             if (identity, country.pk) in seen:
-                first_sheet, first_line = seen[identity, country.pk]
+                first_sheet, first_line, kept = seen[identity, country.pk]
+                # Deux feuilles d'un même pays (RDC-KINSHASA, RDC-LUBUMBASHI) : chaque
+                # site a ses places, le pays reçoit leur somme. Sur la même feuille,
+                # c'est un doublon.
+                if first_sheet != ws.title and kept is not None and self._same_facts(kept, cleaned):
+                    kept["seats"] += cleaned["seats"]
+                    result.normalizations.append(Normalization(
+                        line, f"{ws.title} · Places", cleaned["seats"],
+                        f"ajoutées à « {first_sheet} » ligne {first_line}", "same_country_sites"))
+                    continue
                 result.errors.append(RowError(
                     row=line, column="Code / Date début", value=cleaned["code_norm"],
                     code="DUPLICATE_KEY", sheet=ws.title,
@@ -256,7 +265,7 @@ class SeatSheetsImporter(TabularImporter):
                              f"ligne {first_line}."),
                 ))
                 continue
-            seen[identity, country.pk] = (ws.title, line)
+            seen[identity, country.pk] = (ws.title, line, None)
 
             # Les copies d'une même session sur plusieurs feuilles doivent concorder.
             facts = (cleaned["end_date"], norm_key(cleaned["location"]),
@@ -271,6 +280,7 @@ class SeatSheetsImporter(TabularImporter):
                              f"{first['line']}, mais fin, lieu ou formateurs diffèrent."),
                 ))
                 continue
+            seen[identity, country.pk] = (ws.title, line, cleaned)
             result.rows.append(cleaned)
 
         # Une ligne refusée fausse déjà la somme : le contrôle n'apprendrait rien.
@@ -282,6 +292,11 @@ class SeatSheetsImporter(TabularImporter):
                 message=f"Total déclaré {summary['declared']}, lignes lues {summary['seats']}.",
             ))
         result.extra["sheets"].append(summary)
+
+    @staticmethod
+    def _same_facts(a: dict, b: dict) -> bool:
+        return (a["end_date"], norm_key(a["location"]), frozenset(a["trainer_ids"])) == (
+            b["end_date"], norm_key(b["location"]), frozenset(b["trainer_ids"]))
 
     # ── validation d'une ligne ──────────────────────────────────────────────
     def clean_row(self, line: int, values: dict, result: ParseResult,

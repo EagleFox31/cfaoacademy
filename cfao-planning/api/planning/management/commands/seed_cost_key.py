@@ -23,6 +23,17 @@ COST_KEYS = {
             "tcd", "tgo",
         ],
     },
+    # Synthèse du classeur clé Equipment 2026.
+    (2026, "EQUIPMENT"): {
+        "budget": 200_000_000,
+        "trainee_lodging_cost": 1_800_000,
+        "trainer_lodging_cost": 1_800_000,
+        "hours_per_session": 40,
+        "enrolled": [
+            "ben", "bfa", "caf", "civ", "cmr", "cod", "cog", "gab", "gha", "gin", "gnq",
+            "mdg", "mli", "mrt", "ner", "nga", "sen", "tcd", "tgo",
+        ],
+    },
 }
 
 
