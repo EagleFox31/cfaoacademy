@@ -432,6 +432,12 @@ def _executer(lignes, ecrire, nom_fichier=""):
             diff = any(v and getattr(session, k) != v for k, v in voulu.items()) \
                 or (formation is not None and session.formation_id != formation.pk) \
                 or (formation is None and bool(g["reference"]))
+            if diff and session.source == Session.PLANNING:
+                # Le planning fait foi : le fichier n'y ajoute que des stagiaires.
+                diff = False
+                anomalies.append({"type": "session_du_planning", "session": g["etiquette"],
+                                  "message": f"session {g['numero']} tenue par le planning : formation, dates, "
+                                             "lieu et animateurs non modifies"})
             etat = "a_mettre_a_jour" if diff else "inchangee"
             if diff and ecrire:
                 for k, v in voulu.items():
@@ -471,7 +477,8 @@ def _executer(lignes, ecrire, nom_fichier=""):
         animations = {normaliser(a.nom_fichier): a for a in Animation.objects.filter(session=session)} \
             if session is not None and session.pk else {}
         animations_neuves = 0
-        for nom in g["animateurs"]:
+        du_planning = session is not None and session.source == Session.PLANNING
+        for nom in ([] if du_planning else g["animateurs"]):
             fid = _formateur_id(nom, profils)
             (rattaches if fid else non_rattaches).add(nom)
             existante = animations.get(normaliser(nom))

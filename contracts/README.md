@@ -19,6 +19,7 @@ nouvelle image ne casse pas en silence un module déjà en service.
 |---|---|---|
 | `mail-outbound` 0.1.0 | cfao-academy-mail | aucun pour l'instant |
 | `needs-analytics` 1.0.0 | cfao-needs | cfao-core `^1` |
+| `cr-sessions` 1.0.0 | cfao-planning | cfao-comptes-rendus `^1` |
 
 Les scripts ne contiennent aucun nom de projet, de branche ou de module : tout
 vient du registre.

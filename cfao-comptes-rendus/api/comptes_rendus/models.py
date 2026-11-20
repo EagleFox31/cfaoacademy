@@ -113,6 +113,13 @@ class Session(models.Model):
     lieu = models.CharField(max_length=200, blank=True, default="")
     pays = models.CharField(max_length=80, blank=True, default="")
     libelle_fichier = models.CharField(max_length=300, blank=True, default="")
+    # Copie du planning (contrat `cr-sessions`, voir `planning.py`) : pour une
+    # session venue du planning, il fait foi sur la formation, les dates, le
+    # lieu, le pays et les animateurs ; le fichier n'y ajoute que des stagiaires.
+    FICHIER, PLANNING = "fichier", "planning"
+    source = models.CharField(max_length=10, default=FICHIER)
+    planning_id = models.UUIDField(null=True, blank=True, unique=True)
+    planning_revision = models.CharField(max_length=40, blank=True, default="")
     cree_le = models.DateTimeField(auto_now_add=True)
     modifie_le = models.DateTimeField(auto_now=True)
 

@@ -5,6 +5,10 @@
       "dockerfile": "cfao-academy-mail/Dockerfile",
       "images": []
     },
+    "cfao-comptes-rendus": {
+      "dockerfile": "cfao-comptes-rendus/api/Dockerfile",
+      "images": ["antifragile237/cfao-comptes-rendus-api"]
+    },
     "cfao-core": {
       "dockerfile": "cfao-core/Dockerfile",
       "images": []
@@ -43,6 +47,20 @@
           "range": "^1.1",
           "client_files": ["cfao-planning/api/planning/clients/needs.py"],
           "tests": ["cfao-planning/api/planning/tests/test_needs_consumer.py"]
+        }
+      ]
+    },
+    {
+      "id": "cr-sessions",
+      "provider": "cfao-planning",
+      "format": "openapi",
+      "spec": "cfao-planning/api/planning/contract/cr-sessions.openapi.json",
+      "consumers": [
+        {
+          "module": "cfao-comptes-rendus",
+          "range": "^1",
+          "client_files": ["cfao-comptes-rendus/api/comptes_rendus/planning.py"],
+          "tests": ["cfao-comptes-rendus/api/comptes_rendus/tests/test_planning_copie.py"]
         }
       ]
     }

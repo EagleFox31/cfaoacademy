@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 
 from core.authz import cerbos
 
-from . import import_referentiel
+from . import import_referentiel, planning
 from .models import Brouillon, Formation, Inscription
 from .models import Session as SessionFormation
 
@@ -197,6 +197,8 @@ def session_json(session, avancement=None, aujourdhui=None):
         "statut": statut(c, valide, session.fin, aujourdhui),
         "completion": c,
         "participants": _participants(session),
+        # « planning » : formation, dates, lieu et animateurs viennent du planning.
+        "source": session.source,
     }
 
 
@@ -233,6 +235,7 @@ def _mois_valide(mois):
 class SessionsListe(APIView):
     def get(self, request):
         _exiger(request, SESSION, "*", "list")
+        planning.rafraichir_si_du()  # copie du planning ; servie telle quelle s'il ne repond pas
         p = request.query_params
         mois = p.get("mois", "").strip()
         if mois and not _mois_valide(mois):

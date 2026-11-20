@@ -31,6 +31,9 @@ env = environ.Env(
     SECRET_KEY=(str, CLE_DE_DEV),
     CERBOS_HTTP=(str, "http://localhost:3592"),
     PLATFORM_CORE_URL=(str, "http://localhost:8000"),
+    PLANNING_API_URL=(str, ""),
+    CR_SESSIONS_KEY=(str, ""),
+    PLANNING_SYNC_INTERVALLE=(int, 300),
     OIDC_ISSUER=(str, ""),
     OIDC_AUDIENCE=(str, ""),
     OIDC_JWKS_URL=(str, ""),
@@ -50,6 +53,12 @@ DEBUG = env("DEBUG")
 DEPLOYMENT_MODE = env("DEPLOYMENT_MODE")
 CERBOS_HTTP = env("CERBOS_HTTP")
 PLATFORM_CORE_URL = env("PLATFORM_CORE_URL")
+# Copie des sessions du planning (contrat `cr-sessions`, `comptes_rendus/planning.py`).
+# URL ou cle vide : pas de copie, le referentiel reste celui du fichier.
+PLANNING_API_URL = env("PLANNING_API_URL").rstrip("/")
+CR_SESSIONS_KEY = env("CR_SESSIONS_KEY")
+# Au plus une lecture du planning par intervalle (secondes), a l'ouverture de la liste.
+PLANNING_SYNC_INTERVALLE = env("PLANNING_SYNC_INTERVALLE")
 
 if DEPLOYMENT_MODE not in ("standalone", "local", "integrated"):
     raise ImproperlyConfigured("DEPLOYMENT_MODE : 'standalone', 'local' ou 'integrated'.")
