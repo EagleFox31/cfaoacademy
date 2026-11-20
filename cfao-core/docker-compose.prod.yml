@@ -30,8 +30,8 @@ services:
     image: antifragile237/cfao-core-api:${CORE_VERSION:-v0.1.0}
     command: ["python", "manage.py", "migrate", "--noinput"]
     environment: &core_env
-      # base : DEBUG à False par défaut, hôtes explicites.
-      DJANGO_SETTINGS_MODULE: config.settings.base
+      # prod : DEBUG coupé, clé et hôtes obligatoires (`*` refusé au démarrage).
+      DJANGO_SETTINGS_MODULE: config.settings.prod
       DJANGO_SECRET_KEY: ${CORE_SECRET_KEY:?CORE_SECRET_KEY est obligatoire}
       DJANGO_ALLOWED_HOSTS: ${CORE_ALLOWED_HOSTS:?CORE_ALLOWED_HOSTS manquant (hôtes publics + core-api)}
       CORE_DB_HOST: core-db

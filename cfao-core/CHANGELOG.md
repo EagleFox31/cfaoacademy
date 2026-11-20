@@ -7,4 +7,5 @@ version sans sa section.
 
 ## [Unreleased]
 
+- Production : réglages dédiés (`config.settings.prod`) — débogage coupé, clé secrète et hôtes obligatoires (`*` refusé au démarrage), aucune clé par défaut.
 - Rôle `platform_ops` (équipe d'exploitation) reconnu par le socle.

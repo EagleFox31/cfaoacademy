@@ -13,10 +13,10 @@ Source : audit en lecture seule du 19/11/2026 (20 constats). Ce plan donne l'ord
 ## Phase 0 : aujourd'hui (risque réel, correctif petit)
 | # | Action | Session | Fichiers | Preuve | Vérifié |
 |---|---|---|---|---|---|
-| 1 | Créer `settings/prod.py` pour needs (DEBUG off, hôtes explicites) et l'utiliser en prod | cfao-planning (à confirmer) | cfao-needs/api/config/settings/, cfao-needs/docker-compose.prod.yml:56 | pytest needs avec prod.py ; démarrage prod en recette, DEBUG=False | oui : prod = `config.settings.dev` ; pas de `prod.py` |
+| 1 | Créer `settings/prod.py` pour needs (DEBUG off, hôtes explicites) et l'utiliser en prod | cfao-planning (à confirmer) | cfao-needs/api/config/settings/, cfao-needs/docker-compose.prod.yml:56 | pytest needs avec prod.py ; démarrage prod en recette, DEBUG=False | oui : prod = `config.settings.dev` ; pas de `prod.py` — **corrigé** (sentinelle) : `prod.py` + `NEEDS_ALLOWED_HOSTS` obligatoire, `test_reglages_prod.py` 5/5 ; à livrer avec needs v0.2.2 |
 | 2 | Supprimer les secrets par défaut (`${X:?}`), puis **changer ces secrets en prod** | cfao-planning, puis l'utilisateur pour le serveur | même compose, l.42, 57, 62 | `docker compose config` échoue sans variable ; recette redémarre avec ses variables | oui : valeurs par défaut présentes aux 3 lignes |
 | 2b | Historique git : les anciennes valeurs restent lisibles (dépôt public). La rotation suffit à neutraliser ; **purger l'historique est une décision de l'utilisateur** (réécriture, force-push) | l'utilisateur | | | à décider |
-| 16 | Core en prod : passer de `settings.base` à un `prod.py` (SECRET_KEY obligatoire, SECURE_* actifs derrière edge) | cfao-planning (à confirmer) | cfao-core/docker-compose.prod.yml:34, cfao-core/config/settings/ | pytest core ; en-têtes vus via edge | oui : `config.settings.base` en prod |
+| 16 | Core en prod : passer de `settings.base` à un `prod.py` (SECRET_KEY obligatoire, SECURE_* actifs derrière edge) | cfao-planning (à confirmer) | cfao-core/docker-compose.prod.yml:34, cfao-core/config/settings/ | pytest core ; en-têtes vus via edge | oui : `config.settings.base` en prod — **corrigé** (sentinelle) : `prod.py`, clé sans défaut, `test_reglages_prod.py` 6/6 ; SSL redirect/HSTS laissés à Caddy (appels internes en HTTP, aucun cookie) ; à livrer avec core v0.1.1 |
 
 ## Phase 1 : cette semaine
 | # | Action | Session | Verrous | Preuve | Vérifié |
