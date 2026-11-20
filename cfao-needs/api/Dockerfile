@@ -28,6 +28,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Sans root : l'API n'écrit nulle part dans /app (pas de .pyc, pas de médias),
+# elle n'a donc besoin que de lire son code.
+RUN useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin service
+USER 10001
+
 EXPOSE 8000
 
 # Interdit n° 10 : migration et amorçage ne sont PAS dans l'entrypoint.
@@ -36,7 +41,7 @@ EXPOSE 8000
 # passent par `manage.py bootstrap`, lancé par le job ponctuel `needs-migrate` du
 # compose (AGENTS.md §7) : l'API et le worker l'attendent, une seule exécution.
 # 2 workers : ~100 utilisateurs sur une campagne de six semaines, pas un site public.
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--access-logfile", "-"]
 
 # Version posée au build (scripts/build_image.py) ; en fin de fichier pour garder le cache.
 ARG VERSION=dev
