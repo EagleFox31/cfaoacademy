@@ -31,7 +31,7 @@ services:
   needs-api:
     mem_limit: 512m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-api:v0.2.1
+    image: antifragile237/cfao-needs-api:v0.2.2
     environment: &api_env
       # Jamais dev en prod : dev force DEBUG (pages d'erreur détaillées, routes exposées).
       # prod : DEBUG coupé, hôtes listés (`*` refusé au démarrage).
@@ -84,7 +84,7 @@ services:
   needs-migrate:
     mem_limit: 384m
     restart: "no"
-    image: antifragile237/cfao-needs-api:v0.2.1
+    image: antifragile237/cfao-needs-api:v0.2.2
     command: ["python", "manage.py", "bootstrap"]
     environment: *api_env
     networks: [default]
@@ -98,7 +98,7 @@ services:
     # init (tini) en PID 1 : relaie SIGTERM, arrêt propre sans attendre le kill à 10 s.
     init: true
     restart: unless-stopped
-    image: antifragile237/cfao-needs-api:v0.2.1
+    image: antifragile237/cfao-needs-api:v0.2.2
     command: ["python", "manage.py", "qcluster"]
     environment: *api_env
     depends_on:
@@ -112,7 +112,7 @@ services:
     # init (tini) en PID 1 : relaie SIGTERM, arrêt propre sans attendre le kill à 10 s.
     init: true
     restart: unless-stopped
-    image: antifragile237/cfao-needs-api:v0.2.1
+    image: antifragile237/cfao-needs-api:v0.2.2
     command: ["python", "manage.py", "relay_needs_snapshot"]
     environment: *api_env
     networks: [default, cfao-maillage]

@@ -27,7 +27,7 @@ services:
   core-migrate:
     mem_limit: 384m
     restart: "no"
-    image: antifragile237/cfao-core-api:${CORE_VERSION:-v0.1.0}
+    image: antifragile237/cfao-core-api:${CORE_VERSION:-v0.1.1}
     command: ["python", "manage.py", "migrate", "--noinput"]
     environment: &core_env
       # prod : DEBUG coupé, clé et hôtes obligatoires (`*` refusé au démarrage).
@@ -54,7 +54,7 @@ services:
   core-api:
     mem_limit: 512m
     restart: unless-stopped
-    image: antifragile237/cfao-core-api:${CORE_VERSION:-v0.1.0}
+    image: antifragile237/cfao-core-api:${CORE_VERSION:-v0.1.1}
     command: ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "--timeout", "60", "--access-logfile", "-"]
     environment: *core_env
     # cfao-maillage : needs-api et le PDP ; identite : clés du Keycloak commun.
