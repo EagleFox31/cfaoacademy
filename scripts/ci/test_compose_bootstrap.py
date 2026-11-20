@@ -137,6 +137,24 @@ def test_demo_interdite_en_prod(tmp_path):
     assert any("app-migrate lance des donnees de demo en prod" in e for e in erreurs)
 
 
+def test_reglages_de_dev_et_secrets_par_defaut_interdits_en_prod(tmp_path):
+    contenu = CONFORME + textwrap.dedent("""\
+        x-env:
+          DJANGO_SETTINGS_MODULE: config.settings.dev
+          APP_SECRET_KEY: ${APP_SECRET_KEY:-valeur-ecrite-dans-git}
+          APP_DB_PASSWORD: ${APP_DB_PASSWORD:?manquant}
+          APP_OPTIONAL_KEY: ${APP_OPTIONAL_KEY:-}
+        """)
+    assert check(ecrire(tmp_path, contenu)) == []
+    erreurs = check(ecrire(tmp_path, contenu, nom="docker-compose.prod.yml"))
+    assert any("reglages de dev en prod" in e for e in erreurs)
+    assert [e for e in erreurs if "valeur par defaut" in e] == [
+        e for e in erreurs if "APP_SECRET_KEY a une valeur par defaut" in e
+    ]
+    assert len([e for e in erreurs if "valeur par defaut" in e]) == 1
+    assert not any("valeur-ecrite-dans-git" in e for e in erreurs)
+
+
 def test_service_en_liste_blanche(tmp_path):
     erreurs = check(ecrire(tmp_path, """
         services:

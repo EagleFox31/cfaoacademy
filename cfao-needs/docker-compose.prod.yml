@@ -19,7 +19,7 @@ services:
     environment:
       POSTGRES_DB: ${NEEDS_DB_NAME:-needs}
       POSTGRES_USER: ${NEEDS_DB_USER:-needs}
-      POSTGRES_PASSWORD: ${NEEDS_DB_PASSWORD:-ZyHDiHqm8UMIbsNy5Hmoi2Cl}
+      POSTGRES_PASSWORD: ${NEEDS_DB_PASSWORD:?NEEDS_DB_PASSWORD manquant (.env du serveur)}
     volumes:
       - needs-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -33,13 +33,14 @@ services:
     restart: unless-stopped
     image: antifragile237/cfao-needs-api:v0.2.1
     environment: &api_env
-      DJANGO_SETTINGS_MODULE: config.settings.dev
-      NEEDS_SECRET_KEY: ${NEEDS_SECRET_KEY:-ueDBVqGE8R7OzHALv+e5Hnp710zP2xf1A4uWlC+7oPA5pxtctl3LmKPzo01PYrbf}
+      # Jamais dev en prod : dev force DEBUG (pages d'erreur détaillées, routes exposées).
+      DJANGO_SETTINGS_MODULE: config.settings.base
+      NEEDS_SECRET_KEY: ${NEEDS_SECRET_KEY:?NEEDS_SECRET_KEY manquant (.env du serveur)}
       NEEDS_DEPLOYMENT_MODE: ${NEEDS_DEPLOYMENT_MODE:-standalone}
       NEEDS_DB_HOST: needs-db
       NEEDS_DB_NAME: ${NEEDS_DB_NAME:-needs}
       NEEDS_DB_USER: ${NEEDS_DB_USER:-needs}
-      NEEDS_DB_PASSWORD: ${NEEDS_DB_PASSWORD:-ZyHDiHqm8UMIbsNy5Hmoi2Cl}
+      NEEDS_DB_PASSWORD: ${NEEDS_DB_PASSWORD:?NEEDS_DB_PASSWORD manquant (.env du serveur)}
       # PDP commun (cerbos/compose.prod.yml, projet cfao-pdp), sur cfao-maillage.
       CERBOS_HTTP: ${CERBOS_HTTP:-http://cerbos:3592}
       # Clés lues en interne, sur le réseau du Keycloak commun.

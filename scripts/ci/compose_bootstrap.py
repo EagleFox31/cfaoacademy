@@ -7,7 +7,8 @@ Pour chaque compose suivi par git :
   (c) le consommateur l'attend en `condition: service_completed_successfully` ;
   (d) aucun service hors job ne migre ni ne seede (command, entrypoint, ou
       CMD / ENTRYPOINT du Dockerfile quand le compose le construit) ;
-  (e) un compose de prod ne lance jamais de donnees de demo.
+  (e) un compose de prod ne lance jamais de donnees de demo ;
+  (f) un compose de prod n'utilise ni les reglages de dev ni un secret par defaut.
 
 Usage : python scripts/ci/compose_bootstrap.py [fichiers...]  (defaut : git ls-files)
 """
@@ -26,6 +27,9 @@ DB_ENV = re.compile(r"(^|_)(DB_HOST|DATABASE_URL|DB_URL)$")
 MIGRATE_NAME = re.compile(r"(^|-)migrate$")
 MIGRATES = re.compile(r"\bmigrate\b|upgrade head|db push|seed")
 DEMO = re.compile(r"--demo|--open|seed_dev|loaddata|sample")
+DEV_SETTINGS = re.compile(r"settings\.dev\b")
+# Secret avec une valeur par defaut non vide : la valeur finit dans git.
+SECRET_DEFAULT = re.compile(r"\$\{([A-Z0-9_]*(?:SECRET|PASSWORD|_KEY|TOKEN)[A-Z0-9_]*):-[^}]+\}")
 
 # Services exemptes, avec la raison. Cle : nom de service (regex pleine).
 ALLOWLIST = {
@@ -183,6 +187,12 @@ def check(path: Path) -> list[str]:
             text = _text(service.get("command")) + " " + _text(service.get("entrypoint"))
             if DEMO.search(text):
                 errors.append(f"{where}: {name} lance des donnees de demo en prod")
+        raw = path.read_text(encoding="utf-8")
+        if DEV_SETTINGS.search(raw):
+            errors.append(f"{where}: reglages de dev en prod (DEBUG, pages d'erreur detaillees)")
+        # Seul le nom sort dans le message : la valeur est un secret.
+        for variable in sorted(set(SECRET_DEFAULT.findall(raw))):
+            errors.append(f"{where}: {variable} a une valeur par defaut ; ecrire ${{{variable}:?...}}")
 
     return errors
 
