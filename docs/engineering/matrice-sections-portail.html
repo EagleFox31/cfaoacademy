@@ -141,22 +141,25 @@ const PROFILES = {
   che: ['Chef d’équipe', 'demo'], cha: ['Chef d’atelier', 'demo'],
   ki: ['KI / PIC', 'real'], dps: ['DPS / DOP', 'part'], rhf: ['RH Filiale', 'demo'], dfi: ['Directeur de filiale', 'part'], dre: ['Directeur régional', 'part'],
   dir: ['Directeur', 'real'], coo: ['Coordinateur', 'real'], ass: ['Assistant', 'real'],
-  rhg: ['RH Groupe', 'demo'], drg: ['Directeur groupe', 'part'], adg: ['Admin groupe', 'part'], sa: ['Super Admin + build_team', 'part'],
+  rhg: ['RH Groupe', 'demo'], drg: ['Directeur groupe', 'demo'], adg: ['Admin groupe', 'demo'], sa: ['Super Admin + build_team', 'part'],
 }
 const SRC = { real: 'réelle', part: 'partiel', demo: 'démo', none: 'à créer' }
 document.head.insertAdjacentHTML('beforeend', '<style>.dot.none{background:transparent;border:1.5px solid currentColor}</style>')
 const COLS = GROUPS.flatMap(g => g[1])
 const LABEL = { L: 'Lecture', E: 'Écriture', P: 'À étendre', A: 'Annoncé', X: 'Exclu' }
 
-// [section, précision, { colonne: [type, périmètre] }]
+// [section, précision, { colonne: [type, périmètre] }, étape MEDACAP (facultative)]
 const ROWS = [
+  ['Accueil'],
+  ['Chiffres du hero', 'sous la grande phrase, chaque chiffre mène à sa section', { rhf: ['L', 'Admin filiale : fiches, campagnes · RH filiale : aucun (validé)'], coo: ['L', '4 : à relancer, à corriger, rapprochées, rapports'], ass: ['L', '3 : sessions à préparer, voyages, invitations'], rhg: ['L', '3 : non évalués, sans plan, fiches'], drg: ['L', '2 taux : évalués, avec plan'], adg: ['L', '2 : fiches, plans à valider'] }],
+
   ['Mesure des compétences'],
   ['Tests', 'passer ses tests', { app: ['E', 'soi'], frm: ['X', 'ne passe pas de tests'], che: ['P', 'soi'], cha: ['P', 'soi'], ki: ['E', 'soi'] }],
   ['Recrutement', 'tests des candidats, campagnes, rapports · MEDACAP 8.4 à ingérer · fermé par défaut aux autres profils', { can: ['P', 'passe ses tests'], rhf: ['P', 'sa filiale (RH et Admin filiale)'], sa: ['P', 'groupe : crée, administre, rapports'] }],
-  ['Résultats de compétences', 'vue par marque ou par niveau', { app: ['L', 'soi'], frm: ['A', 'toutes filiales · ses marques, une carte par niveau'], che: ['L', 'équipe'], cha: ['L', 'atelier'], ki: ['L', 'filiale · Toyota'], dps: ['L', 'filiale'], rhf: ['P', 'filiale'], dfi: ['P', 'sa filiale, par agence'], dre: ['P', 'ses filiales, par filiale'], dir: ['P', 'toutes filiales, agrégé'], coo: ['P', 'toutes filiales, par technicien'], rhg: ['L', 'groupe'], drg: ['P', 'groupe'], adg: ['P', 'groupe'], sa: ['L', 'groupe'] }],
+  ['Résultats de compétences', 'vue par marque ou par niveau', { app: ['L', 'soi'], frm: ['A', 'toutes filiales · ses marques, une carte par niveau'], che: ['L', 'équipe'], cha: ['L', 'atelier'], ki: ['L', 'filiale · Toyota'], dps: ['L', 'filiale'], rhf: ['P', 'filiale'], dfi: ['P', 'sa filiale, par agence'], dre: ['P', 'ses filiales, par filiale'], dir: ['P', 'toutes filiales, agrégé'], coo: ['P', 'toutes filiales, par technicien'], rhg: ['L', 'groupe'], drg: ['L', 'groupe'], adg: ['L', 'groupe'], sa: ['L', 'groupe'] }, 'Exploiter'],
 
   ['Développement'],
-  ['PIF / plans de formation', '', { app: ['L', 'son PIF'], che: ['L', 'équipe'], cha: ['L', 'atelier'], ki: ['L', 'filiale · Toyota'], dps: ['L', 'filiale'], rhf: ['P', 'filiale'], dfi: ['P', 'sa filiale, vue macro'], dre: ['P', 'ses filiales, vue macro'], rhg: ['L', 'groupe'], drg: ['P', 'groupe'], adg: ['P', 'groupe'] }],
+  ['PIF / plans de formation', '', { app: ['L', 'son PIF'], che: ['L', 'équipe'], cha: ['L', 'atelier'], ki: ['L', 'filiale · Toyota'], dps: ['L', 'filiale'], rhf: ['P', 'filiale'], dfi: ['P', 'sa filiale, vue macro'], dre: ['P', 'ses filiales, vue macro'], rhg: ['L', 'groupe'], drg: ['L', 'groupe'], adg: ['L', 'groupe'] }, 'Définir'],
   ['Besoins de formation', '', { cha: ['P', 'atelier'], dps: ['L', 'filiale'], rhf: ['P', 'filiale'], dir: ['L', 'tous pays, en partie en construction'] }],
   ['Formations', '', { app: ['L', 'les siennes'], frm: ['A', 'en construction'], ki: ['L', 'à dispenser'] }],
   ['Certifications', '', { app: ['L', 'les siennes'], frm: ['A', 'ses stagiaires, par niveau et marque'], ki: ['L', 'constructeur, les siennes'] }],
@@ -177,7 +180,7 @@ const ROWS = [
 
   ['Sessions et suivi'],
   ['Sessions et comptes rendus', 'à documenter, à venir', { frm: ['E', 'rédiger · reprendre · terminés ; sessions à venir'], ki: ['P', 'sessions animées'], coo: ['P', 'toutes les sessions'] }],
-  ['À traiter, prochaines actions', '', { frm: ['X', 'retiré le 18/11'], che: ['E', 'équipe'], cha: ['E', 'atelier'], dps: ['X', 'rôle observateur'], coo: ['P', 'centre'], rhg: ['L', 'groupe'], adg: ['P', 'groupe'] }],
+  ['À traiter, prochaines actions', '', { frm: ['X', 'retiré le 18/11'], che: ['E', 'équipe'], cha: ['E', 'atelier'], dps: ['X', 'rôle observateur'], coo: ['P', 'centre'], rhg: ['X', 'remplacé par les chiffres du hero'], adg: ['X', 'remplacé par les chiffres du hero'] }],
   ['Assistance', 'contacter le support', { app: ['P', 'soi'], frm: ['E', 'demandes des techniciens sur ses marques'], che: ['E', 'soi'], cha: ['E', 'soi'], dps: ['E', 'soi'] }],
 
   ['Pilotage groupe'],
@@ -221,8 +224,9 @@ function render() {
     + '</tr></thead>'
   const body = ROWS.map(r => {
     if (r.length === 1) return `<tr class="fam"><td class="sticky">${esc(r[0])}</td><td colspan="${COLS.length}"></td></tr>`
-    const [name, hint, cells] = r
-    let html = `<tr><td class="sticky sec">${esc(name)}${hint ? `<small>${esc(hint)}</small>` : ''}</td>`
+    const [name, hint, cells, etape] = r
+    const sous = [etape && `étape ${etape}`, hint].filter(Boolean).join(' · ')
+    let html = `<tr><td class="sticky sec">${esc(name)}${sous ? `<small>${esc(sous)}</small>` : ''}</td>`
     for (let i = 0; i < COLS.length;) {
       const v = cells[COLS[i]]
       let span = 1
