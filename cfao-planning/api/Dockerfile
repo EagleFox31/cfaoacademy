@@ -28,6 +28,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Sans root : l'API n'écrit nulle part dans /app, elle ne fait que lire son code.
+# Le job planning-migrate repasse en root dans le compose, pour lire le partage.
+RUN useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin service
+USER 10001
+
 EXPOSE 8000
 
 # Interdit n° 10 : migration et amorçage ne sont PAS dans l'entrypoint.

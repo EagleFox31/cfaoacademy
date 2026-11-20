@@ -10,6 +10,8 @@ import threading
 bind = "0.0.0.0:8000"
 workers = 2
 threads = 4
+# Journal d'accès sur la sortie standard, lu par `docker logs`.
+accesslog = "-"
 
 
 def post_worker_init(worker):

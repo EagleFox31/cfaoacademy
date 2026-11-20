@@ -32,6 +32,9 @@ services:
     mem_limit: 768m
     restart: "no"
     image: antifragile237/cfao-planning-api:${PLANNING_VERSION:-v0.1.2}
+    # Root pour ce seul job ponctuel : les classeurs du partage ne sont pas
+    # lisibles par l'utilisateur 10001 de l'image (montages en :ro). L'API reste en 10001.
+    user: "0"
     command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_referential && python manage.py seed_cost_key && python manage.py sync_needs_snapshot && python manage.py load_workbooks"]
     networks: [default, cfao-maillage, identite]
     # Classeurs lus au démarrage (load_workbooks), jamais modifiés : le partage de
