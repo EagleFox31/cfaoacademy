@@ -23,7 +23,7 @@ Source : audit en lecture seule du 19/11/2026 (20 constats). Ce plan donne l'ord
 |---|---|---|---|---|---|
 | 3 | Proxy du socket Docker : relire la ligne complète de `-allowGET` ; retirer `containers/<id>/json` si le collecteur peut s'en passer (il lit l'environnement des conteneurs) | cfaoacademy-cf (zone supervision) | build:cfao-supervision/api | le collecteur fonctionne sans ; `curl` du proxy sur `/containers/<id>/json` refusé | partiel : la règle existe (l.114), sa ligne est tronquée à la lecture |
 | 4 | Utilisateur non root (`USER`) dans core, needs, planning ; retirer `build-essential` et `curl` de l'image finale de core | propriétaire de chaque module | build:cfao-core, build:cfao-needs/api, build:cfao-planning/api | l'API démarre et répond en recette ; `docker exec id` ≠ root | oui : 0 `USER` dans ces 3 Dockerfiles (supervision et comptes rendus en ont un) |
-| 12 | `aud` obligatoire : refuser le démarrage si `OIDC_AUDIENCE` est vide (needs, core) | propriétaire du module | | test : jeton sans audience refusé | non |
+| 12 | `aud` obligatoire : refuser le démarrage si `OIDC_AUDIENCE` est vide (needs, core) | propriétaire du module | | test : jeton sans audience refusé | non — **corrigé** (sentinelle) : `config/settings/oidc_obligatoire.py` appelé par `dev` et `prod` (démarrage refusé) + `oidc.py` refuse le jeton si l'audience est vide ; `test_audience_obligatoire.py` ; `jwt_verifier.py` inchangé ; à livrer avec la prochaine image de chaque module |
 
 ## Phase 2 : exploitation
 | # | Action | Session | Verrous | Preuve |

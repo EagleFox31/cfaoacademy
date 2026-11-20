@@ -9,6 +9,7 @@ chaque puce par « API : » ou « Passerelle : ».
 ## [Unreleased]
 
 - Production : réglages dédiés (`config.settings.prod`) — débogage coupé, hôtes servis listés dans `NEEDS_ALLOWED_HOSTS` (obligatoire, `*` refusé au démarrage). Un en-tête Host inconnu reçoit 400.
+- Audience des jetons obligatoire : sans `OIDC_AUDIENCE`, l'API, le worker et le relay refusent de démarrer (dev, prod) et tout jeton est refusé (401).
 
 ## [0.4.1] - 2026-11-20
 

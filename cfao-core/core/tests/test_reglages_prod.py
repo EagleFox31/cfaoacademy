@@ -12,8 +12,8 @@ LIRE = ("import django; django.setup(); from django.conf import settings as s; "
 
 
 def _demarrer(**variables):
-    env = {k: v for k, v in os.environ.items() if not k.startswith(("DJANGO_", "CORE_"))}
-    env.update(DJANGO_SETTINGS_MODULE="config.settings.prod", **variables)
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("DJANGO_", "CORE_", "OIDC_"))}
+    env.update({"DJANGO_SETTINGS_MODULE": "config.settings.prod", "OIDC_AUDIENCE": "cfao-core-api", **variables})
     return subprocess.run([sys.executable, "-c", LIRE], cwd=RACINE, env=env,
                           capture_output=True, encoding="utf-8", timeout=60)
 
@@ -33,3 +33,9 @@ def test_prod_refuse_de_demarrer_sans_cle():
 def test_prod_refuse_de_demarrer_sans_hotes_explicites(hotes):
     r = _demarrer(DJANGO_SECRET_KEY="x" * 50, **({} if hotes is None else {"DJANGO_ALLOWED_HOSTS": hotes}))
     assert r.returncode != 0 and "DJANGO_ALLOWED_HOSTS" in r.stderr, r.stderr[-500:]
+
+
+@pytest.mark.parametrize("audience", ["", " , "])
+def test_prod_refuse_de_demarrer_sans_audience(audience):
+    r = _demarrer(DJANGO_SECRET_KEY="x" * 50, DJANGO_ALLOWED_HOSTS="academy.exemple", OIDC_AUDIENCE=audience)
+    assert r.returncode != 0 and "OIDC_AUDIENCE" in r.stderr, r.stderr[-500:]

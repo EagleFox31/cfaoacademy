@@ -14,13 +14,17 @@ logger = logging.getLogger(__name__)
 
 def verify_token(token: str) -> dict:
     """Les claims d'un jeton valide ; lève AuthenticationFailed sinon (401 unique)."""
+    audiences = jwt_verifier.audiences(settings.OIDC_AUDIENCE)
+    if not audiences:  # sans audience, `aud` ne serait pas vérifiée (constat 12)
+        logger.error("JWT refusé : OIDC_AUDIENCE non configurée.")
+        raise exceptions.AuthenticationFailed("Jeton invalide.")
     try:
         return jwt_verifier.verify(
             token,
             jwt_verifier.trusted_issuers(
                 settings.OIDC_TRUSTED_ISSUERS, settings.OIDC_ISSUER, settings.OIDC_JWKS_URL
             ),
-            jwt_verifier.audiences(settings.OIDC_AUDIENCE),
+            audiences,
         )
     except jwt_verifier.TokenRejected as exc:
         logger.info("JWT refusé : %s", exc)

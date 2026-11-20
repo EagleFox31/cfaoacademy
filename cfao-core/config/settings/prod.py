@@ -9,7 +9,10 @@ les casserait). Aucune session ni cookie Django (jetons Bearer) : rien à marque
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F401,F403
-from .base import env
+from .base import OIDC_AUDIENCE, env
+from .oidc_obligatoire import exiger_audience
+
+exiger_audience(OIDC_AUDIENCE, "cfao-core")
 
 DEBUG = False
 SECRET_KEY = env("DJANGO_SECRET_KEY")

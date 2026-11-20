@@ -8,4 +8,5 @@ version sans sa section.
 ## [Unreleased]
 
 - Production : réglages dédiés (`config.settings.prod`) — débogage coupé, clé secrète et hôtes obligatoires (`*` refusé au démarrage), aucune clé par défaut.
+- Audience des jetons obligatoire : sans `OIDC_AUDIENCE`, l'API refuse de démarrer (dev, prod) et refuse tout jeton (401).
 - Rôle `platform_ops` (équipe d'exploitation) reconnu par le socle.

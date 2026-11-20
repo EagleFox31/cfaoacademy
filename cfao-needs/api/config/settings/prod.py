@@ -5,7 +5,10 @@ Un hôte non listé reçoit 400 (en-tête Host forgé). `*` et une liste vide re
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F401,F403
-from .base import env
+from .base import OIDC_AUDIENCE, env
+from .oidc_obligatoire import exiger_audience
+
+exiger_audience(OIDC_AUDIENCE, "cfao-needs")
 
 DEBUG = False
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
