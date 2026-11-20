@@ -90,6 +90,21 @@ def test_trainer_filter_by_account(sessions):
     assert [(t["name"], t["sub"]) for t in trainers] == [("Eugène EBENE", "sub-eugene"), ("Lucien GAGNE", None)]
 
 
+@pytest.mark.parametrize("trainer_sub", [None, "sub-eugene"])
+def test_query_count_does_not_grow_with_sessions(sessions, referential, django_assert_num_queries,
+                                                 trainer_sub):
+    """Deux requêtes (sessions + formateurs), quel que soit le nombre de sessions : pas de N+1."""
+    key = CostKeyYear.objects.get(year=2026, pole="MOTORS")
+    for i in range(12):
+        s = PlannedSession.objects.create(cost_key=key, brand=referential["toyota"], code_norm=f"TN{i:02}",
+                                          country=referential["cm"], start_date=D(2026, 11, 9),
+                                          end_date=D(2026, 11, 13))
+        s.trainers.set([referential["eugene"], referential["lucien"]])
+    with django_assert_num_queries(2):
+        data = sessions_to_document(60, trainer_sub, D(2026, 11, 20))
+    assert len(data["sessions"]) == (13 if trainer_sub else 14)
+
+
 def test_revision_follows_content(sessions):
     before = sessions_to_document(60, today=D(2026, 11, 20))
     assert sessions_to_document(60, today=D(2026, 11, 20)) == before  # stable
