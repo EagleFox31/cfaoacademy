@@ -102,6 +102,16 @@ KEYCLOAK_COLLECTOR_SECRET = env("KEYCLOAK_COLLECTOR_SECRET", default="")
 # Rétention (RGPD) : une connexion nominative est oubliée après N jours sans activité.
 ACCESS_RETENTION_DAYS = env.int("SUPERVISION_ACCESS_RETENTION_DAYS", default=90)
 EVENT_RETENTION_DAYS = env.int("SUPERVISION_EVENT_RETENTION_DAYS", default=180)
+# Connexions refusées par le pare-feu du serveur (journal ufw monté en lecture seule).
+# Vide = source désactivée (recette sans ufw). Monter le DOSSIER, pas le fichier :
+# la rotation renomme le fichier et un montage de fichier garderait l'ancien.
+UFW_LOG_PATH = env("SUPERVISION_UFW_LOG_PATH", default="")
+UFW_INTERVAL_S = env.int("SUPERVISION_UFW_INTERVAL_S", default=30)
+# Adresses IP des postes : oubliées après 7 jours.
+REFUSED_RETENTION_DAYS = env.int("SUPERVISION_REFUSED_RETENTION_DAYS", default=7)
+# Alerte : au moins N refus pour une adresse (ou un /24) sur la dernière fenêtre.
+REFUSED_ALERT_THRESHOLD = env.int("SUPERVISION_REFUSED_ALERT_THRESHOLD", default=10)
+REFUSED_ALERT_WINDOW_MIN = env.int("SUPERVISION_REFUSED_ALERT_WINDOW_MIN", default=60)
 # Au-delà, l'écran signale que la surveillance ne remonte plus.
 STALE_AFTER_S = env.int("SUPERVISION_STALE_AFTER_S", default=90)
 

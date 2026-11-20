@@ -220,4 +220,5 @@ def purge(now=None) -> dict:
     accesses = UserModuleAccess.objects.filter(old_login & old_activity).delete()[0]
     users = KnownUser.objects.filter(accesses__isnull=True).exclude(last_seen_at__gte=access_limit).delete()[0]
     events = ContainerEvent.objects.filter(at__lt=event_limit).delete()[0]
-    return {"accesses": accesses, "users": users, "events": events}
+    from .firewall import purge as purge_refused
+    return {"accesses": accesses, "users": users, "events": events, "refused": purge_refused(now)}
