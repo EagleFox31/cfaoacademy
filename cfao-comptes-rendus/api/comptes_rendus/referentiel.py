@@ -307,7 +307,10 @@ class InscriptionAbsence(APIView):
 class ReferentielEtat(APIView):
     def get(self, request):
         _exiger(request, SESSION, "*", "list")
-        return Response({"vide": not SessionFormation.objects.exists()})
+        # Planning branche : il fait foi, la liste (meme vide) remplace les
+        # sessions d'essai, et la copie part des la premiere visite.
+        planning.rafraichir_si_du()
+        return Response({"vide": not (planning.configure() or SessionFormation.objects.exists())})
 
 
 class ReferentielImport(APIView):

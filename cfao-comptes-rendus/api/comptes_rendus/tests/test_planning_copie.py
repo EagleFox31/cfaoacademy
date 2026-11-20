@@ -225,6 +225,24 @@ def test_sans_configuration_aucun_appel(faux, client, pdp_fidele, settings):
     assert faux.appels == []
 
 
+# ── Etat du referentiel : le planning branche, le front lit l'API ────────
+
+def test_planning_branche_le_referentiel_n_est_jamais_vide(faux, client, pdp_fidele):
+    # Base neuve : sans cela le front passerait en mode d'essai et
+    # n'appellerait jamais la liste, donc la copie ne partirait jamais.
+    faux.body = corps(session_planning())
+    r = client("f-a").get("/cr-donnees/referentiel/etat")
+    assert r.status_code == 200 and r.json() == {"vide": False}
+    assert len(faux.appels) == 1
+    assert Session.objects.filter(source="planning").count() == 1
+
+
+def test_sans_planning_base_vide_mode_d_essai(faux, client, pdp_fidele, settings):
+    settings.CR_SESSIONS_KEY = ""
+    assert client("f-a").get("/cr-donnees/referentiel/etat").json() == {"vide": True}
+    assert faux.appels == []
+
+
 # ── Import du fichier sur une session du planning ────────────────────────
 
 def test_le_fichier_n_ajoute_que_des_stagiaires(faux, db, excel):
