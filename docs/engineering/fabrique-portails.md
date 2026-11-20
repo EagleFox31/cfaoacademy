@@ -175,6 +175,7 @@ Structure (sections, ordre) et libellés validés par le métier. Ils ne bougent
 | DPS (`DpsDashboard`) | besoins-formation : Identification Annuelle des besoins en formations de votre filiale · resultats : Compétences de vos Equipes par marques · niveaux : Compétences des techniciens par niveau · pif : Plans de formations pluriannuels de vos techniciens · assistance : Assistance |
 | Formateur (`TrainerHome`) | comptes-rendus : Vos comptes rendus de sessions de formation · formations : Formations à dispenser · competences : Résultats des techniciens · certifs : Certifications de vos stagiaires · assistance : Assistance aux techniciens |
 | RH filiale (`RHHome mode="branch_hr"`) | recrutement : Recrutement · competences : Résultats de vos techniciens par niveau · pif : Plans de formations pluriannuels de vos techniciens · besoins : Identification annuelle des besoins en formation · personnes : Techniciens et candidats |
+| Assistante du centre de formation (`AssistantHome`, validé le 19/11) | prochaines-sessions : Prochaines sessions de formation · dossiers : Vos dossiers · a-consulter : À consulter |
 
 Points ouverts, figés tels quels en attendant une décision :
 

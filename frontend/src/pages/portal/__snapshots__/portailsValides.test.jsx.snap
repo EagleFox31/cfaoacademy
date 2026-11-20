@@ -228,6 +228,90 @@ exports[`portails validés : sections et libellés figés > RH filiale (pt) 1`] 
 }
 `;
 
+exports[`portails validés : sections et libellés figés > assistante du centre de formation (en) 1`] = `
+{
+  "accueil": "Good morning Test,",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Centre Assistant",
+      "titre": null,
+    },
+    {
+      "ancre": "prochaines-sessions",
+      "surtitre": "The next 2 weeks",
+      "titre": "Upcoming training sessions",
+    },
+    {
+      "ancre": "dossiers",
+      "surtitre": "Your work, file by file",
+      "titre": "Your files",
+    },
+    {
+      "ancre": "a-consulter",
+      "surtitre": "To check something",
+      "titre": "For reference",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > assistante du centre de formation (fr) 1`] = `
+{
+  "accueil": "Bonjour Test,",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Assistante centre",
+      "titre": null,
+    },
+    {
+      "ancre": "prochaines-sessions",
+      "surtitre": "Les 2 prochaines semaines",
+      "titre": "Prochaines sessions de formation",
+    },
+    {
+      "ancre": "dossiers",
+      "surtitre": "Votre travail, dossier par dossier",
+      "titre": "Vos dossiers",
+    },
+    {
+      "ancre": "a-consulter",
+      "surtitre": "Pour vérifier une information",
+      "titre": "À consulter",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > assistante du centre de formation (pt) 1`] = `
+{
+  "accueil": "Bom dia Test,",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Assistente de centro",
+      "titre": null,
+    },
+    {
+      "ancre": "prochaines-sessions",
+      "surtitre": "As próximas 2 semanas",
+      "titre": "Próximas sessões de formação",
+    },
+    {
+      "ancre": "dossiers",
+      "surtitre": "O seu trabalho, dossiê a dossiê",
+      "titre": "Os seus dossiês",
+    },
+    {
+      "ancre": "a-consulter",
+      "surtitre": "Para verificar uma informação",
+      "titre": "Para consultar",
+    },
+  ],
+}
+`;
+
 exports[`portails validés : sections et libellés figés > directeur du centre de formation (en) 1`] = `
 {
   "accueil": "Good morning Test,",

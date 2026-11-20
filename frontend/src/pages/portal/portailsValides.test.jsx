@@ -36,6 +36,7 @@ const { default: CenterHome } = await import('./CenterHome.jsx')
 const { default: DpsDashboard } = await import('./DpsDashboard.jsx')
 const { default: TrainerHome } = await import('./TrainerHome.jsx')
 const { default: RHHome } = await import('./RHHome.jsx')
+const { default: AssistantHome } = await import('./AssistantHome.jsx')
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 // Comme AuthContext : l'utilisateur de démo porte demoKey = id du profil.
@@ -48,6 +49,7 @@ const PORTAILS = [
   { nom: 'DPS', user: profil('u10'), page: <DpsDashboard /> },
   { nom: 'formateur', user: { id: 'f1', roles: ['trainer'], firstName: 'Test', lastName: 'Formateur' }, page: <TrainerHome /> },
   { nom: 'RH filiale', user: profil('u5'), page: <RHHome mode="branch_hr" /> },
+  { nom: 'assistante du centre de formation', user: { id: 'a1', roles: ['center_assistant'], firstName: 'Test', lastName: 'Assistante' }, page: <AssistantHome /> },
 ]
 
 // Réseau coupé : seul le code du dépôt décide de la structure figée.
