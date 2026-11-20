@@ -54,6 +54,22 @@ describe('validateConfig', () => {
     expect(validateConfig(BASE, { copy, locales: ['fr'] })).toEqual([])
     expect(validateConfig(BASE, { copy, locales: ['fr', 'en'] }).join('\n')).toMatch(/demo:ti absente en en/)
   })
+
+  it('chiffres du hero : cible = ancre de la page, _one et _zero sauf pour un taux', () => {
+    const avecCarte = { ...BASE, sections: [BASE.sections[0],
+      { ...BASE.sections[1], cards: [{ id: 'k', ancre: true }] }] }
+    const kpis = heroKpis => ({ ...avecCarte, heroKpis })
+    const ok = { a: [{ id: 'n', label: 'k_n', cible: 'a' }], b: [{ id: 'p', label: 'k_p', cible: 'b-k', format: 'pct' }] }
+    expect(validateConfig(kpis(ok))).toEqual([])
+    expect(validateConfig(kpis([{ id: 'n', label: 'k_n', cible: 'zz', format: 'ratio' }])).join('\n'))
+      .toMatch(/cible inconnue zz[\s\S]*format inconnu ratio/)
+
+    const dicos = { demo: { ti: 'T', k_n: 'N', k_n_one: 'N1', k_p: 'P' }, portal: { eb: 'E', nav_a: 'A', nav_b: 'B' } }
+    const copy = ns => dicos[ns]
+    const errs = validateConfig(kpis(ok), { copy, locales: ['fr'] }).join('\n')
+    expect(errs).toMatch(/demo:k_n_zero absente en fr/)
+    expect(errs).not.toMatch(/k_p_/)
+  })
 })
 
 describe('navFromConfig', () => {

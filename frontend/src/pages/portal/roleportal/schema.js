@@ -80,15 +80,42 @@ export function validateConfig(config, { copy, locales = [] } = {}) {
     err(`viewportSection inconnue : ${config.viewportSection}`)
   }
 
+  // Chiffres du hero : une ancre de la page (section, ou carte `ancre` :
+  // « <section>-<carte> »).
+  const ancres = new Set(ids)
+  for (const s of config.sections) {
+    for (const c of s.cards ?? []) if (c.ancre) ancres.add(`${s.id}-${c.id}`)
+  }
+  const kpis = heroKpisDe(config)
+  for (const k of kpis) {
+    if (!ancres.has(k.cible)) err(`chiffre du hero ${k.id} : cible inconnue ${k.cible}`)
+    if (k.format != null && !KPI_FORMATS.includes(k.format)) err(`chiffre du hero ${k.id} : format inconnu ${k.format}`)
+  }
+
   if (copy) {
-    for (const s of config.sections) {
-      for (const ref of textRefs(config, s)) {
-        const { ns, key } = cle(ref, config.ns)
-        for (const locale of locales) {
-          if (copy(ns, locale)?.[key] == null) err(`${s.id} : clé ${ns}:${key} absente en ${locale}`)
-        }
+    const absente = (where, ref) => {
+      const { ns, key } = cle(ref, config.ns)
+      for (const locale of locales) {
+        if (copy(ns, locale)?.[key] == null) err(`${where} : clé ${ns}:${key} absente en ${locale}`)
       }
+    }
+    for (const s of config.sections) {
+      for (const ref of textRefs(config, s)) absente(s.id, ref)
+    }
+    // Un compteur dit aussi 1 (`_one`) et 0 (`_zero`, qui rassure) ; un taux, non.
+    for (const k of kpis) {
+      const refs = k.format === 'pct' ? [k.label] : [k.label, `${k.label}_one`, `${k.label}_zero`]
+      for (const ref of refs) absente(`chiffre du hero ${k.id}`, ref)
     }
   }
   return errors
+}
+
+export const KPI_FORMATS = ['pct']
+
+/** Chiffres du hero : une liste, ou une liste par mode (`{ mode: [...] }`). */
+export function heroKpisDe(config) {
+  const h = config?.heroKpis
+  if (!h) return []
+  return Array.isArray(h) ? h : Object.values(h).flat()
 }
