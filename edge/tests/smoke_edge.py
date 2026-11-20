@@ -6,7 +6,8 @@ en proto https sans Keycloak ni CR), KC_INTERNE (Keycloak en direct, avec /auth)
 EMETTEUR_ATTENDU, EDGE_CONTENEUR_HTTPS (nom du conteneur de l'instance https,
 pour les journaux), EDGE_LAN_NEEDS_URL et EDGE_LAN_CR_URL (écoutes LAN de la
 passerelle complète), EDGE_IMAGE (refus au démarrage), EDGE_ATTENTE_URL
-(instance dont les modules sont arrêtés : page d'attente).
+(instance dont les modules sont arrêtés : page d'attente), EDGE_PORTAIL_URL
+(instance portail à la racine, needs sous /besoins/, liste blanche d'origines).
 """
 import base64
 import hashlib
@@ -243,3 +244,55 @@ def test_journaux_json_sans_query_string():
     assert "SECRET-123" not in sortie
     lignes = [ligne for ligne in sortie.splitlines() if ligne.startswith("{")]
     assert lignes and all(k in lignes[-1] for k in ('"module"', '"status"', '"path"', '"req_id"'))
+
+
+# Instance « une adresse » : portail à la racine, needs sous /besoins/, origine
+# canonique https://academy.exemple, liste blanche https://192.168.10.155:8444.
+PORTAIL = os.environ["EDGE_PORTAIL_URL"].rstrip("/")
+ORIGINE_IP = {"X-Forwarded-Host": "192.168.10.155:8444"}
+
+
+@pytest.mark.parametrize("chemin", ["/", "/profil", "/callback", "/catalogues/x", "/assets/a.js", "/config.js", "/cr/x"])
+def test_racine_portail(chemin):
+    vu = _vu(requests.get(f"{PORTAIL}{chemin}"))
+    assert vu["module"] == "portail" and vu["chemin"] == chemin
+
+
+@pytest.mark.parametrize("chemin", ["/besoins/", "/besoins/marque/A", "/api/v1/needs/campagnes"])
+def test_needs_sous_besoins_garde_son_prefixe(chemin):
+    vu = _vu(requests.get(f"{PORTAIL}{chemin}"))
+    assert vu["module"] == "needs" and vu["chemin"] == chemin
+
+
+@pytest.mark.parametrize("chemin, cible", [("/besoins", "/besoins/"), ("/marque/A?v=1", "/besoins/marque/A?v=1"),
+                                           ("/relecture", "/besoins/relecture"), ("/a-envoyer/2", "/besoins/a-envoyer/2"),
+                                           ("/fiche/12", "/besoins/fiche/12"), ("/campagnes/2027", "/besoins/campagnes/2027")])
+def test_anciens_liens_needs_rediriges(chemin, cible):
+    r = requests.get(f"{PORTAIL}{chemin}", allow_redirects=False)
+    assert r.status_code == 308 and r.headers["Location"] == cible
+
+
+@pytest.mark.parametrize("en_tetes", [{}, {"X-Forwarded-Host": "evil.example", "X-Forwarded-Proto": "http"},
+                                      {"Host": "evil.example"}])
+def test_hote_inconnu_recoit_l_origine_canonique(en_tetes):
+    vu = _vu(requests.get(f"{PORTAIL}/besoins/x", headers=en_tetes))["en_tetes"]
+    assert (vu["x-forwarded-proto"], vu["x-forwarded-host"], vu["x-forwarded-port"]) == ("https", "academy.exemple", "443")
+
+
+def test_origine_de_la_liste_blanche_annoncee_a_needs():
+    # Le schéma vient de la liste, pas du X-Forwarded-Proto reçu.
+    vu = _vu(requests.get(f"{PORTAIL}/api/v1/needs/x", headers={**ORIGINE_IP, "X-Forwarded-Proto": "http"}))["en_tetes"]
+    assert (vu["x-forwarded-proto"], vu["x-forwarded-host"], vu["x-forwarded-port"]) == ("https", "192.168.10.155", "8444")
+
+
+@pytest.mark.parametrize("env, motif", [
+    (["-e", "EDGE_RACINE=portail"], "EDGE_PORTAIL_UPSTREAM vide"),
+    (["-e", "EDGE_ORIGINES=https://h;x"], "proto://hôte[:port]"),
+])
+def test_racine_ou_origine_invalide_bloque_le_demarrage(env, motif):
+    r = subprocess.run(["docker", "run", "--rm", "--network", "none",
+                        "-e", "EDGE_LISTEN=127.0.0.1:2", "-e", "EDGE_PUBLIC_PROTO=https",
+                        "-e", "EDGE_PUBLIC_HOST=localhost", "-e", "EDGE_PUBLIC_PORT=443",
+                        "-e", "EDGE_NEEDS_UPSTREAM=127.0.0.1:3", *env, IMAGE, "nginx", "-t"],
+                       capture_output=True, encoding="utf-8", timeout=60)
+    assert r.returncode != 0 and motif in r.stderr, r.stderr[-500:]

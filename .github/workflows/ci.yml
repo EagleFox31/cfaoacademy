@@ -288,6 +288,7 @@ jobs:
       EDGE_LAN_CR_URL: http://127.0.0.1:18094
       EDGE_HTTPS_URL: http://localhost:18089
       EDGE_ATTENTE_URL: http://localhost:18090
+      EDGE_PORTAIL_URL: http://localhost:18091
       KC_INTERNE: http://localhost:18080/auth
       EMETTEUR_ATTENDU: http://localhost:18088/auth/realms/cfao
     steps:
@@ -332,12 +333,20 @@ jobs:
             -e EDGE_PUBLIC_HOST=localhost -e EDGE_PUBLIC_PORT=18090 \
             -e EDGE_NEEDS_UPSTREAM=127.0.0.1:18097 -e EDGE_PLANNING_UPSTREAM=127.0.0.1:18098 \
             antifragile237/cfao-edge:smoke
+          # Une adresse : portail à la racine, needs sous /besoins/, liste blanche d'origines.
+          docker run -d --name edge-portail --network host \
+            -e EDGE_LISTEN=127.0.0.1:18091 -e EDGE_PUBLIC_PROTO=https \
+            -e EDGE_PUBLIC_HOST=academy.exemple -e EDGE_PUBLIC_PORT=443 \
+            -e EDGE_NEEDS_UPSTREAM=127.0.0.1:18081 -e EDGE_PORTAIL_UPSTREAM=127.0.0.1:18095 \
+            -e EDGE_RACINE=portail -e EDGE_ORIGINES=https://192.168.10.155:8444 \
+            antifragile237/cfao-edge:smoke
           sleep 3
       - run: pytest -q edge/tests/smoke_edge.py
       - if: failure()
         run: |
           docker compose -p cfao-edge-smoke -f edge/compose.prod.yml -f edge/tests/compose.smoke.yml logs --tail=200 || true
           docker logs --tail=100 edge-https || true
+          docker logs --tail=100 edge-portail || true
           docker compose -f keycloak/compose.prod.yml logs --tail=200 || true
 
   core:

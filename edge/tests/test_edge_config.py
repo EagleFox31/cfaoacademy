@@ -1,5 +1,7 @@
 """Cohérence statique de cfao-edge (sans docker) : routes, journaux, variables."""
+import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -22,8 +24,10 @@ def _locations(texte):
 def test_liste_blanche_des_routes():
     # Toute nouvelle route publique doit modifier ce test, donc être relue.
     trouvees = sorted(loc for m in MODELES for loc in _locations(_texte(m)))
-    assert trouvees == sorted(["/", "/", "/", "/auth/", "/auth", r"^/auth/(realms/cfao|resources)/", "/cr", "/cr/", "/api/v1/planning/",
-                                 "/api/v1/planning/internal/", "/api/v1/core/", "/api/v1/supervision/"])
+    assert trouvees == sorted(["/", "/", "/", "/", "/auth/", "/auth", r"^/auth/(realms/cfao|resources)/", "/cr", "/cr/",
+                                 "/api/v1/planning/", "/api/v1/planning/internal/", "/api/v1/core/", "/api/v1/supervision/",
+                                 "/besoins", "/besoins/", "/api/v1/needs/",
+                                 r"^/(marque/|relecture(/|$)|a-envoyer(/|$)|fiche/|campagnes/)"])
 
 
 def test_routes_internes_jamais_publiees():
@@ -33,9 +37,36 @@ def test_routes_internes_jamais_publiees():
 
 
 def test_needs_transparent():
-    modele = _texte(EDGE / "templates" / "racine" / "needs.conf.template")
+    modele = _texte(EDGE / "templates" / "needs" / "relais.conf.template")
     bloc = modele.split("location / {", 1)[1]
     assert "X-Forwarded" not in bloc, "/ doit relayer les en-têtes reçus tels quels"
+    # needs à la racine (public) et écoute LAN : le même relais, quelle que soit la racine.
+    for modele in ("racine/needs.conf.template", "lan/needs.conf.template"):
+        assert "include /tmp/conf.d/needs/relais.conf;" in _texte(EDGE / "templates" / modele), modele
+
+
+def test_racine_choisie_par_edge_racine():
+    edge = _texte(EDGE / "templates" / "edge.conf.template")
+    assert "include /tmp/conf.d/racine/*.conf;" in edge
+    actifs = _texte(EDGE / "entrypoint.d" / "25-modules-actifs.sh")
+    assert ('if [ "${EDGE_RACINE:-needs}" = portail ]; then\n    rm -f "$racine/needs.conf"\nelse\n'
+            '    rm -f "$racine/portail.conf" "$routes/needs.conf"\nfi') in actifs
+    exiger = _texte(EDGE / "entrypoint.d" / "05-exiger-variables.sh")
+    assert "EDGE_RACINE=portail mais EDGE_PORTAIL_UPSTREAM vide" in exiger
+    portail = _texte(EDGE / "templates" / "racine" / "portail.conf.template")
+    assert "proxy_pass http://${EDGE_PORTAIL_UPSTREAM};" in portail
+
+
+def test_anciens_liens_needs_rediriges_sous_besoins():
+    needs = _texte(EDGE / "templates" / "routes" / "needs.conf.template")
+    bloc = needs.split("location ~ ", 1)[1].split("}", 1)[0]
+    assert bloc.split("{", 1)[1].split() == ["set", "$edge_module", "needs;", "return", "308", "/besoins$request_uri;"]
+    # Chemins partagés avec le portail : jamais redirigés.
+    motif = re.compile(bloc.split()[0])
+    for chemin in ("/", "/profil", "/callback", "/catalogues/x", "/assets/a.js", "/config.js", "/marques"):
+        assert not motif.match(chemin), chemin
+    for chemin in ("/marque/A", "/relecture", "/relecture/3", "/a-envoyer", "/fiche/1", "/campagnes/2027"):
+        assert motif.match(chemin), chemin
 
 
 def test_ecoutes_lan_sans_auth_ni_hsts():
@@ -63,10 +94,14 @@ def test_ecoutes_lan_suivent_le_proxy_https_devant():
 
 def test_modules_sous_prefixe_recoivent_l_url_du_bloc_server():
     cr = _texte(EDGE / "templates" / "routes" / "cr.conf.template")
-    assert "EDGE_PUBLIC" not in cr
+    needs = _texte(EDGE / "templates" / "routes" / "needs.conf.template")
+    edge = _texte(EDGE / "templates" / "edge.conf.template")
+    assert "EDGE_PUBLIC" not in cr and "EDGE_PUBLIC" not in needs and "EDGE_PUBLIC" not in edge.split("server {", 1)[1]
     for v in ("$edge_fwd_proto", "$edge_fwd_host", "$edge_fwd_port"):
         assert v in cr
-        assert f"set {v} " in _texte(EDGE / "templates" / "edge.conf.template")
+        assert needs.count(v) == 2, v   # /besoins/ et /api/v1/needs/
+        # Écoute publique : l'origine vient de la liste blanche (27-origines.sh).
+        assert f"set {v} $edge_req_{v.rsplit('_', 1)[1]};" in " ".join(edge.split())
         assert f"set {v} " in _texte(EDGE / "templates" / "lan" / "cr.conf.template")
 
 
@@ -98,8 +133,12 @@ def test_api_garde_ses_propres_erreurs():
         assert "proxy_intercept_errors" not in "\n".join(
             ligne for ligne in _texte(EDGE / "templates" / "routes" / f"{api}.conf.template").splitlines()
             if not ligne.lstrip().startswith("#")), api
-    for modele in ("routes/cr.conf.template", "routes/auth.conf.template", "racine/needs.conf.template"):
+    for modele in ("routes/cr.conf.template", "routes/auth.conf.template", "needs/relais.conf.template",
+                   "racine/portail.conf.template"):
         assert "proxy_intercept_errors on;" in _texte(EDGE / "templates" / modele), modele
+    needs = _texte(EDGE / "templates" / "routes" / "needs.conf.template")
+    assert "proxy_intercept_errors on;" in needs.split("location /besoins/ {", 1)[1].split("}", 1)[0]
+    assert "proxy_intercept_errors on;" not in needs.split("location /api/v1/needs/ {", 1)[1].split("}", 1)[0]
 
 
 def test_keycloak_n_utilise_jamais_le_host_recu():
@@ -151,10 +190,12 @@ def test_variables_declarees_partout():
         assert v in exiger or v in optionnelles, v
     for v in utilisees - optionnelles:
         assert re.fullmatch(r"\$\{[A-Z_]+:\?.+\}", compose[v]), v
-    for v in optionnelles | {"EDGE_LAN"}:
+    for v in optionnelles | {"EDGE_LAN", "EDGE_RACINE", "EDGE_ORIGINES"}:
         assert compose[v].endswith(":-}"), v
-    # Vide dans le modèle : une écoute LAN exige d'abord de libérer le port.
-    assert re.search(r"^EDGE_LAN=$", exemple, re.M)
+    # Vides dans le modèle : une écoute LAN exige d'abord de libérer le port ; la
+    # racine portail et les origines suivent la bascule « une adresse ».
+    for v in ("EDGE_LAN", "EDGE_RACINE", "EDGE_ORIGINES"):
+        assert re.search(rf"^{v}=$", exemple, re.M), v
 
 
 def test_modeles_d_environnement_suivis_par_git():
@@ -262,3 +303,65 @@ def test_maillage_refuse_les_ecarts(composes):
 
 def test_maillage_accepte_dev_et_prod_d_un_meme_module():
     assert _ecarts_maillage({"a/docker-compose.yml": _compose(), "a/docker-compose.prod.yml": _compose()}) == []
+
+
+SH = shutil.which("sh")
+BASE = {"EDGE_LISTEN": "127.0.0.1:1", "EDGE_PUBLIC_PROTO": "https", "EDGE_PUBLIC_HOST": "academy.exemple",
+        "EDGE_PUBLIC_PORT": "443", "EDGE_NEEDS_UPSTREAM": "127.0.0.1:2"}
+
+
+def _lancer(script, sortie, **env):
+    return subprocess.run([SH, str(EDGE / "entrypoint.d" / script)], capture_output=True, encoding="utf-8",
+                          env={"PATH": os.environ["PATH"], "NGINX_ENVSUBST_OUTPUT_DIR": str(sortie), **BASE, **env})
+
+
+def _maps(sortie, **env):
+    r = _lancer("27-origines.sh", sortie, **env)
+    assert r.returncode == 0, r.stderr
+    texte = (sortie / "origines.conf").read_text(encoding="utf-8")
+    maps = {}
+    for nom, corps in re.findall(r"map \$edge_req_cle \$edge_req_(\w+) \{\n(.*?)\}", texte, re.S):
+        maps[nom] = dict(re.findall(r'^\s+"?([^"\s]+)"? (\S+);$', corps, re.M))
+    assert 'map $http_x_forwarded_host $edge_req_cle {\n    ""      $http_host;' in texte
+    return maps
+
+
+@pytest.mark.skipif(SH is None, reason="sh absent")
+def test_origines_liste_blanche(tmp_path):
+    # 0 origine : seule l'URL publique, quel que soit l'hôte reçu.
+    assert _maps(tmp_path) == {n: {"default": v} for n, v in
+                               (("proto", "https"), ("host", "academy.exemple"), ("port", "443"))}
+    # 1 origine sur un port non standard : une seule clé hôte:port.
+    m = _maps(tmp_path, EDGE_ORIGINES="https://192.168.10.155:8444")
+    assert m["proto"] == {"default": "https", "192.168.10.155:8444": "https"}
+    assert m["host"]["192.168.10.155:8444"] == "192.168.10.155" and m["port"]["192.168.10.155:8444"] == "8444"
+    # 2 origines, port par défaut : clé avec et sans port ; majuscules ramenées.
+    m = _maps(tmp_path, EDGE_ORIGINES="http://Recette.Local, https://10.0.0.1:8444")
+    assert m["proto"] == {"default": "https", "recette.local:80": "http", "recette.local": "http",
+                          "10.0.0.1:8444": "https"}
+    assert m["port"]["recette.local"] == "80" and m["host"]["recette.local:80"] == "recette.local"
+
+
+@pytest.mark.skipif(SH is None, reason="sh absent")
+@pytest.mark.parametrize("env, motif", [
+    ({"EDGE_ORIGINES": "ftp://h"}, "proto://hôte[:port]"),
+    ({"EDGE_ORIGINES": "https://h/chemin"}, "proto://hôte[:port]"),
+    ({"EDGE_ORIGINES": "https://h;evil"}, "proto://hôte[:port]"),
+    ({"EDGE_ORIGINES": 'https://h"'}, "proto://hôte[:port]"),
+    ({"EDGE_ORIGINES": "https://h https://H:443"}, "en double"),
+    ({"EDGE_ORIGINES": "https://h http://h"}, "en double"),
+    ({"EDGE_RACINE": "autre"}, "needs ou portail"),
+    ({"EDGE_RACINE": "portail"}, "EDGE_PORTAIL_UPSTREAM vide"),
+    ({"EDGE_PUBLIC_HOST": "h;x"}, "nom d'hôte"),
+    ({"EDGE_PUBLIC_PORT": "44a"}, "n'est pas un port"),
+])
+def test_origines_et_racine_invalides_bloquent_le_demarrage(tmp_path, env, motif):
+    r = _lancer("05-exiger-variables.sh", tmp_path, **env)
+    assert r.returncode != 0 and motif in r.stderr, r.stderr
+
+
+@pytest.mark.skipif(SH is None, reason="sh absent")
+def test_origines_et_racine_valides_acceptees(tmp_path):
+    r = _lancer("05-exiger-variables.sh", tmp_path, EDGE_RACINE="portail", EDGE_PORTAIL_UPSTREAM="127.0.0.1:3",
+                EDGE_ORIGINES="https://192.168.10.155:8444 https://192.168.10.155 http://192.168.10.155:8080")
+    assert r.returncode == 0, r.stderr

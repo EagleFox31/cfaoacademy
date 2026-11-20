@@ -14,3 +14,9 @@ services:
     command: ["python", "/stub/echo.py"]
     environment: { NOM: cr, PORT: "18092" }
     volumes: ["./tests/stub:/stub:ro"]
+  portail:
+    image: python:3.12-alpine
+    network_mode: host
+    command: ["python", "/stub/echo.py"]
+    environment: { NOM: portail, PORT: "18095" }
+    volumes: ["./tests/stub:/stub:ro"]

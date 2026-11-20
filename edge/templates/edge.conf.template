@@ -26,15 +26,18 @@ server {
     # Module arrêté ou en mise à jour : page d'attente au lieu d'un 502 brut.
     include /etc/nginx/snippets/attente.conf;
 
-    # URL vue des navigateurs, annoncée aux modules servis sous préfixe.
-    set $edge_fwd_proto ${EDGE_PUBLIC_PROTO};
-    set $edge_fwd_host  ${EDGE_PUBLIC_HOST};
-    set $edge_fwd_port  ${EDGE_PUBLIC_PORT};
+    # URL vue des navigateurs, annoncée aux modules servis sous préfixe : origine
+    # de la liste blanche EDGE_ORIGINES, sinon l'URL publique (origines.conf,
+    # écrit par 27-origines.sh). Jamais l'en-tête reçu tel quel.
+    set $edge_fwd_proto $edge_req_proto;
+    set $edge_fwd_host  $edge_req_host;
+    set $edge_fwd_port  $edge_req_port;
 
     # Modules actifs (fichier présent seulement si leur adresse est renseignée).
     include /tmp/conf.d/routes/*.conf;
 
-    include /tmp/conf.d/racine/needs.conf;
+    # Racine : needs ou portail selon EDGE_RACINE (25-modules-actifs.sh).
+    include /tmp/conf.d/racine/*.conf;
 }
 
 # Écoutes directes du LAN (EDGE_LAN), une application par port : lan.conf,
