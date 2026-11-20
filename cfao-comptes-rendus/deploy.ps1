@@ -69,4 +69,5 @@ Write-Host " Cookie Secure    : $secure"
 Write-Host "==========================================================" -ForegroundColor Green
 
 docker compose --env-file $EnvFile -f $ComposeFile pull
-docker compose --env-file $EnvFile -f $ComposeFile up -d
+# --remove-orphans : retire l'ancien conteneur `api` (service renomme cr-api) ; volumes gardes.
+docker compose --env-file $EnvFile -f $ComposeFile up -d --remove-orphans

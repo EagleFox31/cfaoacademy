@@ -12,8 +12,8 @@ COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 ENV_FILE="${ENV_FILE:-.env}"
 C="docker compose --env-file $ENV_FILE -f $COMPOSE_FILE"
 SOURCE="$(cd "$SOURCE" && pwd)"
-API="$($C ps -q api)"
-[ -n "$API" ] || { echo "Le service api ne tourne pas : lancer ./deploy.sh d'abord."; exit 1; }
+API="$($C ps -q cr-api)"
+[ -n "$API" ] || { echo "Le service cr-api ne tourne pas : lancer ./deploy.sh d'abord."; exit 1; }
 
 # 1. SQLite -> JSON (copie de travail, l'export n'est jamais modifie)
 TRAVAIL="$(mktemp -d)"
@@ -27,9 +27,9 @@ docker run --rm -v "$TRAVAIL:/import" -e DEPLOYMENT_MODE=standalone -e DEBUG=Tru
 docker cp "$TRAVAIL/reprise.json" "$API:/tmp/reprise.json"
 docker cp "$SOURCE/donnees/photos" "$API:/donnees/"
 docker cp "$SOURCE/profils.json" "$API:/donnees/profils-locaux.json"
-$C exec -T -u root api chown -R service:service /donnees
-$C exec -T api python manage.py loaddata /tmp/reprise.json
-$C exec -T api python manage.py shell -c \
+$C exec -T -u root cr-api chown -R service:service /donnees
+$C exec -T cr-api python manage.py loaddata /tmp/reprise.json
+$C exec -T cr-api python manage.py shell -c \
   "from django.apps import apps; print({m.__name__: m.objects.count() for m in apps.get_app_config('comptes_rendus').get_models()})"
 
-echo "Reprise terminee. Creer les mots de passe : $C exec api python manage.py mot_de_passe <identifiant>"
+echo "Reprise terminee. Creer les mots de passe : $C exec cr-api python manage.py mot_de_passe <identifiant>"

@@ -3,7 +3,7 @@
 #   1. Copier ce fichier, deploy.sh|ps1, reprise.sh|ps1 et env.prod.example dans un dossier.
 #   2. ./deploy.sh (ou .\deploy.ps1) : genere les secrets dans .env, deduit l'adresse LAN, demarre.
 #   3. Une fois : ./reprise.sh <export formateurs> (base, photos et profils).
-#   4. Creer chaque compte : docker compose -f docker-compose.prod.yml exec api python manage.py mot_de_passe <identifiant>
+#   4. Creer chaque compte : docker compose -f docker-compose.prod.yml exec cr-api python manage.py mot_de_passe <identifiant>
 # Mode local : comptes a mot de passe du module, sans Keycloak. Les vrais
 # profils se deposent dans le volume cr-donnees (/donnees/profils-locaux.json).
 name: cfao-comptes-rendus
@@ -45,7 +45,7 @@ services:
       timeout: 5s
       retries: 5
 
-  api:
+  cr-api:
     image: antifragile237/cfao-comptes-rendus-api:${CR_VERSION:-v0.4.1}
     restart: unless-stopped
     logging: *journaux
@@ -66,12 +66,21 @@ services:
       PROFILS_LOCAUX: ${PROFILS_LOCAUX:-/donnees/profils-locaux.json}
       DATABASE_URL: postgres://${POSTGRES_USER:-comptes_rendus}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-comptes_rendus}
       CERBOS_HTTP: http://cerbos:3592
+      # Copie des sessions du planning. Cle vide = copie coupee ; la valeur se pose
+      # dans le .env du serveur, identique a CR_SESSIONS_KEY du planning.
+      PLANNING_API_URL: ${PLANNING_API_URL:-http://planning-api:8000}
+      CR_SESSIONS_KEY: ${CR_SESSIONS_KEY:-}
     volumes:
       - cr-donnees:/donnees
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
       cerbos: { condition: service_healthy }
+    networks:
+      # Alias `api` : la passerelle (image publiee) le joint toujours sous ce nom.
+      default: { aliases: [api] }
+      # Lit les sessions du planning (contrat cr-sessions), voir comptes_rendus/planning.py.
+      cfao-maillage: {}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:5175/apercu/sante"]
       interval: 15s
@@ -104,7 +113,13 @@ services:
       # 127.0.0.1 par defaut : ne l'elargir que derriere un proxy TLS (README, « Exposer en interne »).
       - "${CR_BIND:-127.0.0.1}:${CR_PORT:-8090}:80"
     depends_on:
-      api: { condition: service_healthy }
+      cr-api: { condition: service_healthy }
+
+networks:
+  # Reseau de maillage inter-modules (meme cle et meme nom dans chaque compose,
+  # edge/tests/test_edge_config.py) : pas `external`, le premier module le cree.
+  cfao-maillage:
+    name: cfao-maillage
 
 volumes:
   cr-db:
