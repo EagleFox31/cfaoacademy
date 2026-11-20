@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 
 import { BASE } from '../lib/adresse'
@@ -45,9 +45,14 @@ export default function VersPortail() {
   const cible = adressePortail(hash)
   const sortir = quitteLeModule(cible)
 
+  // Garde déjà jouée (le portail ramène ici) : on ouvre le repli, jamais d'écran vide.
+  const [repli, setRepli] = useState(false)
+
   useEffect(() => {
-    if (sortir && !dejaRedirige()) window.location.replace(cible)
+    if (!sortir) return
+    if (dejaRedirige()) setRepli(true)
+    else window.location.replace(cible)
   }, [sortir, cible])
 
-  return sortir ? null : <Navigate to={REPLI} replace />
+  return !sortir || repli ? <Navigate to={REPLI} replace /> : null
 }
