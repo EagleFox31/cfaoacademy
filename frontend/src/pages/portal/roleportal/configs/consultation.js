@@ -32,11 +32,38 @@ const macro = (id, cle, portee, eyebrow, etape) => ({
   cards: [{ id, title: `${cle}_card`, meta: `${cle}_meta_${portee}` }],
 })
 
+/**
+ * Chiffres sous la phrase du hero, propres à chaque rôle (PortalHeroKpis) :
+ * ce qui reste à faire, un clic descend à la section. Directeur groupe
+ * (observateur) : des taux, sans « reste à faire ». Rien pour la RH filiale
+ * (portail validé tel quel), ni pour les directeurs régional et de filiale.
+ */
+export const HERO_KPIS = {
+  group_hr: [
+    { id: 'non-evalues', valeur: 'nonEvalues', label: 'kpi_not_assessed', cible: 'competences' },
+    { id: 'sans-plan', valeur: 'sansPlan', label: 'kpi_no_plan', cible: 'pif' },
+    { id: 'fiches', valeur: 'fichesACompleter', label: 'kpi_records_incomplete', cible: 'personnes' },
+  ],
+  group_admin: [
+    { id: 'fiches', valeur: 'fichesACompleter', label: 'kpi_records_incomplete', cible: 'personnes' },
+    { id: 'plans-a-valider', valeur: 'plansAValider', label: 'kpi_plans_to_approve', cible: 'pif' },
+  ],
+  branch_admin: [
+    { id: 'fiches', valeur: 'fichesACompleter', label: 'kpi_records_incomplete', cible: 'personnes' },
+    { id: 'campagnes', valeur: 'campagnesOuvertes', label: 'kpi_recruit_open', cible: 'recrutement' },
+  ],
+  group_director: [
+    { id: 'pct-evalues', valeur: 'pctEvalues', label: 'kpi_pct_assessed', cible: 'competences', format: 'pct' },
+    { id: 'pct-plans', valeur: 'pctPlans', label: 'kpi_pct_planned', cible: 'pif', format: 'pct' },
+  ],
+}
+
 export default {
   key: 'consultation',
   ns: 'consultation',
   // Phrase chiffrée du métier de chaque rôle (norme DPS / centre).
   header: { render: 'header' },
+  heroKpis: HERO_KPIS,
   construction: { label: 'under_construction', chip: 'chip_follow' },
   sections: [
     { id: 'a-traiter', kind: 'rich', render: 'aTraiter', etape: null,

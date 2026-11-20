@@ -6,11 +6,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getCopy } from '../../i18n/index.js'
 import { resolvePortalNavSections } from '../../data/index.js'
 import { PLANNING_HOME } from '../../utils/planningAccess.js'
-import { codeFiliale, filiales, syntheseCompetences, synthesePersonnes } from '../../utils/rhDonnees'
+import { codeFiliale, filiales, syntheseCompetences, synthesePIF, synthesePersonnes } from '../../utils/rhDonnees'
 import { PIF_YEARS } from '../../utils/learnerPif.js'
 import { resolvePortalOrientKey } from '../../utils/portalOrient.js'
+import PortalHeroKpis from '../../components/PortalHeroKpis.jsx'
 import { CONSULTATION_MODES } from './portalProfiles.js'
-import { CLE_REPARTITION } from './roleportal/configs/consultation.js'
+import { CLE_REPARTITION, HERO_KPIS } from './roleportal/configs/consultation.js'
+import { chiffresDuHero } from './roleportal/sources/consultation.js'
 
 vi.mock('../../components/Nav', () => ({ default: () => null }))
 vi.mock('../../components/Footer', () => ({ default: () => null }))
@@ -79,8 +81,68 @@ describe('portail de consultation (fabrique)', () => {
     expect(HEADER.props.statsHero.chiffres.filiales).toBe(syntheseCompetences().parFiliale.length)
     act(() => root.unmount()); host.remove()
     await show('regional_director')
-    expect(HEADER.props.statsHero.gabarit).toBe(getCopy('portal', 'fr').consult_hero_regional_director)
-    expect(HEADER.props.statsHero.chiffres).toEqual({})
+    const p = getCopy('portal', 'fr')
+    expect(HEADER.props.statsHero.gabarit).toBe(p.consult_hero_regional_director)
+    // Pas encore de source par région : « — », mots au pluriel.
+    expect(HEADER.props.statsHero.chiffres).toMatchObject({
+      techs: null, techs_mot: p.consult_hero_techs, filiales: null, filiales_mot: p.consult_hero_branches,
+    })
+  })
+
+  it('directeur de filiale : techniciens et marques MEDACAP seulement, jamais le jeu de démo', async () => {
+    await show('branch_director')
+    const p = getCopy('portal', 'fr')
+    const { statsHero } = HEADER.props
+    expect(statsHero.gabarit).toBe(p.consult_hero_branch_director)
+    expect(statsHero.filiale).toBe(true)
+    expect(statsHero.chiffres).toMatchObject({ techs: null, marques: null, techs_mot: p.consult_hero_techs })
+  })
+
+  it.each(Object.keys(CONSULTATION_MODES))('%s : chiffres du hero propres au rôle', async role => {
+    await show(role)
+    const below = HEADER.props.belowGreeting
+    if (!HERO_KPIS[role]) {
+      expect(below ?? null).toBeNull()
+      return
+    }
+    expect(below.props.kpis).toBe(HERO_KPIS[role])
+    expect(below.props.t).toEqual(t)
+    // Vue détaillée : chaque chiffre est connu (un nombre, jamais inventé hors vue).
+    HERO_KPIS[role].forEach(k => expect(Number.isFinite(below.props.values[k.valeur]), k.valeur).toBe(true))
+  })
+
+  it('RH filiale : aucun chiffre sous la phrase (portail validé tel quel)', async () => {
+    await show('branch_hr')
+    expect(HEADER.props.belowGreeting ?? null).toBeNull()
+  })
+
+  it('chiffres du hero : tirés du jeu RH en vue détaillée, « — » sinon', () => {
+    const competences = syntheseCompetences()
+    const pif = synthesePIF()
+    const personnes = synthesePersonnes()
+    const v = chiffresDuHero(true, { enCours: { nombre: 2 }, competences, pif, personnes })
+    expect(v).toEqual({
+      nonEvalues: competences.techniciens - competences.evalues,
+      sansPlan: pif.techniciens - pif.avecPif,
+      plansAValider: pif.avecPif - pif.valides,
+      fichesACompleter: personnes.aCompleter,
+      campagnesOuvertes: 2,
+      pctEvalues: competences.couverture,
+      pctPlans: pif.couverture,
+    })
+    Object.values(chiffresDuHero(false, {})).forEach(n => expect(n).toBeNull())
+  })
+
+  it('directeur groupe : des taux, ton neutre, un seul libellé (observateur)', () => {
+    host = document.createElement('div')
+    document.body.appendChild(host)
+    root = createRoot(host)
+    act(() => root.render(<PortalHeroKpis kpis={HERO_KPIS.group_director} t={t}
+      values={{ pctEvalues: 42, pctPlans: 0 }} />))
+    const cartes = [...host.querySelectorAll('.portal-hero-kpi')]
+    expect(cartes.map(c => c.querySelector('.portal-kpi-value').textContent)).toEqual(['42 %', '0 %'])
+    cartes.forEach(c => expect(c.querySelector('.portal-kpi-value').className).toBe('portal-kpi-value'))
+    expect(cartes[1].textContent).toContain(t.kpi_pct_planned)
   })
 
   it.each(Object.keys(CONSULTATION_MODES))('%s : chaque onglet de la navbar a sa section, dans le même ordre', async role => {

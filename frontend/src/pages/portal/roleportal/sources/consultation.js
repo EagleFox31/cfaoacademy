@@ -43,22 +43,47 @@ export function campagnes(recrutement) {
 /** Données du portail de consultation (extrait MEDACAP anonymisé) : tout le
  * groupe, ou la seule filiale de la RH ou de l'admin filiale. */
 export function useConsultationSources(ctx) {
-  const { sections, filialeFixe } = perimetreDuMode(ctx.mode, ctx.user)
+  const { sections, filialeFixe, vueDetaillee } = perimetreDuMode(ctx.mode, ctx.user)
 
   return useMemo(() => {
     const perimetre = filialeFixe ? { ...PERIMETRE_GROUPE, filiale: filialeFixe } : PERIMETRE_GROUPE
     const recrutement = syntheseRecrutement(perimetre)
+    const parStatut = campagnes(recrutement)
+    const competences = syntheseCompetences(perimetre)
+    const pif = synthesePIF(perimetre)
+    const personnes = synthesePersonnes(perimetre)
     return {
       values: {
         filialeFixe,
         // Seules les priorités des sections ouvertes au rôle remontent.
         aTraiter: priorites(perimetre).filter(a => sections.includes(a.espace)),
-        ...campagnes(recrutement),
-        competences: syntheseCompetences(perimetre),
-        pif: synthesePIF(perimetre),
-        personnes: synthesePersonnes(perimetre),
+        ...parStatut,
+        competences,
+        pif,
+        personnes,
+        ...chiffresDuHero(vueDetaillee, { enCours: parStatut.enCours, competences, pif, personnes }),
       },
       loading: false,
     }
-  }, [filialeFixe, sections])
+  }, [filialeFixe, sections, vueDetaillee])
+}
+
+/**
+ * Chiffres du hero (HERO_KPIS, configs/consultation.js), à plat. Hors vue
+ * détaillée : tous `null` (« — »), rien du jeu RH ne s'affiche.
+ */
+export function chiffresDuHero(vueDetaillee, { enCours, competences, pif, personnes }) {
+  if (!vueDetaillee) {
+    return { nonEvalues: null, sansPlan: null, plansAValider: null, fichesACompleter: null,
+      campagnesOuvertes: null, pctEvalues: null, pctPlans: null }
+  }
+  return {
+    nonEvalues: competences.techniciens - competences.evalues,
+    sansPlan: pif.techniciens - pif.avecPif,
+    plansAValider: pif.avecPif - pif.valides,
+    fichesACompleter: personnes.aCompleter,
+    campagnesOuvertes: enCours.nombre,
+    pctEvalues: competences.couverture,
+    pctPlans: pif.couverture,
+  }
 }
