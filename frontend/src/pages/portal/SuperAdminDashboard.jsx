@@ -23,6 +23,7 @@ import TrainerHome from './TrainerHome'
 import { OIDC_ACTIF } from '../../lib/auth.js'
 import PvCard from '../../components/PvCard.jsx'
 import { ADMIN_HOME, ADMIN_NAV, adminPath, canAccessAdminConsole } from '../../utils/adminAccess.js'
+import { ROLES_APERCU, ouvrirApercu, peutOuvrirApercu } from '../../utils/apercuPortail.js'
 
 export const CFAO_ACADEMY_APPS_CONFIG = [
   {
@@ -946,6 +947,32 @@ function SuperAdminGroupe() {
                   />
                 )
               })}
+            </PortalStaggerGrid>
+          </div>
+        </PortalReveal>
+      )}
+
+      {/* ═════════════ #apercus — Portail de chaque profil, dans une fenêtre à part ═════════════ */}
+      {peutOuvrirApercu(user?.roles) && (
+        <PortalReveal id="apercus">
+          <div className="container" style={{ padding: '16px 32px' }}>
+            <PortalSectionHead
+              eyebrow={<PortalSectionEyebrow icon="users" label={t.sa_apercu_eyebrow} />}
+              title={t.sa_apercu_title}
+              methodText={t.sa_apercu_lead}
+              t={t}
+            />
+            <PortalStaggerGrid className="cols-4 pv-grid--stretch">
+              {ROLES_APERCU.map(role => (
+                <PvCard
+                  key={role}
+                  noMedia
+                  title={t[`role_${role}`] ?? role}
+                  onClick={() => ouvrirApercu(role)}
+                  cta={t.sa_apercu_cta}
+                  corner
+                />
+              ))}
             </PortalStaggerGrid>
           </div>
         </PortalReveal>

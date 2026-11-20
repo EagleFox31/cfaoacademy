@@ -127,6 +127,7 @@ export const PORTAL_NAV_SECTIONS = {
   superadmin: [
     { key: 'bilan',       id: 'bilan',       labelKey: 'nav_sec_bilan' },
     { key: 'console',     id: 'console',     labelKey: 'nav_sec_console' },
+    { key: 'apercus',     id: 'apercus',     labelKey: 'nav_sec_apercus' },
     { key: 'branches',    id: 'branches',    labelKey: 'nav_sec_branches' },
     { key: 'competences', id: 'competences', labelKey: 'nav_sec_competences' },
     { key: 'logs',        id: 'logs',        labelKey: 'nav_sec_logs' },

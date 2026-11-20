@@ -3156,6 +3156,30 @@ button.pv-card {
 }
 
 /* ── Toast de notification "Bientôt disponible" ── */
+/* Fenêtre d'aperçu du super admin (components/ApercuProvider.jsx) */
+.portal-apercu-bandeau {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 8px 8px 20px;
+  border: 1px solid #fcd34d;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #78350f;
+  font-size: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+.portal-apercu-bandeau .portal-btn { white-space: nowrap; }
+@media (max-width: 720px) {
+  .portal-apercu-bandeau-note { display: none; }
+}
+
 .portal-coming-soon-toast {
   position: fixed;
   bottom: 24px;

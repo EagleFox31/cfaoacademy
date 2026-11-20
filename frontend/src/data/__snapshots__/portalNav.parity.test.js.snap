@@ -418,6 +418,11 @@ exports[`onglets des portails par rôle > liste figée pour tous les rôles 1`] 
       "labelKey": "nav_sec_console",
     },
     {
+      "id": "apercus",
+      "key": "apercus",
+      "labelKey": "nav_sec_apercus",
+    },
+    {
       "id": "branches",
       "key": "branches",
       "labelKey": "nav_sec_branches",

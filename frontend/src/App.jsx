@@ -2,6 +2,7 @@ import { lazy } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { LocaleProvider } from './context/LocaleProvider.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
+import ApercuProvider from './components/ApercuProvider.jsx'
 import PortalHelpShell from './help/PortalHelpShell.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
 import { SiteBackToTopFab } from './components/BackToTopFab.jsx'
@@ -59,6 +60,7 @@ export default function App() {
   return (
     <AuthProvider>
     <LocaleProvider>
+      <ApercuProvider>
       <PortalHelpShell>
       <ScrollToTop />
       <SiteBackToTopFab />
@@ -112,6 +114,7 @@ export default function App() {
         </GardeCentre>
       </RouteMotion>
       </PortalHelpShell>
+      </ApercuProvider>
     </LocaleProvider>
     </AuthProvider>
   )
