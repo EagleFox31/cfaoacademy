@@ -18,13 +18,14 @@ Regles d'ecriture :
 from __future__ import annotations
 
 import logging
+import threading
 import uuid
 from datetime import date
 
 import requests
 from django.conf import settings
 from django.core.cache import cache
-from django.db import transaction
+from django.db import connections, transaction
 
 from . import import_referentiel
 from .models import Animation, Formation, Session
@@ -34,7 +35,7 @@ journal = logging.getLogger(__name__)
 PATH = "/api/v1/planning/internal/cr-sessions"
 ENTETE_CLE = "X-Cr-Sessions-Key"
 JOURS = 60
-DELAI = (2, 5)  # connexion, lecture (secondes) : la liste ne patiente pas plus
+DELAI = (2, 15)  # connexion, lecture (secondes) ; lu en arriere-plan, la liste n'attend pas
 CLE_ETAG = "planning:cr-sessions:etag"
 CLE_VERROU = "planning:cr-sessions:verrou"
 
@@ -180,12 +181,29 @@ def synchroniser() -> dict | None:
 
 
 def rafraichir_si_du() -> None:
-    """A l'ouverture de la liste : au plus une lecture par intervalle, jamais d'echec visible.
+    """A l'ouverture de la liste : au plus une lecture par intervalle, jamais d'attente ni d'echec visible.
 
-    Planning arrete ou hors contrat : la copie locale est servie telle quelle.
+    La lecture part dans un fil d'arriere-plan : la liste repond tout de suite avec
+    la copie locale, la copie rafraichie sert a l'ouverture suivante. Planning lent,
+    arrete ou hors contrat : la copie locale est servie telle quelle.
     """
-    if not configure() or not cache.add(CLE_VERROU, 1, timeout=settings.PLANNING_SYNC_INTERVALLE):
+    if not configure() or not _lecture.acquire(blocking=False):
         return
+    if not cache.add(CLE_VERROU, 1, timeout=settings.PLANNING_SYNC_INTERVALLE):
+        _lecture.release()
+        return
+    try:
+        _lancer()
+    except Exception:  # noqa: BLE001 - fil refuse par le systeme : la liste sert la copie
+        _lecture.release()
+        journal.exception("copie du planning : fil non lance")
+
+
+# Une seule lecture a la fois : le module tourne dans un seul processus gunicorn.
+_lecture = threading.Lock()
+
+
+def _rafraichir() -> None:
     try:
         compte = synchroniser()
         if compte:
@@ -194,3 +212,16 @@ def rafraichir_si_du() -> None:
         journal.warning("copie du planning non rafraichie : %s", exc)
     except Exception:  # noqa: BLE001 - la liste ne tombe jamais a cause de la copie
         journal.exception("copie du planning en echec")
+    finally:
+        _lecture.release()
+
+
+def _fil() -> None:
+    try:
+        _rafraichir()
+    finally:
+        connections.close_all()  # connexions ouvertes par ce fil, jamais rendues sinon
+
+
+def _lancer() -> None:
+    threading.Thread(target=_fil, name="copie-planning", daemon=True).start()

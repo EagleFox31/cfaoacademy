@@ -5,6 +5,8 @@ le fournisseur (`cfao-planning/api/planning/contract/cr-sessions.openapi.json`).
 """
 import copy
 import sys
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -18,6 +20,7 @@ from comptes_rendus import planning  # noqa: E402
 from comptes_rendus.models import Animation, Formation, Session  # noqa: E402
 
 SPEC = kit.load_spec("cr-sessions")
+LANCER = planning._lancer  # le vrai lancement, avant que le fixture ne le remplace
 URL = "http://planning-api:8000"
 CLE = "cle-de-test"
 
@@ -48,10 +51,12 @@ class FauxPlanning:
     """Remplace `requests.get` : garde les appels, rend la reponse programmee."""
 
     def __init__(self):
-        self.appels, self.body, self.status, self.erreur = [], None, 200, None
+        self.appels, self.body, self.status, self.erreur, self.sommeil = [], None, 200, None, None
 
     def __call__(self, url, params=None, headers=None, timeout=None):
         self.appels.append({"url": url, "params": params, "headers": headers, "timeout": timeout})
+        if self.sommeil:  # planning lent : dort jusqu'a 10 s (reveille en fin de test)
+            self.sommeil.wait(10)
         if self.erreur:
             raise self.erreur
         etag = f'"{self.body["revision"]}"' if self.body else None
@@ -73,6 +78,8 @@ def faux(monkeypatch, settings, profils_referentiel):
     settings.PLANNING_API_URL, settings.CR_SESSIONS_KEY = URL, CLE
     f = FauxPlanning()
     monkeypatch.setattr(planning.requests, "get", f)
+    # Par defaut la lecture est jouee sur place : les tests de copie restent deterministes.
+    monkeypatch.setattr(planning, "_lancer", planning._rafraichir)
     return f
 
 
@@ -177,6 +184,39 @@ def test_liste_lit_le_planning_au_plus_une_fois_par_intervalle(faux, client, pdp
     client("f-a").get("/cr-donnees/sessions")
     client("f-a").get("/cr-donnees/sessions")
     assert len(faux.appels) == 1
+
+
+def _fil_de_copie():
+    return next((t for t in threading.enumerate() if t.name == "copie-planning"), None)
+
+
+def test_la_liste_n_attend_pas_un_planning_lent(faux, client, pdp_fidele, monkeypatch):
+    from django.core.cache import cache
+    monkeypatch.setattr(planning, "_lancer", LANCER)  # vrai fil d'arriere-plan
+    faux.sommeil, faux.erreur = threading.Event(), requests.ReadTimeout("lent")
+    try:
+        debut = time.monotonic()
+        r = client("f-a").get("/cr-donnees/sessions")
+        assert r.status_code == 200
+        assert time.monotonic() - debut < 2  # le faux planning dort 10 s
+        assert _fil_de_copie() is not None
+        # Une seule lecture a la fois, meme une fois l'intervalle ecoule.
+        cache.clear()
+        assert client("f-a").get("/cr-donnees/sessions").status_code == 200
+        assert len(faux.appels) == 1
+    finally:
+        faux.sommeil.set()
+        fil = _fil_de_copie()
+        if fil:
+            fil.join(5)
+    assert _fil_de_copie() is None
+    cache.clear()  # le fil a rendu le verrou : la lecture suivante repart
+    faux.sommeil = None
+    client("f-a").get("/cr-donnees/sessions")
+    fil = _fil_de_copie()
+    if fil:
+        fil.join(5)
+    assert len(faux.appels) == 2
 
 
 def test_sans_configuration_aucun_appel(faux, client, pdp_fidele, settings):
