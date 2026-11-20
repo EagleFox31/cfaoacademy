@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supervisionApi } from '../../../lib/supervisionApi'
 import {
-  absoluteTime, fill, modulePath, relativeTime, sortModules, statusTone, summarize, supervisionPath,
+  REFUSED_PERIODS, absoluteTime, fill, modulePath, relativeTime, sortModules, statusTone, summarize, supervisionPath,
 } from '../../../utils/supervisionStatus'
 
 /** L'écran d'ensemble se recharge seul : un arrêt se voit en moins de 30 s. */
@@ -111,6 +111,13 @@ export function OverviewView({ t, locale }) {
         <div className="dlv-readonly">
           {d.collected_at ? fill(t.stale, { when: relativeTime(d.collected_at, locale) }) : t.never_collected}
         </div>
+      )}
+      {d.refused?.alerts > 0 && (
+        <Link to={supervisionPath('refused')} className="dlv-alert">
+          <span className="dlv-status blocked">{fill(t.refused_alert_badge, { n: d.refused.alerts })}</span>
+          <span>{t.refused_alert_text}</span>
+          <b>{t.refused_alert_link} →</b>
+        </Link>
       )}
       <div className="dlv-kpis">
         <div className="dlv-kpi">
@@ -351,6 +358,105 @@ export function ConnectionsView({ t, locale }) {
       <RefreshFailed state={state} t={t} />
       <p className="dlv-section-sub">{fill(t.retention, { days: state.data.retention_days })}</p>
       <ConnectionsTable rows={state.data.connections} t={t} locale={locale} />
+    </>
+  )
+}
+
+// ── Connexions refusées par le pare-feu ──
+
+function SourceNotice({ source, t, locale }) {
+  if (source === null) return <div className="dlv-readonly">{t.refused_no_source}</div>
+  if (source?.ok === false) {
+    return (
+      <div className="dlv-readonly">
+        {source.last_success_at
+          ? fill(t.refused_source_failed, { when: relativeTime(source.last_success_at, locale) })
+          : t.refused_source_never}
+      </div>
+    )
+  }
+  return null
+}
+
+export function RefusedView({ t, locale }) {
+  const [hours, setHours] = useState(24)
+  const state = useLoad(() => supervisionApi.refused(hours), [hours], REFRESH_MS)
+  const periods = (
+    <div className="dlv-periods" role="group" aria-label={t.refused_period}>
+      {REFUSED_PERIODS.map(h => (
+        <button key={h} type="button" aria-pressed={h === hours}
+          className={`dlv-btn${h === hours ? ' is-active' : ''}`} onClick={() => setHours(h)}>
+          {t[`period_${h}`]}
+        </button>
+      ))}
+    </div>
+  )
+  if (!state.data) return <>{periods}<Loading state={state} t={t} /></>
+  const d = state.data
+  const networks = d.networks ?? []
+  const rule = { threshold: d.threshold, window: d.window_min }
+  return (
+    <>
+      <RefreshFailed state={state} t={t} />
+      <SourceNotice source={d.source} t={t} locale={locale} />
+      {periods}
+      <div className="dlv-kpis three">
+        <div className={`dlv-kpi${d.alerts > 0 ? ' crit' : ''}`}>
+          <div className="dlv-kpi-k">{t.refused_kpi_alerts}</div>
+          <div className="dlv-kpi-v">{d.alerts}</div>
+          <div className="dlv-kpi-m">{fill(t.refused_kpi_alerts_hint, rule)}</div>
+        </div>
+        <div className="dlv-kpi">
+          <div className="dlv-kpi-k">{t.refused_kpi_total}</div>
+          <div className="dlv-kpi-v">{d.total}</div>
+          <div className="dlv-kpi-m">{t[`period_hint_${hours}`]}</div>
+        </div>
+        <div className="dlv-kpi">
+          <div className="dlv-kpi-k">{t.refused_kpi_posts}</div>
+          <div className="dlv-kpi-v">{networks.reduce((n, net) => n + net.addresses, 0)}</div>
+          <div className="dlv-kpi-m">{fill(t.refused_kpi_posts_hint, { n: networks.length })}</div>
+        </div>
+      </div>
+
+      <h2 className="dlv-section-title">{t.section_refused}</h2>
+      <p className="dlv-section-sub">{fill(t.refused_rule, rule)}</p>
+      {networks.length ? (
+        <table className="dlv-table">
+          <thead>
+            <tr>
+              <th>{t.col_post}</th><th>{t.col_state}</th><th>{t.col_refused_total}</th>
+              <th>{fill(t.col_refused_recent, rule)}</th><th>{t.col_target_ports}</th>
+              <th>{t.col_first_refused}</th><th>{t.col_last_refused}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {networks.map(net => [
+              <tr key={net.network} className="dlv-row-group">
+                <td colSpan={7}>
+                  <b>{fill(t.refused_network, { network: net.network })}</b>
+                  {' · '}{fill(t.refused_network_sum, { n: net.addresses, total: net.total })}
+                </td>
+              </tr>,
+              ...net.ips.map(ip => (
+                <tr key={ip.ip}>
+                  <td><code>{ip.ip}</code></td>
+                  <td>
+                    <span className={`dlv-status ${ip.alert ? 'blocked' : 'todo'}`}>
+                      {ip.alert ? t.refused_state_alert : t.refused_state_isolated}
+                    </span>
+                  </td>
+                  <td>{ip.total}</td>
+                  <td>{ip.recent}</td>
+                  <td>{ip.ports.length ? ip.ports.join(', ') : '—'}</td>
+                  <td><When iso={ip.first_at} locale={locale} /></td>
+                  <td><When iso={ip.last_at} locale={locale} /></td>
+                </tr>
+              )),
+            ])}
+          </tbody>
+        </table>
+      ) : <p className="dlv-hint">{d.source === null ? t.refused_none_no_source : t.refused_none}</p>}
+      <p className="dlv-section-sub">{fill(t.refused_retention, { days: d.retention_days })}</p>
     </>
   )
 }

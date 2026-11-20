@@ -18,6 +18,8 @@ export const supervisionApi = {
   dependencies: () => http.get('/dependencies'),
   /** Dernières connexions par compte et par module. */
   connections: () => http.get('/connections'),
+  /** Postes refusés par le pare-feu du serveur sur les `hours` dernières heures. */
+  refused: hours => http.get(`/refused?hours=${encodeURIComponent(hours)}`),
   module: name => http.get(`/modules/${project(name)}`),
   history: name => http.get(`/modules/${project(name)}/history`),
 }

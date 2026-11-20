@@ -38,7 +38,22 @@ const OVERVIEW = {
   ],
 }
 
-function stub({ access = { board: true, connections: true }, overview = OVERVIEW, module, history, deps, connections } = {}) {
+const REFUSED = {
+  hours: 24, window_min: 60, threshold: 10, retention_days: 7, alerts: 1, total: 15,
+  source: { ok: true, last_success_at: recent },
+  networks: [
+    { network: '192.168.10.0/24', total: 14, recent: 12, last_at: recent, alert: true, addresses: 2, ips: [
+      { ip: '192.168.10.42', total: 12, recent: 12, ports: [8444, 8445], first_at: recent, last_at: recent, alert: true },
+      { ip: '192.168.10.7', total: 2, recent: 0, ports: [8092], first_at: recent, last_at: recent, alert: false },
+    ] },
+    { network: '10.0.0.0/24', total: 1, recent: 1, last_at: recent, alert: false, addresses: 1, ips: [
+      { ip: '10.0.0.5', total: 1, recent: 1, ports: [], first_at: recent, last_at: recent, alert: false },
+    ] },
+  ],
+}
+
+function stub({ access = { board: true, connections: true }, overview = OVERVIEW, module, history, deps, connections, refused } = {}) {
+  API.refused = vi.fn().mockResolvedValue(refused ?? REFUSED)
   API.access = vi.fn().mockResolvedValue(access)
   API.overview = vi.fn().mockResolvedValue(overview)
   API.module = module ?? vi.fn().mockResolvedValue({})
@@ -207,6 +222,78 @@ describe('supervision', () => {
     expect(rows).toHaveLength(2)
     expect(rows[1].textContent).toContain(t.user_unknown)
     expect(host.textContent).toContain('7')
+  })
+
+  it('état des modules : pastille vers les connexions refusées seulement en cas d’alerte', async () => {
+    const t = getCopy('supervision', 'fr')
+    stub({ overview: { ...OVERVIEW, refused: { alerts: 2, recent: 30 } } })
+    await show('/portail/supervision')
+    const alert = host.querySelector('a.dlv-alert')
+    expect(alert.getAttribute('href')).toBe('/portail/supervision/refused')
+    expect(alert.textContent).toContain('2 poste(s) bloqué(s)')
+    act(() => root.unmount()); host.remove()
+
+    for (const refused of [{ alerts: 0, recent: 3 }, null]) {
+      stub({ overview: { ...OVERVIEW, refused } })
+      await show('/portail/supervision')
+      expect(host.querySelector('a.dlv-alert')).toBeNull()
+      expect(host.textContent).not.toContain(t.refused_alert_link)
+      act(() => root.unmount()); host.remove()
+    }
+    stub()
+    await show('/portail/supervision')
+  })
+
+  it.each(['fr', 'en', 'pt'])('connexions refusées : par réseau, poste insistant signalé, aucun texte manquant (%s)', async lang => {
+    const t = getCopy('supervision', lang)
+    stub()
+    await show('/portail/supervision/refused', { lang })
+    expect(API.refused).toHaveBeenCalledWith(24)
+    expect(host.querySelector('h1').textContent).toBe(t.title_refused)
+    expect([...host.querySelectorAll('.dlv-kpi-v')].map(n => n.textContent)).toEqual(['1', '15', '3'])
+    expect(host.querySelector('.dlv-kpi').className).toContain('crit')
+    const rows = [...host.querySelectorAll('tbody tr')]
+    expect(rows.map(r => r.className === 'dlv-row-group')).toEqual([true, false, false, true, false])
+    expect(rows[1].textContent).toContain('192.168.10.42')
+    expect(rows[1].textContent).toContain(t.refused_state_alert)
+    expect(rows[1].textContent).toContain('8444, 8445')
+    expect(rows[2].textContent).toContain(t.refused_state_isolated)
+    expect(rows[4].textContent).toContain('—')
+    expect(host.querySelector('.dlv-nav-item.is-active').getAttribute('href')).toBe('/portail/supervision/refused')
+    expect(host.textContent).not.toMatch(/undefined|NaN|\{\w+\}/)
+  })
+
+  it('connexions refusées : changer de période relance la lecture', async () => {
+    stub()
+    await show('/portail/supervision/refused')
+    const [hour] = host.querySelectorAll('.dlv-periods button')
+    await act(async () => { hour.click() })
+    await act(async () => {})
+    expect(API.refused).toHaveBeenLastCalledWith(1)
+    expect(hour.getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('connexions refusées : journal non lu ou en échec, dit en clair', async () => {
+    const t = getCopy('supervision', 'fr')
+    stub({ refused: { ...REFUSED, source: null, alerts: 0, total: 0, networks: [] } })
+    await show('/portail/supervision/refused')
+    expect(host.querySelector('.dlv-readonly').textContent).toBe(t.refused_no_source)
+    expect(host.textContent).toContain(t.refused_none_no_source)
+    act(() => root.unmount()); host.remove()
+
+    stub({ refused: { ...REFUSED, source: { ok: false, last_success_at: null }, networks: [] } })
+    await show('/portail/supervision/refused')
+    expect(host.querySelector('.dlv-readonly').textContent).toBe(t.refused_source_never)
+    expect(host.textContent).toContain(t.refused_none)
+  })
+
+  it('connexions refusées : sans le droit, ni menu ni page', async () => {
+    stub({ access: { board: true, connections: false } })
+    await show('/portail/supervision/refused')
+    expect(host.querySelector('h1').textContent).toBe(getCopy('supervision', 'fr').title_overview)
+    expect([...host.querySelectorAll('.dlv-nav-item')].map(a => a.getAttribute('href')))
+      .not.toContain('/portail/supervision/refused')
+    expect(API.refused).not.toHaveBeenCalled()
   })
 
   it('injoignable : le dit au lieu d’un écran vide', async () => {

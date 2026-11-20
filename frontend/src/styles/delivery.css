@@ -242,6 +242,21 @@
 a.dlv-node--link { text-decoration: none; color: inherit; transition: border-color 0.15s; }
 a.dlv-node--link:hover, a.dlv-node--link:focus-visible { border-color: var(--dlv-navy); }
 .dlv-changelog { white-space: pre-wrap; color: var(--dlv-navy); }
+/* Supervision : postes refusés par le pare-feu */
+.dlv-alert {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 16px; padding: 11px 14px;
+  background: #fff5f6; border: 1px solid #ffd2d8; border-radius: var(--dlv-radius);
+  color: var(--dlv-navy); font-size: 13px; text-decoration: none;
+}
+.dlv-alert b { color: var(--dlv-red); margin-left: auto; }
+.dlv-alert:hover { border-color: var(--dlv-red); }
+.dlv-kpi.crit { --dlv-accent: var(--dlv-red); }
+.dlv-kpi.crit .dlv-kpi-v { color: var(--dlv-red); }
+.dlv-periods { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.dlv-btn.is-active { background: var(--dlv-navy); border-color: var(--dlv-navy); color: #fff; }
+.dlv-table tr.dlv-row-group td { background: #fafafc; color: var(--dlv-muted); font-size: 12px; }
+.dlv-table tr.dlv-row-group td b { color: var(--dlv-navy); }
+.dlv-kpis.three { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .dlv-node-head { display: flex; align-items: center; gap: 10px; }
 .dlv-node-id {
   width: 34px; height: 34px; flex: none; border-radius: 9px;

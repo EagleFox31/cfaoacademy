@@ -15,12 +15,16 @@ export function canSeeSupervision(roles = []) {
 
 export const SUPERVISION_HOME = 'overview'
 
-/** Entrées du menu ; `connections` n'apparaît qu'avec ce droit. */
+/** Entrées du menu ; celles qui portent `needs` n'apparaissent qu'avec ce droit. */
 export const SUPERVISION_NAV = [
   { id: 'overview', ico: '◧' },
   { id: 'dependencies', ico: '⇄' },
   { id: 'connections', ico: '◉', needs: 'connections' },
+  { id: 'refused', ico: '⊘', needs: 'connections' },
 ]
+
+/** Périodes proposées sur l'écran des connexions refusées, en heures. */
+export const REFUSED_PERIODS = [1, 24, 168]
 
 export const SUPERVISION_VIEWS = SUPERVISION_NAV.map(v => v.id)
 

@@ -11,9 +11,11 @@ import { supervisionApi } from '../../../lib/supervisionApi'
 import {
   SUPERVISION_HOME, SUPERVISION_NAV, SUPERVISION_VIEWS, canSeeSupervision, supervisionPath,
 } from '../../../utils/supervisionStatus'
-import { ConnectionsView, DependenciesView, ModuleView, OverviewView } from './SupervisionViews'
+import { ConnectionsView, DependenciesView, ModuleView, OverviewView, RefusedView } from './SupervisionViews'
 
-const VIEWS = { overview: OverviewView, dependencies: DependenciesView, connections: ConnectionsView }
+const VIEWS = {
+  overview: OverviewView, dependencies: DependenciesView, connections: ConnectionsView, refused: RefusedView,
+}
 
 /**
  * Supervision de la plateforme (rôles platform_ops et superadmin) : un écran
@@ -46,7 +48,8 @@ export default function SupervisionConsole() {
   if (!roleOk) return <Navigate to="/portail" replace />
   if (!project && !SUPERVISION_VIEWS.includes(view)) return <Navigate to={supervisionPath()} replace />
   if (access && !access.failed && !access.board) return <Navigate to="/portail" replace />
-  if (view === 'connections' && access && !access.connections) return <Navigate to={supervisionPath()} replace />
+  const needs = !project && SUPERVISION_NAV.find(it => it.id === view)?.needs
+  if (needs && access && !access[needs]) return <Navigate to={supervisionPath()} replace />
 
   const activeId = project ? SUPERVISION_HOME : view
   const nav = [{
