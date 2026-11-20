@@ -430,18 +430,67 @@ export function ConnectionsView({ t, locale }) {
 
 // ── Connexions refusées par le pare-feu ──
 
-function SourceNotice({ source, t, locale }) {
-  if (source === null) return <div className="dlv-readonly">{t.refused_no_source}</div>
+function SourceNotice({ source, t, locale, prefix = 'refused' }) {
+  if (source === null) return <div className="dlv-readonly">{t[`${prefix}_no_source`]}</div>
   if (source?.ok === false) {
     return (
       <div className="dlv-readonly">
         {source.last_success_at
-          ? fill(t.refused_source_failed, { when: relativeTime(source.last_success_at, locale) })
-          : t.refused_source_never}
+          ? fill(t[`${prefix}_source_failed`], { when: relativeTime(source.last_success_at, locale) })
+          : t[`${prefix}_source_never`]}
       </div>
     )
   }
   return null
+}
+
+// Postes que le pare-feu laisse passer mais qui s'arrêtent avant l'application
+// (certificat refusé par le navigateur, redirection sans suite) : journal de Caddy.
+function entryState(poste) {
+  if (poste.stuck_on_certificate) return ['blocked', 'entry_state_certificate']
+  if (poste.lost_after_redirect) return ['blocked', 'entry_state_lost']
+  if (poste.arrived) return ['done', 'entry_state_arrived']
+  return ['todo', 'entry_state_isolated']
+}
+
+function EntrySection({ entry, windowMin, t, locale }) {
+  if (!entry) return null
+  const postes = entry.postes ?? []
+  return (
+    <>
+      <h2 className="dlv-section-title">{t.section_entry}</h2>
+      <p className="dlv-section-sub">{fill(t.entry_rule, { threshold: entry.threshold, window: windowMin })}</p>
+      <SourceNotice source={entry.source} t={t} locale={locale} prefix="entry" />
+      {postes.length ? (
+        <table className="dlv-table">
+          <thead>
+            <tr>
+              <th>{t.col_post}</th><th>{t.col_entry_reason}</th><th>{t.col_cert_refused}</th>
+              <th>{t.col_target_ports}</th><th>{t.col_last_attempt}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {postes.map(p => {
+              const [tone, label] = entryState(p)
+              const last = [p.last_failure_at, p.last_redirect_at].filter(Boolean).sort().at(-1)
+              return (
+                <tr key={p.ip}>
+                  <td><code>{p.ip}</code></td>
+                  <td>
+                    <span className={`dlv-status ${tone}`}>{t[label]}</span>
+                    {p.stuck_on_certificate && <div className="dlv-hint">{t.entry_hint_certificate}</div>}
+                  </td>
+                  <td>{p.cert_refused + p.tls_failed}</td>
+                  <td>{p.ports.length ? p.ports.join(', ') : '—'}</td>
+                  <td><When iso={last} locale={locale} /></td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      ) : entry.source === null ? null : <p className="dlv-hint">{t.entry_none}</p>}
+    </>
+  )
 }
 
 export function RefusedView({ t, locale }) {
@@ -522,6 +571,7 @@ export function RefusedView({ t, locale }) {
           </tbody>
         </table>
       ) : <p className="dlv-hint">{d.source === null ? t.refused_none_no_source : t.refused_none}</p>}
+      <EntrySection entry={d.entry} windowMin={d.window_min} t={t} locale={locale} />
       <p className="dlv-section-sub">{fill(t.refused_retention, { days: d.retention_days })}</p>
     </>
   )

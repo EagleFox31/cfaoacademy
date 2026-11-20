@@ -169,5 +169,19 @@
   "refused_no_source": "O registo da firewall não é lido nesta instalação: as recusas não podem ser mostradas.",
   "refused_source_failed": "A leitura do registo da firewall está a falhar: última leitura bem-sucedida {when}.",
   "refused_source_never": "A leitura do registo da firewall está a falhar: ainda nenhuma leitura bem-sucedida.",
-  "refused_retention": "Endereços guardados durante {days} dias e depois apagados."
+  "refused_retention": "Endereços guardados durante {days} dias e depois apagados.",
+  "section_entry": "Postos parados antes da aplicação",
+  "entry_rule": "A firewall deixa-os passar, mas o navegador recusa o certificado do servidor ({threshold} vezes ou mais em {window} min), ou o posto é redirecionado e não vai mais longe.",
+  "col_entry_reason": "O que bloqueia",
+  "col_cert_refused": "Certificado recusado",
+  "col_last_attempt": "Última tentativa",
+  "entry_state_certificate": "Certificado recusado",
+  "entry_state_lost": "Redirecionado, nunca chegou",
+  "entry_state_arrived": "Chegou depois",
+  "entry_state_isolated": "Tentativa isolada",
+  "entry_hint_certificate": "O posto não reconhece o certificado do servidor: instalar a autoridade de certificação neste posto.",
+  "entry_none": "Nenhum posto parado no caminho neste período.",
+  "entry_no_source": "O registo do servidor web não é lido nesta instalação: os postos parados no caminho não podem ser mostrados.",
+  "entry_source_failed": "Falha na leitura do registo do servidor web: última leitura bem-sucedida {when}.",
+  "entry_source_never": "Falha na leitura do registo do servidor web: nenhuma leitura bem-sucedida até agora."
 }

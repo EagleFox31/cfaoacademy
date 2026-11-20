@@ -132,6 +132,32 @@ class RefusedAttempt(models.Model):
         ]
 
 
+class EntryEvent(models.Model):
+    """Ce que Caddy voit d'un poste à l'entrée du serveur, par tranche de 5 min.
+
+    cert_refused : le navigateur a refusé le certificat ; tls_failed : autre poignée
+    ratée ; redirected : renvoyé ailleurs (8092, 8446…) ; arrived : une réponse autre
+    qu'une redirection. Les arrivées ne sont gardées que pour un poste déjà suspect.
+    Oublié après REFUSED_RETENTION_DAYS.
+    """
+
+    KINDS = ("cert_refused", "tls_failed", "redirected", "arrived")
+
+    src_ip = models.GenericIPAddressField()
+    port = models.PositiveIntegerField(null=True, blank=True)  # inconnu pour une poignée
+    kind = models.CharField(max_length=16)
+    bucket = models.DateTimeField(db_index=True)
+    count = models.PositiveIntegerField(default=0)
+    first_at = models.DateTimeField()
+    last_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["src_ip", "port", "kind", "bucket"],
+                                    name="supervision_entry_unique"),
+        ]
+
+
 class PublicProbe(models.Model):
     """Dernier résultat de chaque sonde d'adresse publique (SUPERVISION_PROBES).
 

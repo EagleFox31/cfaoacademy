@@ -92,11 +92,14 @@ services:
     environment:
       <<: *api_env
       SUPERVISION_UFW_LOG_PATH: /var/log/cfao-ufw/ufw.log
-    # Copie du journal ufw faite par rsyslog (/etc/rsyslog.d/19-cfao-ufw.conf),
-    # syslog:adm 0750 : le DOSSIER en lecture seule (un fichier monté garderait
-    # l'ancien après la rotation), lu grâce au groupe adm (gid 4).
+      SUPERVISION_CADDY_LOG_PATH: /var/log/cfao-caddy/caddy.log
+    # Copies des journaux ufw et Caddy faites par rsyslog (/etc/rsyslog.d/19-cfao-ufw.conf
+    # et 18-cfao-caddy.conf), syslog:adm 0750 : les DOSSIERS en lecture seule (un fichier
+    # monté garderait l'ancien après la rotation), lus grâce au groupe adm (gid 4).
+    # Dossier Caddy absent du serveur : Docker le crée vide, la source ne lit rien.
     volumes:
       - ${SUPERVISION_UFW_DIR:-/var/log/cfao-ufw}:/var/log/cfao-ufw:ro
+      - ${SUPERVISION_CADDY_DIR:-/var/log/cfao-caddy}:/var/log/cfao-caddy:ro
     group_add: ["4"]
     # identite : journal des connexions ; supervision-docker : le proxy du socket.
     networks: [default, identite, supervision-docker]

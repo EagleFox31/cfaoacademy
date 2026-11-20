@@ -22,7 +22,7 @@ from core.authz.permissions import CerbosPermission
 
 from . import contracts
 from . import status as rules
-from .collectors import firewall, probes
+from .collectors import entry, firewall, probes
 from .models import CollectRun, Container, ContainerEvent, Module, UserModuleAccess
 
 UNKNOWN_USER = None  # le front affiche « Compte pas encore identifié »
@@ -175,7 +175,9 @@ class OverviewView(BoardView):
                 row = latest.get(summary["project"])
                 summary["last_connection"] = _access_row(*row) if row else None
             refused = firewall.summary(hours=1)
-            body_refused = {"alerts": refused["alerts"], "recent": sum(n["recent"] for n in refused["networks"])}
+            stuck = entry.summary(hours=1)["alerts"]
+            body_refused = {"alerts": refused["alerts"] + stuck, "entry_alerts": stuck,
+                            "recent": sum(n["recent"] for n in refused["networks"])}
         else:
             body_refused = None
         counts = {key: sum(1 for s in summaries if s["status"] == key)
@@ -294,6 +296,7 @@ class RefusedView(ConnectionsView):
             hours = min(max(int(request.query_params.get("hours", 24)), 1), 24 * 7)
         except ValueError:
             hours = 24
-        run = CollectRun.objects.filter(source=firewall.SOURCE).first()
-        source = None if run is None else {"ok": run.ok, "last_success_at": _iso(run.last_success_at)}
-        return Response({**firewall.summary(hours=hours), "source": source})
+        runs = {run.source: {"ok": run.ok, "last_success_at": _iso(run.last_success_at)}
+                for run in CollectRun.objects.filter(source__in=(firewall.SOURCE, entry.SOURCE))}
+        return Response({**firewall.summary(hours=hours), "source": runs.get(firewall.SOURCE),
+                         "entry": {**entry.summary(hours=hours), "source": runs.get(entry.SOURCE)}})

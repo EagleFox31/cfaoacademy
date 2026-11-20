@@ -112,6 +112,14 @@ REFUSED_RETENTION_DAYS = env.int("SUPERVISION_REFUSED_RETENTION_DAYS", default=7
 # Alerte : au moins N refus pour une adresse (ou un /24) sur la dernière fenêtre.
 REFUSED_ALERT_THRESHOLD = env.int("SUPERVISION_REFUSED_ALERT_THRESHOLD", default=10)
 REFUSED_ALERT_WINDOW_MIN = env.int("SUPERVISION_REFUSED_ALERT_WINDOW_MIN", default=60)
+# Journal de Caddy (poignées TLS ratées, redirections), copié par rsyslog comme ufw.
+# Vide = source désactivée. Même rétention que les refus du pare-feu.
+CADDY_LOG_PATH = env("SUPERVISION_CADDY_LOG_PATH", default="")
+CADDY_INTERVAL_S = env.int("SUPERVISION_CADDY_INTERVAL_S", default=30)
+# Alerte : N certificats refusés par un poste sur la fenêtre, sans arrivée depuis.
+CERT_ALERT_THRESHOLD = env.int("SUPERVISION_CERT_ALERT_THRESHOLD", default=3)
+# Redirigé puis rien pendant ce délai : le poste n'est pas arrivé.
+REDIRECT_GRACE_S = env.int("SUPERVISION_REDIRECT_GRACE_S", default=120)
 # Sondes des adresses publiques, depuis le serveur : « url|fragment du titre » ou
 # « url|-> adresse de redirection », séparées par « ; ». Vide = source désactivée.
 PROBES = env("SUPERVISION_PROBES", default="")

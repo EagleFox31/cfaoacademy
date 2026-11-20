@@ -169,5 +169,19 @@
   "refused_no_source": "Le journal du pare-feu n'est pas lu sur cette installation : les refus ne peuvent pas s'afficher.",
   "refused_source_failed": "Lecture du journal du pare-feu en échec : dernière lecture réussie {when}.",
   "refused_source_never": "Lecture du journal du pare-feu en échec : aucune lecture réussie pour l'instant.",
-  "refused_retention": "Adresses conservées {days} jours, puis effacées."
+  "refused_retention": "Adresses conservées {days} jours, puis effacées.",
+  "section_entry": "Postes arrêtés avant l'application",
+  "entry_rule": "Le pare-feu les laisse passer, mais le navigateur refuse le certificat du serveur ({threshold} fois ou plus en {window} min), ou le poste est redirigé puis ne va pas plus loin.",
+  "col_entry_reason": "Ce qui bloque",
+  "col_cert_refused": "Certificat refusé",
+  "col_last_attempt": "Dernière tentative",
+  "entry_state_certificate": "Certificat refusé",
+  "entry_state_lost": "Redirigé, jamais arrivé",
+  "entry_state_arrived": "Arrivé ensuite",
+  "entry_state_isolated": "Tentative isolée",
+  "entry_hint_certificate": "Le poste ne reconnaît pas le certificat du serveur : installer l'autorité de certification sur ce poste.",
+  "entry_none": "Aucun poste arrêté en route sur cette période.",
+  "entry_no_source": "Le journal du serveur web n'est pas lu sur cette installation : les postes arrêtés en route ne peuvent pas s'afficher.",
+  "entry_source_failed": "Lecture du journal du serveur web en échec : dernière lecture réussie {when}.",
+  "entry_source_never": "Lecture du journal du serveur web en échec : aucune lecture réussie pour l'instant."
 }

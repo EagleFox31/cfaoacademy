@@ -14,7 +14,7 @@ from django.core.management.base import BaseCommand
 from django.db import connection
 from django.utils import timezone
 
-from supervision.collectors import activity, docker_collector, firewall, probes
+from supervision.collectors import activity, docker_collector, entry, firewall, probes
 from supervision.models import CollectRun
 
 log = logging.getLogger("supervision.collect")
@@ -32,6 +32,8 @@ def sources() -> dict:
     # Sans journal du pare-feu (recette), la source n'existe pas : l'écran le dit.
     if settings.UFW_LOG_PATH:
         found[firewall.SOURCE] = (settings.UFW_INTERVAL_S, firewall.collect)
+    if settings.CADDY_LOG_PATH:
+        found[entry.SOURCE] = (settings.CADDY_INTERVAL_S, entry.collect)
     if settings.PROBES.strip():
         found[probes.SOURCE] = (settings.PROBE_INTERVAL_S, probes.collect)
     return found

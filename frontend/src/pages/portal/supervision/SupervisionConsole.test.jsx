@@ -362,6 +362,44 @@ describe('supervision', () => {
     expect(host.textContent).toContain(t.refused_none)
   })
 
+  it.each(['fr', 'en', 'pt'])('postes arrêtés avant l’application : motif, conseil, aucun texte manquant (%s)', async lang => {
+    const t = getCopy('supervision', lang)
+    const poste = (ip, extra) => ({
+      ip, network: '192.168.10.0/24', cert_refused: 0, tls_failed: 0, redirected: 0, recent_failures: 0,
+      ports: [], last_failure_at: null, last_redirect_at: null, last_arrival_at: null,
+      stuck_on_certificate: false, lost_after_redirect: false, alert: false, arrived: false, ...extra,
+    })
+    const entry = {
+      hours: 24, threshold: 3, grace_s: 120, alerts: 2, source: { ok: true, last_success_at: '2026-11-20T09:00:00Z' },
+      postes: [
+        poste('192.168.10.70', { cert_refused: 4, recent_failures: 4, stuck_on_certificate: true, alert: true,
+          last_failure_at: '2026-11-20T09:10:00Z' }),
+        poste('192.168.10.71', { redirected: 1, ports: [8092], lost_after_redirect: true, alert: true,
+          last_redirect_at: '2026-11-20T09:05:00Z' }),
+        poste('192.168.10.72', { cert_refused: 1, arrived: true, last_failure_at: '2026-11-20T08:00:00Z' }),
+        poste('192.168.10.73', { tls_failed: 1, last_failure_at: '2026-11-20T08:00:00Z' }),
+      ],
+    }
+    stub({ refused: { ...REFUSED, networks: [], entry } })
+    await show('/portail/supervision/refused', { lang })
+    expect(host.textContent).toContain(t.section_entry)
+    const rows = [...host.querySelectorAll('tbody tr')]
+    expect(rows.map(r => r.querySelector('.dlv-status').textContent)).toEqual([
+      t.entry_state_certificate, t.entry_state_lost, t.entry_state_arrived, t.entry_state_isolated])
+    expect(rows[0].textContent).toContain(t.entry_hint_certificate)
+    expect(rows[1].textContent).toContain('8092')
+    expect(rows[1].textContent).not.toContain(t.entry_hint_certificate)
+    expect(host.textContent).not.toMatch(/undefined|NaN|\{\w+\}/)
+  })
+
+  it('postes arrêtés : journal du serveur web non lu, dit en clair', async () => {
+    const t = getCopy('supervision', 'fr')
+    stub({ refused: { ...REFUSED, entry: { hours: 24, threshold: 3, alerts: 0, postes: [], source: null } } })
+    await show('/portail/supervision/refused')
+    expect(host.textContent).toContain(t.entry_no_source)
+    expect(host.textContent).not.toContain(t.entry_none)
+  })
+
   it('connexions refusées : sans le droit, ni menu ni page', async () => {
     stub({ access: { board: true, connections: false } })
     await show('/portail/supervision/refused')

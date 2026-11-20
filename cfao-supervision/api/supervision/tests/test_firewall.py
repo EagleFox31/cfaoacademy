@@ -155,7 +155,7 @@ def test_overview_carries_refused_summary(ops, log):
     append(log, *[block(at=datetime.now(timezone.utc).isoformat()) for _ in range(3)])
     firewall.collect()
     refused = ops.get("/api/v1/supervision/overview").json()["refused"]
-    assert refused == {"alerts": 1, "recent": 3}
+    assert refused == {"alerts": 1, "entry_alerts": 0, "recent": 3}
 
 
 def test_source_only_when_log_configured(settings):

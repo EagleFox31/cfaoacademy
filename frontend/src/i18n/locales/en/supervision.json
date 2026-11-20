@@ -169,5 +169,19 @@
   "refused_no_source": "The firewall log is not read on this installation: refusals cannot be shown.",
   "refused_source_failed": "Reading the firewall log is failing: last successful read {when}.",
   "refused_source_never": "Reading the firewall log is failing: no successful read yet.",
-  "refused_retention": "Addresses are kept for {days} days, then erased."
+  "refused_retention": "Addresses are kept for {days} days, then erased.",
+  "section_entry": "Computers stopped before the application",
+  "entry_rule": "The firewall lets them through, but the browser rejects the server certificate ({threshold} times or more in {window} min), or the computer is redirected and goes no further.",
+  "col_entry_reason": "What blocks",
+  "col_cert_refused": "Certificate rejected",
+  "col_last_attempt": "Last attempt",
+  "entry_state_certificate": "Certificate rejected",
+  "entry_state_lost": "Redirected, never arrived",
+  "entry_state_arrived": "Arrived afterwards",
+  "entry_state_isolated": "Isolated attempt",
+  "entry_hint_certificate": "The computer does not recognise the server certificate: install the certificate authority on it.",
+  "entry_none": "No computer stopped on the way over this period.",
+  "entry_no_source": "The web server log is not read on this installation: computers stopped on the way cannot be shown.",
+  "entry_source_failed": "Reading the web server log is failing: last successful read {when}.",
+  "entry_source_never": "Reading the web server log is failing: no successful read yet."
 }
