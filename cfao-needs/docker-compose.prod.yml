@@ -49,7 +49,8 @@ services:
       OIDC_ISSUER: ${OIDC_ISSUER:?OIDC_ISSUER manquant (ex. https://<hote>/auth/realms/cfao)}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-cfao-needs-api}
       NEEDS_CORS_ORIGINS: ${NEEDS_CORS_ORIGINS:-http://localhost:8082,http://localhost:8080,http://localhost:5174}
-      NEEDS_PUBLIC_BASE_URL: ${NEEDS_PUBLIC_BASE_URL:-http://localhost:8082}
+      # Préfixe compris (ex. https://<hôte>/besoins) : liens des mails vers le SPA.
+      NEEDS_PUBLIC_BASE_URL: ${NEEDS_PUBLIC_BASE_URL:-http://localhost:8082/besoins}
       NEEDS_INTERNAL_DOMAINS: ${NEEDS_INTERNAL_DOMAINS:-cfao.com}
       NEEDS_TEAM_RECIPIENTS: ${NEEDS_TEAM_RECIPIENTS:-academy@cfao.com}
       NEEDS_EMAIL_BACKEND: ${NEEDS_EMAIL_BACKEND:-console}
@@ -116,7 +117,7 @@ services:
   needs-gateway:
     mem_limit: 64m
     restart: unless-stopped
-    image: antifragile237/cfao-needs-gateway:v0.3.0
+    image: antifragile237/cfao-needs-gateway:v0.4.0
     environment:
       # Absolu : le LAN (sans /auth) se connecte aussi sur l'émetteur public.
       NEEDS_OIDC_ISSUER: ${OIDC_ISSUER:?OIDC_ISSUER manquant}

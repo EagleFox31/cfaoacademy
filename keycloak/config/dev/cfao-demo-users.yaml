@@ -235,3 +235,107 @@ users:
         - "groupe"
     credentials:
       - { type: password, value: demo, temporary: false }
+
+  # Comptes de démo de needs (ex-realm cfao-needs, retiré le 20/11). Les `id` sont la
+  # jointure avec cfao-needs/api/referential/management/commands/seed_referential.py
+  # (PROFILES) : les deux fichiers se modifient ensemble.
+  - username: chef.atelier@cfao.com
+    id: "a1000001-0000-4000-8000-000000000001"
+    enabled: true
+    emailVerified: true
+    email: chef.atelier@cfao.com
+    firstName: Chef d'atelier
+    lastName: Douala
+    realmRoles: [workshop_manager]
+    attributes:
+      scopeNode: ["groupe.cmr.douala"]
+      brands: ["toyota", "peugeot"]
+      locale: ["fr"]
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: chef.equipe@cfao.com
+    id: "a1000002-0000-4000-8000-000000000002"
+    enabled: true
+    emailVerified: true
+    email: chef.equipe@cfao.com
+    firstName: Chef d'équipe
+    lastName: Abidjan
+    realmRoles: [team_manager]
+    attributes:
+      scopeNode: ["groupe.civ.abidjan"]
+      brands: ["lovol", "hino"]
+      locale: ["fr"]
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: team.lead@cfao.com
+    id: "a1000003-0000-4000-8000-000000000003"
+    enabled: true
+    emailVerified: true
+    email: team.lead@cfao.com
+    firstName: Team lead
+    lastName: Accra
+    realmRoles: [team_manager]
+    attributes:
+      scopeNode: ["groupe.gha.accra"]
+      brands: ["toyota"]
+      locale: ["en"]
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: directeur.cmr@cfao.com
+    id: "a1000004-0000-4000-8000-000000000004"
+    enabled: true
+    emailVerified: true
+    email: directeur.cmr@cfao.com
+    firstName: Directeur filiale
+    lastName: Cameroun
+    realmRoles: [branch_director]
+    attributes:
+      scopeNode: ["groupe.cmr"]
+      locale: ["fr"]
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: assistante@cfao.com
+    id: "a1000005-0000-4000-8000-000000000005"
+    enabled: true
+    emailVerified: true
+    email: assistante@cfao.com
+    firstName: Assistante
+    lastName: centre
+    realmRoles: [center_assistant]
+    attributes:
+      scopeNode: ["groupe"]
+      locale: ["fr"]
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: coordonnateur@cfao.com
+    id: "a1000007-0000-4000-8000-000000000007"
+    enabled: true
+    emailVerified: true
+    email: coordonnateur@cfao.com
+    firstName: Coordonnateur
+    lastName: formations
+    realmRoles: [training_coordinator]
+    attributes:
+      scopeNode: ["groupe"]
+      locale: ["fr"]
+    credentials:
+      - { type: password, value: demo, temporary: false }
+
+  - username: directeur.centre@cfao.com
+    id: "a1000006-0000-4000-8000-000000000006"
+    enabled: true
+    emailVerified: true
+    email: directeur.centre@cfao.com
+    firstName: Directeur
+    lastName: du centre
+    realmRoles: [center_director]
+    attributes:
+      scopeNode: ["groupe"]
+      locale: ["fr"]
+    credentials:
+      - { type: password, value: demo, temporary: false }

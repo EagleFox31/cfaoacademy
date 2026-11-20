@@ -5,76 +5,15 @@
 #   docker compose up -d cerbos
 #   docker compose -f cfao-needs/docker-compose.yml up
 #
-# Pour rejoindre la plateforme,
-# on ne change pas ce fichier : on passe NEEDS_DEPLOYMENT_MODE=integrated et on
-# pointe OIDC_* / CERBOS_HTTP vers le Keycloak et le Cerbos existants
-# (docs/SPEC_RECUEIL_BESOINS_2027.md §2).
+# Connexion : Keycloak commun de la recette (realm `cfao`, client `cfao-needs-web`),
+# comme en prod. Il tourne dans edge/compose.dev.yml et se joint sur cfao-maillage :
+#   docker compose -f edge/compose.dev.yml up -d keycloak keycloak-config edge
+#
+# Le SPA vit sous /besoins/ (PLAN-chemins-edge.md) : http://localhost:8082/besoins/
 
 name: cfao-needs
 
 services:
-  needs-kc-db:
-    # base Keycloak — mesure 54 Mio
-    mem_limit: 256m
-    restart: unless-stopped
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:?KC_DB_PASSWORD est obligatoire}
-    volumes:
-      - needs-kc-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak"]
-      interval: 20s
-      timeout: 5s
-      retries: 10
-
-  needs-keycloak:
-    # JVM bridee a 256 Mio de tas (JAVA_OPTS_KC_HEAP)
-    mem_limit: 768m
-    restart: unless-stopped
-    build:
-      context: ./keycloak
-    image: antifragile237/cfao-needs-keycloak:v0.1.2
-    command: ["start-dev", "--import-realm"]
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://needs-kc-db:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?}
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-${KC_ADMIN:-admin}}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-${KC_ADMIN_PASSWORD:?KC_ADMIN_PASSWORD est obligatoire}}
-      KEYCLOAK_ADMIN: ${KC_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:?KC_ADMIN_PASSWORD est obligatoire}
-      # Joint en direct sur son port : la passerelle ne relaie plus /realms/.
-      KC_HOSTNAME: http://localhost:${KC_PORT:-8081}
-      KC_HOSTNAME_STRICT: "false"
-      KC_PROXY_HEADERS: xforwarded
-      KC_HTTP_ENABLED: "true"
-      NEEDS_LAN_HOST: ${NEEDS_LAN_HOST:-}
-      NEEDS_PUBLIC_BASE_URL: ${NEEDS_PUBLIC_BASE_URL:-}
-      KEYCLOAK_ADDITIONAL_REDIRECT_URIS: ${KEYCLOAK_ADDITIONAL_REDIRECT_URIS:-}
-      KC_HEALTH_ENABLED: "true"
-      # 524 Mio mesures pour ~100 comptes : le tas par defaut de la JVM vise
-      # un annuaire d'entreprise, pas un module saisonnier.
-      JAVA_OPTS_KC_HEAP: "-Xms64m -Xmx256m"
-      # Resout les ${VAR} du realm : les mots de passe de recette restent dans
-      # .env, jamais dans le fichier de realm versionne (interdit n° 2).
-      JAVA_OPTS_APPEND: "-Dkeycloak.migration.replace-placeholders=true"
-      NEEDS_DEMO_PASSWORD: ${NEEDS_DEMO_PASSWORD:?NEEDS_DEMO_PASSWORD est obligatoire}
-    volumes:
-      # Realm en config-as-code : reproductible, dérive détectable.
-      - ./keycloak:/opt/keycloak/data/import:ro
-      # Theme de connexion. En start-dev le cache de themes est desactive :
-      # une modification de CSS est visible au rechargement, sans redemarrage.
-      - ./keycloak/themes:/opt/keycloak/themes:ro
-    depends_on:
-      needs-kc-db:
-        condition: service_healthy
-    ports:
-      - "${KC_PORT:-8081}:8080"
-
   # Autorisation : PDP Cerbos unique de la plateforme (service `cerbos` du
   # compose racine, port 3592 publié sur l'hôte), jamais un Cerbos de module.
   #   docker compose up -d cerbos        (à la racine, avant ce compose)
@@ -114,11 +53,13 @@ services:
       NEEDS_DB_USER: ${NEEDS_DB_USER:-needs}
       NEEDS_DB_PASSWORD: ${NEEDS_DB_PASSWORD:?}
       CERBOS_HTTP: ${CERBOS_HTTP:-http://host.docker.internal:3592}
-      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://needs-keycloak:8080/realms/cfao-needs/protocol/openid-connect/certs}
-      OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:${KC_PORT:-8081}/realms/cfao-needs}
-      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-needs-web}
-      NEEDS_CORS_ORIGINS: ${NEEDS_CORS_ORIGINS:-http://localhost:8080}
-      NEEDS_PUBLIC_BASE_URL: ${NEEDS_PUBLIC_BASE_URL:-http://localhost:8080}
+      # Clés lues en interne sur cfao-maillage ; émetteur = KC_HOSTNAME de la recette.
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/cfao/protocol/openid-connect/certs}
+      OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8088/auth/realms/cfao}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-cfao-needs-api}
+      NEEDS_CORS_ORIGINS: ${NEEDS_CORS_ORIGINS:-http://localhost:8082}
+      # Préfixe compris : liens des mails vers le SPA.
+      NEEDS_PUBLIC_BASE_URL: ${NEEDS_PUBLIC_BASE_URL:-http://localhost:8082/besoins}
       NEEDS_INTERNAL_DOMAINS: ${NEEDS_INTERNAL_DOMAINS:-cfao.com}
       NEEDS_TEAM_RECIPIENTS: ${NEEDS_TEAM_RECIPIENTS:-}
       NEEDS_EMAIL_BACKEND: ${NEEDS_EMAIL_BACKEND:-console}
@@ -204,17 +145,17 @@ services:
     build:
       context: .
       dockerfile: gateway/Dockerfile
-    image: antifragile237/cfao-needs-gateway:v0.2.0
+    image: antifragile237/cfao-needs-gateway:v0.4.0
     environment:
-      # Mode autonome : Keycloak du module. En mode intégré, émetteur commun.
-      NEEDS_OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:${KC_PORT:-8081}/realms/cfao-needs}
-      NEEDS_OIDC_CLIENT_ID: ${NEEDS_OIDC_CLIENT_ID:-needs-web}
+      # Émetteur commun, le même que celui que l'API vérifie.
+      NEEDS_OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8088/auth/realms/cfao}
+      NEEDS_OIDC_CLIENT_ID: ${NEEDS_OIDC_CLIENT_ID:-cfao-needs-web}
     volumes:
-      - ./web/dist:/usr/share/nginx/html:ro
+      - ./web/dist:/usr/share/nginx/html/besoins:ro
       # Fiches formation (PNG / PDF) — même arbre que la vitrine.
       - ../catalogues:/var/www/catalogues:ro
     ports:
-      - "${NEEDS_PORT:-8080}:80"
+      - "${NEEDS_PORT:-8082}:80"
     depends_on:
       needs-api:
         condition: service_started
@@ -229,5 +170,4 @@ networks:
     name: cfao-maillage
 
 volumes:
-  needs-kc-db-data:
   needs-db-data:

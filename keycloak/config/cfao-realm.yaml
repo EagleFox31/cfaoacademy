@@ -321,7 +321,7 @@ clients:
     publicClient: true
     standardFlowEnabled: true
     directAccessGrantsEnabled: false
-    redirectUris: $(env:CFAO_NEEDS_REDIRECT_URIS:-["http://localhost:8082/*","http://localhost:5174/*","http://127.0.0.1:8082/*"])
+    redirectUris: $(env:CFAO_NEEDS_REDIRECT_URIS:-["http://localhost:8082/*","http://localhost:5174/*","http://127.0.0.1:8082/*","http://localhost:8088/besoins/*"])
     webOrigins:
       - "+"
     attributes:

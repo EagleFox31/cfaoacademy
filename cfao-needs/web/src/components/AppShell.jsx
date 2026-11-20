@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useCampaign } from '../App'
 import { useLocale } from '../i18n'
 import { isReviewer } from '../lib/auth'
+import { asset } from '../lib/base'
 import LocaleSwitch from './LocaleSwitch'
 import MobileBottomNav from './MobileBottomNav'
 import { useSaveStatus } from './SaveStatus'
@@ -68,7 +69,7 @@ export default function AppShell({ session, pendingCount = 0, children }) {
           {/* Même signature que la vitrine : le logo groupe, une filet, puis
               « Academy » et son point rouge. */}
           <div className="topbar__brand">
-            <img src="/assets/logo-cfao-mobility.jpg" alt="cfao mobility" className="topbar__logo" />
+            <img src={asset('assets/logo-cfao-mobility.jpg')} alt="cfao mobility" className="topbar__logo" />
             <span className="topbar__wordmark">
               Academy<span>.</span>
             </span>

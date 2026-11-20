@@ -6,7 +6,8 @@ LABEL org.opencontainers.image.title="CFAO Needs Gateway" \
 
 COPY gateway/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --chmod=755 gateway/entrypoint.d/15-config-oidc.sh /docker-entrypoint.d/
-COPY web/dist /usr/share/nginx/html
+# Servi sous /besoins/ (vite `base`, gateway/nginx.conf).
+COPY web/dist /usr/share/nginx/html/besoins
 
 EXPOSE 80
 
