@@ -9,8 +9,11 @@ LABEL org.opencontainers.image.title="CFAO Needs API" \
       org.opencontainers.image.description="API backend Django pour CFAO Needs" \
       org.opencontainers.image.vendor="CFAO Mobility"
 
+# Prod par défaut : sans variable, l'image refuse de démarrer sans hôtes listés.
+# Dev, recette et tests fixent leur DJANGO_SETTINGS_MODULE.
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    DJANGO_SETTINGS_MODULE=config.settings.prod
 
 WORKDIR /app
 

@@ -4,8 +4,11 @@ LABEL org.cfao.contracts.consumes="needs-analytics@^1" \
       org.cfao.module="cfao-core"
 # contracts:end
 
+# Prod par défaut : sans variable, l'image refuse de démarrer sans clé ni hôtes.
+# Dev, recette et tests fixent leur DJANGO_SETTINGS_MODULE.
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    DJANGO_SETTINGS_MODULE=config.settings.prod
 
 WORKDIR /app
 
