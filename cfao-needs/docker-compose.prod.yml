@@ -34,7 +34,9 @@ services:
     image: antifragile237/cfao-needs-api:v0.2.1
     environment: &api_env
       # Jamais dev en prod : dev force DEBUG (pages d'erreur détaillées, routes exposées).
-      DJANGO_SETTINGS_MODULE: config.settings.base
+      # prod : DEBUG coupé, hôtes listés (`*` refusé au démarrage).
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_ALLOWED_HOSTS: ${NEEDS_ALLOWED_HOSTS:?NEEDS_ALLOWED_HOSTS manquant (hôtes publics + needs-api)}
       NEEDS_SECRET_KEY: ${NEEDS_SECRET_KEY:?NEEDS_SECRET_KEY manquant (.env du serveur)}
       NEEDS_DEPLOYMENT_MODE: ${NEEDS_DEPLOYMENT_MODE:-standalone}
       NEEDS_DB_HOST: needs-db

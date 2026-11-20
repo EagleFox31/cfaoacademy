@@ -8,6 +8,8 @@ chaque puce par « API : » ou « Passerelle : ».
 
 ## [Unreleased]
 
+- Production : réglages dédiés (`config.settings.prod`) — débogage coupé, hôtes servis listés dans `NEEDS_ALLOWED_HOSTS` (obligatoire, `*` refusé au démarrage). Un en-tête Host inconnu reçoit 400.
+
 ## [0.4.0] - 2026-11-20
 
 - Passerelle : l'application s'ouvre désormais à l'adresse `/besoins/`, comme les autres applications CFAO Academy. Les anciens liens à la racine redirigent vers `/besoins/`.
