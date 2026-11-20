@@ -60,6 +60,7 @@ def test_passerelle_ne_relaie_plus_keycloak():
     assert sorted(locations) == sorted([
         "/besoins/config.js", "/api/v1/needs/", "/besoins/catalogues/",
         "/besoins/", "/besoins/index.html", "/besoins", "/",
+        r"^/assets/[^/]+\.js$",
     ])
     assert "needs-keycloak" not in conf and "/realms/" not in conf
     assert re.search(r"location = /besoins/config\.js \{\s*alias /etc/nginx/needs-config\.js;", conf)
@@ -72,8 +73,17 @@ def test_passerelle_sert_le_spa_sous_besoins():
     assert re.search(r"location /besoins/ \{\s*root /usr/share/nginx/html;\s*try_files \$uri \$uri/ /besoins/index\.html;", conf)
     # index.html jamais en cache : un ancien index pointe vers des fichiers disparus.
     assert re.search(r"location = /besoins/index\.html \{[^}]*expires -1;", conf)
-    # Anciens liens à la racine : même route sous /besoins.
-    assert re.search(r"location / \{\s*return 308 /besoins\$request_uri;", conf)
+    # Anciens liens à la racine : même route sous /besoins, en 307 non mis en cache
+    # (après L2 la racine sert la landing : pas de « / → /besoins/ » gardé par le navigateur).
+    racine = re.search(r"location / \{([^}]*)\}", conf).group(1)
+    assert "return 307 /besoins$request_uri;" in racine
+    assert 'add_header Cache-Control "no-store" always;' in racine
+    assert "308" not in racine
+    # Ancien bundle racine resté en cache : un script qui recharge sous /besoins/, pas l'index en HTML.
+    ancien = re.search(r"location ~ \^/assets/\[\^/\]\+\\\.js\$ \{([^}]*)\}", conf).group(1)
+    assert "default_type application/javascript;" in ancien
+    assert "window.location.replace('/besoins/'" in ancien
+    assert "X-Content-Type-Options nosniff" in ancien
     assert "COPY web/dist /usr/share/nginx/html/besoins" in _texte(NEEDS / "gateway" / "Dockerfile")
     assert "base: '/besoins/'" in _texte(NEEDS / "web" / "vite.config.js")
 
