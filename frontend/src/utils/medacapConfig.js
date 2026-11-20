@@ -1,6 +1,7 @@
 import { POSTE_DEV } from './posteDev.js'
+import { valeurConfig } from '../lib/configExecution.js'
 /** URL MEDACAP pour lancer les QCM (portal-launch, quiz). */
-export const MEDACAP_BASE_URL = (import.meta.env.VITE_MEDACAP_URL ?? '').replace(/\/$/, '')
+export const MEDACAP_BASE_URL = valeurConfig('medacapUrl', import.meta.env.VITE_MEDACAP_URL ?? '').replace(/\/$/, '')
 
 /** URL optionnelle pour lire l’API (dev local WAMP → Mongo entreprise). */
 export const MEDACAP_API_BASE_URL = (

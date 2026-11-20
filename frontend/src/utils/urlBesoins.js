@@ -1,10 +1,13 @@
+import { valeurConfig } from '../lib/configExecution.js'
+
 /**
  * L'adresse du module « Recueil des besoins » (cfao-needs), servi à part du
- * portail, fixée par VITE_NEEDS_URL. Sans elle : null, la carte qui y mène
- * s'affiche « en construction » plutôt que d'ouvrir une adresse morte.
+ * portail, fixée au déploiement (/config.js) ou par VITE_NEEDS_URL. Sans elle :
+ * null, la carte qui y mène s'affiche « en construction » plutôt que d'ouvrir
+ * une adresse morte.
  */
 export function baseBesoins(env = import.meta.env) {
-  const url = String(env?.VITE_NEEDS_URL ?? '').trim().replace(/\/+$/, '')
+  const url = valeurConfig('needsUrl', String(env?.VITE_NEEDS_URL ?? '')).replace(/\/+$/, '')
   return url || null
 }
 

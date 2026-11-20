@@ -25,7 +25,11 @@
  * portail garde son modèle : profils de démonstration et comptes formateurs
  * servis par `/cr-donnees`. Aucun appel ne part alors vers Keycloak.
  */
-export const OIDC_ACTIF = Boolean((import.meta.env.VITE_OIDC_ISSUER || '').trim())
+import { drapeauConfig, valeurConfig } from './configExecution'
+
+const EMETTEUR_CONFIGURE = valeurConfig('oidcIssuer', import.meta.env.VITE_OIDC_ISSUER)
+
+export const OIDC_ACTIF = Boolean(EMETTEUR_CONFIGURE)
 
 /**
  * Portail servi derrière cfao-edge : Keycloak est sur la même origine, sous
@@ -34,11 +38,13 @@ export const OIDC_ACTIF = Boolean((import.meta.env.VITE_OIDC_ISSUER || '').trim(
  */
 export function connexionKeycloakSeule() {
   if (!OIDC_ACTIF || typeof window === 'undefined') return false
+  // Image de prod : le portail a son origine, Keycloak est sur celle de la plateforme.
+  if (drapeauConfig('keycloakSeul')) return true
   return resolveIssuer().startsWith(`${window.location.origin}/auth/`)
 }
 
 function resolveIssuer() {
-  const envIssuer = (import.meta.env.VITE_OIDC_ISSUER || '').trim()
+  const envIssuer = EMETTEUR_CONFIGURE
   if (!envIssuer) return ''
   if (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     return envIssuer
@@ -49,7 +55,7 @@ function resolveIssuer() {
 }
 
 const ISSUER = resolveIssuer()
-const CLIENT_ID = import.meta.env.VITE_OIDC_CLIENT_ID || 'cfao-spa'
+const CLIENT_ID = valeurConfig('oidcClientId', import.meta.env.VITE_OIDC_CLIENT_ID) || 'cfao-spa'
 const REDIRECT_URI = typeof window !== 'undefined' ? `${window.location.origin}/callback` : 'http://localhost:5173/callback'
 
 const VERIFIER_KEY = 'cfao.pkce.verifier'
