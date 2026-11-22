@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext } from '../context/sessionContext.js'
 import { LocaleProvider } from '../context/LocaleProvider.jsx'
 import ApercuProvider from './ApercuProvider.jsx'
-import { CLE_APERCU } from '../utils/apercuPortail.js'
+import { CLE_APERCU, CLE_CIBLE, CLE_NOM_CIBLE, EN_TETE_VU_COMME } from '../utils/apercuPortail.js'
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
@@ -102,5 +102,22 @@ describe('ApercuProvider', () => {
     const vraiLogout = vi.fn()
     const sonde = await monter(SUPER, vraiLogout)
     expect(sonde.logout).toBe(vraiLogout)
+  })
+
+  // Après un test hors aperçu : le verrou du module est rendu, celui-ci le repose.
+  it('vu comme : bandeau au nom du compte, en-tête sur les lectures de nos API', async () => {
+    const CIBLE = '0b6f2c1e-9a4d-4c3b-8e2f-1d7a5b9c3e40'
+    sessionStorage.setItem(CLE_APERCU, 'trainer')
+    sessionStorage.setItem(CLE_CIBLE, CIBLE)
+    sessionStorage.setItem(CLE_NOM_CIBLE, 'Compte test')
+    const espion = globalThis.fetch
+    await monter(SUPER)
+    const bandeau = conteneur.querySelector('.portal-apercu-bandeau')
+    expect(bandeau?.textContent).toContain('en tant que')
+    expect(bandeau?.textContent).toContain('Compte test')
+    await globalThis.fetch('/api/v1/core/me', { headers: { Authorization: 'Bearer j' } })
+    expect(new Headers(espion.mock.calls.at(-1)[1].headers).get(EN_TETE_VU_COMME)).toBe(CIBLE)
+    const r = await globalThis.fetch('/api/v1/needs', { method: 'POST' })
+    expect(r.status).toBe(403)
   })
 })

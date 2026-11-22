@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { KPIS_COORDINATEUR, alertesCle, chiffresCoordinateur, chiffresHero, etatAnnee } from './CenterHome.jsx'
+import { KPIS_COORDINATEUR, alertesCle, chiffresCoordinateur, chiffresHero, chiffresPresences, etatAnnee, kpisCoordinateur } from './CenterHome.jsx'
 import { PAYS_ACADEMY, SECTIONS_COORDINATEUR, SECTIONS_DIRECTEUR, anneeDuResume, paysAttendus, statutBesoins } from './CenterDirectorSections.jsx'
 import { resolveProfile } from './portalProfiles.js'
 import { getPortalNavSections } from '../../data/index.js'
@@ -12,7 +12,28 @@ describe('chiffres du hero du coordinateur', () => {
 
   it('pendant le recueil : filiales sans réponse et points à corriger', () => {
     expect(chiffresCoordinateur({ statut: 'pret', access: { review: true }, annee: futur, cle }))
-      .toEqual({ aRelancer: PAYS_ACADEMY - 30, aCorriger: 2, rapprochees: null, rapportsAttendus: null })
+      .toEqual({ aRelancer: PAYS_ACADEMY - 30, aCorriger: 2, rapprochees: null, rapportsAttendus: null,
+        formationsTerminees: null, stagiairesFormes: null })
+  })
+
+  it('bilan de l’année : formations terminées et participations présentes, tels quels', () => {
+    const presences = { loaded: true, trainings_completed: 180, participations_present: 1466, people_trained: 743 }
+    expect(chiffresCoordinateur({ statut: 'erreur', cle: null }, presences))
+      .toMatchObject({ formationsTerminees: 180, stagiairesFormes: 1466 })
+    expect(chiffresPresences({ loaded: true, trainings_completed: 0, participations_present: 0 }))
+      .toEqual({ formationsTerminees: 0, stagiairesFormes: 0 })
+  })
+
+  it('liste de présence non chargée : « — » et « liste non chargée », jamais 0', () => {
+    const vide = { loaded: false, trainings_completed: 0, participations_present: 0 }
+    expect(chiffresPresences(vide)).toEqual({ formationsTerminees: null, stagiairesFormes: null })
+    const bilan = kpisCoordinateur(vide).filter(k => k.neutre)
+    expect(bilan).toHaveLength(2)
+    expect(bilan.every(k => k.inconnu === 'hero_kpi_presences_absentes')).toBe(true)
+    expect(CENTER_HOME_COPY.fr.hero_kpi_presences_absentes).toBeTruthy()
+    // Panne ou refus (null) : « — » avec le libellé habituel.
+    expect(chiffresPresences(null)).toEqual({ formationsTerminees: null, stagiairesFormes: null })
+    expect(kpisCoordinateur(null)).toBe(KPIS_COORDINATEUR)
   })
 
   it('recueil clos : plus personne à relancer ; sans droit de revue : « — »', () => {
@@ -21,7 +42,7 @@ describe('chiffres du hero du coordinateur', () => {
   })
 
   it('sans clé chargée, aucun chiffre inventé', () => {
-    expect(Object.values(chiffresCoordinateur({ statut: 'erreur', cle: null }))).toEqual([null, null, null, null])
+    expect(Object.values(chiffresCoordinateur({ statut: 'erreur', cle: null }))).toEqual([null, null, null, null, null, null])
   })
 
   it('chaque chiffre vise une rubrique de sa page et a ses 3 libellés', () => {

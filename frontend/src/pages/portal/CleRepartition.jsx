@@ -21,6 +21,7 @@ import { isMaintenanceError } from '../../lib/api'
 import { makeFormatter } from '../../components/sheet/sheetExport'
 import { planningApi } from '../../lib/planningApi'
 import { planningMenu, retourInterne } from '../../utils/planningAccess'
+import { accesLecture } from '../../utils/apercuPortail.js'
 import { FacetFilter } from './costKey/FacetFilter'
 import { PoleMark } from '../../components/PoleIcon.jsx'
 import { AbcView, Banner, CountryView, SheetSkeleton, TableView, ThemesView, errText, reviewText } from './costKey/costKeyViews'
@@ -89,7 +90,7 @@ export default function CleRepartition() {
     let alive = true
     setBoot(b => ({ ...b, loading: true, error: null }))
     Promise.all([planningApi.access(), planningApi.keys()])
-      .then(([access, keys]) => alive && setBoot({ loading: false, access, keys }))
+      .then(([access, keys]) => alive && setBoot({ loading: false, access: accesLecture(access, user.apercu), keys }))
       .catch(error => alive && setBoot({ loading: false, error }))
     return () => { alive = false }
   }, [user?.id, reload]) // eslint-disable-line react-hooks/exhaustive-deps

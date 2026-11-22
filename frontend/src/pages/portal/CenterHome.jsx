@@ -19,6 +19,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { lienPlanning, planningMenu } from '../../utils/planningAccess.js'
 import { reviewText } from './costKey/reviewText.js'
 import { versBesoins } from '../../utils/urlBesoins.js'
+import { accesLecture } from '../../utils/apercuPortail.js'
 import { BRANDS, STATS } from '../../data/index.js'
 import PortalIconMedia from '../../components/PortalIconMedia.jsx'
 import PortalHeroKpis from '../../components/PortalHeroKpis.jsx'
@@ -80,14 +81,16 @@ export function alertesCle(points, tCle, locale, ouvrir = null) {
  * réponses des filiales, points à traiter. Le directeur aussi : sa cloche
  * affiche les points.
  */
-function useEtatCle() {
+function useEtatCle(apercu) {
   const [etat, setEtat] = useState({ statut: 'chargement', access: null, annee: null, cle: null })
 
   useEffect(() => {
     let actif = true
     ;(async () => {
       try {
-        const [access, { years = [] }] = await Promise.all([planningApi.access(), planningApi.yearSummary()])
+        const [droits, { years = [] }] = await Promise.all([planningApi.access(), planningApi.yearSummary()])
+        // Aperçu du super admin : les droits du rôle regardé, en lecture seule.
+        const access = accesLecture(droits, apercu)
         if (!years.length) {
           if (actif) setEtat({ statut: 'vide', access, annee: null, cle: null })
           return
@@ -100,7 +103,7 @@ function useEtatCle() {
       }
     })()
     return () => { actif = false }
-  }, [])
+  }, [apercu])
 
   return etat
 }
@@ -111,15 +114,51 @@ export const KPIS_COORDINATEUR = [
   { id: 'a-corriger', valeur: 'aCorriger', label: 'hero_kpi_corriger', cible: 'devis' },
   { id: 'rapprochees', valeur: 'rapprochees', label: 'hero_kpi_rapprochees', cible: 'calendrier' },
   { id: 'rapports', valeur: 'rapportsAttendus', label: 'hero_kpi_rapports', cible: 'rapports' },
+  // Bilan de l'année, depuis la liste de présence : ton neutre, rien à faire.
+  { id: 'terminees', valeur: 'formationsTerminees', label: 'hero_kpi_terminees', cible: 'rapports', neutre: true },
+  { id: 'formes', valeur: 'stagiairesFormes', label: 'hero_kpi_formes', cible: 'rapports', neutre: true },
 ]
+
+/** Les chiffres du bilan : sans liste de présence chargée, ils disent « liste non chargée ». */
+export function kpisCoordinateur(presences) {
+  if (presences?.loaded !== false) return KPIS_COORDINATEUR
+  return KPIS_COORDINATEUR.map(k => (k.neutre ? { ...k, inconnu: 'hero_kpi_presences_absentes' } : k))
+}
+
+/**
+ * Bilan de l'année tiré de /years/{année}/attendance-summary (agrégats, aucun
+ * nom). « Stagiaires formés » = participations présentes. Liste non chargée ou
+ * illisible : « — », jamais 0.
+ */
+export function chiffresPresences(presences) {
+  if (!presences?.loaded) return { formationsTerminees: null, stagiairesFormes: null }
+  return {
+    formationsTerminees: presences.trainings_completed ?? null,
+    stagiairesFormes: presences.participations_present ?? null,
+  }
+}
+
+/** Agrégats de présence de l'année en cours ; null tant qu'ils manquent (403, panne). */
+function usePresences(actif) {
+  const [presences, setPresences] = useState(null)
+  useEffect(() => {
+    if (!actif) return undefined
+    let vivant = true
+    planningApi.attendanceSummary(new Date().getFullYear())
+      .then(r => vivant && setPresences(r))
+      .catch(() => vivant && setPresences(null))
+    return () => { vivant = false }
+  }, [actif])
+  return presences
+}
 
 /**
  * Valeurs de ces chiffres, depuis la clé de la dernière année. Filiales à
  * relancer : seulement pendant le recueil (clos, il n'y a plus personne à
  * relancer). Sessions rapprochées et rapports : pas encore de source (« — »).
  */
-export function chiffresCoordinateur({ statut, access, annee, cle }) {
-  const sans = { aRelancer: null, aCorriger: null, rapprochees: null, rapportsAttendus: null }
+export function chiffresCoordinateur({ statut, access, annee, cle }, presences = null) {
+  const sans = { aRelancer: null, aCorriger: null, rapprochees: null, rapportsAttendus: null, ...chiffresPresences(presences) }
   if (statut !== 'pret' || !cle) return sans
   const gelee = cle.statut === 'FROZEN'
   const attendus = paysAttendus({ annee, gelee }, { connus: cle.connues })
@@ -162,7 +201,8 @@ export default function CenterHome({ mode = 'director' }) {
 
   const directeur = mode === 'director'
   const coordinateur = mode === 'coordinator'
-  const etatCle = useEtatCle()
+  const etatCle = useEtatCle(user?.apercu)
+  const presences = usePresences(coordinateur)
   const { statut, access, annee, cle } = etatCle
 
   if (!user) return null
@@ -183,7 +223,7 @@ export default function CenterHome({ mode = 'director' }) {
         <div ref={headerRef}>
           <PortalHeader user={user} centerHero={chiffresHero({ mode })}
             belowGreeting={coordinateur
-              ? <PortalHeroKpis kpis={KPIS_COORDINATEUR} t={t} values={chiffresCoordinateur(etatCle)} grille={GRILLE_RAIL} />
+              ? <PortalHeroKpis kpis={kpisCoordinateur(presences)} t={t} values={chiffresCoordinateur(etatCle, presences)} grille={GRILLE_RAIL} />
               : null} />
         </div>
 

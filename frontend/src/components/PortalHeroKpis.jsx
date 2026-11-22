@@ -9,6 +9,10 @@ import { scrollToPortalSection } from '../utils/portalScroll.js'
  * `format: 'pct'` : un taux (« 42 % »), ton neutre et un seul libellé, pour
  * les rôles qui suivent sans agir (observateurs).
  */
+/*
+ * `neutre` : un bilan (formations faites), pas un reste à faire : ton neutre.
+ * `inconnu` : libellé quand la valeur manque (« liste non chargée »).
+ */
 export default function PortalHeroKpis({ kpis, t, values, grille = 'cols-4' }) {
   // `grille` : celle des cartes des sections de la page, pour que les colonnes tombent juste.
   return (
@@ -17,8 +21,8 @@ export default function PortalHeroKpis({ kpis, t, values, grille = 'cols-4' }) {
         const n = values?.[k.valeur]
         const connu = Number.isFinite(n)
         const pct = k.format === 'pct'
-        const ton = !connu || pct ? '' : n > 0 ? ' progress' : ' green'
-        const libelle = !connu || pct ? t[k.label]
+        const ton = !connu || pct || k.neutre ? '' : n > 0 ? ' progress' : ' green'
+        const libelle = !connu ? t[k.inconnu ?? k.label] : pct ? t[k.label]
           : n === 0 ? t[`${k.label}_zero`]
             : n === 1 ? t[`${k.label}_one`] ?? t[k.label] : t[k.label]
         return (

@@ -44,6 +44,8 @@ export const planningApi = {
   /** Chiffres des cartes du centre, une ligne par année, déjà calculés côté serveur. */
   yearSummary: () => http.get('/years/summary'),
   reviewItems: year => http.get(`/years/${year}/review-items`),
+  // Agrégats de la liste de présence (aucun nom) ; loaded=false : liste non chargée.
+  attendanceSummary: year => http.get(`/years/${year}/attendance-summary`),
   trainerLoad: year => http.get(`/years/${year}/trainer-load`),
   /** Sessions pas encore terminées du formateur connecté : `{ linked, sessions }`. */
   mySessions: () => http.get('/me/sessions'),

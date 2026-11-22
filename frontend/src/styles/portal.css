@@ -3179,6 +3179,18 @@ button.pv-card {
 @media (max-width: 720px) {
   .portal-apercu-bandeau-note { display: none; }
 }
+/* « Vu comme » : choix d'un compte réel (components/ApercuVuComme.jsx) */
+.portal-apercu-vu-comme {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+.portal-apercu-vu-comme label { font-weight: 600; }
+.portal-apercu-vu-comme select { min-width: min(360px, 100%); }
+.portal-apercu-vu-comme-note { margin-top: 24px; text-align: center; color: #64748b; }
 
 .portal-coming-soon-toast {
   position: fixed;

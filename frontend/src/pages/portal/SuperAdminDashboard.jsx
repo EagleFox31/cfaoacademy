@@ -24,6 +24,7 @@ import { OIDC_ACTIF } from '../../lib/auth.js'
 import PvCard from '../../components/PvCard.jsx'
 import { ADMIN_HOME, ADMIN_NAV, adminPath, canAccessAdminConsole } from '../../utils/adminAccess.js'
 import { ROLES_APERCU, ouvrirApercu, peutOuvrirApercu } from '../../utils/apercuPortail.js'
+import ApercuVuComme from '../../components/ApercuVuComme.jsx'
 
 export const CFAO_ACADEMY_APPS_CONFIG = [
   {
@@ -974,6 +975,7 @@ function SuperAdminGroupe() {
                 />
               ))}
             </PortalStaggerGrid>
+            <ApercuVuComme t={t} />
           </div>
         </PortalReveal>
       )}
