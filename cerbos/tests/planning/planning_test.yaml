@@ -68,6 +68,12 @@ resources:
     id: "*"
     attr:
       kind: "seat_allocations"
+  stagiaires_2026:
+    kind: planning_attendance
+    id: "2026"
+    attr:
+      orgPath: ["groupe"]
+      year: 2026
   charge_2027:
     kind: planning_trainer_load
     id: "2027"
@@ -105,6 +111,40 @@ resources:
       orgPath: ["groupe"]
 
 tests:
+  - name: les stagiaires de l'annee sont lus par la coordination et la direction du centre
+    input:
+      principals: ["coordonnateur", "directeur_centre", "superadmin", "assistante", "formateur", "directeur_groupe", "dps_cmr", "chef_atelier_civ", "apprenant"]
+      resources: ["stagiaires_2026"]
+      actions: ["view"]
+    expected:
+      - principal: coordonnateur
+        resource: stagiaires_2026
+        actions: {view: EFFECT_ALLOW}
+      - principal: directeur_centre
+        resource: stagiaires_2026
+        actions: {view: EFFECT_ALLOW}
+      - principal: superadmin
+        resource: stagiaires_2026
+        actions: {view: EFFECT_ALLOW}
+      - principal: assistante
+        resource: stagiaires_2026
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: stagiaires_2026
+        actions: {view: EFFECT_DENY}
+      - principal: directeur_groupe
+        resource: stagiaires_2026
+        actions: {view: EFFECT_DENY}
+      - principal: dps_cmr
+        resource: stagiaires_2026
+        actions: {view: EFFECT_DENY}
+      - principal: chef_atelier_civ
+        resource: stagiaires_2026
+        actions: {view: EFFECT_DENY}
+      - principal: apprenant
+        resource: stagiaires_2026
+        actions: {view: EFFECT_DENY}
+
   - name: la charge des formateurs est reservee au directeur du centre
     input:
       principals: ["directeur_centre", "superadmin", "coordonnateur", "assistante", "formateur", "directeur_groupe", "dps_cmr"]

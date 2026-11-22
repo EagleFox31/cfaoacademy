@@ -6,7 +6,9 @@ seule) et passe chaque classeur reconnu par l'importeur de l'écran Imports :
 - « Plannings formateurs AAAA » : grille du calendrier de l'année AAAA, dernière
   version seulement (numéro « V27 », puis date du fichier) ;
 - « Clé de Répartition … » / « Répartition de places par pays … » : places par pays,
-  de la plus ancienne à la plus récente.
+  de la plus ancienne à la plus récente ;
+- « Liste des participants aux formations AAAA » : stagiaires de l'exercice AAAA,
+  dernière version seulement (les « Copie de … » sont ignorées).
 
 Idempotent : un fichier déjà vu (même empreinte, même type, mêmes paramètres) n'est
 ni relu ni réécrit, qu'il ait été appliqué ou refusé. Un fichier refusé est journalisé
@@ -25,6 +27,7 @@ from django.core.management.base import BaseCommand
 
 from core.models import ImportLog
 
+from ...imports.attendance_list import AttendanceListImporter
 from ...imports.calendar_grid import CalendarGridImporter
 from ...imports.seat_sheets import SeatSheetsImporter
 from ...models import CostKeyYear
@@ -33,6 +36,7 @@ from ...services.cost_key_freeze import FreezeRefused, freeze
 ACTOR = "system:chargement-auto"
 EXTENSIONS = {".xlsx", ".xlsm"}
 _CALENDAR = re.compile(r"plannings? formateurs? (20\d\d)")
+_ATTENDANCE = re.compile(r"liste des participants aux formations (20\d\d)")
 _SEATS = re.compile(r"cle de repartition|repartition de(s)? places par pays")
 _VERSION = re.compile(r"\bv(\d+)\b")
 
@@ -58,6 +62,7 @@ def _lisible(root: Path) -> bool:
 def discover(roots: list[Path]) -> list[tuple[str, Path, dict]]:
     """(type d'import, fichier, paramètres), dans l'ordre d'application."""
     calendars: dict[int, list[Path]] = {}
+    attendance: dict[int, list[Path]] = {}
     seats: list[Path] = []
     for root in roots:
         if not _lisible(root):
@@ -70,6 +75,8 @@ def discover(roots: list[Path]) -> list[tuple[str, Path, dict]]:
             name = _norm(path.stem)
             if match := _CALENDAR.search(name):
                 calendars.setdefault(int(match.group(1)), []).append(path)
+            elif (match := _ATTENDANCE.search(name)) and not name.startswith("copie de"):
+                attendance.setdefault(int(match.group(1)), []).append(path)
             elif _SEATS.search(name):
                 seats.append(path)
 
@@ -80,12 +87,16 @@ def discover(roots: list[Path]) -> list[tuple[str, Path, dict]]:
     plan = [("seat_allocations", p, {}) for p in sorted(seats, key=lambda p: p.stat().st_mtime)]
     plan += [("calendar_grid", max(paths, key=version), {"year": str(year)})
              for year, paths in sorted(calendars.items())]
+    plan += [("attendance_list", max(paths, key=version), {"year": str(year)})
+             for year, paths in sorted(attendance.items())]
     return plan
 
 
 def _importer(kind: str, params: dict):
     if kind == "calendar_grid":
         return CalendarGridImporter(int(params["year"]))
+    if kind == "attendance_list":
+        return AttendanceListImporter(int(params["year"]))
     return SeatSheetsImporter()
 
 

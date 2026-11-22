@@ -1,0 +1,11 @@
+# Stagiaires de l'année (liste des participants) : agrégats pour le portail du centre.
+# Données nominatives en base ; seuls des comptes sortent. Lecture : coordination et
+# direction du centre. Tout autre rôle : refus par défaut.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: planning_attendance
+  rules:
+    - actions: ["view"]
+      effect: EFFECT_ALLOW
+      roles: [training_coordinator, center_director, superadmin]

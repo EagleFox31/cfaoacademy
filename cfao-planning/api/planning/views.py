@@ -34,6 +34,7 @@ from .imports.calendar_grid import CalendarGridImporter
 from .imports.data_sheet import COLUMNS as DATA_COLUMNS, DataSheetImporter
 from .imports.seat_sheets import COLUMNS as SEAT_COLUMNS, SeatSheetsImporter
 from .models import CostKeyYear, FrozenKeyError, YearSummary
+from .services.attendance import attendance_summary
 from .services.cost_key import Mode, compare
 from .services.cost_key_abc import abc_table, consolidate_abc
 from .services.cost_key_cells import MISSING, CellConflict, CellGone, CellInvalid, edit_cell
@@ -547,6 +548,14 @@ class YearTrainerLoadView(APIView):
     def get(self, request, year):
         allow(request, "planning_trainer_load", "view", str(year), {"orgPath": ["groupe"], "year": year})
         return Response(trainer_load(year))
+
+
+class YearAttendanceSummaryView(APIView):
+    """Stagiaires de l'année (liste des participants) : agrégats seulement, aucun nom."""
+
+    def get(self, request, year):
+        allow(request, "planning_attendance", "view", str(year), {"orgPath": ["groupe"], "year": year})
+        return Response(attendance_summary(year))
 
 
 class MySessionsView(APIView):

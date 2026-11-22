@@ -147,6 +147,9 @@ class TabularImporter:
 
             try:
                 cleaned = self.clean_row(line, values, result)
+            except SkipRow:
+                result.extra["rows_skipped"] = result.extra.get("rows_skipped", 0) + 1
+                continue
             except RowRejected as exc:
                 result.errors.append(exc.as_row_error(line))
                 continue
@@ -275,6 +278,12 @@ class TabularImporter:
     @staticmethod
     def _text(value) -> str:
         return "" if value is None else str(value).strip()
+
+
+class SkipRow(Exception):
+    """Levée par `clean_row` pour une ligne résiduelle d'un classeur tenu à la main
+    (formules restées sans personne, par exemple) : ignorée et comptée au rapport
+    (`rows_skipped`), sans refuser le fichier."""
 
 
 class RowRejected(Exception):

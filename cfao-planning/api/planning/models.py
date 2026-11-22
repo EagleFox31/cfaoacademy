@@ -668,6 +668,63 @@ class YearSummary(models.Model):
         return f"résumé {self.year}"
 
 
+class AttendanceOrigin(models.TextChoices):
+    IMPORT = "IMPORT", "Liste des stagiaires (classeur)"
+    MANUAL = "MANUAL", "Saisie"
+
+
+class TraineeAttendance(UUIDModel, TimeStampedModel):
+    """Une ligne de la liste des stagiaires : une personne inscrite à une formation.
+
+    Données nominatives : seuls des agrégats sortent de l'API (Cerbos
+    `planning_attendance`), jamais un nom dans un journal ou un rapport d'import.
+    Origine IMPORT : remplacée en bloc par une version plus récente du classeur du même
+    exercice. Origine MANUAL (saisie future dans l'application) : jamais touchée par un
+    import.
+    """
+
+    year = models.PositiveSmallIntegerField()
+    # N° de la formation du classeur ; à défaut, intitulé + date de début.
+    training_key = models.CharField(max_length=300)
+    training_number = models.CharField(max_length=32, blank=True)
+    center = models.CharField(max_length=48, blank=True)
+    brand_raw = models.CharField(max_length=96, blank=True)
+    title = models.CharField(max_length=255)
+    trainers_raw = models.CharField(max_length=255, blank=True)
+    location = models.CharField(max_length=96, blank=True)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    hours = models.PositiveSmallIntegerField(null=True, blank=True)
+    delivery_mode = models.CharField(max_length=16, choices=DeliveryMode.choices, blank=True)
+    civility = models.CharField(max_length=16, blank=True)
+    last_name = models.CharField(max_length=128)
+    first_name = models.CharField(max_length=128, blank=True)
+    country_raw = models.CharField(max_length=96, blank=True)
+    country = models.ForeignKey(
+        Country, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    subsidiary = models.CharField(max_length=128, blank=True)  # filiale ou client
+    present = models.BooleanField(null=True)  # vide dans le classeur = inconnu
+    # Empreinte nom + prénom + pays normalisés : compter les personnes distinctes.
+    person_key = models.CharField(max_length=64)
+    origin = models.CharField(
+        max_length=16, choices=AttendanceOrigin.choices, default=AttendanceOrigin.IMPORT
+    )
+    last_import = models.ForeignKey(
+        "core.ImportLog", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        db_table = "planning_trainee_attendance"
+        indexes = [
+            models.Index(fields=["year", "origin"]),
+            models.Index(fields=["year", "end_date"]),
+        ]
+
+    def __str__(self) -> str:  # jamais le nom : la ligne peut finir dans un journal
+        return f"stagiaire {self.year} {self.training_key}"
+
+
 # ── Résumé annuel : recalcul de l'année touchée, après le commit ─────────────
 # Une écriture en masse (`bulk_create`, `update()`) ne déclenche aucun signal :
 # elle appelle `services.year_summary.schedule(...)` elle-même.
