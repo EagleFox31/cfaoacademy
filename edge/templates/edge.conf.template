@@ -26,6 +26,9 @@ server {
     # Module arrêté ou en mise à jour : page d'attente au lieu d'un 502 brut.
     include /etc/nginx/snippets/attente.conf;
 
+    # « Vu comme » en lecture seule : écriture refusée avant toute route.
+    include /etc/nginx/snippets/vu-comme.conf;
+
     # URL vue des navigateurs, annoncée aux modules servis sous préfixe : origine
     # de la liste blanche EDGE_ORIGINES, sinon l'URL publique (origines.conf,
     # écrit par 27-origines.sh). Jamais l'en-tête reçu tel quel.
