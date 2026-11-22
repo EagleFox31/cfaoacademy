@@ -117,10 +117,23 @@ def test_comptes_a_creer_sans_doublon_avec_les_comptes_rendus():
     _fiche("Tech NICIEN", kind=Trainer.Kind.TECH_INSTRUCTOR)
     _fiche("Deja RELIE", keycloak_sub="x")
     cr = [{"id": "cr-1", "identifiant": "lgagne", "firstName": "Lucien", "lastName": "Gagne",
-           "roles": ["trainer"], "scopeNodes": ["CMR"]}]
+           "roles": ["trainer"], "scopeNodes": ["groupe.cmr"]}]
     out = StringIO()
     call_command("export_trainer_accounts", stdout=out, avec=None)
     assert {p["identifiant"] for p in json.loads(out.getvalue())} == {"eugene.ebene", "lucien.gagne"}
     profils = account_profiles(cr)
     assert [(p["identifiant"], p["roles"], p["scopeNodes"]) for p in profils] == [
-        ("eugene.ebene", ["trainer"], ["CMR"])]
+        ("eugene.ebene", ["trainer"], ["groupe.cmr"])]
+
+
+def test_scope_node_au_format_orgpath_jamais_un_code_nu():
+    from referential.models import Country
+
+    sen = Country.objects.create(code="sen", label="Sénégal", org_path=["groupe", "groupe.sen"])
+    civ = Country.objects.create(code="CIV", label="Côte d'Ivoire")  # orgPath non renseigné
+    _fiche("Alpha SENE", home_country=sen)
+    _fiche("Bravo IVOIRE", home_country=civ)
+    _fiche("Charlie DOUALA")
+    scopes = {p["identifiant"]: p["scopeNodes"] for p in account_profiles([])}
+    assert scopes == {"alpha.sene": ["groupe.sen"], "bravo.ivoire": ["groupe.civ"],
+                      "charlie.douala": ["groupe.cmr"]}

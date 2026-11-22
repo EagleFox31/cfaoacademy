@@ -24,7 +24,8 @@ from .normalize import norm_key, strip_accents
 logger = logging.getLogger(__name__)
 
 TRAINER_ROLE = "trainer"
-ACADEMY_SCOPE = "CMR"  # périmètre des formateurs de l'Academy (Douala)
+ACADEMY_SCOPE = "CMR"  # code pays des formateurs de l'Academy (Douala)
+ACADEMY_SCOPE_NODE = "groupe.cmr"  # son scopeNode Keycloak, au format orgPath de la plateforme
 _LINKED_TTL = 24 * 3600
 _UNMATCHED_TTL = 600
 
@@ -116,11 +117,20 @@ def account_profiles(existing: list[dict] | None = None) -> list[dict]:
         if names & covered:
             continue
         first, _, last = t.full_name.strip().partition(" ")
-        country = t.home_country.code.upper() if t.home_country else ACADEMY_SCOPE
         profiles.append({
             "id": str(t.pk), "identifiant": _username(t.full_name),
             "firstName": first, "lastName": last or first,
-            "roles": [TRAINER_ROLE], "scopeNodes": [country],
+            "roles": [TRAINER_ROLE], "scopeNodes": [_scope_node(t.home_country)],
             "brands": sorted(b.code for b in t.brands.all()), "departments": [],
         })
     return profiles
+
+
+def _scope_node(country) -> str:
+    """scopeNode du pays (dernier maillon de son orgPath) : jamais un code nu, que
+    la condition Cerbos `scopeNode ∈ orgPath` ne reconnaîtrait pas."""
+    if country is None:
+        return ACADEMY_SCOPE_NODE
+    if country.org_path:
+        return country.org_path[-1]
+    return f"groupe.{country.code.lower()}"
