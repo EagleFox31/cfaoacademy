@@ -8,3 +8,5 @@ cfao-needs/gateway/** text=auto eol=lf
 # Registre de contrats et specs publiées : octets identiques à la génération, quel que soit core.autocrlf.
 contracts/** text=auto eol=lf
 **/contract/*.openapi.json text eol=lf
+# Scripts shell lus sous Linux (images) : un CR casse le shebang.
+*.sh text eol=lf
