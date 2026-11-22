@@ -92,6 +92,38 @@ def test_page_d_attente_dans_chaque_bloc_server():
     assert "http" not in page.split("<style>", 1)[1].split("</style>", 1)[0], "page autonome"
 
 
+def test_vu_comme_lecture_seule_dans_chaque_bloc_server():
+    inclusion = "include /etc/nginx/snippets/vu-comme.conf;"
+    assert inclusion in _texte(EDGE / "templates" / "edge.conf.template")
+    assert inclusion in _texte(EDGE / "entrypoint.d" / "26-ecoutes-lan.sh")
+    # Un seul bloc server écrit à la main : aucun ne doit échapper à la barrière.
+    assert sum(_texte(m).count("server {") for m in MODELES) == 1
+    snippet = _texte(EDGE / "snippets" / "vu-comme.conf")
+    assert re.search(r"^if \(\$edge_vu_comme_refus\) \{\n\s+rewrite \^ /_edge/vu-comme\.json last;\n\}$",
+                     snippet, re.M)
+    assert _locations(snippet) == ["/_edge/vu-comme.json"]
+    assert "internal;" in snippet and "return 403 " in snippet
+    carte = re.search(r'map "\$request_method:\$http_x_cfao_vu_comme" \$edge_vu_comme_refus \{(.*?)\}',
+                      _texte(EDGE / "nginx.conf"), re.S)
+    assert carte, "map absente de nginx.conf"
+    regles = re.findall(r'^\s*(\S+|"[^"]+")\s+([01]);', carte.group(1), re.M)
+    assert regles == [("default", "0"), ('"~^(GET|HEAD):"', "0"), ('"~^[^:]+:."', "1")]
+
+    # Même logique que nginx (regex dans l'ordre, première gagnante), sur la clé.
+    def refus(methode, en_tete):
+        cle = f"{methode}:{en_tete}"
+        for motif, valeur in regles[1:]:
+            if re.search(motif.strip('"')[1:], cle):
+                return valeur == "1"
+        return False
+
+    for methode in ("POST", "PUT", "PATCH", "DELETE", "OPTIONS"):
+        assert refus(methode, "abc-123"), methode
+        assert not refus(methode, ""), f"{methode} sans en-tête"
+    for methode in ("GET", "HEAD"):
+        assert not refus(methode, "abc-123"), methode
+
+
 def test_api_garde_ses_propres_erreurs():
     # Un 503 de l'API garde son corps ; les routes HTML relaient la page d'attente.
     for api in ("planning", "core", "supervision"):

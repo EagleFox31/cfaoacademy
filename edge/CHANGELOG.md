@@ -7,6 +7,12 @@ version sans sa section.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-22
+
+- « Vu comme » en lecture seule : toute requête qui porte l'en-tête `X-Cfao-Vu-Comme` et
+  n'est ni GET ni HEAD reçoit un 403 JSON (`{"detail":"lecture seule"}`), sur l'adresse
+  publique et sur chaque écoute LAN, pour tous les modules. Rien d'autre ne change.
+
 ## [0.4.0] - 2026-11-20
 
 - Route `/api/v1/supervision/` vers le module de supervision (facultative : absente si

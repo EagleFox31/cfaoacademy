@@ -130,6 +130,27 @@ def test_cr_garde_son_prefixe_et_confine_ses_cookies():
     assert "t2=1; Path=/cr/x" in cookies
 
 
+VU_COMME = {"X-Cfao-Vu-Comme": "compte-cible"}
+
+
+@pytest.mark.parametrize("base", [EDGE_URL, LAN_NEEDS, LAN_CR])
+@pytest.mark.parametrize("methode", ["POST", "PUT", "PATCH", "DELETE"])
+def test_vu_comme_refuse_toute_ecriture_des_l_entree(base, methode):
+    r = requests.request(methode, f"{base}/cr/x", headers=VU_COMME, json={})
+    assert r.status_code == 403
+    assert r.headers["Content-Type"].startswith("application/json")
+    assert r.json() == {"detail": "lecture seule"}
+
+
+@pytest.mark.parametrize("base", [EDGE_URL, LAN_CR])
+def test_vu_comme_laisse_passer_la_lecture_et_les_requetes_normales(base):
+    lecture = requests.get(f"{base}/cr/x", headers=VU_COMME)
+    assert _vu(lecture)["module"] == "cr"
+    assert _vu(lecture)["en_tetes"]["x-cfao-vu-comme"] == "compte-cible"  # le module décide aussi
+    ecriture = requests.post(f"{base}/cr/x", json={})
+    assert ecriture.status_code != 403 and _vu(ecriture)["module"] == "cr"
+
+
 @pytest.mark.parametrize("chemin", ["/", "/x", "/cr/x", "/auth/realms/cfao/.well-known/openid-configuration"])
 def test_lan_needs_ne_sert_que_needs(chemin):
     r = requests.get(f"{LAN_NEEDS}{chemin}")
