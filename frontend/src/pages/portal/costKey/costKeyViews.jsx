@@ -48,6 +48,30 @@ function TrainerNames({ value }) {
   )
 }
 
+const shortDate = (iso, locale) => {
+  const d = new Date(`${iso}T00:00:00`)
+  return Number.isNaN(d.getTime()) ? String(iso) : d.toLocaleDateString(locale)
+}
+
+/** Date de début ; lue dans la grille du prévisionnel : mention « Prévu ». Les autres
+ * créneaux du module (vagues de Douala) tiennent dans « +N », listés au survol. */
+function SessionStart({ value, row, t, locale }) {
+  if (!value) return '—'
+  const others = (row.grid_slots || []).filter(x => x.start_date !== value)
+  return (
+    <span className="sheet-c-start" title={row.dates_source === 'grid' ? t.grid_dates_hint : undefined}>
+      {shortDate(value, locale)}
+      {row.dates_source === 'grid' && <span className="sheet-c-planned">{t.grid_dates}</span>}
+      {others.length > 0 && (
+        <span className="sheet-c-more"
+          title={`${t.grid_other_slots} : ${others.map(x => `${shortDate(x.start_date, locale)} → ${shortDate(x.end_date, locale)}`).join(', ')}`}>
+          +{others.length}
+        </span>
+      )}
+    </span>
+  )
+}
+
 /** Filiale : drapeau local (aucun CDN) puis libellé ; sans drapeau, le code pays. */
 function CountryName({ code, label, children }) {
   const [broken, setBroken] = useState(false)
@@ -807,14 +831,18 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
     { id: 'title', header: t.col_title, type: 'text', width: 260, value: s => s.title,
       edit: canEdit ? editableCell('session', 'title', 'text', { hint: t.edit_shared }) : undefined },
     // Le champ date natif (calendrier compris) ne tient pas dans 100 px.
-    { id: 'start', header: t.col_start, type: 'date', width: canEdit ? 140 : 100, value: s => s.start_date,
+    // Une date lue dans la grille du prévisionnel porte « Prévu » ; corrigée ici, elle devient celle de la session.
+    { id: 'start', header: t.col_start, type: 'date', width: canEdit ? 170 : 150, value: s => s.start_date,
+      render: (v, s) => <SessionStart value={v} row={s} t={t} locale={locale} />,
       edit: canEdit ? editableCell('session', 'start_date', 'date', { hint: t.edit_shared }) : undefined },
     { id: 'end', header: t.col_end, type: 'date', width: canEdit ? 140 : 100, value: s => s.end_date,
       edit: canEdit ? editableCell('session', 'end_date', 'date', { hint: t.edit_shared }) : undefined },
     { id: 'trainers', header: t.col_trainers, type: 'text', width: 190,
       value: s => (Array.isArray(s.trainers) ? s.trainers.join(', ') : s.trainers),
       render: v => <TrainerNames value={v} /> },
-    { id: 'location', header: t.col_location, type: 'text', width: 120, value: s => s.location,
+    // Drapeau du pays hôte : « Academy de Douala » porte celui du Cameroun.
+    { id: 'location', header: t.col_location, type: 'text', width: 170, value: s => s.location,
+      render: (v, s) => <CountryName code={s.host} label={v} />,
       edit: canEdit ? editableCell('session', 'location', 'text', { hint: t.edit_shared }) : undefined },
     { id: 'seats', header: t.col_allocated, type: 'int', total: 'sum', value: s => s.seats,
       tone: (_, s) => (s.seat_status ? placeTone(s.seat_status) : null),
@@ -835,10 +863,13 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
   const csvRef = useRef(null)
   const foot = useMemo(() => visibleFooter(data?.footer, sessions, sheetRows ?? sessions, filters),
     [data, sessions, sheetRows, filters])
-  const monthLabel = ym => {
+  // L'année est déjà choisie à côté : le mois seul, l'année n'apparaît que pour une date hors de la clé.
+  const monthText = month => ym => {
     const [y, m] = ym.split('-').map(Number)
-    return new Date(y, m - 1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' })
+    return new Date(y, m - 1, 1).toLocaleDateString(locale,
+      y === Number(ckey.year) ? { month } : { month, year: 'numeric' })
   }
+  const yearMonths = Array.from({ length: 12 }, (_, i) => `${ckey.year}-${String(i + 1).padStart(2, '0')}`)
   // Du plus large au plus fin : la marque, la filiale, puis ce qui décrit la formation.
   const facetDefs = useMemo(() => {
     const countryLabels = new Map(sessions.map(s => [s.country, s.country_label]))
@@ -854,11 +885,13 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
         render: v => <DeliveryMark t={t} mode={v} />, values: DELIVERY_MODES, compare: byOrder(DELIVERY_MODES) },
       { id: 'site', label: t.filter_location, get: s => s.site, text: v => t[`site_${v}`],
         values: SITES, compare: byOrder(PLACE_KEYS) },
-      { id: 'month', label: t.filter_month, get: s => s.start_date?.slice(0, 7), text: monthLabel,
+      // Sélecteur de mois : les 12 mois de l'année, chacun avec son nombre, même à 0.
+      { id: 'month', label: t.filter_month, get: s => s.start_date?.slice(0, 7), layout: 'months',
+        text: monthText('long'), short: monthText('short'), values: yearMonths,
         compare: (x, y) => x.value.localeCompare(y.value) },
     ]
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t, locale, isAll, sessions, global.brands])
+  }, [t, locale, isAll, sessions, global.brands, ckey.year])
   const facets = useMemo(() => buildFacets(sessions, facetDefs, filters), [sessions, facetDefs, filters])
   const shown = useMemo(() => applyFacets(sessions, facetDefs, filters), [sessions, facetDefs, filters])
   // Une seule ligne : la filiale se choisit à droite du titre, l'export rejoint les outils

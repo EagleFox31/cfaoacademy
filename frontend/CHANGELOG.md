@@ -7,6 +7,8 @@ version sans sa section.
 
 ## [Unreleased]
 
+- Devis par filiale : colonne Lieu avec le drapeau du pays (« Academy de Douala », pays de la filiale ou « À distance ») ; dates et formateurs repris du calendrier prévisionnel quand la session n'en a pas, avec la mention « Prévu » et les autres créneaux au survol (« +N »), date modifiable par le coordinateur.
+- Devis, filtre Mois : sélecteur de mois (grille des 12 mois de l'année, sans les jours ni l'année), chaque mois avec son nombre de sessions ; un mois vide reste visible, grisé.
 - Directeur du centre, page « Portails des profils » : 19 profils (directeur du centre et Expert Technique ajoutés), colonnes « Son périmètre » et « Ce qu'il voit de MEDACAP » (7 lettres, un clic sur une lettre allumée liste les fonctionnalités), un « ? » donne la description de chaque profil, l'apprenant est nommé « Apprenant ou Technicien ». « Voir son portail » ouvre, en lecture seule, le portail du coordinateur et celui de l'assistante. Dans un aperçu, la salutation ne nomme plus celui qui regarde.
 - Nouveau profil « Expert Technique » : même portail que le Key Instructor (Toyota) et le PIC (Suzuki), pour les marques d'engins, de bus, de chariots et de camions.
 - Directeur du centre : la carte « Voir les portails des profils » s'ouvre sur une page au format des détails du DPS, navbar conservée. Elle liste les 17 profils en 4 groupes (centre de formation, groupe, filiales, apprenants) avec ce que chacun voit et le nombre de comptes de chaque profil (« — » tant que le serveur ne répond pas). « Voir son portail » est annoncé, pas encore actif.

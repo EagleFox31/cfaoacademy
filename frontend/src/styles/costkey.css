@@ -257,6 +257,25 @@
 .ck-country-add:hover .ck-facet-box { border-color: #1a56db; }
 .ck-facet-value { display: inline-flex; align-items: center; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
 .ck-combo-panel.ck-facet-panel { width: 260px; }
+/* Sélecteur de mois : l'année d'un coup d'œil, 4 mois par rangée, sans les jours. */
+.ck-combo-panel.ck-facet-panel.is-months { width: 300px; }
+.ck-month-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  list-style: none; margin: 0; padding: 0; outline: none;
+}
+.ck-month {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px;
+  border: 1px solid transparent; border-radius: 8px; cursor: pointer; font-size: 13.5px; color: #0e1126;
+}
+.ck-month.is-all { grid-column: 1 / -1; flex-direction: row; justify-content: center; padding: 7px; }
+.ck-month-name { text-transform: capitalize; font-weight: 550; }
+.ck-month.is-active { background: #eef3ff; }
+.ck-month-grid:focus-visible .ck-month.is-active { border-color: #1a56db; }
+.ck-month.is-on { background: #1a56db; color: #fff; font-weight: 650; }
+.ck-month.is-on .ck-facet-count { color: #dbe6ff; }
+.ck-month.is-off { color: #b4b8c6; cursor: default; }
+.ck-month.is-off.is-active { background: transparent; }
+.ck-month.is-off .ck-facet-count { color: #c9ccd6; }
 .ck-facet-main { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .ck-facet-box {
   display: inline-flex; align-items: center; justify-content: center; flex: none; width: 16px; height: 16px;

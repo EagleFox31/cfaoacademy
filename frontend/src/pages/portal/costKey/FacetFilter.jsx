@@ -32,9 +32,10 @@ export function buildFacets(rows, defs, filters) {
       if (v) counts.set(v, (counts.get(v) ?? 0) + 1)
     }
     const options = [...counts].map(([value, count]) => ({
-      value, count, label: d.text ? d.text(value) : value, node: d.render?.(value),
+      value, count, label: d.text ? d.text(value) : value, node: d.render?.(value), short: d.short?.(value),
     }))
-    return { id: d.id, label: d.label, options: options.sort(d.compare ?? ((a, b) => a.label.localeCompare(b.label))) }
+    return { id: d.id, label: d.label, layout: d.layout,
+      options: options.sort(d.compare ?? ((a, b) => a.label.localeCompare(b.label))) }
   })
 }
 
@@ -54,6 +55,8 @@ export const Chevron = () => (
  * Filtre discret : son seul nom tant qu'il ne retient rien, une pastille bleue dès qu'il filtre.
  * Combobox : on tape pour réduire la liste, flèches et Entrée pour choisir, Échap pour fermer.
  * `single` : un seul choix, la liste se referme ; `noAll` : pas d'option « Tous ».
+ * `facet.layout === 'months'` : sélecteur de mois (grille 4 × 3 de l'année, sans les jours),
+ * chaque mois avec son nombre ; un mois sans ligne reste visible, grisé.
  */
 export function FacetFilter({ t, facet, selected, onChange, single = false, noAll = false }) {
   const [open, setOpen] = useState(false)
@@ -63,9 +66,11 @@ export function FacetFilter({ t, facet, selected, onChange, single = false, noAl
   const btnRef = useRef(null)
   const inputRef = useRef(null)
   const listId = useId()
+  const listRef = useRef(null)
   const { label, options } = facet
+  const grid = facet.layout === 'months'
 
-  const q = fold(query.trim())
+  const q = grid ? '' : fold(query.trim())
   // Sans option, « Tous » seul n'apprendrait rien : la liste dit qu'il n'y a rien à choisir.
   const entries = useMemo(() => (q || noAll || options.length === 0
     ? options.filter(o => fold(o.label).includes(q))
@@ -75,11 +80,11 @@ export function FacetFilter({ t, facet, selected, onChange, single = false, noAl
     if (!open) return undefined
     setQuery('')
     setActive(0)
-    inputRef.current?.focus()
+    ;(grid ? listRef : inputRef).current?.focus()
     const away = e => { if (!boxRef.current?.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', away)
     return () => document.removeEventListener('mousedown', away)
-  }, [open])
+  }, [open, grid])
   useEffect(() => { setActive(0) }, [query])
   useEffect(() => {
     if (open) document.getElementById(`${listId}-${active}`)?.scrollIntoView?.({ block: 'nearest' })
@@ -87,14 +92,24 @@ export function FacetFilter({ t, facet, selected, onChange, single = false, noAl
 
   const close = () => { setOpen(false); btnRef.current?.focus() }
   const isOn = o => (o.all ? selected.length === 0 : selected.includes(o.value))
+  // Mois sans ligne : visible pour lire l'année entière, mais rien à y choisir.
+  const isOff = o => grid && !o.all && o.count === 0 && !isOn(o)
   const toggle = o => {
+    if (isOff(o)) return
     if (single) { onChange(o.all ? [] : [o.value]); close(); return }
     if (o.all) onChange([])
     else onChange(selected.includes(o.value) ? selected.filter(v => v !== o.value) : [...selected, o.value])
   }
+  // Grille : « Tous » en tête sur toute la largeur, puis 4 mois par rangée.
+  const head = entries[0]?.all ? 1 : 0
+  const step = (i, d) => Math.min(Math.max(i + d, 0), entries.length - 1)
+  const down = i => (i < head ? head : step(i, 4))
+  const up = i => (i - head < 4 ? 0 : i - 4)
   const onKey = e => {
-    if (e.key === 'ArrowDown') { e.preventDefault(); setActive(i => Math.min(i + 1, entries.length - 1)) }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(i => Math.max(i - 1, 0)) }
+    if (grid && e.key === 'ArrowRight') { e.preventDefault(); setActive(i => step(i, 1)) }
+    else if (grid && e.key === 'ArrowLeft') { e.preventDefault(); setActive(i => step(i, -1)) }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); setActive(i => (grid ? down(i) : step(i, 1))) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(i => (grid ? up(i) : step(i, -1))) }
     else if (e.key === 'Enter') { e.preventDefault(); if (entries[active]) toggle(entries[active]) }
     else if (e.key === 'Escape') { e.preventDefault(); close() }
     else if (e.key === 'Tab') setOpen(false)
@@ -120,7 +135,25 @@ export function FacetFilter({ t, facet, selected, onChange, single = false, noAl
         <Chevron />
       </button>
       {open && (
-        <div className="ck-combo-panel ck-facet-panel" onKeyDown={onKey}>
+        <div className={`ck-combo-panel ck-facet-panel${grid ? ' is-months' : ''}`} onKeyDown={onKey}>
+          {grid ? (
+            <ul ref={listRef} id={listId} role="listbox" tabIndex={0} aria-multiselectable={!single} aria-label={label}
+              aria-activedescendant={entries[active] ? `${listId}-${active}` : undefined} className="ck-month-grid">
+              {entries.map((o, i) => (
+                <li key={o.all ? '*' : o.value} id={`${listId}-${i}`} role="option" aria-selected={isOn(o)}
+                  aria-disabled={isOff(o) || undefined} data-value={o.value} title={o.all ? undefined : o.label}
+                  className={`ck-month${o.all ? ' is-all' : ''}${i === active ? ' is-active' : ''}${isOn(o) ? ' is-on' : ''}${isOff(o) ? ' is-off' : ''}`}
+                  onMouseEnter={() => setActive(i)} onMouseDown={e => { e.preventDefault(); toggle(o) }}>
+                  {o.all ? o.label : (
+                    <>
+                      <span className="ck-month-name">{o.short ?? o.label}</span>
+                      <span className="ck-facet-count">{o.count}</span>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (<>
           <input ref={inputRef} type="text" className="ck-combo-input" role="combobox" aria-expanded="true"
             aria-autocomplete="list" aria-controls={listId}
             aria-activedescendant={entries[active] ? `${listId}-${active}` : undefined}
@@ -142,6 +175,7 @@ export function FacetFilter({ t, facet, selected, onChange, single = false, noAl
             ))}
             {entries.length === 0 && <li className="ck-combo-empty">{t.filter_no_option}</li>}
           </ul>
+          </>)}
         </div>
       )}
     </div>

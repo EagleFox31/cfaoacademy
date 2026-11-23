@@ -348,6 +348,23 @@ describe('saisie dans le devis par filiale', () => {
       expect(facet('Mois').textContent).toContain('2')
     })
 
+    it('Mois : les 12 mois de l’année en grille, sans l’année, mois vides grisés', async () => {
+      await load()
+      await toggleFacet('Mois')
+      const months = [...host.querySelectorAll('.ck-month:not(.is-all)')]
+      expect(months).toHaveLength(12)
+      expect(months.map(m => m.dataset.value)[0]).toBe('2027-01')
+      expect(option('2027-04').querySelector('.ck-month-name').textContent).not.toContain('2027')
+      expect(option('2027-04').getAttribute('aria-disabled')).toBeNull()
+      expect(option('2027-12').getAttribute('aria-disabled')).toBe('true')
+      expect(option('2027-12').querySelector('.ck-facet-count').textContent).toBe('0')
+      await act(async () => { option('2027-12').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })) })
+      expect(option('2027-12').getAttribute('aria-selected')).toBe('false')
+      await toggleFacet('Mois')
+      await choose('Mois', '2027-04')
+      expect(facet('Mois').textContent).not.toContain('2027')
+    })
+
     it('Lieu propose Filiale et Academy', async () => {
       await load()
       await choose('Lieu', 'at_academy')
