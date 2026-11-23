@@ -7,6 +7,11 @@ version sans sa section.
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-11-23
+
+- Calendrier prévisionnel : une session à cheval sur deux mois (du 28/06 au 02/07) ne fait plus deux créneaux. La grille la dessine en deux bandes, une par colonne de mois ; elles sont recollées, formateurs réunis.
+- Import de la grille : un libellé de mois mal écrit (« JIULLET ») est reconnu ; avant, tout le bloc prenait le mois précédent. La suite d'une session au 1er du mois, vide ou réduite au code (« H11 »), reprend le texte de la bande qui finit la veille sur la même ligne du formateur. Grille 2027 : 220 → 223 bandes, juillet EQUIPMENT redaté.
+
 ## [0.2.3] - 2026-11-23
 
 - Devis par filiale : une session issue d’une fiche besoins porte l'intitulé du module (catalogue de cfao-needs, contrat needs-analytics 1.7.0, sinon une session du classeur du même module) et un lieu clair : « Academy de Douala », le nom du pays de la filiale, ou « À distance » (au lieu de « Douala » et « Filiale »). Les sessions déjà en base sont mises à jour au prochain alignement, sans écriture si elles sont à jour.
