@@ -7,9 +7,13 @@ version sans sa section.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-23
+
 - Nombre de comptes par profil : le directeur du centre et le super admin peuvent lire
   le total de comptes par rôle (action `count_by_role` sur `user_account`, totaux seuls,
   aucun nom) ; aucun autre rôle n'y a droit, et la liste des comptes reste inchangée.
+- Nouveau profil Expert Technique (`technical_expert`) : dans les comptes rendus, il a les
+  mêmes droits de formateur suppléant que le Key Instructor et le PIC.
 
 ## [0.4.0] - 2026-11-23
 
