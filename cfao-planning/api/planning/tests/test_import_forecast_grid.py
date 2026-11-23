@@ -130,6 +130,61 @@ def test_lot_vide_ne_supprime_rien():
     assert GridBand.objects.count() == 3
 
 
+def two_months(june_label="JUIN", july_label="JUILLET", continuation=""):
+    """Juin puis juillet, même formateur sur la même ligne ; une bande du 28 au 30 juin."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Calendrier-EQUIPMENT"
+    ws["A1"] = "SERVICE FORMATION EQUIPMENT - 2027"
+    for day in range(1, 32):
+        ws.cell(3, 3 + day, day)
+    for first, label in ((4, june_label), (13, july_label)):
+        ws.cell(first, 1, label)
+        ws.merge_cells(f"A{first}:A{first + 8}")
+        ws.cell(first + 2, 2, "TOYOTA FORKLIFT")
+        ws.cell(first + 2, 3, "Eugène EBENE")
+    ws.merge_cells("AE6:AG6")  # 28 au 30 juin
+    ws["AE6"], ws["AE6"].fill = "H11 - Togo", ORANGE
+    ws.merge_cells("AE7:AG8")
+    ws["AE7"], ws["AE7"].fill = "Diagnostic Pont et Réducteurs", TITLE
+    ws.merge_cells("D15:E15")  # 1er et 2 juillet, même ligne du formateur
+    ws["D15"].fill = ORANGE
+    if continuation:
+        ws["D15"] = continuation
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def test_mois_mal_ecrit_lu_quand_meme():
+    _apply(two_months(july_label="JIULLET", continuation="LVL03 - Burkina Faso"))
+    band = GridBand.objects.get(cell="D15")
+    assert (band.start_date, band.end_date) == (dt.date(2027, 7, 1), dt.date(2027, 7, 2))
+
+
+@pytest.mark.parametrize("continuation", ["", "H11"])
+def test_suite_au_mois_suivant_reprend_le_texte_de_la_bande(continuation):
+    # Une session du 28/06 au 02/07 : la suite, au 1er juillet, est vide ou ne porte que le code.
+    _apply(two_months(continuation=continuation))
+    band = GridBand.objects.get(cell="D15")
+    assert (band.text, band.title, band.trainer_raw) == (
+        "H11 - Togo", "Diagnostic Pont et Réducteurs", "Eugène EBENE")
+    assert (band.start_date, band.end_date) == (dt.date(2027, 7, 1), dt.date(2027, 7, 2))
+
+
+def test_bande_vide_sans_bande_la_veille_ignoree():
+    buf = two_months()
+    from openpyxl import load_workbook
+    wb = load_workbook(buf)
+    wb.active["AE6"].value = None  # plus rien la veille : la bande vide du 1er reste ignorée
+    out = io.BytesIO()
+    wb.save(out)
+    out.seek(0)
+    _apply(out)
+    assert not GridBand.objects.filter(cell="D15").exists()
+
+
 def test_equipment_range_dans_son_pole():
     _apply(grid(sheet="Calendrier-EQUIPMENT"))
     assert set(GridBand.objects.values_list("pole", flat=True)) == {"EQUIPMENT"}

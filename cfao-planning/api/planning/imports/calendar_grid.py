@@ -16,6 +16,7 @@ où le code et l'intitulé sont peints sur deux lignes.
 from __future__ import annotations
 
 import calendar
+import difflib
 import hashlib
 import re
 from dataclasses import dataclass
@@ -248,8 +249,10 @@ class CalendarGridImporter(TabularImporter):
         for row in range(1, ws.max_row + 1):
             raw = ws.cell(row, 1).value
             key = norm_key(raw)
-            if key in _MONTHS:
-                current = _MONTHS[key]
+            # Faute de frappe tolérée (« JIULLET ») : sinon tout le bloc prend le mois d'avant.
+            close = difflib.get_close_matches(key, _MONTHS, n=1, cutoff=0.8) if key else []
+            if close:
+                current = _MONTHS[close[0]]
             if current is not None:
                 found[row] = current
         for merge in ws.merged_cells.ranges:

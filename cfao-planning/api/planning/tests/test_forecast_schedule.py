@@ -114,6 +114,18 @@ def test_co_animation_fusionnee(key, referential):
     assert len(slots) == 1 and slots[0]["trainers"] == ["Eugène EBENE", "Lucien GAGNE"]
 
 
+def test_bande_coupee_au_changement_de_mois_recollee(key, referential):
+    # La grille a une colonne par mois : une session du 30/08 au 03/09 y est deux bandes.
+    s = session(key, referential, "TS06-G3", "ci", location="Côte d'Ivoire")
+    band("TS06-G3-RCI", D(2027, 8, 30), D(2027, 8, 31), cell="D290")
+    band("TS06-G3-RCI", D(2027, 9, 1), D(2027, 9, 3), trainer="Lucien GAGNE", cell="D295")
+    band("TS06-G3-RCI", D(2027, 9, 6), D(2027, 9, 10), cell="D300")  # semaine suivante : 2e groupe
+    slots = schedule_for_key(key)[str(s.pk)]
+    assert [(x["start_date"], x["end_date"]) for x in slots] == [
+        (D(2027, 8, 30), D(2027, 9, 3)), (D(2027, 9, 6), D(2027, 9, 10))]
+    assert slots[0]["trainers"] == ["Eugène EBENE", "Lucien GAGNE"]
+
+
 def test_formateur_inconnu_garde_son_nom_brut(key, referential):
     s = session(key, referential, "TS03-G3", "ci", location="Côte d'Ivoire")
     band("TS03-G3-RCI", D(2027, 1, 11), D(2027, 1, 15), trainer="Mohammed COLY")

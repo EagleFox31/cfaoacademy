@@ -109,6 +109,21 @@ def _known_codes(sessions) -> set[str]:
     return {s.code_norm for s in sessions if s.code_norm}
 
 
+def _join_month_cuts(slots: dict[tuple, Slot]) -> list[Slot]:
+    """Recolle les bandes d'une même session coupées par la colonne de mois de la grille
+    (30/08→31/08 puis 01/09→03/09) : un créneau qui commence le lendemain de la fin du précédent."""
+    joined: list[Slot] = []
+    for slot in sorted(slots.values(), key=lambda x: (x.start_date, x.end_date)):
+        last = joined[-1] if joined else None
+        if last and (slot.start_date - last.end_date).days == 1 and slot.start_date.day == 1:
+            last.end_date = slot.end_date
+            last.trainers += [t for t in slot.trainers if t not in last.trainers]
+            last.cells += slot.cells
+        else:
+            joined.append(slot)
+    return joined
+
+
 def schedule_for_key(key: CostKeyYear) -> dict:
     """{id de session prévue : [créneaux de la grille, du plus tôt au plus tard]}."""
     return plan_for_key(key)[0]
@@ -165,7 +180,7 @@ def plan_for_key(key: CostKeyYear) -> tuple[dict, list[str]]:
         if not members:
             continue
         matched_groups.add((site, code, country_id, brand_id))
-        free = sorted(slots.values(), key=lambda x: (x.start_date, x.end_date))
+        free = _join_month_cuts(slots)
         dated = sorted((s for s in members if s.start_date and s.origin != PlannedSession.Origin.NEEDS_SHEET),
                        key=lambda s: s.start_date)
         for s in dated:

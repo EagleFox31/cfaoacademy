@@ -110,32 +110,51 @@ class ForecastGridImporter(TabularImporter):
             for col in range(merge.min_col, merge.max_col + 1):
                 covered.add((merge.min_row, col))
             spans.append((merge.min_row, merge.min_col, merge.max_col, merge.coord.split(":")[0]))
+        day_one = next((col for col, day in days.items() if day == 1), None)
         for row in range(header + 1, ws.max_row + 1):
             for col in days:
-                if (row, col) not in covered and ws.cell(row, col).value is not None:
-                    spans.append((row, col, col, ws.cell(row, col).coordinate))
+                cell = ws.cell(row, col)
+                # Une case peinte sans texte au 1er du mois peut être la suite d'une session.
+                if (row, col) not in covered and (
+                        cell.value is not None or (col == day_one and fill_key(cell) in SITE_BY_FILL)):
+                    spans.append((row, col, col, cell.coordinate))
         if len(spans) > settings.IMPORT_MAX_ROWS:
             raise TooManyRows(f"Grille trop volumineuse : plus de {settings.IMPORT_MAX_ROWS} bandes.")
 
+        first_row: dict[int, int] = {}
+        for r, m in sorted(month_of.items()):
+            first_row.setdefault(m, r)
+        month_ends: dict[int, dict] = {}  # ligne → bande qui finit le dernier jour de son mois
         for row, min_col, max_col, coord in sorted(spans):
             cell = ws.cell(row, min_col)
             key = fill_key(cell)
             text = _clean(cell.value)
-            if key not in SITE_BY_FILL or not text:
-                continue
             month = month_of.get(row)
-            if month is None:
+            if key not in SITE_BY_FILL or month is None:
+                continue
+            start_day, end_day = days[min_col], days.get(max_col, days[min_col])
+            previous = self._previous_month_band(row, month, start_day, first_row, month_ends)
+            # Session à cheval sur deux mois : la suite, même ligne du formateur au mois suivant,
+            # est vide ou ne reprend que le code (« H11 » pour « H11 - Togo ») ; elle hérite du texte.
+            inherited = bool(previous and previous["fill_key"] == key
+                             and norm_compact(previous["text"]).startswith(norm_compact(text)))
+            if inherited:
+                text = previous["text"]
+            if not text:
                 continue
             result.rows_read += 1
-            start_day, end_day = days[min_col], days.get(max_col, days[min_col])
             last = calendar.monthrange(self.year, month)[1]
             if end_day > last or end_day < start_day:
                 result.extra.setdefault("out_of_month", []).append(f"{ws.title}!{coord}")
                 continue
             below = ws.cell(row + 1, min_col)
             title = _clean(below.value) if fill_key(below) not in SITE_BY_FILL else ""
+            if inherited and not title:
+                title = previous["title"]
             section, brands_raw, trainer_raw = self._line(ws, row, month_of)
             start, end = date(self.year, month, start_day), date(self.year, month, end_day)
+            if end_day == last:
+                month_ends[row] = {"fill_key": key, "text": text, "title": title}
             result.rows.append({
                 "year": self.year, "pole": pole, "sheet": ws.title, "cell": coord,
                 "start_date": start, "end_date": end, "text": text[:255], "title": title[:500],
@@ -143,6 +162,14 @@ class ForecastGridImporter(TabularImporter):
                 "trainer_raw": trainer_raw[:128],
                 "fingerprint": _fingerprint(self.year, pole, ws.title, coord, start, end, text, trainer_raw),
             })
+
+    @staticmethod
+    def _previous_month_band(row: int, month: int, start_day: int, first_row: dict[int, int],
+                             month_ends: dict[int, dict]) -> dict | None:
+        """La bande qui finit le dernier jour du mois d'avant, à la même ligne de son bloc."""
+        if start_day != 1 or month - 1 not in first_row:
+            return None
+        return month_ends.get(first_row[month - 1] + row - first_row[month])
 
     @staticmethod
     def _line(ws, row: int, month_of: dict[int, int]) -> tuple[str, str, str]:
