@@ -24,6 +24,7 @@ from .cost_key import (
     session_has_trainer_lodging,
     seat_price,
 )
+from .forecast_schedule import schedule_for_key
 
 
 # Où vont les places attribuées. Une place reportée reste comptée et facturée.
@@ -383,13 +384,20 @@ def country_sheet(key: CostKeyYear, mode: Mode, country_code: str,
                   levels: CatalogLevels | None = None,
                   postponed: dict | None = None, unassigned: dict | None = None,
                   needs_by_brand: dict[str, int] | None = None,
-                  report: CostKeyReport | None = None) -> dict | None:
+                  report: CostKeyReport | None = None,
+                  schedule: dict | None = None) -> dict | None:
     """Sessions où le pays a des places, et le pied de feuille (coût clé,
-    hébergements, total). None si le pays est inconnu de la clé. `levels` et `report`
-    évitent de relire le catalogue et de recalculer la clé quand plusieurs fiches
-    sont produites d'affilée (toutes les filiales, tous les pôles)."""
+    hébergements, total). None si le pays est inconnu de la clé. `levels`, `report` et
+    `schedule` évitent de relire le catalogue, de recalculer la clé et de relire la grille
+    quand plusieurs fiches sont produites d'affilée (toutes les filiales, tous les pôles).
+
+    Prévisionnel : une session sans date ou sans formateur les reprend de la grille du
+    calendrier (`forecast_schedule`), en affichage seulement ; le coût et l'hébergement
+    du formateur restent ceux de la session."""
     if report is None:
         report = report_for(key, mode, needs)
+    if mode == Mode.PLANNED and schedule is None:
+        schedule = schedule_for_key(key)
     line = next((l for l in report.lines if l.code == country_code), None)
     if line is None:
         return None
@@ -422,6 +430,15 @@ def country_sheet(key: CostKeyYear, mode: Mode, country_code: str,
         postponed_seats = reported.get(a.pk, 0)
         places[site] += a.seats - postponed_seats
         places[POSTPONED] += postponed_seats
+        slots = (schedule or {}).get(str(s.pk), [])
+        start, end = s.start_date, s.end_date
+        dates_source = "session" if start else None
+        if not start and slots:
+            start, end, dates_source = slots[0]["start_date"], slots[0]["end_date"], "grid"
+        # Une session chargée sans lien au référentiel garde le nom lu dans le classeur.
+        trainers = ", ".join(t.full_name for t in people) or getattr(s, "trainers_raw", "")
+        if not trainers and slots:
+            trainers = ", ".join(dict.fromkeys(n for slot in slots for n in slot["trainers"]))
         sessions.append({
             "brand": s.brand.label if s.brand else "",
             "brand_code": s.brand.code if s.brand else "",
@@ -432,9 +449,12 @@ def country_sheet(key: CostKeyYear, mode: Mode, country_code: str,
             "job": JOB_BY_FAMILY.get(module.family) if module else None,
             "delivery": s.delivery_mode or None,
             "code": s.code_raw or s.code_norm,
-            "title": s.title, "start_date": s.start_date, "end_date": s.end_date,
-            # Une session chargée sans lien au référentiel garde le nom lu dans le classeur.
-            "trainers": ", ".join(t.full_name for t in people) or getattr(s, "trainers_raw", ""),
+            "title": s.title, "start_date": start, "end_date": end,
+            "dates_source": dates_source,
+            # Créneaux de la grille pour ce module (plusieurs à Douala : un par vague).
+            "grid_slots": [{"start_date": x["start_date"], "end_date": x["end_date"],
+                            "trainers": x["trainers"]} for x in slots],
+            "trainers": trainers,
             "location": s.location or s.country.label,
             "host": s.country.code, "seats": a.seats,
             "site": site, "seat_status": POSTPONED if postponed_seats else site, "postponed": postponed_seats,
@@ -445,6 +465,9 @@ def country_sheet(key: CostKeyYear, mode: Mode, country_code: str,
             "trainee_lodging": _num(trainee), "trainer_lodging": _num(trainer),
             **_edit_block(key, s, a, mode, module),
         })
+        if dates_source == "grid" and "edit" in sessions[-1]:
+            # Le coordinateur corrige la date prévue : l'éditeur part de la date de la grille.
+            sessions[-1]["edit"]["raw"].update(start_date=start.isoformat(), end_date=end.isoformat())
     sessions.sort(key=_session_order)
     return {
         "year": key.year, "pole": key.pole, "mode": str(mode), "status": key.status,

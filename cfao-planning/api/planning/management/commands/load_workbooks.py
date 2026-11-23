@@ -29,6 +29,7 @@ from core.models import ImportLog
 
 from ...imports.attendance_list import AttendanceListImporter
 from ...imports.calendar_grid import CalendarGridImporter
+from ...imports.forecast_grid import ForecastGridImporter
 from ...imports.seat_sheets import SeatSheetsImporter
 from ...models import CostKeyYear
 from ...services.cost_key_freeze import FreezeRefused, freeze
@@ -87,6 +88,9 @@ def discover(roots: list[Path]) -> list[tuple[str, Path, dict]]:
     plan = [("seat_allocations", p, {}) for p in sorted(seats, key=lambda p: p.stat().st_mtime)]
     plan += [("calendar_grid", max(paths, key=version), {"year": str(year)})
              for year, paths in sorted(calendars.items())]
+    # La même grille, relue pour le prévisionnel : bandes de session brutes (GridBand).
+    plan += [("forecast_grid", max(paths, key=version), {"year": str(year)})
+             for year, paths in sorted(calendars.items())]
     plan += [("attendance_list", max(paths, key=version), {"year": str(year)})
              for year, paths in sorted(attendance.items())]
     return plan
@@ -95,6 +99,8 @@ def discover(roots: list[Path]) -> list[tuple[str, Path, dict]]:
 def _importer(kind: str, params: dict):
     if kind == "calendar_grid":
         return CalendarGridImporter(int(params["year"]))
+    if kind == "forecast_grid":
+        return ForecastGridImporter(int(params["year"]))
     if kind == "attendance_list":
         return AttendanceListImporter(int(params["year"]))
     return SeatSheetsImporter()

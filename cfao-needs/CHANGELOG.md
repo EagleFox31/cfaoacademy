@@ -8,6 +8,10 @@ chaque puce par « API : » ou « Passerelle : ».
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-11-23
+
+- API : les lignes du corps « niveaux du catalogue » portent `title` (intitulé du module), lu par planning pour nommer les sessions issues des fiches besoins. Contrat needs-analytics 1.7.0, champ facultatif, compatible avec les lecteurs 1.5 et 1.6.
+
 ## [0.2.4] - 2026-11-23
 
 - API : une case bleue d'une fiche besoins = places attribuées à Douala (elle était lue comme « sans couleur »). Un nouvel import réaligne les compteurs des lignes déjà en base.

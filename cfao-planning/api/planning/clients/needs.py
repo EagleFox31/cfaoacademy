@@ -244,6 +244,7 @@ class ModuleLevel:
     line_ids: tuple[str, ...]
     scale: tuple[str, ...]
     family: str = ""
+    title: str = ""  # intitulé du module (contrat needs-analytics 1.7.0, facultatif)
 
 
 @dataclass
@@ -310,6 +311,7 @@ def _parse_catalog_levels(payload: dict) -> CatalogLevels:
             order=scale.index(label) if label else len(scale),
             line_ids=tuple(line["id"] for line in lines), scale=scale,
             family=lines[0].get("family", ""),
+            title=next((line["title"] for line in lines if line.get("title")), ""),
         )
     return CatalogLevels(available=True, modules=modules)
 

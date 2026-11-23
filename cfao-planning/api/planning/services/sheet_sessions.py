@@ -18,7 +18,7 @@ from collections import defaultdict
 from django.conf import settings
 from django.db import transaction
 
-from ..models import CostKeyYear, DeliveryMode, NeedsModuleLine, PlannedAllocation, PlannedSession
+from ..models import CostKeyYear, DeliveryMode, NeedsCopyYear, NeedsModuleLine, PlannedAllocation, PlannedSession
 from .cost_key import is_academy_site
 
 ACADEMY, SUBSIDIARY, DISTANCE = "academy", "subsidiary", "distance"
@@ -27,7 +27,7 @@ SITE_BY_KIND = {
     NeedsModuleLine.Kind.IN_SUBSIDIARY: SUBSIDIARY,
     NeedsModuleLine.Kind.AT_DISTANCE: DISTANCE,
 }
-LOCATION_BY_SITE = {ACADEMY: "Douala", SUBSIDIARY: "Filiale", DISTANCE: "À distance"}
+ACADEMY_LOCATION, DISTANCE_LOCATION = "Academy de Douala", "À distance"
 
 
 def _site(session: PlannedSession) -> str:
@@ -60,13 +60,36 @@ def _wanted(key: CostKeyYear) -> dict[tuple, int]:
     return wanted
 
 
-def _create(key: CostKeyYear, ident: tuple, seats: int, academy_id) -> None:
+def _titles(key: CostKeyYear) -> dict[tuple, str]:
+    """(marque, code) → intitulé : catalogue de cfao-needs (copie de l'année), sinon une
+    session du classeur du même module."""
+    from referential.models import Brand
+
+    from ..clients.needs import _parse_catalog_levels
+
+    titles = {}
+    for s in (key.planned_sessions.exclude(origin=PlannedSession.Origin.NEEDS_SHEET).exclude(title="")
+              .values("brand_id", "code_norm", "title")):
+        titles.setdefault((s["brand_id"], s["code_norm"]), s["title"])
+    copy = NeedsCopyYear.objects.filter(year=key.year).values_list("payload", flat=True).first()
+    if copy and copy.get("catalog_levels", {}).get("lines"):
+        brand_pk = dict(Brand.objects.values_list("code", "pk"))
+        for (brand_code, code), level in _parse_catalog_levels(copy["catalog_levels"]).modules.items():
+            if level.title and brand_code in brand_pk:
+                titles[(brand_pk[brand_code], code)] = level.title
+    return titles
+
+
+def _location(site: str, country_label: str) -> str:
+    # Un lieu toujours écrit : sans lieu, une session au Cameroun passerait pour Douala.
+    return {ACADEMY: ACADEMY_LOCATION, DISTANCE: DISTANCE_LOCATION}.get(site, country_label)
+
+
+def _create(key: CostKeyYear, ident: tuple, seats: int, academy_id, title: str, location: str) -> None:
     brand_id, code_norm, country_id, site = ident
     session = PlannedSession.objects.create(
         cost_key=key, brand_id=brand_id, code_norm=code_norm, origin=PlannedSession.Origin.NEEDS_SHEET,
-        country_id=academy_id if site == ACADEMY else country_id,
-        # Un lieu toujours écrit : sans lieu, une session au Cameroun passerait pour Douala.
-        location=LOCATION_BY_SITE[site],
+        country_id=academy_id if site == ACADEMY else country_id, title=title, location=location,
         delivery_mode=DeliveryMode.DISTANCIEL if site == DISTANCE else DeliveryMode.PRESENTIEL,
     )
     PlannedAllocation.objects.create(planned_session=session, country_id=country_id, seats=seats)
@@ -94,16 +117,25 @@ def sync_key(key: CostKeyYear) -> int:
         s.delete()
         writes += 1
     academy = Country.objects.filter(code=settings.ACADEMY_COUNTRY_CODE).values_list("pk", flat=True).first()
+    labels = dict(Country.objects.values_list("pk", "label"))
+    titles = _titles(key)
     for ident, seats in wanted.items():
         allocation = existing.get(ident)
+        title, location = titles.get(ident[:2], ""), _location(ident[3], labels.get(ident[2], ""))
         if allocation is None:
             if ident[3] == ACADEMY and academy is None:
                 continue  # pays de l'Academy absent du référentiel : rien à héberger
-            _create(key, ident, seats, academy)
+            _create(key, ident, seats, academy, title, location)
             writes += 1
-        elif allocation.seats != seats:
+            continue
+        if allocation.seats != seats:
             allocation.seats = seats
             allocation.save(update_fields=["seats", "updated_at"])
+            writes += 1
+        session = allocation.planned_session
+        if (session.title, session.location) != (title or session.title, location):
+            session.title, session.location = title or session.title, location
+            session.save(update_fields=["title", "location", "updated_at"])
             writes += 1
     return writes
 

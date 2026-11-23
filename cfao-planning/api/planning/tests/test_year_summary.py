@@ -214,7 +214,7 @@ def test_places_attribuees_des_fiches_dans_le_devis(world, fake_pdp, django_capt
     # cm TS01 : 4 couvertes par les 6 en session ; cm TS03 : 3 en filiale ; ci TS01 : 6 − 4 = 2 à Douala.
     got = {(s.code_norm, s.location, s.start_date, a.country.code, a.seats)
            for s in sheet() for a in s.allocations.all()}
-    assert got == {("TS03", "Filiale", None, "cm", 3), ("TS01", "Douala", None, "ci", 2)}
+    assert got == {("TS03", "Cameroun", None, "cm", 3), ("TS01", "Academy de Douala", None, "ci", 2)}
     assert _stored(2026)["seats"] == 20 == _from_global(2026)["seats"], "15 en session + 5 des fiches"
     assert sync_needs_lines() == 0, "base à jour : zéro écriture"
 

@@ -36,6 +36,7 @@ from .imports.seat_sheets import COLUMNS as SEAT_COLUMNS, SeatSheetsImporter
 from .models import CostKeyYear, FrozenKeyError, YearSummary
 from .services.attendance import attendance_summary
 from .services.cost_key import Mode, compare
+from .services.forecast_schedule import schedule_for_key
 from .services.cost_key_abc import abc_table, consolidate_abc
 from .services.cost_key_cells import MISSING, CellConflict, CellGone, CellInvalid, edit_cell
 from .services.cost_key_freeze import UNCHECKED, FreezeRefused, FreezeStale, freeze, last_edit_at
@@ -339,13 +340,19 @@ class CostKeyGlobalXlsxView(APIView):
                      f"cle-{key.pole.lower()}-{key.year}-global.xlsx")
 
 
+def _schedule(key, mode) -> dict | None:
+    """Créneaux de la grille du prévisionnel, lus une fois pour toutes les fiches de la clé."""
+    return schedule_for_key(key) if mode == Mode.PLANNED else None
+
+
 def _country_sheets(request, key, table, needs):
     """Une fiche par filiale ayant des places, parmi celles du tableau (donc lisibles)."""
     by_country = needs.by_country if needs.available else None
     levels = fetch_catalog_levels(key.year)
     report = report_for(key, _mode(request), by_country)
+    schedule = _schedule(key, _mode(request))
     sheets = (country_sheet(key, _mode(request), row["country"], by_country, levels, needs.postponed,
-                            needs.unassigned, report=report)
+                            needs.unassigned, report=report, schedule=schedule)
               for row in table["rows"] if row["seats"])
     return [s for s in sheets if s]
 
@@ -462,6 +469,10 @@ class _YearScope:
     def levels(self):
         return fetch_catalog_levels(self.keys[0].year)
 
+    @cached_property
+    def schedules(self):
+        return {k.pk: _schedule(k, self.mode) for k in self.keys}
+
     def sheet(self, code: str) -> dict:
         if code == ALL_COUNTRIES:
             return all_countries_sheet(self.table, [self.sheet(r["country"]) for r in self.table["rows"] if r["seats"]])
@@ -474,7 +485,8 @@ class _YearScope:
         for k in self.keys:
             needs = self.needs[k.pk]
             sheet = country_sheet(k, self.mode, code, self._needs_by_country(k), self.levels,
-                                  needs.postponed, needs.unassigned, report=self.reports[k.pk])
+                                  needs.postponed, needs.unassigned, report=self.reports[k.pk],
+                                  schedule=self.schedules[k.pk])
             if sheet:
                 sheets.append(sheet)
         return consolidate_sheet(sheets, row)

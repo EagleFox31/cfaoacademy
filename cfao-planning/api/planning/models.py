@@ -564,6 +564,40 @@ class ReviewItem(UUIDModel, TimeStampedModel):
         return f"{self.sheet}!{self.cell_range} {self.reason}"
 
 
+class GridBand(UUIDModel, TimeStampedModel):
+    """Bande de session lue telle quelle dans la grille « Plannings formateurs ».
+
+    Copie brute (texte, dates, formateur écrit) : rien n'y est résolu, le rapprochement
+    avec le prévisionnel de la clé se calcule à la lecture (`services.forecast_schedule`).
+    Une bande ne devient jamais une `Session` ni une `PlannedSession`.
+    """
+
+    year = models.PositiveSmallIntegerField()
+    pole = models.CharField(max_length=16)
+    sheet = models.CharField(max_length=64)
+    cell = models.CharField(max_length=16)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    text = models.CharField(max_length=255)
+    title = models.CharField(max_length=500, blank=True)
+    fill_key = models.CharField(max_length=48)
+    # Colonne B normalisée : marque(s), AUTRE, FORMATIONS REPORTEES, ANNULEES, CONSTRUCTEUR.
+    section = models.CharField(max_length=96, blank=True)
+    brands_raw = models.CharField(max_length=255, blank=True)
+    trainer_raw = models.CharField(max_length=128, blank=True)
+    fingerprint = models.CharField(max_length=64, unique=True)
+    import_log = models.ForeignKey(
+        "core.ImportLog", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["year", "pole", "start_date", "sheet", "cell"]
+        indexes = [models.Index(fields=["year", "pole"])]
+
+    def __str__(self) -> str:
+        return f"{self.sheet}!{self.cell} {self.text} {self.start_date}"
+
+
 # ── Copie locale des besoins (poussée par cfao-needs, contrat needs-snapshot-push) ──
 
 class NeedsCopyState(models.Model):

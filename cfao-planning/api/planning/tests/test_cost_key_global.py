@@ -140,6 +140,45 @@ def test_fiche_pays(world):
     assert country_sheet(world["key"], Mode.PLANNED, "xx") is None
 
 
+def _grid_band(text, start, end, trainer="Eugène EBENE", fill="rgb:FFFFC000", cell="H4"):
+    from planning.models import GridBand
+
+    GridBand.objects.create(year=2026, pole="MOTORS", sheet="Calendrier-MOBILITY", cell=cell,
+                            text=text, fill_key=fill, start_date=start, end_date=end,
+                            trainer_raw=trainer, section="OMODA", fingerprint=f"{text}{cell}")
+
+
+def test_fiche_pays_dates_et_formateur_de_la_grille_si_la_session_n_en_a_pas(world):
+    PlannedSession.objects.filter(code_norm="OM01").update(start_date=None, end_date=None)
+    before = country_sheet(world["key"], Mode.PLANNED, "ci", {"ci": 8})
+    _grid_band("OM01 - RCI", dt.date(2026, 5, 4), dt.date(2026, 5, 8))
+    after = country_sheet(world["key"], Mode.PLANNED, "ci", {"ci": 8})
+    row = {s["code"]: s for s in after["sessions"]}
+    om = row["OM01"]
+    assert (om["start_date"], om["end_date"], om["dates_source"]) == (
+        dt.date(2026, 5, 4), dt.date(2026, 5, 8), "grid")
+    assert om["trainers"] == "Eugène EBENE"
+    # Coûts et hébergements restent ceux de la session : la grille ne fait qu'afficher.
+    om_before = next(s for s in before["sessions"] if s["code"] == "OM01")
+    assert (om["trainer_lodging"], om["key_cost"]) == (om_before["trainer_lodging"], om_before["key_cost"])
+    assert after["footer"] == before["footer"]
+    assert om["edit"]["raw"]["start_date"] == "2026-05-04"  # le coordinateur part de la date prévue
+    assert row["TS01"]["dates_source"] == "session" and row["TS01"]["grid_slots"] == []
+
+
+def test_fiche_pays_date_de_session_jamais_remplacee(world):
+    _grid_band("OM01 - RCI", dt.date(2026, 3, 9), dt.date(2026, 3, 13))
+    om = next(s for s in country_sheet(world["key"], Mode.PLANNED, "ci")["sessions"] if s["code"] == "OM01")
+    assert (om["start_date"], om["dates_source"]) == (dt.date(2026, 3, 2), "session")
+    assert [x["start_date"] for x in om["grid_slots"]] == [dt.date(2026, 3, 9)]
+
+
+def test_fiche_pays_realise_sans_grille(world):
+    _grid_band("OM01 - RCI", dt.date(2026, 5, 4), dt.date(2026, 5, 8))
+    sheet = country_sheet(world["key"], Mode.ACTUAL, "ci")
+    assert all(s["grid_slots"] == [] for s in sheet["sessions"])
+
+
 def test_prevu_en_presentiel_par_defaut_distanciel_garde(world):
     """Le filtre Type du devis compte les sessions prévues : sans mode, il affichait 0 / 0."""
     PlannedSession.objects.filter(code_norm="OM01").update(delivery_mode="DISTANCIEL")

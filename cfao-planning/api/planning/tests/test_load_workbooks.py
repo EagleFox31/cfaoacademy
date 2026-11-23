@@ -31,7 +31,8 @@ def test_discover_prend_la_derniere_version_et_ignore_verrous_et_historique(tmp_
 
     plan = discover([tmp_path, tmp_path / "absent"])
 
-    assert plan == [("seat_allocations", cle, {}), ("calendar_grid", v27, {"year": "2026"})]
+    assert plan == [("seat_allocations", cle, {}), ("calendar_grid", v27, {"year": "2026"}),
+                    ("forecast_grid", v27, {"year": "2026"})]
 
 
 def test_dossier_illisible_signale_au_lieu_de_rien_charger_en_silence(tmp_path, monkeypatch, capsys):

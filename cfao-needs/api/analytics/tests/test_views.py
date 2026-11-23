@@ -177,6 +177,7 @@ def test_catalog_levels_gives_the_brand_scale(client, scale):
     assert {(l["code"], l["level_label"], l["tier"]) for l in body["lines"]} == {
         ("TS01", "G4", "JUNIOR"), ("TS03", "G3", "SENIOR"), ("TS04", "", None)}
     assert all(l["family"] == scale[l["code"]].family.key for l in body["lines"])
+    assert all(l["title"] == scale[l["code"]].title for l in body["lines"])
 
 
 def test_level_is_written_with_the_tier_of_the_scale(client, scale):

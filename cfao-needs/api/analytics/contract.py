@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 CONTRACT_ID = "needs-analytics"
-CONTRACT_VERSION = "1.6.0"
+CONTRACT_VERSION = "1.7.0"
 CONTRACT_PATH = Path(__file__).resolve().parent / "contract" / "needs-analytics.openapi.json"
 
 _YEAR = {
@@ -122,6 +122,7 @@ def openapi_document() -> dict:
                             "brand": {"type": "string"},
                             "code": {"type": "string"},
                             "family": {"type": "string", "description": "Clé de la famille du catalogue."},
+                            "title": {"type": "string", "description": "Intitulé du module. Depuis 1.7.0."},
                             "level_label": {"type": "string"},
                             "tier": {"type": ["string", "null"]},
                             "sort_order": {"type": "integer"},

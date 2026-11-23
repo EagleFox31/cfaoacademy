@@ -146,7 +146,7 @@ def catalog_levels_body(year: int) -> dict:
         "year": year, "catalog_available": lines.exists(),
         "lines": [
             {"id": str(line.pk), "brand": line.brand.label, "code": line.code, "family": line.family.key,
-             "level_label": line.level_label, "tier": line.tier or None, "sort_order": line.sort_order}
+             "title": line.title, "level_label": line.level_label, "tier": line.tier or None, "sort_order": line.sort_order}
             for line in lines
         ],
     }
