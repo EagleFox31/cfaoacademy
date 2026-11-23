@@ -7,7 +7,11 @@ version sans sa section.
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-11-23
+
 - Coordinateur : les chiffres « devis des filiales » et « formateurs avec deux sessions trop rapprochées » quittent le haut du portail.
+- Super admin : un clic sur une carte « Voir les portails des profils » affiche toujours un message : fenêtre ouverte (peut-être derrière), ou bloquée par le navigateur avec un lien pour l'ouvrir dans un onglet.
+- Super admin : la carte du DOP le présente sur sa filiale, comme le DPS, et non plus sur une zone régionale.
 
 ## [0.2.2] - 2026-11-23
 
