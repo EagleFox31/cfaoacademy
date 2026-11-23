@@ -5,6 +5,12 @@ Une section par version publiée (`## [X.Y.Z] - AAAA-MM-JJ`). Avant de publier, 
 l'image (label `org.cfao.changelog`), affichée dans l'écran de supervision, et refuse une
 version sans sa section.
 
+## [Unreleased]
+
+- Nombre de comptes par profil : le directeur du centre et le super admin peuvent lire
+  le total de comptes par rôle (action `count_by_role` sur `user_account`, totaux seuls,
+  aucun nom) ; aucun autre rôle n'y a droit, et la liste des comptes reste inchangée.
+
 ## [0.4.0] - 2026-11-23
 
 - Aperçu « vu comme » : l'équipe technique (`superadmin`) peut consulter un portail tel

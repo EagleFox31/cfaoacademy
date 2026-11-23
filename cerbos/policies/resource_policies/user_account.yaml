@@ -15,3 +15,10 @@ resourcePolicy:
       effect: EFFECT_ALLOW
       derivedRoles:
         - admin_within_scope
+    # Nombre de comptes par rôle (totaux seuls, aucun nom) : ressource globale
+    # (id fixe « role-counts », sans orgPath). Liste explicite, pas de rôle dérivé.
+    - actions: ["count_by_role"]
+      effect: EFFECT_ALLOW
+      roles:
+        - center_director
+        - superadmin

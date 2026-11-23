@@ -21,7 +21,32 @@ principals:
     attr:
       scopeNodes: ["groupe.cmr", "groupe.civ"]  # admin de DEUX filiales
 
+  center_director:
+    id: cd_1
+    roles: ["center_director"]
+    attr:
+      scopeNodes: ["groupe"]
+  superadmin:
+    id: sa_1
+    roles: ["superadmin"]
+    attr:
+      scopeNodes: ["groupe"]
+  dps_cmr:
+    id: d_1
+    roles: ["dps"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+  trainer:
+    id: t_1
+    roles: ["trainer"]
+    attr:
+      scopeNodes: ["groupe"]
+
 resources:
+  role_counts:
+    kind: user_account
+    id: role-counts
+    attr: {}
   user_in_scope:
     kind: user_account
     id: s-cmr
@@ -76,3 +101,45 @@ tests:
       - principal: admin_multi
         resource: user_out_of_scope
         actions: { "view": EFFECT_ALLOW }      # via scope groupe.civ
+
+  - name: nombre de comptes par rôle — directeur du centre et super admin
+    input:
+      principals: ["center_director", "superadmin"]
+      resources: ["role_counts"]
+      actions: ["count_by_role", "list", "view"]
+    expected:
+      - principal: center_director
+        resource: role_counts
+        actions: { "count_by_role": EFFECT_ALLOW, "list": EFFECT_DENY, "view": EFFECT_DENY }
+      - principal: superadmin
+        resource: role_counts
+        actions: { "count_by_role": EFFECT_ALLOW, "list": EFFECT_DENY, "view": EFFECT_DENY }
+
+  - name: nombre de comptes par rôle — refusé aux autres rôles (négatif)
+    input:
+      principals: ["dps_cmr", "trainer", "learner_cmr", "admin_cmr"]
+      resources: ["role_counts"]
+      actions: ["count_by_role"]
+    expected:
+      - principal: dps_cmr
+        resource: role_counts
+        actions: { "count_by_role": EFFECT_DENY }
+      - principal: trainer
+        resource: role_counts
+        actions: { "count_by_role": EFFECT_DENY }
+      - principal: learner_cmr
+        resource: role_counts
+        actions: { "count_by_role": EFFECT_DENY }
+      - principal: admin_cmr
+        resource: role_counts
+        actions: { "count_by_role": EFFECT_DENY }
+
+  - name: le directeur du centre ne gagne pas la liste ni le détail des comptes (négatif)
+    input:
+      principals: ["center_director"]
+      resources: ["user_in_scope"]
+      actions: ["view", "list", "update"]
+    expected:
+      - principal: center_director
+        resource: user_in_scope
+        actions: { "view": EFFECT_DENY, "list": EFFECT_DENY, "update": EFFECT_DENY }
