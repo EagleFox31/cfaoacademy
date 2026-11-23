@@ -32,7 +32,7 @@ export const SECTIONS_DIRECTEUR = ['besoins', 'devis', 'offres', 'calendrier', '
 /** Le coordinateur : les mêmes rubriques annuelles, puis l'administration des formations. */
 export const SECTIONS_COORDINATEUR = ['besoins', 'devis', 'calendrier', 'rapports', 'administration']
 
-export const PLATEFORME = ['site', 'support', 'reports', 'portails']
+export const PLATEFORME = ['portails', 'site', 'support', 'reports']
 // Même adresse que celle ouverte par GardeCentre aux comptes du centre.
 export const PAGE_PORTAILS = PAGE_PORTAILS_CENTRE
 
@@ -288,7 +288,7 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
               {id === 'portails' ? (
                 // Seule carte ouverte : la page des portails des profils, au format des détails du DPS.
                 <PvCard
-                  cardMedia={<PortalIconMedia icon="portails" tone="progress" />}
+                  cardMedia={<PortalIconMedia icon="portails" tone="done" />}
                   title={t.dir_plateforme_portails}
                   meta={t.dir_plateforme_portails_meta}
                   cta={t.cta_open}

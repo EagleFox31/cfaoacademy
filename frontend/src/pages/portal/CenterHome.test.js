@@ -61,7 +61,7 @@ describe('chiffres du hero du coordinateur', () => {
 
 describe('plateforme du directeur du centre', () => {
   it('a la carte « Voir les portails des profils », libellée dans les trois langues', () => {
-    expect(PLATEFORME).toEqual(['site', 'support', 'reports', 'portails'])
+    expect(PLATEFORME).toEqual(['portails', 'site', 'support', 'reports'])
     for (const langue of ['fr', 'en', 'pt']) {
       for (const id of PLATEFORME) {
         expect(CENTER_HOME_COPY[langue][`dir_plateforme_${id}`]).toBeTruthy()
