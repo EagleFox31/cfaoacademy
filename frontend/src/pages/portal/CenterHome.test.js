@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import { KPIS_COORDINATEUR, alertesCle, chiffresCoordinateur, chiffresHero, chiffresPresences, etatAnnee, kpisCoordinateur } from './CenterHome.jsx'
-import { PAYS_ACADEMY, PLATEFORME, SECTIONS_COORDINATEUR, SECTIONS_DIRECTEUR, anneeDuResume, paysAttendus, statutBesoins } from './CenterDirectorSections.jsx'
+import { PAYS_ACADEMY, PLATEFORME, teinteCarte, SECTIONS_COORDINATEUR, SECTIONS_DIRECTEUR, anneeDuResume, paysAttendus, statutBesoins } from './CenterDirectorSections.jsx'
 import { resolveProfile } from './portalProfiles.js'
 import { getPortalNavSections } from '../../data/index.js'
 import { CENTER_HOME_COPY } from '../../i18n/centerHome.js'
@@ -163,5 +163,12 @@ describe('portail du centre de formation', () => {
     const cles = Object.keys(CENTER_HOME_COPY.fr).sort()
     expect(Object.keys(CENTER_HOME_COPY.en).sort()).toEqual(cles)
     expect(Object.keys(CENTER_HOME_COPY.pt).sort()).toEqual(cles)
+  })
+})
+
+describe('couleur des cartes', () => {
+  it('jaune orangé réservé au chantier : une carte ouverte en cours passe en vert, les autres statuts gardent leur couleur', () => {
+    expect(teinteCarte('progress')).toBe('done')
+    for (const c of ['done', 'closed', 'open', 'todo']) expect(teinteCarte(c)).toBe(c)
   })
 })

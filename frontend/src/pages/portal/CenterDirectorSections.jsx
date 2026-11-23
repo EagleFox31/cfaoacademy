@@ -33,6 +33,9 @@ export const SECTIONS_DIRECTEUR = ['besoins', 'devis', 'offres', 'calendrier', '
 export const SECTIONS_COORDINATEUR = ['besoins', 'devis', 'calendrier', 'rapports', 'administration']
 
 export const PLATEFORME = ['portails', 'site', 'support', 'reports']
+
+/** Jaune orangé = fonctionnalité en construction : une carte qui fonctionne et reste ouverte passe en vert. */
+export const teinteCarte = chip => (chip === 'progress' ? 'done' : chip)
 // Même adresse que celle ouverte par GardeCentre aux comptes du centre.
 export const PAGE_PORTAILS = PAGE_PORTAILS_CENTRE
 
@@ -153,7 +156,7 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
             return (
               <div key={a.annee} className="portal-card-anchor">
                 <PvCard
-                  cardMedia={<PortalIconMedia icon="besoins" tone={etat.chip} />}
+                  cardMedia={<PortalIconMedia icon="besoins" tone={teinteCarte(etat.chip)} />}
                   kicker={
                     <span className={`portal-status-chip ${etat.chip}`}>{t[etat.cle]}</span>
                   }
@@ -183,7 +186,7 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
           {annees.map(a => (
             <div key={a.annee} className="portal-card-anchor">
               <PvCard
-                cardMedia={<PortalIconMedia icon="devis" tone={a.gelee ? 'closed' : 'progress'} />}
+                cardMedia={<PortalIconMedia icon="devis" tone={a.gelee ? 'closed' : 'done'} />}
                 kicker={
                   <span className={`portal-status-chip ${a.gelee ? 'closed' : 'progress'}`}>
                       {a.gelee ? t.chip_closed : access?.edit ? t.chip_edit : t.status_DRAFT}
