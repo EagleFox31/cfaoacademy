@@ -7,6 +7,9 @@ version sans sa section.
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-11-23
+
+- Directeur du centre, rubrique Plateforme : la carte « Voir les portails des profils », seule ouverte, passe en première position et en vert ; le jaune orangé reste réservé aux fonctionnalités en construction.
 - Devis par filiale : colonne Lieu avec le drapeau du pays (« Academy de Douala », pays de la filiale ou « À distance ») ; dates et formateurs repris du calendrier prévisionnel quand la session n'en a pas, avec la mention « Prévu » et les autres créneaux au survol (« +N »), date modifiable par le coordinateur.
 - Devis, filtre Mois : sélecteur de mois (grille des 12 mois de l'année, sans les jours ni l'année), chaque mois avec son nombre de sessions ; un mois vide reste visible, grisé.
 - Directeur du centre, page « Portails des profils » : 19 profils (directeur du centre et Expert Technique ajoutés), colonnes « Son périmètre » et « Ce qu'il voit de MEDACAP » (7 lettres, un clic sur une lettre allumée liste les fonctionnalités), un « ? » donne la description de chaque profil, l'apprenant est nommé « Apprenant ou Technicien ». « Voir son portail » ouvre, en lecture seule, le portail du coordinateur et celui de l'assistante. Dans un aperçu, la salutation ne nomme plus celui qui regarde.
