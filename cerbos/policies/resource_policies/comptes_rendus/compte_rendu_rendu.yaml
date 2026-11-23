@@ -13,12 +13,12 @@ resourcePolicy:
     # Formateurs certifies et suppleants (KI, PIC).
     - actions: ["render", "redact"]
       effect: EFFECT_ALLOW
-      roles: ["trainer", "ki", "pic"]
+      roles: ["trainer", "ki", "pic", "technical_expert"]
 
     # Uniquement sur ce qui leur appartient.
     - actions: ["read"]
       effect: EFFECT_ALLOW
-      roles: ["trainer", "ki", "pic"]
+      roles: ["trainer", "ki", "pic", "technical_expert"]
       condition:
         match:
           expr: request.resource.attr.ownerId == request.principal.id

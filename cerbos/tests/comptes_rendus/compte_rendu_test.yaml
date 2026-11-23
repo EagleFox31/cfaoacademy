@@ -17,6 +17,10 @@ principals:
     id: p-1
     roles: ["pic"]
     attr: { scopeNode: "CIV", scopeNodes: ["CIV"], brands: ["SUZUKI"] }
+  suppleant_expert:
+    id: e-1
+    roles: ["technical_expert"]
+    attr: { scopeNode: "CMR", scopeNodes: ["CMR"], brands: ["JCB"] }
   autre_formateur:
     id: f-b
     roles: ["trainer"]
@@ -51,6 +55,10 @@ resources:
     kind: compte_rendu
     id: r-3
     attr: { ownerId: "p-1", scopeNode: "CIV", brand: "suzuki" }
+  a_l_expert:
+    kind: compte_rendu
+    id: r-4
+    attr: { ownerId: "e-1", scopeNode: "CMR", brand: "jcb" }
 
 tests:
   - name: chaque formateur agit sur ses propres ressources
@@ -81,6 +89,19 @@ tests:
       - principal: suppleant_pic
         resource: au_pic
         actions: { delete: EFFECT_ALLOW }
+
+  - name: l'expert technique (marques Equipment), formateur suppleant comme le KI et le PIC
+    input:
+      principals: ["suppleant_expert"]
+      resources: ["a_l_expert", "au_ki"]
+      actions: ["delete"]
+    expected:
+      - principal: suppleant_expert
+        resource: a_l_expert
+        actions: { delete: EFFECT_ALLOW }
+      - principal: suppleant_expert
+        resource: au_ki
+        actions: { delete: EFFECT_DENY }
 
   - name: NEGATIF un autre formateur ne touche pas aux ressources d'un collegue
     input:

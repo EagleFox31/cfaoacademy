@@ -13,7 +13,7 @@ resourcePolicy:
     # Le portail d'un formateur signale ce qu'il a constate.
     - actions: ["create"]
       effect: EFFECT_ALLOW
-      roles: ["trainer", "ki", "pic"]
+      roles: ["trainer", "ki", "pic", "technical_expert"]
 
     # Lecture et suppression : equipe technique seule (PLATFORM_ROLES.md).
     - actions: ["*"]

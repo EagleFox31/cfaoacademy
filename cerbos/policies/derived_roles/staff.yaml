@@ -12,6 +12,7 @@ derivedRoles:
       parentRoles:
         - ki
         - pic
+        - technical_expert
         - team_manager
         - workshop_manager
         - dps
