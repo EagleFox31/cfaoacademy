@@ -9,7 +9,11 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 globalThis.IntersectionObserver ??= class { observe() {} unobserve() {} disconnect() {} takeRecords() { return [] } }
 
 // Super admin connecté par OIDC : aucun demoKey, donc aucune donnée de démonstration.
-const { statsMock } = vi.hoisted(() => ({ statsMock: vi.fn(() => ({ stats: null })) }))
+const { statsMock, comptesMock } = vi.hoisted(() => ({
+  statsMock: vi.fn(() => ({ stats: null })),
+  comptesMock: vi.fn(() => ({ data: [], status: 'ready' })),
+}))
+vi.mock('../../hooks/useAdminResource.js', () => ({ default: (...a) => comptesMock(...a), fetchAllUsers: () => null }))
 
 vi.mock('../../lib/auth.js', async importOriginal => ({ ...(await importOriginal()), OIDC_ACTIF: true }))
 vi.mock('../../hooks/useAuth', () => ({
@@ -28,6 +32,7 @@ vi.mock('../../components/PortalLayout.jsx', () => ({
 }))
 
 const { default: SuperAdminDashboard, LMS_VIDE } = await import('./SuperAdminDashboard.jsx')
+const { ROLES_APERCU } = await import('../../utils/apercuPortail.js')
 
 let racine = null
 let hote = null
@@ -78,7 +83,39 @@ describe('SuperAdminDashboard en OIDC (sans demoKey)', () => {
     const retour = screen.getByTestId('apercu-retour')
     expect(retour.textContent).toContain(texte)
     expect(Boolean(retour.querySelector('a[href^="/portail?apercu="]'))).toBe(lien)
+    // Aucun compte réel de ce rôle : on le dit, aperçu avec les droits du super admin.
+    expect(retour.textContent).toContain('Aucun compte')
     ouvrir.mockRestore()
+  })
+
+  it("carte d'un profil : ouvre le premier compte réel du rôle par nom, jamais un super admin", () => {
+    const role = ROLES_APERCU[0]
+    comptesMock.mockReturnValue({
+      status: 'ready',
+      data: [
+        { id: 'aaaaaaaa-0000-4000-8000-000000000001', first_name: 'Zoé', last_name: 'Bilong', roles: [role] },
+        { id: 'AAAAAAAA-0000-4000-8000-000000000002', first_name: 'Alain', last_name: 'Abena', roles: [role] },
+        { id: 'aaaaaaaa-0000-4000-8000-000000000003', first_name: 'Aaron', last_name: 'Admin', roles: [role, 'superadmin'] },
+      ],
+    })
+    const ouvrir = vi.spyOn(window, 'open').mockReturnValue({ focus() {} })
+    rendre()
+    act(() => hote.querySelector('#apercus button.pv-card').click())
+    expect(ouvrir).toHaveBeenCalledWith(
+      `/portail?apercu=${role}&cible=aaaaaaaa-0000-4000-8000-000000000002`, expect.any(String), expect.stringContaining('popup'),
+    )
+    const retour = screen.getByTestId('apercu-retour').textContent
+    expect(retour).toContain('Alain Abena')
+    expect(retour).not.toContain('Aucun compte')
+    ouvrir.mockRestore()
+    comptesMock.mockReturnValue({ data: [], status: 'ready' })
+  })
+
+  it('profils opérationnels : formateur et directeur du centre sont deux cartes distinctes', () => {
+    rendre()
+    const texte = hote.querySelector('#profiles').textContent
+    expect(texte).not.toContain('Formateur & Directeur Centre')
+    expect(texte).toContain('Directeur du centre de formation')
   })
 
   it('la base OIDC est vide', () => {

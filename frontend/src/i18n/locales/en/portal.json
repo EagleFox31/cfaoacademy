@@ -1170,6 +1170,8 @@
   "sa_apercu_ouvert": "“{role}” portal opened in a new window. Can't see it? It may be behind this one.",
   "sa_apercu_bloque": "The browser blocked the new window. Allow pop-ups for this site, or open the “{role}” portal here:",
   "sa_apercu_lien": "open in a tab",
+  "sa_apercu_ouvert_compte": "{nom}'s portal ({role}) opened in a new window, read-only. Can't see it? It may be behind this one.",
+  "sa_apercu_sans_compte": "No “{role}” account yet: preview with your rights.",
   "apercu_bandeau": "Portal preview:",
   "apercu_bandeau_note": "seen with your rights, nothing is saved",
   "apercu_vu_comme": "Read-only preview as",

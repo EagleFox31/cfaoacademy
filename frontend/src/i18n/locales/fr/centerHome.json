@@ -72,6 +72,8 @@
   "dir_plateforme_support_meta": "L’assistance technique aux ateliers.",
   "dir_plateforme_reports": "Plateforme des comptes rendus",
   "dir_plateforme_reports_meta": "Les comptes rendus de réunion et leur suivi.",
+  "dir_plateforme_portails": "Voir les portails des profils",
+  "dir_plateforme_portails_meta": "Le portail de chaque profil, en lecture seule.",
   "eyebrow_key": "Clé de répartition annuelle",
   "title_key": "Où en est la clé de répartition",
   "pole_MOTORS": "Motors",

@@ -1185,6 +1185,8 @@
   "sa_apercu_ouvert": "Portail « {role} » ouvert dans une nouvelle fenêtre. Ne la voyez-vous pas ? Elle est peut-être derrière celle-ci.",
   "sa_apercu_bloque": "Le navigateur a bloqué la nouvelle fenêtre. Autorisez les fenêtres pour ce site, ou ouvrez le portail « {role} » ici :",
   "sa_apercu_lien": "ouvrir dans un onglet",
+  "sa_apercu_ouvert_compte": "Portail de {nom} ({role}) ouvert dans une nouvelle fenêtre, en lecture seule. Ne la voyez-vous pas ? Elle est peut-être derrière celle-ci.",
+  "sa_apercu_sans_compte": "Aucun compte « {role} » pour l’instant : aperçu avec vos droits.",
   "apercu_bandeau": "Aperçu du portail :",
   "apercu_bandeau_note": "vu avec vos droits, rien n'est enregistré",
   "apercu_vu_comme": "Aperçu en lecture seule en tant que",

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import { KPIS_COORDINATEUR, alertesCle, chiffresCoordinateur, chiffresHero, chiffresPresences, etatAnnee, kpisCoordinateur } from './CenterHome.jsx'
-import { PAYS_ACADEMY, SECTIONS_COORDINATEUR, SECTIONS_DIRECTEUR, anneeDuResume, paysAttendus, statutBesoins } from './CenterDirectorSections.jsx'
+import { PAYS_ACADEMY, PLATEFORME, SECTIONS_COORDINATEUR, SECTIONS_DIRECTEUR, anneeDuResume, paysAttendus, statutBesoins } from './CenterDirectorSections.jsx'
 import { resolveProfile } from './portalProfiles.js'
 import { getPortalNavSections } from '../../data/index.js'
 import { CENTER_HOME_COPY } from '../../i18n/centerHome.js'
@@ -56,6 +56,19 @@ describe('chiffres du hero du coordinateur', () => {
     expect(KPIS_COORDINATEUR.map(k => k.cible).every(id => SECTIONS_COORDINATEUR.includes(id))).toBe(true)
     for (const { label } of KPIS_COORDINATEUR)
       for (const s of ['', '_one', '_zero']) expect(CENTER_HOME_COPY.fr[label + s]).toBeTruthy()
+  })
+})
+
+describe('plateforme du directeur du centre', () => {
+  it('a la carte « Voir les portails des profils », libellée dans les trois langues', () => {
+    expect(PLATEFORME).toEqual(['site', 'support', 'reports', 'portails'])
+    for (const langue of ['fr', 'en', 'pt']) {
+      for (const id of PLATEFORME) {
+        expect(CENTER_HOME_COPY[langue][`dir_plateforme_${id}`]).toBeTruthy()
+        expect(CENTER_HOME_COPY[langue][`dir_plateforme_${id}_meta`]).toBeTruthy()
+      }
+    }
+    expect(CENTER_HOME_COPY.fr.dir_plateforme_portails).toBe('Voir les portails des profils')
   })
 })
 

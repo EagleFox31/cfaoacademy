@@ -7,6 +7,13 @@ version sans sa section.
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-11-23
+
+- Super admin : une carte « Voir les portails des profils » ouvre le portail d'un compte réel de ce profil (le premier par nom), en lecture seule, avec ses données. Sans compte de ce profil, l'aperçu s'ouvre avec les droits du super admin et le message le dit.
+
+- Directeur du centre : une carte « Voir les portails des profils », en construction, dans la section des outils numériques.
+- Super admin : dans les profils opérationnels, la carte « Formateur & Directeur Centre » devient deux cartes, « Formateur » et « Directeur du centre de formation ».
+
 ## [0.2.3] - 2026-11-23
 
 - Coordinateur : les chiffres « devis des filiales » et « formateurs avec deux sessions trop rapprochées » quittent le haut du portail.

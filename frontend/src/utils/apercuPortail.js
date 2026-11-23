@@ -100,6 +100,23 @@ export function comptesApercu(comptes = []) {
     .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
 }
 
+/**
+ * Compte réel ouvert par la carte d'un profil : le premier par nom parmi les
+ * comptes qui ont ce rôle (super admins écartés). null s'il n'y en a aucun.
+ */
+export function compteDuRole(comptes = [], role) {
+  return (comptes ?? [])
+    .filter(c => {
+      const roles = c?.roles ?? []
+      return roles.includes(role) && !roles.includes('superadmin') && IDENTIFIANT.test(String(c?.id ?? ''))
+    })
+    .map(c => ({
+      id: String(c.id).toLowerCase(),
+      nom: `${c?.first_name ?? ''} ${c?.last_name ?? ''}`.trim() || c?.email || '',
+    }))
+    .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))[0] ?? null
+}
+
 export function lireNomCible(stockage = globalThis.sessionStorage) {
   try {
     return String(stockage?.getItem(CLE_NOM_CIBLE) ?? '').slice(0, 120) || null

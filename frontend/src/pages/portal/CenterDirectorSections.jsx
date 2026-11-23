@@ -32,7 +32,7 @@ export const SECTIONS_DIRECTEUR = ['besoins', 'devis', 'offres', 'calendrier', '
 /** Le coordinateur : les mêmes rubriques annuelles, puis l'administration des formations. */
 export const SECTIONS_COORDINATEUR = ['besoins', 'devis', 'calendrier', 'rapports', 'administration']
 
-const PLATEFORME = ['site', 'support', 'reports']
+export const PLATEFORME = ['site', 'support', 'reports', 'portails']
 
 
 /**

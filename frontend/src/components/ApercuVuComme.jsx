@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react'
-import useAdminResource, { fetchAllUsers } from '../hooks/useAdminResource.js'
 import { comptesApercu, ouvrirApercu } from '../utils/apercuPortail.js'
 
 /**
  * « Vu comme » : le super admin choisit un compte réel et ouvre son portail en
- * lecture seule. La liste vient de core (comptes qu'il a le droit de voir) ;
- * c'est core qui décide ensuite de l'aperçu, ici on ne fait que désigner.
+ * lecture seule. La liste vient de core (comptes qu'il a le droit de voir),
+ * chargée une fois par le portail qui l'affiche (`data`, `status`) ; c'est
+ * core qui décide ensuite de l'aperçu, ici on ne fait que désigner.
  */
-export default function ApercuVuComme({ t }) {
-  const { data, status } = useAdminResource(() => fetchAllUsers(), [])
+export default function ApercuVuComme({ t, data, status }) {
   const comptes = useMemo(() => comptesApercu(data), [data])
   const [choix, setChoix] = useState('')
 

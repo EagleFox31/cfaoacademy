@@ -23,7 +23,8 @@ import TrainerHome from './TrainerHome'
 import { OIDC_ACTIF } from '../../lib/auth.js'
 import PvCard from '../../components/PvCard.jsx'
 import { ADMIN_HOME, ADMIN_NAV, adminPath, canAccessAdminConsole } from '../../utils/adminAccess.js'
-import { ROLES_APERCU, ouvrirApercu, peutOuvrirApercu, urlApercu } from '../../utils/apercuPortail.js'
+import { ROLES_APERCU, compteDuRole, ouvrirApercu, peutOuvrirApercu, urlApercu } from '../../utils/apercuPortail.js'
+import useAdminResource, { fetchAllUsers } from '../../hooks/useAdminResource.js'
 import ApercuVuComme from '../../components/ApercuVuComme.jsx'
 
 export const CFAO_ACADEMY_APPS_CONFIG = [
@@ -490,15 +491,29 @@ export const OPERATIONAL_PROFILES_CONFIG = [
   {
     id: 'prof-trainer',
     role: 'trainer',
-    title: 'Formateur & Directeur Centre',
-    kicker: 'ACADÉMIE · HUB RÉGIONAL',
+    title: 'Formateur',
+    kicker: 'ACADÉMIE · FORMATEURS',
     image: '/assets/formation_motorisation_centre_formation.jpg',
-    scope: 'Centres régionaux CFAO',
-    desc: 'Conception des cursus constructeurs, gestion des plateaux techniques régionaux et certification des Key Instructors.',
+    scope: 'Ses sessions de formation',
+    desc: 'Animation des sessions de formation, comptes rendus et suivi des stagiaires formés.',
     status: 'CONFIGURABLE',
     statusClass: 'progress',
     accentColor: '#d97706',
-    modulesCount: 'Plateaux techniques',
+    modulesCount: 'Sessions & comptes rendus',
+    targetRoute: '/portail/admin/builder',
+  },
+  {
+    id: 'prof-center-director',
+    role: 'center_director',
+    title: 'Directeur du centre de formation',
+    kicker: 'ACADÉMIE · DIRECTION DU CENTRE',
+    image: '/assets/formation_motorisation_centre_formation.jpg',
+    scope: 'Centre de formation entier',
+    desc: 'Vue d’ensemble du centre : besoins en formations, devis des filiales, offres, calendrier, rapports et retour sur investissement.',
+    status: 'CONFIGURABLE',
+    statusClass: 'progress',
+    accentColor: '#b45309',
+    modulesCount: 'Vue d’ensemble du centre',
     targetRoute: '/portail/admin/builder',
   },
 ]
@@ -627,6 +642,9 @@ function SuperAdminGroupe() {
       allocationsPerBranch: apiStats.allocationsPerBranch?.length ? apiStats.allocationsPerBranch : null,
     }
   }, [mockLms, apiStats])
+
+  // Comptes réels (core) : la carte d'un profil ouvre l'un d'eux ; le « vu comme » les liste.
+  const comptesCore = useAdminResource(() => fetchAllUsers(), [])
 
   if (!user || !lms) return null
 
@@ -982,7 +1000,13 @@ function SuperAdminGroupe() {
                   key={role}
                   noMedia
                   title={t[`role_${role}`] ?? role}
-                  onClick={() => setApercuOuvert({ role, bloque: !ouvrirApercu(role) })}
+                  onClick={() => {
+                    // Un compte réel du rôle si core en a un ; sinon l'aperçu du rôle, avec les droits du super admin.
+                    const pret = comptesCore.status === 'ready'
+                    const compte = pret ? compteDuRole(comptesCore.data, role) : null
+                    const fenetre = compte ? ouvrirApercu(role, window, compte.id, compte.nom) : ouvrirApercu(role)
+                    setApercuOuvert({ role, compte, sansCompte: pret && !compte, bloque: !fenetre })
+                  }}
                   cta={t.sa_apercu_cta}
                   corner
                 />
@@ -990,14 +1014,16 @@ function SuperAdminGroupe() {
             </PortalStaggerGrid>
             {apercuOuvert && (
               <p className="portal-apercu-vu-comme-note" role="status" data-testid="apercu-retour">
-                {(apercuOuvert.bloque ? t.sa_apercu_bloque : t.sa_apercu_ouvert)
-                  .replace('{role}', t[`role_${apercuOuvert.role}`] ?? apercuOuvert.role)}
+                {apercuOuvert.sansCompte && <>{t.sa_apercu_sans_compte.replace('{role}', t[`role_${apercuOuvert.role}`] ?? apercuOuvert.role)} </>}
+                {(apercuOuvert.bloque ? t.sa_apercu_bloque : apercuOuvert.compte ? t.sa_apercu_ouvert_compte : t.sa_apercu_ouvert)
+                  .replace('{role}', t[`role_${apercuOuvert.role}`] ?? apercuOuvert.role)
+                  .replace('{nom}', apercuOuvert.compte?.nom ?? '')}
                 {apercuOuvert.bloque && (
-                  <> <a href={urlApercu(apercuOuvert.role)} target="_blank" rel="opener">{t.sa_apercu_lien}</a></>
+                  <> <a href={urlApercu(apercuOuvert.role, apercuOuvert.compte?.id)} target="_blank" rel="opener">{t.sa_apercu_lien}</a></>
                 )}
               </p>
             )}
-            <ApercuVuComme t={t} />
+            <ApercuVuComme t={t} data={comptesCore.data} status={comptesCore.status} />
           </div>
         </PortalReveal>
       )}
@@ -1363,7 +1389,7 @@ function SuperAdminGroupe() {
             eyebrow={<PortalSectionEyebrow icon="users" label="GOUVERNANCE & RÔLES · PROFILES BUILDER" />}
             title="Création et paramétrage des profils opérationnels"
             lead="Gestion des habilitations, matrices de compétences MEDACAP et cockpits métiers pour l'ensemble des collaborateurs du réseau."
-            methodText="8 profils métiers configurés avec périmètres d'action et dashboards dédiés."
+            methodText={`${OPERATIONAL_PROFILES_CONFIG.length} profils métiers configurés avec périmètres d'action et dashboards dédiés.`}
             t={t}
           />
           <PortalStaggerGrid className="cols-4 pv-grid--stretch">

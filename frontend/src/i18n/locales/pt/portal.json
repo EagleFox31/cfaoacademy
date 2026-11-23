@@ -1018,6 +1018,8 @@
   "sa_apercu_ouvert": "Portal «{role}» aberto numa nova janela. Não a vê? Pode estar atrás desta.",
   "sa_apercu_bloque": "O navegador bloqueou a nova janela. Permita as janelas para este site, ou abra o portal «{role}» aqui:",
   "sa_apercu_lien": "abrir num separador",
+  "sa_apercu_ouvert_compte": "Portal de {nom} ({role}) aberto numa nova janela, só de leitura. Não a vê? Talvez esteja atrás desta.",
+  "sa_apercu_sans_compte": "Ainda não há conta « {role} »: pré-visualização com os seus direitos.",
   "apercu_bandeau": "Pré-visualização do portal:",
   "apercu_bandeau_note": "visto com os seus direitos, nada é gravado",
   "apercu_vu_comme": "Pré-visualização só de leitura como",
