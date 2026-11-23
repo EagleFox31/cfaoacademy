@@ -7,6 +7,10 @@ version sans sa section.
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-23
+
+- Super admin connecté par la connexion d'entreprise : son portail s'affiche enfin (en-tête, phrase chiffrée, cartes). Il était vide, seul le fond apparaissait. Sans réponse de l'API, les chiffres restent « — », jamais ceux de la démonstration.
+
 ## [0.2.1] - 2026-11-22
 
 - Super admin : « Voir le portail d'un compte réel » ouvre le portail d'un compte choisi, en lecture seule, avec ses données ; le bandeau dit « Aperçu en lecture seule en tant que … ».

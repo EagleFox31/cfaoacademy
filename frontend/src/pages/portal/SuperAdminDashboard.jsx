@@ -509,6 +509,15 @@ export const OPERATIONAL_PROFILES_CONFIG = [
  * Nav (dans data/index.js) : #bilan · #branches · #directory · #logs
  * Chaque section = PortalReveal + container + PortalSectionHead + PortalStaggerGrid + PlanEntryCard.
  */
+// Base du super admin connecté par OIDC : aucune donnée de démonstration.
+export const LMS_VIDE = Object.freeze({
+  globalKpis: {},
+  filialesStats: [],
+  recentLogs: [],
+  filialesFormations: null,
+  filialesCompetences: null,
+})
+
 export default function SuperAdminDashboard() {
   const { user } = useAuth()
   // Compte technique du mode local (sans donnees de demo) : les comptes rendus
@@ -597,13 +606,15 @@ function SuperAdminGroupe() {
 
   // Hydrate le lms avec les vrais chiffres MEDACAP dès qu'ils arrivent.
   // Fallback silencieux sur le mock si l'endpoint est indisponible.
+  // En OIDC (aucun demoKey), la base est vide : le portail s'affiche quand même
+  // et ne montre que les chiffres de l'API, jamais ceux du mock.
   const lms = useMemo(() => {
-    if (!mockLms) return null
-    if (!apiStats) return mockLms
+    const base = mockLms ?? LMS_VIDE
+    if (!apiStats) return base
     return {
-      ...mockLms,
+      ...base,
       globalKpis: {
-        ...mockLms.globalKpis,
+        ...base.globalKpis,
         totalApprenants: apiStats.learnerCount,
         filialesActives: apiStats.branchCount,
         brandsCount:     apiStats.brandCount,
