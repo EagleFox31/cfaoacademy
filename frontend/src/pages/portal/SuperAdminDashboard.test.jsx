@@ -65,6 +65,22 @@ describe('SuperAdminDashboard en OIDC (sans demoKey)', () => {
     })
   })
 
+  it.each([
+    [null, 'bloqué', true],
+    [{ focus() {} }, 'nouvelle fenêtre', false],
+  ])('clic sur une carte de profil : un message, jamais de silence (open → %o)', (fenetre, texte, lien) => {
+    const ouvrir = vi.spyOn(window, 'open').mockReturnValue(fenetre)
+    rendre()
+    const carte = hote.querySelector('#apercus button.pv-card')
+    expect(carte).toBeTruthy()
+    act(() => carte.click())
+    expect(ouvrir).toHaveBeenCalledWith(expect.stringMatching(/^\/portail\?apercu=/), expect.any(String), expect.stringContaining('popup'))
+    const retour = screen.getByTestId('apercu-retour')
+    expect(retour.textContent).toContain(texte)
+    expect(Boolean(retour.querySelector('a[href^="/portail?apercu="]'))).toBe(lien)
+    ouvrir.mockRestore()
+  })
+
   it('la base OIDC est vide', () => {
     expect(LMS_VIDE.globalKpis).toEqual({})
     expect(LMS_VIDE.filialesStats).toEqual([])

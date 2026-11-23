@@ -23,7 +23,7 @@ import TrainerHome from './TrainerHome'
 import { OIDC_ACTIF } from '../../lib/auth.js'
 import PvCard from '../../components/PvCard.jsx'
 import { ADMIN_HOME, ADMIN_NAV, adminPath, canAccessAdminConsole } from '../../utils/adminAccess.js'
-import { ROLES_APERCU, ouvrirApercu, peutOuvrirApercu } from '../../utils/apercuPortail.js'
+import { ROLES_APERCU, ouvrirApercu, peutOuvrirApercu, urlApercu } from '../../utils/apercuPortail.js'
 import ApercuVuComme from '../../components/ApercuVuComme.jsx'
 
 export const CFAO_ACADEMY_APPS_CONFIG = [
@@ -631,6 +631,8 @@ function SuperAdminGroupe() {
   if (!user || !lms) return null
 
   const [comingSoonToast, setComingSoonToast] = useState(null)
+  // Retour du clic sur une carte d'aperçu : jamais de silence (fenêtre bloquée ou restée derrière).
+  const [apercuOuvert, setApercuOuvert] = useState(null)
 
   const triggerComingSoon = (filialeTitle, context = 'sessions') => {
     setComingSoonToast({
@@ -980,12 +982,21 @@ function SuperAdminGroupe() {
                   key={role}
                   noMedia
                   title={t[`role_${role}`] ?? role}
-                  onClick={() => ouvrirApercu(role)}
+                  onClick={() => setApercuOuvert({ role, bloque: !ouvrirApercu(role) })}
                   cta={t.sa_apercu_cta}
                   corner
                 />
               ))}
             </PortalStaggerGrid>
+            {apercuOuvert && (
+              <p className="portal-apercu-vu-comme-note" role="status" data-testid="apercu-retour">
+                {(apercuOuvert.bloque ? t.sa_apercu_bloque : t.sa_apercu_ouvert)
+                  .replace('{role}', t[`role_${apercuOuvert.role}`] ?? apercuOuvert.role)}
+                {apercuOuvert.bloque && (
+                  <> <a href={urlApercu(apercuOuvert.role)} target="_blank" rel="opener">{t.sa_apercu_lien}</a></>
+                )}
+              </p>
+            )}
             <ApercuVuComme t={t} />
           </div>
         </PortalReveal>
