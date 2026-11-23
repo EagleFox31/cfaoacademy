@@ -5,6 +5,11 @@ Une section par version publiée (`## [X.Y.Z] - AAAA-MM-JJ`). Avant de publier, 
 l'image (label `org.cfao.changelog`), affichée dans l'écran de supervision, et refuse une
 version sans sa section.
 
+## [0.3.1] - 2026-11-23
+
+- Planning : le coordinateur, le directeur du centre et l'équipe technique (`superadmin`)
+  voient le bilan de présence des stagiaires par année (chiffres agrégés, sans nom).
+
 ## [0.3.0] - 2026-11-19
 
 - Écran de supervision réservé à l'équipe d'exploitation (`platform_ops`) et à l'équipe
