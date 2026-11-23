@@ -92,6 +92,24 @@ services:
       needs-db:
         condition: service_healthy
 
+  # Job ponctuel d'import des fiches besoins, lancé par le script serveur
+  # (scripts/serveur/importer_classeurs.sh) quand le partage change :
+  #   docker compose --profile import run --rm needs-import python manage.py import_need_workbooks ...
+  # Partage en lecture seule ; uid 1000 = propriétaire du partage (dossier en 700).
+  needs-import:
+    profiles: [import]
+    mem_limit: 384m
+    restart: "no"
+    image: antifragile237/cfao-needs-api:v0.2.2
+    user: "1000:1000"
+    environment: *api_env
+    volumes:
+      - ${NEEDS_SHARE_DIR:-/srv/partage/users/academy}:/classeurs/partage:ro
+    networks: [default]
+    depends_on:
+      needs-migrate:
+        condition: service_completed_successfully
+
   # Même image que l'API (l'image worker dédiée n'était plus reconstruite).
   needs-worker:
     mem_limit: 384m

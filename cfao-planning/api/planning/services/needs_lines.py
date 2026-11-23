@@ -17,6 +17,11 @@ from django.db import transaction
 from ..models import NeedsCopyState, NeedsCopyYear, NeedsLine, NeedsModuleLine, NeedsPole
 from .needs_copy import POLES
 
+# Site d'une place attribuée sur la fiche → genre de la ligne rangée, et retour.
+ASSIGNED_KIND = {"academy": NeedsModuleLine.Kind.AT_ACADEMY, "subsidiary": NeedsModuleLine.Kind.IN_SUBSIDIARY,
+                 "distance": NeedsModuleLine.Kind.AT_DISTANCE}
+SITE_OF_KIND = {str(kind): site for site, kind in ASSIGNED_KIND.items()}
+
 
 def _wanted():
     """Lignes attendues d'après la copie : (en-têtes, cellules, modules), par clé unique."""
@@ -43,6 +48,9 @@ def _wanted():
                                  (NeedsModuleLine.Kind.UNASSIGNED, data.unassigned)):
                 for (country, brand, code), places in target.items():
                     modules[(copy.year, pole, str(kind), pk["country", country], pk["brand", brand], code)] = places
+            for (country, brand, code, site), places in data.assigned.items():
+                kind = str(ASSIGNED_KIND[site])
+                modules[(copy.year, pole, kind, pk["country", country], pk["brand", brand], code)] = places
     return poles, cells, modules
 
 
@@ -68,8 +76,16 @@ def _sync(model, fields, key_of, value_of, wanted, build) -> int:
 
 
 def sync_needs_lines() -> int:
-    """Range la copie en lignes ; nombre de lignes écrites (0 si déjà à jour)."""
+    """Range la copie en lignes ; nombre de lignes écrites (0 si déjà à jour). Les sessions
+    « fiche » des clés en préparation suivent les lignes (`sheet_sessions`)."""
+    from .sheet_sessions import sync_sheet_sessions
+
     poles, cells, modules = _wanted()
+    with transaction.atomic():
+        return _sync_tables(poles, cells, modules) + sync_sheet_sessions()
+
+
+def _sync_tables(poles, cells, modules) -> int:
     with transaction.atomic():
         return (
             _sync(NeedsPole, ["source", "warnings"], lambda r: (r.year, r.pole),
@@ -116,5 +132,9 @@ def resolved_needs(year: int, pole: str):
     targets = {NeedsModuleLine.Kind.POSTPONED: data.postponed, NeedsModuleLine.Kind.UNASSIGNED: data.unassigned}
     for m in (NeedsModuleLine.objects.filter(year=year, pole=header.pole)
               .select_related("country", "brand").order_by("id")):
-        targets[m.kind][(m.country.code, m.brand.code, m.code_norm)] = m.places
+        module = (m.country.code, m.brand.code, m.code_norm)
+        if m.kind in SITE_OF_KIND:
+            data.assigned[(*module, SITE_OF_KIND[m.kind])] = m.places
+        else:
+            targets[m.kind][module] = m.places
     return data

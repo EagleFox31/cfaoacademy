@@ -133,7 +133,7 @@ def test_lignes_rangees_egales_a_l_analyse_du_json(referential, pole, header):
     apply_snapshot(_snapshot(), PUSH)
     parsed = client._parse_needs(_snapshot()["years"]["2026"]["needs_by_branch_brand"][header])
     stored = resolved_needs(2026, pole)
-    for field in ("available", "source", "by_country", "by_cell", "postponed", "unassigned", "warnings"):
+    for field in ("available", "source", "by_country", "by_cell", "postponed", "unassigned", "assigned", "warnings"):
         assert getattr(stored, field) == getattr(parsed, field), field
     if pole == "MOTORS":
         assert stored.by_cell[("cm", "toyota")] == (6, 3), "deux libellés du même pays : une cellule"
@@ -190,18 +190,42 @@ def test_chaque_ecriture_recalcule_l_annee(world, fake_pdp, django_capture_on_co
     assert ensure_year_summaries() == 1 and _stored(2030) is None, "année sans clé : pas de ligne"
 
 
-def test_places_attribuees_lues_sur_les_fiches(world, fake_pdp, django_capture_on_commit_callbacks):
-    """Clé en préparation : un pays sans session compte les places en couleur de ses
-    fiches (besoins − sans couleur − rouge). Clé gelée : les sessions seules."""
+ASSIGNED = [
+    {"country": "Cameroun", "brand": "TOYOTA", "code": "TS01", "site": "academy", "places": 4},
+    {"country": "Cameroun", "brand": "TOYOTA", "code": "TS03", "site": "subsidiary", "places": 3},
+    {"country": "RCI", "brand": "TOYOTA", "code": "ts01", "site": "academy", "places": 6},
+]
+
+
+def _with_assigned(version, assigned):
+    doc = _snapshot(version)
+    doc["years"]["2026"]["needs_by_branch_brand"]["motors"]["assigned"] = assigned
+    return doc
+
+
+def test_places_attribuees_des_fiches_dans_le_devis(world, fake_pdp, django_capture_on_commit_callbacks):
+    """Clé en préparation : les places en couleur des fiches que le classeur ne couvre pas
+    deviennent des sessions « à dater » ; le devis et la carte les comptent. Clé gelée : rien
+    ne bouge."""
     with django_capture_on_commit_callbacks(execute=True):
-        PlannedAllocation.objects.filter(planned_session=world["session"], country__code="cm").delete()
-        year_summary.schedule(sessions={world["session"].pk})
-    # Motors : cm 6 − 2 rouges = 4 (aucune session), ci max(4 en session, 5 − 1 sans couleur) = 4 ;
-    # Equipment : cm 5 en session.
-    assert _stored(2026)["seats"] == 13 == _from_global(2026)["seats"]
+        apply_snapshot(_with_assigned(2, ASSIGNED), PUSH)
+    def sheet():
+        return PlannedSession.objects.filter(origin=PlannedSession.Origin.NEEDS_SHEET)
+    # cm TS01 : 4 couvertes par les 6 en session ; cm TS03 : 3 en filiale ; ci TS01 : 6 − 4 = 2 à Douala.
+    got = {(s.code_norm, s.location, s.start_date, a.country.code, a.seats)
+           for s in sheet() for a in s.allocations.all()}
+    assert got == {("TS03", "Filiale", None, "cm", 3), ("TS01", "Douala", None, "ci", 2)}
+    assert _stored(2026)["seats"] == 20 == _from_global(2026)["seats"], "15 en session + 5 des fiches"
+    assert sync_needs_lines() == 0, "base à jour : zéro écriture"
+
+    with django_capture_on_commit_callbacks(execute=True):
+        apply_snapshot(_with_assigned(3, ASSIGNED[:2]), PUSH)
+    assert sheet().count() == 1 and _stored(2026)["seats"] == 18, "ci n'a plus de place en couleur"
+
     with django_capture_on_commit_callbacks(execute=True):
         freeze(world["motors"], "test")
-    assert _stored(2026)["seats"] == 9, "clé gelée : cm 0 + ci 4 + Equipment 5"
+        apply_snapshot(_with_assigned(4, []), PUSH)
+    assert sheet().count() == 1 and _stored(2026)["seats"] == 18, "clé gelée : sessions inchangées"
 
 
 def test_synthese_compte_une_filiale_une_fois():

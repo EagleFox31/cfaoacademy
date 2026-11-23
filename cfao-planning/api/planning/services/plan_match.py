@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from uuid import UUID
 
-from ..models import INACTIVE_STATUSES, CostKeyYear, Session
+from ..models import INACTIVE_STATUSES, CostKeyYear, PlannedSession, Session
 
 
 class MatchStatus(StrEnum):
@@ -44,7 +44,7 @@ class MatchGroup:
 
 def match(key: CostKeyYear) -> list[MatchGroup]:
     fields = ("brand_id", "code_norm", "country_id")
-    planned = Counter(key.planned_sessions.filter(brand__pole=key.pole)
+    planned = Counter(key.planned_sessions.filter(brand__pole=key.pole, origin=PlannedSession.Origin.WORKBOOK)
                       .values_list(*fields))
     actual = Counter(
         Session.objects.filter(year=key.year, brand__pole=key.pole)

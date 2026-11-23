@@ -301,6 +301,15 @@ class PlannedSession(UUIDModel, TimeStampedModel):
         "core.ImportLog", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
 
+    class Origin(models.TextChoices):
+        WORKBOOK = "workbook", "Classeur de la clé"
+        NEEDS_SHEET = "needs_sheet", "Fiche besoins"
+
+    # Une session « fiche » porte les places attribuées par une fiche besoins (vert, bleu) que
+    # les sessions du classeur ne couvrent pas encore ; `services.sheet_sessions` la tient à
+    # jour tant que la clé n'est pas gelée, et l'import du classeur ne la retire jamais.
+    origin = models.CharField(max_length=16, choices=Origin.choices, default=Origin.WORKBOOK)
+
     objects = PlannedSessionQuerySet.as_manager()
 
     @property
@@ -621,11 +630,15 @@ class NeedsLine(models.Model):
 
 
 class NeedsModuleLine(models.Model):
-    """Places d'un module reportées ou exprimées sans attribution (cellule sans couleur)."""
+    """Places d'un module reportées, exprimées sans attribution (cellule sans couleur) ou
+    attribuées sur la fiche, par site (cellule verte = filiale, bleue = Douala)."""
 
     class Kind(models.TextChoices):
         POSTPONED = "postponed", "Reportées"
         UNASSIGNED = "unassigned", "Sans attribution"
+        AT_ACADEMY = "at_academy", "Attribuées à Douala"
+        IN_SUBSIDIARY = "in_subsidiary", "Attribuées en filiale"
+        AT_DISTANCE = "at_distance", "Attribuées à distance"
 
     year = models.IntegerField()
     pole = models.CharField(max_length=16)

@@ -35,6 +35,7 @@ from ..models import (
     CostKeyYear, FrozenKeyError, PlannedAllocation, PlannedCellEdit, PlannedSession,
 )
 from ..services.cost_key_cells import manual_cells, raw
+from ..services.sheet_sessions import sync_key
 from .data_sheet import _TRAINER_SPLIT, parse_date, parse_int
 
 COLUMNS = ColumnSpec(
@@ -108,7 +109,7 @@ def manual_changes(key_ids: set, groups: dict[tuple, dict], countries: set
         report.append({"session": str(session), "country": country, "field": field,
                        "current": raw(current), "file": raw(incoming)})
 
-    stored = (PlannedSession.objects.filter(cost_key_id__in=key_ids)
+    stored = (PlannedSession.objects.filter(cost_key_id__in=key_ids, origin=PlannedSession.Origin.WORKBOOK)
               .select_related("brand", "country").prefetch_related("allocations__country"))
     for session in stored:
         group = groups.get(file_identity(session, groups))
@@ -133,7 +134,7 @@ def _state(end_date, location, trainer_ids, allocations: dict) -> tuple:
 def _stored_state(key: CostKeyYear, groups: dict[tuple, dict], countries: set) -> dict[tuple, tuple]:
     """Le prévu en base d'une clé, restreint aux pays lus dans le fichier."""
     state = {}
-    planned = key.planned_sessions.prefetch_related("trainers", "allocations")
+    planned = key.planned_sessions.filter(origin=PlannedSession.Origin.WORKBOOK).prefetch_related("trainers", "allocations")
     for p in planned:
         allocations = {a.country_id: a.seats for a in p.allocations.all()
                        if a.country_id in countries}
@@ -440,7 +441,7 @@ class SeatSheetsImporter(TabularImporter):
             ))
 
         moved = {_identity(s, s.file_start_date): s for s in PlannedSession.objects.filter(
-            cost_key_id__in=set(keys) - noop, start_moved=True)}
+            cost_key_id__in=set(keys) - noop, start_moved=True, origin=PlannedSession.Origin.WORKBOOK)}
 
         created = updated = sessions = written = 0
         for identity, group in groups.items():
@@ -453,6 +454,7 @@ class SeatSheetsImporter(TabularImporter):
             planned, was_created = moved.get(identity), False
             if planned is None:
                 planned, was_created = PlannedSession.objects.get_or_create(
+                    origin=PlannedSession.Origin.WORKBOOK,
                     cost_key_id=key_id, brand_id=brand_id, code_norm=code_norm, start_date=start,
                     country_id=host_id, defaults={**fields, "last_import": log},
                 )
@@ -500,6 +502,7 @@ class SeatSheetsImporter(TabularImporter):
         missing = [
             a for a in PlannedAllocation.objects.filter(
                 planned_session__cost_key_id__in=touched, country_id__in=self._countries,
+                planned_session__origin=PlannedSession.Origin.WORKBOOK,
             ).select_related("planned_session__country", "country")
             if (file_identity(a.planned_session, groups), a.country_id) not in kept
         ]
@@ -513,9 +516,12 @@ class SeatSheetsImporter(TabularImporter):
             PlannedSession.objects.filter(cost_key_id__in=touched,
                                           allocations__isnull=True).delete()
         PlannedCellEdit.objects.bulk_create(journal)
+        # Les places du classeur couvrent désormais une part des fiches besoins : les
+        # sessions « fiche » de ces clés se recalent (la plus grande source l'emporte).
+        sheet_writes = sum(sync_key(keys[k]) for k in sorted(touched))
         self.report_extra.update(
             manual_kept=manual_kept, overwrite_manual=overwrite, created=created, updated=updated, planned_sessions=sessions,
             missing_from_file=report_missing, replaced=bool(self._params.get("replace")),
-            frozen_noop=sorted(str(keys[k]) for k in noop),
+            frozen_noop=sorted(str(keys[k]) for k in noop), sheet_sessions=sheet_writes,
         )
         return written

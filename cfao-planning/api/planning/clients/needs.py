@@ -43,7 +43,7 @@ OFFLINE_TIMEOUT_S = 30
 
 _POLES = ("motors", "equipment", "all")
 _EMPTY_YEAR = {
-    "needs_by_branch_brand": {p: {"source": "none", "rows": [], "postponed": [], "unassigned": []} for p in _POLES},
+    "needs_by_branch_brand": {p: {"source": "none", "rows": [], "postponed": [], "unassigned": [], "assigned": []} for p in _POLES},
     "unchosen_modules": {p: {"catalog_available": False, "modules": []} for p in _POLES},
     "catalog_levels": {"lines": []},
 }
@@ -62,6 +62,9 @@ class NeedsData:
     postponed: dict[tuple[str, str, str], int] = field(default_factory=dict)
     # Même clé → places exprimées sans attribution sur la fiche (cellule sans couleur).
     unassigned: dict[tuple[str, str, str], int] = field(default_factory=dict)
+    # (code pays, code marque, code module normalisé, site) → places attribuées sur la fiche
+    # (cellule verte = filiale, bleue = Douala). Site : academy, subsidiary ou distance.
+    assigned: dict[tuple[str, str, str, str], int] = field(default_factory=dict)
     warnings: list[dict] = field(default_factory=list)
 
 
@@ -206,6 +209,12 @@ def _parse_needs(payload: dict, resolver: Resolver | None = None) -> NeedsData:
                 continue
             module = (country.obj.code, brand.obj.code, norm_code(row["code"]))
             target[module] = target.get(module, 0) + row["places"]
+    for row in payload.get("assigned", []):
+        country, brand = resolver.country(row["country"]), resolver.brand(row["brand"])
+        if country is None or brand is None:
+            continue
+        module = (country.obj.code, brand.obj.code, norm_code(row["code"]), row["site"])
+        data.assigned[module] = data.assigned.get(module, 0) + row["places"]
     data.warnings = [{"code": f"unknown_{kind}", "value": value} for kind, value in sorted(unknown)]
     return data
 

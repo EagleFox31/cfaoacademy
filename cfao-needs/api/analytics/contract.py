@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 CONTRACT_ID = "needs-analytics"
-CONTRACT_VERSION = "1.5.0"
+CONTRACT_VERSION = "1.6.0"
 CONTRACT_PATH = Path(__file__).resolve().parent / "contract" / "needs-analytics.openapi.json"
 
 _YEAR = {
@@ -241,11 +241,30 @@ def openapi_document() -> dict:
                         },
                     },
                 },
+                "assigned": {
+                    "type": "array",
+                    "description": "Places attribuées sur la fiche (cellule verte = filiale, bleue = "
+                                   "Douala) par module et site : besoins exprimés moins les places "
+                                   "reportées et sans couleur. Depuis 1.6.0.",
+                    "items": {
+                        "type": "object",
+                        "required": ["country", "brand", "code", "site", "places"],
+                        "properties": {
+                            "country": {"type": "string"},
+                            "brand": {"type": "string"},
+                            "code": {"type": "string"},
+                            "site": {"type": "string", "enum": ["academy", "subsidiary", "distance"]},
+                            "places": {"type": "integer", "minimum": 1},
+                        },
+                    },
+                },
             },
             "examples": [{"year": 2026, "pole": "motors", "source": "quota_import", "rows": [
                 {"country": "BENIN", "brand": "TOYOTA", "needs": 34, "technicians": 22}],
                 "postponed": [{"country": "BENIN", "brand": "TOYOTA", "code": "TS11-G2", "places": 3}],
-                "unassigned": [{"country": "BENIN", "brand": "TOYOTA", "code": "TS12-G1", "places": 4}]}],
+                "unassigned": [{"country": "BENIN", "brand": "TOYOTA", "code": "TS12-G1", "places": 4}],
+                "assigned": [{"country": "BENIN", "brand": "TOYOTA", "code": "TS11-G2", "site": "subsidiary",
+                              "places": 5}]}],
         },
         "UnchosenModules": {
             "type": "object",

@@ -209,6 +209,15 @@
       "NeedsByBranchBrand": {
         "examples": [
           {
+            "assigned": [
+              {
+                "brand": "TOYOTA",
+                "code": "TS11-G2",
+                "country": "BENIN",
+                "places": 5,
+                "site": "subsidiary"
+              }
+            ],
             "pole": "motors",
             "postponed": [
               {
@@ -239,6 +248,43 @@
           }
         ],
         "properties": {
+          "assigned": {
+            "description": "Places attribuées sur la fiche (cellule verte = filiale, bleue = Douala) par module et site : besoins exprimés moins les places reportées et sans couleur. Depuis 1.6.0.",
+            "items": {
+              "properties": {
+                "brand": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "country": {
+                  "type": "string"
+                },
+                "places": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "site": {
+                  "enum": [
+                    "academy",
+                    "subsidiary",
+                    "distance"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "country",
+                "brand",
+                "code",
+                "site",
+                "places"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
           "pole": {
             "enum": [
               "motors",
@@ -377,6 +423,15 @@
                 },
                 "needs_by_branch_brand": {
                   "all": {
+                    "assigned": [
+                      {
+                        "brand": "TOYOTA",
+                        "code": "TS11-G2",
+                        "country": "BENIN",
+                        "places": 5,
+                        "site": "subsidiary"
+                      }
+                    ],
                     "pole": "motors",
                     "postponed": [
                       {
@@ -406,6 +461,15 @@
                     "year": 2026
                   },
                   "equipment": {
+                    "assigned": [
+                      {
+                        "brand": "TOYOTA",
+                        "code": "TS11-G2",
+                        "country": "BENIN",
+                        "places": 5,
+                        "site": "subsidiary"
+                      }
+                    ],
                     "pole": "motors",
                     "postponed": [
                       {
@@ -435,6 +499,15 @@
                     "year": 2026
                   },
                   "motors": {
+                    "assigned": [
+                      {
+                        "brand": "TOYOTA",
+                        "code": "TS11-G2",
+                        "country": "BENIN",
+                        "places": 5,
+                        "site": "subsidiary"
+                      }
+                    ],
                     "pole": "motors",
                     "postponed": [
                       {
@@ -739,7 +812,7 @@
   "info": {
     "description": "Agrégats de service à service lus par cfao-core (tableau de bord super admin) et cfao-planning (clé de répartition).",
     "title": "CFAO Needs Analytics",
-    "version": "1.5.0"
+    "version": "1.6.0"
   },
   "openapi": "3.1.0",
   "paths": {

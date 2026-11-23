@@ -6,7 +6,8 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import PatternFill
 
 from campaigns.imports.need_workbooks import (
-    Report, _merge, _need_fields, _precise_line, canonical_brand, canonical_code, parse_workbook,
+    Report, _merge, _need_fields, _precise_line, canonical_brand, canonical_code, parse_directory,
+    parse_workbook, pending_files, unknown_files, validated_pairs,
 )
 from campaigns.models import Campaign, CatalogFamily, CatalogLine, NeedLine, Submission
 from referential.models import OrgUnitRef
@@ -69,6 +70,17 @@ def test_lit_la_ligne_demandee_et_reporte_la_marque_fusionnee(tmp_path):
     ("MOBILITY 2027 Formulaire besoins formation RGE.xlsx", " TECHNIQUE ", "groupe.gnq"),
     ("MOBILITY 2027_Tchad.xlsx", " TECHNIQUE ", "groupe.tcd"),
     ("MOBILITY 2027_Inconnu.xlsx", " TECHNIQUE ", None),
+    ("EQUIPMENT 2027 Training Needs Identification Form_Ghana.xlsx", "EQUIPMENT", "groupe.gha"),
+    ("Fiche EQUIPMENT 2027 v1_Burkina Faso.xlsx", "EQUIPMENT", "groupe.bfa"),
+    ("MOBILITY 2027 Formulaire besoins formation_Cameroun_Toyota.xlsx", " TECHNIQUE ", "groupe.cmr"),
+    ("Fiche EQUIPMENT 2027 v1_Mali.xlsx", "EQUIPMENT", "groupe.mli"),
+    ("MOBILITY 2027 Formulaire besoins formation_Benin.xlsx", " TECHNIQUE ", "groupe.ben"),
+    ("MOBILITY 2027 Formulaire besoins formation_Guinée.xlsx", " TECHNIQUE ", "groupe.gin"),
+    ("MOBILITY 2027 Formulaire besoins formation_Guinée équatoriale.xlsx", " TECHNIQUE ", "groupe.gnq"),
+    ("MOBILITY 2027 Formulaire besoins formation RDC.xlsx", " TECHNIQUE ", "groupe.cod"),
+    ("MOBILITY 2027 Formulaire besoins formation v1_Congo.xlsx", " TECHNIQUE ", "groupe.cog"),
+    # Mots entiers : un nom qui contient « mali » ou « rge » sans les porter n'est pas reconnu.
+    ("Fiche normalisée EQUIPMENT 2027 large.xlsx", "EQUIPMENT", None),
 ])
 def test_filiale_reconnue_au_nom_du_fichier(tmp_path, name, sheet, org):
     path = _save(tmp_path, name, sheet, [
@@ -131,6 +143,22 @@ def test_couleurs_lieu_filiale_et_report(tmp_path):
     assert _need_fields(entries[0])["comment"] == ""
 
 
+def test_case_bleue_attribuee_a_douala(tmp_path):
+    path = _save(tmp_path, "MOBILITY 2027_Tchad.xlsx", "TECHNIQUE", [
+        ["Titre"], HEADER, QUARTERS,
+        ["SENIOR", "TOYOTA", "TS06-G3", "T", "A", 9, None, None, 3],
+    ])
+    _paint(path, {"I4": "FF00B0F0"})
+    (blue,) = parse_workbook(path)
+    assert blue.place_of(2) == "ACADEMY"
+
+    class _Lines:
+        def line_for(self, row):
+            return SimpleNamespace(pk=row.code)
+    (entry,) = _merge([blue], _Lines()).values()
+    assert (entry["postponed"], entry["unassigned"]) == (0, 0), "bleu = attribué, pas « sans couleur »"
+
+
 def test_rci_couleur_portee_par_le_total(tmp_path):
     line = ["SENIOR", "TS07-G3", "G3", "TECHNIQUE", "Certif", 15] + [None, None, None, "NOMS"]
     line += [None, None, None, None, 4, None, None, None, "SUBSIDIARY"]
@@ -176,3 +204,97 @@ def test_non_attribue_precise_une_ligne_existante_une_seule_fois():
     assert (need.unassigned, need.postponed, need.q3) == (3, 0, 3)
     assert need.comment.count("Non attribué") == 1
     assert _precise_line(need, entry, Report()) is False
+
+
+GREEN = PatternFill("solid", fgColor="FF92D050")
+
+
+def _suivi(tmp_path, rows):
+    """Classeur de suivi : (pays, pôle, RDV vert ?, rapport, calendrier)."""
+    book = Workbook()
+    sheet = book.active
+    sheet.title = "RDV"
+    sheet.append(["PAYS", "PÔLE", "DOP/DPS", "RDV", "RAPPORT RDV", "CALENDRIER"])
+    for number, (country, pole, green, report, calendar) in enumerate(rows, start=2):
+        sheet.append([country, pole, None, "2026-10-27", report, calendar])
+        if green:
+            sheet.cell(number, 4).fill = GREEN
+    path = tmp_path / "Suivi 2027.xlsx"
+    book.save(path)
+    return path
+
+
+def test_fiche_validee_seulement_si_rdv_vert_rapport_et_calendrier(tmp_path):
+    path = _suivi(tmp_path, [
+        ("Tchad", "Mobility", True, "Yes", "Yes"),
+        ("Tchad", "Equipment", True, "Yes", None),
+        ("Togo", "Equipment", False, "Yes", "Yes"),
+        ("RGE", "Equipment", True, "yes ", "YES"),
+        ("Atlantide", "Mobility", True, "Yes", "Yes"),
+    ])
+    assert validated_pairs(path) == {("groupe.tcd", "MOBILITY"), ("groupe.gnq", "EQUIPMENT")}
+
+
+def test_suivi_sans_feuille_rdv_refuse(tmp_path):
+    path = tmp_path / "Suivi 2027.xlsx"
+    Workbook().save(path)
+    with pytest.raises(ValueError):
+        validated_pairs(path)
+
+
+def test_dossier_lu_en_profondeur_et_fiches_non_validees_ecartees(tmp_path):
+    row = ["SENIOR", "SUZUKI", "SS05", "T", "Diag", 9, 2]
+    for sub, name in (("Mobility 2027", "MOBILITY 2027_Tchad.xlsx"),
+                      ("Equipment 2027", "Fiche EQUIPMENT 2027_Tchad.xlsx"),
+                      ("Formulaires vierges", "MOBILITY 2027 Formulaire.xlsx")):
+        (tmp_path / sub).mkdir()
+        sheet = "EQUIPMENT" if "EQUIPMENT" in name else "TECHNIQUE"
+        _save(tmp_path / sub, name, sheet, [["Titre"], HEADER, QUARTERS, row])
+    pairs = validated_pairs(_suivi(tmp_path, [("Tchad", "Mobility", True, "Yes", "Yes")]))
+    assert {r.source for r in parse_directory(tmp_path)} == {
+        "MOBILITY 2027_Tchad.xlsx", "Fiche EQUIPMENT 2027_Tchad.xlsx"}
+    assert {r.source for r in parse_directory(tmp_path, pairs)} == {"MOBILITY 2027_Tchad.xlsx"}
+    assert pending_files(tmp_path, pairs) == ["Fiche EQUIPMENT 2027_Tchad.xlsx"]
+    assert unknown_files(tmp_path) == []
+
+
+@pytest.mark.django_db
+def test_commande_json_detail_par_fichier_sous_4_ko(tmp_path):
+    import io
+    import json
+
+    from django.core.management import call_command
+    Campaign.objects.create(year=2027, label="2027")
+    OrgUnitRef.objects.create(code="groupe.tcd", label="Tchad", country="TCHAD")
+    CatalogFamily.objects.create(key="techniques-motors", label="Techniques", pole="MOBILITY")
+    row = ["SENIOR", None, "SS05", "T", "Diag", 9, 2]  # sans marque : formation transverse
+    for name, sheet in (("MOBILITY 2027_Tchad.xlsx", "TECHNIQUE"),
+                        ("Fiche EQUIPMENT 2027_Tchad.xlsx", "EQUIPMENT"),
+                        ("MOBILITY 2027_Atlantide.xlsx", "TECHNIQUE")):
+        _save(tmp_path, name, sheet, [["Titre"], HEADER, QUARTERS, row])
+    suivi = _suivi(tmp_path, [("Tchad", "Mobility", True, "Yes", "Yes")])
+    out = io.StringIO()
+    call_command("import_need_workbooks", str(tmp_path), "--year", "2027",
+                 "--validated-by", str(suivi), "--dry-run", "--json", stdout=out)
+    last = out.getvalue().splitlines()[-1]
+    assert last.startswith("JSON ") and len(last.encode()) < 4096
+    detail = json.loads(last[5:])
+    assert [(f["nom"], f["status"]) for f in detail["fichiers"]] == [
+        ("MOBILITY 2027_Atlantide.xlsx", "ignore"),
+        ("Fiche EQUIPMENT 2027_Tchad.xlsx", "en_attente"),
+        ("MOBILITY 2027_Tchad.xlsx", "importe"),
+    ]
+    assert all(len(f["sha256"]) == 64 and f["type"] == "fiche_besoins" for f in detail["fichiers"])
+    assert detail["fichiers"][2]["lignes"] == 1
+    assert detail["compteurs"] == {"places_ajoutees": 2, "fiches_creees": 1, "en_attente": 1}
+    assert not Submission.objects.exists()  # essai à blanc
+
+
+@pytest.mark.django_db
+def test_commande_sans_suivi_lisible_n_ecrit_rien(tmp_path):
+    from django.core.management import CommandError, call_command
+    Campaign.objects.create(year=2027, label="2027")
+    with pytest.raises(CommandError):
+        call_command("import_need_workbooks", str(tmp_path), "--year", "2027",
+                     "--validated-by", str(tmp_path / "absent.xlsx"))
+    assert not Submission.objects.exists()

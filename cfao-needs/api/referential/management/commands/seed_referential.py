@@ -80,12 +80,17 @@ ORG_UNITS = [
     ("groupe.mar",        "CFAO Maroc",                "Maroc",        "fr", "groupe"),
     ("groupe.tcd",        "CFAO Tchad",                "Tchad",        "fr", "groupe"),
     ("groupe.tgo",        "CFAO Togo",                 "Togo",         "fr", "groupe"),
+    ("groupe.cmr",        "CFAO Cameroun",             "Cameroun",     "fr", "groupe"),
+    ("groupe.gha",        "CFAO Ghana",                "Ghana",        "en", "groupe"),
+    ("groupe.bfa",        "CFAO Burkina Faso",         "Burkina Faso", "fr", "groupe"),
+    ("groupe.mli",        "CFAO Mali",                 "Mali",         "fr", "groupe"),
+    ("groupe.ben",        "CFAO Bénin",                "Bénin",        "fr", "groupe"),
+    ("groupe.gin",        "CFAO Guinée",               "Guinée",       "fr", "groupe"),
+    ("groupe.cod",        "CFAO RD Congo",             "RD Congo",     "fr", "groupe"),
 ]
 DEMO_ORG_UNITS = [
-    ("groupe.cmr",        "CFAO Cameroun",             "Cameroun",     "fr", "groupe"),
     ("groupe.cmr.douala", "Agence Douala",             "Cameroun",     "fr", "groupe.cmr"),
     ("groupe.civ.abidjan","Agence Abidjan",            "Côte d'Ivoire","fr", "groupe.civ"),
-    ("groupe.gha",        "CFAO Ghana",                "Ghana",        "en", "groupe"),
     ("groupe.gha.accra",  "Accra branch",              "Ghana",        "en", "groupe.gha"),
 ]
 

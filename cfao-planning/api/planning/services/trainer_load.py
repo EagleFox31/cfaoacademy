@@ -104,7 +104,9 @@ def trainer_load(year: int, today: dt.date | None = None) -> dict:
     today = today or dt.date.today()
     trainers = Trainer.objects.filter(
         is_active=True, is_external=False, kind=Trainer.Kind.TRAINER).select_related("home_country")
-    planned = (PlannedSession.objects.filter(cost_key__year=year)
+    # Les sessions « fiche » (places attribuées sur une fiche besoins, à dater) ne sont pas encore
+    # des sessions à confier à un formateur : seules celles du classeur comptent ici.
+    planned = (PlannedSession.objects.filter(cost_key__year=year, origin=PlannedSession.Origin.WORKBOOK)
                .select_related("brand", "country", "cost_key").prefetch_related("trainers"))
 
     by_trainer: dict = {t.pk: [] for t in trainers}

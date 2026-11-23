@@ -85,7 +85,7 @@ def test_migration_adopts_tables_already_created_by_ingestion():
 
 # ── Clé de répartition (cfao-planning) ─────────────────────────────────────────
 
-from campaigns.models import CatalogLine, NeedLine, Submission  # noqa: E402
+from campaigns.models import CatalogLine, NeedLine, Place, Submission  # noqa: E402
 from referential.models import Brand, CatalogFamily, OrgUnitRef  # noqa: E402
 
 
@@ -126,7 +126,7 @@ def test_validated_submissions_replace_imported_needs(client, campaign):
 def test_needs_empty_year_says_none(client, campaign):
     body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2030}).json()
     assert body == {"year": 2030, "pole": "all", "source": "none", "rows": [], "postponed": [],
-                    "unassigned": []}
+                    "unassigned": [], "assigned": []}
 
 
 def test_unchosen_modules_lists_catalog_without_validated_demand(client, campaign):
@@ -231,3 +231,21 @@ def test_unassigned_seats_stay_in_the_needs(client, campaign):
     assert body["rows"][0]["needs"] == 4
     assert body["unassigned"] == [{"country": "BENIN", "brand": "Toyota", "code": "TS06", "places": 4}]
     assert body["postponed"] == []
+    assert body["assigned"] == []
+
+
+def test_assigned_seats_by_site(client, campaign):
+    """Attribué = besoins − rouge − sans couleur ; le site suit le lieu de la ligne."""
+    toyota = Brand.objects.create(code="toyota", label="Toyota", pole="MOBILITY")
+    benin = _submission(campaign, "BENIN")
+    NeedLine.objects.create(submission=benin, catalog_line=_catalog(campaign, "TS11", toyota),
+                            q1=2, q4=3, postponed=1, place_q1=Place.FILIALE, place_q4=Place.FILIALE)
+    NeedLine.objects.create(submission=benin, catalog_line=_catalog(campaign, "TS12", toyota),
+                            q2=4, unassigned=1, place_q2=Place.CFR)
+    NeedLine.objects.create(submission=benin, catalog_line=_catalog(campaign, "TS13", toyota),
+                            q3=2, postponed=2, place_q3=Place.CFR)
+    body = client.get("/api/v1/needs/analytics/needs-by-branch-brand", {"year": 2026}).json()
+    assert body["assigned"] == [
+        {"country": "BENIN", "brand": "Toyota", "code": "TS11", "site": "subsidiary", "places": 4},
+        {"country": "BENIN", "brand": "Toyota", "code": "TS12", "site": "academy", "places": 3},
+    ]

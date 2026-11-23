@@ -26,12 +26,17 @@ from referential.models import OrgUnitRef
 
 ACTOR = "import_need_workbooks"
 
+# Mots du nom de fichier (sans accent, en minuscules) → filiale. Le premier qui
+# correspond l'emporte : les noms composés passent avant leur mot seul.
 ORG_BY_FILE = (
+    # Guinée équatoriale : les fiches portent le sigle de la filiale (« ... v1 RGE.xlsx »).
+    ("rge", "groupe.gnq"), ("guinee equatoriale", "groupe.gnq"),
+    ("rdc", "groupe.cod"), ("rd congo", "groupe.cod"),
     ("rci", "groupe.civ"), ("congo", "groupe.cog"), ("gabon", "groupe.gab"),
     ("madagascar", "groupe.mdg"), ("maroc", "groupe.mar"), ("tchad", "groupe.tcd"),
-    ("togo", "groupe.tgo"),
-    # Guinée équatoriale : les fiches portent le sigle de la filiale (« ... v1 RGE.xlsx »).
-    ("rge", "groupe.gnq"),
+    ("togo", "groupe.tgo"), ("cameroun", "groupe.cmr"), ("ghana", "groupe.gha"),
+    ("burkina", "groupe.bfa"), ("mali", "groupe.mli"), ("benin", "groupe.ben"),
+    ("guinee", "groupe.gin"),
 )
 
 FAMILY_BY_SHEET = {
@@ -61,11 +66,16 @@ BRAND_FIXES = {"TOYIE": "TOYOTA FORKLIFT", "TOYOTA INDUSTRIES EQUIPMENT": "TOYOT
 NO_PLACE_COMMENT = "Lieu non renseigné sur la fiche."
 POSTPONED_COMMENT = "Reporté sur la fiche : {places} place(s)."
 # Une case sans couleur est un besoin exprimé que la fiche n'attribue à aucune session,
-# même si un lieu est écrit. Les cases vertes (filiale) et rouges (reporté) sont attribuées.
+# même si un lieu est écrit. Les cases vertes (filiale), bleues (Douala) et rouges (reporté)
+# sont attribuées.
 UNASSIGNED_COMMENT = "Non attribué sur la fiche : {places} place(s)."
+# Notes de compteur déjà écrites : remplacées à chaque relecture de la fiche.
+SHEET_NOTE = re.compile(r"(Reporté|Non attribué) sur la fiche : \d+ place\(s\)\.")
 
 # Couleur des cases d'effectif ; les classeurs n'ont pas de légende, le sens vient du centre.
-IN_SUBSIDIARY, POSTPONED = "FF92D050", "FFFF0000"
+IN_SUBSIDIARY, AT_ACADEMY, POSTPONED = "FF92D050", "FF00B0F0", "FFFF0000"
+MARKS = (IN_SUBSIDIARY, AT_ACADEMY, POSTPONED)
+PLACE_BY_MARK = {IN_SUBSIDIARY: "FILIALE", AT_ACADEMY: "ACADEMY"}
 
 
 def _ascii_upper(value) -> str:
@@ -122,17 +132,20 @@ class SheetRow:
         written = {place for place in self.places if place in PLACE_BY_LABEL}
         if len(written) == 1:
             return written.pop()
-        return "FILIALE" if self.marks[quarter] == IN_SUBSIDIARY else ""
+        return PLACE_BY_MARK.get(self.marks[quarter], "")
 
 
 def _org_of(name: str) -> str | None:
-    lowered = name.lower()
-    return next((org for key, org in ORG_BY_FILE if key in lowered), None)
+    """Filiale d'un fichier, par mots entiers : « Mali » ne se lit pas dans « normalisé »."""
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().lower()
+    words = re.findall(r"[a-z]+", plain)
+    text = f" {' '.join(words)} "
+    return next((org for key, org in ORG_BY_FILE if f" {key} " in text), None)
 
 
 def _mark(cell) -> str:
     color = cell.fill.fgColor
-    if cell.fill.patternType and color.type == "rgb" and color.rgb in (IN_SUBSIDIARY, POSTPONED):
+    if cell.fill.patternType and color.type == "rgb" and color.rgb in MARKS:
         return color.rgb
     return ""
 
@@ -152,7 +165,7 @@ def parse_workbook(path: Path) -> list[SheetRow]:
     if org is None:
         return []
     is_rci = org == "groupe.civ"
-    pole = "EQUIPMENT" if "EQUIPMENT" in path.name.upper() else "MOBILITY"
+    pole = _pole_of(path.name)
     book = load_workbook(path, data_only=True)
     result: list[SheetRow] = []
     for sheet in book.worksheets:
@@ -195,12 +208,69 @@ def parse_workbook(path: Path) -> list[SheetRow]:
     return result
 
 
-def parse_directory(directory: Path) -> list[SheetRow]:
+def _pole_of(name: str) -> str:
+    return "EQUIPMENT" if "EQUIPMENT" in name.upper() else "MOBILITY"
+
+
+def _workbooks(directory: Path) -> list[Path]:
+    """Fiches du dossier et de ses sous-dossiers (« Mobility 2027 », « Equipment 2027 »).
+
+    Les formulaires vierges, les trames et le classeur de suivi ne sont pas des fiches.
+    """
+    root = Path(directory)
+    return [
+        p for p in sorted(root.rglob("*.xlsx"))
+        if not p.name.startswith(("~$", "Trame", "Suivi"))
+        and not any("VIERGE" in _ascii_upper(part) for part in p.relative_to(root).parts[:-1])
+    ]
+
+
+def validated_pairs(suivi: Path) -> set[tuple[str, str]]:
+    """(filiale, pôle) dont la fiche est validée dans le classeur de suivi, feuille RDV.
+
+    Validée = case RDV verte, rapport du RDV et calendrier reçus (« Yes »). Les colonnes
+    se repèrent par leur libellé : le centre peut en insérer ou les déplacer.
+    """
+    try:
+        sheet = load_workbook(suivi, data_only=True)["RDV"]
+    except (FileNotFoundError, KeyError) as exc:
+        raise ValueError(f"Feuille RDV introuvable dans {suivi}") from exc
+    rows = sheet.iter_rows()
+    labels = [_ascii_upper(c.value) for c in next(rows, ())]
+    wanted = ("PAYS", "POLE", "RDV", "RAPPORT RDV", "CALENDRIER")
+    if any(label not in labels for label in wanted):
+        raise ValueError(f"Colonnes attendues dans la feuille RDV : {', '.join(wanted)}")
+    country, pole, rdv, report, calendar = (labels.index(label) for label in wanted)
+    pairs = set()
+    for row in rows:
+        org = _org_of(str(row[country].value or ""))
+        done = all(_ascii_upper(row[i].value) == "YES" for i in (report, calendar))
+        if org and done and _mark(row[rdv]) == IN_SUBSIDIARY:
+            pairs.add((org, _pole_of(str(row[pole].value or ""))))
+    return pairs
+
+
+def is_validated(path: Path, pairs: set[tuple[str, str]] | None) -> bool:
+    return pairs is None or (_org_of(path.name), _pole_of(path.name)) in pairs
+
+
+def parse_directory(directory: Path, pairs: set[tuple[str, str]] | None = None) -> list[SheetRow]:
+    """Lignes des fiches ; avec `pairs`, seulement celles des fiches validées."""
     rows: list[SheetRow] = []
-    for path in sorted(Path(directory).glob("*.xlsx")):
-        if not path.name.startswith(("~$", "Trame")):
+    for path in _workbooks(directory):
+        if is_validated(path, pairs):
             rows.extend(parse_workbook(path))
     return rows
+
+
+def unknown_files(directory: Path) -> list[str]:
+    """Classeurs écartés faute de filiale reconnue : à signaler, jamais en silence."""
+    return [p.name for p in _workbooks(directory) if _org_of(p.name) is None]
+
+
+def pending_files(directory: Path, pairs: set[tuple[str, str]]) -> list[str]:
+    """Fiches d'une filiale reconnue mais pas encore validées : écartées, et signalées."""
+    return [p.name for p in _workbooks(directory) if _org_of(p.name) and not is_validated(p, pairs)]
 
 
 @dataclass
@@ -320,15 +390,17 @@ def _precise_line(need, entry, report: Report) -> bool:
             report.place_conflicts.append((need.submission.org_unit.code, entry["line"].code, i + 1, have, wanted))
     known = all(entry["places"][i] in PLACE_BY_LABEL for i in range(4) if entry["q"][i])
     comment = "" if need.comment == NO_PLACE_COMMENT and known else need.comment
+    comment = " ".join(SHEET_NOTE.sub("", comment).split())
     for note in (_postponed_note(entry), _unassigned_note(entry)):
         if note and note not in comment:
             comment = f"{comment} {note}".strip()
     if comment != need.comment:
         changes["comment"] = comment
-    if entry["postponed"] and not need.postponed:
-        changes["postponed"] = entry["postponed"]
-    if entry.get("unassigned") and not need.unassigned:
-        changes["unassigned"] = entry["unassigned"]
+    # Les compteurs ne viennent que des couleurs de la fiche : la fiche relue fait foi
+    # (une case bleue, autrefois lue sans couleur, quitte ainsi les places non attribuées).
+    for field in ("postponed", "unassigned"):
+        if entry.get(field, 0) != getattr(need, field):
+            changes[field] = entry.get(field, 0)
     if changes:
         NeedLine.objects.filter(pk=need.pk).update(**changes)
     return bool(changes)

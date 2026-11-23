@@ -15,7 +15,7 @@ from django.db import connection, transaction
 from django.db.models import F, Sum
 from django.utils import timezone
 
-from campaigns.models import BranchBrandQuota, Campaign, CatalogLine, NeedLine, Submission
+from campaigns.models import BranchBrandQuota, Campaign, CatalogLine, NeedLine, Place, Submission
 
 from .models import NeedsState
 
@@ -72,7 +72,34 @@ def needs_by_branch_brand_body(year: int, pole: str) -> dict:
         "rows": sorted(rows.values(), key=lambda r: (r["country"], r["brand"])),
         "postponed": _places_by_module(year, pole, "postponed"),
         "unassigned": _places_by_module(year, pole, "unassigned"),
+        "assigned": _assigned_by_module(year, pole),
     }
+
+
+# Lieu d'une ligne de besoin → site des places attribuées.
+SITE_BY_PLACE = {Place.CFR: "academy", Place.FILIALE: "subsidiary", Place.DISTANCE: "distance"}
+
+
+def _assigned_by_module(year: int, pole: str) -> list[dict]:
+    """Places attribuées sur la fiche (case verte ou bleue) par pays, marque, module et site :
+    besoins exprimés moins les places reportées (rouge) et sans couleur. Le site est le lieu
+    des trimestres demandés ; ils ont un même lieu par ligne dans les fiches 2027, sinon le
+    premier trimestre demandé l'emporte."""
+    totals: dict[tuple, int] = {}
+    lines = (validated_lines(year, pole).exclude(catalog_line__brand__isnull=True)
+             .values_list("submission__country", "catalog_line__brand__label", "catalog_line__code",
+                          "q1", "q2", "q3", "q4", "place_q1", "place_q2", "place_q3", "place_q4",
+                          "postponed", "unassigned"))
+    for country, brand, code, *rest in lines:
+        quantities, places, (postponed, unassigned) = rest[:4], rest[4:8], rest[8:]
+        assigned = sum(q or 0 for q in quantities) - (postponed or 0) - (unassigned or 0)
+        if assigned <= 0:
+            continue
+        place = next(p for q, p in zip(quantities, places) if q)
+        key = (country, brand, code, SITE_BY_PLACE.get(place, "academy"))
+        totals[key] = totals.get(key, 0) + assigned
+    return [{"country": c, "brand": b, "code": m, "site": s, "places": n}
+            for (c, b, m, s), n in sorted(totals.items())]
 
 
 def _places_by_module(year: int, pole: str, column: str) -> list[dict]:

@@ -14,9 +14,10 @@ LIRE = ("import django; django.setup(); from django.conf import settings as s; "
 def _demarrer(**variables):
     env = {k: v for k, v in os.environ.items() if not k.startswith(("DJANGO_", "NEEDS_", "OIDC_"))}
     env.update({"DJANGO_SETTINGS_MODULE": "config.settings.prod", "NEEDS_SECRET_KEY": "x" * 50,
-                "OIDC_AUDIENCE": "cfao-needs-api", **variables})
-    return subprocess.run([sys.executable, "-c", LIRE], cwd=API, env=env,
-                          capture_output=True, encoding="utf-8", timeout=60)
+                "OIDC_AUDIENCE": "cfao-needs-api", "PYTHONIOENCODING": "utf-8", **variables})
+    # Sortie forcée en UTF-8 : sous Windows, l'erreur accentuée arriverait en cp1252.
+    return subprocess.run([sys.executable, "-c", LIRE], cwd=API, env=env, capture_output=True,
+                          encoding="utf-8", errors="replace", timeout=60)
 
 
 def test_prod_coupe_debug_et_garde_les_hotes_listes():

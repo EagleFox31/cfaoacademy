@@ -77,6 +77,26 @@ services:
       planning-db:
         condition: service_healthy
 
+  # Job ponctuel de rechargement des classeurs (calendrier, clé de répartition,
+  # participants), lancé par le script serveur (scripts/serveur/importer_classeurs.sh)
+  # quand le partage change. Idempotent par empreinte : un classeur déjà lu n'écrit rien.
+  # uid 1000 = propriétaire du partage (dossier en 700) : pas besoin de root ici.
+  planning-import:
+    profiles: [import]
+    mem_limit: 768m
+    restart: "no"
+    image: antifragile237/cfao-planning-api:${PLANNING_VERSION:-v0.1.2}
+    user: "1000:1000"
+    command: ["python", "manage.py", "load_workbooks"]
+    networks: [default, cfao-maillage, identite]
+    volumes:
+      - ${PLANNING_SHARE_DIR:-/srv/partage/users/academy}:/classeurs/partage:ro
+      - ${PLANNING_EXTRA_WORKBOOKS_DIR:-./classeurs}:/classeurs/complements:ro
+    environment: *api_env
+    depends_on:
+      planning-migrate:
+        condition: service_completed_successfully
+
   planning-api:
     mem_limit: 512m
     restart: unless-stopped
