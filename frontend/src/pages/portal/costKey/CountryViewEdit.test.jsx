@@ -353,6 +353,8 @@ describe('saisie dans le devis par filiale', () => {
       await toggleFacet('Mois')
       const months = [...host.querySelectorAll('.ck-month:not(.is-all)')]
       expect(months).toHaveLength(12)
+      expect(host.querySelector('.ck-month.is-active')).toBeNull()
+      expect(host.querySelector('.ck-month-head').textContent).toContain('2027')
       expect(months.map(m => m.dataset.value)[0]).toBe('2027-01')
       expect(option('2027-04').querySelector('.ck-month-name').textContent).not.toContain('2027')
       expect(option('2027-04').getAttribute('aria-disabled')).toBeNull()

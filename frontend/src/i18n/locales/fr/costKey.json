@@ -117,6 +117,8 @@
   "no_sessions": "Aucune session pour cette filiale.",
   "filter_brand": "Marque",
   "filter_month": "Mois",
+  "filter_month_caption": "sessions par mois",
+  "filter_month_outside": "Hors {year}",
   "filter_location": "Lieu",
   "filter_country": "Filiale",
   "filter_job": "Métier",

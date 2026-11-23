@@ -34,7 +34,7 @@ export function buildFacets(rows, defs, filters) {
     const options = [...counts].map(([value, count]) => ({
       value, count, label: d.text ? d.text(value) : value, node: d.render?.(value), short: d.short?.(value),
     }))
-    return { id: d.id, label: d.label, layout: d.layout,
+    return { id: d.id, label: d.label, layout: d.layout, year: d.year,
       options: options.sort(d.compare ?? ((a, b) => a.label.localeCompare(b.label))) }
   })
 }
@@ -69,17 +69,23 @@ export function FacetFilter({ t, facet, selected, onChange, single = false, noAl
   const listRef = useRef(null)
   const { label, options } = facet
   const grid = facet.layout === 'months'
+  // Grille fixe janv.–déc. de l'année ; un mois d'une autre année va à part, sous la grille.
+  const inYear = o => !grid || o.value.startsWith(`${facet.year}-`)
+  const ordered = useMemo(() => [...options.filter(inYear), ...options.filter(o => !inYear(o))],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [options, grid, facet.year])
 
   const q = grid ? '' : fold(query.trim())
   // Sans option, « Tous » seul n'apprendrait rien : la liste dit qu'il n'y a rien à choisir.
-  const entries = useMemo(() => (q || noAll || options.length === 0
-    ? options.filter(o => fold(o.label).includes(q))
-    : [{ all: true, value: '', label: t.filter_all }, ...options]), [options, q, t, noAll])
+  const entries = useMemo(() => (q || noAll || ordered.length === 0
+    ? ordered.filter(o => fold(o.label).includes(q))
+    : [{ all: true, value: '', label: t.filter_all }, ...ordered]), [ordered, q, t, noAll])
 
   useEffect(() => {
     if (!open) return undefined
     setQuery('')
-    setActive(0)
+    // Grille : aucun repère tant que le clavier n'a pas servi (il se lirait comme un choix).
+    setActive(grid ? -1 : 0)
     ;(grid ? listRef : inputRef).current?.focus()
     const away = e => { if (!boxRef.current?.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', away)
@@ -136,10 +142,15 @@ export function FacetFilter({ t, facet, selected, onChange, single = false, noAl
       </button>
       {open && (
         <div className={`ck-combo-panel ck-facet-panel${grid ? ' is-months' : ''}`} onKeyDown={onKey}>
-          {grid ? (
+          {grid ? (<>
+            <div className="ck-month-head"><strong>{facet.year}</strong> · {t.filter_month_caption}</div>
             <ul ref={listRef} id={listId} role="listbox" tabIndex={0} aria-multiselectable={!single} aria-label={label}
               aria-activedescendant={entries[active] ? `${listId}-${active}` : undefined} className="ck-month-grid">
-              {entries.map((o, i) => (
+              {entries.map((o, i) => [
+                !o.all && !inYear(o) && (o === entries.find(e => !e.all && !inYear(e))) && (
+                  <li key="outside" role="presentation" className="ck-month-outside">
+                    {t.filter_month_outside?.replace('{year}', facet.year)}
+                  </li>),
                 <li key={o.all ? '*' : o.value} id={`${listId}-${i}`} role="option" aria-selected={isOn(o)}
                   aria-disabled={isOff(o) || undefined} data-value={o.value} title={o.all ? undefined : o.label}
                   className={`ck-month${o.all ? ' is-all' : ''}${i === active ? ' is-active' : ''}${isOn(o) ? ' is-on' : ''}${isOff(o) ? ' is-off' : ''}`}
@@ -150,10 +161,10 @@ export function FacetFilter({ t, facet, selected, onChange, single = false, noAl
                       <span className="ck-facet-count">{o.count}</span>
                     </>
                   )}
-                </li>
-              ))}
+                </li>,
+              ])}
             </ul>
-          ) : (<>
+          </>) : (<>
           <input ref={inputRef} type="text" className="ck-combo-input" role="combobox" aria-expanded="true"
             aria-autocomplete="list" aria-controls={listId}
             aria-activedescendant={entries[active] ? `${listId}-${active}` : undefined}

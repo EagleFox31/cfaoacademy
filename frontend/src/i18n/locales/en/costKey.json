@@ -117,6 +117,8 @@
   "no_sessions": "No session for this subsidiary.",
   "filter_brand": "Brand",
   "filter_month": "Month",
+  "filter_month_caption": "sessions per month",
+  "filter_month_outside": "Outside {year}",
   "filter_location": "Location",
   "filter_country": "Subsidiary",
   "filter_job": "Job",

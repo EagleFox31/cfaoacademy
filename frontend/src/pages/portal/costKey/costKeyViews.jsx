@@ -886,7 +886,7 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
       { id: 'site', label: t.filter_location, get: s => s.site, text: v => t[`site_${v}`],
         values: SITES, compare: byOrder(PLACE_KEYS) },
       // Sélecteur de mois : les 12 mois de l'année, chacun avec son nombre, même à 0.
-      { id: 'month', label: t.filter_month, get: s => s.start_date?.slice(0, 7), layout: 'months',
+      { id: 'month', label: t.filter_month, get: s => s.start_date?.slice(0, 7), layout: 'months', year: Number(ckey.year),
         text: monthText('long'), short: monthText('short'), values: yearMonths,
         compare: (x, y) => x.value.localeCompare(y.value) },
     ]
