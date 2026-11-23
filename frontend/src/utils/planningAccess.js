@@ -49,10 +49,14 @@ export function centreSeul(roles = []) {
     && !roles.some(r => ROLE_PRIORITY.includes(r) && !CENTER_ROLES.includes(r))
 }
 
-/** Pages du portail ouvertes à un compte du centre seul : sa vitrine et la clé de répartition. */
+/** Page « Portails des profils » du directeur du centre (elle filtre elle-même les rôles). */
+export const PAGE_PORTAILS_CENTRE = '/portail/centre/portails'
+
+/** Pages du portail ouvertes à un compte du centre seul : sa vitrine, la clé de répartition, les portails des profils. */
 export function pageCentreAutorisee(pathname = '') {
   return pathname === '/portail' || pathname === '/portail/'
     || pathname === PLANNING_HOME || pathname.startsWith(`${PLANNING_HOME}/`)
+    || pathname === PAGE_PORTAILS_CENTRE
 }
 
 /**

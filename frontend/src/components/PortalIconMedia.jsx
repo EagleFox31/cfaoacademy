@@ -30,6 +30,15 @@ const ICONES = {
       <path d="m7 21 5-5 5 5" />
     </>
   ),
+  // Fenêtres côte à côte : les portails des profils.
+  portails: (
+    <>
+      <rect x="2" y="3" width="9" height="8" rx="1.5" />
+      <rect x="13" y="3" width="9" height="8" rx="1.5" />
+      <rect x="2" y="13" width="9" height="8" rx="1.5" />
+      <rect x="13" y="13" width="9" height="8" rx="1.5" />
+    </>
+  ),
   // Liste à cocher : le recueil des besoins.
   besoins: (
     <>

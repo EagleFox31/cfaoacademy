@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   canSeePlanning, CENTER_ROLES, centreSeul, lienPlanning, pageAccueil, pageCentreAutorisee,
-  planningMenu, PLANNING_HOME, PLANNING_ROLES, retourInterne,
+  PAGE_PORTAILS_CENTRE, planningMenu, PLANNING_HOME, PLANNING_ROLES, retourInterne,
 } from './planningAccess'
-
 describe('retour vers le portail', () => {
   it('n’accepte qu’un chemin interne', () => {
     expect(retourInterne('/portail/centre')).toBe('/portail/centre')
@@ -88,7 +87,11 @@ describe('pageCentreAutorisee', () => {
     expect(pageCentreAutorisee(PLANNING_HOME)).toBe(true)
     expect(pageCentreAutorisee(`${PLANNING_HOME}/country`)).toBe(true)
   })
+  it('la page des portails des profils du directeur', () => {
+    expect(pageCentreAutorisee(PAGE_PORTAILS_CENTRE)).toBe(true)
+  })
   it('rien d\'autre dans le portail', () => {
+    expect(pageCentreAutorisee('/portail/centre/portails/x')).toBe(false)
     expect(pageCentreAutorisee('/portail/assistance')).toBe(false)
     expect(pageCentreAutorisee('/portail/cle-repartition-bis')).toBe(false)
   })

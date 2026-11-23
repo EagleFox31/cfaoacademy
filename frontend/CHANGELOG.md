@@ -7,6 +7,10 @@ version sans sa section.
 
 ## [Unreleased]
 
+- Directeur du centre, page « Portails des profils » : 19 profils (directeur du centre et Expert Technique ajoutés), colonnes « Son périmètre » et « Ce qu'il voit de MEDACAP » (7 lettres, un clic sur une lettre allumée liste les fonctionnalités), un « ? » donne la description de chaque profil, l'apprenant est nommé « Apprenant ou Technicien ». « Voir son portail » ouvre, en lecture seule, le portail du coordinateur et celui de l'assistante. Dans un aperçu, la salutation ne nomme plus celui qui regarde.
+- Nouveau profil « Expert Technique » : même portail que le Key Instructor (Toyota) et le PIC (Suzuki), pour les marques d'engins, de bus, de chariots et de camions.
+- Directeur du centre : la carte « Voir les portails des profils » s'ouvre sur une page au format des détails du DPS, navbar conservée. Elle liste les 17 profils en 4 groupes (centre de formation, groupe, filiales, apprenants) avec ce que chacun voit et le nombre de comptes de chaque profil (« — » tant que le serveur ne répond pas). « Voir son portail » est annoncé, pas encore actif.
+
 ## [0.2.4] - 2026-11-23
 
 - Super admin : une carte « Voir les portails des profils » ouvre le portail d'un compte réel de ce profil (le premier par nom), en lecture seule, avec ses données. Sans compte de ce profil, l'aperçu s'ouvre avec les droits du super admin et le message le dit.

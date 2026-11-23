@@ -38,6 +38,16 @@ describe('rôles proposés', () => {
     expect(peutOuvrirApercu(['group_admin'])).toBe(false)
     expect(peutOuvrirApercu(undefined)).toBe(false)
   })
+
+  it('le directeur du centre ouvre l’aperçu des portails de son équipe, pas les autres', () => {
+    expect(peutOuvrirApercu(['center_director'])).toBe(false)
+    expect(peutOuvrirApercu(['center_director'], 'training_coordinator')).toBe(true)
+    expect(peutOuvrirApercu(['center_director'], 'center_assistant')).toBe(true)
+    expect(peutOuvrirApercu(['center_director'], 'dps')).toBe(false)
+    expect(peutOuvrirApercu(['center_director'], 'trainer')).toBe(false)
+    expect(peutOuvrirApercu(['dps'], 'training_coordinator')).toBe(false)
+    expect(peutOuvrirApercu(['superadmin'], 'dps')).toBe(true)
+  })
 })
 
 describe('rôle de la fenêtre', () => {

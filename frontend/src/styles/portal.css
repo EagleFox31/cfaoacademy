@@ -12474,7 +12474,7 @@ section#assistance:nth-of-type(even) .portal-section-title {
 .pv-card-action--soon {
   color: var(--muted);
   border-style: dashed;
-  cursor: not-allowed;
+  cursor: default;
 }
 /* Carte de marque au portail : mention du PDF à gauche, crayon à droite. */
 .pv-brand-portal-foot {
@@ -12488,3 +12488,83 @@ section#assistance:nth-of-type(even) .portal-section-title {
 /* « Modifier le catalogue » tant que l'édition n'existe pas. */
 .pv-voir--soon { gap: 8px; cursor: not-allowed; opacity: 0.85; }
 .pv-voir--soon:hover { transform: none; }
+
+/* Directeur du centre, « Portails des profils » : accès au portail d'un profil, à venir. */
+.portal-portails-acces { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.portal-portails-cta {
+  font: inherit;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: 1px dashed var(--rule);
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: default;
+}
+.portal-portails-table { table-layout: fixed; }
+.portal-portails-table th:nth-child(1), .portal-portails-table td:nth-child(1) { width: 22%; }
+.portal-portails-table th:nth-child(2), .portal-portails-table td:nth-child(2) { width: 9%; }
+.portal-portails-table th:nth-child(3), .portal-portails-table td:nth-child(3) { width: 19%; }
+.portal-portails-table th:nth-child(4), .portal-portails-table td:nth-child(4) { width: 28%; }
+.portal-portails-medacap { display: flex; gap: 4px; flex-wrap: wrap; }
+.portal-portails-lettre {
+  width: 30px; height: 30px; border-radius: 8px; padding: 0;
+  border: 1px solid var(--rule); background: transparent; color: var(--muted);
+  font: inherit; font-weight: 700; line-height: 1; opacity: .45; cursor: default;
+}
+.portal-portails-lettre.is-active { opacity: 1; cursor: pointer; border-color: var(--navy); color: var(--navy); background: var(--paper); }
+.portal-portails-lettre.is-active:hover, .portal-portails-lettre.is-active:focus-visible { background: var(--navy); color: var(--paper); }
+.portal-portails-lettre.is-open { background: var(--red); border-color: var(--red); color: #fff; }
+.portal-portails-lettre:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.portal-portails-medacap-inconnu { color: var(--muted); font-style: italic; }
+.portal-portails-table tr.portal-portails-sous-ligne td { width: auto; background: var(--paper-3); padding: 12px 18px 14px; }
+.portal-portails-sous-titre { margin: 0 0 6px; font-weight: 700; color: var(--navy); }
+.portal-portails-sous-ligne ul { margin: 0; padding-left: 20px; }
+.portal-portails-sous-ligne li { margin: 2px 0; }
+.portal-portails-table .portal-portails-nb { text-align: right; font-variant-numeric: tabular-nums; }
+.portal-portails-table td.portal-portails-nb { font-weight: 700; font-size: 1.15em; }
+.portal-portails-groupe-titre { display: flex; align-items: center; gap: 10px; }
+.portal-portails-groupe-titre svg { color: var(--red); flex-shrink: 0; }
+/* Portails des profils : le titre à côté du logo, pour gagner en hauteur. */
+.portal-dps-brand-header.portal-portails-header { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+.portal-dps-brand-header.portal-portails-header .article-header-logos {
+  grid-column: 1; min-height: 0; margin-bottom: 0; padding: 0 clamp(20px, 3vw, 36px) 0 0;
+  border-bottom: 0; border-right: 1px solid var(--rule); align-self: stretch;
+}
+.portal-dps-brand-header.portal-portails-header .article-header-logo--cfao { position: static; transform: none; height: 44px; max-width: 150px; }
+@media (max-width: 640px) {
+  .portal-dps-brand-header.portal-portails-header { grid-template-columns: minmax(0, 1fr); }
+  .portal-dps-brand-header.portal-portails-header .article-header-logos {
+    justify-content: flex-start; padding: 0 0 14px; border-right: 0; border-bottom: 1px solid var(--rule);
+  }
+}
+/* Portails des profils : un « ? » toujours visible ; au survol, la description du profil. */
+.portal-portails-profil { display: inline-flex; align-items: center; gap: 8px; }
+.portal-portails-aide {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--rule); background: #fff;
+  color: var(--red); font-size: 12px; font-weight: 700; line-height: 1; cursor: help;
+}
+.portal-portails-aide:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.portal-portails-bulle {
+  position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); z-index: 5;
+  width: max-content; max-width: min(440px, 70vw); padding: 10px 12px; border-radius: 10px;
+  background: #1c1c1e; color: #fff; font-size: 13px; font-weight: 500; line-height: 1.5; text-align: left;
+  white-space: normal; box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  visibility: hidden; opacity: 0; pointer-events: none; transition: opacity .15s ease;
+}
+.portal-portails-aide:hover .portal-portails-bulle,
+.portal-portails-aide:focus-visible .portal-portails-bulle { visibility: visible; opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .portal-portails-bulle { transition: none; } }
+/* La bulle dépasse du tableau : le cadre ne rogne plus, les coins restent arrondis. */
+.portal-table-wrap:has(> .portal-portails-table) { overflow: visible; }
+.portal-portails-table thead th:first-child { border-top-left-radius: 15px; }
+.portal-portails-table thead th:last-child { border-top-right-radius: 15px; }
+.portal-portails-table tbody tr:last-child td:first-child { border-bottom-left-radius: 15px; }
+.portal-portails-table tbody tr:last-child td:last-child { border-bottom-right-radius: 15px; }
+/* « Voir son portail » ouvert : un vrai bouton, plus le pointillé de l'attente. */
+.portal-portails-cta.is-active {
+  color: #fff; background: var(--red); border: 1px solid var(--red); text-decoration: none; cursor: pointer;
+}
+.portal-portails-cta.is-active:hover { filter: brightness(.92); }
+.portal-portails-cta.is-active:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }

@@ -48,6 +48,24 @@ describe('haut de page du formateur', () => {
     expect(host.querySelector('h1').textContent.replace(/\s+/g, ' ').trim()).toBe('Bonjour Aminata,')
   })
 
+  it('en aperçu, la salutation ne nomme pas celui qui regarde', () => {
+    host = document.createElement('div')
+    document.body.appendChild(host)
+    root = createRoot(host)
+    const titre = () => host.querySelector('h1').textContent.replace(/\s+/g, ' ').trim()
+    act(() => root.render(
+      <PortalGreetingBlock greetingKey="Bon après-midi" firstName="Laurent" primaryRole="center_assistant" hideOrient
+        user={{ roles: ['center_assistant'], apercu: 'center_assistant' }} centerHero={{ mode: 'assistant', countries: 35, brands: 22 }} />,
+    ))
+    expect(titre()).toBe('Bon après-midi,')
+    act(() => root.render(
+      <PortalGreetingBlock greetingKey="Bonjour" firstName="Laurent" primaryRole="learner" hideOrient
+        user={{ roles: ['learner'], apercu: 'learner' }} />,
+    ))
+    expect(titre()).toBe('Bonjour!')
+    expect(host.textContent).not.toContain('Laurent')
+  })
+
   it('phrase chiffrée générique : nombre inconnu = « — », jamais de chiffre inventé', () => {
     host = document.createElement('div')
     document.body.appendChild(host)

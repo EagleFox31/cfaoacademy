@@ -22,8 +22,21 @@ export const ROLES_APERCU = [
   'learner',
 ]
 
-export function peutOuvrirApercu(roles = []) {
-  return (roles ?? []).some(r => AUTORISES.has(r))
+/**
+ * Aperçus ouverts à un autre profil que le super admin : profil → portails
+ * qu'il peut regarder. Le directeur du centre voit ceux de son équipe, dont
+ * ses droits couvrent déjà les données.
+ */
+const APERCUS_DU_PROFIL = { center_director: ['training_coordinator', 'center_assistant'] }
+
+/**
+ * Sans `role` : droit d'ouvrir tous les aperçus (super admin). Avec `role` :
+ * droit d'ouvrir l'aperçu de ce portail-là.
+ */
+export function peutOuvrirApercu(roles = [], role = null) {
+  const tenus = roles ?? []
+  if (tenus.some(r => AUTORISES.has(r))) return true
+  return role !== null && tenus.some(r => APERCUS_DU_PROFIL[r]?.includes(role))
 }
 
 function roleValide(role) {

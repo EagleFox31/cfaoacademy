@@ -24,6 +24,7 @@ export const ROLE_PRIORITY = [
   'team_manager',
   'ki',
   'pic',
+  'technical_expert',
   'trainer',
   'center_director',
   'training_coordinator',
@@ -109,7 +110,7 @@ export const PORTAL_PROFILES = {
     key: 'ki',
     label: 'Key Instructor / PIC',
     description: 'Formations à dispenser, accompagnement des apprenants et évaluations réseau.',
-    roles: ['ki', 'pic'],
+    roles: ['ki', 'pic', 'technical_expert'],
   },
   superadmin: {
     key: 'superadmin',
@@ -161,7 +162,7 @@ export function resolveProfile(roles = []) {
   if (primary === 'team_manager') {
     return PORTAL_PROFILES.team_manager
   }
-  if (primary === 'ki' || primary === 'pic') {
+  if (primary === 'ki' || primary === 'pic' || primary === 'technical_expert') {
     return PORTAL_PROFILES.ki
   }
   if (CENTER_MODES[primary]) {

@@ -25,6 +25,7 @@ const Assistance = lazy(() => import('./pages/portal/Assistance.jsx'))
 const CleRepartition = lazy(() => import('./pages/portal/CleRepartition.jsx'))
 const CompetencyBulletin = lazy(() => import('./pages/portal/CompetencyBulletin.jsx'))
 const DpsBrandCompetencyDetail = lazy(() => import('./pages/portal/DpsBrandCompetencyDetail.jsx'))
+const CenterProfilePortalsDetail = lazy(() => import('./pages/portal/CenterProfilePortalsDetail.jsx'))
 const DpsTierCompetencyDetail = lazy(() => import('./pages/portal/DpsTierCompetencyDetail.jsx'))
 const DpsTechnicianPifDetail = lazy(() => import('./pages/portal/DpsTechnicianPifDetail.jsx'))
 const KiTeamgpDetail = lazy(() => import('./pages/portal/KiTeamgpDetail.jsx'))
@@ -87,6 +88,7 @@ export default function App() {
           <Route path="/profil" element={<Profil />} />
           <Route path="/portail/competences/:brandId" element={<DpsBrandCompetencyDetail />} />
           <Route path="/portail/niveaux/:tierId" element={<DpsTierCompetencyDetail />} />
+          <Route path="/portail/centre/portails" element={<CenterProfilePortalsDetail />} />
           <Route path="/portail/teamgp" element={<KiTeamgpDetail />} />
           <Route path="/portail/technicien/:technicianId/pif" element={<DpsTechnicianPifDetail />} />
           <Route path="/portail/assistance" element={<Assistance />} />

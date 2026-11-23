@@ -86,6 +86,7 @@ roles:
     - { name: learner,           description: Apprenant }
     - { name: ki,                description: Key Instructor }
     - { name: pic,               description: Partner Instructor Manager }
+    - { name: technical_expert,  description: "Expert Technique (engins, bus, chariots, camions)" }
     - { name: team_manager,      description: Manager chef d'équipe }
     - { name: workshop_manager,  description: Manager chef d'atelier }
     - { name: dps,               description: Directeur Pièces & Services }

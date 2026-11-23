@@ -310,6 +310,9 @@ export default function PortalGreetingBlock({
   const showPill = Boolean(filialeLabel && user && !dpsHero && !kiHero && !superadminHero && !managerHero && !centerHero && !statsHero)
   // Rôles dont la phrase chiffrée suit le prénom (« Bonsoir, Aminata, … »).
   const titreAvecSuite = Boolean(dpsHero || kiHero || managerHero || centerHero || statsHero)
+  // Aperçu d'un portail : ce n'est le portail de personne, la salutation ne nomme pas celui qui regarde.
+  const sansPrenom = Boolean(user?.apercu)
+  const ponctuation = titreAvecSuite ? ',' : superadminHero ? '.' : '!'
 
   const pays = user ? resolveProfilePays(user) : null
   const countryLabel = pays
@@ -343,19 +346,21 @@ export default function PortalGreetingBlock({
           const node = (
             <Fragment key={`g-${idx}`}>
               <span className="portal-word" style={{ '--wi': wi }}>
-                {isLast && !titreAvecSuite ? `${w},` : w}
+                {isLast && sansPrenom ? `${w}${ponctuation}` : isLast && !titreAvecSuite ? `${w},` : w}
               </span>{' '}
             </Fragment>
           )
           wi += 1
           return node
         })}
-        <span className="portal-word portal-header-firstname" style={{ '--wi': wi++ }}>
-          {firstName}
-        </span>
+        {!sansPrenom && (
+          <span className="portal-word portal-header-firstname" style={{ '--wi': wi++ }}>
+            {firstName}
+          </span>
+        )}
         {titreAvecSuite ? (
           <>
-            <span className="portal-word" style={{ '--wi': wi++ }}>,</span>{' '}
+            {!sansPrenom && <span className="portal-word" style={{ '--wi': wi++ }}>,</span>}{' '}
             {filialeSuffixWords.map((w, idx) => (
               <Fragment key={`f-${idx}`}>
                 <span className="portal-word" style={{ '--wi': wi++ }}>{w}</span>{' '}
@@ -363,10 +368,10 @@ export default function PortalGreetingBlock({
             ))}
           </>
         ) : superadminHero ? (
-          <span className="portal-word" style={{ '--wi': wi++ }}>.</span>
+          !sansPrenom && <span className="portal-word" style={{ '--wi': wi++ }}>.</span>
         ) : (
           <>
-            <span className="portal-word" style={{ '--wi': wi++ }}>!</span>
+            {!sansPrenom && <span className="portal-word" style={{ '--wi': wi++ }}>!</span>}
             {showPill && (
               <span
                 className="portal-header-greeting-org portal-word"

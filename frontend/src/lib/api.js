@@ -204,6 +204,9 @@ export const api = {
    */
   users: (cursor) => request(`/users/${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
 
+  /** Nombre de comptes par rôle : { counts: { code: n } }, sans nom. Directeur du centre / superadmin. */
+  userRoleCounts: () => request('/users/role-counts/'),
+
   /** Catalogue des rôles : [{ code, description }]. Superadmin / admin groupe. */
   systemRoles: () => request('/roles'),
 

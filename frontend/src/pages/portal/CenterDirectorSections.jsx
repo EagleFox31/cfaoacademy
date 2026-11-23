@@ -8,8 +8,8 @@ import PortalIconMedia from '../../components/PortalIconMedia.jsx'
 import PortalCardKpis from '../../components/PortalCardKpis.jsx'
 import HomeOfferSections from '../../components/HomeOfferSections.jsx'
 import { planningApi } from '../../lib/planningApi.js'
-import { useLocation } from 'react-router-dom'
-import { lienPlanning } from '../../utils/planningAccess.js'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { lienPlanning, PAGE_PORTAILS_CENTRE } from '../../utils/planningAccess.js'
 import { versBesoins } from '../../utils/urlBesoins.js'
 import cartographie from '../../data/academy/pays-cartographie.json'
 
@@ -33,6 +33,8 @@ export const SECTIONS_DIRECTEUR = ['besoins', 'devis', 'offres', 'calendrier', '
 export const SECTIONS_COORDINATEUR = ['besoins', 'devis', 'calendrier', 'rapports', 'administration']
 
 export const PLATEFORME = ['site', 'support', 'reports', 'portails']
+// Même adresse que celle ouverte par GardeCentre aux comptes du centre.
+export const PAGE_PORTAILS = PAGE_PORTAILS_CENTRE
 
 
 /**
@@ -133,6 +135,7 @@ const aSuivre = t =><span className="portal-status-chip todo">{t.chip_follow}</s
 export default function CenterDirectorSections({ t, access, sections = SECTIONS_DIRECTEUR }) {
   const { statut, annees } = useAnnees()
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const millesimes = annees.length ? annees.map(a => a.annee) : [new Date().getFullYear()]
   const avec = id => sections.includes(id)
   const derniere = annees[0]?.annee ?? millesimes[0]
@@ -282,11 +285,27 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
         <PortalStaggerGrid className={GRILLE_RAIL}>
           {PLATEFORME.map(id => (
             <div key={id} className="portal-card-anchor">
-              <PvCard
-                cardMedia={<PortalConstructionMedia label={t.under_construction} />} kicker={aSuivre(t)}
-                title={t[`dir_plateforme_${id}`]}
-                meta={t[`dir_plateforme_${id}_meta`]}
-              />
+              {id === 'portails' ? (
+                // Seule carte ouverte : la page des portails des profils, au format des détails du DPS.
+                <PvCard
+                  cardMedia={<PortalIconMedia icon="portails" tone="progress" />}
+                  title={t.dir_plateforme_portails}
+                  meta={t.dir_plateforme_portails_meta}
+                  cta={t.cta_open}
+                  hoverHint={t.cta_open}
+                  onClick={e => {
+                    const r = e?.currentTarget?.getBoundingClientRect?.()
+                    navigate(PAGE_PORTAILS, { state: { originRect: r ? { top: r.top, left: r.left, width: r.width, height: r.height } : null } })
+                  }}
+                  corner
+                />
+              ) : (
+                <PvCard
+                  cardMedia={<PortalConstructionMedia label={t.under_construction} />} kicker={aSuivre(t)}
+                  title={t[`dir_plateforme_${id}`]}
+                  meta={t[`dir_plateforme_${id}_meta`]}
+                />
+              )}
             </div>
           ))}
         </PortalStaggerGrid>

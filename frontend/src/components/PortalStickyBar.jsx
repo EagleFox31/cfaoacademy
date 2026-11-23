@@ -10,7 +10,7 @@ import { getPrimaryRole } from '../data/index.js'
  * Instructors et PIC. Les experts techniques du pôle Equipment s'y ajouteront
  * quand leur rôle existera.
  */
-const PASSENT_DES_TESTS = new Set(['learner', 'ki', 'pic'])
+const PASSENT_DES_TESTS = new Set(['learner', 'ki', 'pic', 'technical_expert'])
 
 const BRAND_LOGOS = {
   toyota:          '/assets/logos/toyota.png',

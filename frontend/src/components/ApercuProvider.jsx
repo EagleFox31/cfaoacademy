@@ -14,16 +14,19 @@ import {
 /**
  * Fenêtre d'aperçu du super admin (utils/apercuPortail.js) : toute l'application
  * y lit le compte avec le seul rôle de l'aperçu, les écritures sont refusées et
- * un bandeau rappelle ce qu'on regarde. Hors aperçu, ou pour un autre compte
- * que le super admin, rien ne change.
+ * un bandeau rappelle ce qu'on regarde. Hors aperçu, ou pour un compte qui
+ * n'a pas droit à cet aperçu, rien ne change.
  */
 export default function ApercuProvider({ children }) {
   const session = useContext(AuthContext)
   const [role, setRole] = useState(() => lireApercu())
-  const [cible] = useState(() => (role ? lireCible() : null))
-  const [nomCible] = useState(() => (cible ? lireNomCible() : null))
+  const [cibleDemandee] = useState(() => (role ? lireCible() : null))
+  const [nomDemande] = useState(() => (cibleDemandee ? lireNomCible() : null))
   const reel = session?.user
-  const actif = Boolean(role && reel && peutOuvrirApercu(reel.roles))
+  const actif = Boolean(role && reel && peutOuvrirApercu(reel.roles, role))
+  // « Vu comme » un compte réel : réservé au super admin, les autres n'ont que l'aperçu du rôle.
+  const cible = reel && peutOuvrirApercu(reel.roles) ? cibleDemandee : null
+  const nomCible = cible ? nomDemande : null
 
   // Posé dès le rendu, pas dans un effet : les effets des écrans enfants
   // passent avant ceux de ce composant et pourraient écrire avant le verrou.
