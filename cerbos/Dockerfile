@@ -7,10 +7,13 @@ LABEL org.opencontainers.image.title="CFAO Cerbos" \
       org.opencontainers.image.description="PDP Cerbos commun : socle, needs, comptes rendus, planning" \
       org.opencontainers.image.vendor="CFAO Mobility"
 
-COPY policies /policies
+# Hors de /policies : l'image de base le déclare en VOLUME. Un conteneur recréé sans `-V`
+# gardait le volume anonyme de l'ancienne version, donc ses anciennes politiques.
+COPY policies /cfao/policies
 COPY config.yaml /config/config.yaml
 
-CMD ["server", "--config=/config/config.yaml"]
+# config.yaml reste commun au dev (politiques montées sur /policies) : seule l'image change de dossier.
+CMD ["server", "--config=/config/config.yaml", "--set=storage.disk.directory=/cfao/policies"]
 
 # Version posée au build (scripts/build_image.py) ; en fin de fichier pour garder le cache.
 ARG VERSION=dev

@@ -1,0 +1,99 @@
+# Tests policy apercu_profil — « vu comme » réservé à superadmin, lecture seule, default-deny.
+name: ApercuProfilSuite
+description: Action voir_comme réservée au super admin ; toute autre action ou tout autre rôle refusé
+
+principals:
+  superadmin:
+    id: s_1
+    roles: ["superadmin"]
+    attr: { scopeNodes: ["groupe"] }
+  superadmin_en_apercu:
+    id: s_2
+    roles: ["superadmin"]
+    attr: { scopeNodes: ["groupe"], apercu: true, vu_par: "s_1" }
+  group_admin:
+    id: g_1
+    roles: ["group_admin"]
+    attr: { scopeNodes: ["groupe"] }
+  branch_admin:
+    id: a_1
+    roles: ["branch_admin"]
+    attr: { scopeNodes: ["groupe.cmr"] }
+  center_director:
+    id: d_1
+    roles: ["center_director"]
+    attr: { scopeNodes: ["groupe.cmr.douala"] }
+  training_coordinator:
+    id: c_1
+    roles: ["training_coordinator"]
+    attr: { scopeNodes: ["groupe.cmr.douala"] }
+  learner:
+    id: l_1
+    roles: ["learner"]
+    attr: { scopeNodes: ["groupe.cmr.douala"] }
+
+resources:
+  cible:
+    kind: apercu_profil
+    id: "0b7f7c1e-0000-4000-8000-000000000001"
+    attr: {}
+
+tests:
+  - name: le super admin peut voir comme un compte
+    input:
+      principals: ["superadmin"]
+      resources: ["cible"]
+      actions: ["voir_comme"]
+    expected:
+      - principal: superadmin
+        resource: cible
+        actions: { "voir_comme": EFFECT_ALLOW }
+
+  - name: aucune action d'écriture, même pour le super admin (négatif)
+    input:
+      principals: ["superadmin"]
+      resources: ["cible"]
+      actions: ["create", "update", "delete", "edit", "approve", "submit", "*"]
+    expected:
+      - principal: superadmin
+        resource: cible
+        actions:
+          create: EFFECT_DENY
+          update: EFFECT_DENY
+          delete: EFFECT_DENY
+          edit: EFFECT_DENY
+          approve: EFFECT_DENY
+          submit: EFFECT_DENY
+          "*": EFFECT_DENY
+
+  - name: pas de « vu comme » en cascade depuis un aperçu (négatif)
+    input:
+      principals: ["superadmin_en_apercu"]
+      resources: ["cible"]
+      actions: ["voir_comme"]
+    expected:
+      - principal: superadmin_en_apercu
+        resource: cible
+        actions: { "voir_comme": EFFECT_DENY }
+
+  - name: tout autre rôle est refusé (négatif)
+    input:
+      principals: ["group_admin", "branch_admin", "center_director", "training_coordinator", "learner"]
+      resources: ["cible"]
+      actions: ["voir_comme", "view", "list"]
+    expected:
+      - principal: group_admin
+        resource: cible
+        actions: { "voir_comme": EFFECT_DENY, "view": EFFECT_DENY, "list": EFFECT_DENY }
+      - principal: branch_admin
+        resource: cible
+        actions: { "voir_comme": EFFECT_DENY, "view": EFFECT_DENY, "list": EFFECT_DENY }
+      - principal: center_director
+        resource: cible
+        actions: { "voir_comme": EFFECT_DENY, "view": EFFECT_DENY, "list": EFFECT_DENY }
+      - principal: training_coordinator
+        resource: cible
+        actions: { "voir_comme": EFFECT_DENY, "view": EFFECT_DENY, "list": EFFECT_DENY }
+      - principal: learner
+        resource: cible
+        actions: { "voir_comme": EFFECT_DENY, "view": EFFECT_DENY, "list": EFFECT_DENY }

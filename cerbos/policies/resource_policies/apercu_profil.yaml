@@ -1,0 +1,17 @@
+# Ressource « apercu_profil » — « vu comme » (A2) : le super admin consulte un portail
+# avec l'identité résolue d'un compte réel, en LECTURE SEULE.
+# Une seule action, `voir_comme`, réservée à superadmin. Aucune action d'écriture n'est
+# déclarée : tout le reste tombe en default-deny. Un principal déjà en aperçu
+# (P.attr.apercu == true) ne peut pas enchaîner un second « vu comme ».
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: apercu_profil
+  rules:
+    - actions: ["voir_comme"]
+      effect: EFFECT_ALLOW
+      roles:
+        - superadmin
+      condition:
+        match:
+          expr: '!has(P.attr.apercu) || P.attr.apercu != true'
