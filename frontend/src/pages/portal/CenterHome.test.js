@@ -10,10 +10,17 @@ describe('chiffres du hero du coordinateur', () => {
   const cle = { statut: 'DRAFT', connues: 20, repondu: 30, points: [{ id: 1 }, { id: 2 }] }
   const futur = new Date().getFullYear() + 1
 
-  it('pendant le recueil : filiales sans réponse et points à corriger', () => {
+  it('pendant le recueil : filiales sans réponse', () => {
     expect(chiffresCoordinateur({ statut: 'pret', access: { review: true }, annee: futur, cle }))
-      .toEqual({ aRelancer: PAYS_ACADEMY - 30, aCorriger: 2, rapprochees: null, rapportsAttendus: null,
+      .toEqual({ aRelancer: PAYS_ACADEMY - 30, rapportsAttendus: null,
         formationsTerminees: null, stagiairesFormes: null })
+  })
+
+  it('plus de chiffre « devis des filiales » ni « sessions trop rapprochées » dans le hero', () => {
+    const ids = KPIS_COORDINATEUR.map(k => k.id)
+    expect(ids).not.toContain('a-corriger')
+    expect(ids).not.toContain('rapprochees')
+    expect(ids).toEqual(['a-relancer', 'rapports', 'terminees', 'formes'])
   })
 
   it('bilan de l’année : formations terminées et participations présentes, tels quels', () => {
@@ -36,13 +43,13 @@ describe('chiffres du hero du coordinateur', () => {
     expect(kpisCoordinateur(null)).toBe(KPIS_COORDINATEUR)
   })
 
-  it('recueil clos : plus personne à relancer ; sans droit de revue : « — »', () => {
+  it('recueil clos : plus personne à relancer', () => {
     expect(chiffresCoordinateur({ statut: 'pret', access: {}, annee: futur, cle: { ...cle, statut: 'FROZEN' } }))
-      .toMatchObject({ aRelancer: 0, aCorriger: null })
+      .toMatchObject({ aRelancer: 0 })
   })
 
   it('sans clé chargée, aucun chiffre inventé', () => {
-    expect(Object.values(chiffresCoordinateur({ statut: 'erreur', cle: null }))).toEqual([null, null, null, null, null, null])
+    expect(Object.values(chiffresCoordinateur({ statut: 'erreur', cle: null }))).toEqual([null, null, null, null])
   })
 
   it('chaque chiffre vise une rubrique de sa page et a ses 3 libellés', () => {

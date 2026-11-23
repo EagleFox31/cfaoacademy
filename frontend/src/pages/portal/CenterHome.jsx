@@ -111,8 +111,6 @@ function useEtatCle(apercu) {
 /** Chiffres cliquables du hero du coordinateur : une rubrique de sa page chacun. */
 export const KPIS_COORDINATEUR = [
   { id: 'a-relancer', valeur: 'aRelancer', label: 'hero_kpi_relance', cible: 'besoins' },
-  { id: 'a-corriger', valeur: 'aCorriger', label: 'hero_kpi_corriger', cible: 'devis' },
-  { id: 'rapprochees', valeur: 'rapprochees', label: 'hero_kpi_rapprochees', cible: 'calendrier' },
   { id: 'rapports', valeur: 'rapportsAttendus', label: 'hero_kpi_rapports', cible: 'rapports' },
   // Bilan de l'année, depuis la liste de présence : ton neutre, rien à faire.
   { id: 'terminees', valeur: 'formationsTerminees', label: 'hero_kpi_terminees', cible: 'rapports', neutre: true },
@@ -155,10 +153,10 @@ function usePresences(actif) {
 /**
  * Valeurs de ces chiffres, depuis la clé de la dernière année. Filiales à
  * relancer : seulement pendant le recueil (clos, il n'y a plus personne à
- * relancer). Sessions rapprochées et rapports : pas encore de source (« — »).
+ * relancer). Rapports : pas encore de source (« — »).
  */
-export function chiffresCoordinateur({ statut, access, annee, cle }, presences = null) {
-  const sans = { aRelancer: null, aCorriger: null, rapprochees: null, rapportsAttendus: null, ...chiffresPresences(presences) }
+export function chiffresCoordinateur({ statut, annee, cle }, presences = null) {
+  const sans = { aRelancer: null, rapportsAttendus: null, ...chiffresPresences(presences) }
   if (statut !== 'pret' || !cle) return sans
   const gelee = cle.statut === 'FROZEN'
   const attendus = paysAttendus({ annee, gelee }, { connus: cle.connues })
@@ -166,7 +164,6 @@ export function chiffresCoordinateur({ statut, access, annee, cle }, presences =
   return {
     ...sans,
     aRelancer: recueil.chip === 'progress' ? Math.max(0, attendus - cle.repondu) : 0,
-    aCorriger: access?.review ? cle.points.length : null,
   }
 }
 

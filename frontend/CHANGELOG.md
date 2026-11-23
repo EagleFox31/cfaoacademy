@@ -7,6 +7,8 @@ version sans sa section.
 
 ## [Unreleased]
 
+- Coordinateur : les chiffres « devis des filiales » et « formateurs avec deux sessions trop rapprochées » quittent le haut du portail.
+
 ## [0.2.2] - 2026-11-23
 
 - Super admin connecté par la connexion d'entreprise : son portail s'affiche enfin (en-tête, phrase chiffrée, cartes). Il était vide, seul le fond apparaissait. Sans réponse de l'API, les chiffres restent « — », jamais ceux de la démonstration.
