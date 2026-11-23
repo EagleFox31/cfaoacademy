@@ -28,7 +28,7 @@ describe('choisirAnnee', () => {
 describe('pastilleRythme', () => {
   it('distingue rythme tenu, sessions rapprochées et aucune session', () => {
     expect(pastilleRythme(formateur(3), fr)).toEqual({ chip: 'done', texte: 'Rythme tenu' })
-    expect(pastilleRythme(formateur(3, 2), fr)).toEqual({ chip: 'progress', texte: '2 sessions rapprochées' })
+    expect(pastilleRythme(formateur(3, 2), fr)).toEqual({ chip: 'alert', texte: '2 sessions rapprochées' })
     expect(pastilleRythme(formateur(0), fr)).toEqual({ chip: 'todo', texte: 'Aucune session' })
   })
 })

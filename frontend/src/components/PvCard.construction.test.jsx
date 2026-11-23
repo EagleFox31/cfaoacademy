@@ -47,6 +47,12 @@ describe('PvCard — carte sans destination', () => {
     expect(h.querySelector('.pv-card-construction')).toBeNull()
   })
 
+  it('la bulle de survol qui répète le bouton n’est pas affichée', () => {
+    expect(carte({ to: '/x', cta: 'Voir le détail', hoverHint: 'Voir le détail' }).querySelector('.pv-card-hover-hint')).toBeNull()
+    act(() => root.unmount()); host.remove()
+    expect(carte({ to: '/x', cta: 'Traiter', hoverHint: 'Traiter la priorité' }).querySelector('.pv-card-hover-hint')).not.toBeNull()
+  })
+
   it('une carte avec destination reste un lien, sans chantier', () => {
     const h = carte({ to: '/x', cta: 'Ouvrir' })
     expect(h.querySelector('a.pv-card')).not.toBeNull()

@@ -25,7 +25,7 @@ export default function DpsDashboard() {
   const { t } = useLocale('portal')
   const headerRef = useRef(null)
   const mockLms = LMS_BY_USER[user.demoKey]
-  const { lms, displayUser: scopeUser, filialeBrands, scopeLoading, insightsLoading, lastUpdatedAt } = useDpsFilialeScope(user, mockLms)
+  const { lms, displayUser: scopeUser, filialeBrands, scopeLoading, insightsLoading, liveUnavailable, lastUpdatedAt } = useDpsFilialeScope(user, mockLms)
   const [medacapProfile, setMedacapProfile] = useState(null)
 
   useEffect(() => {
@@ -69,6 +69,14 @@ export default function DpsDashboard() {
           t={t}
           updatedAt={lastUpdatedAt}
         />
+
+        {liveUnavailable && (
+          <div className="container" style={{ padding: '16px 32px 0' }}>
+            <div className="portal-plan-filter-empty portal-dps-live-unavailable" role="status">
+              {t.dps_data_unavailable}
+            </div>
+          </div>
+        )}
 
         <DpsCollaboratorResultsSection
           user={displayUser}

@@ -61,7 +61,7 @@ export default function TrainerSessionsSection({ t, locale, values }) {
           <PvCard
             {...visuelSession(s)}
             kicker={
-              <span className={`portal-status-chip ${s.statut === 'en_cours' ? 'progress' : 'todo'}`}>
+              <span className={`portal-status-chip ${s.statut === 'en_cours' ? 'open' : 'todo'}`}>
                 {s.statut === 'en_cours' ? t.session_running : t.session_upcoming}
               </span>
             }

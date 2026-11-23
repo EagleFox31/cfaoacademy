@@ -90,7 +90,7 @@ describe('RolePortal', () => {
     await rendu()
     const chips = [...host.querySelectorAll('section#prio .portal-status-chip')]
     expect(chips.map(c => [c.className, c.textContent])).toEqual([
-      ['portal-status-chip progress', '2 en attente'],
+      ['portal-status-chip alert', '2 en attente'],
       ['portal-status-chip done', '0 en attente'],
     ])
     expect(host.querySelector('section#prio').textContent).toContain('Rien')

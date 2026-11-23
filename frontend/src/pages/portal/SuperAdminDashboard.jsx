@@ -482,8 +482,7 @@ export const OPERATIONAL_PROFILES_CONFIG = [
     image: '/assets/respon_sav.jpg',
     scope: 'Filiale (Collaborateurs)',
     desc: 'Planification des campagnes d’évaluation, gestion des parcours certifiants, conformité et interface siège.',
-    status: 'CONFIGURABLE',
-    statusClass: 'progress',
+    statusClass: 'open',
     accentColor: '#059669',
     modulesCount: 'Campagnes & Annuaire',
     targetRoute: '/portail/admin/builder',
@@ -496,8 +495,7 @@ export const OPERATIONAL_PROFILES_CONFIG = [
     image: '/assets/formation_motorisation_centre_formation.jpg',
     scope: 'Ses sessions de formation',
     desc: 'Animation des sessions de formation, comptes rendus et suivi des stagiaires formés.',
-    status: 'CONFIGURABLE',
-    statusClass: 'progress',
+    statusClass: 'open',
     accentColor: '#d97706',
     modulesCount: 'Sessions & comptes rendus',
     targetRoute: '/portail/admin/builder',
@@ -510,8 +508,7 @@ export const OPERATIONAL_PROFILES_CONFIG = [
     image: '/assets/formation_motorisation_centre_formation.jpg',
     scope: 'Centre de formation entier',
     desc: 'Vue d’ensemble du centre : besoins en formations, devis des filiales, offres, calendrier, rapports et retour sur investissement.',
-    status: 'CONFIGURABLE',
-    statusClass: 'progress',
+    statusClass: 'open',
     accentColor: '#b45309',
     modulesCount: 'Vue d’ensemble du centre',
     targetRoute: '/portail/admin/builder',
@@ -587,7 +584,7 @@ function SuperAdminGroupe() {
         profilesLabel = `${profilesOk} OK · ${profilesDraft} DRAFT`
       }
 
-      let statusChipClass = progressPct >= 75 ? 'done' : progressPct >= 40 ? 'progress' : 'accent'
+      let statusChipClass = progressPct >= 75 ? 'done' : 'open'
       let statusChip = progressPct >= 75 ? `LIVE · ${progressPct}%` : `EN COURS · ${progressPct}%`
       if (app.id === 'global') {
         statusChip = `${progressPct}% DÉPLOYÉ`
@@ -1276,7 +1273,7 @@ function SuperAdminGroupe() {
               flagSrc="/assets/flags/cameroon.svg"
               countryFlag="Cameroun"
               statusChip={
-                <span className="portal-status-chip progress">
+                <span className="portal-status-chip open">
                   TESTS EN COURS
                 </span>
               }
@@ -1402,11 +1399,13 @@ function SuperAdminGroupe() {
                 cardMedia={(
                   <div className="pv-card-img portal-plan-entry-card-img portal-profile-media-img">
                     <img src={p.image} alt={p.title} loading="lazy" />
-                    <div className="portal-eval-img-tags">
-                      <span className={`portal-status-chip ${p.statusClass}`}>
-                        {p.status}
-                      </span>
-                    </div>
+                    {p.status && (
+                      <div className="portal-eval-img-tags">
+                        <span className={`portal-status-chip ${p.statusClass}`}>
+                          {p.status}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
                 desc={p.desc}

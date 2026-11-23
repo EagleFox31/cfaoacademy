@@ -40,7 +40,7 @@ export function choisirAnnee(charges) {
 export function pastilleRythme(f, t) {
   if (!f.sessions_count) return { chip: 'todo', texte: t.dir_formateurs_chip_none }
   if (f.close_sessions > 0) {
-    return { chip: 'progress', texte: remplir(t.dir_formateurs_chip_close, { n: f.close_sessions }) }
+    return { chip: 'alert', texte: remplir(t.dir_formateurs_chip_close, { n: f.close_sessions }) }
   }
   return { chip: 'done', texte: t.dir_formateurs_chip_ok }
 }
@@ -94,7 +94,7 @@ function SessionsFormateur({ f, annee, t, onClose }) {
                   <td>
                     {dates(s)}
                     {s.close && (
-                      <span className="portal-status-chip progress" title={t.dir_formateurs_close}>
+                      <span className="portal-status-chip alert" title={t.dir_formateurs_close}>
                         {t.dir_formateurs_close_chip}
                       </span>
                     )}

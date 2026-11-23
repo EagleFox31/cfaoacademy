@@ -742,8 +742,12 @@ section:nth-of-type(even) .portal-section-method-btn.is-open {
 }
 .portal-status-chip.todo     { background: var(--paper-3); color: var(--muted); }
 .portal-status-chip.open     { background: #eef3ff; color: #1a56db; }
-.portal-status-chip.progress { background: #fff3cc; color: #996600; }
-.portal-status-chip.done     { background: #edfaf4; color: #1aab5b; }
+.portal-status-chip.progress { background: #fff3cc; color: #8a5a00; }
+.portal-status-chip.done     { background: #edfaf4; color: #047857; }
+/* État clos : gris doux, le plus discret des états. */
+.portal-status-chip.ended    { background: #eef0f3; color: #475569; }
+/* Alerte (à faire, à traiter, en retard, à valider) : rouge orangé, distinct du jaune réservé au chantier. */
+.portal-status-chip.alert    { background: #fdeee8; color: #b42318; }
 .portal-status-chip.closed,
 .portal-status-chip.cloture  { background: #0e1126; color: #ffffff; }
 
@@ -12438,10 +12442,12 @@ section#assistance:nth-of-type(even) .portal-section-title {
     var(--icon-media-bg);
   color: var(--icon-media-fg);
 }
-.portal-icon-media--done { --icon-media-bg: #e3f5eb; --icon-media-fg: #1aab5b; }
+.portal-icon-media--done { --icon-media-bg: #e3f5eb; --icon-media-fg: #047857; }
 .portal-icon-media--progress { --icon-media-bg: #fff3cc; --icon-media-fg: #996600; }
 .portal-icon-media--open { --icon-media-bg: #e6edfc; --icon-media-fg: #1a56db; }
 .portal-icon-media--closed { --icon-media-bg: #e4e5eb; --icon-media-fg: #0e1126; }
+.portal-icon-media--ended { --icon-media-bg: #eef0f3; --icon-media-fg: #475569; }
+.portal-icon-media--alert { --icon-media-bg: #fdeee8; --icon-media-fg: #b42318; }
 .portal-icon-media__disc {
   display: grid;
   place-items: center;

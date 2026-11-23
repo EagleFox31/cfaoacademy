@@ -190,7 +190,8 @@ export default function PortalHeader({
   // forte, pour que la première section tienne dans l'écran sans défilement.
   const heroClassName = [showBrandsBand && 'portal-page-header--with-brands', isPlMedacapVariant(lms) && 'portal-page-header--compact']
     .filter(Boolean).join(' ')
-  const dpsHero = (showDpsBrandsStrip && !isManager)
+  // Phrase chiffrée du DPS même sans marque live : les chiffres passent à « — ».
+  const dpsHero = ((primaryRole === 'dps' || primaryRole === 'dop') && !isManager)
     ? {
         technicianCount: lms?.technicians?.length || lms?.kpis?.totalTechnicians,
         brandCount: filialeBrands?.length ?? 0,
@@ -274,7 +275,7 @@ export default function PortalHeader({
       firstName={user.firstName}
       user={user}
       primaryRole={primaryRole}
-      hideOrient={showBrandLevels || showDpsBrandsStrip || isSuperAdmin || isManager || Boolean(centerHero) || Boolean(statsHero)}
+      hideOrient={showBrandLevels || showDpsBrandsStrip || Boolean(dpsHero) || isSuperAdmin || isManager || Boolean(centerHero) || Boolean(statsHero)}
       dpsHero={dpsHero}
       statsHero={statsHero}
       superadminHero={superadminHero}

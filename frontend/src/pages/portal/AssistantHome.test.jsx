@@ -127,7 +127,7 @@ describe('prochaines sessions', () => {
 
   it('pastille : Prête, N choses à faire, ou rien si la liste est inconnue', () => {
     expect(pastilleSession({ aFaire: 0 })).toEqual({ cls: 'done', key: 'session_ready' })
-    expect(pastilleSession({ aFaire: 2 })).toEqual({ cls: 'progress', key: 'session_todo', n: 2 })
+    expect(pastilleSession({ aFaire: 2 })).toEqual({ cls: 'alert', key: 'session_todo', n: 2 })
     expect(pastilleSession({})).toBeNull()
   })
 

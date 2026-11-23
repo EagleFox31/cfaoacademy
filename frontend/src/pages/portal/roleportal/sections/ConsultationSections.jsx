@@ -20,12 +20,12 @@ const VISUEL = {
 }
 
 /** Seuils et couleurs des statuts : puces du portail (`portal-status-chip`
- * done / progress / todo) et couleurs de docs/PORTAL_COLORIMETRY.md
+ * done / open / alert / todo) et couleurs de docs/PORTAL_COLORIMETRY.md
  * (vert fait, orange en cours, rouge non fait). */
 const ETAT = [
   [80, 'done', 'state_done', '#1aab5b'],
-  [50, 'progress', 'state_progress', '#e67e00'],
-  [0, 'todo', 'state_late', 'var(--red)'],
+  [50, 'open', 'state_progress', '#e67e00'],
+  [0, 'alert', 'state_late', 'var(--red)'],
 ]
 const etat = valeur => ETAT.find(([seuil]) => (valeur ?? 0) >= seuil)
 
@@ -165,7 +165,7 @@ export function ATraiterSection({ t, values }) {
             const l = libellerPriorite(t, a)
             return (
               <Carte key={a.code} img={VISUEL[a.espace]}
-                statut={<Puce cls="progress">{l.nature}</Puce>}
+                statut={<Puce cls="alert">{l.nature}</Puce>}
                 titre={l.titre} contenu={l.detail} accent="#E3001B"
                 action={t.cta_treat} survol={t.hint_treat} />
             )
@@ -187,7 +187,7 @@ export function RecrutementSection({ t, values }) {
         titre={t.rec_new_title} contenu={t.rec_new_card}
         accent="#E3001B" action={t.rec_new_cta} survol={t.rec_new_hint} />
       <Carte img={VISUEL.recrutement}
-        statut={<Puce cls={enCours.nombre ? 'progress' : 'todo'}>
+        statut={<Puce cls={enCours.nombre ? 'open' : 'todo'}>
           {enCours.nombre ? tx(t, 'rec_running_chip', { n: enCours.nombre }) : t.rec_running_none}
         </Puce>}
         titre={t.rec_running_title}
@@ -366,7 +366,7 @@ export function PersonnesSection({ t, values }) {
         titre={t.people_add_title} contenu={t.people_add_card}
         accent="#E3001B" action={t.people_add_cta} survol={t.people_add_hint} />
       <Carte img="/assets/img_cards/test_theorie_expert.jpg"
-        statut={<Puce cls="progress">{tx(t, 'people_candidates_count', { n: personnes.candidats })}</Puce>}
+        statut={<Puce cls="open">{tx(t, 'people_candidates_count', { n: personnes.candidats })}</Puce>}
         titre={t.people_candidates_title} contenu={t.people_candidates_card}
         action={t.people_manage_cta} survol={t.people_candidates_hint} />
       <Carte img={VISUEL.personnes}

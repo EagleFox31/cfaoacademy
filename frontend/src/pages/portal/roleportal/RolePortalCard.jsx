@@ -31,7 +31,7 @@ export default function RolePortalCard({ card, construction, texte, value, obser
   const n = card.count == null ? null : value
   const lien = observer ? null : lienActif(card.link, n)
   const chip = texte(card.chip?.key)
-  const cls = card.chip?.cls ?? (n ? 'progress' : n === undefined ? 'todo' : 'done')
+  const cls = card.chip?.cls ?? (n ? 'alert' : n === undefined ? 'todo' : 'done')
   // Une route interne reste un vrai lien (ouverture dans un onglet, survol).
   const to = lien?.to
   return (

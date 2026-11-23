@@ -190,6 +190,44 @@ exports[`portails validés : sections et libellés figés > RH filiale (fr) 1`] 
 }
 `;
 
+exports[`portails validés : sections et libellés figés > RH filiale (fr) 2`] = `
+{
+  "accueil": "Bonjour Aminata, au sein de votre filiale motors Côte d'Ivoire",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "RH Filiale",
+      "titre": null,
+    },
+    {
+      "ancre": "recrutement",
+      "surtitre": "Campagnes et résultats",
+      "titre": "Recrutement",
+    },
+    {
+      "ancre": "competences",
+      "surtitre": "Mesure des compétences techniciens",
+      "titre": "Résultats de vos techniciens par niveau",
+    },
+    {
+      "ancre": "pif",
+      "surtitre": "Plans de formation",
+      "titre": "Plans de formations pluriannuels de vos techniciens",
+    },
+    {
+      "ancre": "besoins",
+      "surtitre": "Besoins en formation",
+      "titre": "Identification annuelle des besoins en formation",
+    },
+    {
+      "ancre": "personnes",
+      "surtitre": "Vos collaborateurs",
+      "titre": "Techniciens et candidats",
+    },
+  ],
+}
+`;
+
 exports[`portails validés : sections et libellés figés > RH filiale (pt) 1`] = `
 {
   "accueil": "Bom dia Aminata, na sua filial Motors do Costa do Marfim",
@@ -397,7 +435,7 @@ exports[`portails validés : sections et libellés figés > directeur du centre 
     {
       "ancre": "devis",
       "surtitre": "Répartition des coûts",
-      "titre": "Devis filiale",
+      "titre": "Devis des filiales",
     },
     {
       "ancre": "offres",
@@ -465,7 +503,75 @@ exports[`portails validés : sections et libellés figés > directeur du centre 
     {
       "ancre": "devis",
       "surtitre": "Repartição dos custos",
-      "titre": "Orçamento da filial",
+      "titre": "Orçamentos das filiais",
+    },
+    {
+      "ancre": "offres",
+      "surtitre": null,
+      "titre": "As nossas ofertas de formação técnica em Veículos Ligeiros.",
+    },
+    {
+      "ancre": "formations-equipment",
+      "surtitre": null,
+      "titre": "As nossas ofertas de formação técnica em Engins, Camiões, Autocarros e Empilhadores.",
+    },
+    {
+      "ancre": "formations-carrosserie",
+      "surtitre": null,
+      "titre": "As nossas ofertas de formação em Reparação de Carroçaria — todos os veículos.",
+    },
+    {
+      "ancre": "formations-sav-motors",
+      "surtitre": null,
+      "titre": "As nossas ofertas de formação em Organização SAV Motors.",
+    },
+    {
+      "ancre": "formations-sav-equipment",
+      "surtitre": null,
+      "titre": "As nossas ofertas de formação em Organização SAV Equipment.",
+    },
+    {
+      "ancre": "calendrier",
+      "surtitre": "Planeamento",
+      "titre": "Calendário anual de formação",
+    },
+    {
+      "ancre": "rapports",
+      "surtitre": "Balanço das formações",
+      "titre": "Relatórios de formação",
+    },
+    {
+      "ancre": "roi",
+      "surtitre": "Desempenho",
+      "titre": "Retorno do investimento da Academy",
+    },
+    {
+      "ancre": "plateforme",
+      "surtitre": "Ferramentas digitais",
+      "titre": "Estado de avanço da plataforma",
+    },
+  ],
+}
+`;
+
+exports[`portails validés : sections et libellés figés > directeur du centre de formation (pt) 2`] = `
+{
+  "accueil": "Bom dia Test,",
+  "sections": [
+    {
+      "ancre": "portail-hero",
+      "surtitre": "Dir. Centro de formação",
+      "titre": null,
+    },
+    {
+      "ancre": "besoins",
+      "surtitre": "Levantamento das necessidades",
+      "titre": "Identificação anual das necessidades de formação",
+    },
+    {
+      "ancre": "devis",
+      "surtitre": "Repartição dos custos",
+      "titre": "Orçamentos das filiais",
     },
     {
       "ancre": "offres",

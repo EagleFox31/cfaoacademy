@@ -68,6 +68,6 @@ describe('portail du formateur', () => {
 
   it('aucun texte français dans la version anglaise', async () => {
     await show('en')
-    expect(host.textContent).not.toMatch(/Comptes rendus|Formations à dispenser|À suivre/)
+    expect(host.textContent).not.toMatch(/Comptes rendus|Formations à dispenser|Bientôt/)
   })
 })

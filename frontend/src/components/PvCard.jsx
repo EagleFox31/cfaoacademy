@@ -41,7 +41,10 @@ export default function PvCard({
   const corner = sansDestination ? undefined : cornerProp
   const isInteractive = Boolean(onClick)
   const hasDualCta = Boolean(secondCta && secondCtaTo)
-  const resolvedHoverHint = sansDestination || hoverHint === false || !hoverHint ? null : hoverHint
+  // La bulle de survol n'est utile que si elle dit autre chose que le bouton.
+  const norm = v => (typeof v === 'string' ? v.trim().toLowerCase() : null)
+  const repeteBouton = Boolean(norm(hoverHint)) && [ctaProp, secondCta].some(c => norm(c) === norm(hoverHint))
+  const resolvedHoverHint = sansDestination || hoverHint === false || !hoverHint || repeteBouton ? null : hoverHint
   const primaryImg = img || DEFAULT_IMG
   const [resolvedImg, setResolvedImg] = useState(primaryImg)
   const [variantFailed, setVariantFailed] = useState(false)

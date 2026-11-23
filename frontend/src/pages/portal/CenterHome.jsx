@@ -37,6 +37,15 @@ const OUTILS = {
   prepare: { img: '/assets/img_cards/certification.jpg', vue: 'prepare' },
 }
 
+// Verbe + objet pour chaque écran de la clé (jamais un « Ouvrir » générique).
+const CTA_OUTIL = {
+  table: 'cta_tool_table',
+  country: 'dir_devis_cta',
+  themes: 'cta_tool_themes',
+  settings: 'dir_administration_prices_cta',
+  prepare: 'cta_tool_prepare',
+}
+
 const BIENTOT = {
   director: ['fill', 'sessions', 'trainers'],
   assistant: ['sessions', 'convocations', 'fill'],
@@ -255,9 +264,9 @@ export default function CenterHome({ mode = 'director' }) {
                       return (
                         <div className="portal-card-anchor">
                           <PvCard
-                            cardMedia={<PortalIconMedia icon="devis" tone={gelee ? 'closed' : 'progress'} />}
+                            cardMedia={<PortalIconMedia icon="devis" tone={gelee ? 'ended' : 'open'} />}
                             kicker={
-                              <span className={`portal-status-chip ${gelee ? 'closed' : 'progress'}`}>
+                              <span className={`portal-status-chip ${gelee ? 'ended' : 'open'}`}>
                                 {t[`status_${cle.statut}`] ?? cle.statut}
                               </span>
                             }
@@ -286,9 +295,9 @@ export default function CenterHome({ mode = 'director' }) {
                     {access?.review && (
                       <div className="portal-card-anchor">
                         <PvCard
-                          cardMedia={<PortalIconMedia icon="alerte" tone={aTraiter ? 'progress' : 'done'} />}
+                          cardMedia={<PortalIconMedia icon="alerte" tone={aTraiter ? 'alert' : 'done'} />}
                           kicker={
-                            <span className={`portal-status-chip ${aTraiter ? 'progress' : 'done'}`}>
+                            <span className={`portal-status-chip ${aTraiter ? 'alert' : 'done'}`}>
                               {remplir(t.review_chip, { n: aTraiter })}
                             </span>
                           }
@@ -327,14 +336,13 @@ export default function CenterHome({ mode = 'director' }) {
                         <PvCard
                           img={o.img}
                           kicker={
-                            <span className={`portal-status-chip ${modifiable ? 'progress' : 'open'}`}>
-                              {modifiable ? t.chip_edit : t.chip_open}
+                            <span className={`portal-status-chip open`}>
+                              {modifiable ? t.chip_ongoing : t.chip_open}
                             </span>
                           }
                           title={t[`tool_${id}`]}
                           meta={meta}
-                          cta={t.cta_open}
-                          hoverHint={t.cta_open}
+                          cta={modifiable ? t.dir_devis_cta_edit : t[CTA_OUTIL[id]]}
                           to={lienCle(o.vue, { annee, ...o.query })}
                           corner
                         />
@@ -347,8 +355,7 @@ export default function CenterHome({ mode = 'director' }) {
                       kicker={<span className="portal-status-chip open">{t.chip_open}</span>}
                       title={t.tool_needs}
                       meta={t.tool_needs_meta}
-                      cta={t.cta_open}
-                      hoverHint={t.cta_open}
+                      cta={t.dir_besoins_cta}
                       {...versBesoins(t.under_construction)}
                       corner
                     />

@@ -32,7 +32,7 @@ export default {
       head: { eyebrow: 'cr_eyebrow', title: 'cr_title' },
       nav: { labelKey: 'nav_sec_comptes_rendus' },
       cards: [
-        { id: 'nouveau', img: ENTREE.nouveau, count: null, chip: { cls: 'progress', key: 'cr_new_chip' },
+        { id: 'nouveau', img: ENTREE.nouveau, count: null, chip: { cls: 'open', key: 'cr_new_chip' },
           title: 'cr_new_title', meta: 'cr_new_meta', cta: 'cr_new_cta', hint: 'cr_new_hint',
           accent: '#E3001B', link: { module: '/portail/compte-rendu/nouveau' } },
         { id: 'brouillon', img: ENTREE.brouillon, count: null, chip: { cls: 'todo', key: 'cr_draft_chip' },

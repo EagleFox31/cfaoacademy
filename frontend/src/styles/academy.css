@@ -3986,16 +3986,12 @@ section:nth-of-type(even) .sessions-month-count {
   font-family: 'Space Grotesk', system-ui, sans-serif;
 }
 
-.portal-campaign-year-chip--future {
-  background: #eff6ff;
-  color: #1a56db;
-  border: 1px solid #bfdbfe;
-}
-
+/* L'année n'est qu'un repère : même teinte neutre pour les trois, l'état est porté par la pastille. */
+.portal-campaign-year-chip--future,
 .portal-campaign-year-chip--current {
-  background: #ecfdf5;
-  color: #047857;
-  border: 1px solid #a7f3d0;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }
 
 .portal-campaign-year-chip--past {

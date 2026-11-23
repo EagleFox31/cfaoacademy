@@ -8,7 +8,7 @@ import { resolveProfileIcon } from '../utils/resolveProfileIcon.js'
 function memberStatusChip(member, t) {
   if (member.certified) return { label: t.status_certified, className: 'done' }
   if (member.alert) return { label: t.tm_status_inactive, className: 'todo' }
-  return { label: t.status_progress, className: 'progress' }
+  return { label: t.status_progress, className: 'open' }
 }
 
 /** Bordure, barre de progression et avatar — une couleur par statut. */

@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { isMedacapEnabled, resolveMedacapUserQuery } from '../utils/medacapConfig.js'
 import {
-  mergeDpsScopeWithMock,
+  buildLmsFromDpsScope,
+  emptyDpsLms,
   resolveDpsFilialeBrandIds,
   sanitizeCollaboratorEvaluations,
 } from '../utils/dpsScope.js'
-import { mergeCmrEquipmentPlanningSummary } from '../data/dps/cmrEquipmentPlanning.js'
-import { hasDpsCompetencyDisplayData, readDpsScopeCache, writeDpsScopeCache } from '../utils/dpsScopeSessionCache.js'
+import { applyCmrEquipmentPifFallback } from '../data/dps/cmrEquipmentPlanning.js'
+import { readDpsScopeCache, writeDpsScopeCache } from '../utils/dpsScopeSessionCache.js'
 import {
   fetchDpsInsights,
   fetchDpsPif,
@@ -18,7 +19,23 @@ import {
 /** Au-delà : on coupe le badge « Mise à jour… » même si une requête traîne encore. */
 const INSIGHTS_UI_SOFT_MS = 3_000
 
-export default function useDpsFilialeScope(user, mockLms) {
+/**
+ * LMS du portail DPS à partir du seul live MEDACAP (ou de son cache de session).
+ * Sans live : LMS vide, les vues affichent « — ». Le PIF tombe sur l'extraction
+ * locale CMR seulement si dps-pif.php n'a pas répondu.
+ * `pageLms` ne sert qu'aux blocs hors compétences (alertes, tickets d'assistance).
+ */
+export function resolveDpsLms(scope, pifStatus, pageLms) {
+  const live = scope ? buildLmsFromDpsScope(scope) : null
+  const base = {
+    ...(live ?? emptyDpsLms()),
+    alerts: pageLms?.alerts ?? [],
+    filialeTickets: pageLms?.filialeTickets ?? [],
+  }
+  return pifStatus === 'failed' ? applyCmrEquipmentPifFallback(base) : base
+}
+
+export default function useDpsFilialeScope(user, pageLms) {
   const scopeQuery = useMemo(
     () => resolveMedacapUserQuery(user),
     [user?.medacapUserId, user?.medacapUsername, user?.medacapEmail],
@@ -27,6 +44,7 @@ export default function useDpsFilialeScope(user, mockLms) {
   const [scope, setScope] = useState(null)
   const [scopeLoading, setScopeLoading] = useState(needsScopeFetch)
   const [insightsLoading, setInsightsLoading] = useState(false)
+  const [pifStatus, setPifStatus] = useState(needsScopeFetch ? 'pending' : 'failed')
   const [lastUpdatedAt, setLastUpdatedAt] = useState(() => new Date())
 
   useEffect(() => {
@@ -47,28 +65,18 @@ export default function useDpsFilialeScope(user, mockLms) {
       setInsightsLoading(false)
     }
 
-    /** Cache session si utilisable, sinon null → le LMS tombe sur le mock local. */
-    function resolveOfflineScope(prev) {
-      if (prev?.brands?.length) {
-        const probe = mergeDpsScopeWithMock(prev, mockLms)
-        if (hasDpsCompetencyDisplayData(probe)) return prev
-      }
-      return null
-    }
+    const keepLivePif = status => (status === 'live' ? status : 'failed')
 
     if (!needsScopeFetch) {
       setScope(null)
       setScopeLoading(false)
       setInsightsLoading(false)
+      setPifStatus('failed')
       setLastUpdatedAt(new Date())
       return undefined
     }
 
     const cached = readDpsScopeCache(user)
-    const localReady = hasDpsCompetencyDisplayData(mockLms)
-      || (cached?.scope && hasDpsCompetencyDisplayData(
-        mergeDpsScopeWithMock(cached.scope, mockLms),
-      ))
 
     if (cached?.scope) {
       setScope({
@@ -77,33 +85,28 @@ export default function useDpsFilialeScope(user, mockLms) {
       })
       setScopeLoading(false)
       setInsightsLoading(true)
+      setPifStatus(cached.scope.pifLive ? 'live' : 'pending')
       if (cached.cachedAt) setLastUpdatedAt(new Date(cached.cachedAt))
-    } else if (localReady) {
-      /* Local-first : mock affiché tout de suite, refresh réseau en fond. */
-      setScope(null)
-      setScopeLoading(false)
-      setInsightsLoading(true)
-    } else {
-      setScopeLoading(true)
-      setInsightsLoading(false)
-      setScope(null)
-    }
-
-    if (localReady) {
       softTimer = window.setTimeout(() => {
         if (!cancelled) setInsightsLoading(false)
       }, INSIGHTS_UI_SOFT_MS)
+    } else {
+      setScopeLoading(true)
+      setInsightsLoading(false)
+      setPifStatus('pending')
+      setScope(null)
     }
 
     ;(async () => {
       const fast = await fetchDpsScope(scopeQuery, { insights: false, pif: false })
       if (cancelled) return
 
-      /* BD en ligne indispo / timeout / erreur → rester sur cache ou mock local. */
+      /* BD en ligne indispo / timeout / erreur → cache de session s'il existe, sinon rien. */
       if (!fast?.brands?.length) {
-        setScope(resolveOfflineScope)
+        setScope(prev => (prev?.brands?.length ? prev : null))
         setScopeLoading(false)
         setInsightsLoading(false)
+        setPifStatus(keepLivePif)
         clearSoftTimer()
         return
       }
@@ -144,15 +147,21 @@ export default function useDpsFilialeScope(user, mockLms) {
       }
 
       const applyPif = async () => {
+        let answered = false
         try {
           const pif = await fetchDpsPif(scopeQuery)
           if (cancelled || !pif) return
+          answered = true
           setScope(prev => {
             const merged = mergeScopePayload(prev, null, pif)
-            if (merged) writeDpsScopeCache(user, merged)
-            return merged
+            if (!merged) return merged
+            const withFlag = { ...merged, pifLive: true }
+            writeDpsScopeCache(user, withFlag)
+            return withFlag
           })
+          setPifStatus('live')
         } finally {
+          if (!cancelled && !answered) setPifStatus(keepLivePif)
           pendingEnrich -= 1
           finishEnrichIfIdle()
         }
@@ -165,15 +174,11 @@ export default function useDpsFilialeScope(user, mockLms) {
       cancelled = true
       clearSoftTimer()
     }
-  }, [user?.sub, needsScopeFetch, mockLms, scopeQuery])
+  }, [user?.sub, needsScopeFetch, scopeQuery])
 
   const lms = useMemo(
-    () => {
-      /* scope null = fallback mock local (BD offline ou pas encore de live). */
-      const merged = scope ? mergeDpsScopeWithMock(scope, mockLms) : mockLms
-      return mergeCmrEquipmentPlanningSummary(merged, mockLms)
-    },
-    [scope, mockLms],
+    () => resolveDpsLms(scope, pifStatus, pageLms),
+    [scope, pifStatus, pageLms],
   )
 
   const filialeBrandIds = useMemo(
@@ -192,6 +197,7 @@ export default function useDpsFilialeScope(user, mockLms) {
     filialeBrands: lms?.brandStats ?? [],
     scopeLoading,
     insightsLoading,
+    liveUnavailable: !scopeLoading && !scope,
     lastUpdatedAt,
   }
 }

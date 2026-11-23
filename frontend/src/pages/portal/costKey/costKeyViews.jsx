@@ -57,20 +57,34 @@ const shortDate = (iso, locale) => {
  * créneaux du module (vagues de Douala) tiennent dans « +N », listés au survol. */
 function SessionStart({ value, row, t, locale }) {
   if (!value) return '—'
-  const others = (row.grid_slots || []).filter(x => x.start_date !== value)
   return (
     <span className="sheet-c-start" title={row.dates_source === 'grid' ? t.grid_dates_hint : undefined}>
       {shortDate(value, locale)}
       {row.dates_source === 'grid' && <span className="sheet-c-planned">{t.grid_dates}</span>}
-      {others.length > 0 && (
-        <span className="sheet-c-more"
-          title={`${t.grid_other_slots} : ${others.map(x => `${shortDate(x.start_date, locale)} → ${shortDate(x.end_date, locale)}`).join(', ')}`}>
-          +{others.length}
-        </span>
-      )}
     </span>
   )
 }
+
+/**
+ * Une ligne par date de début de la grille : chaque session de la formation a sa ligne (code,
+ * formation, dates, formateur, lieu) ; les places de la fiche et leurs montants restent une
+ * seule cellule fusionnée sur ces lignes et ne comptent qu'une fois.
+ * `_session` renvoie à la session reçue, `_base` est sa clé, `_slot` le rang de la date.
+ */
+export function slotRows(sessions, keyOf) {
+  return sessions.flatMap((s, i) => {
+    const base = keyOf(s, i)
+    const slots = s.dates_source === 'grid' ? (s.grid_slots ?? []) : []
+    if (slots.length < 2) return [{ ...s, _session: s, _base: base, _slot: 0 }]
+    return slots.map((x, k) => ({
+      ...s, _session: s, _base: base, _slot: k, start_date: x.start_date, end_date: x.end_date,
+      trainers: x.trainers?.length ? x.trainers.join(', ') : s.trainers,
+    }))
+  })
+}
+
+/** Total du tableau : les dates supplémentaires d'une même session ne recomptent rien. */
+const sumOnce = fn => rows => sumOf([...new Set(rows.map(r => r._session ?? r))], fn)
 
 /** Filiale : drapeau local (aucun CDN) puis libellé ; sans drapeau, le code pays. */
 function CountryName({ code, label, children }) {
@@ -655,7 +669,9 @@ export function visibleNeeds(foot, all, visible, filters = {}) {
   return sumOf([...cells.values()], s => cellNeeds(s.country, s.brand_code))
 }
 
-function visibleFooter(foot, all, visible, filters) {
+function visibleFooter(foot, all, rows, filters) {
+  // Les lignes d'une même session redeviennent la session reçue (`visibleNeeds` compare les lignes).
+  const visible = [...new Set(rows.map(r => r._session ?? r))]
   if (!foot || visible.length === all.length) return foot
   const places = Object.fromEntries(PLACE_KEYS.map(k => [k, 0]))
   for (const s of visible) {
@@ -679,6 +695,10 @@ function visibleFooter(foot, all, visible, filters) {
 const editableCell = (target, field, input, extra) => ({
   input, target, field, raw: s => s.edit.raw[field], can: s => Boolean(s.edit && !s.edit.frozen), ...extra,
 })
+
+/** Colonne propre à la session : fusionnée sur les lignes de ses dates prévues. */
+const perSession = { merge: true, mergeKey: s => s._base }
+const sessionKey = (s, i) => s.edit?.allocation ?? `${s.code}-${s.start_date}-${i}`
 
 const ALL_COUNTRIES = 'all'
 
@@ -840,21 +860,22 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
     { id: 'trainers', header: t.col_trainers, type: 'text', width: 190,
       value: s => (Array.isArray(s.trainers) ? s.trainers.join(', ') : s.trainers),
       render: v => <TrainerNames value={v} /> },
-    // Drapeau du pays hôte : « Academy de Douala » porte celui du Cameroun.
+    // Drapeau du pays hôte : une session à l'Academy s'affiche « Academy » avec celui du Cameroun.
+    // La valeur saisie reste intacte (le site se déduit du texte du lieu côté planning).
     { id: 'location', header: t.col_location, type: 'text', width: 170, value: s => s.location,
-      render: (v, s) => <CountryName code={s.host} label={v} />,
+      render: (v, s) => <CountryName code={s.host} label={s.site === 'at_academy' ? t.site_at_academy : v} />,
       edit: canEdit ? editableCell('session', 'location', 'text', { hint: t.edit_shared }) : undefined },
-    { id: 'seats', header: t.col_allocated, type: 'int', total: 'sum', value: s => s.seats,
+    { id: 'seats', header: t.col_allocated, type: 'int', ...perSession, total: sumOnce(s => s.seats), value: s => s.seats,
       tone: (_, s) => (s.seat_status ? placeTone(s.seat_status) : null),
       edit: canEdit ? editableCell('allocation', 'seats', 'number', { min: 1, max: 32767 }) : undefined },
     // Montant par ligne : clé tarifée seulement, une clé à budget fixe n'a pas de prix de place.
     ...(sessions.some(s => s.key_cost != null)
-      ? [{ id: 'key_cost', header: t.col_key_cost, type: 'money', unit: t.currency, width: 296, total: 'sum', value: s => s.key_cost }]
+      ? [{ id: 'key_cost', header: t.col_key_cost, type: 'money', unit: t.currency, width: 296, ...perSession, total: sumOnce(s => s.key_cost), value: s => s.key_cost }]
       : []),
-    { id: 'trainee_lodging', header: t.col_trainee_lodging, type: 'money', unit: t.currency, width: 320, total: 'sum',
-      value: s => s.trainee_lodging },
-    { id: 'trainer_lodging', header: t.col_trainer_lodging, type: 'money', unit: t.currency, width: 290, total: 'sum',
-      value: s => s.trainer_lodging },
+    { id: 'trainee_lodging', header: t.col_trainee_lodging, type: 'money', unit: t.currency, width: 320, ...perSession,
+      total: sumOnce(s => s.trainee_lodging), value: s => s.trainee_lodging },
+    { id: 'trainer_lodging', header: t.col_trainer_lodging, type: 'money', unit: t.currency, width: 290, ...perSession,
+      total: sumOnce(s => s.trainer_lodging), value: s => s.trainer_lodging },
   ], [t, locale, reviews, sessions, canEdit, isAll, current])
 
   // Sans filtre, le pied renvoyé par le serveur fait foi ; sinon les indicateurs suivent le tableau.
@@ -894,6 +915,7 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
   }, [t, locale, isAll, sessions, global.brands, ckey.year])
   const facets = useMemo(() => buildFacets(sessions, facetDefs, filters), [sessions, facetDefs, filters])
   const shown = useMemo(() => applyFacets(sessions, facetDefs, filters), [sessions, facetDefs, filters])
+  const sheetData = useMemo(() => slotRows(shown, sessionKey), [shown])
   // Une seule ligne : la filiale se choisit à droite du titre, l'export rejoint les outils
   // de l'en-tête (slots de la page) ; les filtres vivent juste au-dessus des indicateurs.
   // Une filiale : sa vue, modifiable. Aucune ou plusieurs : la vue consolidée, filtrée.
@@ -968,8 +990,8 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
       )}
       {ready && data && (
         <div className={filtering || reloading ? 'ck-sheet-busy' : undefined} aria-busy={filtering || reloading || undefined}>
-          <DataSheet id="ck-country-niveau" columns={columns} rows={shown} frozen={isAll ? 4 : 3} onViewChange={setSheetRows} filtersTarget={filtersHost} exportRef={csvRef}
-            rowKey={(s, i) => s.edit?.allocation ?? `${s.code}-${s.start_date}-${i}`}
+          <DataSheet id="ck-country-niveau" columns={columns} rows={sheetData} frozen={isAll ? 4 : 3} onViewChange={setSheetRows} filtersTarget={filtersHost} exportRef={csvRef}
+            rowKey={s => `${s._base}#${s._slot}`}
             rowClass={s => (session && s.code === session ? 'is-focus' : undefined)} revealKey={reveal}
             onCellCommit={canEdit && !reloading ? sendCell : undefined} openHint={canEdit ? t.edit_hint : undefined}
             cellError={(s, c) => (problem?.cell === `${s.edit?.allocation}|${c.id}` ? problem.text : null)}

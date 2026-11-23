@@ -41,15 +41,15 @@ export const PAGE_PORTAILS = PAGE_PORTAILS_CENTRE
 
 
 /**
- * Titre d'une carte annuelle, l'année colorée selon le code des pastilles
- * d'année du portail DPS : à venir en bleu, en cours en vert, passée en gris.
+ * Titre d'une carte annuelle. L'année reste de la couleur du titre : la pastille
+ * porte seule l'état, pour un seul code couleur par carte.
  */
 function titreAnnee(texte, annee) {
-  const courante = new Date().getFullYear()
-  const temps = annee > courante ? 'future' : annee === courante ? 'current' : 'past'
-  const [avant, apres = ''] = texte.split('{year}')
-  return <>{avant}<span className={`portal-card-year portal-card-year--${temps}`}>{annee}</span>{apres}</>
+  return texte.replace('{year}', annee)
 }
+
+/** Pastille d'un état métier : bleu en cours, vert complet, gris clos. Le jaune reste au chantier. */
+const PASTILLE_ETAT = { progress: 'open', done: 'done', closed: 'ended' }
 
 /**
  * Une année du résumé serveur (/years/summary), dans les mots de l'écran. Aucun
@@ -75,7 +75,7 @@ export function anneeDuResume(r) {
  * le recueil est clos, même si des pays n'ont jamais répondu.
  */
 export function statutBesoins(a, anneeCourante = new Date().getFullYear()) {
-  if (a.gelee || a.annee <= anneeCourante) return { chip: 'closed', cle: 'chip_closed' }
+  if (a.gelee || a.annee <= anneeCourante) return { chip: 'closed', cle: 'chip_needs_closed' }
   if (a.connus > 0 && a.repondu >= a.connus) return { chip: 'done', cle: 'chip_complete' }
   return { chip: 'progress', cle: 'chip_ongoing' }
 }
@@ -158,7 +158,7 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
                 <PvCard
                   cardMedia={<PortalIconMedia icon="besoins" tone={teinteCarte(etat.chip)} />}
                   kicker={
-                    <span className={`portal-status-chip ${etat.chip}`}>{t[etat.cle]}</span>
+                    <span className={`portal-status-chip ${PASTILLE_ETAT[etat.chip]}`}>{t[etat.cle]}</span>
                   }
                   title={titreAnnee(t.dir_besoins_card, a.annee)}
                   meta={
@@ -169,8 +169,7 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
                       ]}
                     />
                   }
-                  cta={t.cta_open}
-                  hoverHint={t.cta_open}
+                  cta={t.dir_besoins_cta}
                   {...versBesoins(t.under_construction)}
                   corner
                 />
@@ -188,9 +187,9 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
               <PvCard
                 cardMedia={<PortalIconMedia icon="devis" tone={a.gelee ? 'closed' : 'done'} />}
                 kicker={
-                  <span className={`portal-status-chip ${a.gelee ? 'closed' : 'progress'}`}>
-                      {a.gelee ? t.chip_closed : access?.edit ? t.chip_edit : t.status_DRAFT}
-                    </span>
+                  <span className={`portal-status-chip ${a.gelee ? 'ended' : 'open'}`}>
+                    {a.gelee ? t.chip_closed : t.chip_ongoing}
+                  </span>
                 }
                 title={titreAnnee(t.dir_devis_card, a.annee)}
                 meta={
@@ -202,8 +201,7 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
                     ]}
                   />
                 }
-                cta={t.cta_open}
-                hoverHint={t.cta_open}
+                cta={!a.gelee && access?.edit ? t.dir_devis_cta_edit : t.dir_devis_cta}
                 to={lienPlanning('country', { annee: a.annee, pays: 'all' }, pathname)}
                 corner
               />
@@ -239,8 +237,7 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
               kicker={<span className="portal-status-chip open">{t.chip_open}</span>}
               title={t.dir_administration_offers}
               meta={t.dir_administration_offers_meta}
-              cta={t.cta_open}
-              hoverHint={t.cta_open}
+              cta={t.dir_administration_offers_cta}
               to="/formations"
               corner
             />
@@ -260,8 +257,7 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
                 kicker={<span className="portal-status-chip open">{t.chip_open}</span>}
                 title={t.dir_administration_prices}
                 meta={t.tool_settings_meta}
-                cta={t.cta_open}
-                hoverHint={t.cta_open}
+                cta={t.dir_administration_prices_cta}
                 to={lienPlanning('settings', { annee: derniere }, pathname)}
                 corner
               />
@@ -292,10 +288,10 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
                 // Seule carte ouverte : la page des portails des profils, au format des détails du DPS.
                 <PvCard
                   cardMedia={<PortalIconMedia icon="portails" tone="done" />}
+                  kicker={<span className="portal-status-chip open">{t.chip_open}</span>}
                   title={t.dir_plateforme_portails}
                   meta={t.dir_plateforme_portails_meta}
-                  cta={t.cta_open}
-                  hoverHint={t.cta_open}
+                  cta={t.dir_plateforme_portails_cta}
                   onClick={e => {
                     const r = e?.currentTarget?.getBoundingClientRect?.()
                     navigate(PAGE_PORTAILS, { state: { originRect: r ? { top: r.top, left: r.left, width: r.width, height: r.height } : null } })

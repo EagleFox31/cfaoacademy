@@ -1,5 +1,5 @@
 {
-  "chip_follow": "To follow",
+  "chip_follow": "Coming soon",
   "chip_read": "View only",
   "kpi_not_assessed": "technicians not assessed yet",
   "kpi_not_assessed_one": "technician not assessed yet",
@@ -40,7 +40,7 @@
   "state_done": "Up to date",
   "state_progress": "In progress",
   "state_late": "Behind",
-  "cta_country": "View country",
+  "cta_country": "View the subsidiary",
   "todo_eyebrow": "Priority — human resources",
   "todo_title": "To do",
   "todo_empty": "Nothing pending in this scope.",

@@ -99,8 +99,8 @@ describe('portail du centre de formation', () => {
     const a = { annee: 2027, gelee: false, repondu: 7, connus: 24 }
     expect(statutBesoins(a, 2026).cle).toBe('chip_ongoing')
     expect(statutBesoins({ ...a, repondu: 24 }, 2026).cle).toBe('chip_complete')
-    expect(statutBesoins({ ...a, gelee: true }, 2026).cle).toBe('chip_closed')
-    expect(statutBesoins({ ...a, annee: 2026, repondu: 20 }, 2026).cle).toBe('chip_closed')
+    expect(statutBesoins({ ...a, gelee: true }, 2026).cle).toBe('chip_needs_closed')
+    expect(statutBesoins({ ...a, annee: 2026, repondu: 20 }, 2026).cle).toBe('chip_needs_closed')
   })
 
   const LIGNE = {

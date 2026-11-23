@@ -196,7 +196,7 @@ describe('saisie dans le devis par filiale', () => {
 
   it('affiche les places face aux besoins et le taux de couverture des besoins', async () => {
     await show()
-    expect(host.textContent).toContain('Nombre de places attribuées / Besoins')
+    expect(host.textContent).toContain('Places attribuées / demandées (besoins)')
     expect(host.textContent).toContain('6 / 8')
     expect(host.textContent).toContain('2 besoins non couverts')
     expect(host.textContent).toContain('Taux de couverture des besoins')
@@ -256,6 +256,36 @@ describe('saisie dans le devis par filiale', () => {
         .toEqual(['Marque', 'Métier', 'Type', 'Lieu', 'Mois'])
       expect(host.querySelector('.sheet:not(.ck-filterbar) .sheet-toolbar')).toBeNull()
       expect(host.querySelector('.sheet-head .sheet-rownum-h .sheet-cols-btn')).not.toBeNull()
+    })
+
+    it('une session à l\'Academy affiche « Academy » avec le drapeau, sans « de Douala »', async () => {
+      await load([
+        row('a1', 'Toyota', 'toyota', 'Academy de Douala', 'at_academy', 4),
+        row('a2', 'Suzuki', 'suzuki', 'Madagascar', 'in_subsidiary', 3, { host: 'MG' }),
+      ])
+      const labels = [...host.querySelectorAll('.sheet-table tbody .ck-country-label')].map(l => l.textContent)
+      expect(labels).toEqual(expect.arrayContaining(['Academy', 'Madagascar']))
+      expect(labels).not.toContain('Academy de Douala')
+      expect(host.querySelector('.sheet-table tbody .ck-country .ck-flag, .sheet-table tbody .ck-country .ck-flag-code')).not.toBeNull()
+    })
+
+    it('une ligne par date de la grille : formation sur chaque ligne, une seule cellule de places', async () => {
+      const grid_slots = [
+        { start_date: '2027-01-04', end_date: '2027-01-08', trainers: ['A. Un'] },
+        { start_date: '2027-03-01', end_date: '2027-03-05', trainers: ['B. Deux'] },
+      ]
+      await load([row('a1', 'Suzuki', 'suzuki', 'Academy de Douala', 'at_academy', 4,
+        { start_date: '2027-01-04', dates_source: 'grid', grid_slots })], { ...footer, seats: 4 })
+      const lines = host.querySelectorAll('.sheet-table tbody tr')
+      expect(lines).toHaveLength(2)
+      expect(host.querySelector('.sheet-c-more')).toBeNull()
+      expect(lines[1].textContent).toContain('B. Deux')
+      const titres = [...lines].map(l => [...l.querySelectorAll('td')].find(td => td.textContent === 'Moteur'))
+      expect(titres.every(td => td && !td.hasAttribute('rowspan'))).toBe(true)
+      expect([...lines].map(l => [...l.querySelectorAll('td')].filter(td => td.textContent === '4').length))
+        .toEqual([1, 0])
+      expect([...lines[0].querySelectorAll('td')].find(td => td.textContent === '4').getAttribute('rowspan')).toBe('2')
+      expect(host.querySelector('.sheet-table tfoot').textContent).not.toContain('8')
     })
 
     it('garde les filtres sur un devis vide, sans aucun choix à proposer', async () => {

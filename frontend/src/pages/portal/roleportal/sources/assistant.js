@@ -29,7 +29,7 @@ export function sessionsProches(sessions, jour = aujourdhui(), jours = JOURS_A_V
 export function pastilleSession({ aFaire }) {
   if (aFaire == null) return null
   if (aFaire === 0) return { cls: 'done', key: 'session_ready' }
-  return { cls: 'progress', key: 'session_todo', n: aFaire }
+  return { cls: 'alert', key: 'session_todo', n: aFaire }
 }
 
 // cfao-planning n'expose pas encore les sessions datées (ni leurs inscrits,

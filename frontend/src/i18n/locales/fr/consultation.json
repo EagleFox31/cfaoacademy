@@ -1,5 +1,5 @@
 {
-  "chip_follow": "À suivre",
+  "chip_follow": "Bientôt",
   "chip_read": "Consultation",
   "kpi_not_assessed": "techniciens pas encore évalués",
   "kpi_not_assessed_one": "technicien pas encore évalué",
@@ -40,7 +40,7 @@
   "state_done": "À jour",
   "state_progress": "En cours",
   "state_late": "En retard",
-  "cta_country": "Voir le pays",
+  "cta_country": "Voir la filiale",
   "todo_eyebrow": "Priorité — ressources humaines",
   "todo_title": "À traiter",
   "todo_empty": "Rien en attente sur ce périmètre.",

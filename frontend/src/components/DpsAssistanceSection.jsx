@@ -81,7 +81,7 @@ function ticketStatusLabel(status, t) {
 
 function ticketStatusClass(status) {
   if (status === 'resolved') return 'done'
-  if (status === 'progress') return 'progress'
+  if (status === 'progress') return 'open'
   return 'open'
 }
 
@@ -192,7 +192,10 @@ function DpsAssistanceContactCard({ t, variant = 'dps' }) {
       to="/portail/assistance"
       cardMedia={<DpsContactCardMedia />}
       kicker={(
-        <span className="portal-dps-contact-kicker">{t.dps_assistance_eyebrow}</span>
+        <span className="pv-card-kicker-row">
+          <span className="portal-dps-contact-kicker">{t.dps_assistance_eyebrow}</span>
+          <span className="portal-status-chip open">{t.dps_chip_open}</span>
+        </span>
       )}
       title={t.dps_assistance_contact_title}
       meta={(
