@@ -190,6 +190,20 @@ def test_chaque_ecriture_recalcule_l_annee(world, fake_pdp, django_capture_on_co
     assert ensure_year_summaries() == 1 and _stored(2030) is None, "année sans clé : pas de ligne"
 
 
+def test_places_attribuees_lues_sur_les_fiches(world, fake_pdp, django_capture_on_commit_callbacks):
+    """Clé en préparation : un pays sans session compte les places en couleur de ses
+    fiches (besoins − sans couleur − rouge). Clé gelée : les sessions seules."""
+    with django_capture_on_commit_callbacks(execute=True):
+        PlannedAllocation.objects.filter(planned_session=world["session"], country__code="cm").delete()
+        year_summary.schedule(sessions={world["session"].pk})
+    # Motors : cm 6 − 2 rouges = 4 (aucune session), ci max(4 en session, 5 − 1 sans couleur) = 4 ;
+    # Equipment : cm 5 en session.
+    assert _stored(2026)["seats"] == 13 == _from_global(2026)["seats"]
+    with django_capture_on_commit_callbacks(execute=True):
+        freeze(world["motors"], "test")
+    assert _stored(2026)["seats"] == 9, "clé gelée : cm 0 + ci 4 + Equipment 5"
+
+
 def test_synthese_compte_une_filiale_une_fois():
     g = {"status": "DRAFT", "total_seats": 7, "brand_totals": {"a": {"needs": 3}, "b": {"needs": None}},
          "responses": [{"answered": ["cm", "ci"], "known": ["cm", "ci", "sn"]},

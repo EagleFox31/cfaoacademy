@@ -40,7 +40,10 @@ def synthese(g: dict, keys) -> dict:
     codes = lambda field: len({c for r in g["responses"] for c in r[field]})
     offered = [k.seats_offered for k in keys if k.seats_offered is not None]
     seats_offered = sum(offered) if offered else None
-    seats = g["total_seats"] or 0
+    # Places attribuées : celles des sessions et, tant que la clé n'est pas gelée, celles
+    # des fiches besoins (vert, bleu). Le rouge (reporté) ne compte pas : il reste dans
+    # la colonne « reportées » du devis.
+    seats = g.get("total_attributed", g["total_seats"]) or 0
     return {
         "status": g["status"],
         "answered": codes("answered"),

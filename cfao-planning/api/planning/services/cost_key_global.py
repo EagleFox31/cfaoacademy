@@ -115,6 +115,17 @@ def unassigned_by_country(unassigned: dict, code: str | None = None) -> int | di
     return totals[code] if code is not None else dict(totals)
 
 
+def _attributed(seats: int, cells: dict, unassigned: int, postponed: int, on_sheets: bool) -> int:
+    """Places attribuées d'un pays. Clé gelée : les places des sessions. Clé en préparation :
+    l'attribution se lit aussi sur les fiches besoins (cellule verte = filiale, bleue =
+    Douala) : besoins exprimés moins les places sans couleur et les reportées (rouge). Les
+    deux sources décrivent les mêmes places : la plus grande l'emporte, sans addition."""
+    if not on_sheets:
+        return seats
+    asked = sum(c["needs"] or 0 for c in cells.values())
+    return max(seats, asked - unassigned - postponed)
+
+
 def review_items(key: CostKeyYear, visible: set[str] | None = None) -> list[dict]:
     """Incohérences de source encore ouvertes sur cette clé, limitées aux pays du lecteur."""
     items = ReviewItem.objects.filter(status=ReviewItem.Status.OPEN,
@@ -148,6 +159,8 @@ def global_table(key: CostKeyYear, mode: Mode, needs: NeedsData,
     cells, brands = seats_by_cell(key, mode)
     places = places_by_country(key, mode, needs.postponed)
     unassigned = unassigned_by_country(needs.unassigned)
+    postponed = unassigned_by_country(needs.postponed)
+    on_sheets = not key.is_frozen and needs.available
     for (_, brand_code) in needs.by_cell:
         brands.setdefault(brand_code, brand_code.upper())
     brand_order = sorted(brands, key=lambda c: brands[c])
@@ -174,6 +187,8 @@ def global_table(key: CostKeyYear, mode: Mode, needs: NeedsData,
             "technicians": technicians, "needs": line.needs, "seats": line.seats,
             **{k: places[line.code][k] for k in PLACE_KEYS},
             "unassigned": unassigned.get(line.code, 0),
+            "attributed": _attributed(line.seats, row_cells, unassigned.get(line.code, 0),
+                                      postponed.get(line.code, 0), on_sheets),
             "coverage": _num(round(line.coverage, 4)) if line.coverage is not None else None,
             "share": float(round(line.share, 6)), "key_cost": _num(line.key_cost),
             "trainee_lodging": _num(line.trainee_lodging),
@@ -189,6 +204,7 @@ def global_table(key: CostKeyYear, mode: Mode, needs: NeedsData,
         "year": key.year, "pole": key.pole, "mode": str(mode), "status": key.status,
         "responses": [_responses(key.pole, answered, known, visible, _row_needs(rows, None))],
         "budget": _num(report.budget), "total_seats": report.total_seats,
+        "total_attributed": sum(r["attributed"] for r in rows),
         "hourly_cost": None if report.hourly_cost is None else round(float(report.hourly_cost), 2),
         "hourly_rate": _num(key.hourly_rate),
         "needs_source": needs.source, "warnings": needs.warnings,
@@ -239,7 +255,7 @@ def consolidate(tables: list[dict], visible: set[str] | None = None) -> dict:
             for k in ("technicians", "needs", "key_cost", "trainee_lodging",
                       "trainer_lodging", "total"):
                 acc[k] = _add(acc[k], r[k])
-            for k in ("seats", *PLACE_KEYS, "unassigned"):
+            for k in ("seats", *PLACE_KEYS, "unassigned", "attributed"):
                 acc[k] += r.get(k, 0)
             for b, c in r["cells"].items():
                 acc["cells"][b] = _merge_cell(acc["cells"].get(b), c)
@@ -275,7 +291,8 @@ def consolidate(tables: list[dict], visible: set[str] | None = None) -> dict:
                       for t in tables for r in t["responses"]],
         "status": "FROZEN" if all(t["status"] == "FROZEN" for t in tables) else "DRAFT",
         "budget": sum(t["budget"] or 0 for t in tables),
-        "total_seats": sum(t["total_seats"] for t in tables), "hourly_cost": None,
+        "total_seats": sum(t["total_seats"] for t in tables),
+        "total_attributed": sum(t["total_attributed"] for t in tables), "hourly_cost": None,
         "hourly_rate": None,
         "needs_source": sources.pop() if len(sources) == 1 else "mixed",
         "warnings": [w for t in tables for w in t["warnings"]],
