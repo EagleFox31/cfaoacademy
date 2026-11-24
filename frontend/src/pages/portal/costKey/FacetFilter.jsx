@@ -11,10 +11,13 @@ export const byOrder = list => {
   return (a, b) => rank(a) - rank(b)
 }
 
+// `get` renvoie une valeur, ou une liste quand une ligne en porte plusieurs (ex. marques).
+const valuesOf = (d, r) => [].concat(d.get(r) ?? []).filter(Boolean)
+
 /** Dans un filtre, un choix OU un autre ; entre filtres, tous à la fois. `except` ignore un filtre. */
 export function applyFacets(rows, defs, filters, except = null) {
   return rows.filter(r => defs.every(d =>
-    d.id === except || !filters[d.id]?.length || filters[d.id].includes(d.get(r))))
+    d.id === except || !filters[d.id]?.length || valuesOf(d, r).some(v => filters[d.id].includes(v))))
 }
 
 /**
@@ -28,8 +31,7 @@ export function buildFacets(rows, defs, filters) {
     // `values` : domaine fixe (ex. Présentiel / Distanciel), toujours proposé, à 0 si absent.
     const counts = new Map([...(d.values ?? []), ...(filters[d.id] ?? [])].map(v => [v, 0]))
     for (const r of applyFacets(rows, defs, filters, d.id)) {
-      const v = d.get(r)
-      if (v) counts.set(v, (counts.get(v) ?? 0) + 1)
+      for (const v of new Set(valuesOf(d, r))) counts.set(v, (counts.get(v) ?? 0) + 1)
     }
     const options = [...counts].map(([value, count]) => ({
       value, count, label: d.text ? d.text(value) : value, node: d.render?.(value), short: d.short?.(value),
@@ -143,7 +145,7 @@ export function FacetFilter({ t, facet, selected, onChange, single = false, noAl
       {open && (
         <div className={`ck-combo-panel ck-facet-panel${grid ? ' is-months' : ''}`} onKeyDown={onKey}>
           {grid ? (<>
-            <div className="ck-month-head"><strong>{facet.year}</strong> · {t.filter_month_caption}</div>
+            <div className="ck-month-head"><strong>{facet.year}</strong></div>
             <ul ref={listRef} id={listId} role="listbox" tabIndex={0} aria-multiselectable={!single} aria-label={label}
               aria-activedescendant={entries[active] ? `${listId}-${active}` : undefined} className="ck-month-grid">
               {entries.map((o, i) => [
@@ -155,12 +157,8 @@ export function FacetFilter({ t, facet, selected, onChange, single = false, noAl
                   aria-disabled={isOff(o) || undefined} data-value={o.value} title={o.all ? undefined : o.label}
                   className={`ck-month${o.all ? ' is-all' : ''}${i === active ? ' is-active' : ''}${isOn(o) ? ' is-on' : ''}${isOff(o) ? ' is-off' : ''}`}
                   onMouseEnter={() => setActive(i)} onMouseDown={e => { e.preventDefault(); toggle(o) }}>
-                  {o.all ? o.label : (
-                    <>
-                      <span className="ck-month-name">{o.short ?? o.label}</span>
-                      <span className="ck-facet-count">{o.count}</span>
-                    </>
-                  )}
+                  {/* Pas de compte sous le mois : il se lirait comme une date. Mois vide = grisé. */}
+                  {o.all ? o.label : <span className="ck-month-name">{o.short ?? o.label}</span>}
                 </li>,
               ])}
             </ul>

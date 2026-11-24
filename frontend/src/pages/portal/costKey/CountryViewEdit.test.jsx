@@ -389,7 +389,7 @@ describe('saisie dans le devis par filiale', () => {
       expect(option('2027-04').querySelector('.ck-month-name').textContent).not.toContain('2027')
       expect(option('2027-04').getAttribute('aria-disabled')).toBeNull()
       expect(option('2027-12').getAttribute('aria-disabled')).toBe('true')
-      expect(option('2027-12').querySelector('.ck-facet-count').textContent).toBe('0')
+      expect(host.querySelector('.ck-month-grid .ck-facet-count')).toBeNull() // un chiffre sous un mois se lit comme une date
       await act(async () => { option('2027-12').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })) })
       expect(option('2027-12').getAttribute('aria-selected')).toBe('false')
       await toggleFacet('Mois')

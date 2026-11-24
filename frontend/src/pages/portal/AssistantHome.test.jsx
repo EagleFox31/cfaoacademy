@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getCopy } from '../../i18n/index.js'
 import { getPortalNavSections } from '../../data/index.js'
 import { lienPlanning } from '../../utils/planningAccess.js'
-import { PART_DES_FILIALES } from './roleportal/configs/assistant.js'
+import { CALENDRIER, PART_DES_FILIALES } from './roleportal/configs/assistant.js'
 import { pastilleSession, sessionsProches } from './roleportal/sources/assistant.js'
 import AssistantSessionsSection from './roleportal/sections/AssistantSessionsSection.jsx'
 import PortalHeroKpis from '../../components/PortalHeroKpis.jsx'
@@ -106,13 +106,13 @@ describe("portail de l'assistante du centre", () => {
     expect(titres).toEqual([t.rooms_card, t.trainees_card, t.travel_card, t.invites_card, t.certificates_card])
   })
 
-  it('à consulter : calendrier annoncé, part des filiales ouvre la clé en lecture', async () => {
+  it('à consulter : le calendrier et la part des filiales s’ouvrent en lecture', async () => {
     await monter(<AssistantHome />)
     expect(texteDe('a-consulter')).toContain(t.calendar_card)
-    expect(texteDe('a-consulter')).toContain(t.under_construction)
     expect(PART_DES_FILIALES).toBe(lienPlanning('table', {}, '/portail'))
+    expect(CALENDRIER).toBe(lienPlanning('calendar', {}, '/portail'))
     const liens = [...host.querySelectorAll('section#a-consulter a[href]')].map(a => a.getAttribute('href'))
-    expect(liens).toEqual([PART_DES_FILIALES])
+    expect(liens).toEqual([CALENDRIER, PART_DES_FILIALES])
   })
 })
 

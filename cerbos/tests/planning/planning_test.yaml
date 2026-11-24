@@ -80,6 +80,12 @@ resources:
     attr:
       orgPath: ["groupe"]
       year: 2027
+  calendrier_2027:
+    kind: planning_calendar
+    id: "2027:MOTORS"
+    attr:
+      orgPath: ["groupe"]
+      year: 2027
   mes_sessions:
     kind: planning_my_sessions
     id: u_trainer
@@ -437,4 +443,35 @@ tests:
         actions: {view: EFFECT_ALLOW}
       - principal: chef_atelier_civ
         resource: thematiques
+        actions: {view: EFFECT_DENY}
+
+  - name: calendrier annuel pour l equipe du centre seulement
+    input:
+      principals: ["directeur_centre", "coordonnateur", "assistante", "superadmin", "dps_cmr", "formateur", "directeur_groupe", "apprenant"]
+      resources: ["calendrier_2027"]
+      actions: ["view"]
+    expected:
+      - principal: directeur_centre
+        resource: calendrier_2027
+        actions: {view: EFFECT_ALLOW}
+      - principal: coordonnateur
+        resource: calendrier_2027
+        actions: {view: EFFECT_ALLOW}
+      - principal: assistante
+        resource: calendrier_2027
+        actions: {view: EFFECT_ALLOW}
+      - principal: superadmin
+        resource: calendrier_2027
+        actions: {view: EFFECT_ALLOW}
+      - principal: dps_cmr
+        resource: calendrier_2027
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: calendrier_2027
+        actions: {view: EFFECT_DENY}
+      - principal: directeur_groupe
+        resource: calendrier_2027
+        actions: {view: EFFECT_DENY}
+      - principal: apprenant
+        resource: calendrier_2027
         actions: {view: EFFECT_DENY}

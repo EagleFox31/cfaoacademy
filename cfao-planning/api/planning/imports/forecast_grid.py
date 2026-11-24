@@ -31,6 +31,19 @@ from .calendar_grid import CalendarGridImporter, fill_key
 ACADEMY, SUBSIDIARY = "academy", "subsidiary"
 # Mêmes couleurs que `seed_referential` : jaune = Academy de Douala, orange = filiale.
 SITE_BY_FILL = {"rgb:FFFFFF00": ACADEMY, "rgb:FFFFC000": SUBSIDIARY}
+# Autres couleurs de la légende de la grille, gardées pour le calendrier seulement :
+# le prévisionnel de la clé ne lit que `SITE_BY_FILL`.
+KIND_BY_FILL = {
+    **SITE_BY_FILL,
+    "theme:9:0": "trainers", "rgb:FF92D050": "trainers", "rgb:FF70AD47": "trainers",
+    "rgb:FF66FF66": "support",
+    "rgb:FF00B0F0": "client", "rgb:FF0070C0": "client",
+    "theme:1:0": "leave",
+}
+HOLIDAY_FILL = "rgb:FF7030A0"
+HOLIDAY_SECTION = "JOURS FERIES"
+# Un jour férié peint toute la colonne du mois ; une case violette isolée n'en est pas un.
+_HOLIDAY_MIN_CELLS = 2
 POLE_BY_SHEET = {
     "calendrier-motors": Pole.MOTORS, "calendrier-mobility": Pole.MOTORS,
     "calendrier-equipment": Pole.EQUIPMENT,
@@ -103,7 +116,7 @@ class ForecastGridImporter(TabularImporter):
             if isinstance(value, int) and 1 <= value <= 31:
                 days[col] = value
         month_of = CalendarGridImporter._months(ws)
-        spans, covered = [], set()
+        spans, covered, painted = [], set(), {}
         for merge in ws.merged_cells.ranges:
             if merge.min_col not in days or merge.min_row <= header:
                 continue
@@ -115,8 +128,11 @@ class ForecastGridImporter(TabularImporter):
             for col in days:
                 cell = ws.cell(row, col)
                 # Une case peinte sans texte au 1er du mois peut être la suite d'une session.
+                key = fill_key(cell)
+                if key == HOLIDAY_FILL and row in month_of:
+                    painted[(month_of[row], days[col])] = painted.get((month_of[row], days[col]), 0) + 1
                 if (row, col) not in covered and (
-                        cell.value is not None or (col == day_one and fill_key(cell) in SITE_BY_FILL)):
+                        cell.value is not None or (col == day_one and key in KIND_BY_FILL)):
                     spans.append((row, col, col, cell.coordinate))
         if len(spans) > settings.IMPORT_MAX_ROWS:
             raise TooManyRows(f"Grille trop volumineuse : plus de {settings.IMPORT_MAX_ROWS} bandes.")
@@ -130,7 +146,7 @@ class ForecastGridImporter(TabularImporter):
             key = fill_key(cell)
             text = _clean(cell.value)
             month = month_of.get(row)
-            if key not in SITE_BY_FILL or month is None:
+            if key not in KIND_BY_FILL or month is None:
                 continue
             start_day, end_day = days[min_col], days.get(max_col, days[min_col])
             previous = self._previous_month_band(row, month, start_day, first_row, month_ends)
@@ -148,7 +164,7 @@ class ForecastGridImporter(TabularImporter):
                 result.extra.setdefault("out_of_month", []).append(f"{ws.title}!{coord}")
                 continue
             below = ws.cell(row + 1, min_col)
-            title = _clean(below.value) if fill_key(below) not in SITE_BY_FILL else ""
+            title = _clean(below.value) if fill_key(below) not in KIND_BY_FILL else ""
             if inherited and not title:
                 title = previous["title"]
             section, brands_raw, trainer_raw = self._line(ws, row, month_of)
@@ -161,6 +177,20 @@ class ForecastGridImporter(TabularImporter):
                 "fill_key": key, "section": section[:96], "brands_raw": brands_raw[:255],
                 "trainer_raw": trainer_raw[:128],
                 "fingerprint": _fingerprint(self.year, pole, ws.title, coord, start, end, text, trainer_raw),
+            })
+        self._holidays(ws, pole, painted, result)
+
+    def _holidays(self, ws, pole: str, painted: dict, result: ParseResult):
+        """Jours fériés : une bande d'un jour par date, sans formateur."""
+        for (month, day), count in sorted(painted.items()):
+            if count < _HOLIDAY_MIN_CELLS or day > calendar.monthrange(self.year, month)[1]:
+                continue
+            when, cell = date(self.year, month, day), f"{month:02d}-{day:02d}"
+            result.rows.append({
+                "year": self.year, "pole": pole, "sheet": ws.title, "cell": cell,
+                "start_date": when, "end_date": when, "text": "Jour férié", "title": "",
+                "fill_key": HOLIDAY_FILL, "section": HOLIDAY_SECTION, "brands_raw": "", "trainer_raw": "",
+                "fingerprint": _fingerprint(self.year, pole, ws.title, cell, when, when, "Jour férié", ""),
             })
 
     @staticmethod

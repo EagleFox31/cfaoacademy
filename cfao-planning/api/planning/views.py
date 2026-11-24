@@ -37,6 +37,7 @@ from .models import CostKeyYear, FrozenKeyError, YearSummary
 from .services.attendance import attendance_summary
 from .services.cost_key import Mode, compare
 from .services.forecast_schedule import schedule_for_key
+from .services.training_calendar import training_calendar
 from .services.cost_key_abc import abc_table, consolidate_abc
 from .services.cost_key_cells import MISSING, CellConflict, CellGone, CellInvalid, edit_cell
 from .services.cost_key_freeze import UNCHECKED, FreezeRefused, FreezeStale, freeze, last_edit_at
@@ -167,6 +168,7 @@ class AccessView(APIView):
             "edit": cerbos.check(p, "planning_cost_key", "*", attr, "edit_planned"),
             "import": cerbos.check(p, "planning_import", "*", attr, "apply"),
             "gaps": cerbos.check(p, "planning_catalog_gap", "*", attr, "view"),
+            "calendar": cerbos.check(p, "planning_calendar", "*", attr, "view"),
         })
 
 
@@ -560,6 +562,17 @@ class YearTrainerLoadView(APIView):
     def get(self, request, year):
         allow(request, "planning_trainer_load", "view", str(year), {"orgPath": ["groupe"], "year": year})
         return Response(trainer_load(year))
+
+
+class YearTrainingCalendarView(APIView):
+    """Calendrier annuel de formation d'un pôle : la grille « Plannings formateurs »."""
+
+    def get(self, request, year, pole):
+        pole = pole.upper()
+        if pole not in ("MOTORS", "EQUIPMENT"):
+            raise NotFound()
+        allow(request, "planning_calendar", "view", f"{year}:{pole}", {"orgPath": ["groupe"], "year": year})
+        return Response(training_calendar(year, pole))
 
 
 class YearAttendanceSummaryView(APIView):

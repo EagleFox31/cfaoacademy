@@ -38,6 +38,10 @@ describe('menu de la clé de répartition par rôle', () => {
     expect(planningMenu(ALL, { roles: ['training_coordinator'] })).toContain('prepare')
     expect(planningMenu(ALL, { roles: ['center_director', 'training_coordinator'] })).toContain('prepare')
   })
+  it('calendrier annuel : juste après les feuilles, seulement avec son droit', () => {
+    expect(planningMenu({ ...ALL, calendar: true })).toEqual(['table', 'country', 'calendar', 'themes', 'settings', 'prepare'])
+    expect(planningMenu({ view: true, calendar: false })).not.toContain('calendar')
+  })
   it('sans droit de lecture : aucun menu', () => {
     expect(planningMenu({ view: false })).toEqual([])
     expect(planningMenu(null)).toEqual([])

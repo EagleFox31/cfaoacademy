@@ -7,6 +7,13 @@ version sans sa section.
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-11-24
+
+- Calendrier annuel de formation : `GET years/<année>/calendar/<pôle>` renvoie la grille « Plannings formateurs » (lignes, bandes avec type, dates, nom complet du formateur, filiale et marque résolues, jours fériés de la grille). Droit Cerbos `planning_calendar` (directeur et coordinateur du centre, assistante, superadmin) ; `/access` renvoie `calendar`.
+- Import de la grille : le type de chaque bande (Douala, filiale, formateurs, client, support, congés) et les jours fériés (colonne violette) sont lus.
+- Charge des formateurs : des formations enchaînées sans jour ouvré entre elles comptent pour une seule ; les deux semaines de pause se comptent après la fin de la dernière.
+- Points à traiter du devis : une place attribuée sans date de session ni créneau dans la grille est signalée au coordinateur (« sans date »).
+
 ## [0.2.4] - 2026-11-23
 
 - Calendrier prévisionnel : une session à cheval sur deux mois (du 28/06 au 02/07) ne fait plus deux créneaux. La grille la dessine en deux bandes, une par colonne de mois ; elles sont recollées, formateurs réunis.

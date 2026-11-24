@@ -54,12 +54,27 @@ def _session_json(s: PlannedSession) -> dict:
     }
 
 
+def back_to_back(end: dt.date, start: dt.date) -> bool:
+    """Vrai quand `start` suit `end` sans aucun jour ouvré entre les deux (week-end seul)."""
+    day = dt.timedelta(days=1)
+    return start > end and working_days(end + day, start - day) == 0
+
+
 def _mark_close(sessions: list[dict]) -> int:
-    """Marque les sessions rapprochées (avant ou après) et renvoie leur nombre."""
+    """Marque les sessions rapprochées (avant ou après) et renvoie leur nombre.
+
+    Des sessions enchaînées sans jour ouvré entre elles forment une seule formation
+    (une formation de deux semaines, par exemple) : les deux semaines de pause se
+    comptent après la fin de la dernière.
+    """
     dated = [s for s in sessions if s["start_date"]]
-    for prev, nxt in zip(dated, dated[1:]):
-        if (nxt["start_date"] - prev["end_date"]).days < MIN_GAP_DAYS:
-            prev["close"] = nxt["close"] = True
+    last = None  # session qui termine la formation en cours
+    for nxt in dated:
+        if last is not None and not back_to_back(last["end_date"], nxt["start_date"]) \
+                and (nxt["start_date"] - last["end_date"]).days < MIN_GAP_DAYS:
+            last["close"] = nxt["close"] = True
+        if last is None or nxt["end_date"] >= last["end_date"]:
+            last = nxt
     return sum(s["close"] for s in sessions)
 
 

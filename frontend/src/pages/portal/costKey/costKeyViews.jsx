@@ -20,7 +20,7 @@ const brandLogo = b => resolveCardBrandBadge(b.label || b.code).logo
 
 const PADDED_LOGOS = new Set(['STELLANTIS', 'BYD'])
 
-function BrandMark({ brand }) {
+export function BrandMark({ brand }) {
   const [casse, setCasse] = useState(false)
   const logo = resolveCardBrandBadge(brand).logo
   if (!logo || casse) return brand
@@ -29,7 +29,7 @@ function BrandMark({ brand }) {
   return <img className={cls} src={logo} alt={brand} onError={() => setCasse(true)} />
 }
 
-function TrainerAvatar({ name }) {
+export function TrainerAvatar({ name }) {
   const [casse, setCasse] = useState(false)
   const photo = trainerPhoto(name)
   if (!photo || casse) return <span className="sheet-c-avatar is-initials" aria-hidden="true">{trainerInitials(name)}</span>
@@ -53,7 +53,7 @@ const shortDate = (iso, locale) => {
   return Number.isNaN(d.getTime()) ? String(iso) : d.toLocaleDateString(locale)
 }
 
-/** Date de début ; lue dans la grille du prévisionnel : mention « Prévu ». Les autres
+/** Date de début ; lue dans la grille du prévisionnel, l'info-bulle le dit. Les autres
  * créneaux du module (vagues de Douala) tiennent dans « +N », listés au survol. */
 function SessionStart({ value, row, t, locale }) {
   if (!value) return '—'
@@ -86,7 +86,7 @@ export function slotRows(sessions, keyOf) {
 const sumOnce = fn => rows => sumOf([...new Set(rows.map(r => r._session ?? r))], fn)
 
 /** Filiale : drapeau local (aucun CDN) puis libellé ; sans drapeau, le code pays. */
-function CountryName({ code, label, children }) {
+export function CountryName({ code, label, children }) {
   const [broken, setBroken] = useState(false)
   const flag = broken ? null : flagUrlForIso(code)
   return (
@@ -251,7 +251,7 @@ const seatSplit = (t, fmt, counts) => ({
 
 // Recherche et filtres décident de ce que comptent les indicateurs : ils se placent juste
 // au-dessus d'eux. Les outils propres au tableau (colonnes, copie, CSV) restent sur le tableau.
-function FilterBar({ hostRef, note, slots }) {
+export function FilterBar({ hostRef, note, slots }) {
   const bar = inline => (
     <div className={`sheet ck-filterbar${inline ? ' is-inline' : ''}`}>
       <div className="ck-filterbar-host" ref={hostRef} />
@@ -262,7 +262,7 @@ function FilterBar({ hostRef, note, slots }) {
   return slots?.filters ? createPortal(bar(true), slots.filters) : bar(false)
 }
 
-function Kpis({ items, large = false, paired = false }) {
+export function Kpis({ items, large = false, paired = false }) {
   return (
     <dl className={`ck-kpis${large ? ' ck-kpis--large' : ''}${paired ? ' ck-kpis--paired' : ''}`}>
       {items.map(k => (
@@ -992,7 +992,7 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
     { id: 'title', header: t.col_title, type: 'text', width: 260, value: s => s.title,
       edit: canEdit ? editableCell('session', 'title', 'text', { hint: t.edit_shared }) : undefined },
     // Le champ date natif (calendrier compris) ne tient pas dans 100 px.
-    // Une date lue dans la grille du prévisionnel porte « Prévu » ; corrigée ici, elle devient celle de la session.
+    // Une date lue dans la grille du prévisionnel, corrigée ici, devient celle de la session.
     { id: 'start', header: t.col_start, type: 'date', width: canEdit ? 170 : 150, value: s => s.start_date,
       render: (v, s) => <SessionStart value={v} row={s} t={t} locale={locale} />,
       edit: canEdit ? editableCell('session', 'start_date', 'date', { hint: t.edit_shared }) : undefined },

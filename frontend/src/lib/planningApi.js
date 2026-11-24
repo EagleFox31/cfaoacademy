@@ -47,6 +47,8 @@ export const planningApi = {
   // Agrégats de la liste de présence (aucun nom) ; loaded=false : liste non chargée.
   attendanceSummary: year => http.get(`/years/${year}/attendance-summary`),
   trainerLoad: year => http.get(`/years/${year}/trainer-load`),
+  /** Grille « Plannings formateurs » d'un pôle : `{ lines, bands, holidays, empty }`. */
+  calendar: (year, pole) => http.get(`/years/${year}/calendar/${pole.toLowerCase()}`),
   /** Sessions pas encore terminées du formateur connecté : `{ linked, sessions }`. */
   mySessions: () => http.get('/me/sessions'),
   /** Fiche du formateur connecté : `{ linked, trainer: { name, country, brands } }`. */

@@ -27,6 +27,7 @@ import { PoleMark } from '../../components/PoleIcon.jsx'
 import { AbcView, Banner, CountryView, SheetSkeleton, TableView, ThemesView, errText, reviewText } from './costKey/costKeyViews'
 import PrepareView from './costKey/PrepareView'
 import SettingsView from './costKey/SettingsView'
+import CalendarView from './costKey/CalendarView'
 
 const BASE = '/portail/cle-repartition'
 /** Vues qui savent montrer « Tous pôles » d'une année. */
@@ -192,6 +193,9 @@ export default function CleRepartition() {
       <PrepareView t={t} fmt={fmt} access={boot.access} ckey={ckey}
         onKeyChange={onKeyChange} onDataChanged={refreshSilently} onRefresh={refreshSilently} />
     )
+  } else if (view === 'calendar' && year) {
+    // La grille des formateurs se lit par pôle, sans clé : « Tous » ouvre Motors.
+    body = <CalendarView t={t} locale={locale} year={year} pole={(pole !== ALL && pole) || ckey?.pole || POLES[0]} slots={slots} />
   } else if (!ckey && keys.length && pole !== ALL) {
     const msg = menu.includes('prepare') ? t.no_key_pole_manage : t.no_key_pole
     body = <Banner tone="info">{msg.replace('{pole}', t[`pole_${pole}`] || pole).replace('{year}', year)}</Banner>

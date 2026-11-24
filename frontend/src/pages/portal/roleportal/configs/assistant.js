@@ -7,7 +7,7 @@
  *   2. Vos dossiers : Salles · Stagiaires · Logistique · Invitations ·
  *      Attestations, dans l'ordre du travail. En construction tant qu'aucune
  *      donnée n'existe (pas de fausses données).
- *   3. À consulter : calendrier de l'année (en construction) et part de
+ *   3. À consulter : calendrier de l'année (grille des formateurs) et part de
  *      chaque filiale (clé de répartition, en lecture).
  *
  * Constante pure : ni React, ni `data/index.js` (la navbar en dérive).
@@ -18,6 +18,8 @@
  * (utils/planningAccess.js importe data/index.js : l'importer ici bouclerait).
  * Égalité vérifiée par AssistantHome.test. */
 export const PART_DES_FILIALES = '/portail/cle-repartition/table?retour=%2Fportail'
+/** Calendrier annuel de formation (dernière année), même règle que ci-dessus. */
+export const CALENDRIER = '/portail/cle-repartition/calendar?retour=%2Fportail'
 
 export default {
   key: 'assistant',
@@ -54,7 +56,8 @@ export default {
       head: { eyebrow: 'lookup_eyebrow', title: 'lookup_title' },
       nav: { labelKey: 'nav_sec_assist_consulter', iconKey: 'sliders' },
       cards: [
-        { id: 'calendrier', construction: true, title: 'calendar_card', meta: 'calendar_meta' },
+        { id: 'calendrier', icon: 'calendrier', count: null, chip: { cls: 'open', key: 'chip_read' },
+          title: 'calendar_card', meta: 'calendar_meta', cta: 'cta_consult', link: { to: CALENDRIER } },
         // Refacturation : elle la consulte, le coordinateur et le directeur la modifient.
         { id: 'part-filiales', icon: 'devis', count: null, chip: { cls: 'open', key: 'chip_read' },
           title: 'shares_card', meta: 'shares_meta', cta: 'cta_consult',

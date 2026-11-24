@@ -7,7 +7,9 @@ from rest_framework.test import APIClient
 from core.auth.principal import Principal
 from planning import views
 from planning.models import CostKeyYear, PlannedSession
-from planning.services.trainer_load import my_sessions, my_trainer, trainer_load, working_days
+from planning.services.trainer_load import (
+    _mark_close, back_to_back, my_sessions, my_trainer, trainer_load, working_days,
+)
 from referential.models import Country, Trainer
 from referential.normalize import norm_key
 
@@ -65,6 +67,25 @@ def test_charge_par_formateur(annee):
                                       "country_label": "Cameroun"}
     assert (lucien["days"], lucien["sessions_count"], lucien["close_sessions"]) == (2, 2, 0)
     assert eugene["service_label"] == "Motors"
+
+
+def test_formation_sur_deux_semaines_la_pause_se_compte_apres():
+    def s(start, end):
+        return {"start_date": start, "end_date": end, "close": False}
+
+    # Deux semaines enchaînées (seul le week-end entre elles) = une formation, pas d'alerte.
+    deux_semaines = [s(D(2027, 3, 1), D(2027, 3, 5)), s(D(2027, 3, 8), D(2027, 3, 12))]
+    assert _mark_close(deux_semaines) == 0
+    # Pause de 2 semaines comptée après la fin de la 2e semaine : tenue au 26/03.
+    assert _mark_close(deux_semaines + [s(D(2027, 3, 26), D(2027, 3, 26))]) == 0
+    # Reprise 10 jours après la fin : la dernière semaine et la reprise sont rapprochées.
+    suite = [s(D(2027, 3, 1), D(2027, 3, 5)), s(D(2027, 3, 8), D(2027, 3, 12)), s(D(2027, 3, 22), D(2027, 3, 24))]
+    assert _mark_close(suite) == 2
+    assert [x["close"] for x in suite] == [False, True, True]
+    # Un jour ouvré libre entre deux sessions : ce n'est plus la même formation.
+    assert _mark_close([s(D(2027, 3, 1), D(2027, 3, 4)), s(D(2027, 3, 8), D(2027, 3, 9))]) == 2
+    assert back_to_back(D(2027, 3, 5), D(2027, 3, 8)) and back_to_back(D(2027, 3, 3), D(2027, 3, 4))
+    assert not back_to_back(D(2027, 3, 5), D(2027, 3, 5))  # chevauchement : alerte conservée
 
 
 def test_formateur_sans_session_reste_liste(referential):

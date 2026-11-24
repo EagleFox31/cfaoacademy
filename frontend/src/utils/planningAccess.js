@@ -80,6 +80,8 @@ export function planningMenu(access, { scoped = false, roles = [] } = {}) {
   // Une filiale vient d'abord voir SA filiale ; le groupe vient voir le tableau.
   // La vue « abc » existe toujours (AbcView) : retirée du menu pour l'instant, à la demande du métier.
   const items = scoped ? ['country', 'table'] : ['table', 'country']
+  // Calendrier de formation : la grille des formateurs, pour l'équipe du centre.
+  if (access.calendar) items.push('calendar')
   if (access.gaps) items.push('themes')
   if (access.manage) items.push('settings')
   // « Préparer l'année » (imports, validation des montants) relève du coordinateur : le directeur du centre n'a pas ce menu.

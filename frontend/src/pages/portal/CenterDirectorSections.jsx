@@ -217,11 +217,23 @@ export default function CenterDirectorSections({ t, access, sections = SECTIONS_
           <PortalStaggerGrid className={GRILLE_RAIL}>
             {millesimes.map(annee => (
               <div key={annee} className="portal-card-anchor">
-                <PvCard
-                  cardMedia={<PortalConstructionMedia label={t.under_construction} />} kicker={aSuivre(t)}
-                  title={titreAnnee(t[`dir_${id}_card`], annee)}
-                  meta={t[`dir_${id}_meta`]}
-                />
+                {/* Calendrier : la grille « Plannings formateurs » de l'année, mêmes couleurs que l'Excel. */}
+                {id === 'calendrier' && access?.calendar ? (
+                  <PvCard
+                    cardMedia={<PortalIconMedia icon="calendrier" tone="open" />}
+                    title={titreAnnee(t.dir_calendrier_card, annee)}
+                    meta={t.dir_calendrier_meta}
+                    cta={t.dir_calendrier_cta}
+                    to={lienPlanning('calendar', { annee }, pathname)}
+                    corner
+                  />
+                ) : (
+                  <PvCard
+                    cardMedia={<PortalConstructionMedia label={t.under_construction} />} kicker={aSuivre(t)}
+                    title={titreAnnee(t[`dir_${id}_card`], annee)}
+                    meta={t[`dir_${id}_meta`]}
+                  />
+                )}
               </div>
             ))}
           </PortalStaggerGrid>

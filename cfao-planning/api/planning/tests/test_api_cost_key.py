@@ -19,7 +19,7 @@ pytestmark = pytest.mark.django_db
 
 """Reflet de cerbos/policies/resource_policies/planning (testées à part par cerbos compile)."""
 ACADEMY = {"planning_cost_key": {"view", "list"}, "planning_catalog_gap": {"view"},
-           "planning_country_sheet": {"view"}}
+           "planning_country_sheet": {"view"}, "planning_calendar": {"view"}}
 PILOT = {**ACADEMY, "planning_cost_key": ACADEMY["planning_cost_key"] | {"create", "update", "freeze", "edit_planned"},
          "planning_import": {"template", "preview", "apply", "list", "view"}}
 OBSERVER = {"planning_cost_key": {"view", "list"}, "planning_catalog_gap": {"view"},
@@ -82,13 +82,13 @@ def url(key, suffix=""):
 def test_access_menu_par_role(db):
     assert client_for("training_coordinator").get("/api/v1/planning/access").json() == {
         "view": True, "manage": True, "freeze": True, "review": True, "edit": True, "import": True,
-        "gaps": True}
+        "gaps": True, "calendar": True}
     assert client_for("center_assistant").get("/api/v1/planning/access").json() == {
         "view": True, "manage": False, "freeze": False, "review": False, "edit": False,
-        "import": False, "gaps": True}
+        "import": False, "gaps": True, "calendar": True}
     assert client_for("workshop_manager").get("/api/v1/planning/access").json() == {
         "view": True, "manage": False, "freeze": False, "review": False, "edit": False,
-        "import": False, "gaps": False}
+        "import": False, "gaps": False, "calendar": False}
     assert client_for("learner").get("/api/v1/planning/access").json()["view"] is False
 
 
