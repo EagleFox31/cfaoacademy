@@ -143,6 +143,37 @@ export async function lireVersionEnLigne(url, faireFetch = globalThis.fetch) {
   }
 }
 
+/*
+ * Offre en cours, partagée entre la barre et le menu du compte : le menu la montre
+ * tant qu'elle existe, même après « Plus tard » (qui ne fait taire que la barre).
+ */
+let offreCourante = null
+const abonnes = new Set()
+
+export function publierOffre(offre) {
+  offreCourante = offre ?? null
+  abonnes.forEach((f) => f())
+}
+export function lireOffre() {
+  return offreCourante
+}
+export function abonnerOffre(f) {
+  abonnes.add(f)
+  return () => abonnes.delete(f)
+}
+
+/**
+ * Lit version.json et publie le résultat. Renvoie 'disponible', 'a-jour' ou 'echec'
+ * (lecture impossible : l'offre déjà connue est gardée).
+ */
+export async function rechercherMiseAJour({ url = '/version.json', locale = VERSION_LOCALE, faireFetch } = {}) {
+  const distant = await lireVersionEnLigne(url, faireFetch)
+  if (!distant || typeof distant !== 'object') return 'echec'
+  const offre = evaluer(distant, locale)
+  publierOffre(offre)
+  return offre ? 'disponible' : 'a-jour'
+}
+
 export function reporter(maintenant = Date.now()) {
   ecrire(CLE_PLUS_TARD, { jusqua: maintenant + RAPPEL_MS })
 }

@@ -7,5 +7,11 @@
   "rappel": "“Later”: we will remind you again in 30 minutes.",
   "titreCritique": "Update required",
   "texteCritique": "This version of the page is no longer supported. Refresh to keep working.",
+  "menuRechercher": "Check for updates",
+  "menuRecherche": "Checking…",
+  "menuAJour": "You have the latest version.",
+  "menuEchec": "Unable to check right now. Try again in a few minutes.",
+  "menuDisponible": "Update available",
+  "menuActualiser": "Refresh",
   "notes": {}
 }

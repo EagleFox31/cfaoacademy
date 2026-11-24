@@ -123,13 +123,15 @@ describe('MiseAJourDisponible', () => {
     expect(hote.textContent).toBe('')
   })
 
-  it('nouveau build : bandeau non bloquant avec version, rappel et deux choix', async () => {
+  it('nouveau build : barre en haut, non bloquante, rappel et deux choix', async () => {
     const recharger = vi.fn()
     await monter({ faireFetch: reponse({ module: 'portail', version: 'v0.2.6', build: 'b2' }), recharger })
     const bandeau = hote.querySelector('[role="status"]')
     expect(bandeau.textContent).toContain('Une nouvelle version est disponible')
-    expect(bandeau.textContent).toContain('Version v0.2.6')
-    expect(bandeau.textContent).toContain('30 minutes')
+    // Numéro technique : pas affiché à l'utilisateur (il ne lui dit rien).
+    expect(bandeau.textContent).not.toContain('0.2.6')
+    expect(bouton('Plus tard').title).toContain('30 minutes')
+    expect(document.documentElement.classList.contains('nv-actif')).toBe(true)
     expect(hote.querySelector('[role="alertdialog"]')).toBeNull()
     act(() => bouton('Actualiser maintenant').click())
     expect(recharger).toHaveBeenCalledOnce()
@@ -140,6 +142,7 @@ describe('MiseAJourDisponible', () => {
     await monter({ faireFetch })
     act(() => bouton('Plus tard').click())
     expect(hote.textContent).toBe('')
+    expect(document.documentElement.classList.contains('nv-actif')).toBe(false)
     expect(estReporte()).toBe(true)
     act(() => racine.unmount())
     await monter({ faireFetch })

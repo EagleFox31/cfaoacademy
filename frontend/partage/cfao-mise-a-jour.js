@@ -1,4 +1,4 @@
-/*! cfao-mise-a-jour.js — version 1.0.0
+/*! cfao-mise-a-jour.js — version 1.1.0
  *
  * « Une nouvelle version est disponible » pour les modules CFAO Academy (cr, needs,
  * planning, medacap…). Fichier autonome : un seul script, sans dépendance, FR/EN/PT.
@@ -21,11 +21,17 @@
  *   })
  *   CfaoMiseAJour.registerBeforeReload('brouillon', () => donnees)   // à garder
  *   CfaoMiseAJour.registerAfterReload('brouillon', (donnees) => {…}) // à remettre
+ *
+ * Affichage : barre pleine largeur tout en haut. Tant qu'elle est là, <html> porte la
+ * classe cfao-nv-actif et --cfao-maj-h vaut sa hauteur ; le <body> descend d'autant.
+ * Une nav collante ou fixe du module se cale dessous avec : top: var(--cfao-maj-h, 0px).
+ *
+ * 1.1.0 : barre en haut (au lieu d'une carte en bas), sans numéro de version affiché.
  */
 (function (global) {
   'use strict'
 
-  var VERSION = '1.0.0'
+  var VERSION = '1.1.0'
   var RAPPEL_MS = 30 * 60000
   var INTERVALLE_MS = 10 * 60000
   var ECART_MIN_MS = 60000
@@ -64,13 +70,19 @@
   }
 
   var STYLE = ''
-    + '.cfao-nv-bandeau{position:fixed;left:50%;bottom:20px;z-index:9000;transform:translateX(-50%);'
-    + 'width:min(720px,calc(100% - 32px));display:flex;align-items:center;gap:16px;box-sizing:border-box;'
-    + 'padding:14px 16px 14px 20px;border-radius:16px;border-left:4px solid #0b1f4b;background:#fff;'
-    + 'box-shadow:0 12px 36px rgba(10,18,40,.18);color:#0f172a;font:14px/1.45 system-ui,sans-serif}'
-    + '.cfao-nv-texte{flex:1;display:grid;gap:2px}.cfao-nv-texte strong{font-size:15px}'
-    + '.cfao-nv-texte span{color:#64748b}.cfao-nv-rappel{font-size:12px}'
+    // Barre d'information pleine largeur tout en haut ; la page descend de sa hauteur.
+    + '.cfao-nv-bandeau{position:fixed;top:0;left:0;right:0;z-index:9000;box-sizing:border-box;'
+    + 'display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 12px;padding:8px 16px;'
+    + 'background:#1d4ed8;color:#fff;box-shadow:0 2px 10px rgba(10,18,40,.18);font:14px/1.4 system-ui,sans-serif}'
+    + 'html.cfao-nv-actif body{padding-top:var(--cfao-maj-h,0px)}'
+    + '.cfao-nv-texte{margin:0}.cfao-nv-texte strong{font-weight:700;margin-right:8px}'
+    + '.cfao-nv-texte span{color:rgba(255,255,255,.88)}'
     + '.cfao-nv-actions{display:flex;gap:8px;flex-shrink:0}'
+    + '.cfao-nv-bandeau .cfao-nv-btn{height:34px;border-radius:8px;border-color:rgba(255,255,255,.55);'
+    + 'background:transparent;color:#fff}.cfao-nv-bandeau .cfao-nv-btn:hover{background:rgba(255,255,255,.12)}'
+    + '.cfao-nv-bandeau .cfao-nv-principal{border-color:#fff;background:#fff;color:#1d4ed8}'
+    + '.cfao-nv-bandeau .cfao-nv-principal:hover{background:#e8eefc}'
+    + '.cfao-nv-bandeau .cfao-nv-btn:focus-visible{outline-color:#fff}'
     + '.cfao-nv-btn{height:38px;padding:0 16px;border:1px solid #d5dae4;border-radius:10px;background:#fff;'
     + 'color:#0b1f4b;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}'
     + '.cfao-nv-btn:hover{background:#f3f5f9}.cfao-nv-btn:focus-visible{outline:2px solid #0b1f4b;outline-offset:2px}'
@@ -80,7 +92,7 @@
     + '.cfao-nv-modale{width:min(460px,100%);box-sizing:border-box;padding:28px;border-radius:20px;background:#fff;'
     + 'box-shadow:0 24px 60px rgba(10,18,40,.35);text-align:center;color:#0f172a;font:14px/1.5 system-ui,sans-serif}'
     + '.cfao-nv-modale h2{margin:0 0 8px;font-size:20px}.cfao-nv-modale p{margin:0 0 12px;color:#64748b}'
-    + '@media (max-width:640px){.cfao-nv-bandeau{flex-direction:column;align-items:stretch;bottom:12px}'
+    + '@media (max-width:640px){.cfao-nv-texte span{display:none}.cfao-nv-actions{width:100%}'
     + '.cfao-nv-actions .cfao-nv-btn{flex:1}}'
 
   var sauvegardes = {}
@@ -174,9 +186,22 @@
     return b
   }
 
+  // Hauteur de la barre, exposée en --cfao-maj-h pour décaler la page et la nav du module.
+  function mesurer() {
+    var racine = global.document.documentElement
+    if (element && element.className === 'cfao-nv-bandeau') {
+      racine.classList.add('cfao-nv-actif')
+      racine.style.setProperty('--cfao-maj-h', element.offsetHeight + 'px')
+    } else {
+      racine.classList.remove('cfao-nv-actif')
+      racine.style.removeProperty('--cfao-maj-h')
+    }
+  }
+
   function fermer() {
     if (element && element.parentNode) element.parentNode.removeChild(element)
     element = null
+    mesurer()
   }
 
   function afficher(offre) {
@@ -186,6 +211,7 @@
       st.id = 'cfao-nv-style'
       st.textContent = STYLE
       doc.head.appendChild(st)
+      global.addEventListener('resize', mesurer)
     }
     fermer()
     var t = textes()
@@ -211,20 +237,23 @@
     element = noeud('div', 'cfao-nv-bandeau')
     element.setAttribute('role', 'status')
     element.setAttribute('aria-live', 'polite')
-    var zone = noeud('div', 'cfao-nv-texte')
+    // Pas de numéro de version ici : il ne dit rien à l'utilisateur.
+    var zone = noeud('p', 'cfao-nv-texte')
     zone.appendChild(noeud('strong', '', t.titre))
-    zone.appendChild(noeud('span', '', t.texte + (version ? ' · ' + version : '')))
-    if (notes) zone.appendChild(noeud('span', '', notes))
-    zone.appendChild(noeud('span', 'cfao-nv-rappel', t.rappel))
+    zone.appendChild(noeud('span', '', notes || t.texte))
     var actions = noeud('div', 'cfao-nv-actions')
     actions.appendChild(bouton(t.actualiser, true, actualiser))
-    actions.appendChild(bouton(t.plusTard, false, function () {
+    var plusTard = bouton(t.plusTard, false, function () {
       ecrire(cle('plus-tard'), { jusqua: Date.now() + RAPPEL_MS })
       fermer()
-    }))
+    })
+    plusTard.title = t.rappel
+    plusTard.setAttribute('aria-label', t.plusTard + ' — ' + t.rappel)
+    actions.appendChild(plusTard)
     element.appendChild(zone)
     element.appendChild(actions)
     doc.body.appendChild(element)
+    mesurer()
   }
 
   function verifier() {
