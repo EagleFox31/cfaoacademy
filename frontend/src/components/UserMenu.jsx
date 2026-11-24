@@ -9,13 +9,17 @@ import { countryCodeFromName, flagCdnUrlForCountry } from '../utils/countryFlag.
 import { localizedCountryName } from '../utils/localizeGeo.js'
 import { NotificationItems } from './PortalNotificationsBell.jsx'
 import ProfileAvatar from './ProfileAvatar.jsx'
+import MenuMiseAJour, { useOffreMiseAJour } from './MenuMiseAJour.jsx'
 import {
-  ActivityIcon, BellIcon, ChevronIcon, GlobeIcon, LifeBuoyIcon, LogOutIcon, MilestoneIcon, UserIcon,
+  ActivityIcon, BellIcon, ChevronIcon, GlobeIcon, LifeBuoyIcon, LightbulbIcon, LogOutIcon, MilestoneIcon, UserIcon,
 } from './portalSectionIcons.jsx'
 
 const ICONS = {
   user: UserIcon, bell: BellIcon, lifebuoy: LifeBuoyIcon, milestone: MilestoneIcon, globe: GlobeIcon, activity: ActivityIcon,
+  lightbulb: LightbulbIcon,
 }
+
+const compte = n => (n > 9 ? '9+' : n)
 
 /**
  * Ce qu'on affiche du compte : nom, e-mail, fonction, pays et drapeau. Repris par
@@ -72,7 +76,7 @@ export function AccountBadges({ summary }) {
  * Les options du menu du compte (USER_MENU_OPTIONS), filtrées par rôle.
  * Une option `panel: 'notifications'` déplie les alertes sur place.
  */
-export function UserMenuItems({ user, items = USER_MENU_DEFAULT, notifications, onNavigate, variant = 'desktop' }) {
+export function UserMenuItems({ user, items = USER_MENU_DEFAULT, notifications, propositions, onNavigate, variant = 'desktop' }) {
   const { t } = useLocale('profile')
   const { pathname, search, hash } = useLocation()
   const [panel, setPanel] = useState(null)
@@ -80,21 +84,24 @@ export function UserMenuItems({ user, items = USER_MENU_DEFAULT, notifications, 
   const alerts = notifications ?? []
   const itemClass = mobile ? 'nav-mobile-foot-link nav-user-menu-option' : 'nav-user-dropdown-item'
 
-  return userMenuItems(user.roles ?? [], items).map(option => {
+  const options = userMenuItems(user.roles ?? [], items).map(option => {
     const Icon = ICONS[option.icon] ?? UserIcon
     const label = t[option.labelKey]
+    const nombre = {
+      notifications: alerts.length,
+      propositions: propositions?.nouvelles?.length ?? 0,
+    }[option.id] ?? 0
     const inner = (
       <>
         <Icon size={16} className="nav-user-dropdown-item-icon" />
         <span className="nav-user-dropdown-item-label">{label}</span>
-        {option.panel === 'notifications' && alerts.length > 0 ? (
-          <span className="nav-user-dropdown-count">{alerts.length > 9 ? '9+' : alerts.length}</span>
-        ) : null}
+        {nombre > 0 ? <span className="nav-user-dropdown-count">{compte(nombre)}</span> : null}
       </>
     )
 
     if (option.panel) {
       const open = panel === option.id
+      const basculer = () => setPanel(open ? null : option.id)
       return (
         <div key={option.id} className="nav-user-dropdown-group">
           <button
@@ -102,12 +109,12 @@ export function UserMenuItems({ user, items = USER_MENU_DEFAULT, notifications, 
             className={itemClass}
             role={mobile ? undefined : 'menuitem'}
             aria-expanded={open}
-            onClick={() => setPanel(open ? null : option.id)}
+            onClick={basculer}
           >
             {inner}
             <ChevronIcon open={open} className="nav-user-dropdown-arrow" />
           </button>
-          {open ? (
+          {open && option.panel === 'notifications' ? (
             alerts.length === 0 ? (
               <p className="nav-user-dropdown-empty">{t.notifications_empty}</p>
             ) : (
@@ -137,6 +144,8 @@ export function UserMenuItems({ user, items = USER_MENU_DEFAULT, notifications, 
       </Link>
     )
   })
+  // Toujours présent, quel que soit le rôle : recherche à la demande, ou mise à jour en attente.
+  return [...options, <MenuMiseAJour key="mise-a-jour" variant={variant} />]
 }
 
 /**
@@ -144,11 +153,13 @@ export function UserMenuItems({ user, items = USER_MENU_DEFAULT, notifications, 
  * choisies par `items` (ids de USER_MENU_OPTIONS, défaut : profil + notifications),
  * puis déconnexion.
  */
-export default function UserMenu({ user, onLogout, items = USER_MENU_DEFAULT, notifications }) {
+export default function UserMenu({ user, onLogout, items = USER_MENU_DEFAULT, notifications, propositions }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const { t } = useLocale('profile')
   const summary = useAccountSummary(user)
+  const majEnAttente = Boolean(useOffreMiseAJour())
+  const { t: majT } = useLocale('miseAJour')
 
   useEffect(() => {
     if (!open) return undefined
@@ -182,6 +193,11 @@ export default function UserMenu({ user, onLogout, items = USER_MENU_DEFAULT, no
           imgClassName="nav-user-avatar-img"
         />
         <span className="nav-user-name">{user.firstName}</span>
+        {majEnAttente ? (
+          <span className="nv-menu-point" title={majT.menuDisponible}>
+            <span className="nv-masque">{majT.menuDisponible}</span>
+          </span>
+        ) : null}
         <ChevronIcon open={open} className="nav-user-chevron" />
       </button>
 
@@ -200,6 +216,7 @@ export default function UserMenu({ user, onLogout, items = USER_MENU_DEFAULT, no
               user={user}
               items={items}
               notifications={notifications}
+              propositions={propositions}
               onNavigate={() => setOpen(false)}
             />
           </div>

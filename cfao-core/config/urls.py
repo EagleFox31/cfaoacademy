@@ -14,5 +14,6 @@ urlpatterns = [
     path("api/v1/core/", include("lms.urls")),
     path("api/v1/core/", include("analytics.urls")),
     path("api/v1/core/", include("manager.urls")),
+    path("api/v1/core/", include("suggestions.urls")),
     # <generated-routes>  (ne pas retirer : ancre du générateur scripts/new_module.py)
 ]

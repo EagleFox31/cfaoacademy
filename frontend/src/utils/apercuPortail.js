@@ -11,6 +11,7 @@
  * navigation dans cette fenêtre et ne touche pas la fenêtre principale.
  */
 import { ROLE_PRIORITY } from '../pages/portal/portalProfiles.js'
+import { URL_SUGGESTIONS } from '../lib/api.js'
 
 export const CLE_APERCU = 'cfao_apercu_role'
 const PARAM = 'apercu'
@@ -24,10 +25,12 @@ export const ROLES_APERCU = [
 
 /**
  * Aperçus ouverts à un autre profil que le super admin : profil → portails
- * qu'il peut regarder. Le directeur du centre voit ceux de son équipe, dont
- * ses droits couvrent déjà les données.
+ * qu'il peut regarder. Le directeur du centre voit le portail de chaque
+ * profil, toujours avec ses propres droits : core ne lui renvoie que les
+ * données qu'il peut déjà lire. « Vu comme » (un compte précis) reste au
+ * super admin.
  */
-const APERCUS_DU_PROFIL = { center_director: ['training_coordinator', 'center_assistant'] }
+const APERCUS_DU_PROFIL = { center_director: ROLES_APERCU }
 
 /**
  * Sans `role` : droit d'ouvrir tous les aperçus (super admin). Avec `role` :
@@ -211,6 +214,24 @@ function versNosApi(entree, win) {
   }
 }
 
+/** Seule écriture permise dans l'aperçu : proposer une modification de ce portail. */
+// Même adresse que l'appel réel (api.js) : en local l'API n'est pas sur l'origine de la page.
+export const CHEMIN_SUGGESTIONS = URL_SUGGESTIONS
+
+/** `sousChemins` : toute l'API des propositions (lecture de « mes propositions »), pas seulement l'envoi. */
+function versSuggestions(entree, win, sousChemins = false) {
+  try {
+    const base = win.location?.href ?? 'http://localhost/'
+    const url = new URL(urlDe(entree), base)
+    const permise = new URL(CHEMIN_SUGGESTIONS, base)
+    if (url.origin !== permise.origin) return false
+    if (sousChemins) return url.pathname.startsWith(permise.pathname)
+    return url.pathname === permise.pathname && !url.search
+  } catch {
+    return false
+  }
+}
+
 /** Même requête, avec l'en-tête « vu comme » en plus de ses propres en-têtes. */
 function avecCible(entree, options, cible) {
   const entetes = new Headers(options?.headers ?? (entree instanceof Request ? entree.headers : undefined))
@@ -223,17 +244,22 @@ function avecCible(entree, options, cible) {
  * jeton (`/protocol/openid-connect/token`) passe : sans lui, l'aperçu se
  * déconnecterait. Avec une cible (« vu comme »), les lectures de nos API
  * (GET, HEAD) portent l'en-tête ; rien d'autre ne le porte (ni Keycloak, ni
- * une autre adresse). Renvoie la fonction qui rend le fetch d'origine.
+ * une autre adresse). Exception : le POST d'une proposition de modification
+ * (CHEMIN_SUGGESTIONS) part sans l'en-tête, avec l'identité réelle du compte ;
+ * la lecture de ses propres propositions aussi.
+ * Renvoie la fonction qui rend le fetch d'origine.
  */
 export function verrouillerEcritures(win = globalThis.window, cible = null) {
   const origine = win.fetch
   if (!origine || origine.apercu) return () => {}
   const garde = (entree, options) => {
     const methode = methodeDe(entree, options)
-    if (cible && (methode === 'GET' || methode === 'HEAD') && versNosApi(entree, win)) {
+    if (cible && (methode === 'GET' || methode === 'HEAD') && versNosApi(entree, win)
+      && !versSuggestions(entree, win, true)) {
       return origine.call(win, entree, avecCible(entree, options, cible))
     }
-    if (LECTURES.has(methode) || urlDe(entree).includes('/protocol/openid-connect/token')) {
+    if (LECTURES.has(methode) || urlDe(entree).includes('/protocol/openid-connect/token')
+      || (methode === 'POST' && versSuggestions(entree, win))) {
       return origine.call(win, entree, options)
     }
     return Promise.resolve(new Response(JSON.stringify({ detail: 'apercu_lecture_seule' }), {

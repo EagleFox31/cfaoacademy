@@ -13,7 +13,7 @@ globalThis.IntersectionObserver ??= class { observe() {} unobserve() {} disconne
 
 const { authMock, comptesMock } = vi.hoisted(() => ({ authMock: vi.fn(), comptesMock: vi.fn() }))
 vi.mock('../../hooks/useAuth', () => ({ default: () => authMock() }))
-vi.mock('../../lib/api', () => ({ api: { userRoleCounts: () => comptesMock() } }))
+vi.mock('../../lib/api', () => ({ api: { userRoleCounts: () => comptesMock() }, URL_SUGGESTIONS: '/api/v1/core/suggestions' }))
 vi.mock('../../components/Nav', () => ({ default: () => <nav data-testid="nav" /> }))
 vi.mock('../../components/Footer', () => ({ default: () => null }))
 vi.mock('../../components/PortalDemoBar', () => ({ default: () => null }))
@@ -77,6 +77,7 @@ describe('Portails des profils (directeur du centre)', () => {
     const page = hote.querySelector('[data-testid="portails-profils"]')
     expect(hote.querySelector('[data-testid="nav"]')).toBeTruthy()
     expect(page.querySelector('h1').textContent).toBe('Portails des profils')
+    expect(page.querySelector('[data-testid="portails-suggestion"]').textContent).toContain('« Proposer une modification »')
     expect(page.querySelectorAll('table')).toHaveLength(GROUPES_PROFILS.length)
     expect(page.textContent).toContain(`Les ${PROFILS_ATTENDUS.length} profils de la plateforme, classés en ${GROUPES_PROFILS.length} groupes`)
     expect([...page.querySelectorAll('table')[0].querySelectorAll('th')].map(th => th.textContent))
@@ -86,11 +87,11 @@ describe('Portails des profils (directeur du centre)', () => {
     expect(boutons).toHaveLength(PROFILS_ATTENDUS.length)
   })
 
-  it('« Voir son portail » : ouvert au directeur pour le coordinateur et l’assistante, « Bientôt » ailleurs', () => {
+  it('« Voir son portail » : ouvert au directeur pour chaque profil', () => {
     rendre(['center_director'])
-    const ouverts = [...hote.querySelectorAll('[data-testid^="voir-"]')].map(a => a.dataset.testid).sort()
-    expect(ouverts).toEqual(['voir-center_assistant', 'voir-training_coordinator'])
-    expect(hote.querySelectorAll('tbody .portal-portails-cta[aria-disabled="true"]')).toHaveLength(PROFILS_ATTENDUS.length - 2)
+    const ouverts = [...hote.querySelectorAll('[data-testid^="voir-"]')].map(a => a.dataset.testid)
+    expect(ouverts).toHaveLength(PROFILS_ATTENDUS.length)
+    expect(hote.querySelectorAll('tbody .portal-portails-cta[aria-disabled="true"]')).toHaveLength(0)
     const lien = hote.querySelector('[data-testid="voir-training_coordinator"]')
     expect(lien.getAttribute('href')).toBe('/portail?apercu=training_coordinator')
     const ouvrir = vi.spyOn(window, 'open').mockReturnValue({ focus() {} })

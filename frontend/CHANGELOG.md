@@ -7,6 +7,12 @@ version sans sa section.
 
 ## [Unreleased]
 
+- Calendrier annuel de formation : la grille des formateurs de l'année, avec filtres (filiale, marque, formateur, type, mois) et indicateurs ; carte Calendrier pour le directeur, le coordinateur et l'assistante. Nécessite cfao-planning 0.2.5.
+- Devis : saisie façon tableur, tarifs modifiables sur place.
+
+- Nouvelle page « Mes propositions » (menu du compte), au format de la page « Portails des profils » : deux tableaux, En cours et Terminées, avec pour chaque proposition le portail, la date d'envoi, l'étape (Envoyée, Lue, Planifiée « Prévue d'ici le … », En ligne, Non retenue) et le mot de l'équipe ou le motif. L'entrée du menu y mène et compte les changements d'étape non vus ; la cloche les signale (« Voir le suivi »).
+- Super admin, Propositions des portails : « Marquer comme traitée » remplacé par « Changer l'étape » (étape, date prévue obligatoire pour Planifiée, mot pour l'auteur, motif obligatoire pour Non retenue). Nécessite cfao-core avec la migration `suggestions.0003`.
+
 ## [0.2.5] - 2026-11-23
 
 - Directeur du centre, rubrique Plateforme : la carte « Voir les portails des profils », seule ouverte, passe en première position et en vert. Le jaune orangé est réservé aux fonctionnalités en construction : les cartes « Besoins en formations » en cours et « Devis des filiales » modifiables passent aussi en vert.

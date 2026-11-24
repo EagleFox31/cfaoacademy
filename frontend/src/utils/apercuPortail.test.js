@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  CHEMIN_SUGGESTIONS,
   CLE_APERCU,
   CLE_CIBLE,
   CLE_NOM_CIBLE,
@@ -43,8 +44,10 @@ describe('rôles proposés', () => {
     expect(peutOuvrirApercu(['center_director'])).toBe(false)
     expect(peutOuvrirApercu(['center_director'], 'training_coordinator')).toBe(true)
     expect(peutOuvrirApercu(['center_director'], 'center_assistant')).toBe(true)
-    expect(peutOuvrirApercu(['center_director'], 'dps')).toBe(false)
-    expect(peutOuvrirApercu(['center_director'], 'trainer')).toBe(false)
+    expect(peutOuvrirApercu(['center_director'], 'dps')).toBe(true)
+    expect(peutOuvrirApercu(['center_director'], 'trainer')).toBe(true)
+    expect(peutOuvrirApercu(['center_director'], 'learner')).toBe(true)
+    expect(peutOuvrirApercu(['center_director'], 'superadmin')).toBe(false)
     expect(peutOuvrirApercu(['dps'], 'training_coordinator')).toBe(false)
     expect(peutOuvrirApercu(['superadmin'], 'dps')).toBe(true)
   })
@@ -199,6 +202,52 @@ describe('lecture seule', () => {
     const r = await win.fetch('/api/v1/needs', { method: 'POST' })
     expect(r.status).toBe(403)
     expect(origine).toHaveBeenCalledTimes(5)
+  })
+
+  it('seul l’envoi d’une proposition de modification passe, sans l’en-tête vu comme', async () => {
+    const origine = vi.fn(async () => new Response('{}', { status: 201 }))
+    const win = { fetch: origine, location: { href: 'https://portail.test/portail?apercu=trainer' } }
+    rendre = verrouillerEcritures(win, CIBLE)
+
+    const ok = await win.fetch(CHEMIN_SUGGESTIONS, { method: 'POST', body: '{}' })
+    expect(ok.status).toBe(201)
+    expect(origine).toHaveBeenCalledTimes(1)
+    expect(new Headers(origine.mock.calls[0][1]?.headers).get(EN_TETE_VU_COMME)).toBeNull()
+
+    const permise = new URL(CHEMIN_SUGGESTIONS, win.location.href)
+    const refuses = [
+      [permise.href + '?x=1', 'POST'],
+      ['https://ailleurs.test' + permise.pathname, 'POST'],
+      [permise.origin + '/api/v1/needs/', 'POST'],
+      [CHEMIN_SUGGESTIONS + 'abc/', 'POST'],
+      [CHEMIN_SUGGESTIONS + 'abc/', 'PATCH'],
+      [CHEMIN_SUGGESTIONS, 'PUT'],
+      [CHEMIN_SUGGESTIONS, 'DELETE'],
+    ]
+    for (const [url, method] of refuses) {
+      const r = await win.fetch(url, { method })
+      expect(r.status).toBe(403)
+    }
+    expect(origine).toHaveBeenCalledTimes(1)
+  })
+
+  it('vu comme : la lecture de ses propres propositions garde l’identité réelle', async () => {
+    const origine = vi.fn(async () => new Response('[]', { status: 200 }))
+    const win = { fetch: origine, location: { href: 'https://portail.test/portail?apercu=trainer' } }
+    rendre = verrouillerEcritures(win, CIBLE)
+    await win.fetch(CHEMIN_SUGGESTIONS + 'miennes/', { headers: { Authorization: 'Bearer j' } })
+    expect(new Headers(origine.mock.calls[0][1]?.headers).get(EN_TETE_VU_COMME)).toBeNull()
+    expect(new Headers(origine.mock.calls[0][1]?.headers).get('Authorization')).toBe('Bearer j')
+  })
+
+  it('API sur une autre origine que la page (poste local) : la proposition passe quand même', async () => {
+    const origine = vi.fn(async () => new Response('{}', { status: 201 }))
+    const win = { fetch: origine, location: { href: 'http://autre-origine.test:5173/portail?apercu=trainer' } }
+    rendre = verrouillerEcritures(win)
+    const permise = new URL(CHEMIN_SUGGESTIONS, 'http://api.test:8000/')
+    // L'adresse permise est celle d'api.js : absolue en local, relative derrière edge.
+    const appel = /^https?:/.test(CHEMIN_SUGGESTIONS) ? CHEMIN_SUGGESTIONS : permise.pathname
+    expect((await win.fetch(appel, { method: 'POST' })).status).toBe(201)
   })
 
   it('ne s’empile pas', () => {

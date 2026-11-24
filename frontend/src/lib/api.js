@@ -30,6 +30,9 @@ function resolveApiBase() {
 
 const BASE = resolveApiBase()
 
+/** Adresse des propositions de modification : seule écriture que l'aperçu laisse passer. */
+export const URL_SUGGESTIONS = `${BASE}/portal-suggestions/`
+
 export class ApiError extends Error {
   constructor(status, detail, payload = null) {
     super(detail || `HTTP ${status}`)
@@ -206,6 +209,20 @@ export const api = {
 
   /** Nombre de comptes par rôle : { counts: { code: n } }, sans nom. Directeur du centre / superadmin. */
   userRoleCounts: () => request('/users/role-counts/'),
+
+  /**
+   * Propositions de modification des portails, faites depuis l'aperçu.
+   * Création et lecture des siennes : directeur du centre et superadmin ; liste et suivi : superadmin.
+   * Seule écriture que l'aperçu laisse passer (utils/apercuPortail.js), sans « vu comme ».
+   */
+  suggestions: {
+    creer: (body) => request('/portal-suggestions/', { method: 'POST', body }),
+    lister: (cursor) => request(`/portal-suggestions/${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
+    /** Les propositions du compte connecté et leur suivi (20 plus récentes). */
+    miennes: () => request('/portal-suggestions/miennes/'),
+    /** Suivi (superadmin) : { statut, echeance (AAAA-MM-JJ, Planifiée), reponse_equipe (motif si Non retenue) }. */
+    suivre: (id, body) => request(`/portal-suggestions/${encodeURIComponent(id)}/`, { method: 'PATCH', body }),
+  },
 
   /** Catalogue des rôles : [{ code, description }]. Superadmin / admin groupe. */
   systemRoles: () => request('/roles'),

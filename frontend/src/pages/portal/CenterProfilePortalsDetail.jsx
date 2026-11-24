@@ -210,7 +210,7 @@ export default function CenterProfilePortalsDetail() {
         ].filter(Boolean).join(' ')}
       >
         <div ref={shellRef} className="portal-brand-detail-shell">
-          <div className="container article-shell portal-dps-brand-shell">
+          <div className="container article-shell portal-dps-brand-shell portal-portails-shell">
             <PageCloseButton onClick={fermer} ariaLabel={t.dir_portails_close} />
             <div className="article-main">
               <article className="article-sheet portal-dps-brand-sheet" data-testid="portails-profils">
@@ -221,6 +221,9 @@ export default function CenterProfilePortalsDetail() {
                     <h1>{t.dir_portails_title}</h1>
                     <p className="article-lead portal-dps-brand-detail-sub">
                       {t.dir_portails_lead.replace('{n}', nbProfils).replace('{g}', GROUPES_PROFILS.length)}
+                    </p>
+                    <p className="portal-portails-suggestion" data-testid="portails-suggestion">
+                      {t.dir_portails_suggestion}
                     </p>
                   </div>
                 </header>

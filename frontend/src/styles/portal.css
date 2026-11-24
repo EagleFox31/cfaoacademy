@@ -3180,6 +3180,76 @@ button.pv-card {
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
 }
 .portal-apercu-bandeau .portal-btn { white-space: nowrap; }
+.portal-apercu-bandeau .portal-apercu-proposer { margin-left: auto; }
+/* Panneau « Proposer une modification », posé au-dessus du bandeau d'aperçu. */
+.portal-apercu-proposition {
+  position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); z-index: 10001;
+  width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 120px); overflow: auto;
+  padding: 18px 20px; border: 1px solid var(--rule, #e2e8f0); border-radius: 16px;
+  background: var(--paper, #fff); color: var(--ink, #0f172a);
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.24); font-size: 14px;
+}
+.portal-apercu-proposition form { display: grid; gap: 8px; }
+.portal-apercu-proposition h2 { margin: 0; font-size: 18px; color: var(--navy, #0f172a); }
+.portal-apercu-proposition label { font-weight: 600; margin-top: 4px; }
+.portal-apercu-proposition select,
+.portal-apercu-proposition input,
+.portal-apercu-proposition textarea {
+  font: inherit; width: 100%; padding: 8px 10px; border: 1px solid var(--rule, #cbd5e1);
+  border-radius: 8px; background: #fff; color: inherit;
+}
+.portal-apercu-proposition textarea { resize: vertical; min-height: 110px; }
+.portal-apercu-proposition select:focus-visible,
+.portal-apercu-proposition input:focus-visible,
+.portal-apercu-proposition textarea:focus-visible { outline: 2px solid var(--navy, #1d4ed8); outline-offset: 1px; }
+.portal-apercu-proposition-contexte { margin: 0; color: var(--muted, #475569); }
+.portal-apercu-proposition-aide { margin: 0; font-size: 12px; color: var(--muted, #475569); }
+.portal-apercu-proposition-retour { margin: 0; padding: 8px 10px; border-radius: 8px; background: #fef2f2; color: #991b1b; }
+.portal-apercu-proposition-retour.is-ok { background: #ecfdf5; color: #065f46; }
+.portal-apercu-proposition-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+/* Type de modification : liste de choix avec saisie libre (ChoixType). */
+.portal-apercu-choix { position: relative; }
+.portal-apercu-choix input { padding-right: 36px; }
+.portal-apercu-choix-fleche {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  display: grid; place-items: center; width: 28px; height: 28px; padding: 0;
+  border: 0; border-radius: 6px; background: transparent; color: var(--muted, #475569); cursor: pointer;
+}
+.portal-apercu-choix-fleche:hover { background: #f1f5f9; color: var(--navy, #0f172a); }
+.portal-apercu-choix-liste {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 2;
+  max-height: 232px; overflow: auto; margin: 0; padding: 4px; list-style: none;
+  border: 1px solid var(--rule, #e2e8f0); border-radius: 10px; background: #fff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+}
+.portal-apercu-choix-liste li { padding: 8px 10px; border-radius: 6px; cursor: pointer; color: var(--ink, #0f172a); }
+.portal-apercu-choix-liste li.is-active { background: #eff6ff; color: #1e40af; }
+.portal-apercu-choix-liste li[aria-selected="true"] { font-weight: 600; }
+/* « Vos propositions » : suivi de l'auteur, sous le formulaire. */
+.portal-apercu-miennes { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--rule, #e2e8f0); }
+.portal-apercu-miennes h3 { margin: 0 0 8px; font-size: 15px; color: var(--navy, #0f172a); }
+/* Propositions reçues, côté super admin (components/PropositionsPortails.jsx) */
+.portal-suggestions-filtre { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; font-size: 14px; }
+.portal-suggestions-filtre label { font-weight: 600; }
+.portal-suggestions-filtre select { font: inherit; padding: 6px 10px; border: 1px solid var(--line, #cbd5e1); border-radius: 8px; background: #fff; }
+.portal-suggestions-table-wrap { overflow-x: auto; margin-top: 12px; border: 1px solid var(--line, #e5e7eb); border-radius: 12px; background: #fff; }
+.portal-suggestions-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.portal-suggestions-table th { text-align: left; font-weight: 600; padding: 10px 12px; background: var(--paper-3, #f5f6f8); border-bottom: 1px solid var(--line, #e5e7eb); white-space: nowrap; }
+.portal-suggestions-table td { padding: 10px 12px; border-bottom: 1px solid var(--line, #e5e7eb); vertical-align: top; }
+.portal-suggestions-table tr:last-child td { border-bottom: 0; }
+.portal-suggestions-table tr.is-terminee td { color: #4b5563; }
+.portal-suggestions-chemin { display: block; font-size: 12px; color: #4b5563; }
+.portal-suggestions-message { min-width: 260px; white-space: pre-wrap; }
+.portal-suggestions-suivi { min-width: 220px; }
+.portal-suggestions-changer { display: block; margin-top: 8px; }
+.portal-suggestions-form { display: grid; gap: 6px; min-width: 240px; }
+.portal-suggestions-form label { font-size: 12px; font-weight: 600; color: #334155; }
+.portal-suggestions-form select,
+.portal-suggestions-form input,
+.portal-suggestions-form textarea { font: inherit; font-size: 14px; padding: 6px 10px; border: 1px solid var(--line, #cbd5e1); border-radius: 8px; background: #fff; color: #0f172a; }
+.portal-suggestions-form textarea { resize: vertical; }
+.portal-suggestions-form-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.portal-suggestions-echec { display: block; margin-top: 4px; font-size: 12px; color: #991b1b; }
 @media (max-width: 720px) {
   .portal-apercu-bandeau-note { display: none; }
 }
@@ -12531,6 +12601,12 @@ section#assistance:nth-of-type(even) .portal-section-title {
 .portal-portails-table td.portal-portails-nb { font-weight: 700; font-size: 1.15em; }
 .portal-portails-groupe-titre { display: flex; align-items: center; gap: 10px; }
 .portal-portails-groupe-titre svg { color: var(--red); flex-shrink: 0; }
+/* Portails des profils : fenêtre plus large que les autres détails (5 colonnes). */
+.portal-dps-brand-shell.portal-portails-shell { max-width: min(1600px, 100%); }
+.portal-portails-suggestion {
+  margin: 10px 0 0; padding: 10px 14px; border-left: 3px solid var(--navy);
+  background: var(--paper-3); border-radius: 0 8px 8px 0; color: var(--ink, inherit); font-size: .95em;
+}
 /* Portails des profils : le titre à côté du logo, pour gagner en hauteur. */
 .portal-dps-brand-header.portal-portails-header { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
 .portal-dps-brand-header.portal-portails-header .article-header-logos {

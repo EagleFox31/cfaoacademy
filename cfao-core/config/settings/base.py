@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "lms",
     "analytics",
     "manager",
+    "suggestions",
     # <generated-apps>  (ne pas retirer : ancre du générateur scripts/new_module.py)
 ]
 

@@ -51,6 +51,7 @@ const MentionsLegales = lazy(() => import('./pages/MentionsLegales.jsx'))
 const Confidentialite = lazy(() => import('./pages/Confidentialite.jsx'))
 const APropos = lazy(() => import('./pages/APropos.jsx'))
 const Profil = lazy(() => import('./pages/Profil.jsx'))
+const MesPropositions = lazy(() => import('./pages/MesPropositions.jsx'))
 
 // Chacun ne voit, dans l'annonce, que les changements qui le concernent.
 function AnnonceSelonRole() {
@@ -91,6 +92,7 @@ export default function App() {
           <Route path="/portail/competences/:brandId" element={<DpsBrandCompetencyDetail />} />
           <Route path="/portail/niveaux/:tierId" element={<DpsTierCompetencyDetail />} />
           <Route path="/portail/centre/portails" element={<CenterProfilePortalsDetail />} />
+          <Route path="/portail/mes-propositions" element={<MesPropositions />} />
           <Route path="/portail/teamgp" element={<KiTeamgpDetail />} />
           <Route path="/portail/technicien/:technicianId/pif" element={<DpsTechnicianPifDetail />} />
           <Route path="/portail/assistance" element={<Assistance />} />

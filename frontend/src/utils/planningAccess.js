@@ -52,11 +52,15 @@ export function centreSeul(roles = []) {
 /** Page « Portails des profils » du directeur du centre (elle filtre elle-même les rôles). */
 export const PAGE_PORTAILS_CENTRE = '/portail/centre/portails'
 
-/** Pages du portail ouvertes à un compte du centre seul : sa vitrine, la clé de répartition, les portails des profils. */
+/** Suivi de ses propositions de modification (directeur du centre, superadmin). */
+export const PAGE_MES_PROPOSITIONS = '/portail/mes-propositions'
+
+/** Pages du portail ouvertes à un compte du centre seul : sa vitrine, la clé de répartition, les portails des profils, ses propositions. */
 export function pageCentreAutorisee(pathname = '') {
   return pathname === '/portail' || pathname === '/portail/'
     || pathname === PLANNING_HOME || pathname.startsWith(`${PLANNING_HOME}/`)
     || pathname === PAGE_PORTAILS_CENTRE
+    || pathname === PAGE_MES_PROPOSITIONS
 }
 
 /**

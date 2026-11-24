@@ -1,6 +1,7 @@
 import { useCallback, useContext, useMemo, useState } from 'react'
 import { AuthContext } from '../context/sessionContext.js'
 import useLocale from '../hooks/useLocale'
+import ProposerModification, { peutProposer } from './ProposerModification.jsx'
 import {
   lireApercu,
   lireCible,
@@ -50,7 +51,10 @@ export default function ApercuProvider({ children }) {
   return (
     <AuthContext.Provider value={valeur}>
       {children}
-      {actif && <BandeauApercu role={role} cible={cible} nomCible={nomCible} onFermer={fermer} />}
+      {actif && (
+        <BandeauApercu role={role} cible={cible} nomCible={nomCible} onFermer={fermer}
+          proposer={peutProposer(reel.roles)} />
+      )}
     </AuthContext.Provider>
   )
 }
@@ -65,7 +69,7 @@ function basculerVerrou(actif, cible) {
   }
 }
 
-function BandeauApercu({ role, cible, nomCible, onFermer }) {
+function BandeauApercu({ role, cible, nomCible, onFermer, proposer }) {
   const { t } = useLocale('portal')
   const libelleRole = t[`role_${role}`] ?? role
   return (
@@ -81,7 +85,8 @@ function BandeauApercu({ role, cible, nomCible, onFermer }) {
           <span className="portal-apercu-bandeau-note"> · {t.apercu_bandeau_note}</span>
         </span>
       )}
-      <button type="button" className="portal-btn portal-btn-ghost" onClick={onFermer}>
+      {proposer && <ProposerModification role={role} />}
+      <button type="button" className="portal-btn portal-btn-ghost" data-testid="apercu-fermer" onClick={onFermer}>
         {t.apercu_fermer}
       </button>
     </div>

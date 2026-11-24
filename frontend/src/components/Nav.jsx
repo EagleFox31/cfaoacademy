@@ -7,6 +7,7 @@ import useNavScrollSpy from '../hooks/useNavScrollSpy.js'
 import useLocale from '../hooks/useLocale.js'
 import LocaleSwitch from './LocaleSwitch.jsx'
 import useAuth from '../hooks/useAuth.js'
+import useMesPropositions, { alertesAvecPropositions, PAGE_MES_PROPOSITIONS } from '../hooks/useMesPropositions.js'
 import { usePortalOnboarding } from '../context/PortalOnboardingContext.jsx'
 import PortalHelpMenu from './PortalHelpMenu.jsx'
 import PortalNotificationsBell from './PortalNotificationsBell.jsx'
@@ -144,7 +145,7 @@ function NavLinkList({
  * close?: { to, label } } ; `close` ajoute une croix de retour après les entrées.
  * Il remplace les sections du portail et la barre prend toute la largeur.
  */
-export default function Nav({ user: propUser, active: pageActive, notifications, appNav, hideHelp = false }) {
+export default function Nav({ user: propUser, active: pageActive, notifications: alertesPage, appNav, hideHelp = false }) {
   const { pathname, hash } = useLocation()
   const navigate = useNavigate()
   const onHome    = pathname === '/'
@@ -160,6 +161,17 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
   const { locale, setLocale, t: navT } = useLocale('nav')
   const { t: commonT }  = useLocale('common')
   const { t: portalT }  = useLocale('portal')
+  const { t: profileT } = useLocale('profile')
+
+  // Propositions de modification dont l'étape a changé, pas encore vues : en tête de la cloche.
+  const propositions = useMesPropositions(user)
+  const notifications = useMemo(
+    () => alertesAvecPropositions(
+      alertesPage, propositions.nouvelles, profileT, propositions.marquerVues,
+      () => navigate(PAGE_MES_PROPOSITIONS),
+    ),
+    [alertesPage, propositions.nouvelles, propositions.marquerVues, profileT, navigate],
+  )
 
   const [menuOpen, setMenuOpen] = useState(false)
   const toggleRef = useRef(null)
@@ -362,7 +374,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
           )}
 
           {user ? (
-            <UserMenu user={user} onLogout={handleLogout} notifications={notifications} />
+            <UserMenu user={user} onLogout={handleLogout} notifications={notifications} propositions={propositions} />
           ) : (
             <>
               <Link
@@ -458,6 +470,7 @@ export default function Nav({ user: propUser, active: pageActive, notifications,
               <UserMenuItems
                 user={user}
                 notifications={notifications}
+                propositions={propositions}
                 onNavigate={closeMenu}
                 variant="mobile"
               />

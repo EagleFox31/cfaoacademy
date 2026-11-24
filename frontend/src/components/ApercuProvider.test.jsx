@@ -78,7 +78,7 @@ describe('ApercuProvider', () => {
     sessionStorage.setItem(CLE_APERCU, 'dps')
     const fermer = vi.spyOn(window, 'close').mockImplementation(() => {})
     const sonde = await monter(SUPER)
-    await act(async () => { conteneur.querySelector('.portal-apercu-bandeau button').click() })
+    await act(async () => { conteneur.querySelector('[data-testid="apercu-fermer"]').click() })
     expect(fermer).toHaveBeenCalled()
     expect(sessionStorage.getItem(CLE_APERCU)).toBeNull()
     expect(sonde.user).toBe(SUPER)
@@ -96,6 +96,29 @@ describe('ApercuProvider', () => {
     expect(sessionStorage.getItem(CLE_APERCU)).toBeNull()
     expect(sonde.user).toBe(SUPER)
     fermer.mockRestore()
+  })
+
+  it('le bandeau d’aperçu propose « Proposer une modification »', async () => {
+    sessionStorage.setItem(CLE_APERCU, 'trainer')
+    await monter(SUPER)
+    expect(conteneur.querySelector('.portal-apercu-proposer')?.textContent).toBe('Proposer une modification')
+  })
+
+  it('directeur du centre : aperçu de tout portail avec ses droits, bouton Proposer, jamais « vu comme »', async () => {
+    // Le verrou vit au niveau du module : un rendu hors aperçu le rend avant de le reposer sur ce fetch.
+    await monter(SUPER)
+    act(() => racine.unmount())
+    conteneur.remove()
+    sessionStorage.setItem(CLE_APERCU, 'trainer')
+    sessionStorage.setItem(CLE_CIBLE, '0b6f2c1e-9a4d-4c3b-8e2f-1d7a5b9c3e40')
+    const espion = globalThis.fetch
+    const sonde = await monter({ sub: 'd1', roles: ['center_director'] })
+    expect(sonde.user).toMatchObject({ sub: 'd1', roles: ['trainer'], apercu: 'trainer' })
+    expect(conteneur.querySelector('.portal-apercu-proposer')).not.toBeNull()
+    await globalThis.fetch('/api/v1/core/me')
+    expect(new Headers(espion.mock.calls.at(-1)[1]?.headers).get(EN_TETE_VU_COMME)).toBeNull()
+    const r = await globalThis.fetch('/api/v1/needs', { method: 'POST' })
+    expect(r.status).toBe(403)
   })
 
   it('hors aperçu, la déconnexion reste la vraie', async () => {

@@ -26,6 +26,7 @@ import { ADMIN_HOME, ADMIN_NAV, adminPath, canAccessAdminConsole } from '../../u
 import { ROLES_APERCU, compteDuRole, ouvrirApercu, peutOuvrirApercu, urlApercu } from '../../utils/apercuPortail.js'
 import useAdminResource, { fetchAllUsers } from '../../hooks/useAdminResource.js'
 import ApercuVuComme from '../../components/ApercuVuComme.jsx'
+import PropositionsPortails from '../../components/PropositionsPortails.jsx'
 
 export const CFAO_ACADEMY_APPS_CONFIG = [
   {
@@ -541,7 +542,7 @@ export default function SuperAdminDashboard() {
 
 function SuperAdminGroupe() {
   const { user } = useAuth()
-  const { t } = useLocale('portal')
+  const { t, locale } = useLocale('portal')
   const { t: td } = useLocale('delivery')
   const { t: ta } = useLocale('admin')
   const navigate = useNavigate()
@@ -1021,6 +1022,21 @@ function SuperAdminGroupe() {
               </p>
             )}
             <ApercuVuComme t={t} data={comptesCore.data} status={comptesCore.status} />
+          </div>
+        </PortalReveal>
+      )}
+
+      {/* ═════════════ #propositions — Propositions de modification des portails ═════════════ */}
+      {peutOuvrirApercu(user?.roles) && (
+        <PortalReveal id="propositions">
+          <div className="container" style={{ padding: '16px 32px' }}>
+            <PortalSectionHead
+              eyebrow={<PortalSectionEyebrow icon="users" label={t.sa_suggestions_eyebrow} />}
+              title={t.sa_suggestions_title}
+              methodText={t.sa_suggestions_lead}
+              t={t}
+            />
+            <PropositionsPortails t={t} locale={locale} />
           </div>
         </PortalReveal>
       )}

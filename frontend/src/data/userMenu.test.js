@@ -8,14 +8,19 @@ const ids = (roles, items) => userMenuItems(roles, items).map(o => o.id)
 
 describe('menu du compte', () => {
   it('par défaut, tout compte a son profil et ses notifications', () => {
-    expect(USER_MENU_DEFAULT).toEqual(['profil', 'notifications', 'journal', 'supervision'])
-    for (const roles of [['learner'], ['center_director'], []]) {
+    expect(USER_MENU_DEFAULT).toEqual(['profil', 'notifications', 'propositions', 'journal', 'supervision'])
+    for (const roles of [['learner'], ['trainer'], []]) {
       expect(ids(roles)).toEqual(['profil', 'notifications'])
     }
   })
 
   it('par défaut, le superadmin garde le journal des erreurs et la supervision', () => {
-    expect(ids(['superadmin'])).toEqual(['profil', 'notifications', 'journal', 'supervision'])
+    expect(ids(['superadmin'])).toEqual(['profil', 'notifications', 'propositions', 'journal', 'supervision'])
+  })
+
+  it('« Mes propositions » : directeur du centre et superadmin seulement (comme Cerbos)', () => {
+    expect(ids(['center_director'])).toEqual(['profil', 'notifications', 'propositions'])
+    for (const r of ['training_coordinator', 'trainer', 'dps', 'learner']) expect(ids([r])).not.toContain('propositions')
   })
 
   it('l’exploitant voit la supervision, pas le journal des erreurs', () => {
