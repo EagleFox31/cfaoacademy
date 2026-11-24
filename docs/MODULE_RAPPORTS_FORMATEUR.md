@@ -54,13 +54,13 @@ Navigateur (SPA React)                     cfao-comptes-rendus/api (Django)
                                             │ rendu/modeles/MODELE-REFERENCES  │
                                             └───────────────┬─────────────────┘
                                                             │ CheckResources
-                                            cfao-comptes-rendus/cerbos (default-deny)
+                                            cerbos/ commun (default-deny)
 ```
 
 - **Dev** : le serveur Vite relaie `/apercu` et `/cr-donnees` vers `127.0.0.1:5175`
   (`cfao-comptes-rendus/web/vite.config.js`).
-- **Docker Compose** : service `rapports` (`cfao-comptes-rendus/api/Dockerfile`) et son Cerbos
-  `rapports-cerbos`, joignables seulement par la passerelle nginx, qui route les mêmes chemins
+- **Docker Compose** : service `rapports` (`cfao-comptes-rendus/api/Dockerfile`), qui interroge
+  le Cerbos commun `cerbos`, joignable seulement par la passerelle nginx, qui route les mêmes chemins
   (`gateway/nginx.conf`). Le dossier `cfao-comptes-rendus/` se déploie aussi seul (son propre
   `docker-compose.yml`, `Makefile`, `.env.example`).
 
@@ -225,7 +225,7 @@ Le texte proposé reste à relire par le formateur.
 | `GET /cr-donnees/photos/<id>.jpg` | photo enregistrée |
 
 Hors `sante` et les trois routes de connexion, tout répond 401 sans identité. Chaque route qui
-touche une donnée interroge le Cerbos du service (`cfao-comptes-rendus/cerbos/`, refus par défaut).
+touche une donnée interroge le Cerbos commun (`cerbos/policies/resource_policies/comptes_rendus/`, refus par défaut).
 
 ### Identité des formateurs
 

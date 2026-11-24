@@ -17,6 +17,7 @@ import {
   readSession,
   reauthenticate,
 } from './lib/auth'
+import { cheminApp } from './lib/base'
 import BrandEntry from './pages/BrandEntry'
 import FicheViewer from './pages/FicheViewer'
 import Inbox from './pages/Inbox'
@@ -111,16 +112,14 @@ function Authenticated({ session, initialCampaignData }) {
 export default function App() {
   const [session, setSession] = useState(() => readSession())
   const [campaignData, setCampaignData] = useState(null)
-  const [bootStatus, setBootStatus] = useState(() => {
-    const path = window.location.pathname
-    if (path.startsWith('/fiche/')) return 'ready'
-    return 'loading'
-  })
+  const [bootStatus, setBootStatus] = useState(() =>
+    cheminApp().startsWith('/fiche/') ? 'ready' : 'loading',
+  )
   const [bootError, setBootError] = useState(null)
   const [isLeaving, setIsLeaving] = useState(false)
   const navigate = useNavigate()
 
-  const path = window.location.pathname
+  const path = cheminApp()
   const isFiche = path.startsWith('/fiche/')
   const isCallback = path === '/callback'
 

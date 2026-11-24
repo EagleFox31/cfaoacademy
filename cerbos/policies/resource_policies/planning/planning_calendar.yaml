@@ -1,0 +1,15 @@
+# Ressource « planning_calendar » : calendrier annuel de formation d'un pôle
+# (la grille « Plannings formateurs », en lecture). Équipe du centre de formation
+# seulement : la grille nomme les formateurs et couvre toutes les filiales.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: planning_calendar
+  rules:
+    - actions: ["view"]
+      effect: EFFECT_ALLOW
+      roles:
+        - center_director
+        - training_coordinator
+        - center_assistant
+        - superadmin

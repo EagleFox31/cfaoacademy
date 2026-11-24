@@ -1,12 +1,11 @@
-.PHONY: help up down logs test seed migrate shell
+.PHONY: help up down logs test migrate shell
 
 help:
 	@echo "  make up       — docker compose up -d --build"
 	@echo "  make down     — arrête les conteneurs"
 	@echo "  make logs     — journaux mail-api"
 	@echo "  make test     — pytest (hôte, SQLite)"
-	@echo "  make seed     — templates email v1"
-	@echo "  make migrate  — migrations dans le conteneur"
+	@echo "  make migrate  — rejoue le job mail-migrate (migrations + modèles v1 manquants)"
 
 up:
 	docker compose up -d --build
@@ -22,11 +21,8 @@ test:
 	cd api && .venv/Scripts/python.exe -m pip install -q -r requirements-dev.txt
 	cd api && .venv/Scripts/python.exe -m pytest -q
 
-seed:
-	docker compose exec mail-api python manage.py seed_email_templates
-
 migrate:
-	docker compose exec mail-api python manage.py migrate
+	docker compose run --rm mail-migrate
 
 shell:
 	docker compose exec mail-api python manage.py shell

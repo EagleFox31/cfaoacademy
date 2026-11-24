@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import VersConnexion from '../../components/VersConnexion.jsx'
 import PortalDemoBar from '../../components/PortalDemoBar.jsx'
 import BulletinAppShell from '../../components/bulletin/BulletinAppShell.jsx'
 import useSiteEffects from '../../hooks/useSiteEffects.js'
@@ -240,7 +241,7 @@ export default function CompetencyBulletin() {
   }, [evalId, selection?.evalId, navigate])
 
   if (status === "loading") return null
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <VersConnexion />
 
   const isLearner = user.roles?.includes('learner') || isMedacapLearner
 

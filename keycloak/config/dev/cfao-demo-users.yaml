@@ -1,0 +1,384 @@
+# Comptes de démo du realm `cfao` (DEV uniquement, mot de passe « demo »), alignés sur les personas du front.
+# Importés par keycloak-config-cli seulement si `/config/dev/*.yaml` figure dans IMPORT_FILES_LOCATIONS :
+# jamais en prod, où les comptes viennent de la migration (keycloak/migration/).
+# Le mot de passe « demo » est déclaré déjà haché (pbkdf2-sha512, 210 000 itérations, un sel
+# par compte) : la passwordPolicy du realm ne s'applique qu'aux mots de passe saisis, ces
+# comptes gardent donc « demo ». Pour en ajouter un : même format, hash recalculé.
+realm: cfao
+users:
+  - username: kouame.assi
+    id: "11111111-1111-1111-1111-000000000001"
+    enabled: true
+    emailVerified: true
+    email: kouame.assi@cfao.example
+    firstName: Kouamé
+    lastName: Assi
+    realmRoles: [learner]
+    attributes:
+      scopeNode: ["groupe.afrique_ouest.cote_divoire.abidjan_plateau"]
+      departments: ["motors"]
+      brands: ["toyota"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_ouest"
+        - "groupe.afrique_ouest.cote_divoire"
+        - "groupe.afrique_ouest.cote_divoire.abidjan_plateau"
+    credentials:
+      - type: password
+        secretData: '{"value":"d39KC4J/8ZLsWlYhWa4FegmzeZGKlJJri7HJKQ1d84JIVZz37oMloeqzx7+mGXbAVjxLepIWKDbkIA7AGhEzyg==","salt":"dHZVEZ+9cyPyDMsw/iLWMA==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: brahim.tahir
+    id: "11111111-1111-1111-1111-000000000002"
+    enabled: true
+    emailVerified: true
+    email: brahim.tahir@cfao.example
+    firstName: Brahim
+    lastName: Tahir
+    realmRoles: [learner, ki]
+    attributes:
+      scopeNode: ["groupe.afrique_nord.maroc.casablanca"]
+      departments: ["motors"]
+      brands: ["toyota"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_nord"
+        - "groupe.afrique_nord.maroc"
+        - "groupe.afrique_nord.maroc.casablanca"
+    credentials:
+      - type: password
+        secretData: '{"value":"t2SzKDHL6aI+FoJrriWePCZyQ8vPU6YD1SGgDYpeF5+pLxzd4JjtUDGzpDmnv/e1ylM6oO0QazeDChXmoKGxog==","salt":"q/767fmujN5oeYxYP6ofIA==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: moa.pilotage
+    id: "11111111-1111-1111-1111-000000000003"
+    enabled: true
+    emailVerified: true
+    email: moa@cfao.example
+    firstName: MOA
+    lastName: Pilotage
+    realmRoles: [group_admin]
+    attributes:
+      scopeNode: ["groupe"]
+      orgPath: ["groupe"]
+    credentials:
+      - type: password
+        secretData: '{"value":"PFulhW7VvpsxsmQ1VATvROXvv/XUhoJyOPP/mzLId5iutj4zpQNJ7/xFuRlIW9/kZjEs0fS5JqG13It5D6n6/g==","salt":"3x4tQ8zIdhfJIBB+If1REA==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: tech.lead
+    id: "11111111-1111-1111-1111-000000000004"
+    enabled: true
+    emailVerified: true
+    email: techlead@cfao.example
+    firstName: Tech
+    lastName: Lead
+    realmRoles: [build_team]
+    attributes:
+      scopeNode: ["groupe"]
+      orgPath: ["groupe"]
+    credentials:
+      - type: password
+        secretData: '{"value":"f7tVzplVpiHR5Ybxvd0t6O7FevJ8mBVHlwEwIiL4UC4OfQpsjBeF3D5kG0FIulX7D04SesAAVpOJ1z1nGnqH9g==","salt":"HbMjnIdtCDH3V+MQoFeUjQ==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: exploitant
+    id: "11111111-1111-1111-1111-000000000099"
+    enabled: true
+    emailVerified: true
+    email: exploitant@cfao.example
+    firstName: Exploitant
+    lastName: Plateforme
+    realmRoles: [platform_ops]
+    attributes:
+      scopeNode: ["groupe"]
+      orgPath: ["groupe"]
+    credentials:
+      - type: password
+        secretData: '{"value":"C3d+TK2jckPjoke1UHl1K4FiXifMvg22GrUmDMqlKWQt7IujCIdLXXzUDgg3VUveyKY0jRoV9AsSD/rOJC8bIw==","salt":"bUDnuDalC2ck4XdiJo2yDA==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: admin.groupe
+    id: "11111111-1111-1111-1111-000000000005"
+    enabled: true
+    emailVerified: true
+    email: admin@cfao.example
+    firstName: Admin
+    lastName: Groupe
+    realmRoles: [superadmin]
+    attributes:
+      scopeNode: ["groupe"]
+      orgPath: ["groupe"]
+    credentials:
+      - type: password
+        secretData: '{"value":"p2P77P6nXbdu6hQk/l90xjfAWRMSmc+3sF5kAVer0fBH9lT/IlHnSYAzhz/ICbbfXOOP1shQBi6hJDf8KowqHQ==","salt":"1EA1okH1Zs0+flKKahAnIQ==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: seydou.diallo
+    id: "11111111-1111-1111-1111-000000000006"
+    enabled: true
+    emailVerified: true
+    email: seydou.diallo@cfao.example
+    firstName: Seydou
+    lastName: Diallo
+    realmRoles: [team_manager]
+    attributes:
+      scopeNode: ["groupe.afrique_ouest.senegal.dakar_nord"]
+      departments: ["motors"]
+      brands: ["toyota", "suzuki"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_ouest"
+        - "groupe.afrique_ouest.senegal"
+        - "groupe.afrique_ouest.senegal.dakar_nord"
+    credentials:
+      - type: password
+        secretData: '{"value":"aVmz4p39rDMT9VCan4JJ7VqnGoxuqZVyo8eGQ1kOJScQM6w0H/p/+61iZ9m7GzYzbficKziP5Mm7hkdJnOCIiA==","salt":"jNlhIoeXgeLA3p+avNNrdA==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: fatou.mbaye
+    id: "11111111-1111-1111-1111-000000000007"
+    enabled: true
+    emailVerified: true
+    email: fatou.mbaye@cfao.example
+    firstName: Fatou
+    lastName: Mbaye
+    realmRoles: [workshop_manager]
+    attributes:
+      scopeNode: ["groupe.afrique_ouest.senegal.dakar_nord"]
+      departments: ["motors"]
+      brands: ["toyota", "suzuki", "fuso"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_ouest"
+        - "groupe.afrique_ouest.senegal"
+        - "groupe.afrique_ouest.senegal.dakar_nord"
+    credentials:
+      - type: password
+        secretData: '{"value":"lUGBNfVy+brZHPIpBCMmsL4Q8al6Vvl13OLJGa9RDecWMS4K5oUOlHMz2RVmQnb1l6fhidCSmqpdrmKLA8jSjA==","salt":"XlXu+tkmFsKb4bI9214/wA==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: aminata.kone
+    id: "11111111-1111-1111-1111-000000000008"
+    enabled: true
+    emailVerified: true
+    email: aminata.kone@cfao.example
+    firstName: Aminata
+    lastName: Koné
+    realmRoles: [branch_hr]
+    attributes:
+      scopeNode: ["groupe.afrique_ouest.cote_divoire"]
+      departments: ["motors"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_ouest"
+        - "groupe.afrique_ouest.cote_divoire"
+    credentials:
+      - type: password
+        secretData: '{"value":"hb5w0IEMibEOj7T/EhxCOyoodCbB2AlzB4EYBR7QjYpkfprOOO6OqcYkMX7jofyzZtez0ZGiM5shzdViHKMjBQ==","salt":"k1eKAoiwr1H7/8/TCjc8+g==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  # u9 — apprenant Equipment / PL (Cameroun). Couvre la règle « PL/engins = département Equipment ».
+  - username: loic.traore
+    id: "11111111-1111-1111-1111-000000000009"
+    enabled: true
+    emailVerified: true
+    email: loic.traore@cfao.example
+    firstName: Loïc
+    lastName: Traoré
+    realmRoles: [learner]
+    attributes:
+      scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
+      departments: ["equipment"]
+      brands: ["fuso", "renault-trucks", "king-long", "jcb", "lovol"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_centrale"
+        - "groupe.afrique_centrale.cameroun"
+        - "groupe.afrique_centrale.cameroun.douala"
+    credentials:
+      - type: password
+        secretData: '{"value":"OMiL8SHidJ5/x40cx3iZiT8AzyjcR8+fcWRYE0NJmN3AcuP3qLCri+Do5wxrs/cZEvAYSCiWl6fOtQqaSYCLxQ==","salt":"7rTatZ/sMr2WMDDABOCyPg==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  # Cameroun — profils MEDACAP. Sans eux, les tableaux de bord DPS et KI n'ont
+  # aucun compte reel derriere leur maquette.
+  - username: jacques.robin
+    id: "11111111-1111-1111-1111-000000000010"
+    enabled: true
+    emailVerified: true
+    email: jacques.robin@cfao.example
+    firstName: Jacques
+    lastName: Robin
+    realmRoles: [dps]
+    attributes:
+      scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
+      departments: ["equipment"]
+      brands: ["sinotruk", "renault-trucks", "king-long", "hino", "jcb", "toyota-forklift", "bt", "lovol"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_centrale"
+        - "groupe.afrique_centrale.cameroun"
+        - "groupe.afrique_centrale.cameroun.douala"
+    credentials:
+      - type: password
+        secretData: '{"value":"EiqfYHc+r7Sl8J5Dm6TkzHSAEeTk5hMhlALyl70i1eqzSI/aVCGYorvxgV/ugG/rbyQm5gTWy6hMqboVbD5KkA==","salt":"lX2gE1fZscYD9AZTo43yZA==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: andre.yogba
+    id: "11111111-1111-1111-1111-000000000011"
+    enabled: true
+    emailVerified: true
+    email: andre.yogba@cfao.example
+    firstName: Andre
+    lastName: Yogba
+    realmRoles: [learner, ki]
+    attributes:
+      scopeNode: ["groupe.afrique_centrale.cameroun.douala"]
+      departments: ["motors"]
+      brands: ["toyota"]
+      orgPath:
+        - "groupe"
+        - "groupe.afrique_centrale"
+        - "groupe.afrique_centrale.cameroun"
+        - "groupe.afrique_centrale.cameroun.douala"
+    credentials:
+      - type: password
+        secretData: '{"value":"uwqnv5ACLze0q6kLM5bZzr1xs3jLHibeRHTx1ch3sEeJUvED2htpbEmvHjPOd8yqvMqTwxz0DC5fq0Qm8WhOUg==","salt":"sulUNwCvD9TIQ21w0gDzhQ==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  # Planning seul : aucun rôle de portail, arrive droit sur la clé de répartition.
+  - username: lecteur.planning
+    id: "11111111-1111-1111-1111-000000000012"
+    enabled: true
+    emailVerified: true
+    email: lecteur.planning@cfao.example
+    firstName: Lecteur
+    lastName: Planning
+    realmRoles: [planning_viewer]
+    attributes:
+      scopeNode: ["groupe"]
+      orgPath:
+        - "groupe"
+    credentials:
+      - type: password
+        secretData: '{"value":"VkZH9QLLW5ArTc2ezKcgArabGQe3jnd+Y0/ifXombSzg8dkUHp4vwQv2+cHAdyP1xGhd9F/qRkF7kEBzW+jsEw==","salt":"EICFo703lVgWWQekrJiWCw==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  # Comptes de démo de needs (ex-realm cfao-needs, retiré le 20/11). Les `id` sont la
+  # jointure avec cfao-needs/api/referential/management/commands/seed_referential.py
+  # (PROFILES) : les deux fichiers se modifient ensemble.
+  - username: chef.atelier@cfao.com
+    id: "a1000001-0000-4000-8000-000000000001"
+    enabled: true
+    emailVerified: true
+    email: chef.atelier@cfao.com
+    firstName: Chef d'atelier
+    lastName: Douala
+    realmRoles: [workshop_manager]
+    attributes:
+      scopeNode: ["groupe.cmr.douala"]
+      brands: ["toyota", "peugeot"]
+      locale: ["fr"]
+    credentials:
+      - type: password
+        secretData: '{"value":"IwOQTu9kdFYgLqksersc1JVvNhPQxOICjISBChnUHwDSr0lt3TWZuhAwShvYIYmvArKZ/w1rSnl8HCDbcHjd9Q==","salt":"9eEqpwEOQxhZzZX/cpxHzg==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: chef.equipe@cfao.com
+    id: "a1000002-0000-4000-8000-000000000002"
+    enabled: true
+    emailVerified: true
+    email: chef.equipe@cfao.com
+    firstName: Chef d'équipe
+    lastName: Abidjan
+    realmRoles: [team_manager]
+    attributes:
+      scopeNode: ["groupe.civ.abidjan"]
+      brands: ["lovol", "hino"]
+      locale: ["fr"]
+    credentials:
+      - type: password
+        secretData: '{"value":"/zna4erYg5ZNQf71saZrTIf6jqBCSb5Ex3Q4wnaiM3+Aj7PwHgEkrWAKUq1rH3/uc/pUaVU/5Us50hTJL1Y9PA==","salt":"YR2UEoos//ms6IqFqAyGLg==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: team.lead@cfao.com
+    id: "a1000003-0000-4000-8000-000000000003"
+    enabled: true
+    emailVerified: true
+    email: team.lead@cfao.com
+    firstName: Team lead
+    lastName: Accra
+    realmRoles: [team_manager]
+    attributes:
+      scopeNode: ["groupe.gha.accra"]
+      brands: ["toyota"]
+      locale: ["en"]
+    credentials:
+      - type: password
+        secretData: '{"value":"Y5NSkaA6b7NPRBcc5AN9JB6+yxoLLTIUtEtTiklXKJVbekOtqcXrrJ7t/5XbZnPfnrZMrjNZtNMjpKVVo+u0Jw==","salt":"kDG6dU7mFoWbVQXykQG1Sg==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: directeur.cmr@cfao.com
+    id: "a1000004-0000-4000-8000-000000000004"
+    enabled: true
+    emailVerified: true
+    email: directeur.cmr@cfao.com
+    firstName: Directeur filiale
+    lastName: Cameroun
+    realmRoles: [branch_director]
+    attributes:
+      scopeNode: ["groupe.cmr"]
+      locale: ["fr"]
+    credentials:
+      - type: password
+        secretData: '{"value":"DPy2doRFYyQebpu+OgpWD3aoqRSMBGKlY7gsvqzwVvUBTXrmTLmuSxNLKmFa3gsp4p1110l2TcVPJ1d1zn7drQ==","salt":"ZdAvgXJTOO4zn0943amT+Q==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: assistante@cfao.com
+    id: "a1000005-0000-4000-8000-000000000005"
+    enabled: true
+    emailVerified: true
+    email: assistante@cfao.com
+    firstName: Assistante
+    lastName: centre
+    realmRoles: [center_assistant]
+    attributes:
+      scopeNode: ["groupe"]
+      locale: ["fr"]
+    credentials:
+      - type: password
+        secretData: '{"value":"c1Qw06bUejm+C6rHe7DkXgqD+P/SIw0yT1aw41LD7XscxUN/SVLcYnxCJXYuMYq8327S4JYVbiSXrj+svBGq1A==","salt":"lIpfLUcncscQx3zonm7TAw==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: coordonnateur@cfao.com
+    id: "a1000007-0000-4000-8000-000000000007"
+    enabled: true
+    emailVerified: true
+    email: coordonnateur@cfao.com
+    firstName: Coordonnateur
+    lastName: formations
+    realmRoles: [training_coordinator]
+    attributes:
+      scopeNode: ["groupe"]
+      locale: ["fr"]
+    credentials:
+      - type: password
+        secretData: '{"value":"XcviWGAGphVyVl2xZZhQcSr3RrsJ04lOMFEJ5aETBrfLDPW8AcC8ruyhxFPXl6UDoU5A96fEP1ULOAfYGJky+Q==","salt":"uTA1s8GfvYu6xs8muMjtlg==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'
+
+  - username: directeur.centre@cfao.com
+    id: "a1000006-0000-4000-8000-000000000006"
+    enabled: true
+    emailVerified: true
+    email: directeur.centre@cfao.com
+    firstName: Directeur
+    lastName: du centre
+    realmRoles: [center_director]
+    attributes:
+      scopeNode: ["groupe"]
+      locale: ["fr"]
+    credentials:
+      - type: password
+        secretData: '{"value":"fbMxBi00K/Pte0U8E4JbY10g81C4aqgY4gguqsrdhrvESS2C5/VpT7TIlQ/c7zU5lRyMx7Bj2K88UH9AY5S7fg==","salt":"H6L1PWQvJjf3QQvhi2XqxQ==","additionalParameters":{}}'
+        credentialData: '{"hashIterations":210000,"algorithm":"pbkdf2-sha512","additionalParameters":{}}'

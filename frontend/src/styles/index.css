@@ -73,8 +73,11 @@ body {
 .nav {
   position: sticky; top: 0; z-index: 50;
   background: rgba(255,255,255,0.85);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  /* Flou partagé par toutes les variantes de la barre (accueil, portail, pages éditoriales). */
+  --nav-blur: saturate(180%) blur(40px);
+  --nav-bg-glass: rgba(255, 255, 255, 0.7);
+  backdrop-filter: var(--nav-blur);
+  -webkit-backdrop-filter: var(--nav-blur);
   border-bottom: 1px solid rgba(26, 31, 60, 0.14);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
@@ -197,18 +200,19 @@ body {
 }
 .nav-links a:hover { color: var(--red); }
 .nav--home {
-  background: rgba(255, 255, 255, 0.52);
+  background: var(--nav-bg-glass);
 }
 .nav--home .nav-links a {
   color: var(--ink);
 }
-.nav--home .nav-cta {
+/* « Votre espace » (.nav-myspace-btn) garde son fond foncé : son texte est blanc partout. */
+.nav--home .nav-cta:not(.nav-myspace-btn) {
   background: transparent;
   color: var(--ink);
   border: 1px solid rgba(26, 31, 60, 0.42);
   font-weight: 500;
 }
-.nav--home .nav-cta:hover {
+.nav--home .nav-cta:not(.nav-myspace-btn):hover {
   background: rgba(255, 255, 255, 0.85);
   color: var(--ink);
   border-color: var(--ink);
@@ -379,6 +383,10 @@ body {
   column-gap: 16px;
   padding: 0 clamp(16px, 2vw, 32px);
 }
+/* Écran applicatif (menu du module dans la barre) : toute la largeur disponible. */
+/* La barre du portail et des écrans applicatifs occupe toute la largeur de l'écran. */
+.nav--wide .nav-shell,
+.nav--portal .nav-shell { max-width: none; }
 .nav--portal .nav-brand {
   grid-column: 1;
   grid-row: 1;
@@ -426,6 +434,19 @@ body {
 .nav--portal .nav-links a.nav-portal-pill:hover {
   color: var(--ink);
   background: rgba(255, 255, 255, 0.52);
+}
+/* Croix de retour d'un écran ouvert seul depuis le portail. */
+.nav--portal .nav-links a.nav-portal-pill.nav-app-close {
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.nav--portal .nav-links a.nav-portal-pill.nav-app-close:hover {
+  color: #fff;
+  background: var(--red);
 }
 .nav--portal .nav-links a.nav-portal-pill.active {
   color: var(--navy);
@@ -630,6 +651,32 @@ body {
   .brand-label {
     font-size: 15px;
     padding-left: 10px;
+  }
+}
+
+/* Téléphone : logo + menu + langues + connexion doivent tenir sans défilement
+   horizontal (467 px mesurés à 390 px avant). Le logo nomme déjà la marque. */
+@media (max-width: 480px) {
+  .nav:not(.nav--portal) .nav-shell {
+    padding: 0 12px;
+    gap: 6px;
+  }
+  .nav:not(.nav--portal) .brand-label {
+    display: none;
+  }
+  .nav:not(.nav--portal) .nav-actions {
+    gap: 6px;
+  }
+}
+@media (max-width: 360px) {
+  .nav:not(.nav--portal) .nav-shell {
+    padding: 0 8px;
+  }
+  .nav:not(.nav--portal) .locale-switch--nav {
+    gap: 2px;
+  }
+  .nav:not(.nav--portal) .brand-mark {
+    height: 30px;
   }
 }
 
@@ -6089,6 +6136,36 @@ section:nth-of-type(even) .card-carousel--peek.card-carousel--can-scroll-left::b
   list-style: none;
   margin: 0;
   padding: 0;
+  max-height: min(60vh, 440px);
+  overflow-y: auto;
+}
+
+.nav-notif-item--link {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-notif-item--link:hover {
+  background: #f4f6fb;
+}
+
+.nav-notif-item--link:focus-visible {
+  outline: 2px solid #1a56db;
+  outline-offset: -2px;
+}
+
+.nav-notif-item-cta {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 650;
+  color: #1a56db;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .nav-notif-item {
@@ -6402,6 +6479,83 @@ section:nth-of-type(even) .card-carousel--peek.card-carousel--can-scroll-left::b
   opacity: 0.4;
   font-size: 12px;
   margin-left: auto;
+}
+
+/* Menu du compte (UserMenu) : compteur d'alertes et panneau déplié sur place. */
+.nav-user-dropdown-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.nav-user-dropdown-empty {
+  margin: 0;
+  padding: 4px 16px 12px 42px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.nav-user-dropdown-notifs {
+  max-height: 260px;
+  padding: 0 8px 8px;
+}
+
+/* Propositions de modification et leur étape (aperçu du portail, page « Mes propositions », superadmin).
+   Pas de jaune (réservé au chantier) ; contrastes ≥ 4,5:1. */
+.mes-propositions { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.mes-propositions li { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.mes-propositions-quoi { min-width: 0; font-weight: 600; }
+.mes-propositions-date { color: var(--muted, #475569); font-weight: 400; }
+.mes-propositions-message { display: block; font-weight: 400; color: var(--muted, #475569); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mes-propositions-statut { flex: none; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #f1f5f9; color: #334155; }
+.mes-propositions-statut.is-lue,
+.mes-propositions-statut.is-planifiee { background: #eff6ff; color: #1e40af; }
+.mes-propositions-statut.is-en_ligne { background: #ecfdf5; color: #047857; }
+.mes-propositions-statut.is-non_retenue { background: #f3f4f6; color: #4b5563; }
+
+/* Page « Mes propositions » (pages/MesPropositions.jsx) : tableaux au format des portails des profils. */
+.mes-prop-nb { min-width: 26px; padding: 1px 8px; border-radius: 999px; background: var(--paper-3); color: var(--navy); font-size: 14px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.mes-prop-table { table-layout: fixed; }
+.mes-prop-table th:nth-child(1), .mes-prop-table td:nth-child(1) { width: 34%; }
+.mes-prop-table th:nth-child(2), .mes-prop-table td:nth-child(2) { width: 13%; }
+.mes-prop-table th:nth-child(3), .mes-prop-table td:nth-child(3) { width: 12%; }
+.mes-prop-table th:nth-child(4), .mes-prop-table td:nth-child(4) { width: 17%; }
+.mes-prop-table td { vertical-align: top; }
+.mes-prop-table thead th:first-child { border-top-left-radius: 15px; }
+.mes-prop-table thead th:last-child { border-top-right-radius: 15px; }
+.mes-prop-table tbody tr:last-child td:first-child { border-bottom-left-radius: 15px; }
+.mes-prop-table tbody tr:last-child td:last-child { border-bottom-right-radius: 15px; }
+.mes-prop-quoi { color: #0f172a; }
+.mes-prop-section { color: #475569; }
+.mes-prop-message { margin: 4px 0 0; white-space: pre-wrap; color: #334155; }
+.mes-prop-date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mes-prop-pastilles { display: flex; flex-wrap: wrap; gap: 6px; }
+.mes-prop-nouveau { padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #1e3a8a; color: #fff; }
+.mes-prop-echeance { margin: 6px 0 0; font-size: 13px; font-weight: 600; color: #1e40af; }
+.mes-prop-reponse p { margin: 0; white-space: pre-wrap; color: #1f2937; }
+.mes-prop-reponse-titre { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 700; color: #4b5563; }
+.mes-prop-sans-reponse { color: #475569; }
+.mes-prop-ligne.is-en_ligne td, .mes-prop-ligne.is-non_retenue td { background: #fafafa; }
+.mes-prop-vide { margin: 8px 0 0; color: #475569; }
+
+.nav-user-menu-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .nav-user-dropdown-divider {

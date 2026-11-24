@@ -1,3 +1,4 @@
+import { POSTE_DEV } from '../utils/posteDev.js'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -7,7 +8,7 @@ import { getPrimaryRole } from '../data/index.js'
 
 export default function PortalDemoBar() {
   // Uniquement visible en environnement de développement local (masqué en production)
-  if (!import.meta.env.DEV) return null
+  if (!POSTE_DEV) return null
 
   const { user, logout, status } = useAuth()
   const { t } = useLocale('portal')

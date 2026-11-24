@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<!-- Servie par cfao-edge quand un module ne répond pas (502, 503, 504). -->
+<meta http-equiv="refresh" content="15">
+<title>CFAO Academy · Mise à jour en cours</title>
+<style>
+  :root { --navy: #0e1126; --blue: #1a56db; --muted: #5b6078; --line: #e3e6ef; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: grid; place-items: center; padding: 16px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--navy);
+    background: linear-gradient(160deg, #f4f6fb 0%, #e8edf8 100%);
+  }
+  main {
+    width: 100%; max-width: 520px; padding: 32px 28px;
+    background: rgba(255, 255, 255, .86); border: 1px solid var(--line);
+    border-radius: 16px; box-shadow: 0 12px 40px rgba(14, 17, 38, .08);
+    text-align: center;
+  }
+  .brand { margin: 0 0 24px; font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .brand span { color: var(--blue); }
+  .spin {
+    width: 36px; height: 36px; margin: 0 auto 20px; border-radius: 50%;
+    border: 3px solid var(--line); border-top-color: var(--blue);
+    animation: spin 1s linear infinite;
+  }
+  h1 { margin: 0 0 8px; font-size: 22px; line-height: 1.3; }
+  p { margin: 0; color: var(--muted); line-height: 1.5; }
+  .en { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
+  .en h2 { margin: 0 0 6px; font-size: 16px; color: var(--navy); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+</style>
+</head>
+<body>
+<main role="status" aria-live="polite">
+  <p class="brand">CFAO <span>Academy</span></p>
+  <div class="spin" aria-hidden="true"></div>
+  <h1>Mise à jour en cours</h1>
+  <p>Le service redémarre. La page se recharge toute seule dans quelques secondes, inutile de la fermer.</p>
+  <div class="en" lang="en">
+    <h2>Update in progress</h2>
+    <p>The service is restarting. This page reloads by itself in a few seconds, no need to close it.</p>
+  </div>
+</main>
+</body>
+</html>

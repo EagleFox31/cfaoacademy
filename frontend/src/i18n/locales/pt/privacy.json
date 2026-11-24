@@ -1,0 +1,136 @@
+{
+  "eyebrow": "Dados pessoais",
+  "title": "Política de privacidade",
+  "sub": "Última atualização: junho de 2026 — CFAO Academy / CFAO Mobility Camarões",
+  "scopeTitle": "Objeto e âmbito",
+  "scopeP1": "A presente política aplica-se ao site e à plataforma CFAO Academy, serviço de formação técnica da CFAO Mobility nos Camarões (filial do CFAO Group), concebido e explorado pela equipa CFAO Academy.",
+  "scopeP2": "A CFAO Academy inclui:",
+  "scopeBullets": [
+    "um LMS (Learning Management System) para percursos de aprendizes: inscrição em sessões, acesso a conteúdos, acompanhamento da progressão, avaliações e certificados;",
+    "um módulo de assistência a formadores para o acompanhamento de pedidos de ajuda pedagógica ou logística emitidos por formadores ou coordenadores;",
+    "uma ferramenta de reserva de salas e oficinas do centro de formação Academy (calendário, capacidade, equipamentos);",
+    "o site público (catálogo, sessões, notícias, formulário de contacto)."
+  ],
+  "scopeP3": "Descreve como os seus dados pessoais são recolhidos e tratados quando consulta o site, cria uma conta, segue uma formação, solicita assistência a um formador ou reserva uma sala no centro.",
+  "controllerTitle": "Responsável pelo tratamento",
+  "controllerP1": "O responsável pelo tratamento é a CFAO Mobility, cuja sede social se situa em Bonabéri, Zona Industrial, Douala, Camarões.",
+  "controllerP2": "A CFAO Academy é o serviço operacional. Os tratamentos são realizados em conformidade com o quadro de proteção de dados do CFAO Group e a regulamentação aplicável (nomeadamente o RGPD para titulares situados no EEE e a legislação camaronesa em matéria de proteção de dados).",
+  "controllerContactLabel": "Contacto operacional Academy:",
+  "controllerCompliance": "Para o exercício dos seus direitos em matéria de proteção de dados, pode também consultar as coordenadas do serviço Compliance / proteção de dados publicadas em",
+  "subjectsTitle": "Titulares dos dados",
+  "subjectsBullets": [
+    "Aprendizes — técnicos, conselheiros de serviço, gestores da rede CFAO",
+    "Formadores — Key Instructors, Partner Instructor Managers, intervenientes de construtor",
+    "Pessoal de filial / centro — coordenadores de formação, referentes de rede, administração do centro",
+    "Visitantes do site — consulta do catálogo, pedidos via formulário de contacto"
+  ],
+  "dataTitle": "Dados recolhidos",
+  "dataIntro": "Conforme a sua utilização da plataforma, podemos tratar:",
+  "dataBullets": [
+    "Identificação e contacto — nome, apelido, identificador, endereço de e-mail profissional, número de telefone, filial CFAO, país, função",
+    "Conta e autenticação — credenciais de acesso, histórico de sessões ativas, ligação SSO (Microsoft, Google) quando aplicável",
+    "Percurso LMS — inscrições em sessões, presença, progressão, resultados de avaliações, certificados e certificações de construtor, materiais consultados",
+    "Assistência a formadores — conteúdo dos pedidos de ajuda, trocas com a equipa Academy, estado do tratamento, anexos eventuais",
+    "Reserva de salas — horários reservados, sala ou oficina em causa, sessão associada, número de participantes, necessidades materiais (equipamentos, veículos pedagógicos)",
+    "Formulário de contacto — coordenadas, assunto e mensagem do seu pedido",
+    "Navegação e preferências — registos técnicos (endereço IP, carimbo temporal), idioma de apresentação (FR/EN/PT), cookies ou armazenamento local estritamente necessários"
+  ],
+  "dataOutro": "Os campos obrigatórios são indicados no momento da recolha. Alguns dados podem ser transmitidos pela sua filial ou referente de rede aquando da criação da sua conta de aprendiz.",
+  "tableTitle": "Finalidades, bases legais e prazos de conservação",
+  "tableIntro": "A tabela abaixo resume os principais tratamentos. Os prazos indicativos podem ser prolongados em caso de obrigação legal, litígio ou arquivo justificado (certificações de construtor).",
+  "tablePurpose": "Finalidade",
+  "tableLegal": "Base legal",
+  "tableRetention": "Prazo indicativo",
+  "processingRows": {
+    "lmsAccount": {
+      "purpose": "Gestão da conta LMS",
+      "detail": "criação, autenticação, direitos de acesso por perfil (aprendiz, formador, administrador)",
+      "legal": "Execução do contrato / interesse legítimo",
+      "retention": "Duração da conta + 3 anos"
+    },
+    "trainingPath": {
+      "purpose": "Percurso de formação",
+      "detail": "inscrição, acompanhamento pedagógico, avaliações, emissão de certificados e certificações",
+      "legal": "Execução do contrato",
+      "retention": "Duração da formação + 10 anos (comprovativos profissionais)"
+    },
+    "trainerSupport": {
+      "purpose": "Assistência a formadores",
+      "detail": "tratamento de pedidos de ajuda, coordenação com a equipa pedagógica e logística",
+      "legal": "Interesse legítimo / execução do contrato",
+      "retention": "3 anos após encerramento do pedido"
+    },
+    "roomBooking": {
+      "purpose": "Reserva de salas",
+      "detail": "planeamento de horários no centro de formação, atribuição de recursos (salas, oficinas, equipamentos)",
+      "legal": "Execução do contrato / interesse legítimo",
+      "retention": "12 meses após a data da sessão"
+    },
+    "contactForm": {
+      "purpose": "Formulário de contacto",
+      "detail": "resposta a pedidos (inscrição, catálogo, parceria, auditoria)",
+      "legal": "Interesse legítimo / medidas pré-contratuais",
+      "retention": "3 anos após a última troca"
+    },
+    "trainingComms": {
+      "purpose": "Comunicações relacionadas com a formação",
+      "detail": "convocatórias, lembretes de sessão, informações pedagógicas",
+      "legal": "Execução do contrato",
+      "retention": "Duração da relação de formação"
+    },
+    "security": {
+      "purpose": "Segurança e melhoria do serviço",
+      "detail": "registos técnicos, prevenção de fraudes, manutenção da plataforma",
+      "legal": "Interesse legítimo / obrigação legal",
+      "retention": "12 meses no máximo (registos)"
+    },
+    "displayPrefs": {
+      "purpose": "Preferências de apresentação",
+      "detail": "idioma do site (FR/EN/PT)",
+      "legal": "Interesse legítimo",
+      "retention": "Enquanto não forem apagadas pelo utilizador"
+    }
+  },
+  "recipientsTitle": "Destinatários dos dados",
+  "recipientsIntro": "Os seus dados são acessíveis, no limite das respetivas atribuições, a:",
+  "recipientsBullets": [
+    "a equipa CFAO Academy (pedagogia, planeamento, suporte)",
+    "a sua filial CFAO e o seu referente de rede",
+    "os formadores atribuídos às suas sessões ou ao seu pedido de assistência",
+    "os construtores parceiros (Toyota, Mercedes-Benz, BYD, Suzuki, Stellantis, etc.) quando a certificação ou o programa o exige",
+    "os subcontratantes técnicos (Microsoft Azure para alojamento, mensagens, autenticação SSO) vinculados por compromissos de confidencialidade e proteção de dados"
+  ],
+  "recipientsOutro": "Nenhum dado pessoal é vendido a terceiros. Os acessos internos limitam-se ao princípio da necessidade de conhecimento (perfis aprendiz, formador, coordenador de centro, administrador).",
+  "transfersTitle": "Transferências internacionais",
+  "transfersP1": "No âmbito das atividades do CFAO Group em África e, quando aplicável, com prestadores ou entidades situados fora dos Camarões ou do EEE, alguns dados podem ser objeto de transferências internacionais.",
+  "transfersP2": "Essas transferências são enquadradas por garantias adequadas (cláusulas contratuais-tipo, decisões de adequação ou medidas equivalentes) em conformidade com o quadro do CFAO Group e a regulamentação aplicável.",
+  "rightsTitle": "Os seus direitos",
+  "rightsIntro": "Em conformidade com a regulamentação aplicável, dispõe dos seguintes direitos sobre os seus dados pessoais:",
+  "rightsBullets": [
+    "Direito de acesso — obter uma cópia dos seus dados",
+    "Direito de retificação — corrigir dados inexatos ou incompletos",
+    "Direito ao apagamento — nas condições previstas pela lei",
+    "Direito à limitação — restringir certos tratamentos",
+    "Direito de oposição — nomeadamente a tratamentos baseados no interesse legítimo",
+    "Direito à portabilidade — receber os seus dados num formato estruturado, quando aplicável",
+    "Retirada do consentimento — quando o tratamento se baseia no seu consentimento"
+  ],
+  "rightsExerciseBefore": "Para exercer os seus direitos, contacte",
+  "rightsExerciseAfter": "indicando o assunto do seu pedido. Poderá ser solicitado um documento de identificação para verificar a sua identidade.",
+  "rightsComplaint": "Pode também apresentar uma reclamação junto da autoridade de proteção de dados competente (autoridade camaronesa ou, quando aplicável, a autoridade do seu país de residência, incluindo ao abrigo do RGPD).",
+  "cookiesTitle": "Cookies e armazenamento local",
+  "cookiesIntro": "A plataforma utiliza nomeadamente:",
+  "cookiesBullets": [
+    "Cookies de sessão — manutenção da ligação segura ao LMS e aos módulos de reserva / assistência",
+    "Armazenamento de preferências — idioma selecionado (FR/EN/PT) registado localmente no seu navegador",
+    "Cookies técnicos — segurança, equilíbrio de carga, memorização de navegação interna (ex.: regresso ao calendário de sessões)"
+  ],
+  "cookiesOutro": "Ferramentas de medição de audiência podem ser implementadas posteriormente; nesse caso, o seu consentimento será recolhido em conformidade com o quadro de cookies do CFAO Group. Pode gerir os cookies a qualquer momento nas definições do seu navegador.",
+  "securityTitle": "Segurança",
+  "securityP1": "A CFAO Mobility implementa medidas técnicas e organizacionais adequadas ao LMS e aos dados de formação: comunicações encriptadas (HTTPS), gestão de permissões por perfil, cópias de segurança, controlo de acesso aos módulos de formadores e reserva, e sensibilização do pessoal autorizado.",
+  "updatesTitle": "Alterações",
+  "updatesP1": "Esta política pode ser atualizada para refletir a evolução dos serviços CFAO Academy (LMS, assistência a formadores, reserva de salas) ou os requisitos regulamentares do CFAO Group. Em caso de alteração substancial, os utilizadores autenticados poderão ser informados por e-mail ou notificação na plataforma.",
+  "contactTitle": "Contacto",
+  "contactP1Before": "Para qualquer questão relativa a esta política ou ao tratamento dos seus dados no âmbito da CFAO Academy:",
+  "closeAria": "Fechar e voltar à página anterior"
+}

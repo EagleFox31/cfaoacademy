@@ -1,3 +1,5 @@
+import { drapeauUrl } from './drapeau.js'
+
 function norm(s) {
   return s
     .trim()
@@ -99,6 +101,41 @@ const LOCAL_COUNTRY_FLAGS = {
   'toutes les filiales': '/assets/flags/africa-cfao-network.jpg',
 }
 
+/** Codes ISO (alpha-3 du référentiel planning, alpha-2 accepté) → fichier local. */
+const ISO_FLAG_FILES = {
+  all: 'groupe-cfao', // choix « toutes les filiales »
+  cmr: 'cameroon', cm: 'cameroon',
+  civ: 'ivory-coast', ci: 'ivory-coast',
+  sen: 'senegal', sn: 'senegal',
+  cod: 'democratic-republic-of-congo', cd: 'democratic-republic-of-congo',
+  cog: 'congo', cg: 'congo',
+  gab: 'gabon', ga: 'gabon',
+  ben: 'benin', bj: 'benin',
+  bfa: 'burkina-faso', bf: 'burkina-faso',
+  mdg: 'madagascar', mg: 'madagascar',
+  mar: 'morocco', ma: 'morocco',
+  mrt: 'mauritania', mr: 'mauritania',
+  ner: 'niger', ne: 'niger',
+  caf: 'central-african-republic', cf: 'central-african-republic',
+  gnq: 'equatorial-guinea', gq: 'equatorial-guinea',
+  tcd: 'chad', td: 'chad',
+  tgo: 'togo', tg: 'togo',
+  mli: 'mali', ml: 'mali',
+  gin: 'guinea', gn: 'guinea',
+  gha: 'ghana', gh: 'ghana',
+  ken: 'kenya', ke: 'kenya',
+  nga: 'nigeria', ng: 'nigeria',
+  tza: 'tanzania', tz: 'tanzania',
+  gmb: 'gambia', gm: 'gambia',
+  gnb: 'guinea-bissau', gw: 'guinea-bissau',
+}
+
+/** Drapeau local d'un code pays ISO (aucun CDN) ; null si inconnu. */
+export function flagUrlForIso(code) {
+  const file = code ? ISO_FLAG_FILES[String(code).trim().toLowerCase()] : null
+  return file ? `/assets/flags/${file}.svg` : null
+}
+
 /** @returns {string | null} */
 export function countryCodeFromName(name) {
   if (!name) return null
@@ -110,10 +147,11 @@ export function localFlagUrlForCountry(name) {
   return LOCAL_COUNTRY_FLAGS[norm(name)] ?? null
 }
 
+/** Drapeau hébergé localement (`drapeauUrl`) ; `width` ignoré : SVG. */
+// eslint-disable-next-line no-unused-vars
 export function flagCdnUrlForCountry(name, width = 40) {
   const code = countryCodeFromName(name)
-  if (!code) return null
-  return `https://flagcdn.com/w${width}/${code}.png`
+  return code ? drapeauUrl(code) : null
 }
 
 export function flagUrlForCountry(name, width = 64) {

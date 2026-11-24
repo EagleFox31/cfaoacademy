@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "lms",
     "analytics",
     "manager",
+    "suggestions",
     # <generated-apps>  (ne pas retirer : ancre du générateur scripts/new_module.py)
 ]
 
@@ -64,6 +65,8 @@ REST_FRAMEWORK = {
 OIDC_JWKS_URL = env("OIDC_JWKS_URL", default="")
 OIDC_ISSUER = env("OIDC_ISSUER", default="")
 OIDC_AUDIENCE = env("OIDC_AUDIENCE", default="")
+# Émetteurs supplémentaires « émetteur=jwks;… » (voir core/auth/jwt_verifier.py).
+OIDC_TRUSTED_ISSUERS = env("OIDC_TRUSTED_ISSUERS", default="")
 
 # ── Cerbos (PDP) ──
 CERBOS_HTTP = env("CERBOS_HTTP", default="http://localhost:3592")

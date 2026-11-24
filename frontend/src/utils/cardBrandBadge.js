@@ -1,8 +1,16 @@
 import { BRANDS } from '../data/index.js'
 
-const BRAND_LOGOS = Object.fromEntries(
-  BRANDS.filter((b) => b.logo).map((b) => [b.name.toUpperCase(), b.logo]),
-)
+const sansAccent = (s) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '')
+
+// Marques du catalogue sans fiche publique dans BRANDS : le logo existe quand même.
+const BRAND_LOGOS = {
+  ...Object.fromEntries(
+    BRANDS.filter((b) => b.logo).map((b) => [sansAccent(b.name.toUpperCase()), b.logo]),
+  ),
+  FIAT: '/assets/logos/fiat.png',
+  JEEP: '/assets/logos/jeep.png',
+  PEUGEOT: '/assets/logos/peugeot.png',
+}
 
 const LOGO_ALIASES = {
   'MERCEDES-BENZ': 'MERCEDES-BENZ',
@@ -10,6 +18,7 @@ const LOGO_ALIASES = {
   'OMODA & JAECCO': 'OMODA & JAECCO',
   'OMODA-JAECCO': 'OMODA & JAECCO',
   'OMODA-JAECOO': 'OMODA & JAECCO',
+  'OMODA & JAECOO': 'OMODA & JAECCO',
   'TOYOTA FORKLIFT': 'TOYOTA MATERIAL',
   'TOYOTA-FORKLIFT': 'TOYOTA MATERIAL',
   'TOYOTA MATERIAL': 'TOYOTA MATERIAL',
@@ -44,7 +53,7 @@ const BU_BADGE = {
 }
 
 function norm(s) {
-  return (s ?? '').trim().toUpperCase()
+  return sansAccent((s ?? '').trim().toUpperCase())
 }
 
 function lookupLogo(raw) {

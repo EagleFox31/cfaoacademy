@@ -1,15 +1,16 @@
+import { adresse } from '../lib/adresse'
 /**
  * Fond d'écran hero du portail, selon le profil : copie de la règle de
  * `frontend/src/utils/portalBackground.js` et `portalPersona.js`
  * (persona, puis département), sans la vue groupe que le module n'a pas.
  */
 export const PORTAL_HERO_IMAGES = {
-  default: '/assets/hero/default.jpg',
-  vl: '/assets/hero/cta_hover_vl.jpg',
-  pl: '/assets/hero/cta_hover_pl.jpg',
-  carrossier: '/assets/hero/cta_hover_carrosserie.png',
-  savParts: '/assets/hero/cta_hover_sav.jpg',
-  b2b: '/assets/hero/cta_hover_b2b.jpg',
+  default: adresse('/assets/hero/default.jpg'),
+  vl: adresse('/assets/hero/cta_hover_vl.jpg'),
+  pl: adresse('/assets/hero/cta_hover_pl.jpg'),
+  carrossier: adresse('/assets/hero/cta_hover_carrosserie.png'),
+  savParts: adresse('/assets/hero/cta_hover_sav.jpg'),
+  b2b: adresse('/assets/hero/cta_hover_b2b.jpg'),
 }
 
 export const PORTAL_HERO_BG_POSITION = {

@@ -24,6 +24,12 @@ export function filterTicketsForUser(tickets = [], user) {
   })
 }
 
+/** Tickets visibles par un formateur : ceux des marques qu'il couvre. */
+export function filterTicketsForBrands(tickets = [], brands = []) {
+  const marques = new Set(brands)
+  return (tickets ?? []).filter(ticket => marques.has(ticket.brand))
+}
+
 /** Pool mock/API puis filtre technicien. */
 export function resolveLearnerAssistanceTickets(lms, user) {
   const pool = lms?.myTickets ?? lms?.filialeTickets ?? []

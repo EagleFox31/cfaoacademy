@@ -275,16 +275,18 @@
   background: rgba(14, 17, 38, 0.11);
   color: var(--ink);
 }
-section.has-section-bg:nth-of-type(even) .pv-tabs--pills .pv-tab,
-section.has-section-bg:nth-of-type(even) .pv-tabs--pills .pv-tab.active,
-section.has-section-bg:nth-of-type(even) .pv-tabs--pills .pv-tab:hover:not(.active) {
+/* Une pastille a toujours un fond clair : texte foncé, section sombre ou non,
+   avec ou sans photo de fond. */
+section:nth-of-type(even) .pv-tabs--pills .pv-tab,
+section:nth-of-type(even) .pv-tabs--pills .pv-tab.active,
+section:nth-of-type(even) .pv-tabs--pills .pv-tab:hover:not(.active) {
   color: var(--ink);
 }
-section.has-section-bg:nth-of-type(even) .pv-tabs--pills .pv-tab .tab-count {
+section:nth-of-type(even) .pv-tabs--pills .pv-tab .tab-count {
   background: rgba(14, 17, 38, 0.08);
   color: var(--ink);
 }
-section.has-section-bg:nth-of-type(even) .pv-tabs--pills .pv-tab.active .tab-count {
+section:nth-of-type(even) .pv-tabs--pills .pv-tab.active .tab-count {
   background: var(--red);
   color: #fff;
 }
@@ -363,6 +365,14 @@ a.pv-card,
   position: relative;
   flex-shrink: 0;
 }
+/* Carte sans destination : le chantier animé recouvre le visuel d'office (pas d'app derrière). */
+.pv-card-construction {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.pv-card-construction > .portal-construction-media { height: 100%; }
 .pv-card-hover-hint {
   position: absolute;
   top: 50%;
@@ -552,6 +562,18 @@ button.pv-card {
   transition: transform .5s cubic-bezier(.2,.7,.2,1);
 }
 .pv-card:hover .pv-card-img img { transform: scale(1.05); }
+/* Flou d'attente : miniature agrandie sous l'image, qui la recouvre dès qu'elle est décodée.
+   L'image n'est jamais masquée en attendant le JS : un fondu piloté par `load` retardait
+   sa peinture (LCP) de 1,3 s quand le fil principal est chargé. */
+.pv-card-img.has-flou { position: relative; }
+.pv-card-img.has-flou::before {
+  content: ''; position: absolute; inset: 0;
+  background: var(--img-flou) center / cover no-repeat;
+  filter: blur(14px); transform: scale(1.15);
+}
+/* Retiré une fois l'image chargée : rien derrière un PNG transparent. */
+.pv-card-img.has-flou.is-loaded::before { display: none; }
+.pv-card-img.has-flou img { position: relative; }
 
 /* card body */
 .pv-card-body {
@@ -606,6 +628,14 @@ button.pv-card {
   font-size: 18px; letter-spacing: -0.02em; line-height: 1.15;
   font-weight: 600; color: var(--ink);
   text-wrap: pretty;
+}
+/* ClampedText : N lignes max (--clamp-lines, 3 par défaut), texte complet en infobulle. */
+.clamp-lines {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--clamp-lines, 3);
+  line-clamp: var(--clamp-lines, 3);
+  overflow: hidden;
 }
 .pv-card .meta {
   font-size: 13px;
@@ -1981,9 +2011,9 @@ a.pv-card--brand {
 .card-rail {
   position: relative;
   width: 100%;
-  --rail-count: 4;
-  --rail-peek: 0.5;
-  --rail-gap: 20px;
+  --rail-count: var(--rail-count-lg, 4);
+  --rail-peek: var(--rail-peek-lg, 0.5);
+  --rail-gap: var(--rail-gap-lg, 20px);
 }
 .card-rail__scroller {
   display: flex;
@@ -1997,8 +2027,22 @@ a.pv-card--brand {
   padding: 4px 2px 12px;
 }
 .card-rail__scroller::-webkit-scrollbar { display: none; }
+/* Grille dont les cartes ont la largeur d'une carte de rail : même page, même gabarit. */
+.pv-grid.pv-grid--rail {
+  --rail-count: var(--rail-count-lg, 4);
+  --rail-peek: var(--rail-peek-lg, 0.5);
+  --rail-gap: var(--rail-gap-lg, 20px);
+  gap: var(--rail-gap);
+  grid-template-columns: repeat(auto-fill, var(--rail-card-w));
+}
+.card-rail, .pv-grid--rail {
+  --rail-card-w: calc((100% - (var(--rail-count) - 1) * var(--rail-gap)) / (var(--rail-count) + var(--rail-peek)));
+}
+@media (max-width: 900px) {
+  .pv-grid.pv-grid--rail { --rail-count: 2; --rail-peek: 0.3; --rail-gap: 14px; }
+}
 .card-rail__item {
-  flex: 0 0 calc((100% - (var(--rail-count) - 1) * var(--rail-gap)) / (var(--rail-count) + var(--rail-peek)));
+  flex: 0 0 var(--rail-card-w);
   min-width: 0;
   scroll-snap-align: start;
   display: flex;
@@ -2041,7 +2085,7 @@ a.pv-card--brand {
 .card-rail__nav--next { right: -14px; }
 
 @media (max-width: 900px) {
-  .card-rail { --rail-count: 2; --rail-peek: 0.3; --rail-gap: 14px; }
+  .card-rail { --rail-count: min(2, var(--rail-count-lg, 4)); --rail-peek: 0.3; --rail-gap: 14px; }
   .card-rail__nav { width: 40px; height: 40px; font-size: 22px; }
 }
 @media (max-width: 560px) {
@@ -2285,15 +2329,16 @@ body.editorial-page-bg {
 }
 /* Même transparence que l’accueil — la photo reste visible sous la nav */
 body.editorial-page-bg .nav {
-  background: rgba(255, 255, 255, 0.52);
+  background: var(--nav-bg-glass);
 }
-body.editorial-page-bg .nav .nav-cta:not(.nav-cta--primary) {
+/* « Votre espace » (.nav-myspace-btn) garde son fond foncé : son texte est blanc partout. */
+body.editorial-page-bg .nav .nav-cta:not(.nav-cta--primary):not(.nav-myspace-btn) {
   background: transparent;
   color: var(--ink);
   border: 1px solid rgba(26, 31, 60, 0.42);
   font-weight: 500;
 }
-body.editorial-page-bg .nav .nav-cta:not(.nav-cta--primary):hover {
+body.editorial-page-bg .nav .nav-cta:not(.nav-cta--primary):not(.nav-myspace-btn):hover {
   background: rgba(255, 255, 255, 0.85);
   color: var(--ink);
   border-color: var(--ink);
@@ -2833,6 +2878,220 @@ body.editorial-page-bg .nav .nav-cta:not(.nav-cta--primary)::after {
   aspect-ratio: 16 / 9;
   object-fit: cover;
   display: block;
+}
+
+/* Page « Mon profil » : gabarit du détail d'article, avatar posé sur l'image. */
+.profile-sheet {
+  position: relative;
+  padding-bottom: 8px;
+}
+/* Croix dans le coin de la carte, pas flottante au-dessus de la page. */
+.article-close.profile-close {
+  top: 20px;
+  right: 20px;
+}
+.profile-head {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 40px 72px 32px 40px;
+}
+.profile-head h1 {
+  margin: 0;
+}
+.profile-page-badges {
+  margin-top: 10px;
+}
+.profile-avatar {
+  flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  overflow: hidden;
+  box-shadow: 0 0 0 4px #fff, 0 8px 24px rgba(14, 17, 38, 0.16);
+}
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+/* Rubriques à gauche, contenu à droite (modèle des pages compte Google / Apple). */
+.profile-body {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 40px;
+  padding: 8px 40px 40px;
+  border-top: 1px solid rgba(26, 31, 60, 0.1);
+}
+.profile-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 24px;
+}
+.profile-tab {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.profile-tab svg {
+  flex-shrink: 0;
+}
+.profile-tab:hover {
+  background: rgba(26, 31, 60, 0.05);
+  color: var(--ink);
+}
+.profile-tab.is-active {
+  background: rgba(26, 31, 60, 0.08);
+  color: var(--ink);
+  font-weight: 700;
+}
+.profile-tab:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.profile-panel {
+  padding-top: 24px;
+  min-width: 0;
+}
+.profile-panel-title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.profile-list {
+  margin: 0;
+}
+.profile-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) 2fr;
+  align-items: center;
+  gap: 16px;
+  min-height: 60px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(26, 31, 60, 0.1);
+}
+.profile-row-label {
+  font-size: 14px;
+  color: var(--muted);
+}
+.profile-row-value {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.profile-brands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.profile-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid rgba(26, 31, 60, 0.14);
+  border-radius: 999px;
+}
+.profile-brand-logo {
+  width: 32px;
+  height: 20px;
+  object-fit: contain;
+}
+.profile-locale-switch {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.profile-locale-switch .locale-switch-btn {
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid rgba(26, 31, 60, 0.14);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0;
+  color: var(--muted);
+  cursor: pointer;
+}
+.profile-locale-switch .locale-switch-btn.is-active {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.profile-action {
+  padding: 8px 16px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+.profile-action:hover {
+  background: var(--ink);
+  color: #fff;
+}
+@media (max-width: 640px) {
+  .profile-head {
+    gap: 16px;
+    padding: 28px 20px 24px;
+  }
+  .article-close.profile-close {
+    top: 12px;
+    right: 12px;
+  }
+  .profile-avatar {
+    width: 72px;
+    height: 72px;
+    font-size: 24px;
+  }
+  .profile-body {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0 20px 28px;
+  }
+  .profile-tabs {
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 16px 0 4px;
+    scrollbar-width: none;
+  }
+  .profile-tab {
+    width: auto;
+    white-space: nowrap;
+    padding: 8px 14px;
+  }
+  .profile-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
 }
 .article-hero--video video,
 .article-hero--video iframe {
@@ -3727,16 +3986,12 @@ section:nth-of-type(even) .sessions-month-count {
   font-family: 'Space Grotesk', system-ui, sans-serif;
 }
 
-.portal-campaign-year-chip--future {
-  background: #eff6ff;
-  color: #1a56db;
-  border: 1px solid #bfdbfe;
-}
-
+/* L'année n'est qu'un repère : même teinte neutre pour les trois, l'état est porté par la pastille. */
+.portal-campaign-year-chip--future,
 .portal-campaign-year-chip--current {
-  background: #ecfdf5;
-  color: #047857;
-  border: 1px solid #a7f3d0;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }
 
 .portal-campaign-year-chip--past {
@@ -3744,6 +3999,11 @@ section:nth-of-type(even) .sessions-month-count {
   color: #475569;
   border: 1px solid #cbd5e1;
 }
+
+/* Année dans le titre d'une carte : mêmes couleurs que les pastilles d'année */
+.portal-card-year--future { color: #1a56db; }
+.portal-card-year--current { color: #047857; }
+.portal-card-year--past { color: #475569; }
 
 /* ─── Titre section Plans de formations pluriannuels — en blanc sur fond sombre ─ */
 .portal-pif-filiale-section .portal-section-title,

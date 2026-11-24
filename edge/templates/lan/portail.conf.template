@@ -1,0 +1,29 @@
+# Portail par rôle sur sa propre origine : le partage zrok `academy-portail` vise
+# cette écoute. Les API planning, core et supervision y sont servies sous leur préfixe (même
+# origine que l'interface). Pas de Keycloak ici : l'émetteur reste l'URL publique
+# d'academy-server. zrok ou Caddy terminent TLS : le schéma vu des navigateurs suit
+# l'en-tête reçu, et le port aussi quand le proxy le déclare (Caddy sur l'IP).
+set $edge_fwd_proto http;
+set $edge_fwd_host  $host;
+set $edge_fwd_port  $server_port;
+if ($http_x_forwarded_proto = https) {
+    set $edge_fwd_proto https;
+    set $edge_fwd_port  443;
+}
+if ($http_x_forwarded_port) {
+    set $edge_fwd_port $http_x_forwarded_port;
+}
+
+# Absentes si le module n'a pas d'adresse (25-modules-actifs.sh).
+include /tmp/conf.d/routes/planning.con[f];
+include /tmp/conf.d/routes/core.con[f];
+include /tmp/conf.d/routes/supervision.con[f];
+
+location / {
+    set $edge_module portail;
+    include /etc/nginx/snippets/proxy-commun.conf;
+    proxy_set_header Host $http_host;
+    # Portail arrêté (502/503/504) : page d'attente.
+    proxy_intercept_errors on;
+    proxy_pass http://${EDGE_PORTAIL_UPSTREAM};
+}

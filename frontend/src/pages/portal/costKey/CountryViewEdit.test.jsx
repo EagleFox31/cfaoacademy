@@ -1,0 +1,824 @@
+// @vitest-environment jsdom
+import { act } from 'react'
+import { createRoot } from 'react-dom/client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { getCopy } from '../../../i18n/index.js'
+import { makeFormatter } from '../../../components/sheet/sheetExport'
+
+vi.mock('../../../hooks/useLocale', () => ({ default: s => ({ t: getCopy(s, 'fr'), locale: 'fr' }) }))
+vi.mock('../../../lib/planningApi', () => ({ planningApi: {} }))
+vi.mock('../../../data/academy/equipe-poles.json', () => ({
+  default: { poles: [{ members: [{ name: 'Awa TESTEUR', photo: '/assets/team/awa-testeur.png' }] }] },
+}))
+
+const { planningApi } = await import('../../../lib/planningApi')
+const { CountryView } = await import('./costKeyViews.jsx')
+
+globalThis.IS_REACT_ACT_ENVIRONMENT = true
+Element.prototype.scrollIntoView = () => {} // absent de jsdom
+const T = getCopy('costKey', 'fr')
+const KEY = { id: 'k1', year: 2027, pole: 'MOTORS', status: 'DRAFT' }
+const COUNTRIES = { rows: [{ country: 'CG', label: 'Congo' }], brands: [] }
+
+const session = (edit = {}, seats = 6) => ({
+  brand: 'TOYOTA', code: 'T-01', title: 'Moteur', start_date: '2027-03-01', end_date: '2027-03-05',
+  trainers: [], location: 'Douala', host: 'CM', seats,
+  edit: {
+    key: 'k1', frozen: false, session: 's1', allocation: 'a1',
+    raw: { seats, start_date: '2027-03-01', end_date: '2027-03-05', location: 'Douala', title: 'Moteur' }, ...edit,
+  },
+})
+const payload = sessions => ({
+  country: 'CG', label: 'Congo', sessions, brands: [],
+  footer: { seats: 6, share: 0.2, key_cost: 1, trainee_lodging: 1, trainer_lodging: 1, total: 3, needs: 8, coverage: 0.75 },
+})
+
+const flush = async () => {
+  for (let i = 0; i < 5; i += 1) await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+}
+
+let host, root, onEdited
+async function show(props = {}) {
+  host = document.createElement('div')
+  document.body.appendChild(host)
+  root = createRoot(host)
+  await act(async () => {
+    root.render(
+      <CountryView t={T} locale="fr" fmt={makeFormatter('fr')} ckey={KEY} mode="PLANNED" global={COUNTRIES}
+        code="CG" setCode={() => {}} slots={{ title: null, tools: null }} canEdit onEdited={onEdited} {...props} />,
+    )
+  })
+  await flush()
+}
+
+const editable = () => [...host.querySelectorAll('td.is-editable')]
+const startCell = () => editable()[1]
+const seatsCell = () => editable()[4]
+const fire = (el, event) => act(async () => { el.dispatchEvent(event) })
+const dblclick = el => fire(el, new MouseEvent('dblclick', { bubbles: true }))
+const press = (el, key) => fire(el, new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+const input = () => host.querySelector('input.sheet-edit')
+async function type(value) {
+  const el = input()
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, value)
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+}
+async function enter(cell, value) {
+  await dblclick(cell)
+  await type(value)
+  await press(input(), 'Enter')
+  await flush()
+}
+const conflict = (details = {}) => Object.assign(new Error('conflict'), {
+  status: 409,
+  code: 'CELL_CONFLICT',
+  payload: { error: { details: { current: 9, changed_by: 'Une collègue', changed_at: '2027-01-05T10:00:00Z', source: 'CELL', ...details } } },
+})
+const alertBox = () => document.querySelector('.ck-cell-alert')
+const button = label => [...alertBox().querySelectorAll('button')].find(b => b.textContent === label)
+
+beforeEach(() => {
+  onEdited = vi.fn().mockResolvedValue(undefined)
+  Object.assign(planningApi, {
+    country: vi.fn().mockResolvedValue(payload([session()])),
+    editCell: vi.fn().mockResolvedValue({ changed: true, value: 8, edited_at: '2027-01-05T11:00:00Z' }),
+  })
+})
+
+afterEach(async () => {
+  await act(async () => { root.unmount() })
+  host.remove()
+})
+
+describe('saisie dans le devis par filiale', () => {
+  it('permet de modifier la date de début de la session', async () => {
+    await show()
+    await enter(startCell(), '2027-03-08')
+    expect(planningApi.editCell).toHaveBeenCalledWith('k1', expect.objectContaining({
+      target: 'session', field: 'start_date', expected: '2027-03-01', value: '2027-03-08',
+    }))
+  })
+
+  it('envoie la valeur vue au départ, puis actualise le tableau et la vue globale', async () => {
+    await show()
+    await enter(seatsCell(), '8')
+    expect(planningApi.editCell).toHaveBeenCalledWith('k1', { target: 'allocation', id: 'a1', field: 'seats', expected: 6, value: 8 })
+    expect(planningApi.country).toHaveBeenCalledTimes(2)
+    expect(onEdited).toHaveBeenCalledTimes(1)
+  })
+
+  it('valide aussi quand la cellule perd le focus', async () => {
+    await show()
+    await dblclick(seatsCell())
+    await type('8')
+    await act(async () => { input().dispatchEvent(new FocusEvent('focusout', { bubbles: true })) })
+    await flush()
+    expect(planningApi.editCell).toHaveBeenCalledTimes(1)
+  })
+
+  it('n’envoie rien sur Échap, ni si la valeur ne change pas', async () => {
+    await show()
+    await dblclick(seatsCell())
+    await type('8')
+    await press(input(), 'Escape')
+    await flush()
+    expect(input()).toBeNull()
+    await enter(seatsCell(), '6')
+    expect(planningApi.editCell).not.toHaveBeenCalled()
+  })
+
+  it('garde la cellule ouverte sur une saisie non valide', async () => {
+    await show()
+    await enter(seatsCell(), '0')
+    expect(input()).not.toBeNull()
+    expect(planningApi.editCell).not.toHaveBeenCalled()
+  })
+
+  it('un conflit montre l’autre valeur, puis « remplacer » repart de celle-ci', async () => {
+    planningApi.editCell.mockRejectedValueOnce(conflict())
+    await show()
+    await enter(seatsCell(), '8')
+    expect(alertBox().textContent).toContain('Une collègue')
+    expect(alertBox().textContent).toContain('9')
+    await act(async () => { button(T.conflict_replace).click() })
+    await flush()
+    expect(planningApi.editCell).toHaveBeenLastCalledWith('k1', { target: 'allocation', id: 'a1', field: 'seats', expected: 9, value: 8 })
+    expect(alertBox()).toBeNull()
+  })
+
+  it('un conflit « garder » n’envoie plus rien et affiche la valeur de l’autre', async () => {
+    planningApi.editCell.mockRejectedValueOnce(conflict())
+    planningApi.country
+      .mockResolvedValueOnce(payload([session()]))
+      .mockResolvedValueOnce(payload([session({}, 9)]))
+    await show()
+    await enter(seatsCell(), '8')
+    await act(async () => { button(T.conflict_keep).click() })
+    await flush()
+    expect(planningApi.editCell).toHaveBeenCalledTimes(1)
+    expect(alertBox()).toBeNull()
+    expect(seatsCell().textContent).toContain('9')
+  })
+
+  it('un conflit causé par un import le dit', async () => {
+    planningApi.editCell.mockRejectedValueOnce(conflict({ source: 'IMPORT', changed_by: '' }))
+    await show()
+    await enter(seatsCell(), '8')
+    expect(alertBox().textContent).toContain(T.conflict_import)
+  })
+
+  it('une valeur refusée par le serveur n’actualise pas', async () => {
+    planningApi.editCell.mockRejectedValueOnce(Object.assign(new Error('bad'), { status: 400, code: 'END_BEFORE_START' }))
+    await show()
+    await enter(seatsCell(), '8')
+    expect(alertBox().textContent).toContain(T.err_END_BEFORE_START)
+    expect(planningApi.country).toHaveBeenCalledTimes(1)
+    expect(onEdited).not.toHaveBeenCalled()
+  })
+
+  it('ne laisse pas saisir sans le droit', async () => {
+    await show({ canEdit: false })
+    expect(editable()).toHaveLength(0)
+    const cell = host.querySelector('td[data-cell]')
+    await dblclick(cell)
+    expect(input()).toBeNull()
+  })
+
+  it('montre la photo du formateur, ou ses initiales s’il n’en a pas', async () => {
+    planningApi.country.mockResolvedValue(payload([{ ...session(), trainers: ['Awa TESTEUR', 'Formateur externe'] }]))
+    await show()
+    expect(host.querySelector('img.sheet-c-avatar').getAttribute('src')).toBe('/assets/team/awa-testeur.png')
+    expect(host.querySelector('.sheet-c-avatar.is-initials').textContent).toBe('FE')
+    expect(host.querySelector('.sheet-c-trainer-names').textContent).toBe('Awa TESTEUR, Formateur externe')
+  })
+
+  it('affiche les places face aux besoins et le taux de couverture des besoins', async () => {
+    await show()
+    expect(host.textContent).toContain('Places attribuées / demandées (besoins)')
+    expect(host.textContent).toContain('6 / 8')
+    expect(host.textContent).toContain('2 besoins non couverts')
+    expect(host.textContent).toContain('Taux de couverture des besoins')
+  })
+
+  it('colore les places selon leur destination et montre les trois compteurs', async () => {
+    planningApi.country.mockResolvedValue({
+      ...payload([{ ...session(), seat_status: 'postponed', postponed: 6 }]),
+      footer: { ...payload([]).footer, in_subsidiary: 1, at_academy: 2, postponed: 3 },
+    })
+    await show()
+    expect(seatsCell().classList.contains('tone-place-postponed')).toBe(true)
+    const counter = key => host.querySelector(`.ck-kpi--split .ck-split--${key}`).textContent
+    expect(counter('in_subsidiary')).toBe('En filiale1')
+    expect(counter('at_academy')).toBe('À l\'Academy2')
+    expect(counter('postponed')).toBe('Reportées3')
+    expect(host.querySelector('.ck-kpi-split small').textContent).toBe('Restent comptées et facturées')
+  })
+
+  describe('indicateurs et filtres', () => {
+    const row = (allocation, brand, brand_code, location, site, seats, extra = {}) => ({
+      ...session({ allocation }, seats), brand, brand_code, location, site, postponed: 0, seat_status: site,
+      code: allocation, start_date: '2027-03-01', key_cost: seats * 10, trainee_lodging: seats, trainer_lodging: 1, ...extra,
+    })
+    const footer = {
+      seats: 10, key_cost: 100, trainee_lodging: 10, trainer_lodging: 3, total: 113, needs: 16, coverage: 0.625,
+      in_subsidiary: 6, at_academy: 2, postponed: 2, needs_by_brand: { toyota: 5, suzuki: 11 },
+    }
+    const rows = () => [
+      row('a1', 'Toyota', 'toyota', 'Douala', 'at_academy', 4, { postponed: 2, seat_status: 'postponed' }),
+      row('a2', 'Suzuki', 'suzuki', 'Douala', 'in_subsidiary', 3),
+      row('a3', 'Suzuki', 'suzuki', 'Tana', 'in_subsidiary', 3, { start_date: '2027-04-01' }),
+    ]
+    const load = async (sessions = rows(), foot = footer) => {
+      planningApi.country.mockResolvedValue({ ...payload(sessions), footer: foot })
+      await show()
+    }
+    const kpi = label => [...host.querySelectorAll('.ck-kpi')].find(k => k.querySelector('dt').textContent === label)
+    const value = label => kpi(label).querySelector('dd').textContent.replace(/\s/g, ' ')
+    const split = key => host.querySelector(`.ck-split--${key} b`).textContent
+    const facet = label => [...host.querySelectorAll('.ck-facet-btn')].find(b => b.querySelector('.ck-facet-label').textContent === label)
+    const option = val => host.querySelector(`[role=option][data-value="${val}"]`)
+    const toggleFacet = async label => { await act(async () => { facet(label).click() }) }
+    const choose = async (label, val) => {
+      await toggleFacet(label)
+      await act(async () => { option(val).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })) })
+      await toggleFacet(label)
+      await flush()
+    }
+
+    it('place les filtres juste avant les indicateurs, sans recherche globale ni barre de boutons', async () => {
+      await load()
+      const filtres = host.querySelector('.ck-filterbar')
+      expect(filtres.nextElementSibling.classList.contains('ck-kpis')).toBe(true)
+      expect(filtres.querySelector('.sheet-search')).toBeNull()
+      expect([...filtres.querySelectorAll('.ck-facet-label')].map(l => l.textContent))
+        .toEqual(['Marque', 'Métier', 'Type', 'Lieu', 'Mois'])
+      expect(host.querySelector('.sheet:not(.ck-filterbar) .sheet-toolbar')).toBeNull()
+      expect(host.querySelector('.sheet-head .sheet-rownum-h .sheet-cols-btn')).not.toBeNull()
+    })
+
+    it('une session à l\'Academy affiche « Academy » avec le drapeau, sans « de Douala »', async () => {
+      await load([
+        row('a1', 'Toyota', 'toyota', 'Academy de Douala', 'at_academy', 4),
+        row('a2', 'Suzuki', 'suzuki', 'Madagascar', 'in_subsidiary', 3, { host: 'MG' }),
+      ])
+      const labels = [...host.querySelectorAll('.sheet-table tbody .ck-country-label')].map(l => l.textContent)
+      expect(labels).toEqual(expect.arrayContaining(['Academy', 'Madagascar']))
+      expect(labels).not.toContain('Academy de Douala')
+      expect(host.querySelector('.sheet-table tbody .ck-country .ck-flag, .sheet-table tbody .ck-country .ck-flag-code')).not.toBeNull()
+    })
+
+    it('une ligne par date de la grille : formation sur chaque ligne, une seule cellule de places', async () => {
+      const grid_slots = [
+        { start_date: '2027-01-04', end_date: '2027-01-08', trainers: ['A. Un'] },
+        { start_date: '2027-03-01', end_date: '2027-03-05', trainers: ['B. Deux'] },
+      ]
+      await load([row('a1', 'Suzuki', 'suzuki', 'Academy de Douala', 'at_academy', 4,
+        { start_date: '2027-01-04', dates_source: 'grid', grid_slots })], { ...footer, seats: 4 })
+      const lines = host.querySelectorAll('.sheet-table tbody tr')
+      expect(lines).toHaveLength(2)
+      expect(host.querySelector('.sheet-c-more')).toBeNull()
+      expect(lines[1].textContent).toContain('B. Deux')
+      const titres = [...lines].map(l => [...l.querySelectorAll('td')].find(td => td.textContent === 'Moteur'))
+      expect(titres.every(td => td && !td.hasAttribute('rowspan'))).toBe(true)
+      expect([...lines].map(l => [...l.querySelectorAll('td')].filter(td => td.textContent === '4').length))
+        .toEqual([1, 0])
+      expect([...lines[0].querySelectorAll('td')].find(td => td.textContent === '4').getAttribute('rowspan')).toBe('2')
+      expect(host.querySelector('.sheet-table tfoot').textContent).not.toContain('8')
+    })
+
+    it('garde les filtres sur un devis vide, sans aucun choix à proposer', async () => {
+      await load([], { ...footer, seats: 0 })
+      expect(host.querySelectorAll('.ck-filterbar .ck-facet-btn')).toHaveLength(5)
+      await toggleFacet('Marque')
+      expect(host.querySelectorAll('[role=option]')).toHaveLength(0)
+      expect(host.querySelector('.ck-combo-empty').textContent).toBe('Aucun choix possible')
+    })
+
+    it('une case par ligne : le CSV ne reprend que les lignes cochées', async () => {
+      await load()
+      URL.createObjectURL = vi.fn(() => 'blob:devis')
+      URL.revokeObjectURL = vi.fn()
+      const cases = [...host.querySelectorAll('.sheet-table tbody .sheet-check input')]
+      expect(cases.length).toBeGreaterThan(1)
+      expect(cases).toHaveLength(host.querySelectorAll('.sheet-table tbody tr').length)
+      await act(async () => { cases[0].click() })
+      expect(host.querySelector('.sheet-status').textContent).toContain('1 ligne cochée')
+      await act(async () => { host.querySelector('.ck-xlsx[aria-haspopup=menu]').click() })
+      const csv = [...host.querySelectorAll('[role=menuitem]')].find(e => e.textContent.includes(T.export_csv))
+      await act(async () => { csv.click() })
+      const texte = await new Promise(resolve => {
+        const lecteur = new FileReader()
+        lecteur.onload = () => resolve(lecteur.result)
+        lecteur.readAsText(URL.createObjectURL.mock.calls[0][0])
+      })
+      expect(texte.trim().split(/\r?\n/)).toHaveLength(2)
+    })
+
+    it('l’icône de l’en-tête ouvre le choix des colonnes, Échap le referme', async () => {
+      await load()
+      await act(async () => { host.querySelector('.sheet-cols-btn').click() })
+      expect(host.querySelector('.sheet-pop-panel')).not.toBeNull()
+      await act(async () => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })) })
+      expect(host.querySelector('.sheet-pop-panel')).toBeNull()
+    })
+
+    it('« Tout effacer » retire aussi les filtres Marque, Mois et Lieu', async () => {
+      await load()
+      await choose('Marque', 'Toyota')
+      const clear = [...host.querySelectorAll('.sheet-toolbar button')].find(b => b.textContent === 'Tout effacer')
+      await act(async () => { clear.click() })
+      await flush()
+      expect(facet('Marque').getAttribute('aria-label')).toBe('Marque : Tous')
+      expect(value(T.kpi_seats_needs)).toBe('10 / 16')
+    })
+
+    it('annonce le filtre au-dessus des indicateurs, seulement si des lignes sont masquées', async () => {
+      await load()
+      expect(host.textContent).not.toContain(T.filter_on)
+      await choose('Marque', 'Toyota')
+      expect(host.querySelector('.ck-filterbar-note').textContent).toMatch(/^\d+ \/ \d+ lignes$/)
+    })
+
+    it('explique sous la somme totale ce qu’elle additionne', async () => {
+      await load()
+      expect(kpi(T.col_total).querySelector('.ck-kpi-note').textContent).toBe(T.kpi_total_note)
+    })
+
+    it('garde les chiffres du serveur sans filtre', async () => {
+      await load()
+      expect(value(T.kpi_seats_needs)).toBe('10 / 16')
+      expect(split('at_academy')).toBe('2')
+    })
+
+    it('suit la marque choisie, besoin et taux compris', async () => {
+      await load()
+      await choose('Marque', 'Toyota')
+      expect(value(T.kpi_seats_needs)).toBe('4 / 5')
+      expect(value(T.col_coverage)).toBe('80,0 %')
+      expect([split('in_subsidiary'), split('at_academy'), split('postponed')]).toEqual(['0', '2', '2'])
+      expect(kpi(T.col_coverage).textContent).not.toContain(T.kpi_needs_by_brand_note)
+    })
+
+    it('n’invente pas de besoin pour un filtre qui coupe une marque', async () => {
+      await load()
+      await choose('Mois', '2027-04')
+      expect(value(T.kpi_seats)).toBe('3')
+      expect(value(T.col_coverage)).toBe('—')
+      expect(kpi(T.col_coverage).textContent).toContain(T.kpi_needs_by_brand_note)
+    })
+
+    it('choix multiple dans un filtre : une valeur OU l’autre', async () => {
+      await load()
+      await choose('Mois', '2027-04')
+      expect(value(T.kpi_seats)).toBe('3')
+      await choose('Mois', '2027-03')
+      expect(value(T.kpi_seats_needs)).toBe('10 / 16')
+      expect(facet('Mois').textContent).toContain('2')
+    })
+
+    it('Mois : les 12 mois de l’année en grille, sans l’année, mois vides grisés', async () => {
+      await load()
+      await toggleFacet('Mois')
+      const months = [...host.querySelectorAll('.ck-month:not(.is-all)')]
+      expect(months).toHaveLength(12)
+      expect(host.querySelector('.ck-month.is-active')).toBeNull()
+      expect(host.querySelector('.ck-month-head').textContent).toContain('2027')
+      expect(months.map(m => m.dataset.value)[0]).toBe('2027-01')
+      expect(option('2027-04').querySelector('.ck-month-name').textContent).not.toContain('2027')
+      expect(option('2027-04').getAttribute('aria-disabled')).toBeNull()
+      expect(option('2027-12').getAttribute('aria-disabled')).toBe('true')
+      expect(host.querySelector('.ck-month-grid .ck-facet-count')).toBeNull() // un chiffre sous un mois se lit comme une date
+      await act(async () => { option('2027-12').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })) })
+      expect(option('2027-12').getAttribute('aria-selected')).toBe('false')
+      await toggleFacet('Mois')
+      await choose('Mois', '2027-04')
+      expect(facet('Mois').textContent).not.toContain('2027')
+    })
+
+    it('Lieu propose Filiale et Academy', async () => {
+      await load()
+      await choose('Lieu', 'at_academy')
+      expect(split('at_academy')).toBe('2')
+      expect(facet('Lieu').textContent).toContain('Academy')
+    })
+
+    it('filtres intelligents : les choix suivent les autres filtres, pas le leur', async () => {
+      await load([
+        row('a1', 'Toyota', 'toyota', 'Douala', 'at_academy', 4, { job: 'TECHNICIAN' }),
+        row('a2', 'Suzuki', 'suzuki', 'Douala', 'in_subsidiary', 3, { job: 'PARTS' }),
+        row('a3', 'Suzuki', 'suzuki', 'Tana', 'in_subsidiary', 3, { job: 'TECHNICIAN' }),
+      ])
+      await choose('Lieu', 'at_academy')
+      await toggleFacet('Marque')
+      expect(option('Toyota')).not.toBeNull()
+      expect(option('Suzuki')).toBeNull()
+      await toggleFacet('Marque')
+      await toggleFacet('Lieu')
+      expect(option('in_subsidiary')).not.toBeNull()
+      await toggleFacet('Lieu')
+      await toggleFacet('Métier')
+      expect(option('PARTS').querySelector('.ck-facet-count').textContent).toBe('0')
+      expect(option('TECHNICIAN').querySelector('.ck-facet-count').textContent).toBe('1')
+    })
+
+    it('montre un filtre sans donnée, ses options suivent les lignes', async () => {
+      await load()
+      await toggleFacet('Type')
+      expect([...host.querySelectorAll('[role=option]')].map(o => o.textContent)).toEqual(['Tous', 'Présentiel0', 'Distanciel0'])
+      await toggleFacet('Type')
+      await toggleFacet('Métier')
+      expect([...host.querySelectorAll('[role=option]')].map(o => o.textContent)).toEqual(['Tous', 'Techniciens0', 'SAV0', 'Carrossiers0', 'Parts0', 'Conduite0', 'Non classé3'])
+    })
+
+    it('changement de pôle : les filtres restent affichés pendant le rechargement', async () => {
+      await load()
+      let resolve
+      planningApi.country.mockReturnValue(new Promise(r => { resolve = r }))
+      await act(async () => {
+        root.render(
+          <CountryView t={T} locale="fr" fmt={makeFormatter('fr')} ckey={{ ...KEY, id: 'k2', pole: 'EQUIPMENT' }} mode="PLANNED"
+            global={COUNTRIES} code="CG" setCode={() => {}} slots={{ title: null, tools: null }} canEdit onEdited={onEdited} />,
+        )
+      })
+      expect(facet('Marque')).toBeTruthy()
+      expect(host.querySelector('.ck-sheet-busy')).not.toBeNull()
+      expect(host.querySelector('.ck-kpi')).toBeNull()
+      await act(async () => { resolve({ ...payload(rows()), footer }) })
+      await flush()
+      expect(host.querySelector('.ck-sheet-busy')).toBeNull()
+      expect(host.querySelector('.ck-kpi')).not.toBeNull()
+    })
+
+    it('le filtre Marque propose toutes les marques du pôle, à 0 sans session', async () => {
+      planningApi.country.mockResolvedValue({ ...payload([row('a1', 'Suzuki', 'suzuki', 'Douala', 'in_subsidiary', 3)]), footer })
+      await show({ global: { ...COUNTRIES, brands: [{ code: 'suzuki', label: 'Suzuki' }, { code: 'toyota', label: 'Toyota' }] } })
+      await toggleFacet('Marque')
+      expect(option('Suzuki').querySelector('.ck-facet-count').textContent).toBe('1')
+      expect(option('Toyota').querySelector('.ck-facet-count').textContent).toBe('0')
+    })
+
+    it('le filtre Lieu propose toujours Filiale et Academy, à 0 si absents', async () => {
+      await load([row('a1', 'Suzuki', 'suzuki', 'Douala', 'in_subsidiary', 3)])
+      await toggleFacet('Lieu')
+      expect([...host.querySelectorAll('[role=option]')].map(o => o.textContent)).toEqual(['Tous', 'Filiale1', 'Academy0'])
+    })
+
+    const type = async (input, text) => {
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, text)
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+    }
+
+    it('chaque filtre est une combobox : on tape pour réduire sa liste, même courte', async () => {
+      await load()
+      await toggleFacet('Lieu')
+      const input = host.querySelector('.ck-facet-panel input[role=combobox]')
+      expect(document.activeElement).toBe(input)
+      await type(input, 'acad')
+      expect(option('at_academy')).not.toBeNull()
+      expect(option('in_subsidiary')).toBeNull()
+    })
+
+    it('suit aussi le filtre d’une colonne du tableau', async () => {
+      await load()
+      const input = [...host.querySelectorAll('.sheet-filters input')].find(i => /Lieu/.test(i.getAttribute('aria-label')))
+      await type(input, 'Tana')
+      await flush()
+      expect(value(T.kpi_seats)).toBe('3')
+    })
+
+    it('ne donne pas de total partiel sur une clé à budget fixe', async () => {
+      await load(rows().map(s => ({ ...s, key_cost: null })))
+      await choose('Mois', '2027-04')
+      expect(value(T.col_total)).toBe('—')
+    })
+  })
+
+  describe('gestes Excel : formule et recopie', () => {
+    const line = (allocation, code, seats, extra = {}) => ({
+      ...session({ allocation }, seats), code, key_cost: seats * 100, trainee_lodging: 0, trainer_lodging: 0, ...extra,
+    })
+    const load = async (props = {}) => {
+      planningApi.country.mockResolvedValue(payload([
+        line('a1', 'A1', 6, { trainee_lodging: 6 * 50, trainer_lodging: 900 }), line('a2', 'A2', 4), line('a3', 'A3', 3),
+      ]))
+      await show(props)
+    }
+    const seatsCol = () => Number(seatsCell().dataset.cell.split(':')[1])
+    const cell = (ri, ci) => host.querySelector(`[data-cell="${ri}:${ci}"]`)
+    const down = (el, init = {}) => fire(el, new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0, ...init }))
+    const up = () => act(async () => { window.dispatchEvent(new MouseEvent('mouseup')) })
+    const fx = () => host.querySelector('.sheet-formula-expr')?.textContent
+
+    it('la barre fx dit d’où vient le montant d’une cellule calculée', async () => {
+      await load()
+      const ci = seatsCol()
+      await down(cell(0, ci + 1))
+      await up()
+      expect(fx()).toBe(T.fx_key_cost.replace('{seats}', '6').replace('{price}', `${makeFormatter('fr')(100, 'money')} ${T.currency}`))
+      await down(cell(0, ci + 2))
+      expect(fx()).toContain('6 places')
+      await down(cell(1, ci + 2))
+      expect(fx()).toBe(T.fx_trainee_lodging_none)
+      await down(cell(0, ci + 3))
+      expect(fx()).toContain(T.fx_trainer_lodging.split(' ')[1])
+      await down(cell(0, ci))
+      expect(fx()).toBeUndefined()
+    })
+
+    it('la barre fx mène aux tarifs, pour qui peut les modifier', async () => {
+      const link = () => host.querySelector('.sheet-formula-link')
+      await load()
+      await down(cell(0, seatsCol() + 1))
+      expect(link()).toBeNull()
+      act(() => root.unmount())
+      host.remove()
+
+      const onEditRates = vi.fn()
+      await load({ onEditRates })
+      const ci = seatsCol()
+      await down(cell(0, ci))
+      expect(link()).toBeNull()
+      await down(cell(0, ci + 1))
+      expect(link().textContent).toBe(T.fx_edit_rates)
+      await fire(link(), new MouseEvent('click', { bubbles: true }))
+      expect(onEditRates).toHaveBeenCalledTimes(1)
+    })
+
+    it('le coût horaire se modifie dans la carte, Ctrl+Z revient au précédent', async () => {
+      const rateBox = () => host.querySelector('.ck-rate')
+      await load({ params: { hourly_rate: 1000 } })
+      expect(rateBox()).toBeNull() // sans le droit, pas de crayon
+      act(() => root.unmount())
+      host.remove()
+
+      const onSaveRate = vi.fn().mockResolvedValue(undefined)
+      await load({ params: { hourly_rate: 1000 }, onSaveParams: onSaveRate })
+      expect(rateBox().textContent).toContain(T.kpi_rate)
+      await fire(host.querySelector('.ck-rate-pencil'), new MouseEvent('click', { bubbles: true }))
+      const field = host.querySelector('.ck-rate input')
+      expect(field.value).toBe('1000')
+
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, 'abc')
+        field.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      await fire(host.querySelector('.ck-rate form, form.ck-rate'), new Event('submit', { bubbles: true, cancelable: true }))
+      expect(host.querySelector('.ck-rate-error').textContent).toBe(T.rate_invalid)
+      expect(onSaveRate).not.toHaveBeenCalled()
+
+      const calls = planningApi.country.mock.calls.length
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, '1 200')
+        field.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      await fire(host.querySelector('form.ck-rate'), new Event('submit', { bubbles: true, cancelable: true }))
+      await flush()
+      expect(onSaveRate).toHaveBeenLastCalledWith({ hourly_rate: 1200 })
+      expect(planningApi.country.mock.calls.length).toBe(calls + 1) // tableau rechargé
+      expect(host.querySelector('.ck-rate-undo').textContent).toContain('Avant')
+
+      await press(document.body, 'z') // sans Ctrl : rien
+      expect(onSaveRate).toHaveBeenCalledTimes(1)
+      await fire(document.body, new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(onSaveRate).toHaveBeenLastCalledWith({ hourly_rate: 1000 })
+      expect(host.querySelector('.ck-rate-undo')).toBeNull()
+    })
+
+    it("l'accommodation se modifie dans sa carte, 0 accepté, Ctrl+Z revient au dernier changé", async () => {
+      const onSaveParams = vi.fn().mockResolvedValue(undefined)
+      await load({ params: { hourly_rate: 1000, trainee_lodging_cost: 5000, trainer_lodging_cost: 80000 }, onSaveParams })
+      const boxes = () => [...host.querySelectorAll('.ck-rate')]
+      expect(boxes().map(b => b.textContent.split(' :')[0])).toEqual([T.kpi_trainee_lodging_rate, T.kpi_trainer_lodging_rate, T.kpi_rate])
+      const set = async (box, text) => {
+        await fire(box.querySelector('.ck-rate-pencil'), new MouseEvent('click', { bubbles: true }))
+        const field = host.querySelector('form.ck-rate input')
+        await act(async () => {
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, text)
+          field.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+        await fire(host.querySelector('form.ck-rate'), new Event('submit', { bubbles: true, cancelable: true }))
+        await flush()
+      }
+      await set(boxes()[0], '-1')
+      expect(host.querySelector('.ck-rate-error').textContent).toBe(T.amount_invalid)
+      await fire(host.querySelector('.ck-rate-close'), new MouseEvent('click', { bubbles: true }))
+      await set(boxes()[0], '0')
+      expect(onSaveParams).toHaveBeenLastCalledWith({ trainee_lodging_cost: 0 })
+      await set(boxes()[1], '90000')
+      expect(onSaveParams).toHaveBeenLastCalledWith({ trainer_lodging_cost: 90000 })
+      expect(boxes()[1].querySelector('.ck-rate-undo')).not.toBeNull()
+      expect(boxes()[0].querySelector('.ck-rate-undo')).toBeNull()
+
+      await fire(document.body, new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(onSaveParams).toHaveBeenLastCalledWith({ trainer_lodging_cost: 80000 })
+      await fire(document.body, new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(onSaveParams).toHaveBeenLastCalledWith({ trainee_lodging_cost: 5000 })
+      expect(onSaveParams).toHaveBeenCalledTimes(4)
+    })
+
+    it('la poignée recopie la valeur vers le bas, un seul rechargement', async () => {
+      await load()
+      const ci = seatsCol()
+      await down(cell(0, ci))
+      await up()
+      const handle = cell(0, ci).querySelector('.sheet-fill-handle')
+      expect(handle).not.toBeNull()
+      await down(handle)
+      await fire(cell(2, ci), new MouseEvent('mouseover', { bubbles: true }))
+      expect(cell(1, ci).classList.contains('is-filling')).toBe(true)
+      await up()
+      await flush()
+      expect(planningApi.editCell.mock.calls).toEqual([
+        ['k1', { target: 'allocation', id: 'a2', field: 'seats', expected: 4, value: 6 }],
+        ['k1', { target: 'allocation', id: 'a3', field: 'seats', expected: 3, value: 6 }],
+      ])
+      expect(planningApi.country).toHaveBeenCalledTimes(2)
+      expect(onEdited).toHaveBeenCalledTimes(1)
+    })
+
+    it('Ctrl+D recopie la première cellule sur la sélection ; un conflit s’affiche', async () => {
+      planningApi.editCell.mockRejectedValueOnce(conflict())
+      await load()
+      const ci = seatsCol()
+      await down(cell(0, ci))
+      await down(cell(2, ci), { shiftKey: true })
+      await up()
+      await fire(cell(2, ci), new KeyboardEvent('keydown', { key: 'd', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(planningApi.editCell).toHaveBeenCalledTimes(2)
+      expect(alertBox().textContent).toContain('Une collègue')
+    })
+
+    const paste = (el, text) => {
+      const event = new Event('paste', { bubbles: true, cancelable: true })
+      event.clipboardData = { getData: () => text }
+      return fire(el, event)
+    }
+    const seatsCall = (id, expected, value) => ['k1', { target: 'allocation', id, field: 'seats', expected, value }]
+
+    it('Ctrl+V colle une colonne d’Excel ; une valeur non valide est laissée de côté', async () => {
+      await load()
+      const ci = seatsCol()
+      await down(cell(0, ci))
+      await up()
+      await paste(cell(0, ci), '7\r\nx\r\n9\r\n')
+      await flush()
+      expect(planningApi.editCell.mock.calls).toEqual([seatsCall('a1', 6, 7), seatsCall('a3', 3, 9)])
+      expect(host.querySelector('.sheet-status').textContent).toContain('1 valeur(s) collée(s) non valide(s)')
+    })
+
+    it('Ctrl+V d’une seule valeur remplit toute la sélection', async () => {
+      await load()
+      const ci = seatsCol()
+      await down(cell(1, ci))
+      await down(cell(2, ci), { shiftKey: true })
+      await up()
+      await paste(cell(1, ci), '5')
+      await flush()
+      expect(planningApi.editCell.mock.calls).toEqual([seatsCall('a2', 4, 5), seatsCall('a3', 3, 5)])
+    })
+
+    it('Ctrl+Z renvoie l’ancienne valeur en attendant celle écrite', async () => {
+      await load()
+      await enter(seatsCell(), '8')
+      await press(host.querySelector('.sheet-scroll'), 'z')
+      expect(planningApi.editCell).toHaveBeenCalledTimes(1)
+      await fire(host.querySelector('.sheet-scroll'), new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(planningApi.editCell).toHaveBeenLastCalledWith(...seatsCall('a1', 8, 6))
+      await fire(host.querySelector('.sheet-scroll'), new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(planningApi.editCell).toHaveBeenCalledTimes(2)
+    })
+
+    it('Ctrl+Z n’annule pas une saisie refusée', async () => {
+      planningApi.editCell.mockRejectedValueOnce(conflict())
+      await load()
+      await enter(seatsCell(), '8')
+      await fire(host.querySelector('.sheet-scroll'), new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(planningApi.editCell).toHaveBeenCalledTimes(1)
+    })
+
+    it('double-clic sur la poignée : recopie jusqu’en bas', async () => {
+      await load()
+      const ci = seatsCol()
+      await down(cell(0, ci))
+      await up()
+      await fire(cell(0, ci).querySelector('.sheet-fill-handle'), new MouseEvent('dblclick', { bubbles: true }))
+      await flush()
+      expect(planningApi.editCell.mock.calls).toEqual([seatsCall('a2', 4, 6), seatsCall('a3', 3, 6)])
+      expect(input()).toBeNull()
+    })
+
+    it('Entrée sur une cellule fusionnée passe à la session suivante', async () => {
+      const grid_slots = [
+        { start_date: '2027-01-04', end_date: '2027-01-08', trainers: [] },
+        { start_date: '2027-03-01', end_date: '2027-03-05', trainers: [] },
+      ]
+      planningApi.country.mockResolvedValue(payload([
+        line('a1', 'A1', 6, { start_date: '2027-01-04', dates_source: 'grid', grid_slots }), line('a2', 'A2', 4, { start_date: '2027-06-01' }),
+      ]))
+      await show()
+      const ci = seatsCol()
+      await enter(cell(0, ci), '8')
+      expect(host.querySelector('td.is-active').dataset.cell).toBe(`2:${ci}`)
+    })
+
+    it('pas de poignée sur une colonne calculée', async () => {
+      await load()
+      const ci = seatsCol()
+      await down(cell(0, ci + 1))
+      await up()
+      expect(host.querySelector('.sheet-fill-handle')).toBeNull()
+    })
+  })
+
+  it('fusionne le niveau dans une même marque, pas entre deux marques', async () => {
+    const row = (brand, level, level_tier, code) => ({ ...session(), brand, level, level_tier, code })
+    planningApi.country.mockResolvedValue(payload([
+      row('TOYOTA', 'G4', 'JUNIOR', 'A1'), row('TOYOTA', 'G4', 'JUNIOR', 'A2'), row('TOYOTA', 'G3', 'SENIOR', 'A3'),
+      row('SUZUKI', 'G3', 'SENIOR', 'B1'), row('SUZUKI', null, null, 'B2'), row('SUZUKI', null, null, 'B3'),
+    ]))
+    await show()
+    const chips = [...host.querySelectorAll('.sheet-c-level')]
+    expect(chips.map(c => c.textContent)).toEqual(['G4', 'G3', 'G3'])
+    expect(chips.map(c => c.closest('td').rowSpan)).toEqual([2, 1, 1])
+    expect(chips[0].className).toContain('is-junior')
+  })
+
+  it('propose le barème de la marque et enregistre le niveau choisi', async () => {
+    const edit = { levels: ['G4', 'G3'], raw: { seats: 6, level: 'G4' } }
+    planningApi.country.mockResolvedValue(payload([{ ...session(edit), level: 'G4', level_tier: 'JUNIOR' }]))
+    planningApi.editCell = vi.fn().mockResolvedValue({ changed: true })
+    await show()
+    await dblclick(host.querySelector('.sheet-c-level').closest('td'))
+    const select = host.querySelector('select.sheet-edit')
+    expect([...select.options].map(o => o.textContent)).toEqual(['—', 'G4', 'G3'])
+    await act(async () => {
+      select.value = 'G3'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await flush()
+    expect(planningApi.editCell).toHaveBeenCalledWith('k1', {
+      target: 'session', id: 's1', field: 'level', expected: 'G4', value: 'G3',
+    })
+  })
+
+  it('explique pourquoi un module hors catalogue reste en lecture seule', async () => {
+    planningApi.country.mockResolvedValue(payload([{ ...session({ levels: null }), level: null, in_catalog: false }]))
+    await show()
+    expect(host.querySelector(`span[title="${T.level_not_in_catalog}"]`)).not.toBeNull()
+    expect(host.querySelector('.sheet-c-level')).toBeNull()
+  })
+
+  it('ne laisse pas saisir sur une clé gelée', async () => {
+    planningApi.country.mockResolvedValue(payload([session({ frozen: true })]))
+    await show()
+    expect(editable()).toHaveLength(0)
+  })
+})
+
+describe('gel après saisie', async () => {
+  const { default: PrepareView } = await import('./PrepareView.jsx')
+  const STAMP = '2027-01-05T10:00:00+00:00'
+  let onRefresh
+  const showFreeze = async () => {
+    onRefresh = vi.fn()
+    await show({})
+    await act(async () => {
+      root.render(
+        <PrepareView t={T} fmt={makeFormatter('fr')} access={{ freeze: true }} ckey={{ ...KEY, last_edit_at: STAMP }}
+          onKeyChange={() => {}} onDataChanged={() => {}} onRefresh={onRefresh} />,
+      )
+    })
+    await flush()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+  }
+  const clickFreeze = async () => {
+    await act(async () => { [...host.querySelectorAll('button')].find(b => b.textContent === T.freeze.replace('{year}', KEY.year)).click() })
+    await flush()
+  }
+
+  it('renvoie le jeton de la dernière saisie lue', async () => {
+    planningApi.freeze = vi.fn().mockResolvedValue({ ...KEY, status: 'FROZEN' })
+    await showFreeze()
+    await clickFreeze()
+    expect(planningApi.freeze).toHaveBeenCalledWith('k1', STAMP)
+  })
+
+  it('une saisie intervenue entre-temps prévient et actualise', async () => {
+    planningApi.freeze = vi.fn().mockRejectedValue(Object.assign(new Error('stale'), { status: 409, code: 'FREEZE_STALE' }))
+    await showFreeze()
+    await clickFreeze()
+    expect(host.textContent).toContain(T.err_FREEZE_STALE)
+    expect(onRefresh).toHaveBeenCalledTimes(1)
+  })
+})

@@ -1,0 +1,17 @@
+{
+  "titre": "Une nouvelle version est disponible",
+  "texte": "Actualisez la page pour obtenir les dernières corrections.",
+  "version": "Version {version}",
+  "actualiser": "Actualiser maintenant",
+  "plusTard": "Plus tard",
+  "rappel": "« Plus tard » : nouveau rappel dans 30 minutes.",
+  "titreCritique": "Mise à jour nécessaire",
+  "texteCritique": "Cette version de la page n’est plus prise en charge. Actualisez pour continuer à travailler.",
+  "menuRechercher": "Rechercher des mises à jour",
+  "menuRecherche": "Recherche en cours…",
+  "menuAJour": "Vous avez la dernière version.",
+  "menuEchec": "Recherche impossible pour le moment. Réessayez dans quelques minutes.",
+  "menuDisponible": "Mise à jour disponible",
+  "menuActualiser": "Actualiser",
+  "notes": {}
+}

@@ -1,4 +1,5 @@
 import { PAYS } from '../data/index.js'
+import { drapeauUrl } from './drapeau.js'
 
 /** Villes CFAO Academy → pays (code ISO flagcdn). */
 const CITY_TO_CODE = {
@@ -81,6 +82,8 @@ export function flagForSessionLieu(lieu) {
   return null
 }
 
+/** Drapeau hébergé localement (`drapeauUrl`) ; `width` ignoré : SVG. */
+// eslint-disable-next-line no-unused-vars
 export function flagCdnUrl(code, width = 40) {
-  return `https://flagcdn.com/w${width}/${code}.png`
+  return drapeauUrl(code)
 }

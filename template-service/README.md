@@ -31,11 +31,14 @@ cp .env.example .env
 # 2. Démarrer la stack locale (API + PostgreSQL + Cerbos)
 make up
 # ou : docker compose up -d --build
-
-# 3. Appliquer les migrations et charger les données de test
-make migrate
-make seed
+# Le job service-migrate crée le schéma et le référentiel avant l'API :
+# aucune commande manuelle (AGENTS.md §7).
 ```
+
+Référentiel : une commande de seed par jeu de données, déclarée dans
+`BOOTSTRAP_SEEDS` (`api/config/settings/base.py`) et écrite avec
+`core.seeding.ensure` (créer seulement, jamais d'écrasement). Données de démo :
+`BOOTSTRAP_DEMO_SEEDS`, chargées par `bootstrap --demo` en dev uniquement.
 
 L'API est accessible sur : `http://localhost:8000`  
 Le PDP Cerbos est accessible sur : `http://localhost:3592`
@@ -88,6 +91,17 @@ Pour basculer d'un mode à l'autre, **aucune ligne de code n'est modifiée** :
 * En local : `DEPLOYMENT_MODE=standalone`
 * En intégration plateforme : `DEPLOYMENT_MODE=integrated`
 
+### Joindre l'API d'un autre module (réseau `cfao-maillage`)
+
+Le compose du gabarit place déjà l'API sur `cfao-maillage`, un réseau commun créé par le premier module démarré, sans commande préalable.
+
+1. Renommez `service-api` en `<module>-api` : le nom doit être unique sur ce réseau.
+2. Appelez l'autre module par son nom de service, par exemple `http://needs-api:8000`. L'URL et la clé viennent de variables d'environnement.
+3. Ne passez pas ce réseau en `external` : le module ne démarrerait plus seul. Compose affiche un avertissement au démarrage du second module, il est normal.
+4. N'y mettez jamais une base ni un worker. Si le module n'échange avec aucun autre, retirez le réseau.
+
+Ce réseau ne protège rien à lui seul : chaque route reste authentifiée.
+
 ---
 
 ## 5. Tests & Validation
@@ -138,7 +152,7 @@ class MonEntite(models.Model):
 
 ### Étape 3 — Déclarer la policy Cerbos
 
-Dans `cerbos/policies/mon_domaine_resource.yaml`, calquez-vous sur [`sample_resource.yaml`](cerbos/policies/resource_policies/sample_resource.yaml). La règle « *la ressource est dans mon périmètre* » s'écrit toujours de la même manière :
+La plateforme n'a qu'un PDP : la policy d'un module déployé vit dans le bundle commun, `../cerbos/policies/resource_policies/<module>/`, ses tests dans `../cerbos/tests/<module>/` (le dossier `cerbos/` du gabarit n'est qu'un exemple autonome). Calquez-vous sur [`sample_resource.yaml`](cerbos/policies/resource_policies/sample_resource.yaml). La règle « *la ressource est dans mon périmètre* » s'écrit toujours de la même manière :
 
 ```yaml
 condition:
@@ -216,7 +230,7 @@ Ce qui signifie : *« le nœud organisationnel de la ressource figure dans la li
 
 Les listes `scopeNodes` et `brands` du principal sont construites côté Identity Provider — en mode `standalone`, elles sont figées en dur dans `LocalMockIdentityProvider`. En mode `integrated`, elles proviennent de l'API centrale `GET /api/v1/core/me`.
 
-Pour aller plus loin sur les cas complexes (rôles cumulés, scope flottant, marques partielles), consulter les policies de référence déjà en production dans [`../cfao-needs/cerbos/policies/`](../cfao-needs/cerbos/policies/) et le document [`../architecture.md`](../architecture.md) §6.
+Pour aller plus loin sur les cas complexes (rôles cumulés, scope flottant, marques partielles), consulter les policies de référence déjà en production dans [`../cerbos/policies/resource_policies/needs/`](../cerbos/policies/resource_policies/needs/) et le document [`../architecture.md`](../architecture.md) §6.
 
 ---
 
@@ -251,8 +265,6 @@ docker compose exec service-api python manage.py migrate mon_domaine 0001_initia
 make down
 docker volume rm cfao-template-service_service-db-data
 make up
-make migrate
-make seed
 ```
 
 > ⚠️ Ne jamais faire cela sur un environnement partagé ou de production.
@@ -262,7 +274,7 @@ make seed
 ## 10. Références utiles
 
 - **Architecture globale de la plateforme** : [`../architecture.md`](../architecture.md) — principes directeurs, modèle de scope, flux PEP → PDP
-- **Policies Cerbos de référence** : [`../cfao-needs/cerbos/policies/`](../cfao-needs/cerbos/policies/) — exemples réels en production, avec tests complets
+- **Policies Cerbos de référence** : [`../cerbos/policies/resource_policies/needs/`](../cerbos/policies/resource_policies/needs/) — exemples réels en production, avec tests complets
 - **Spécification du module Recueil des besoins** : [`../docs/SPEC_RECUEIL_BESOINS_2027.md`](../docs/SPEC_RECUEIL_BESOINS_2027.md) — cas d'étude d'un service détachable réel
 - **Patron de module sécurisé** : skill projet `module-securise` dans `.claude/skills/`
 - **Normes DevSecOps** : skill projet `cerbos-policy` dans `.claude/skills/`

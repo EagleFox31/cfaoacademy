@@ -48,6 +48,27 @@ def test_list_plan_allowed(monkeypatch, data):
 
 
 @pytest.mark.django_db
+def test_list_expose_roles_actifs_tries(monkeypatch, data):
+    u_cmr, _ = data
+    cmr = OrgUnit.objects.get(slug="cmr")
+    RoleAssignment.objects.create(user=u_cmr, role="dps", scope_unit=cmr)
+    RoleAssignment.objects.create(user=u_cmr, role="trainer", scope_unit=cmr, active=False)
+    monkeypatch.setattr("identity.views.cerbos.plan", lambda *a, **k: {"kind": "KIND_ALWAYS_ALLOWED"})
+    c = APIClient(); c.force_authenticate(_admin())
+    rows = {u["email"]: u for u in c.get(URL).json()["results"]}
+    assert rows["a@x.io"]["roles"] == ["dps", "learner"]
+    assert rows["b@x.io"]["roles"] == ["learner"]
+
+
+@pytest.mark.django_db
+def test_roles_lecture_seule(monkeypatch, data):
+    monkeypatch.setattr("core.authz.permissions.cerbos.check", lambda *a, **k: True)
+    c = APIClient(); c.force_authenticate(_admin())
+    r = c.post(URL, {"keycloak_sub": "n", "email": "n@x.io", "roles": ["superadmin"]}, format="json")
+    assert r.status_code == 201 and r.json()["roles"] == []
+
+
+@pytest.mark.django_db
 def test_list_plan_denied_vide(monkeypatch, data):
     monkeypatch.setattr("identity.views.cerbos.plan", lambda *a, **k: {"kind": "KIND_ALWAYS_DENIED"})
     c = APIClient(); c.force_authenticate(_admin())

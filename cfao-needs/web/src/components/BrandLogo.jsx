@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { brandLogo } from '../lib/assets'
+import { asset } from '../lib/base'
 
 /**
  * Pastille de marque — logo si le fichier existe, monogramme sinon.
@@ -43,7 +44,7 @@ export default function BrandLogo({ code, label, transverse = false, variant, si
   if (transverse) {
     return (
       <span className="brand-logo brand-logo--all" style={style} aria-hidden="true">
-        <img src="/assets/favicon.svg" alt={label || 'CFAO'} loading="lazy" />
+        <img src={asset('assets/favicon.svg')} alt={label || 'CFAO'} loading="lazy" />
       </span>
     )
   }

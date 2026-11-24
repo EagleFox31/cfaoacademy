@@ -10,6 +10,7 @@ import { useReportSaveStatus } from '../components/SaveStatus'
 import { AsyncBoundary, Banner, Counter, Empty, SaveIndicator } from '../components/ui'
 import { useFormatters, useLocale } from '../i18n'
 import { api } from '../lib/api'
+import { asset } from '../lib/base'
 import { brandTheme } from '../lib/brandColors'
 import { openFicheWindow } from '../lib/fichePaths'
 import { useAsync, useDebouncedSave, useElementVisible } from '../lib/hooks'
@@ -21,8 +22,8 @@ const TRANSVERSE = '__transverse__'
 
 /** Le pôle porte son propre logo groupe — Equipment n'est pas Mobility. */
 const POLE_LOGO = {
-  EQUIPMENT: { src: '/assets/logo_cfao_equipment.png', alt: 'CFAO Equipment' },
-  DEFAULT: { src: '/assets/logo-cfao-mobility.jpg', alt: 'CFAO Mobility' },
+  EQUIPMENT: { src: asset('assets/logo_cfao_equipment.png'), alt: 'CFAO Equipment' },
+  DEFAULT: { src: asset('assets/logo-cfao-mobility.jpg'), alt: 'CFAO Mobility' },
 }
 
 /**

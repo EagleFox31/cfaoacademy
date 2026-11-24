@@ -107,15 +107,25 @@ def test_soumettre_nenvoie_rien_a_la_filiale(submission, manager):
     assert not OutboundMessage.objects.filter(kind="submission_confirmed").exists()
 
 
-@override_settings(ACADEMY_TEAM_RECIPIENTS=["academy@cfao.com"])
+@override_settings(
+    ACADEMY_TEAM_RECIPIENTS=["academy@cfao.com"],
+    PUBLIC_BASE_URL="https://hote.exemple/besoins/",
+)
 def test_le_resume_interne_porte_un_lien_et_des_totaux_pas_la_fiche(submission, manager):
     submit(submission, manager)
     interne = OutboundMessage.objects.get(kind="internal_submission_summary")
 
-    assert "review_url" in interne.context
-    assert str(submission.id) in interne.context["review_url"]
+    # Lien vers une route qui existe dans le SPA, sous le préfixe de l'application.
+    assert interne.context["review_url"] == f"https://hote.exemple/besoins/relecture/{submission.id}"
     assert "summary" in interne.context
     assert "lines" not in interne.context  # le détail se lit dans l'outil
+
+
+@override_settings(PUBLIC_BASE_URL="https://hote.exemple/besoins")
+def test_le_lien_de_saisie_ouvre_l_accueil_de_l_application(submission):
+    from outbound.services.queue import submission_url
+
+    assert submission_url(submission) == "https://hote.exemple/besoins/"
 
 
 @override_settings(ACADEMY_TEAM_RECIPIENTS=["academy@cfao.com"])

@@ -1,0 +1,477 @@
+# Tests policies cfao-planning — clé de répartition (SPEC §7).
+name: PlanningCostKeySuite
+description: Qui fabrique, gèle et lit la clé ; une filiale ne lit que ses pays
+
+principals:
+  assistante:
+    id: u_assistante
+    roles: ["center_assistant"]
+    attr:
+      scopeNodes: ["groupe"]
+  coordonnateur:
+    id: u_coord
+    roles: ["training_coordinator"]
+    attr:
+      scopeNodes: ["groupe"]
+  dps_cmr:
+    id: u_dps
+    roles: ["dps"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+  chef_atelier_civ:
+    id: u_chef
+    roles: ["workshop_manager"]
+    attr:
+      scopeNodes: ["groupe.civ"]
+  directeur_centre:
+    id: u_dc
+    roles: ["center_director"]
+    attr:
+      scopeNodes: ["groupe"]
+  directeur_groupe:
+    id: u_dg
+    roles: ["group_director"]
+    attr:
+      scopeNodes: ["groupe"]
+  apprenant:
+    id: u_learner
+    roles: ["learner"]
+    attr:
+      scopeNodes: ["groupe.cmr"]
+  formateur:
+    id: u_trainer
+    roles: ["trainer"]
+    attr:
+      scopeNodes: ["groupe"]
+  superadmin:
+    id: u_superadmin
+    roles: ["superadmin"]
+    attr:
+      scopeNodes: ["groupe"]
+
+resources:
+  cle_2026:
+    kind: planning_cost_key
+    id: k_2026
+    attr:
+      orgPath: ["groupe"]
+      year: 2026
+      pole: "MOTORS"
+      status: "DRAFT"
+  fiche_cmr:
+    kind: planning_country_sheet
+    id: cmr
+    attr:
+      orgPath: ["groupe", "groupe.cmr"]
+  import_prevu:
+    kind: planning_import
+    id: "*"
+    attr:
+      kind: "seat_allocations"
+  stagiaires_2026:
+    kind: planning_attendance
+    id: "2026"
+    attr:
+      orgPath: ["groupe"]
+      year: 2026
+  charge_2027:
+    kind: planning_trainer_load
+    id: "2027"
+    attr:
+      orgPath: ["groupe"]
+      year: 2027
+  calendrier_2027:
+    kind: planning_calendar
+    id: "2027:MOTORS"
+    attr:
+      orgPath: ["groupe"]
+      year: 2027
+  mes_sessions:
+    kind: planning_my_sessions
+    id: u_trainer
+    attr:
+      orgPath: ["groupe"]
+      ownerSub: u_trainer
+  sessions_autre_formateur:
+    kind: planning_my_sessions
+    id: u_autre
+    attr:
+      orgPath: ["groupe"]
+      ownerSub: u_autre
+  ma_fiche:
+    kind: planning_my_trainer
+    id: u_trainer
+    attr:
+      orgPath: ["groupe"]
+      ownerSub: u_trainer
+  fiche_autre_formateur:
+    kind: planning_my_trainer
+    id: u_autre
+    attr:
+      orgPath: ["groupe"]
+      ownerSub: u_autre
+  thematiques:
+    kind: planning_catalog_gap
+    id: k_2026
+    attr:
+      orgPath: ["groupe"]
+
+tests:
+  - name: les stagiaires de l'annee sont lus par la coordination et la direction du centre
+    input:
+      principals: ["coordonnateur", "directeur_centre", "superadmin", "assistante", "formateur", "directeur_groupe", "dps_cmr", "chef_atelier_civ", "apprenant"]
+      resources: ["stagiaires_2026"]
+      actions: ["view"]
+    expected:
+      - principal: coordonnateur
+        resource: stagiaires_2026
+        actions: {view: EFFECT_ALLOW}
+      - principal: directeur_centre
+        resource: stagiaires_2026
+        actions: {view: EFFECT_ALLOW}
+      - principal: superadmin
+        resource: stagiaires_2026
+        actions: {view: EFFECT_ALLOW}
+      - principal: assistante
+        resource: stagiaires_2026
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: stagiaires_2026
+        actions: {view: EFFECT_DENY}
+      - principal: directeur_groupe
+        resource: stagiaires_2026
+        actions: {view: EFFECT_DENY}
+      - principal: dps_cmr
+        resource: stagiaires_2026
+        actions: {view: EFFECT_DENY}
+      - principal: chef_atelier_civ
+        resource: stagiaires_2026
+        actions: {view: EFFECT_DENY}
+      - principal: apprenant
+        resource: stagiaires_2026
+        actions: {view: EFFECT_DENY}
+
+  - name: la charge des formateurs est reservee au directeur du centre
+    input:
+      principals: ["directeur_centre", "superadmin", "coordonnateur", "assistante", "formateur", "directeur_groupe", "dps_cmr"]
+      resources: ["charge_2027"]
+      actions: ["view"]
+    expected:
+      - principal: directeur_centre
+        resource: charge_2027
+        actions: {view: EFFECT_ALLOW}
+      - principal: superadmin
+        resource: charge_2027
+        actions: {view: EFFECT_ALLOW}
+      - principal: coordonnateur
+        resource: charge_2027
+        actions: {view: EFFECT_DENY}
+      - principal: assistante
+        resource: charge_2027
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: charge_2027
+        actions: {view: EFFECT_DENY}
+      - principal: directeur_groupe
+        resource: charge_2027
+        actions: {view: EFFECT_DENY}
+      - principal: dps_cmr
+        resource: charge_2027
+        actions: {view: EFFECT_DENY}
+
+  - name: un formateur ne lit que sa propre fiche
+    input:
+      principals: ["formateur", "coordonnateur"]
+      resources: ["ma_fiche", "fiche_autre_formateur"]
+      actions: ["view"]
+    expected:
+      - principal: formateur
+        resource: ma_fiche
+        actions: {view: EFFECT_ALLOW}
+      - principal: formateur
+        resource: fiche_autre_formateur
+        actions: {view: EFFECT_DENY}
+      - principal: coordonnateur
+        resource: ma_fiche
+        actions: {view: EFFECT_DENY}
+      - principal: coordonnateur
+        resource: fiche_autre_formateur
+        actions: {view: EFFECT_DENY}
+  - name: un formateur ne lit que ses propres sessions
+    input:
+      principals: ["formateur", "coordonnateur", "directeur_centre", "assistante"]
+      resources: ["mes_sessions", "sessions_autre_formateur"]
+      actions: ["view"]
+    expected:
+      - principal: formateur
+        resource: mes_sessions
+        actions: {view: EFFECT_ALLOW}
+      - principal: formateur
+        resource: sessions_autre_formateur
+        actions: {view: EFFECT_DENY}
+      - principal: coordonnateur
+        resource: mes_sessions
+        actions: {view: EFFECT_DENY}
+      - principal: coordonnateur
+        resource: sessions_autre_formateur
+        actions: {view: EFFECT_DENY}
+      - principal: directeur_centre
+        resource: mes_sessions
+        actions: {view: EFFECT_DENY}
+      - principal: directeur_centre
+        resource: sessions_autre_formateur
+        actions: {view: EFFECT_DENY}
+      - principal: assistante
+        resource: mes_sessions
+        actions: {view: EFFECT_DENY}
+      - principal: assistante
+        resource: sessions_autre_formateur
+        actions: {view: EFFECT_DENY}
+
+  - name: les points a traiter sont reserves au coordinateur
+    input:
+      principals: ["coordonnateur", "directeur_centre", "assistante", "dps_cmr"]
+      resources: ["cle_2026"]
+      actions: ["review"]
+    expected:
+      - principal: coordonnateur
+        resource: cle_2026
+        actions:
+          review: EFFECT_ALLOW
+      - principal: directeur_centre
+        resource: cle_2026
+        actions:
+          review: EFFECT_DENY
+      - principal: assistante
+        resource: cle_2026
+        actions:
+          review: EFFECT_DENY
+      - principal: dps_cmr
+        resource: cle_2026
+        actions:
+          review: EFFECT_DENY
+
+  - name: seuls directeur, coordinateur et superadmin saisissent dans le devis
+    input:
+      principals: ["coordonnateur", "directeur_centre", "superadmin", "assistante", "dps_cmr", "directeur_groupe", "chef_atelier_civ"]
+      resources: ["cle_2026"]
+      actions: ["edit_planned"]
+    expected:
+      - principal: coordonnateur
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_ALLOW}
+      - principal: directeur_centre
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_ALLOW}
+      - principal: superadmin
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_ALLOW}
+      - principal: assistante
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_DENY}
+      - principal: dps_cmr
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_DENY}
+      - principal: directeur_groupe
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_DENY}
+      - principal: chef_atelier_civ
+        resource: cle_2026
+        actions: {edit_planned: EFFECT_DENY}
+
+  - name: l assistante lit la cle, seuls les pilotes la fabriquent et la gelent
+    input:
+      principals: ["assistante", "coordonnateur"]
+      resources: ["cle_2026"]
+      actions: ["view", "list", "create", "update", "freeze"]
+    expected:
+      - principal: assistante
+        resource: cle_2026
+        actions:
+          view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+          create: EFFECT_DENY
+          update: EFFECT_DENY
+          freeze: EFFECT_DENY
+      - principal: coordonnateur
+        resource: cle_2026
+        actions:
+          view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+          create: EFFECT_ALLOW
+          update: EFFECT_ALLOW
+          freeze: EFFECT_ALLOW
+
+  - name: les directions lisent la cle sans pouvoir la modifier
+    input:
+      principals: ["dps_cmr", "chef_atelier_civ", "directeur_groupe"]
+      resources: ["cle_2026"]
+      actions: ["view", "create", "update", "freeze"]
+    expected:
+      - principal: dps_cmr
+        resource: cle_2026
+        actions:
+          view: EFFECT_ALLOW
+          create: EFFECT_DENY
+          update: EFFECT_DENY
+          freeze: EFFECT_DENY
+      - principal: chef_atelier_civ
+        resource: cle_2026
+        actions:
+          view: EFFECT_ALLOW
+          create: EFFECT_DENY
+          update: EFFECT_DENY
+          freeze: EFFECT_DENY
+      - principal: directeur_groupe
+        resource: cle_2026
+        actions:
+          view: EFFECT_ALLOW
+          create: EFFECT_DENY
+          update: EFFECT_DENY
+          freeze: EFFECT_DENY
+
+  - name: hors personnel de pilotage aucun acces
+    input:
+      principals: ["apprenant", "formateur"]
+      resources: ["cle_2026", "fiche_cmr", "import_prevu", "thematiques"]
+      actions: ["view"]
+    expected:
+      - principal: apprenant
+        resource: cle_2026
+        actions: {view: EFFECT_DENY}
+      - principal: apprenant
+        resource: fiche_cmr
+        actions: {view: EFFECT_DENY}
+      - principal: apprenant
+        resource: import_prevu
+        actions: {view: EFFECT_DENY}
+      - principal: apprenant
+        resource: thematiques
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: cle_2026
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: fiche_cmr
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: import_prevu
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: thematiques
+        actions: {view: EFFECT_DENY}
+
+  - name: une filiale ne lit que la fiche de ses pays
+    input:
+      principals: ["dps_cmr", "chef_atelier_civ", "directeur_groupe", "assistante"]
+      resources: ["fiche_cmr"]
+      actions: ["view"]
+    expected:
+      - principal: dps_cmr
+        resource: fiche_cmr
+        actions: {view: EFFECT_ALLOW}
+      - principal: chef_atelier_civ
+        resource: fiche_cmr
+        actions: {view: EFFECT_DENY}
+      - principal: directeur_groupe
+        resource: fiche_cmr
+        actions: {view: EFFECT_ALLOW}
+      - principal: assistante
+        resource: fiche_cmr
+        actions: {view: EFFECT_ALLOW}
+
+  - name: imports reserves aux pilotes
+    input:
+      principals: ["coordonnateur", "directeur_centre", "superadmin", "assistante", "dps_cmr", "directeur_groupe"]
+      resources: ["import_prevu"]
+      actions: ["template", "preview", "apply", "list"]
+    expected:
+      - principal: coordonnateur
+        resource: import_prevu
+        actions:
+          template: EFFECT_ALLOW
+          preview: EFFECT_ALLOW
+          apply: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+      - principal: directeur_centre
+        resource: import_prevu
+        actions:
+          template: EFFECT_ALLOW
+          preview: EFFECT_ALLOW
+          apply: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+      - principal: superadmin
+        resource: import_prevu
+        actions:
+          template: EFFECT_ALLOW
+          preview: EFFECT_ALLOW
+          apply: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+      - principal: assistante
+        resource: import_prevu
+        actions:
+          template: EFFECT_DENY
+          preview: EFFECT_DENY
+          apply: EFFECT_DENY
+          list: EFFECT_DENY
+      - principal: dps_cmr
+        resource: import_prevu
+        actions:
+          template: EFFECT_DENY
+          preview: EFFECT_DENY
+          apply: EFFECT_DENY
+          list: EFFECT_DENY
+      - principal: directeur_groupe
+        resource: import_prevu
+        actions:
+          template: EFFECT_DENY
+          preview: EFFECT_DENY
+          apply: EFFECT_DENY
+          list: EFFECT_DENY
+
+  - name: thematiques non choisies pour l Academy et les observateurs
+    input:
+      principals: ["assistante", "dps_cmr", "chef_atelier_civ"]
+      resources: ["thematiques"]
+      actions: ["view"]
+    expected:
+      - principal: assistante
+        resource: thematiques
+        actions: {view: EFFECT_ALLOW}
+      - principal: dps_cmr
+        resource: thematiques
+        actions: {view: EFFECT_ALLOW}
+      - principal: chef_atelier_civ
+        resource: thematiques
+        actions: {view: EFFECT_DENY}
+
+  - name: calendrier annuel pour l equipe du centre seulement
+    input:
+      principals: ["directeur_centre", "coordonnateur", "assistante", "superadmin", "dps_cmr", "formateur", "directeur_groupe", "apprenant"]
+      resources: ["calendrier_2027"]
+      actions: ["view"]
+    expected:
+      - principal: directeur_centre
+        resource: calendrier_2027
+        actions: {view: EFFECT_ALLOW}
+      - principal: coordonnateur
+        resource: calendrier_2027
+        actions: {view: EFFECT_ALLOW}
+      - principal: assistante
+        resource: calendrier_2027
+        actions: {view: EFFECT_ALLOW}
+      - principal: superadmin
+        resource: calendrier_2027
+        actions: {view: EFFECT_ALLOW}
+      - principal: dps_cmr
+        resource: calendrier_2027
+        actions: {view: EFFECT_DENY}
+      - principal: formateur
+        resource: calendrier_2027
+        actions: {view: EFFECT_DENY}
+      - principal: directeur_groupe
+        resource: calendrier_2027
+        actions: {view: EFFECT_DENY}
+      - principal: apprenant
+        resource: calendrier_2027
+        actions: {view: EFFECT_DENY}

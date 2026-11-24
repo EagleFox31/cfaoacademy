@@ -16,67 +16,40 @@ export const CMR_EQUIPMENT_BRAND_PIF_STATS = summaryPayload.brandPifStats ?? []
 export const CMR_EQUIPMENT_PIF_TECHNICIANS = pifTechniciansPayload.technicians ?? []
 
 /**
- * Injecte le PIF filiale CMR Equipment (Define pluri + 2025 x/y par marque).
- * Priorité aux données locales pour brandPlanningSummary / brandPifStats.
+ * Repli PIF filiale CMR Equipment (extraction locale), seulement quand
+ * dps-pif.php n'a pas répondu : jamais par-dessus le live. Ne touche ni aux
+ * marques, ni aux techniciens, ni aux scores de compétences.
  */
-export function mergeCmrEquipmentPlanningSummary(lms, mockLms) {
-  if (!lms || !Object.keys(CMR_EQUIPMENT_BRAND_PLANNING_SUMMARY).length) {
+export function applyCmrEquipmentPifFallback(lms, extraction = {
+  summary: CMR_EQUIPMENT_BRAND_PLANNING_SUMMARY,
+  pifStats: CMR_EQUIPMENT_BRAND_PIF_STATS,
+  technicians: CMR_EQUIPMENT_PIF_TECHNICIANS,
+  meta: summaryPayload.meta ?? null,
+}) {
+  if (!lms || !Object.keys(extraction.summary ?? {}).length) {
     return lms
   }
 
-  const mockByBrand = Object.fromEntries(
-    (mockLms?.brandStats ?? []).map(row => [row.brand, row]),
-  )
-
   const pifByBrand = Object.fromEntries(
-    CMR_EQUIPMENT_BRAND_PIF_STATS.map(row => [row.brand, row]),
+    (extraction.pifStats ?? []).map(row => [row.brand, row]),
   )
 
   const brandStats = (lms.brandStats ?? []).map(row => {
-    const live = pifByBrand[row.brand]
-    if (!live) return row
+    const local = pifByBrand[row.brand]
+    if (!local) return row
     return {
       ...row,
-      pifProposed: live.pifProposed ?? row.pifProposed,
-      pifValidated: live.pifValidated2025 ?? live.pifValidated ?? row.pifValidated,
+      pifProposed: local.pifProposed ?? row.pifProposed,
+      pifValidated: local.pifValidated2025 ?? local.pifValidated ?? row.pifValidated,
     }
   })
 
-  const knownBrands = new Set(brandStats.map(row => row.brand))
-  for (const live of CMR_EQUIPMENT_BRAND_PIF_STATS) {
-    if (knownBrands.has(live.brand)) continue
-    const mock = mockByBrand[live.brand]
-    brandStats.push({
-      ...(mock ?? {}),
-      brand: live.brand,
-      technicians: mock?.technicians ?? (live.brand === 'lovol' ? 1 : 0),
-      avgScore: mock?.avgScore ?? null,
-      evaluated: mock?.evaluated ?? 0,
-      tiers: mock?.tiers,
-      pifProposed: live.pifProposed ?? mock?.pifProposed ?? 0,
-      pifValidated: live.pifValidated2025 ?? live.pifValidated ?? mock?.pifValidated ?? 0,
-    })
-  }
-
-  const brandOrder = CMR_EQUIPMENT_BRAND_PIF_STATS.map(row => row.brand)
-  brandStats.sort(
-    (a, b) => brandOrder.indexOf(a.brand) - brandOrder.indexOf(b.brand),
-  )
-
   return {
     ...lms,
-    brandStats: brandStats.length ? brandStats : lms.brandStats,
-    brandPlanningSummary: {
-      ...(lms.brandPlanningSummary ?? {}),
-      ...CMR_EQUIPMENT_BRAND_PLANNING_SUMMARY,
-    },
-    brandPifStats: CMR_EQUIPMENT_BRAND_PIF_STATS.length
-      ? CMR_EQUIPMENT_BRAND_PIF_STATS
-      : lms.brandPifStats,
-    filialeBrands: CMR_EQUIPMENT_BRAND_PIF_STATS.map(row => row.brand),
-    pifTechnicians: CMR_EQUIPMENT_PIF_TECHNICIANS.length
-      ? CMR_EQUIPMENT_PIF_TECHNICIANS
-      : lms.pifTechnicians,
-    cmrEquipmentPlanningMeta: summaryPayload.meta ?? null,
+    brandStats,
+    brandPlanningSummary: extraction.summary,
+    brandPifStats: extraction.pifStats?.length ? extraction.pifStats : lms.brandPifStats,
+    pifTechnicians: extraction.technicians?.length ? extraction.technicians : lms.pifTechnicians,
+    cmrEquipmentPlanningMeta: extraction.meta ?? null,
   }
 }

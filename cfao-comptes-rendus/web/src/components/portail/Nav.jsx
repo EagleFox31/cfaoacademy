@@ -5,14 +5,13 @@ import { useAuth } from '../../lib/auth'
 import { sessionsDuFormateur } from '../../data/mock_sessions_formateur'
 import { sessionsAVenir } from '../../utils/planningFormateur.js'
 import { scrollToPortalSection } from '../../utils/portalScroll.js'
-
-// Adresse du portail, quand le module en est un satellite : le bouton
-// « Retour au site » n'existe que si elle est renseignée.
-const PORTAIL_URL = import.meta.env.VITE_PORTAIL_URL
+import { adresse } from '../../lib/adresse'
+// Adresse du portail : le bouton « Retour au site » et les sections du menu
+// (celles de l'accueil formateur du portail) n'existent que si elle est connue.
+import { PORTAIL_URL, adressePortail } from '../../lib/portail'
 
 /** Sections du menu formateur ; « sessions » n'existe que s'il y en a à venir. */
 const SECTIONS_FORMATEUR = [
-  { key: 'a-documenter', id: 'a-documenter', libelle: 'Priorités' },
   { key: 'comptes-rendus', id: 'comptes-rendus', libelle: 'Vos comptes rendus' },
   { key: 'sessions-a-venir', id: 'sessions-a-venir', libelle: 'Vos sessions de formation' },
 ]
@@ -127,7 +126,7 @@ export default function Nav() {
   const mobileMenuId = `nav-mobile-menu${menuInstanceId}`
 
   const portalSections = useMemo(() => {
-    if (!onPortal) return []
+    if (!onPortal || !PORTAIL_URL) return []
     const aVenir = sessionsAVenir(sessionsDuFormateur(user)).length > 0
     return aVenir ? SECTIONS_FORMATEUR : SECTIONS_FORMATEUR.filter(s => s.key !== 'sessions-a-venir')
   }, [onPortal, user])
@@ -152,9 +151,9 @@ export default function Nav() {
 
   const handlePortalNavClick = (section) => (e) => {
     e.preventDefault()
-    // Depuis une autre page : retour à l'accueil, qui défile jusqu'à l'ancre.
+    // Les sections sont celles de l'accueil formateur du portail.
     if (!onHome) {
-      navigate({ pathname: '/', hash: `#${section.id}` })
+      window.location.assign(adressePortail(section.id))
       return
     }
     setActiveKey(section.key)
@@ -239,7 +238,7 @@ export default function Nav() {
     >
       <div className="nav-shell">
         <Link to="/" className="brand nav-brand" style={{ textDecoration: 'none' }} onClick={brandClick}>
-          <img src="/assets/logo-cfao-mobility.jpg" alt="cfao mobility" className="brand-mark" />
+          <img src={adresse('/assets/logo-cfao-mobility.jpg')} alt="cfao mobility" className="brand-mark" />
           <div className="brand-label">Academy<span>.</span></div>
         </Link>
 

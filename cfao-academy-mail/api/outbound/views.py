@@ -7,7 +7,7 @@ from core.auth.service import HasMailServiceKey
 
 from .models import OutboundMessage
 from .serializers import EnqueueSerializer, OutboundMessageSerializer
-from .services.queue import ForbiddenSend, enqueue
+from .services.queue import ForbiddenSend, ForbiddenSource, enqueue
 
 
 def _detail(errors) -> str:
@@ -38,11 +38,16 @@ def enqueue_message(request):
             source_app=data.get("source_app", ""),
             source_ref=data.get("source_ref", ""),
             correlation_id=data.get("correlation_id") or None,
+            expires_at=data.get("expires_at"),
+            bound_source=getattr(request, "mail_source", None),
         )
+    except ForbiddenSource as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
     except ForbiddenSend as exc:
         return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
     if created and message.status == OutboundMessage.Status.APPROVED:
+        # Seul l'identifiant passe par le broker (ORM, en clair en base) : jamais de contexte.
         async_task("outbound.tasks.dispatch_message", str(message.id))
 
     code = status.HTTP_201_CREATED if created else status.HTTP_200_OK

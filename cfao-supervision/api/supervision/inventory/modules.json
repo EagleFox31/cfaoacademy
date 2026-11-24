@@ -1,0 +1,31 @@
+{
+  "_doc": "Référentiel des modules supervisés. Ajouté par `manage.py bootstrap` s'il manque ; une ligne déjà en base n'est jamais modifiée (AGENTS.md §7).",
+  "modules": [
+    {"project": "cfao-portail", "display_name": "Portail", "sort_order": 10,
+     "oidc_clients": ["cfao-portail-web", "cfao-portal", "cfao-spa"], "edge_modules": ["portail"], "public_prefix": "/"},
+    {"project": "cfao-needs", "display_name": "Recueil des besoins", "sort_order": 20,
+     "oidc_clients": ["cfao-needs-web"], "edge_modules": ["needs"], "public_prefix": "/api/v1/needs/"},
+    {"project": "cfao-planning", "display_name": "Planning des formateurs", "sort_order": 30,
+     "oidc_clients": [], "edge_modules": ["planning"], "public_prefix": "/api/v1/planning/"},
+    {"project": "cfao-compte-rendus", "display_name": "Comptes rendus de formation", "sort_order": 40,
+     "oidc_clients": [], "edge_modules": ["cr"], "public_prefix": "/api/v1/cr/"},
+    {"project": "cfao-core", "display_name": "Comptes et droits", "sort_order": 50,
+     "oidc_clients": [], "edge_modules": ["core"], "public_prefix": "/api/v1/core/"},
+    {"project": "cfao-identity", "display_name": "Connexion", "sort_order": 60,
+     "oidc_clients": [], "edge_modules": ["auth"], "public_prefix": "/auth/"},
+    {"project": "cfao-edge", "display_name": "Passerelle d'accès", "sort_order": 70,
+     "oidc_clients": [], "edge_modules": ["edge"], "public_prefix": ""},
+    {"project": "cfao-supervision", "display_name": "Supervision", "sort_order": 80,
+     "oidc_clients": [], "edge_modules": ["supervision"], "public_prefix": "/api/v1/supervision/"}
+  ],
+  "demo": [
+    {"project": "cfao-recette", "display_name": "Recette (passerelle et connexion)", "sort_order": 65,
+     "oidc_clients": [], "edge_modules": ["auth", "edge"], "public_prefix": ""},
+    {"project": "cfao-front", "display_name": "Portail (développement)", "sort_order": 11,
+     "oidc_clients": ["cfao-portail-web", "cfao-portal", "cfao-spa"], "edge_modules": ["portail"], "public_prefix": "/"},
+    {"project": "cfaoacademy", "display_name": "Socle de développement", "sort_order": 51,
+     "oidc_clients": [], "edge_modules": [], "public_prefix": ""},
+    {"project": "cfao-academy-mail", "display_name": "Envoi des courriels", "sort_order": 75,
+     "oidc_clients": [], "edge_modules": [], "public_prefix": ""}
+  ]
+}

@@ -9,10 +9,12 @@ import TeamManagerHeroCard from './TeamManagerHeroCard.jsx'
 import DpsFilialeBrandsStrip from './DpsFilialeBrandsStrip.jsx'
 import SuperAdminBuBrandsStrip from './SuperAdminBuBrandsStrip.jsx'
 import PortalHeroShell from './PortalHeroShell.jsx'
+import PoleIcon from './PoleIcon.jsx'
 import { resolveCertGoalPrerequisites } from '../utils/certGoalProgress.js'
 import { formatCertLevelLabel } from '../utils/portalCertLevel.js'
 import { isPlMedacapVariant } from '../utils/portalVariant.js'
 import { computePortalGreetingKey } from '../utils/portalGreeting.js'
+import { getPrimaryRole } from '../pages/portal/portalProfiles.js'
 
 const ROLE_LABELS = {
   learner:          'Apprenant',
@@ -30,20 +32,10 @@ const ROLE_LABELS = {
   superadmin:       'Super Admin',
   trainer:          'Formateur',
   center_director:  'Dir. Centre de formation',
+  training_coordinator: 'Coordinateur formations',
+  center_assistant: 'Assistante Centre de formation',
 }
 
-const ROLE_PRIORITY = [
-  'superadmin','branch_hr','branch_admin','group_hr','group_admin',
-  'workshop_manager','team_manager','ki','pic',
-  'trainer','center_director','dop','dps','branch_director',
-]
-
-function getPrimaryRole(roles) {
-  for (const r of ROLE_PRIORITY) {
-    if (roles.includes(r)) return r
-  }
-  return 'learner'
-}
 
 /* ─── Sub-components ────────────────────────────────────────────── */
 
@@ -156,6 +148,10 @@ export default function PortalHeader({
   activeBu: controlledActiveBu,
   onBuChange,
   managerHeroCard,
+  centerHero,
+  statsHero,
+  // Bloc posé sous la phrase d'accueil (ex. chiffres cliquables d'un rôle).
+  belowGreeting = null,
 }) {
   const { t } = useLocale('portal')
   const { t: heroT } = useLocale('hero')
@@ -182,6 +178,11 @@ export default function PortalHeader({
   const showWorkshopCard = false
   const showSidePanel = showCertCard || showTeamCard || showWorkshopCard
   const [superadminStripMode, setSuperadminStripMode] = useState('marques')
+  // Équipe du centre : les marques restent fermées tant qu'on ne clique pas sur « N marques ».
+  const [centerBrandsOpen, setCenterBrandsOpen] = useState(false)
+  const centerHeroInteractive = centerHero && centerHero.brandList?.length
+    ? { ...centerHero, brandsOpen: centerBrandsOpen, onToggleBrands: () => setCenterBrandsOpen(o => !o) }
+    : centerHero
 
   const showGeoBrands = !showBrandLevels && !showDpsBrandsStrip && !showSuperAdminBrands && userBrands.length > 0
   const showBrandsBand = showBrandLevels || showDpsBrandsStrip || showSuperAdminBrands
@@ -189,7 +190,8 @@ export default function PortalHeader({
   // forte, pour que la première section tienne dans l'écran sans défilement.
   const heroClassName = [showBrandsBand && 'portal-page-header--with-brands', isPlMedacapVariant(lms) && 'portal-page-header--compact']
     .filter(Boolean).join(' ')
-  const dpsHero = (showDpsBrandsStrip && !isManager)
+  // Phrase chiffrée du DPS même sans marque live : les chiffres passent à « — ».
+  const dpsHero = ((primaryRole === 'dps' || primaryRole === 'dop') && !isManager)
     ? {
         technicianCount: lms?.technicians?.length || lms?.kpis?.totalTechnicians,
         brandCount: filialeBrands?.length ?? 0,
@@ -231,13 +233,7 @@ export default function PortalHeader({
           onClick={() => setActiveBu('all')}
           title="Toutes les Business Units (Equipment & Motors - 20 marques)"
         >
-          <span className="portal-header-bu-badge-icon" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="2" y1="12" x2="22" y2="12" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
-          </span>
+          <span className="portal-header-bu-badge-icon" aria-hidden="true"><PoleIcon pole="ALL" /></span>
           <span>Toutes BU</span>
           <span className="portal-header-bu-badge-count">20</span>
         </button>
@@ -250,14 +246,7 @@ export default function PortalHeader({
           onClick={() => setActiveBu(activeBu === 'equipment' ? 'all' : 'equipment')}
           title="Pôle Equipment (BTP, Poids Lourds, Manutention - 11 marques)"
         >
-          <span className="portal-header-bu-badge-icon" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M1 3h15v13H1z" />
-              <path d="M16 8h4l3 3v5h-7V8z" />
-              <circle cx="5.5" cy="18.5" r="2.5" />
-              <circle cx="18.5" cy="18.5" r="2.5" />
-            </svg>
-          </span>
+          <span className="portal-header-bu-badge-icon" aria-hidden="true"><PoleIcon pole="EQUIPMENT" /></span>
           <span>Equipment</span>
           <span className="portal-header-bu-badge-count">11</span>
         </button>
@@ -270,14 +259,7 @@ export default function PortalHeader({
           onClick={() => setActiveBu(activeBu === 'motors' ? 'all' : 'motors')}
           title="Pôle Motors (Véhicules particuliers & utilitaires - 9 marques)"
         >
-          <span className="portal-header-bu-badge-icon" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.2 1 12 1 13v3c0 .6.4 1 1 1h2" />
-              <circle cx="7" cy="17" r="2" />
-              <path d="M9 17h6" />
-              <circle cx="17" cy="17" r="2" />
-            </svg>
-          </span>
+          <span className="portal-header-bu-badge-icon" aria-hidden="true"><PoleIcon pole="MOTORS" /></span>
           <span>Motors</span>
           <span className="portal-header-bu-badge-count">9</span>
         </button>
@@ -293,10 +275,12 @@ export default function PortalHeader({
       firstName={user.firstName}
       user={user}
       primaryRole={primaryRole}
-      hideOrient={showBrandLevels || showDpsBrandsStrip || isSuperAdmin || isManager}
+      hideOrient={showBrandLevels || showDpsBrandsStrip || Boolean(dpsHero) || isSuperAdmin || isManager || Boolean(centerHero) || Boolean(statsHero)}
       dpsHero={dpsHero}
+      statsHero={statsHero}
       superadminHero={superadminHero}
       managerHero={managerHero}
+      centerHero={centerHeroInteractive}
     />
   )
 
@@ -315,8 +299,19 @@ export default function PortalHeader({
           filiales={lms?.filialesLearners}
         />
       )}
+      {centerBrandsOpen && centerHero?.brandList?.length > 0 && (
+        <div id="portal-center-brands" className="portal-header-geo-row portal-center-brands">
+          <div className="portal-header-geo-brands">
+            {centerHero.brandList.map(b => (
+              <span key={b.name} className="portal-header-brand-logo-wrap portal-header-brand-logo-wrap--geo" title={b.name}>
+                <img src={b.logo} alt={b.name} className="portal-header-brand-logo" loading="lazy" />
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       {showGeoBrands && (
-        <div className={`portal-header-geo-row${showBrandsBand ? ' portal-header-geo-row--grid portal-header-geo-row--below-brands' : ''}`}>
+        <div className={`portal-header-geo-row${showBrandsBand ? ' portal-header-geo-row--grid portal-header-geo-row--below-brands' : ''}${primaryRole === 'trainer' ? ' portal-header-geo-row--instructor' : ''}`}>
           <div className="portal-header-geo-brands">
             {userBrands.map(brand => (
               <BrandLogo key={brand} brand={brand} size="geo" />
@@ -337,6 +332,7 @@ export default function PortalHeader({
       <PortalHeroShell aside={aside} className={heroClassName}>
         <div className="portal-header-role-line">{roleBadge}</div>
         {greetingBlock}
+        {belowGreeting}
         {brandsBand}
       </PortalHeroShell>
     )
@@ -347,6 +343,7 @@ export default function PortalHeader({
       <div className="portal-header-main">
         <div className="page-header-eyebrow portal-header-eyebrow">{roleBadge}</div>
         {greetingBlock}
+        {belowGreeting}
         {brandsBand}
       </div>
     </PortalHeroShell>

@@ -9,21 +9,28 @@
  * est prise par l'API, qui interroge Cerbos. Academix restaurait l'utilisateur —
  * rôle compris — depuis `localStorage` sans revalidation (interdit n° 6).
  */
+import { cheminApp, urlApp } from './base'
+
+// Fixée au déploiement par la passerelle (/config.js) : la même image sert
+// tout hôte. Le LAN se connecte sur l'émetteur public, seul servi par /auth.
+const RUNTIME = (typeof window !== 'undefined' && window.__NEEDS_CONFIG__) || {}
+
 function resolveIssuer() {
+  if (RUNTIME.oidcIssuer) return RUNTIME.oidcIssuer
   const customIssuer = (import.meta.env.VITE_OIDC_ISSUER || '').trim()
   if (customIssuer) {
-    // Override explicite (ex. dev local direct sur http://localhost:8081/realms/cfao-needs)
+    // Override explicite (ex. Vite isolé sur http://localhost:8088/auth/realms/cfao)
     return customIssuer.startsWith('http')
       ? customIssuer.replace('localhost', window.location.hostname)
       : `${window.location.origin}${customIssuer.startsWith('/') ? '' : '/'}${customIssuer}`
   }
-  // Par défaut : same-origin via la passerelle (production / tunnels HTTPS / LAN)
-  return `${window.location.origin}/realms/cfao-needs`
+  // Par défaut : Keycloak commun, même origine via la passerelle cfao-edge.
+  return `${window.location.origin}/auth/realms/cfao`
 }
 
 const ISSUER = resolveIssuer()
-const CLIENT_ID = import.meta.env.VITE_OIDC_CLIENT_ID || 'needs-web'
-const REDIRECT_URI = `${window.location.origin}/callback`
+const CLIENT_ID = RUNTIME.oidcClientId || import.meta.env.VITE_OIDC_CLIENT_ID || 'cfao-needs-web'
+const REDIRECT_URI = urlApp('/callback')
 
 const VERIFIER_KEY = 'needs.pkce.verifier'
 const STATE_KEY = 'needs.pkce.state'
@@ -262,7 +269,7 @@ export function reauthenticate(returnTo) {
 
   const path =
     returnTo ??
-    `${window.location.pathname}${window.location.search}${window.location.hash}`
+    `${cheminApp()}${window.location.search}${window.location.hash}`
   try {
     if (path && path !== '/' && !path.startsWith('/callback')) {
       sessionStorage.setItem(RETURN_KEY, path)
@@ -294,8 +301,9 @@ export function consumeAuthReturnPath() {
  * confirmation, puis échoue si la session n'est plus là — ce qui donne un
  * « la déconnexion a échoué » alors que l'utilisateur a bien été déconnecté.
  *
- * L'URI de retour porte sa barre finale : le client n'autorise que
- * `http://localhost:8080/*`, et l'origine nue tombe hors du motif.
+ * L'URI de retour porte sa barre finale : en prod le client n'autorise que
+ * `<origine>/besoins/callback` et `<origine>/besoins/`, et l'adresse sans barre
+ * finale tombe hors de la liste.
  */
 export function logout() {
   const idToken = readRawSession()?.idToken
@@ -308,7 +316,7 @@ export function logout() {
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
-    post_logout_redirect_uri: `${window.location.origin}/`,
+    post_logout_redirect_uri: urlApp('/'),
   })
   if (idToken) params.set('id_token_hint', idToken)
 

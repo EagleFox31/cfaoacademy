@@ -4,6 +4,7 @@ import { satisfactionStagiaire, detailParCritere, CRITERES_FORMATION, CRITERES_A
 import { periodeLongue } from './compteRendu'
 import { estCertification } from './certification'
 import { rubriquesBilanCertification } from './remarquesCertification'
+import { adresse } from '../lib/adresse'
 
 /**
  * Les remarques de session : les deux constats de la page des resultats
@@ -221,7 +222,7 @@ export function valeursClasseursStagiaire(b, id) {
  */
 export async function redigerRemarque(type, donnees, rubrique) {
   try {
-    const reponse = await fetch('/apercu/redaction', {
+    const reponse = await fetch(adresse('/apercu/redaction'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -1,0 +1,26 @@
+{
+  "navAria": "Testimonial navigation",
+  "prev": "Previous testimonial",
+  "next": "Next testimonial",
+  "choose": "Choose a testimonial",
+  "testimonialN": "Testimonial {n} — {name}",
+  "playVideo": "Play {name}'s testimonial",
+  "videoTitle": "Testimonial — {name}",
+  "items": [
+    {
+      "name": "Eric N.",
+      "role": "Technician · Douala",
+      "quote": "Before, we were mostly told how to apply things, not why. Now I know why I make each move. Since G3 certification, I handle chassis work orders without waiting for someone to unblock me."
+    },
+    {
+      "name": "Anonymous",
+      "role": "Body shop technician · Abidjan",
+      "quote": "In body repair, multi-layer paint was what sent us backwards. The session put us all on the same method — fewer reworks, fewer nasty surprises."
+    },
+    {
+      "name": "Anonymous",
+      "role": "Parts manager · Senegal",
+      "quote": "At the counter, we wasted time finding the right part number. After Parts training, stock and customer requests are clearer for the whole team."
+    }
+  ]
+}

@@ -26,20 +26,37 @@ _CACHE_TTL = 60
 _TIMEOUT = 5
 
 
+#: Aperçu « vu comme » : le super admin lit le portail d'un compte réel. La décision
+#: (droit, cible active, audit) est prise par core sur GET /api/v1/core/me ; needs ne
+#: fait que transmettre l'en-tête par ce seul chemin et refuser toute écriture.
+EN_TETE_VU_COMME = "X-Cfao-Vu-Comme"
+
+
+class VuCommeRefuse(Exception):
+    """Aperçu refusé ou cible introuvable : jamais de repli sur l'identité réelle."""
+
+    def __init__(self, statut: int):
+        super().__init__(statut)
+        self.statut = statut
+
+
 class IdentityProvider(Protocol):
-    def resolve(self, principal) -> None:
+    def resolve(self, principal, vu_comme: str | None = None) -> None:
         """Complète `principal.roles` et `principal.attr` **en place**.
 
-        Ne lève jamais : un périmètre non résolu laisse le principal tel qu'il sort
-        du token. Comme les policies Cerbos sont en default-deny, un périmètre vide
-        refuse l'accès — c'est le comportement voulu (fail-closed).
+        Ne lève jamais sans `vu_comme` : un périmètre non résolu laisse le principal
+        tel qu'il sort du token. Comme les policies Cerbos sont en default-deny, un
+        périmètre vide refuse l'accès — c'est le comportement voulu (fail-closed).
+        Avec `vu_comme`, tout échec lève `VuCommeRefuse`.
         """
 
 
 class LocalIdentityProvider:
     """Mode standalone — périmètre lu dans la base du module."""
 
-    def resolve(self, principal) -> None:
+    def resolve(self, principal, vu_comme: str | None = None) -> None:
+        if vu_comme:  # l'aperçu n'existe qu'avec la plateforme (core décide)
+            raise VuCommeRefuse(403)
         from referential.models import UserProfile  # import tardif (cycle core↔referential)
 
         profile = (
@@ -60,7 +77,10 @@ class LocalIdentityProvider:
 class PlatformIdentityProvider:
     """Mode integrated — périmètre lu depuis le module `identity` de la plateforme."""
 
-    def resolve(self, principal) -> None:
+    def resolve(self, principal, vu_comme: str | None = None) -> None:
+        if vu_comme:
+            self._resolve_vu_comme(principal, vu_comme)
+            return
         key = f"needs:principal:{principal.id}"
         resolved = cache.get(key)
         if resolved is None:
@@ -71,14 +91,47 @@ class PlatformIdentityProvider:
         principal.roles = resolved.get("roles") or principal.roles
         principal.attr.update(resolved.get("attr") or {})
 
-    def _fetch(self, principal) -> dict | None:
-        url = f"{settings.PLATFORM_CORE_HTTP.rstrip('/')}/api/v1/core/me"
+    def _resolve_vu_comme(self, principal, cible: str) -> None:
+        # Clé = compte réel + cible : une réponse « vu comme » ne sert jamais une
+        # requête normale, ni un autre appelant.
+        key = f"needs:apercu:{principal.id}:{cible}"
+        resolved = cache.get(key)
+        if resolved is None:
+            resolved = self._fetch_vu_comme(principal, cible)
+            cache.set(key, resolved, _CACHE_TTL)
+        vu_par = principal.id
+        principal.id = resolved.get("id") or principal.id
+        principal.roles = resolved.get("roles") or []
+        principal.attr = {**(resolved.get("attr") or {}), "apercu": True, "vu_par": vu_par}
+
+    def _fetch_vu_comme(self, principal, cible: str) -> dict:
         try:
-            resp = requests.get(
-                url,
-                headers={"Authorization": f"Bearer {principal.raw_token}"},
-                timeout=_TIMEOUT,
-            )
+            resp = self._get_me(principal, {EN_TETE_VU_COMME: cible})
+        except requests.RequestException:
+            raise VuCommeRefuse(503)
+        if resp.status_code == 404:
+            raise VuCommeRefuse(404)
+        if resp.status_code != 200:
+            raise VuCommeRefuse(403)
+        try:
+            data = resp.json()
+        except ValueError:
+            raise VuCommeRefuse(503)
+        if not (data.get("attr") or {}).get("apercu"):  # core n'a pas appliqué l'aperçu
+            raise VuCommeRefuse(403)
+        return data
+
+    def _get_me(self, principal, extra: dict | None = None):
+        url = f"{settings.PLATFORM_CORE_HTTP.rstrip('/')}/api/v1/core/me"
+        return requests.get(
+            url,
+            headers={"Authorization": f"Bearer {principal.raw_token}", **(extra or {})},
+            timeout=_TIMEOUT,
+        )
+
+    def _fetch(self, principal) -> dict | None:
+        try:
+            resp = self._get_me(principal)
             resp.raise_for_status()
             return resp.json()
         except (requests.RequestException, ValueError):

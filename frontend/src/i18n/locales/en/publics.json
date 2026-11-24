@@ -1,0 +1,57 @@
+{
+  "Techniciens Véhicules Légers": {
+    "name": "Light vehicle technicians",
+    "niv": "Junior → Expert",
+    "meta": "Preventive maintenance, repair and diagnostics on light vehicles — G4 → G1 certifying pathway across Motors brands."
+  },
+  "Techniciens Voitures": {
+    "name": "Light vehicle technicians",
+    "niv": "Junior → Expert",
+    "meta": "Preventive maintenance, repair and diagnostics on light vehicles — G4 → G1 certifying pathway across Motors brands."
+  },
+  "Techniciens Poids lourds, Engins, Chariots & Bus": {
+    "name": "Heavy vehicle, machinery, forklift & bus technicians",
+    "niv": "Junior → Expert",
+    "meta": "Technician skills on trucks, construction equipment, forklifts and buses — Equipment manufacturer standards."
+  },
+  "Carrossiers": {
+    "name": "Body shop technicians",
+    "niv": "Junior → Expert",
+    "meta": "Steel straightening, surface prep, glazing replacement and multi-layer blending — from N1 dent removal to N5 colour matching."
+  },
+  "Conseillers Services": {
+    "name": "Service advisors",
+    "niv": "Advisors",
+    "meta": "Advisors in administrative and financial services — network support functions, compliance and performance."
+  },
+  "Manager et conseillers services administratifs, financiers": {
+    "name": "Service advisors",
+    "niv": "Advisors",
+    "meta": "Advisors in administrative and financial services — network support functions, compliance and performance."
+  },
+  "Technico-commerciaux": {
+    "name": "Technical sales advisors",
+    "niv": "Product · Sales",
+    "meta": "Product knowledge and technical sales arguments — for advisors combining vehicle expertise and commercial performance."
+  },
+  "Commerciaux": {
+    "name": "Sales & service advisors",
+    "niv": "Reception · Aftersales",
+    "meta": "Customer welcome, intake and aftersales support — from service reception to experienced service advisor."
+  },
+  "Managers": {
+    "name": "Managers",
+    "niv": "Manager · Back office",
+    "meta": "Aftersales managers and leaders — manufacturer standards, KPI management and KI/PIC network compliance."
+  },
+  "Manager et responsables organisation SAV": {
+    "name": "Managers",
+    "niv": "Manager · Back office",
+    "meta": "Aftersales managers and back-office leaders — manufacturer standards, KPI management and KI/PIC network compliance."
+  },
+  "Clients": {
+    "name": "Clients",
+    "niv": "B2B partners",
+    "meta": "Technicians, body shop staff and parts managers from partner companies — the same training delivered to CFAO Mobility and Equipment partners and fleets."
+  }
+}

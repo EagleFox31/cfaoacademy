@@ -19,7 +19,7 @@ function RoleIcon({ role }) {
       </svg>
     )
   }
-  if (role === 'ki' || role === 'pic' || role === 'trainer') {
+  if (role === 'ki' || role === 'pic' || role === 'technical_expert' || role === 'trainer') {
     return (
       <svg {...common}>
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />

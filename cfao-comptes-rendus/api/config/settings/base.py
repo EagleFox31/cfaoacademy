@@ -34,6 +34,7 @@ env = environ.Env(
     OIDC_ISSUER=(str, ""),
     OIDC_AUDIENCE=(str, ""),
     OIDC_JWKS_URL=(str, ""),
+    OIDC_TRUSTED_ISSUERS=(str, ""),
     OIDC_CONNEXION=(str, "/oauth2/start?rd=/portail"),
     OIDC_DECONNEXION=(str, "/oauth2/sign_out?rd=/"),
     PROFILS_LOCAUX=(str, str(BASE_DIR / "profils-locaux.json")),
@@ -60,6 +61,8 @@ if DEPLOYMENT_MODE == "standalone" and not DEBUG:
 OIDC_ISSUER = env("OIDC_ISSUER")
 OIDC_AUDIENCE = env("OIDC_AUDIENCE")
 OIDC_JWKS_URL = env("OIDC_JWKS_URL")
+# Emetteurs supplementaires « emetteur=jwks;... » (voir core/auth/jwt_verifier.py).
+OIDC_TRUSTED_ISSUERS = env("OIDC_TRUSTED_ISSUERS")
 # Ou envoyer le navigateur pour se connecter / se deconnecter (oauth2-proxy).
 OIDC_CONNEXION = env("OIDC_CONNEXION")
 OIDC_DECONNEXION = env("OIDC_DECONNEXION")

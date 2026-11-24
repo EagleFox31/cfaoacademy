@@ -37,7 +37,7 @@ Le module tourne dans deux modes, **même code, même image**, deux fichiers Com
 
 | | Mode `standalone` (R0) | Mode `integrated` (après go-live plateforme) |
 |---|---|---|
-| Identité | Keycloak embarqué, realm `cfao-needs` | Keycloak plateforme, realm `cfao` |
+| Identité | Keycloak commun, realm `cfao` (décision du 19/11/2026 : plus de Keycloak propre au module) | Keycloak commun, realm `cfao` |
 | Autorisation | Cerbos embarqué, policies `needs_*` | Cerbos plateforme, mêmes policies |
 | Base | `needs-db` dédiée | `needs-db` dédiée (inchangé) |
 | Référentiel formations | Table locale `catalog_line`, alimentée par import | Synchronisée depuis `lms.Course` via job |
@@ -53,8 +53,8 @@ modification de code. Toute dépendance à la plateforme passe par une interface
 
 ```
                  ┌──────────────────┐
-      login      │  needs-keycloak  │  realm cfao-needs (config-as-code)
-   ┌────────────▶│  + kc-db         │
+      login      │ Keycloak commun  │  realm cfao (keycloak/ à la racine)
+   ┌────────────▶│  (hors module)   │
    │             └──────────────────┘
 ┌──────┐   JWT   ┌──────────────────┐
 │ SPA  │────────▶│  needs-gateway   │  nginx + oauth2-proxy (BFF, cookie httpOnly)

@@ -9,6 +9,7 @@ import {
   resolveProfilePays,
 } from '../utils/profileOrg.js'
 import { flagCdnUrlForCountry } from '../utils/countryFlag.js'
+import { getPrimaryRole } from '../pages/portal/portalProfiles.js'
 
 const BRAND_LOGOS = {
   toyota:          '/assets/logos/toyota.png',
@@ -23,18 +24,6 @@ const BRAND_LOGOS = {
   'renault-trucks':'/assets/logos/renault-trucks.png',
 }
 
-const ROLE_PRIORITY = [
-  'superadmin','branch_hr','branch_admin','group_hr','group_admin',
-  'workshop_manager','team_manager','ki','pic',
-  'trainer','center_director','dop','dps','branch_director',
-]
-
-function getPrimaryRole(roles) {
-  for (const r of ROLE_PRIORITY) {
-    if (roles.includes(r)) return r
-  }
-  return 'learner'
-}
 
 /** Agence ou filiale — toujours avec drapeau pays quand `pays` est connu (norme site). */
 function HeroGeoContextBadge({ pays, label }) {

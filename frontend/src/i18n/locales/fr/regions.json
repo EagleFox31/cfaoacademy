@@ -1,0 +1,24 @@
+{
+  "nord": {
+    "label": "Afrique du Nord",
+    "shortLabel": "Nord"
+  },
+  "ouest": {
+    "label": "Afrique de l'Ouest",
+    "shortLabel": "Ouest"
+  },
+  "centrale": {
+    "label": "Afrique Centrale",
+    "shortLabel": "Centrale"
+  },
+  "est": {
+    "label": "Afrique de l'Est",
+    "shortLabel": "Est"
+  },
+  "australe": {
+    "label": "Afrique Australe & Océan Indien",
+    "shortLabel": "Australe"
+  },
+  "statusPotential": "en cours",
+  "regionsKicker": "Régions"
+}

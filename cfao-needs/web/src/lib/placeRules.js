@@ -8,6 +8,7 @@
 
 export const CMR_AGENCY_MIN = 7 // « plus de 6 »
 export const ACADEMY_COUNTRY = 'Cameroun'
+export const PLACES = ['CFR', 'FILIALE', 'DISTANCE']
 
 function normalizeCountry(country) {
   return String(country || '')
@@ -23,10 +24,10 @@ export function isCameroon(country) {
 
 /**
  * Corrige un lieu incohérent.
- * Cameroun ≤6 : toujours CFR. Au-delà : conserve CFR ou FILIALE demandé.
+ * Cameroun ≤6 : toujours CFR. Au-delà : conserve le lieu demandé.
  */
 export function resolvePlace(country, headcount, requested = 'CFR') {
-  const place = requested === 'FILIALE' ? 'FILIALE' : 'CFR'
+  const place = PLACES.includes(requested) ? requested : 'CFR'
   if (!isCameroon(country)) return place
   if (Number(headcount) < CMR_AGENCY_MIN) return 'CFR'
   return place
@@ -34,7 +35,6 @@ export function resolvePlace(country, headcount, requested = 'CFR') {
 
 /** Options proposées dans le sélecteur. */
 export function placeOptionsFor(country, headcount) {
-  if (!isCameroon(country)) return ['CFR', 'FILIALE']
-  if (Number(headcount) < CMR_AGENCY_MIN) return ['CFR']
-  return ['CFR', 'FILIALE']
+  if (isCameroon(country) && Number(headcount) < CMR_AGENCY_MIN) return ['CFR']
+  return PLACES
 }

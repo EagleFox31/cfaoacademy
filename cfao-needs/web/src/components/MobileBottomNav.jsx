@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useLocale } from '../i18n'
 import { isReviewer } from '../lib/auth'
+import { asset } from '../lib/base'
 
 function IconCar() {
   return (
@@ -68,7 +69,7 @@ export default function MobileBottomNav({ session, pendingCount = 0 }) {
 
   const scrollTo = (id) => {
     if (location.pathname !== '/') {
-      window.location.href = `/#${id}`
+      window.location.href = asset(`#${id}`)
       return
     }
     const el = document.getElementById(id)

@@ -1,0 +1,15 @@
+# Ressource « portal_suggestion » : propositions de modification d'un portail,
+# faites depuis son aperçu. Default-deny. Rôles seuls (pas de derivedRoles :
+# roles + derivedRoles dans une même règle = OU).
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: portal_suggestion
+  rules:
+    # list_own : ses propres propositions (core filtre sur l'auteur du jeton).
+    - actions: ["create", "list_own"]
+      effect: EFFECT_ALLOW
+      roles: ["center_director", "superadmin"]
+    - actions: ["list", "view", "update"]
+      effect: EFFECT_ALLOW
+      roles: ["superadmin"]

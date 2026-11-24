@@ -94,6 +94,8 @@ REST_FRAMEWORK = {
 OIDC_JWKS_URL = env("OIDC_JWKS_URL", default="")
 OIDC_ISSUER = env("OIDC_ISSUER", default="")
 OIDC_AUDIENCE = env("OIDC_AUDIENCE", default="")
+# Émetteurs supplémentaires « émetteur=jwks;… » (voir core/auth/jwt_verifier.py).
+OIDC_TRUSTED_ISSUERS = env("OIDC_TRUSTED_ISSUERS", default="")
 
 # ── Cerbos (PDP) ──
 CERBOS_HTTP = env("CERBOS_HTTP", default="http://needs-cerbos:3592")
@@ -134,6 +136,14 @@ PUBLIC_BASE_URL = env("NEEDS_PUBLIC_BASE_URL", default="http://localhost:8080")
 # Utilisée par cfao-core pour agréger les KPIs du dashboard super admin.
 # Absente = tous les endpoints analytics renvoient 401 (fail-close).
 ANALYTICS_INBOUND_KEY = env("NEEDS_ANALYTICS_INBOUND_KEY", default="")
+CATALOG_WRITE_INBOUND_KEY = env("NEEDS_CATALOG_WRITE_INBOUND_KEY", default="")
+
+# ── Copie des besoins poussée à cfao-planning (relais `needs-relay`) ──────────
+# URL ou clé absente = relais inactif ; planning se rattrape par /analytics/snapshot.
+PLANNING_API_URL = env("PLANNING_API_URL", default="")
+NEEDS_SNAPSHOT_PUSH_KEY = env("NEEDS_SNAPSHOT_PUSH_KEY", default="")
+NEEDS_RELAY_LISTEN_TIMEOUT_S = env.int("NEEDS_RELAY_LISTEN_TIMEOUT_S", default=30)
+NEEDS_RELAY_MAX_BACKOFF_S = env.int("NEEDS_RELAY_MAX_BACKOFF_S", default=600)
 
 # ── Worker asynchrone : broker = Postgres, pas de Redis (architecture.md §7) ──
 Q_CLUSTER = {

@@ -54,14 +54,24 @@ if (-not $env:NEEDS_PUBLIC_BASE_URL) {
     }
 }
 
-# Issuer OIDC : valeur explicite > .env > dérivé de NEEDS_PUBLIC_BASE_URL
+# Issuer OIDC : valeur explicite > .env. Jamais déduit de l'hôte : c'est
+# l'émetteur du Keycloak commun (KC_HOSTNAME + /realms/cfao).
 if (-not $env:OIDC_ISSUER) {
-    $envIssuer = Get-EnvValue "OIDC_ISSUER"
-    if ($envIssuer) {
-        $env:OIDC_ISSUER = $envIssuer
-    } else {
-        $env:OIDC_ISSUER = "$($env:NEEDS_PUBLIC_BASE_URL)/realms/cfao-needs"
-    }
+    $env:OIDC_ISSUER = Get-EnvValue "OIDC_ISSUER"
+}
+if (-not $env:OIDC_ISSUER) {
+    Write-Error "OIDC_ISSUER manquant (ex. https://<hote>/auth/realms/cfao)"
+    exit 1
+}
+
+# Audience : vide = défaut du compose (cfao-needs-api). Un reste du realm de
+# module (needs-web) ferait refuser tous les jetons par l'API.
+if (-not $env:OIDC_AUDIENCE) {
+    $env:OIDC_AUDIENCE = Get-EnvValue "OIDC_AUDIENCE"
+}
+if ($env:OIDC_AUDIENCE -and (($env:OIDC_AUDIENCE -split ',') -notcontains 'cfao-needs-api')) {
+    Write-Error "OIDC_AUDIENCE=$($env:OIDC_AUDIENCE) : doit être vide ou contenir cfao-needs-api"
+    exit 1
 }
 
 Write-Host "==========================================================" -ForegroundColor Green

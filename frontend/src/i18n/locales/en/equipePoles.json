@@ -1,0 +1,22 @@
+{
+  "supports": {
+    "shortLabel": "Support",
+    "label": "Support hub · 4"
+  },
+  "toyota": {
+    "shortLabel": "Toyota",
+    "label": "Toyota hub · 3"
+  },
+  "autres-marques": {
+    "shortLabel": "Other brands",
+    "label": "Other brands hub · 12"
+  },
+  "equipement": {
+    "shortLabel": "Equipment",
+    "label": "Equipment hub · 4"
+  },
+  "autres-act": {
+    "shortLabel": "Other activities",
+    "label": "Other activities hub · 3"
+  }
+}

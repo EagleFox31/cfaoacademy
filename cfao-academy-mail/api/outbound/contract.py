@@ -6,16 +6,25 @@ La source exécutable est le catalogue (`required_context`). Le fichier
 
 from __future__ import annotations
 
+import json
+import os
 from pathlib import Path
 
-from outbound.catalog import MESSAGE_TYPES, MessageType
+from outbound.catalog import LOCALES, MESSAGE_TYPES, MessageType
 
-CONTRACT_VERSION = "0.1.0"
+CONTRACT_VERSION = "0.2.0"
 CONTRACT_PATH = Path(__file__).resolve().parent / "contract" / "mail.openapi.json"
 
 
 def _schema_name(key: str) -> str:
     return "Enqueue" + "".join(part.capitalize() for part in key.replace(".", "_").split("_"))
+
+
+def _context_property(message_type: MessageType, key: str) -> dict:
+    patterns = dict(message_type.context_patterns)
+    if key in patterns:
+        return {"type": ["string", "integer"], "pattern": f"^{patterns[key]}$"}
+    return {"type": ["string", "number"]}
 
 
 def _request_schema(message_type: MessageType) -> dict:
@@ -26,11 +35,11 @@ def _request_schema(message_type: MessageType) -> dict:
         "to": {"$ref": "#/components/schemas/EmailList"},
         "cc": {"$ref": "#/components/schemas/EmailList"},
         "reply_to": {"type": "string", "format": "email"},
-        "locale": {"type": "string", "enum": ["fr", "en"], "default": "fr"},
+        "locale": {"type": "string", "enum": list(LOCALES), "default": "fr"},
         "context": {
             "type": "object",
             "required": context_required,
-            "properties": {key: {"type": ["string", "number"]} for key in context_required},
+            "properties": {key: _context_property(message_type, key) for key in context_required},
             "additionalProperties": True,
         },
         "source_app": {"type": "string", "maxLength": 32},
@@ -45,6 +54,15 @@ def _request_schema(message_type: MessageType) -> dict:
         }
     else:
         properties["module_url"] = {"type": "string", "format": "uri"}
+    if message_type.sensitive:
+        # Message sensible : sans copie, avec une échéance (refusée sur les autres types).
+        del properties["cc"]
+        properties["expires_at"] = {
+            "type": "string",
+            "format": "date-time",
+            "description": "Échéance du code ou du lien. Passée, le message n'est pas envoyé (EXPIRED).",
+        }
+        required.append("expires_at")
     schema = {
         "type": "object",
         "additionalProperties": False,
@@ -53,6 +71,10 @@ def _request_schema(message_type: MessageType) -> dict:
         "description": message_type.description,
         "x-required-context": list(message_type.required_context),
     }
+    if message_type.sensitive:
+        schema["x-secret-context"] = list(message_type.secret_context)
+    if message_type.allowed_sources:
+        schema["x-allowed-sources"] = list(message_type.allowed_sources)
     if "module_url" in message_type.required_context:
         schema["anyOf"] = [
             {"required": ["module_url"]},
@@ -88,7 +110,7 @@ def openapi_document() -> dict:
                 "kind": {"type": "string"},
                 "status": {
                     "type": "string",
-                    "enum": ["PENDING_REVIEW", "APPROVED", "SENT", "FAILED", "REJECTED"],
+                    "enum": ["PENDING_REVIEW", "APPROVED", "SENT", "FAILED", "REJECTED", "EXPIRED"],
                 },
                 "source_app": {"type": "string"},
                 "source_ref": {"type": "string"},
@@ -129,7 +151,9 @@ def openapi_document() -> dict:
             "version": CONTRACT_VERSION,
             "description": (
                 "Hub d'envoi. Les modules passent le contexte et l'adresse du bouton. "
-                "Un champ requis manquant est refusé (400), le mail n'est pas envoyé."
+                "Un champ requis manquant est refusé (400), le mail n'est pas envoyé. "
+                "Message sensible (x-secret-context) : les secrets ne sont jamais stockés en clair, "
+                "le message part une seule fois et seule une clé liée à x-allowed-sources peut l'envoyer."
             ),
         },
         "paths": {
@@ -180,7 +204,7 @@ def openapi_document() -> dict:
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
                         },
                         "403": {
-                            "description": "Clé X-Mail-Service-Key absente ou invalide.",
+                            "description": "Clé X-Mail-Service-Key absente, invalide ou non autorisée pour ce type.",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
                         },
                     },
@@ -198,3 +222,25 @@ def openapi_document() -> dict:
             "schemas": schemas,
         },
     }
+
+
+def render() -> str:
+    """Sérialisation stable : ordre du catalogue, LF, une ligne vide finale."""
+    return json.dumps(openapi_document(), indent=2, ensure_ascii=False) + "\n"
+
+
+def publish(path: Path = CONTRACT_PATH) -> bool:
+    """Écrit le contrat s'il a changé. Octets, pas texte : pas de CRLF sous Windows."""
+    content = render().encode("utf-8")
+    if path.is_file() and path.read_bytes() == content:
+        return False
+    path.write_bytes(content)
+    return True
+
+
+if __name__ == "__main__":
+    import django
+
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.test")
+    django.setup()
+    print(f"{CONTRACT_PATH.name} {CONTRACT_VERSION} : {'écrit' if publish() else 'inchangé'}")

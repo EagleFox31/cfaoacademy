@@ -7,6 +7,7 @@
  * c'est la seule clé stable, le libellé change (« OMODA & JAECCO » vs
  * « OMODA & JAECOO ») alors que le code, non.
  */
+import { asset } from './base'
 
 /**
  * Chemin du logo, sans vérifier que le fichier existe.
@@ -17,7 +18,7 @@
  * monogramme via `onError`, ce qui couvre déjà le fichier manquant.
  */
 export function brandLogo(code) {
-  return code ? `/assets/brands/${code}.png` : null
+  return code ? asset(`assets/brands/${code}.png`) : null
 }
 
 const COUNTRY_FLAGS = {
@@ -62,5 +63,5 @@ function normalize(value) {
 
 export function countryFlag(country) {
   const file = COUNTRY_FLAGS[normalize(country)]
-  return file ? `/assets/flags/${file}` : null
+  return file ? asset(`assets/flags/${file}`) : null
 }

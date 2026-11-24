@@ -1,0 +1,32 @@
+{
+  "badges": {
+    "allBrands": "All brands",
+    "bodywork": "Body shop",
+    "savMotors": "Aftersales Motors",
+    "savEquipment": "Aftersales Equipment",
+    "processSav": "Aftersales process",
+    "partsProcess": "Parts & process",
+    "technicians": "Technicians",
+    "equipment": "Equipment",
+    "academy": "Academy"
+  },
+  "public": {
+    "Manager": "Manager",
+    "Managers": "Managers",
+    "Front Office": "Front office",
+    "Back office": "Back office",
+    "Back-office": "Back office",
+    "Techniciens": "Technicians",
+    "Carrossier": "Body shop technician",
+    "Manager + Front Office + Back office": "Manager + Front office + Back office",
+    "Manager + Front office + Back office": "Manager + Front office + Back office",
+    "Manager, Back-office & Front office": "Manager, Back office & Front office",
+    "Back-office & Front office": "Back office & Front office",
+    "Managers, Back-office, Front-Office": "Managers, Back office, Front office",
+    "Managers, Back-office": "Managers, Back office",
+    "Conseiller Technique et/Administrateur Garantie": "Technical advisor and/or warranty administrator",
+    "Préparateur après-vente, contrôleurs qualité, Chef d'atelier": "Aftersales prep staff, quality controllers, workshop manager",
+    "Carrossier-peintre, tôlier, mécanicien": "Painter-body technician, panel beater, mechanic"
+  },
+  "durationEach": "each"
+}

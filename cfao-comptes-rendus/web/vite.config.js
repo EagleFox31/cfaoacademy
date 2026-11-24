@@ -21,6 +21,8 @@ export default defineConfig(({ mode }) => {
   // tournent a part ; CR_SERVICE permet de brancher une copie isolee.
   const service = env.CR_SERVICE || 'http://127.0.0.1:5175'
   return {
+    // Préfixe de service : `/cr/` derrière cfao-edge (image de la passerelle).
+    base: env.CR_BASE || '/',
     plugins: [react()],
     css: { postcss: { plugins: [unitesEcran] } },
     server: {

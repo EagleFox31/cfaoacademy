@@ -136,7 +136,7 @@ function EvalCardResult({ e, t, locked = false, statusOnly = false }) {
         ) : inProgress ? (
           <span className="portal-eval-finish-cta">{t.eval_finish_test}</span>
         ) : statusOnly ? (
-          <span className={`portal-status-chip ${evalCardStatusClass(e, locked)}`}>
+          <span className={`portal-status-chip ${e.status === 'progress' && !locked ? 'open' : evalCardStatusClass(e, locked)}`}>
             {evalCardStatusLabel(e, t, locked)}
           </span>
         ) : e.score != null ? (

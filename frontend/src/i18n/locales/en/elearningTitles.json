@@ -1,0 +1,21 @@
+{
+  "EL-TS01-G4": "Preventive maintenance of Toyota vehicles",
+  "EL-TS02-G4": "Workshop safety and introduction to Toyota systems",
+  "EL-TS03-G3": "Petrol and diesel engine overhaul and repair",
+  "EL-TS04-G3": "Chassis overhaul — gearboxes and differential",
+  "EL-TS05-G3": "Chassis overhaul — braking, suspension and steering",
+  "EL-TS06-G3": "Electrical overhaul — air conditioning, alternator and starter",
+  "EL-TS07-G3": "G3 certification — vehicle systems overhaul and repair review",
+  "EL-TS08-G2": "Multiplexed vehicle systems diagnostics",
+  "EL-TS09-G2": "Vehicle chassis systems diagnostics",
+  "EL-TS10-G2": "Vehicle electrical/electronic systems diagnostics",
+  "EL-TS11-G2": "Manual and automatic A/C systems diagnostics",
+  "EL-TS12-G2": "G2 certification: vehicle systems diagnostics",
+  "EL-TS13-G1": "Diagnostics of cross-system vehicle failures",
+  "EL-TS14-G1": "Mechanical noise diagnostics on vehicle systems",
+  "EL-TS15-G1": "Failure analysis and case studies across vehicle systems",
+  "EL-TS16-G1": "G1 certification: noise and cross-system failure diagnostics (with and without DTC)",
+  "EL-TSH01": "Safe intervention on a Toyota hybrid vehicle",
+  "EL-TSKR01": "Toyota manufacturer feedback — SKR procedure (Shinraisei Kojo Report)",
+  "EL-TSA01": "Aftersales customer management by Toyota service advisor"
+}

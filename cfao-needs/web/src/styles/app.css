@@ -3277,7 +3277,7 @@ body:has(.entry-actions) .back-to-top-fab {
 
 .submit-panel__places-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-4);
 }
 
@@ -3322,6 +3322,12 @@ body:has(.entry-actions) .back-to-top-fab {
 .submit-place-card__icon--filiale {
   background: rgba(227, 0, 27, 0.08);
   color: var(--red);
+}
+
+.submit-place-card__icon--distance,
+.submit-place-card__tag--distance {
+  background: rgba(26, 86, 219, 0.08);
+  color: #1a56db;
 }
 
 .submit-place-card__body {
@@ -3402,6 +3408,10 @@ body:has(.entry-actions) .back-to-top-fab {
 
 .submit-place-card__bar-fill--filiale {
   background: linear-gradient(90deg, var(--red) 0%, #ff5252 100%);
+}
+
+.submit-place-card__bar-fill--distance {
+  background: linear-gradient(90deg, #1a56db 0%, #5b8def 100%);
 }
 
 .submit-panel__footer {

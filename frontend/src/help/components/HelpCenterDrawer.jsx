@@ -1,4 +1,4 @@
-import { useHelp } from '../context/HelpProvider.jsx'
+import { useHelp } from '../context/helpContext.js'
 import HelpCenterPanel from './HelpCenterPanel.jsx'
 
 /** Overlay + panneau latéral — prêt à brancher sur le bouton Aide. */

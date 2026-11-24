@@ -1,0 +1,63 @@
+# Front du portail en développement, dans Docker (vite + HMR).
+#
+#   docker compose -f frontend/compose.dev.yml up -d
+#   -> http://localhost:5173
+#
+# Les sources sont montées depuis le poste : une modification est rechargée à chaud.
+# node_modules vit dans un volume (binaires Linux, pas ceux du poste Windows).
+# Les autres modules sont joints par leurs ports publiés sur l'hôte
+# (host.docker.internal) : aucun réseau partagé à créer, chaque pile reste autonome.
+
+name: cfao-front
+
+services:
+  front:
+    image: node:22.23.4-alpine
+    working_dir: /repo/frontend
+    # npm ci seulement si le lockfile a changé depuis la dernière installation.
+    # FRONT_MODE=build (défaut) : la recette est servie depuis un build, comme en
+    # prod ; le serveur de dev Vite y mettait 15 s à afficher la connexion (138
+    # modules chargés un par un). Le build se refait à chaque modification :
+    # recharger la page. FRONT_MODE=dev : serveur de dev avec HMR.
+    command:
+      - sh
+      - -c
+      - >-
+        cmp -s package-lock.json node_modules/.lock-installe || { npm ci --no-audit --no-fund && cp package-lock.json node_modules/.lock-installe; };
+        [ "$$FRONT_MODE" = dev ] && exec npm run dev;
+        rm -rf /tmp/front-dist;
+        npx vite build --outDir /tmp/front-dist --emptyOutDir false &
+        until [ -f /tmp/front-dist/index.html ]; do sleep 2; done;
+        exec npx vite preview --outDir /tmp/front-dist --host 0.0.0.0 --port 5173 --strictPort
+    mem_limit: 2g # build continu + preview + un build de contrôle ponctuel ; plafond, pas une réservation
+    restart: unless-stopped
+    environment:
+      VITE_POLLING: "1"
+      FRONT_MODE: ${FRONT_MODE:-build}
+      VITE_POSTE_DEV: "1"
+      # Prime sur frontend/.env. Recette derrière edge : http://localhost:8088/auth/realms/cfao.
+      # Défaut = Keycloak derrière l'edge (recette 8088) : un `up -d` nu ne casse plus la connexion.
+      VITE_OIDC_ISSUER: ${VITE_OIDC_ISSUER:-http://localhost:8088/auth/realms/cfao}
+      # host.docker.internal a aussi une adresse IPv6 injoignable : sans cela, le proxy expire au hasard.
+      NODE_OPTIONS: --dns-result-order=ipv4first
+      CORE_SERVICE: http://host.docker.internal:8006
+      NEEDS_SERVICE: http://host.docker.internal:8082
+      KEYCLOAK_SERVICE: http://host.docker.internal:8080
+      PLANNING_SERVICE: http://host.docker.internal:8005
+      SUPERVISION_SERVICE: http://host.docker.internal:8007
+      CR_SERVICE: http://host.docker.internal:5175
+      MEDACAP_SERVICE: http://host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${FRONT_PORT:-5173}:5173"
+    volumes:
+      # Le dépôt entier : vite sert aussi ../catalogues et ../assets.
+      - ..:/repo
+      # public/assets est une jonction Windows vers un chemin absolu du poste,
+      # cassée dans le conteneur : montée ici. (catalogues : repli dans vite.config.)
+      - ../assets:/repo/frontend/public/assets:ro
+      - front-node-modules:/repo/frontend/node_modules
+
+volumes:
+  front-node-modules:

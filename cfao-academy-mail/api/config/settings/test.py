@@ -8,6 +8,9 @@ from .base import *  # noqa: F403
 
 SECRET_KEY = "test-secret-key"
 MAIL_INBOUND_KEY = "test-inbound-key"
+MAIL_INBOUND_KEYS = {"test-identity-key": "cfao-identity"}
+# Clé Fernet de test uniquement (jamais utilisée hors pytest).
+MAIL_SEALED_CONTEXT_KEY = "dGVzdC1zZWFsZWQtY29udGV4dC1rZXktMzItYnl0ZXM="
 DEBUG = False
 DATABASES = {
     "default": {

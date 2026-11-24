@@ -21,6 +21,12 @@ import {
 import { loadBuildState, buildStateKey } from '../../config/profileBuildStatus.js'
 import TrainerHome from './TrainerHome'
 import { OIDC_ACTIF } from '../../lib/auth.js'
+import PvCard from '../../components/PvCard.jsx'
+import { ADMIN_HOME, ADMIN_NAV, adminPath, canAccessAdminConsole } from '../../utils/adminAccess.js'
+import { ROLES_APERCU, compteDuRole, ouvrirApercu, peutOuvrirApercu, urlApercu } from '../../utils/apercuPortail.js'
+import useAdminResource, { fetchAllUsers } from '../../hooks/useAdminResource.js'
+import ApercuVuComme from '../../components/ApercuVuComme.jsx'
+import PropositionsPortails from '../../components/PropositionsPortails.jsx'
 
 export const CFAO_ACADEMY_APPS_CONFIG = [
   {
@@ -404,7 +410,7 @@ export const OPERATIONAL_PROFILES_CONFIG = [
     role: 'ki',
     title: 'Key Instructor & PIC',
     kicker: 'FORMATION · TERRAIN FILIALE',
-    image: '/assets/KI.png',
+    image: '/assets/KI.webp',
     scope: 'Filiale / Ateliers',
     desc: 'Animation des formations internes filiales, accompagnement terrain des techniciens et validation des évaluations.',
     status: 'OPÉRATIONNEL',
@@ -432,7 +438,7 @@ export const OPERATIONAL_PROFILES_CONFIG = [
     role: 'team_manager',
     title: 'Chef d’équipe & Atelier',
     kicker: 'MANAGEMENT · ATELIER',
-    image: '/assets/chef-equipe.png',
+    image: '/assets/chef-equipe.webp',
     scope: 'Équipe / Atelier',
     desc: 'Attribution des ordres de réparation, suivi du PIF individuel et validation des acquis opérationnels de l’équipe.',
     status: 'OPÉRATIONNEL',
@@ -446,7 +452,7 @@ export const OPERATIONAL_PROFILES_CONFIG = [
     role: 'dps',
     title: 'Directeur Pièces & Services (DPS)',
     kicker: 'DIRECTION · APRÈS-VENTE FILIALE',
-    image: '/assets/dps-noir.png',
+    image: '/assets/dps-noir.webp',
     scope: 'Filiale entière',
     desc: 'Pilotage global de l’après-vente filiale, matrice des compétences atelier, plan de formation et reporting DOP.',
     status: 'OPÉRATIONNEL',
@@ -459,14 +465,14 @@ export const OPERATIONAL_PROFILES_CONFIG = [
     id: 'prof-dop',
     role: 'dop',
     title: 'Directeur des Opérations (DOP)',
-    kicker: 'DIRECTION · PÔLE RÉGIONAL',
-    image: '/assets/dop-noir.png',
-    scope: 'Zone régionale',
-    desc: 'Supervision transversale multi-filiales (Equipment & Mobility), allocation des quotas et gouvernance réseau.',
+    kicker: 'DIRECTION · OPÉRATIONS FILIALE',
+    image: '/assets/dop-noir.webp',
+    scope: 'Filiale entière',
+    desc: 'Pilotage des opérations de sa filiale : suivi des compétences, plan de formation et arbitrage des PIF, comme le DPS.',
     status: 'OPÉRATIONNEL',
     statusClass: 'done',
     accentColor: '#0f172a',
-    modulesCount: 'Multi-filiales',
+    modulesCount: 'Cockpit filiale & KPIs',
     targetRoute: '/portail',
   },
   {
@@ -477,8 +483,7 @@ export const OPERATIONAL_PROFILES_CONFIG = [
     image: '/assets/respon_sav.jpg',
     scope: 'Filiale (Collaborateurs)',
     desc: 'Planification des campagnes d’évaluation, gestion des parcours certifiants, conformité et interface siège.',
-    status: 'CONFIGURABLE',
-    statusClass: 'progress',
+    statusClass: 'open',
     accentColor: '#059669',
     modulesCount: 'Campagnes & Annuaire',
     targetRoute: '/portail/admin/builder',
@@ -486,15 +491,27 @@ export const OPERATIONAL_PROFILES_CONFIG = [
   {
     id: 'prof-trainer',
     role: 'trainer',
-    title: 'Formateur & Directeur Centre',
-    kicker: 'ACADÉMIE · HUB RÉGIONAL',
+    title: 'Formateur',
+    kicker: 'ACADÉMIE · FORMATEURS',
     image: '/assets/formation_motorisation_centre_formation.jpg',
-    scope: 'Centres régionaux CFAO',
-    desc: 'Conception des cursus constructeurs, gestion des plateaux techniques régionaux et certification des Key Instructors.',
-    status: 'CONFIGURABLE',
-    statusClass: 'progress',
+    scope: 'Ses sessions de formation',
+    desc: 'Animation des sessions de formation, comptes rendus et suivi des stagiaires formés.',
+    statusClass: 'open',
     accentColor: '#d97706',
-    modulesCount: 'Plateaux techniques',
+    modulesCount: 'Sessions & comptes rendus',
+    targetRoute: '/portail/admin/builder',
+  },
+  {
+    id: 'prof-center-director',
+    role: 'center_director',
+    title: 'Directeur du centre de formation',
+    kicker: 'ACADÉMIE · DIRECTION DU CENTRE',
+    image: '/assets/formation_motorisation_centre_formation.jpg',
+    scope: 'Centre de formation entier',
+    desc: 'Vue d’ensemble du centre : besoins en formations, devis des filiales, offres, calendrier, rapports et retour sur investissement.',
+    statusClass: 'open',
+    accentColor: '#b45309',
+    modulesCount: 'Vue d’ensemble du centre',
     targetRoute: '/portail/admin/builder',
   },
 ]
@@ -505,6 +522,15 @@ export const OPERATIONAL_PROFILES_CONFIG = [
  * Nav (dans data/index.js) : #bilan · #branches · #directory · #logs
  * Chaque section = PortalReveal + container + PortalSectionHead + PortalStaggerGrid + PlanEntryCard.
  */
+// Base du super admin connecté par OIDC : aucune donnée de démonstration.
+export const LMS_VIDE = Object.freeze({
+  globalKpis: {},
+  filialesStats: [],
+  recentLogs: [],
+  filialesFormations: null,
+  filialesCompetences: null,
+})
+
 export default function SuperAdminDashboard() {
   const { user } = useAuth()
   // Compte technique du mode local (sans donnees de demo) : les comptes rendus
@@ -516,8 +542,9 @@ export default function SuperAdminDashboard() {
 
 function SuperAdminGroupe() {
   const { user } = useAuth()
-  const { t } = useLocale('portal')
+  const { t, locale } = useLocale('portal')
   const { t: td } = useLocale('delivery')
+  const { t: ta } = useLocale('admin')
   const navigate = useNavigate()
   const mockLms = LMS_BY_USER[user?.demoKey]
   // BU active du switcher hero. Remontée ici pour piloter le refetch du hook
@@ -558,7 +585,7 @@ function SuperAdminGroupe() {
         profilesLabel = `${profilesOk} OK · ${profilesDraft} DRAFT`
       }
 
-      let statusChipClass = progressPct >= 75 ? 'done' : progressPct >= 40 ? 'progress' : 'accent'
+      let statusChipClass = progressPct >= 75 ? 'done' : 'open'
       let statusChip = progressPct >= 75 ? `LIVE · ${progressPct}%` : `EN COURS · ${progressPct}%`
       if (app.id === 'global') {
         statusChip = `${progressPct}% DÉPLOYÉ`
@@ -592,13 +619,15 @@ function SuperAdminGroupe() {
 
   // Hydrate le lms avec les vrais chiffres MEDACAP dès qu'ils arrivent.
   // Fallback silencieux sur le mock si l'endpoint est indisponible.
+  // En OIDC (aucun demoKey), la base est vide : le portail s'affiche quand même
+  // et ne montre que les chiffres de l'API, jamais ceux du mock.
   const lms = useMemo(() => {
-    if (!mockLms) return null
-    if (!apiStats) return mockLms
+    const base = mockLms ?? LMS_VIDE
+    if (!apiStats) return base
     return {
-      ...mockLms,
+      ...base,
       globalKpis: {
-        ...mockLms.globalKpis,
+        ...base.globalKpis,
         totalApprenants: apiStats.learnerCount,
         filialesActives: apiStats.branchCount,
         brandsCount:     apiStats.brandCount,
@@ -612,9 +641,14 @@ function SuperAdminGroupe() {
     }
   }, [mockLms, apiStats])
 
+  // Comptes réels (core) : la carte d'un profil ouvre l'un d'eux ; le « vu comme » les liste.
+  const comptesCore = useAdminResource(() => fetchAllUsers(), [])
+
   if (!user || !lms) return null
 
   const [comingSoonToast, setComingSoonToast] = useState(null)
+  // Retour du clic sur une carte d'aperçu : jamais de silence (fenêtre bloquée ou restée derrière).
+  const [apercuOuvert, setApercuOuvert] = useState(null)
 
   const triggerComingSoon = (filialeTitle, context = 'sessions') => {
     setComingSoonToast({
@@ -916,6 +950,97 @@ function SuperAdminGroupe() {
         </div>
       </PortalReveal>
 
+      {/* ═════════════ #console — Administration de la plateforme (super admin) ═════════════ */}
+      {canAccessAdminConsole(user?.roles) && (
+        <PortalReveal id="console">
+          <div className="container" style={{ padding: '16px 32px' }}>
+            <PortalSectionHead
+              eyebrow={<PortalSectionEyebrow icon="cog" label={t.sa_console_eyebrow} />}
+              title={t.sa_console_title}
+              methodText={t.sa_console_lead}
+              t={t}
+            />
+            <PortalStaggerGrid className="cols-3 pv-grid--stretch">
+              {[ADMIN_HOME, ...ADMIN_NAV.flatMap(g => g.items.map(i => i.id))].map(id => {
+                const pending = ADMIN_NAV.some(g => g.items.some(i => i.id === id && i.status === 'construction'))
+                return (
+                  <PvCard
+                    key={id}
+                    noMedia
+                    kicker={<span className={`portal-status-chip ${pending ? 'todo' : 'open'}`}>{pending ? ta.under_construction : t.sa_console_chip_readonly}</span>}
+                    title={ta[`title_${id}`]}
+                    meta={ta[`lead_${id}`]}
+                    to={adminPath(id)}
+                    cta={t.sa_console_cta}
+                    enConstruction={pending ? ta.under_construction : undefined}
+                    corner
+                  />
+                )
+              })}
+            </PortalStaggerGrid>
+          </div>
+        </PortalReveal>
+      )}
+
+      {/* ═════════════ #apercus — Portail de chaque profil, dans une fenêtre à part ═════════════ */}
+      {peutOuvrirApercu(user?.roles) && (
+        <PortalReveal id="apercus">
+          <div className="container" style={{ padding: '16px 32px' }}>
+            <PortalSectionHead
+              eyebrow={<PortalSectionEyebrow icon="users" label={t.sa_apercu_eyebrow} />}
+              title={t.sa_apercu_title}
+              methodText={t.sa_apercu_lead}
+              t={t}
+            />
+            <PortalStaggerGrid className="cols-4 pv-grid--stretch">
+              {ROLES_APERCU.map(role => (
+                <PvCard
+                  key={role}
+                  noMedia
+                  title={t[`role_${role}`] ?? role}
+                  onClick={() => {
+                    // Un compte réel du rôle si core en a un ; sinon l'aperçu du rôle, avec les droits du super admin.
+                    const pret = comptesCore.status === 'ready'
+                    const compte = pret ? compteDuRole(comptesCore.data, role) : null
+                    const fenetre = compte ? ouvrirApercu(role, window, compte.id, compte.nom) : ouvrirApercu(role)
+                    setApercuOuvert({ role, compte, sansCompte: pret && !compte, bloque: !fenetre })
+                  }}
+                  cta={t.sa_apercu_cta}
+                  corner
+                />
+              ))}
+            </PortalStaggerGrid>
+            {apercuOuvert && (
+              <p className="portal-apercu-vu-comme-note" role="status" data-testid="apercu-retour">
+                {apercuOuvert.sansCompte && <>{t.sa_apercu_sans_compte.replace('{role}', t[`role_${apercuOuvert.role}`] ?? apercuOuvert.role)} </>}
+                {(apercuOuvert.bloque ? t.sa_apercu_bloque : apercuOuvert.compte ? t.sa_apercu_ouvert_compte : t.sa_apercu_ouvert)
+                  .replace('{role}', t[`role_${apercuOuvert.role}`] ?? apercuOuvert.role)
+                  .replace('{nom}', apercuOuvert.compte?.nom ?? '')}
+                {apercuOuvert.bloque && (
+                  <> <a href={urlApercu(apercuOuvert.role, apercuOuvert.compte?.id)} target="_blank" rel="opener">{t.sa_apercu_lien}</a></>
+                )}
+              </p>
+            )}
+            <ApercuVuComme t={t} data={comptesCore.data} status={comptesCore.status} />
+          </div>
+        </PortalReveal>
+      )}
+
+      {/* ═════════════ #propositions — Propositions de modification des portails ═════════════ */}
+      {peutOuvrirApercu(user?.roles) && (
+        <PortalReveal id="propositions">
+          <div className="container" style={{ padding: '16px 32px' }}>
+            <PortalSectionHead
+              eyebrow={<PortalSectionEyebrow icon="users" label={t.sa_suggestions_eyebrow} />}
+              title={t.sa_suggestions_title}
+              methodText={t.sa_suggestions_lead}
+              t={t}
+            />
+            <PropositionsPortails t={t} locale={locale} />
+          </div>
+        </PortalReveal>
+      )}
+
       {/* ═════════════ #branches — Réalisation des plans de formation ═════════════ */}
       <PortalReveal id="branches">
         <div className="container" style={{ padding: '16px 32px' }}>
@@ -1164,7 +1289,7 @@ function SuperAdminGroupe() {
               flagSrc="/assets/flags/cameroon.svg"
               countryFlag="Cameroun"
               statusChip={
-                <span className="portal-status-chip progress">
+                <span className="portal-status-chip open">
                   TESTS EN COURS
                 </span>
               }
@@ -1277,7 +1402,7 @@ function SuperAdminGroupe() {
             eyebrow={<PortalSectionEyebrow icon="users" label="GOUVERNANCE & RÔLES · PROFILES BUILDER" />}
             title="Création et paramétrage des profils opérationnels"
             lead="Gestion des habilitations, matrices de compétences MEDACAP et cockpits métiers pour l'ensemble des collaborateurs du réseau."
-            methodText="8 profils métiers configurés avec périmètres d'action et dashboards dédiés."
+            methodText={`${OPERATIONAL_PROFILES_CONFIG.length} profils métiers configurés avec périmètres d'action et dashboards dédiés.`}
             t={t}
           />
           <PortalStaggerGrid className="cols-4 pv-grid--stretch">
@@ -1290,11 +1415,13 @@ function SuperAdminGroupe() {
                 cardMedia={(
                   <div className="pv-card-img portal-plan-entry-card-img portal-profile-media-img">
                     <img src={p.image} alt={p.title} loading="lazy" />
-                    <div className="portal-eval-img-tags">
-                      <span className={`portal-status-chip ${p.statusClass}`}>
-                        {p.status}
-                      </span>
-                    </div>
+                    {p.status && (
+                      <div className="portal-eval-img-tags">
+                        <span className={`portal-status-chip ${p.statusClass}`}>
+                          {p.status}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
                 desc={p.desc}

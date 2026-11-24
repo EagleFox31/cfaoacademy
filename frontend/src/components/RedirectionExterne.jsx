@@ -3,10 +3,10 @@ import { useLocation } from 'react-router-dom'
 
 import { adresseComptesRendus } from '../utils/urlComptesRendus'
 
-/** Vrai si l'adresse visée est la page courante du portail (même origine, même chemin). */
+/** Vrai si l'adresse visée (absolue, ou chemin /cr relatif à l'origine) est la page courante du portail. */
 function bouclerait(adresse, lieu, origine) {
   try {
-    const cible = new URL(adresse)
+    const cible = new URL(adresse, origine)
     return cible.origin === origine && cible.pathname === lieu.pathname
   } catch {
     return false

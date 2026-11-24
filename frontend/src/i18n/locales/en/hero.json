@@ -1,0 +1,83 @@
+{
+  "veilScrubberAria": "Adjust the overlay on the hero image",
+  "prevSlideAria": "Previous slide",
+  "nextSlideAria": "Next slide",
+  "defaultTitleBefore": "Build your ",
+  "defaultTitleEm": "technical",
+  "defaultTitleAfter": " skills with ",
+  "defaultTitleBrand": "CFAO Academy",
+  "headlineTemplateBefore": "Build your skills in ",
+  "lead": "Manufacturer training and certifications — for CFAO teams and partners alike.",
+  "cardScrollHint": "Explore training offers",
+  "personasNavAria": "Choose your profile",
+  "whoAreYou": "Who are you?",
+  "formationOffer": "Training offer",
+  "hintSep": " & ",
+  "b2bSectionLabel": "Businesses & partners",
+  "b2bEyebrow": "Representing a company?",
+  "b2bAction": "Train your teams",
+  "tags": {
+    "motors": "Motors",
+    "equipment": "Equipment",
+    "carrosserie": "Body shop",
+    "sav": "Aftersales organisation"
+  },
+  "personas": {
+    "vl": {
+      "label": "Light vehicle technician",
+      "title": "Light vehicles · Motors",
+      "headlineBefore": "",
+      "headlineHighlight": "light vehicle repair",
+      "loggedHeadlineHighlight": "skills in light vehicle repair",
+      "headlineAfter": " with CFAO Academy",
+      "headlineAfterBlock": true
+    },
+    "pl": {
+      "label": "Heavy vehicle technician",
+      "title": "Trucks, machinery & buses · Equipment",
+      "headlineBefore": "",
+      "headlineHighlight": "machinery, truck and forklift repair",
+      "loggedHeadlineHighlight": "skills in machinery, truck and forklift repair",
+      "headlineAfter": " with CFAO Academy",
+      "headlineAfterBlock": true
+    },
+    "carrossier": {
+      "label": "Body shop technician",
+      "title": "N1 → N5 pathways",
+      "headlineBefore": "",
+      "headlineHighlight": "body repair on all vehicles",
+      "loggedHeadlineHighlight": "skills in body repair",
+      "headlineAfter": " with CFAO Academy",
+      "headlineAfterBlock": true
+    },
+    "savParts": {
+      "label": "Aftersales & parts",
+      "title": "Service, counter & stock · Aftersales org.",
+      "headlineBefore": "",
+      "headlineHighlight": "aftersales & parts organisation",
+      "loggedHeadlineHighlight": "skills in aftersales & parts organisation",
+      "headlineAfter": " with CFAO Academy",
+      "headlineAfterBlock": true
+    }
+  },
+  "b2b": {
+    "label": "B2B client",
+    "title": "Partners & fleets",
+    "headlineBefore": "",
+    "headlineHighlight": "machinery operation",
+    "headlineAfter": " with CFAO Academy"
+  },
+  "logged_greeting": "Welcome back",
+  "logged_learner_headline_prefix": "Build your ",
+  "logged_manager_headline_before": "Develop your collaborators' skills ",
+  "logged_goal": "Goal {level}",
+  "logged_cta_continue": "Continue your pathway",
+  "logged_cta_portal": "Go to your workspace",
+  "logged_browse": "Browse trainings",
+  "logged_certs": "certification earned",
+  "logged_certs_pl": "certifications earned",
+  "logged_avg_progress": "avg. progress",
+  "newsEyebrow": "Featured",
+  "newsRead": "Read article",
+  "newsNavAria": "Featured news"
+}

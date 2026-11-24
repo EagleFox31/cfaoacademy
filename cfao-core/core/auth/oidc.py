@@ -1,22 +1,34 @@
 """Validation du JWT Keycloak via JWKS (architecture.md §6)."""
 from __future__ import annotations
 
-import jwt
+import logging
+
 from django.conf import settings
 from rest_framework import authentication, exceptions
 
+from . import jwt_verifier
 from .principal import build_principal
 
-_jwk_client: jwt.PyJWKClient | None = None
+logger = logging.getLogger(__name__)
 
 
-def _client() -> jwt.PyJWKClient:
-    global _jwk_client
-    if _jwk_client is None:
-        if not settings.OIDC_JWKS_URL:
-            raise exceptions.AuthenticationFailed("OIDC_JWKS_URL non configuré.")
-        _jwk_client = jwt.PyJWKClient(settings.OIDC_JWKS_URL)
-    return _jwk_client
+def verify_token(token: str) -> dict:
+    """Les claims d'un jeton valide ; lève AuthenticationFailed sinon (401 unique)."""
+    audiences = jwt_verifier.audiences(settings.OIDC_AUDIENCE)
+    if not audiences:  # sans audience, `aud` ne serait pas vérifiée (constat 12)
+        logger.error("JWT refusé : OIDC_AUDIENCE non configurée.")
+        raise exceptions.AuthenticationFailed("Jeton invalide.")
+    try:
+        return jwt_verifier.verify(
+            token,
+            jwt_verifier.trusted_issuers(
+                settings.OIDC_TRUSTED_ISSUERS, settings.OIDC_ISSUER, settings.OIDC_JWKS_URL
+            ),
+            audiences,
+        )
+    except jwt_verifier.TokenRejected as exc:
+        logger.info("JWT refusé : %s", exc)
+        raise exceptions.AuthenticationFailed("Jeton invalide.") from exc
 
 
 class KeycloakJWTAuthentication(authentication.BaseAuthentication):
@@ -30,30 +42,7 @@ class KeycloakJWTAuthentication(authentication.BaseAuthentication):
             return None
         token = header[len(self.keyword) + 1:].strip()
 
-        options = {"require": ["exp", "sub"], "verify_iss": False}
-        audience = settings.OIDC_AUDIENCE or None
-        if audience is None:
-            options["verify_aud"] = False
-
-        try:
-            signing_key = _client().get_signing_key_from_jwt(token)
-            claims = jwt.decode(
-                token,
-                signing_key.key,
-                algorithms=["RS256"],
-                audience=audience,
-                options=options,
-            )
-            if settings.OIDC_ISSUER:
-                token_iss = claims.get("iss", "")
-                norm_token = token_iss.replace("keycloak:8080", "localhost:8080")
-                norm_expected = settings.OIDC_ISSUER.replace("keycloak:8080", "localhost:8080")
-                if norm_token != norm_expected:
-                    raise jwt.InvalidIssuerError(f"Issuer mismatch: {token_iss} != {settings.OIDC_ISSUER}")
-        except jwt.PyJWTError as exc:  # signature, expiration, audience, issuer…
-            raise exceptions.AuthenticationFailed(f"Jeton invalide : {exc}")
-
-        principal = build_principal(claims)
+        principal = build_principal(verify_token(token))
         _apply_db_scope(principal)  # périmètre = source de vérité identity (si compte connu)
         return principal, token
 

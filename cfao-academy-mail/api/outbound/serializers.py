@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from outbound.catalog import LOCALES
 from outbound.models import OutboundMessage
 
 
@@ -9,11 +10,13 @@ class EnqueueSerializer(serializers.Serializer):
     cc = serializers.ListField(child=serializers.EmailField(), required=False, default=list)
     reply_to = serializers.EmailField(required=False, allow_blank=True, default="")
     module_url = serializers.URLField(required=False, allow_blank=True, default="")
-    locale = serializers.ChoiceField(choices=["fr", "en"], default="fr")
+    locale = serializers.ChoiceField(choices=list(LOCALES), default="fr")
     context = serializers.DictField(required=False, default=dict)
     source_app = serializers.CharField(max_length=32, required=False, default="")
     source_ref = serializers.CharField(max_length=128, required=False, default="")
     correlation_id = serializers.CharField(max_length=160, required=False, allow_blank=True)
+    # Obligatoire pour un message sensible, refusé pour les autres (voir queue.enqueue).
+    expires_at = serializers.DateTimeField(required=False, default=None)
 
     def to_internal_value(self, data):
         if isinstance(data, dict):

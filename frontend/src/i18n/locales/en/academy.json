@@ -1,0 +1,30 @@
+{
+  "medacap": {
+    "kicker": "MEDACAP",
+    "title": "Developing technicians’ professional expertise",
+    "meta": "Network methodology"
+  },
+  "mission": {
+    "kicker": "Andragogy",
+    "title": "Learning by doing",
+    "meta": "Hands-on workshop skills"
+  },
+  "equipe": {
+    "kicker": "26 experts",
+    "title": "5 hubs · multi-brand",
+    "meta": "Cameroon · 9+ countries",
+    "panelTitle": "The team"
+  },
+  "reseau": {
+    "kicker": "Network",
+    "title": "People in the field",
+    "meta": "Our relays across subsidiaries",
+    "panelTitle": "People in the field"
+  },
+  "pays": {
+    "kicker": "Countries",
+    "title": "35 countries",
+    "meta": "Africa",
+    "panelTitle": "Our countries"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "notFoundTitle": "Ficha de formação não encontrada",
+  "notFoundLead": "Esta ficha ainda não está disponível ou está em atualização.",
+  "closeNotFound": "Fechar e voltar às sessões",
+  "closeBack": "Fechar e voltar às sessões a venir",
+  "metaAria": "Informações sobre a sessão",
+  "sheetTag": "Ficha de formação",
+  "targetAudience": "Público-alvo",
+  "level": "Nível",
+  "trainer": "Formador",
+  "sheetImageAlt": "Ficha de formação {code} — {title}"
+}

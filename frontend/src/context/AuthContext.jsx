@@ -1,4 +1,4 @@
-import { createContext, useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import profiles from '../data/mock_profiles.json'
 import { api } from '../lib/api'
 import {
@@ -12,7 +12,8 @@ import {
   scheduleSilentRefresh,
 } from '../lib/auth'
 
-export const AuthContext = createContext(null)
+import { AuthContext } from './sessionContext.js'
+export { AuthContext }
 
 // Le profil connecte est retenu dans le sessionStorage du portail, pour les
 // modules du portail qui le lisent hors de React. Le module des comptes rendus

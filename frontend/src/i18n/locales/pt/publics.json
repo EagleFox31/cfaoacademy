@@ -1,0 +1,57 @@
+{
+  "Techniciens Véhicules Légers": {
+    "name": "Técnicos de veículos ligeiros",
+    "niv": "Júnior → Especialista",
+    "meta": "Manutenção preventiva, reparação e diagnóstico em veículos ligeiros — percurso certificador G4 → G1 multi-marca Motors."
+  },
+  "Techniciens Voitures": {
+    "name": "Técnicos de veículos ligeiros",
+    "niv": "Júnior → Especialista",
+    "meta": "Manutenção preventiva, reparação e diagnóstico em veículos ligeiros — percurso certificador G4 → G1 multi-marca Motors."
+  },
+  "Techniciens Poids lourds, Engins, Chariots & Bus": {
+    "name": "Técnicos de pesados, engins, empilhadores e autocarros",
+    "niv": "Júnior → Especialista",
+    "meta": "Competências técnicas em camiões, engins de obra, empilhadores e autocarros — standards Equipment."
+  },
+  "Carrossiers": {
+    "name": "Carroçeiros",
+    "niv": "Júnior → Especialista",
+    "meta": "Retificação de aço, preparação de superfícies, substituição de vidros e fundidos multicamada — do N1 ao N5."
+  },
+  "Conseillers Services": {
+    "name": "Conselheiros de Serviços",
+    "niv": "Conselheiros",
+    "meta": "Conselheiros dos serviços administrativos e financeiros — acolhimento, conformidade e desempenho das funções de suporte da rede."
+  },
+  "Manager et conseillers services administratifs, financiers": {
+    "name": "Conselheiros de Serviços",
+    "niv": "Conselheiros",
+    "meta": "Conselheiros dos serviços administrativos e financeiros — acolhimento, conformidade e desempenho das funções de suporte da rede."
+  },
+  "Technico-commerciaux": {
+    "name": "Técnicos-comerciais",
+    "niv": "Produto · Venda",
+    "meta": "Domínio de produto e argumentação técnica de venda — para vendedores que combinam conhecimento do veículo e desempenho comercial."
+  },
+  "Commerciaux": {
+    "name": "Comerciais",
+    "niv": "Receção · SAV",
+    "meta": "Acolhimento, receção e acompanhamento de clientes no SAV — do rececionista ao conselheiro de serviço experiente."
+  },
+  "Managers": {
+    "name": "Managers",
+    "niv": "Manager · Back-office",
+    "meta": "Managers e responsáveis back-office SAV — standards de construtor, gestão de indicadores e conformidade de rede KI/PIC."
+  },
+  "Manager et responsables organisation SAV": {
+    "name": "Managers",
+    "niv": "Manager · Back-office",
+    "meta": "Managers e responsáveis back-office SAV — standards de construtor, gestão de indicadores e conformidade de rede KI/PIC."
+  },
+  "Clients": {
+    "name": "Clientes",
+    "niv": "Parceiros B2B",
+    "meta": "Técnicos, carroçeiros e gestores de peças de empresas parceiras — as mesmas formações, dispensadas a parceiros e frotas CFAO Mobility e Equipment."
+  }
+}

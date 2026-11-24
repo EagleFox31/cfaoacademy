@@ -1,0 +1,143 @@
+/* « Une nouvelle version est disponible » : barre d'information système pleine largeur,
+   tout en haut, au-dessus de la nav (motif « banner » : message de l'application, pas
+   d'une action de l'utilisateur). Bleu = information, distinct du navy des barres du site.
+   La saisie reste libre, rien n'est masqué : la page descend de la hauteur de la barre. */
+.nv-bandeau {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9000;
+  background: #1d4ed8;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(10, 18, 40, 0.18);
+}
+.nv-bandeau-corps {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 1320px;
+  min-height: 52px;
+  margin: 0 auto;
+  padding: 8px 32px;
+}
+.nv-icone { width: 20px; height: 20px; flex-shrink: 0; }
+.nv-bandeau-texte {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.nv-bandeau-texte strong { font-weight: 700; margin-right: 8px; }
+.nv-bandeau-detail { color: rgba(255, 255, 255, 0.88); }
+.nv-bandeau-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.nv-bandeau .nv-btn { height: 34px; border-radius: 8px; }
+.nv-bandeau .nv-btn--principal { border-color: #fff; background: #fff; color: #1d4ed8; }
+.nv-bandeau .nv-btn--principal:hover { background: #e8eefc; }
+.nv-bandeau .nv-btn--discret { border-color: rgba(255, 255, 255, 0.55); background: transparent; color: #fff; }
+.nv-bandeau .nv-btn--discret:hover { background: rgba(255, 255, 255, 0.12); }
+.nv-bandeau .nv-btn:focus-visible { outline-color: #fff; }
+.nv-masque {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Barre affichée : la page et tout ce qui se cale sous la nav descendent de --maj-h
+   (mesurée par le composant ; 52px par défaut). */
+html.nv-actif { --maj-h: 52px; --nav-h: calc(76px + var(--maj-h)); }
+html.nv-actif body { padding-top: var(--maj-h); }
+html.nv-actif .nav,
+html.nv-actif .medacap-preview-topbar,
+html.nv-actif .bltn-header { top: var(--maj-h); }
+html.nv-actif .portal-sticky-bar { top: var(--nav-h); }
+html.nv-actif .portal-page { --portal-nav-h: calc(77px + var(--maj-h)); }
+html.nv-actif .article-close.page-header-close { top: calc(var(--nav-h) + 12px); }
+html.nv-actif:has(.portal-page) { scroll-padding-top: calc(92px + var(--maj-h)); }
+
+.nv-btn {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid #d5dae4;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--navy, #0b1f4b);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.nv-btn:hover { background: #f3f5f9; }
+.nv-btn:focus-visible { outline: 2px solid var(--navy, #0b1f4b); outline-offset: 2px; }
+.nv-btn--principal {
+  border-color: var(--navy, #0b1f4b);
+  background: var(--navy, #0b1f4b);
+  color: #fff;
+}
+.nv-btn--principal:hover { background: #142c63; }
+
+/* Menu du compte : « Rechercher des mises à jour » / « Mise à jour disponible ». */
+.nv-menu:disabled { cursor: progress; opacity: 0.75; }
+.nv-menu--dispo,
+.nav-user-dropdown-item.nv-menu--dispo:hover { color: #1d4ed8; font-weight: 600; background: rgba(29, 78, 216, 0.06); }
+.nv-menu--dispo .nav-user-dropdown-item-icon,
+.nav-user-dropdown-item.nv-menu--dispo:hover .nav-user-dropdown-item-icon { color: #1d4ed8; }
+.nv-menu-cta {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.nv-menu-message { margin: 0; padding: 0 14px 0 40px; font-size: 12px; line-height: 1.4; color: var(--muted, #6b6f82); }
+.nv-menu-message:not(:empty) { padding-bottom: 8px; }
+.nv-menu-tourne { animation: nv-tourne 0.9s linear infinite; }
+@keyframes nv-tourne { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .nv-menu-tourne { animation: none; } }
+/* Pastille sur le bouton du compte : une version attend. */
+.nv-menu-point {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #1d4ed8;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+/* Version critique : actualisation obligatoire. */
+.nv-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 18, 40, 0.62);
+  backdrop-filter: blur(3px);
+}
+.nv-modale {
+  width: min(460px, 100%);
+  padding: 28px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(10, 18, 40, 0.35);
+  text-align: center;
+  color: var(--ink, #0f172a);
+}
+.nv-modale h2 { margin: 0 0 8px; font-size: 20px; }
+.nv-modale p { margin: 0 0 12px; color: var(--muted, #64748b); line-height: 1.5; }
+.nv-modale .nv-btn { margin-top: 8px; }
+.nv-version { font-size: 12px; }
+
+@media (max-width: 640px) {
+  .nv-bandeau-corps { flex-wrap: wrap; padding: 8px 16px; }
+  .nv-bandeau-detail { display: none; }
+  .nv-bandeau-actions { width: 100%; }
+  .nv-bandeau-actions .nv-btn { flex: 1; }
+}

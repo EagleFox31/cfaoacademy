@@ -1,10 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DEFAULT_LOCALE, LOCALES } from '../i18n/index.js'
+import { LocaleContext } from './localeContext.js'
 
 const LS_KEY = 'cfao_locale_v1'
 const LS_KEY_LEGACY = 'cfao_login_locale_v1'
-
-const LocaleContext = createContext(null)
 
 function readStoredLocale() {
   try {
@@ -45,12 +44,4 @@ export function LocaleProvider({ children }) {
       {children}
     </LocaleContext.Provider>
   )
-}
-
-export function useLocaleContext() {
-  const ctx = useContext(LocaleContext)
-  if (!ctx) {
-    throw new Error('useLocaleContext must be used within LocaleProvider')
-  }
-  return ctx
 }

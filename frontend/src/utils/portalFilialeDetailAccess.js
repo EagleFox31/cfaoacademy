@@ -12,7 +12,7 @@ export function resolvePortalFilialeDetailAccess(roles, { dpsHash = 'resultats',
   if (primary === 'dps' || primary === 'dop') {
     return { allowed: true, isKi: false, backHash: dpsHash }
   }
-  if (primary === 'ki' || primary === 'pic') {
+  if (primary === 'ki' || primary === 'pic' || primary === 'technical_expert') {
     return { allowed: true, isKi: true, backHash: kiHash }
   }
   return { allowed: false, isKi: false, backHash: dpsHash }

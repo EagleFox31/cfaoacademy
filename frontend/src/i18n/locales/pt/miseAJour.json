@@ -1,0 +1,17 @@
+{
+  "titre": "Uma nova versão está disponível",
+  "texte": "Atualize a página para obter as correções mais recentes.",
+  "version": "Versão {version}",
+  "actualiser": "Atualizar agora",
+  "plusTard": "Mais tarde",
+  "rappel": "“Mais tarde”: novo lembrete daqui a 30 minutos.",
+  "titreCritique": "Atualização necessária",
+  "texteCritique": "Esta versão da página já não é suportada. Atualize para continuar a trabalhar.",
+  "menuRechercher": "Procurar atualizações",
+  "menuRecherche": "A procurar…",
+  "menuAJour": "Tem a versão mais recente.",
+  "menuEchec": "Não é possível verificar agora. Tente novamente dentro de alguns minutos.",
+  "menuDisponible": "Atualização disponível",
+  "menuActualiser": "Atualizar",
+  "notes": {}
+}
