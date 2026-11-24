@@ -141,8 +141,44 @@ function avertirSansUrlComptesRendus(mode) {
   }
 }
 
+/**
+ * Contrat commun des modules : GET <préfixe>/version.json →
+ * { module, version, build, critical?, min_client?, notes_key? }.
+ * `build` change à chaque build (recette en surveillance comprise) et est recopié dans
+ * le code à la place de JETON_BUILD : un onglet ouvert sait ainsi qu'il est périmé.
+ * VERSION (argument du Dockerfile), sinon celle du package.json. VERSION_CRITICAL=1
+ * et VERSION_MIN_CLIENT=x.y.z demandent une actualisation sans « Plus tard ».
+ */
+const JETON_BUILD = '__CFAO_BUILD_ID__'
+const VERSION_CODE = (process.env.VERSION || '').trim()
+  || JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version
+
+function fichierVersion(version) {
+  let build = ''
+  return {
+    name: 'fichier-version',
+    apply: 'build',
+    buildStart() {
+      build = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+    },
+    renderChunk(code) {
+      return code.includes(JETON_BUILD) ? { code: code.replaceAll(JETON_BUILD, build), map: null } : null
+    },
+    generateBundle() {
+      const contenu = { module: 'portail', version, build }
+      if (/^(1|true)$/i.test(process.env.VERSION_CRITICAL || '')) contenu.critical = true
+      if (process.env.VERSION_MIN_CLIENT) contenu.min_client = process.env.VERSION_MIN_CLIENT.trim()
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: `${JSON.stringify(contenu)}\n` })
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), cataloguesFallbackPlugin(), avertirSansUrlComptesRendus(mode)],
+  plugins: [react(), cataloguesFallbackPlugin(), avertirSansUrlComptesRendus(mode), fichierVersion(VERSION_CODE)],
+  define: {
+    __CFAO_VERSION__: JSON.stringify(VERSION_CODE),
+    __CFAO_BUILD__: JSON.stringify(JETON_BUILD),
+  },
   css: { postcss: { plugins: [unitesEcran] } },
   publicDir: 'public',
   // FRONT_MODE=build (recette, frontend/compose.dev.yml) : `public/` est servi en

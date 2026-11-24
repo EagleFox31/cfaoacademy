@@ -10,6 +10,7 @@ import RedirectionExterne from './components/RedirectionExterne.jsx'
 import RouteMotion from './components/RouteMotion.jsx'
 import GardeCentre from './components/GardeCentre.jsx'
 import AnnonceMaintenance from './components/AnnonceMaintenance.jsx'
+import MiseAJourDisponible from './components/MiseAJourDisponible.jsx'
 import useAuth from './hooks/useAuth.js'
 import Login from './pages/Login.jsx'
 import AuthCallback from './pages/AuthCallback.jsx'
@@ -66,6 +67,7 @@ export default function App() {
       <ScrollToTop />
       <SiteBackToTopFab />
       <AnnonceSelonRole />
+      <MiseAJourDisponible />
       {/* Loader + transition morph sur chaque changement de route */}
       <RouteMotion>
         <GardeCentre>

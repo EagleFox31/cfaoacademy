@@ -1,0 +1,11 @@
+{
+  "titre": "A new version is available",
+  "texte": "Refresh the page to get the latest fixes.",
+  "version": "Version {version}",
+  "actualiser": "Refresh now",
+  "plusTard": "Later",
+  "rappel": "“Later”: we will remind you again in 30 minutes.",
+  "titreCritique": "Update required",
+  "texteCritique": "This version of the page is no longer supported. Refresh to keep working.",
+  "notes": {}
+}

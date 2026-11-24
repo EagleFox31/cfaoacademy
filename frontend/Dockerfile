@@ -8,6 +8,8 @@ WORKDIR /web
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . ./
+# Écrite dans dist/version.json et dans le code : un onglet ouvert compare les deux.
+ARG VERSION=
 RUN npm run build
 
 # Non privilégié : tourne en lecture seule (read_only + tmpfs /tmp), écoute 8080.

@@ -1,0 +1,81 @@
+/* « Une nouvelle version est disponible » : bandeau sans voile, la saisie reste libre. */
+.nv-bandeau {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  z-index: 9000;
+  transform: translateX(-50%);
+  width: min(720px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px 14px 20px;
+  border-radius: 16px;
+  border-left: 4px solid var(--navy, #0b1f4b);
+  background: #fff;
+  box-shadow: 0 12px 36px rgba(10, 18, 40, 0.18);
+  color: var(--ink, #0f172a);
+}
+.nv-bandeau-texte {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.nv-bandeau-texte strong { font-size: 15px; }
+.nv-bandeau-texte span { color: var(--muted, #64748b); }
+.nv-rappel { font-size: 12px; }
+.nv-bandeau-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.nv-btn {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid #d5dae4;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--navy, #0b1f4b);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.nv-btn:hover { background: #f3f5f9; }
+.nv-btn:focus-visible { outline: 2px solid var(--navy, #0b1f4b); outline-offset: 2px; }
+.nv-btn--principal {
+  border-color: var(--navy, #0b1f4b);
+  background: var(--navy, #0b1f4b);
+  color: #fff;
+}
+.nv-btn--principal:hover { background: #142c63; }
+
+/* Version critique : actualisation obligatoire. */
+.nv-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 18, 40, 0.62);
+  backdrop-filter: blur(3px);
+}
+.nv-modale {
+  width: min(460px, 100%);
+  padding: 28px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(10, 18, 40, 0.35);
+  text-align: center;
+  color: var(--ink, #0f172a);
+}
+.nv-modale h2 { margin: 0 0 8px; font-size: 20px; }
+.nv-modale p { margin: 0 0 12px; color: var(--muted, #64748b); line-height: 1.5; }
+.nv-modale .nv-btn { margin-top: 8px; }
+.nv-version { font-size: 12px; }
+
+@media (max-width: 640px) {
+  .nv-bandeau { flex-direction: column; align-items: stretch; bottom: 12px; }
+  .nv-bandeau-actions .nv-btn { flex: 1; }
+}
