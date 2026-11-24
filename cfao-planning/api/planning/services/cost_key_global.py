@@ -120,13 +120,34 @@ def unassigned_by_country(unassigned: dict, code: str | None = None) -> int | di
 
 
 def review_items(key: CostKeyYear, visible: set[str] | None = None) -> list[dict]:
-    """Incohérences de source encore ouvertes sur cette clé, limitées aux pays du lecteur."""
+    """Incohérences de source encore ouvertes sur cette clé, puis les places à dater, limitées
+    aux pays du lecteur."""
     items = ReviewItem.objects.filter(status=ReviewItem.Status.OPEN,
                                       reason=ReviewItem.Reason.SOURCE_INCONSISTENT,
                                       proposed__cost_key=str(key.id))
     fields = ("country", "country_label", "code", "seats", "start_date", "end_date", "issue", "assignee")
-    return [{"id": str(item.id), **{f: item.proposed.get(f) for f in fields}}
-            for item in items if visible is None or item.proposed.get("country") in visible]
+    found = [{"id": str(item.id), **{f: item.proposed.get(f) for f in fields}}
+             for item in items if visible is None or item.proposed.get("country") in visible]
+    return found + undated_items(key, visible)
+
+
+def undated_items(key: CostKeyYear, visible: set[str] | None = None) -> list[dict]:
+    """Places attribuées dont la session n'a de date ni dans la clé ni dans la grille du
+    prévisionnel : le coordinateur la saisit sur la ligne du devis. Calculé à la lecture : le
+    point disparaît dès que la date existe, d'un côté ou de l'autre. Un par filiale servie."""
+    allocations = (PlannedAllocation.objects
+                   .filter(planned_session__cost_key=key, planned_session__start_date__isnull=True, seats__gt=0)
+                   .select_related("country", "planned_session"))
+    if visible is not None:
+        allocations = allocations.filter(country__code__in=visible)
+    allocations = list(allocations)
+    if not allocations:
+        return []
+    schedule = schedule_for_key(key)
+    return [{"id": f"no-date-{a.pk}", "country": a.country.code, "country_label": a.country.label,
+             "code": a.planned_session.code_raw or a.planned_session.code_norm, "seats": a.seats,
+             "start_date": None, "end_date": None, "issue": "no_date", "assignee": ""}
+            for a in allocations if not schedule.get(str(a.planned_session_id))]
 
 
 def _responses(pole: str, answered, known, visible: set[str] | None, needs: int) -> dict:

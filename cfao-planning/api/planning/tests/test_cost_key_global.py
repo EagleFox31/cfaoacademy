@@ -351,3 +351,20 @@ def test_global_signale_les_incoherences_ouvertes(world):
 def test_incoherences_limitees_aux_pays_visibles(world):
     _incoherence(world["key"], "ci")
     assert global_table(world["key"], Mode.PLANNED, needs(), visible={"cm"})["review_items"] == []
+
+
+def test_session_sans_date_ni_creneau_de_la_grille_a_dater(world):
+    # Une place attribuée sans date dans la clé ni dans la grille : le coordinateur la date.
+    PlannedSession.objects.filter(code_norm="TS01").update(start_date=None, end_date=None)
+    items = [i for i in global_table(world["key"], Mode.PLANNED, needs())["review_items"]
+             if i["issue"] == "no_date"]
+    assert sorted((i["code"], i["country"], i["seats"]) for i in items) == [("TS01", "ci", 2), ("TS01", "cm", 6)]
+    assert all(i["start_date"] is None and i["country_label"] for i in items)
+    assert global_table(world["key"], Mode.PLANNED, needs(), visible={"ci"})["review_items"] == [
+        i for i in items if i["country"] == "ci"]
+
+
+def test_session_datee_par_la_grille_pas_a_dater(world):
+    PlannedSession.objects.filter(code_norm="OM01").update(start_date=None, end_date=None)
+    _grid_band("OM01 - RCI", dt.date(2026, 5, 4), dt.date(2026, 5, 8))
+    assert global_table(world["key"], Mode.PLANNED, needs())["review_items"] == []
