@@ -23,6 +23,7 @@ def test_liste_blanche_des_routes():
     # Toute nouvelle route publique doit modifier ce test, donc être relue.
     trouvees = sorted(loc for m in MODELES for loc in _locations(_texte(m)))
     assert trouvees == sorted(["/", "/", "/", "/auth/", "/auth", r"^/auth/(realms/cfao|resources)/", "/cr", "/cr/", "/api/v1/planning/",
+                                 "/api/v1/needs/",
                                  "/api/v1/planning/internal/", "/api/v1/core/", "/api/v1/supervision/"])
 
 
@@ -126,6 +127,17 @@ def test_route_supervision_optionnelle_et_servie_sur_le_portail():
     actifs = _texte(EDGE / "entrypoint.d" / "25-modules-actifs.sh")
     assert 'EDGE_SUPERVISION_UPSTREAM:-' in actifs and 'rm -f "$routes/supervision.conf"' in actifs
     assert "include /tmp/conf.d/routes/supervision.con[f];" in _texte(EDGE / "templates" / "lan" / "portail.conf.template")
+
+
+def test_api_needs_servie_sur_le_portail_sans_besoins():
+    # Les cartes du portail lisent /api/v1/needs/ sur leur origine ; le SPA needs
+    # (/besoins/) n'y est pas publié, et l'API garde ses propres erreurs.
+    portail = _texte(EDGE / "templates" / "lan" / "portail.conf.template")
+    assert sorted(_locations(portail)) == ["/", "/api/v1/needs/"]
+    bloc = portail.split("location /api/v1/needs/ {", 1)[1].split("\n}", 1)[0]
+    assert "proxy_pass http://${EDGE_NEEDS_UPSTREAM};" in bloc
+    assert "proxy_intercept_errors on;" not in bloc
+    assert "/besoins" not in portail and "routes/needs" not in portail
 
 
 def test_directives_de_securite():
