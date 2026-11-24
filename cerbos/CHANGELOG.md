@@ -7,6 +7,11 @@ version sans sa section.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-11-24
+
+- Planning : le calendrier annuel de formation (grille des formateurs) est lisible du
+  directeur et du coordinateur du centre, de l'assistante et de l'équipe technique (`superadmin`).
+
 ## [0.4.1] - 2026-11-23
 
 - Nombre de comptes par profil : le directeur du centre et le super admin peuvent lire
