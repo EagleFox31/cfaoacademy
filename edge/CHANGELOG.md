@@ -7,7 +7,7 @@ version sans sa section.
 
 ## [Unreleased]
 
-## [0.4.1] - 2026-11-24
+## [0.4.2] - 2026-11-24
 
 - Écoute du portail : l'API des besoins (`/api/v1/needs/`) y est servie, les cartes du
   portail lisent les campagnes sur leur propre adresse. Rien d'autre ne change.
