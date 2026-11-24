@@ -99,6 +99,16 @@ export default function CleRepartition() {
   const { years, year, pole, ckey, allPoles } = resolveScope(keys, search)
   // Portée du Tableau et de la fiche Pays : une clé, ou « tous pôles » de l'année.
   const scope = allPoles ? { id: null, year, pole: ALL, status: null } : ckey
+  // Coût horaire modifiable sur le Devis : celui de la clé, ou le taux commun des pôles de l'année.
+  // Taux différents, clé gelée ou clé au budget : rien à modifier ici, les Paramètres restent la voie.
+  const rateKeys = allPoles ? keys.filter(k => k.year === year) : (ckey ? [ckey] : [])
+  const common = field => (rateKeys.length && rateKeys.every(k => k.status !== 'FROZEN' && k[field] != null
+    && Number(k[field]) === Number(rateKeys[0][field])) ? Number(rateKeys[0][field]) : null)
+  const keyParams = {
+    hourly_rate: common('hourly_rate'),
+    trainee_lodging_cost: common('trainee_lodging_cost'),
+    trainer_lodging_cost: common('trainer_lodging_cost'),
+  }
   const scopeId = allPoles ? `year:${year}` : ckey?.id
 
   /* tableau global : sert au Tableau, à la liste des pays et au périmètre */
@@ -202,7 +212,15 @@ export default function CleRepartition() {
         code={search.get('pays')} setCode={c => setParams({ pays: c, session: null })}
         picked={search.get('filiales')} setPicked={list => setParams({ filiales: list })}
         session={search.get('session')} revealTick={revealTick} slots={slots}
-        canEdit={Boolean(boot.access?.edit)} onEdited={refreshSilently} />
+        canEdit={Boolean(boot.access?.edit)} onEdited={refreshSilently}
+        onEditRates={menu.includes('settings') ? () => go('settings', { session: null }) : undefined}
+        params={keyParams}
+        onSaveParams={menu.includes('settings') && rateKeys.length
+          ? async body => {
+            for (const k of rateKeys) await planningApi.updateKey(k.id, body) // eslint-disable-line no-await-in-loop
+            await refreshSilently()
+          }
+          : undefined} />
     )
   } else {
     body = (

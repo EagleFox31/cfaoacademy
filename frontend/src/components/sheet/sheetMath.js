@@ -152,6 +152,42 @@ export const cellDraft = raw => (raw == null ? '' : String(raw))
 /** Vrai si la saisie ne change rien à la valeur lue : aucun appel au serveur. */
 export const sameCell = (value, base) => cellDraft(value).trim() === cellDraft(base).trim()
 
+/** Presse-papier d'Excel (ou de toTSV) -> matrice de textes ; guillemets doublés compris. */
+export function fromTSV(text) {
+  const rows = [[]]
+  let cell = ''
+  let quoted = false
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i]
+    if (quoted) {
+      if (ch === '"' && text[i + 1] === '"') { cell += '"'; i += 1 } else if (ch === '"') quoted = false
+      else cell += ch
+    } else if (ch === '"' && cell === '') quoted = true
+    else if (ch === '\t') { rows[rows.length - 1].push(cell); cell = '' } else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i += 1
+      rows[rows.length - 1].push(cell); cell = ''
+      rows.push([])
+    } else cell += ch
+  }
+  rows[rows.length - 1].push(cell)
+  // Excel termine sa copie par un saut de ligne : pas de ligne vide en trop.
+  if (rows.length > 1 && rows[rows.length - 1].length === 1 && rows[rows.length - 1][0] === '') rows.pop()
+  return rows
+}
+
+/**
+ * Valeur collée -> valeur à envoyer : comme une frappe, avec en plus les dates d'Excel
+ * (jj/mm/aaaa) et, pour une liste, une valeur de la liste seulement.
+ */
+export function parsePasted(text, edit, options) {
+  let draft = String(text ?? '').trim()
+  const fr = edit.input === 'date' && /^(\d{1,2})[/.](\d{1,2})[/.](\d{4})$/.exec(draft)
+  if (fr) draft = `${fr[3]}-${fr[2].padStart(2, '0')}-${fr[1].padStart(2, '0')}`
+  const parsed = parseCellInput(draft, edit)
+  if (parsed.ok && options && parsed.value !== '' && !options.includes(parsed.value)) return { ok: false }
+  return parsed
+}
+
 function isIsoDate(text) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false
   const date = new Date(`${text}T00:00:00Z`)

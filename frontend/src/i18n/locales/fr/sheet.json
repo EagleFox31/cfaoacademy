@@ -26,6 +26,8 @@
   "no_match": "Aucune ligne ne correspond.",
   "ready": "Prêt",
   "edit_invalid": "Valeur non valide",
+  "fill_hint": "Tirer vers le haut ou le bas pour recopier la valeur. Double-clic : jusqu’en bas. Ctrl+D : recopier sur la sélection.",
+  "paste_refused": "{n} valeur(s) collée(s) non valide(s), laissée(s) de côté",
   "rows": "{n} lignes sur {m}",
   "avg": "Moyenne",
   "count": "Nombre",

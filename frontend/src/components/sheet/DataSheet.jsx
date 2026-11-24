@@ -9,19 +9,27 @@
  *
  * Colonne : { id, header, group?, groupIcon?, type: text|int|money|percent|date, value(row),
  *             width?, total?: 'sum' | (rows) => valeur, tone?(v, row), bar?, unit?, render?(v, row),
- *             hidden?, edit? }
+ *             hidden?, edit?, formula?(row) }
+ *   formula : texte du calcul d'une cellule calculée, montré dans la barre fx après la valeur.
  * Saisie (avec onCellCommit et un rowKey stable, indépendant de l'index) :
  *   edit : { input: number|date|text, raw(row), can?(row), min?, max?, hint? }.
  *   F2, Entrée ou double-clic ouvrent la cellule ; Entrée valide et descend, Tab passe à la
  *   suivante, Échap annule, quitter la cellule valide. La valeur lue à l'ouverture part avec
  *   la saisie : c'est elle qui permet au serveur de détecter une modification concurrente.
  *   cellError?(row, col) : message d'erreur à porter sur la cellule (état tenu par le parent).
+ *   Recopie comme Excel : la poignée du coin bas-droit, tirée vers le haut ou le bas, copie la
+ *   valeur dans les cellules saisissables de la même colonne ; Ctrl+D recopie la 1re ligne de
+ *   la sélection vers le bas. onCellsCommit?(items) reçoit le lot ({ row, col, value, base }),
+ *   sinon chaque cellule passe par onCellCommit. Double-clic sur la poignée : jusqu'en bas.
+ *   Ctrl+V colle un bloc (Excel ou la grille) dans les cellules saisissables ; Ctrl+Z annule
+ *   la dernière écriture (le serveur refuse si la cellule a changé depuis). onCellCommit et
+ *   onCellsCommit peuvent renvoyer false (par item pour le lot) : écriture refusée.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSettle } from './useSettle'
 import useLocale from '../../hooks/useLocale'
-import { aggregate, cellAddress, cellDraft, colLetter, fold, isRowSelected, mergeSpans, normRange, parseCellInput, parseFilter, sameCell, spanInRange, toTSV } from './sheetMath'
+import { aggregate, cellAddress, cellDraft, colLetter, fold, fromTSV, isRowSelected, mergeSpans, normRange, parseCellInput, parseFilter, parsePasted, sameCell, spanInRange, toTSV } from './sheetMath'
 import { cellText, columnTitle, downloadBlob, makeFormatter, toCsv } from './sheetExport'
 
 /** Unité affichée à côté du nombre ; le presse-papier et le CSV gardent le nombre seul. */
@@ -111,8 +119,10 @@ const rowInSpan = (e, span) => {
 export default function DataSheet({
   id, columns, rows, rowKey, frozen = 1, onRowOpen, filterControls, filtersTarget, hideSearch = false, exportRef, controlsActive = false, onClearControls,
   exportName = 'export', emptyText, openHint, simple = false, rowClass, revealKey = 0,
-  onCellCommit, cellError, onViewChange,
+  onCellCommit, onCellsCommit, cellError, onViewChange, formulaAction,
 }) {
+  // formulaAction { label, onClick } : lien affiché dans la barre fx à côté d'une formule
+  // (ex. « Modifier les tarifs » quand la formule dépend de réglages saisis ailleurs).
   // simple : lecteur pressé. Ni barre de formule, ni lettres de colonnes, ni
   // réglages de tableur ; la ligne de filtres reste à ouvrir à la demande.
   const { t, locale } = useLocale('sheet')
@@ -134,6 +144,8 @@ export default function DataSheet({
   const [copied, setCopied] = useState(false)
   const [editing, setEditing] = useState(null) // { id, row, col, base }
   const [saving, setSaving] = useState({}) // id de cellule -> valeur en cours d'envoi
+  const [fill, setFill] = useState(null) // poignée tirée : { ci, r0, r1, to }
+  const fillRef = useRef(null)
   // Recherche, filtre de colonne ou tri : bref squelette sur le corps du tableau.
   const settling = useSettle([search, filters, sort])
   const gridRef = useRef(null)
@@ -343,23 +355,156 @@ export default function DataSheet({
     return true
   }
 
+  // ── écritures par lot (recopie, collage, annulation) ───────────────────
+  // Item : { id, row, col, value, base }. onCellsCommit peut renvoyer un booléen par item,
+  // onCellCommit un booléen : false = refusé, l'écriture n'entre pas dans l'historique.
+  const history = useRef([]) // Ctrl+Z : les 20 dernières écritures, la plus récente à la fin
+  const remember = items => {
+    history.current = [...history.current.slice(-19),
+      items.map(i => ({ id: i.id, row: i.row, col: i.col, value: i.base, base: i.value }))]
+  }
+  const commitItems = async (items, { undoable = true } = {}) => {
+    if (!items.length) return
+    setSaving(s => ({ ...s, ...Object.fromEntries(items.map(i => [i.id, i.value])) }))
+    let results
+    try {
+      if (onCellsCommit) results = await onCellsCommit(items.map(({ id: _id, ...item }) => item))
+      else {
+        results = []
+        for (const i of items) results.push(await onCellCommit(i.row, i.col, i.value, i.base)) // eslint-disable-line no-await-in-loop
+      }
+    } finally {
+      const ids = new Set(items.map(i => i.id))
+      setSaving(s => Object.fromEntries(Object.entries(s).filter(([k]) => !ids.has(k))))
+    }
+    const done = items.filter((_, k) => !Array.isArray(results) || results[k] !== false)
+    if (undoable && done.length) remember(done)
+  }
+  // Annuler : on renvoie l'ancienne valeur en attendant celle qu'on a écrite ; si quelqu'un l'a
+  // changée entre-temps, le serveur refuse et le parent affiche le conflit (rien n'est écrasé).
+  const undo = () => {
+    const last = history.current.pop()
+    if (last) commitItems(last, { undoable: false })
+  }
+
   const finishEdit = async (outcome, move) => {
     const cur = editing
     setEditing(null)
     if (move) {
-      const next = clamp(cur.at.row + move.row, cur.at.col + move.col)
+      let row = cur.at.row + move.row
+      // Entrée sur une cellule fusionnée : on passe à la ligne qui suit toute la fusion.
+      const key = cur.col.merge ? (cur.col.mergeKey ?? cur.col.value) : null
+      const k0 = key ? key(cur.row) : null
+      if (move.row > 0 && k0 != null && k0 !== '') {
+        while (row <= lastR && key(view[row]) === k0) row += 1
+      }
+      const next = clamp(row, cur.at.col + move.col)
       setAnchor(next)
       setFocus(next)
       gridRef.current?.focus({ preventScroll: true })
     }
     if (!outcome || sameCell(outcome.value, cur.base)) return
     setSaving(s => ({ ...s, [cur.id]: outcome.value }))
+    let ok
     try {
-      await onCellCommit(cur.row, cur.col, outcome.value, cur.base)
+      ok = await onCellCommit(cur.row, cur.col, outcome.value, cur.base)
     } finally {
       setSaving(({ [cur.id]: _done, ...rest }) => rest)
     }
+    if (ok !== false) remember([{ id: cur.id, row: cur.row, col: cur.col, value: outcome.value, base: cur.base }])
   }
+
+  // Coller (Ctrl+V) depuis Excel ou la grille : le bloc part de la 1re cellule de la sélection ;
+  // une seule valeur collée remplit toute la sélection. Cellules non saisissables ignorées.
+  const onPaste = e => {
+    if (!onCellCommit || editing || !range) return
+    const text = e.clipboardData?.getData('text/plain')
+    if (!text) return
+    e.preventDefault()
+    const matrix = fromTSV(text)
+    const single = matrix.length === 1 && matrix[0].length === 1
+    const h = single ? range.r1 - range.r0 + 1 : matrix.length
+    const w = single ? range.c1 - range.c0 + 1 : Math.max(...matrix.map(l => l.length))
+    const items = []
+    let refused = 0
+    for (let dr = 0; dr < h; dr += 1) {
+      for (let dc = 0; dc < w; dc += 1) {
+        const ri = range.r0 + dr
+        const row = view[ri]
+        const c = cols[range.c0 + dc]
+        const raw = single ? matrix[0][0] : matrix[dr][dc]
+        if (!row || !c || raw == null || !canEdit(row, ri, c)) continue
+        const parsed = parsePasted(raw, c.edit, c.edit.options?.(row))
+        if (!parsed.ok) { refused += 1; continue }
+        const base = c.edit.raw(row)
+        if (!sameCell(parsed.value, base)) items.push({ id: editId(row, ri, c), row, col: c, value: parsed.value, base })
+      }
+    }
+    setAnchor({ row: range.r0, col: range.c0 })
+    setFocus(clamp(range.r0 + h - 1, range.c0 + w - 1))
+    if (refused) {
+      setCopied(t.paste_refused.replace('{n}', refused))
+      setTimeout(() => setCopied(false), 4000)
+    }
+    commitItems(items)
+  }
+
+  // ── recopie (poignée, Ctrl+D) ───────────────────────────────────────────
+  // Source : une seule colonne, saisissable, une seule valeur (une cellule fusionnée en compte plusieurs).
+  const fillSource = (() => {
+    if (!onCellCommit || editing || !range || range.c0 !== range.c1) return null
+    const c = cols[range.c0]
+    const first = view[range.r0]
+    if (!c?.edit || !first || !canEdit(first, range.r0, c)) return null
+    const value = c.edit.raw(first)
+    for (let r = range.r0 + 1; r <= range.r1; r += 1) {
+      if (!sameCell(c.edit.raw(view[r]), value)) return null
+    }
+    return { ci: range.c0, r0: range.r0, r1: range.r1, value }
+  })()
+
+  const fillCells = async (ci, value, from, to) => {
+    const c = cols[ci]
+    const items = []
+    for (let ri = from; ri <= to; ri += 1) {
+      const row = view[ri]
+      if (!row || !canEdit(row, ri, c)) continue
+      const base = c.edit.raw(row)
+      if (!sameCell(value, base)) items.push({ id: editId(row, ri, c), row, col: c, value, base })
+    }
+    return commitItems(items)
+  }
+  // Double-clic sur la poignée : recopie jusqu'à la dernière ligne affichée.
+  const fillDown = e => {
+    e.stopPropagation()
+    if (!fillSource || fillSource.r1 >= lastR) return
+    setAnchor({ row: fillSource.r0, col: fillSource.ci })
+    setFocus({ row: lastR, col: fillSource.ci })
+    fillCells(fillSource.ci, fillSource.value, fillSource.r1 + 1, lastR)
+  }
+
+  const endFill = useRef(null)
+  endFill.current = () => {
+    const f = fillRef.current
+    fillRef.current = null
+    setFill(null)
+    if (!f) return
+    const [from, to] = f.to > f.r1 ? [f.r1 + 1, f.to] : f.to < f.r0 ? [f.to, f.r0 - 1] : [null, null]
+    if (from == null) return
+    setAnchor({ row: Math.min(from, f.r0), col: f.ci })
+    setFocus({ row: Math.max(to, f.r1), col: f.ci })
+    fillCells(f.ci, f.value, from, to)
+  }
+  const startFill = e => {
+    if (e.button !== 0 || !fillSource) return
+    e.preventDefault()
+    e.stopPropagation()
+    fillRef.current = { ...fillSource, to: fillSource.r1 }
+    setFill(fillRef.current)
+    window.addEventListener('mouseup', () => endFill.current(), { once: true })
+  }
+  const fillLo = fill ? Math.min(fill.r0, fill.to) : null
+  const fillHi = fill ? Math.max(fill.r1, fill.to) : null
 
   const onKeyDown = e => {
     const mod = e.ctrlKey || e.metaKey
@@ -367,6 +512,16 @@ export default function DataSheet({
     if (mod && k === 'f' && searchRef.current) { e.preventDefault(); searchRef.current.focus(); return }
     if (mod && k === 'c') { e.preventDefault(); copy(); return }
     if (mod && k === 'a') { e.preventDefault(); selectAll(); return }
+    if (mod && k === 'z' && !e.shiftKey && onCellCommit && !editing) { e.preventDefault(); undo(); return }
+    if (mod && k === 'd' && onCellCommit && !editing && range && range.c0 === range.c1 && range.r1 > range.r0) {
+      const c = cols[range.c0]
+      const first = view[range.r0]
+      if (c?.edit && first && canEdit(first, range.r0, c)) {
+        e.preventDefault()
+        fillCells(range.c0, c.edit.raw(first), range.r0 + 1, range.r1)
+      }
+      return
+    }
     if (e.target.matches('button, input[type="checkbox"]')) return // Entrée, Espace et flèches restent aux contrôles
     if (!view.length || !cols.length) return
     const cur = focus ?? { row: 0, col: 0 }
@@ -414,7 +569,16 @@ export default function DataSheet({
     dragging.current = true
     gridRef.current?.focus({ preventScroll: true })
   }
-  const onCellEnter = (row, col) => { if (dragging.current) setFocus({ row, col }) }
+  const onCellEnter = (row, col, rows = 1) => {
+    const f = fillRef.current
+    if (f) {
+      // La recopie reste dans sa colonne ; vers le bas, une cellule fusionnée compte jusqu'à sa dernière ligne.
+      const to = row > f.r1 ? row + rows - 1 : row
+      if (to !== f.to) { fillRef.current = { ...f, to }; setFill(fillRef.current) }
+      return
+    }
+    if (dragging.current) setFocus({ row, col })
+  }
 
   const selectColumn = (e, col) => {
     if (!view.length) return
@@ -500,6 +664,7 @@ export default function DataSheet({
   const focusCol = focus ? cols[focus.col] : null
   const focusRow = focus ? view[focus.row] : null
   const focusText = focusCol && focusRow ? format(focusCol.value(focusRow), focusCol.type) : ''
+  const focusFormula = focusCol?.formula && focusRow ? focusCol.formula(focusRow) : null
 
   // filtersTarget : élément qui reçoit recherche et filtres quand ils pilotent aussi le reste
   // de la page (null tant qu'il n'est pas monté). Non fourni, ils restent dans la barre.
@@ -583,14 +748,20 @@ export default function DataSheet({
           <span className="sheet-formula-val">
             {focusCol && <b>{focusCol.group ? `${focusCol.group} · ${focusCol.header}` : focusCol.header} : </b>}
             {focusText}
+            {focusFormula && <span className="sheet-formula-expr">{focusFormula}</span>}
           </span>
+          {focusFormula && formulaAction && (
+            <button type="button" className="sheet-formula-link" onClick={formulaAction.onClick}>
+              {formulaAction.label}
+            </button>
+          )}
         </div>
       )}
 
       {/* ── grille ── */}
       <div className="sheet-scroll" ref={gridRef} tabIndex={0} role="grid"
-        aria-rowcount={view.length} aria-colcount={cols.length} onKeyDown={onKeyDown}>
-        <table className="sheet-table" style={{ width: tableWidth }}>
+        aria-rowcount={view.length} aria-colcount={cols.length} onKeyDown={onKeyDown} onPaste={onPaste}>
+        <table className={`sheet-table${fill ? ' is-fill-drag' : ''}`} style={{ width: tableWidth }}>
           <colgroup>
             <col style={{ width: rowHeadW }} />
             {cols.map(c => <col key={c.id} style={{ width: width(c) }} />)}
@@ -727,16 +898,21 @@ export default function DataSheet({
                     const editable = cid != null && canEdit(row, ri, c)
                     const failure = editable && !isEditing ? cellError?.(row, c) : null
                     const shown = isSaving ? format(saving[cid], c.type) : text
+                    const filling = fill && fill.ci === ci && ri <= fillHi && ri + span - 1 >= fillLo
+                    // Poignée au coin bas-droit de la source, comme Excel.
+                    const handle = !fill && fillSource && fillSource.ci === ci
+                      && ri <= fillSource.r1 && ri + span - 1 >= fillSource.r1
                     const cls = `sheet-c${NUMERIC.has(c.type) ? ' is-num' : ''}${groupCls(ci)}${tone ? ` tone-${tone}` : ''}`
                       + `${sel ? ' is-sel' : ''}${active ? ' is-active' : ''}${c.merge ? ' is-merged' : ''}${c.openOnClick && onRowOpen ? ' is-openable' : ''}${frozenCls(ci)}`
                       + `${editable ? ' is-editable' : ''}${isSaving ? ' is-saving' : ''}${failure ? ' is-error' : ''}`
+                      + `${filling ? ' is-filling' : ''}${handle ? ' has-fill' : ''}`
                     const tip = failure || (editable && c.edit.hint ? [text, c.edit.hint].filter(Boolean).join(' · ') : text)
                     return (
                       <td key={c.id} data-cell={`${ri}:${ci}`} role="gridcell" aria-selected={sel || undefined}
                         aria-busy={isSaving || undefined}
                         rowSpan={span > 1 ? span : undefined}
                         className={cls} style={frozenStyle(ci)} title={tip}
-                        onMouseDown={e => onCellDown(e, ri, ci, span)} onMouseEnter={() => onCellEnter(ri, ci)}
+                        onMouseDown={e => onCellDown(e, ri, ci, span)} onMouseEnter={() => onCellEnter(ri, ci, span)}
                         onClick={c.openOnClick && onRowOpen ? e => {
                           // Une sélection au clavier ou un bouton de la cellule n'ouvrent pas la ligne.
                           if (!e.shiftKey && !e.ctrlKey && !e.metaKey && !e.target.closest('button, a')) onRowOpen(row)
@@ -749,6 +925,7 @@ export default function DataSheet({
                           ? <CellInput key={cid} edit={c.edit} initial={cellDraft(editing.base)} label={c.header}
                               invalidText={t.edit_invalid} onDone={finishEdit} options={c.edit.options?.(editing.row)} />
                           : <span className="sheet-c-txt">{c.render && !isSaving ? c.render(v, row) : withUnit(shown, c.unit)}</span>}
+                        {handle && <span className="sheet-fill-handle" title={t.fill_hint} aria-hidden="true" onMouseDown={startFill} onDoubleClick={fillDown} />}
                       </td>
                     )
                   })}
@@ -775,7 +952,7 @@ export default function DataSheet({
       {/* ── barre d'état ── */}
       <div className="sheet-status">
         <span>
-          {copied ? t.copied : selection && selection.cells > 1 ? address : checkedRows.length > 0 ? (
+          {copied ? (copied === true ? t.copied : copied) : selection && selection.cells > 1 ? address : checkedRows.length > 0 ? (
             <>
               {(checkedRows.length === 1 ? t.checked_one : t.checked_many).replace('{n}', checkedRows.length)}{' '}
               <button type="button" className="sheet-link" onClick={() => pickRows(new Set())}>{t.uncheck_all}</button>

@@ -361,6 +361,26 @@ button.ck-review-mark:focus-visible { outline: 2px solid #1a56db; outline-offset
 .ck-kpis--large .ck-kpi dt { font-size: 15px; }
 .ck-kpis--large .ck-kpi dd { margin-top: 4px; font-size: 30px; line-height: 1.15; }
 .ck-kpis--large .ck-kpi dd.ck-kpi-note { margin-top: 2px; font-size: 16px; font-style: italic; }
+/* Coût horaire modifiable sur place, sous le coût de formation. */
+.ck-kpi dd.ck-kpi-extra, .ck-kpis--large .ck-kpi dd.ck-kpi-extra { margin-top: 6px; font-size: 14px; font-weight: 500; line-height: 1.3; color: var(--muted); }
+.ck-rate { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.ck-rate b { color: #1f2333; font-variant-numeric: tabular-nums; }
+.ck-rate-pencil, .ck-rate-close {
+  display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0;
+  border: 1px solid #d5d8e2; border-radius: 6px; background: #fff; color: #3d4256; cursor: pointer;
+}
+.ck-rate-pencil:hover, .ck-rate-close:hover { border-color: #9aa0b4; background: #f4f5f8; }
+.ck-rate-close { font-size: 18px; line-height: 1; }
+.ck-rate.is-open label { display: inline-flex; align-items: center; gap: 8px; }
+.ck-rate.is-open input {
+  width: 9em; padding: 4px 8px; border: 1px solid #9aa0b4; border-radius: 6px;
+  font: inherit; font-size: 16px; font-weight: 700; color: #1f2333; text-align: right; font-variant-numeric: tabular-nums;
+}
+.ck-rate.is-open input[aria-invalid] { border-color: #c0392b; }
+.ck-rate.is-open .ck-btn { padding: 4px 12px; }
+.ck-rate-undo { display: inline-flex; align-items: center; gap: 6px; font-style: italic; }
+.ck-rate-undo button { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-style: normal; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.ck-rate-error { flex-basis: 100%; margin: 0; color: #c0392b; font-size: 13px; }
 .ck-kpis--large .ck-kpi-poles { gap: 0 16px; font-size: 20px; }
 .ck-kpis--large .ck-kpi-poles small { font-size: 15px; }
 /* Détail des places : mêmes couleurs que les cellules. À côté du chiffre si la carte est assez large. */

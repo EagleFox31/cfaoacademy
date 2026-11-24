@@ -326,6 +326,31 @@ describe('Clé de répartition : menu par rôle et vue tableur', { timeout: 2000
     expect(kpis[1]).toContain(`${T.pole_EQUIPMENT}1 / 2`)
   })
 
+  it('Devis tous pôles : le coût horaire commun se modifie sur les deux clés ; taux différents, pas de crayon', async () => {
+    const keys = (other = 10000) => [{ ...KEY, hourly_rate: 10000 }, { ...KEY, id: 8, pole: 'EQUIPMENT', hourly_rate: other }]
+    planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, review: false })
+    planningApi.keys = vi.fn().mockResolvedValue(keys())
+    planningApi.yearGlobal = vi.fn().mockResolvedValue(GLOBAL())
+    planningApi.yearCountry = planningApi.country
+    await show('/portail/cle-repartition/country?pays=CM')
+    expect(host.querySelector('.ck-rate').textContent).toContain(T.kpi_rate)
+    await act(async () => { host.querySelector('.ck-rate-pencil').click() })
+    const field = host.querySelector('.ck-rate input')
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, '12000')
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => { host.querySelector('form.ck-rate').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })) })
+    for (let i = 0; i < 5; i += 1) await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+    expect(planningApi.updateKey.mock.calls).toEqual([[7, { hourly_rate: 12000 }], [8, { hourly_rate: 12000 }]])
+
+    act(() => root.unmount()); host.remove()
+    planningApi.keys = vi.fn().mockResolvedValue(keys(12500))
+    await show('/portail/cle-repartition/country?pays=CM')
+    expect(host.querySelector('.sheet')).not.toBeNull()
+    expect(host.querySelector('.ck-rate')).toBeNull()
+  })
+
   it('cartes : sans les besoins, aucune filiale n’est annoncée comme n’ayant pas répondu', async () => {
     planningApi.access = vi.fn().mockResolvedValue({ view: true, manage: true, freeze: true, review: false })
     planningApi.global = vi.fn().mockResolvedValue({ ...GLOBAL(), needs_source: 'none',

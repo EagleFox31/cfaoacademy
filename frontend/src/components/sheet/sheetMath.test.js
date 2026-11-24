@@ -1,8 +1,28 @@
 import { describe, expect, it } from 'vitest'
 import {
   aggregate, cellAddress, colLetter, coverageTone, inRange, isRowSelected, mergeSpans, normRange, parseFilter,
-  spanInRange, toTSV, parseCellInput, sameCell,
+  spanInRange, toTSV, parseCellInput, sameCell, fromTSV, parsePasted,
 } from './sheetMath'
+
+describe('collage depuis Excel', () => {
+  it('lit le presse-papier d’Excel, sans ligne vide finale', () => {
+    expect(fromTSV('7\t8\r\n9\t10\r\n')).toEqual([['7', '8'], ['9', '10']])
+    expect(fromTSV('seul')).toEqual([['seul']])
+  })
+
+  it('relit ce que toTSV écrit, guillemets et sauts de ligne compris', () => {
+    const matrix = [['a\tb', 'dit "oui"'], ['deux\nlignes', '']]
+    expect(fromTSV(toTSV(matrix))).toEqual(matrix)
+  })
+
+  it('accepte une date d’Excel et refuse une valeur hors liste', () => {
+    expect(parsePasted('1/3/2027', { input: 'date' })).toEqual({ ok: true, value: '2027-03-01' })
+    expect(parsePasted('31/02/2027', { input: 'date' }).ok).toBe(false)
+    expect(parsePasted(' 8 ', { input: 'number', min: 1 })).toEqual({ ok: true, value: 8 })
+    expect(parsePasted('G9', { input: 'text' }, ['G4', 'G3']).ok).toBe(false)
+    expect(parsePasted('G3', { input: 'text' }, ['G4', 'G3'])).toEqual({ ok: true, value: 'G3' })
+  })
+})
 
 describe('saisie dans une cellule', () => {
   const seats = { input: 'number', min: 1, max: 32767 }

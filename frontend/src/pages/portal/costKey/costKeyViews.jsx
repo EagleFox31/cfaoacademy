@@ -9,7 +9,7 @@ import { useSettle } from '../../../components/sheet/useSettle'
 import DataSheet from '../../../components/sheet/DataSheet'
 import { PoleMark } from '../../../components/PoleIcon.jsx'
 import { reviewText } from './reviewText.js'
-import { coverageTone } from '../../../components/sheet/sheetMath'
+import { coverageTone, parseCellInput } from '../../../components/sheet/sheetMath'
 import { planningApi } from '../../../lib/planningApi'
 import { flagUrlForIso } from '../../../utils/countryFlag'
 import { resolveCardBrandBadge } from '../../../utils/cardBrandBadge'
@@ -60,7 +60,6 @@ function SessionStart({ value, row, t, locale }) {
   return (
     <span className="sheet-c-start" title={row.dates_source === 'grid' ? t.grid_dates_hint : undefined}>
       {shortDate(value, locale)}
-      {row.dates_source === 'grid' && <span className="sheet-c-planned">{t.grid_dates}</span>}
     </span>
   )
 }
@@ -271,6 +270,7 @@ function Kpis({ items, large = false, paired = false }) {
           <dt>{k.label}</dt>
           <dd>{k.value}</dd>
           {k.note && <dd className="ck-kpi-note">{k.note}</dd>}
+          {k.extra && <dd className="ck-kpi-extra">{k.extra}</dd>}
           {k.split && (
             <dd className="ck-kpi-split">
               <ul>
@@ -282,6 +282,116 @@ function Kpis({ items, large = false, paired = false }) {
         </div>
       ))}
     </dl>
+  )
+}
+
+const MAX_AMOUNT = 999_999_999_999
+const NO_PARAMS = {}
+const isTyping = el => Boolean(el?.closest?.('input, textarea, select, [contenteditable="true"], .sheet'))
+
+/**
+ * Réglages de la clé modifiables depuis les cartes du Devis (coût horaire, accommodation).
+ * Un seul historique pour tous : Ctrl+Z (hors saisie et hors tableau) revient au dernier changé.
+ */
+function useKeyParams({ t, params, onSave, onSaved }) {
+  const [history, setHistory] = useState([])
+  const [issue, setIssue] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+
+  const save = async (field, value, undo = false) => {
+    if (busyRef.current) return false
+    busyRef.current = true
+    setBusy(true); setIssue(null)
+    const before = params[field]
+    try {
+      await onSave({ [field]: value })
+      await onSaved?.()
+      setHistory(h => (undo ? h.slice(0, -1) : [...h.slice(-19), { field, value: before }]))
+      return true
+    } catch (err) {
+      setIssue({ field, text: errText(t, err) })
+      return false
+    } finally { busyRef.current = false; setBusy(false) }
+  }
+  const last = history[history.length - 1]
+  const undo = () => (last ? save(last.field, last.value, true) : Promise.resolve(false))
+
+  const undoRef = useRef(undo)
+  undoRef.current = undo
+  const canUndo = history.length > 0
+  useEffect(() => {
+    if (!canUndo) return undefined
+    const onKey = e => {
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== 'z' || isTyping(e.target)) return
+      e.preventDefault()
+      undoRef.current()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [canUndo])
+
+  // Props d'un éditeur : valeur, dernier état annulable s'il le concerne, erreur s'il la concerne.
+  return field => ({
+    value: params[field], busy,
+    previous: last?.field === field ? last.value : null,
+    issue: issue?.field === field ? issue.text : null,
+    onSave: value => save(field, value),
+    onUndo: undo,
+  })
+}
+
+/** Un réglage modifiable sur place : crayon, saisie, Entrée ou Enregistrer, Échap ferme. */
+function ParamEditor({ t, fmt, label, editLabel, min = 1, value, busy, previous, issue, onSave, onUndo }) {
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [error, setError] = useState(null)
+  const pencil = useRef(null)
+  const field = useRef(null)
+  useEffect(() => { if (open) field.current?.select() }, [open])
+
+  const start = () => { setDraft(String(value)); setError(null); setOpen(true) }
+  const close = () => { setOpen(false); setError(null); requestAnimationFrame(() => pencil.current?.focus()) }
+  const submit = async e => {
+    e.preventDefault()
+    const parsed = parseCellInput(draft, { input: 'number', min, max: MAX_AMOUNT })
+    if (!parsed.ok) { setError(min > 0 ? t.rate_invalid : t.amount_invalid); return }
+    if (parsed.value === Number(value)) { close(); return }
+    if (await onSave(parsed.value)) close()
+  }
+  const amount = v => `${fmt(v, 'money')} ${t.currency}`
+  const shownError = error || issue
+
+  if (open) {
+    return (
+      <form className="ck-rate is-open" onSubmit={submit} onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); close() } }}>
+        <label>
+          <span>{label}</span>
+          <input ref={field} inputMode="numeric" value={draft} disabled={busy} aria-invalid={shownError ? true : undefined}
+            onChange={e => { setDraft(e.target.value); setError(null) }} />
+          <small>{t.currency}</small>
+        </label>
+        <button type="submit" className="ck-btn ck-btn--primary" disabled={busy}>{t.save}</button>
+        <button type="button" className="ck-rate-close" onClick={close} disabled={busy} aria-label={t.rate_close}>×</button>
+        {shownError && <p className="ck-rate-error" role="alert">{shownError}</p>}
+      </form>
+    )
+  }
+  return (
+    <div className="ck-rate">
+      <span>{label} : <b>{amount(value)}</b></span>
+      <button ref={pencil} type="button" className="ck-rate-pencil" onClick={start} title={editLabel} aria-label={editLabel} disabled={busy}>
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5"
+          strokeLinecap="round" strokeLinejoin="round"><path d="M10.5 2.5l3 3L5 14H2v-3z" /><path d="M9 4l3 3" /></svg>
+      </button>
+      {previous != null && (
+        <span className="ck-rate-undo" role="status">
+          {t.rate_before.replace('{amount}', amount(previous))}
+          <button type="button" onClick={onUndo} disabled={busy}>{t.rate_undo}</button>
+        </span>
+      )}
+      {shownError && <p className="ck-rate-error" role="alert">{shownError}</p>}
+    </div>
   )
 }
 
@@ -702,7 +812,7 @@ const sessionKey = (s, i) => s.edit?.allocation ?? `${s.code}-${s.start_date}-${
 
 const ALL_COUNTRIES = 'all'
 
-export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode, picked = null, setPicked, session, revealTick = 0, slots, canEdit = false, onEdited }) {
+export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode, picked = null, setPicked, session, revealTick = 0, slots, canEdit = false, onEdited, onEditRates, params = NO_PARAMS, onSaveParams }) {
   const [state, setState] = useState({ loading: true })
   // Le choix « toutes » n'a de sens que pour qui voit plusieurs filiales.
   const countries = useMemo(() => (global.partial || global.rows.length < 2
@@ -761,23 +871,54 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
       .replace('{current}', shownValue(details.current, col)).replace('{mine}', shownValue(value, col))
   }
 
-  const sendCell = async (s, col, value, expected) => {
+  // Une écriture ; renvoie le problème à afficher (null si tout va bien).
+  // `changed` : faux quand le serveur a refusé la valeur (400), rien à recharger.
+  const writeCell = async (s, col, value, expected) => {
     const { target, field } = col.edit
     const cell = `${s.edit.allocation}|${col.id}`
-    setProblem(null)
     try {
       await planningApi.editCell(s.edit.key, { target, id: s.edit[target], field, expected, value })
+      return null
     } catch (err) {
       const details = err?.payload?.error?.details
       if (err?.code === 'CELL_CONFLICT' && details) {
-        setProblem({ cell, text: conflictText(details, col, value), retry: () => sendCell(s, col, value, details.current) })
-      } else {
-        setProblem({ cell, text: errText(t, err) })
+        return { cell, changed: true, text: conflictText(details, col, value), retry: () => sendCell(s, col, value, details.current) }
       }
-      if (err?.status === 400) return // valeur refusée : rien n'a changé côté serveur
+      return { cell, changed: err?.status !== 400, text: errText(t, err) }
     }
-    await Promise.all([refresh(), onEdited?.()])
   }
+
+  const sendCell = async (s, col, value, expected) => {
+    setProblem(null)
+    const issue = await writeCell(s, col, value, expected)
+    if (issue) setProblem(issue)
+    if (issue && !issue.changed) return false
+    await Promise.all([refresh(), onEdited?.()])
+    return !issue
+  }
+
+  // Recopie, collage, annulation : une écriture par cellule réelle (les lignes d'une même session
+  // partagent la leur), un seul rechargement à la fin ; le premier problème s'affiche.
+  // Renvoie, item par item, si l'écriture est passée.
+  const sendCells = async items => {
+    setProblem(null)
+    const done = new Map()
+    let first = null
+    for (const { row: s, col, value, base } of items) {
+      const id = `${col.edit.target}|${s.edit[col.edit.target]}|${col.id}`
+      if (done.has(id)) continue
+      const issue = await writeCell(s, col, value, base) // eslint-disable-line no-await-in-loop
+      done.set(id, !issue)
+      if (issue && !first) first = issue
+    }
+    if (first) setProblem(first)
+    await Promise.all([refresh(), onEdited?.()])
+    return items.map(({ row: s, col }) => done.get(`${col.edit.target}|${s.edit[col.edit.target]}|${col.id}`))
+  }
+
+  // Réglages de la clé modifiables depuis les cartes ; le tableau se recalcule aussitôt.
+  const keyParam = useKeyParams({ t, params, onSave: onSaveParams, onSaved: refresh })
+  const editable = field => Boolean(onSaveParams) && params[field] != null
 
   // Retour sur l'onglet : les autres ont pu saisir entre-temps.
   useEffect(() => {
@@ -870,12 +1011,22 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
       edit: canEdit ? editableCell('allocation', 'seats', 'number', { min: 1, max: 32767 }) : undefined },
     // Montant par ligne : clé tarifée seulement, une clé à budget fixe n'a pas de prix de place.
     ...(sessions.some(s => s.key_cost != null)
-      ? [{ id: 'key_cost', header: t.col_key_cost, type: 'money', unit: t.currency, width: 296, ...perSession, total: sumOnce(s => s.key_cost), value: s => s.key_cost }]
+      ? [{ id: 'key_cost', header: t.col_key_cost, type: 'money', unit: t.currency, width: 296, ...perSession, total: sumOnce(s => s.key_cost), value: s => s.key_cost,
+        formula: s => (s.key_cost != null && s.seats
+          ? t.fx_key_cost.replace('{seats}', fmt(s.seats, 'int')).replace('{price}', `${fmt(s.key_cost / s.seats, 'money')} ${t.currency}`)
+          : null) }]
       : []),
+    // Barre fx : d'où vient le montant (le calcul est fait côté planning).
     { id: 'trainee_lodging', header: t.col_trainee_lodging, type: 'money', unit: t.currency, width: 320, ...perSession,
-      total: sumOnce(s => s.trainee_lodging), value: s => s.trainee_lodging },
+      total: sumOnce(s => s.trainee_lodging), value: s => s.trainee_lodging,
+      formula: s => (s.trainee_lodging > 0 && s.seats
+        ? t.fx_trainee_lodging.replace('{seats}', fmt(s.seats, 'int')).replace('{unit}', `${fmt(s.trainee_lodging / s.seats, 'money')} ${t.currency}`)
+        : t.fx_trainee_lodging_none) },
     { id: 'trainer_lodging', header: t.col_trainer_lodging, type: 'money', unit: t.currency, width: 290, ...perSession,
-      total: sumOnce(s => s.trainer_lodging), value: s => s.trainer_lodging },
+      total: sumOnce(s => s.trainer_lodging), value: s => s.trainer_lodging,
+      formula: s => (s.trainer_lodging > 0
+        ? t.fx_trainer_lodging.replace('{amount}', `${fmt(s.trainer_lodging, 'money')} ${t.currency}`)
+        : t.fx_trainer_lodging_none) },
   ], [t, locale, reviews, sessions, canEdit, isAll, current])
 
   // Sans filtre, le pied renvoyé par le serveur fait foi ; sinon les indicateurs suivent le tableau.
@@ -983,8 +1134,25 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
             split: [
               { key: 'trainees', tone: 'plain', label: t.kpi_lodging_trainees, value: kpiMoney(foot.trainee_lodging, fmt, t) },
               { key: 'trainers', tone: 'plain', label: t.kpi_lodging_trainers, value: kpiMoney(foot.trainer_lodging, fmt, t) },
-            ] },
-          { label: t.col_key_cost, value: foot.key_cost == null ? '—' : kpiMoney(foot.key_cost, fmt, t) },
+            ],
+            // Tarifs d'accommodation de la clé, modifiables sur place comme le coût horaire.
+            extra: (editable('trainee_lodging_cost') || editable('trainer_lodging_cost')) && (
+              <>
+                {editable('trainee_lodging_cost') && (
+                  <ParamEditor t={t} fmt={fmt} min={0} label={t.kpi_trainee_lodging_rate} editLabel={t.trainee_lodging_rate_edit}
+                    {...keyParam('trainee_lodging_cost')} />
+                )}
+                {editable('trainer_lodging_cost') && (
+                  <ParamEditor t={t} fmt={fmt} min={0} label={t.kpi_trainer_lodging_rate} editLabel={t.trainer_lodging_rate_edit}
+                    {...keyParam('trainer_lodging_cost')} />
+                )}
+              </>
+            ) },
+          { label: t.col_key_cost, value: foot.key_cost == null ? '—' : kpiMoney(foot.key_cost, fmt, t),
+            // Clé au tarif horaire, modifiable : le taux se change sur place, tout se recalcule.
+            extra: editable('hourly_rate') && (
+              <ParamEditor t={t} fmt={fmt} label={t.kpi_rate} editLabel={t.rate_edit} {...keyParam('hourly_rate')} />
+            ) },
           { label: t.col_total, value: foot.total == null ? '—' : kpiMoney(foot.total, fmt, t), note: t.kpi_total_note },
         ]} />
       )}
@@ -993,7 +1161,9 @@ export function CountryView({ t, locale, fmt, ckey, mode, global, code, setCode,
           <DataSheet id="ck-country-niveau" columns={columns} rows={sheetData} frozen={isAll ? 4 : 3} onViewChange={setSheetRows} filtersTarget={filtersHost} exportRef={csvRef}
             rowKey={s => `${s._base}#${s._slot}`}
             rowClass={s => (session && s.code === session ? 'is-focus' : undefined)} revealKey={reveal}
-            onCellCommit={canEdit && !reloading ? sendCell : undefined} openHint={canEdit ? t.edit_hint : undefined}
+            onCellCommit={canEdit && !reloading ? sendCell : undefined}
+            onCellsCommit={canEdit && !reloading ? sendCells : undefined}
+            formulaAction={onEditRates ? { label: t.fx_edit_rates, onClick: onEditRates } : undefined} openHint={canEdit ? t.edit_hint : undefined}
             cellError={(s, c) => (problem?.cell === `${s.edit?.allocation}|${c.id}` ? problem.text : null)}
             exportName={`cle-${ckey.year}-${current}`} emptyText={t.no_sessions} filterControls={filterBar || null} hideSearch
             controlsActive={Object.values(filters).some(list => list.length > 0)}

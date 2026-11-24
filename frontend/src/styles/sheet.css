@@ -138,6 +138,24 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* Calcul d'une cellule calculée, après sa valeur. */
+.sheet-formula-expr { margin-left: 12px; color: #4b5066; font-family: ui-monospace, Consolas, monospace; font-size: 0.92em; }
+.sheet-formula-link {
+  flex: none; margin: 0 8px; padding: 2px 8px; border: 0; border-radius: 4px; background: none;
+  color: var(--sheet-sel-line); font: inherit; font-size: 0.92em; text-decoration: underline; cursor: pointer;
+}
+.sheet-formula-link:hover { background: rgba(0, 0, 0, 0.05); }
+.sheet-formula-link:focus-visible { outline: 2px solid var(--sheet-sel-line); outline-offset: 1px; }
+
+/* ── recopie : poignée au coin bas-droit de la sélection, aperçu en pointillés ── */
+.sheet-c.has-fill:not(.is-frozen) { position: relative; }
+.sheet-fill-handle {
+  position: absolute; right: -1px; bottom: -1px; z-index: 2;
+  width: 8px; height: 8px; background: var(--sheet-sel-line); border: 1px solid #fff;
+  cursor: crosshair;
+}
+.sheet-table tbody td.is-filling { outline: 2px dashed var(--sheet-sel-line); outline-offset: -3px; }
+.sheet-table.is-fill-drag, .sheet-table.is-fill-drag td { cursor: crosshair; }
 
 /* ── zone défilante ── */
 .sheet-scroll {
@@ -437,9 +455,10 @@
 /* Ligne sélectionnée : vert pomme opaque (colonnes figées), prioritaire sur les teintes et les marqueurs. */
 .sheet-table tbody tr.is-row-sel td { background: var(--sheet-row-sel) !important; color: #0e1126; }
 .sheet-table tbody tr.is-row-sel .sheet-rownum { background: var(--sheet-row-sel-num) !important; color: #0e1126; }
-/* Cellule fusionnée : ne prend pas la couleur d'une seule de ses lignes. */
+/* Cellule fusionnée : ne prend pas la couleur d'une seule de ses lignes, mais garde la sienne
+   (ex. « Attribué » : vert filiale, bleu Academy, rouge reportée). */
 .sheet-table tbody td.is-merged { text-align: center; vertical-align: middle; }
-.sheet-table tbody td.is-merged:not(.is-sel) { background: #fff !important; }
+.sheet-table tbody td.is-merged:not(.is-sel):not([class*=" tone-"]) { background: #fff !important; }
 .sheet-c-logo { display: block; margin: 0 auto; max-height: 34px; max-width: 86px; object-fit: contain; }
 .sheet-c-logo.is-padded { height: 34px; max-height: none; max-width: none; object-fit: cover; width: 110px; }
 .sheet-c-level { border-radius: 999px; display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; }
@@ -453,7 +472,6 @@
 .sheet-c-avatar.is-initials { align-items: center; color: #5b6275; display: inline-flex; font-size: 11px; font-weight: 700; justify-content: center; }
 /* Date de début : mention « Prévu » (lue dans la grille) et « +N » autres créneaux. */
 .sheet-c-start { align-items: center; display: inline-flex; gap: 6px; }
-.sheet-c-planned { background: #eef0f6; border-radius: 999px; color: #5b6275; font-size: 11px; font-weight: 700; padding: 1px 7px; }
 .sheet-c-trainer-names { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sheet-table .is-frozen-edge { box-shadow: 3px 0 0 -1px #dfe2ea; }
 .sheet-table tfoot td { background: #eef0f6; border-top: 2px solid var(--sheet-navy); color: var(--sheet-navy); }

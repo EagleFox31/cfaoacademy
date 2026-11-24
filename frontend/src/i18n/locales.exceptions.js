@@ -26,10 +26,7 @@ export const FR_FROM_SOURCE_DATA = {
 /**
  * Langues sans fichier pour un namespace : getCopy retombe sur le français.
  */
-export const MISSING_LOCALE_FILES = {
-  costKey: ['pt'],
-  sheet: ['pt'],
-}
+export const MISSING_LOCALE_FILES = {}
 
 /**
  * Clés absentes d'une langue alors qu'une autre les a (chemin à points,

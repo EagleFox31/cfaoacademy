@@ -497,6 +497,250 @@ describe('saisie dans le devis par filiale', () => {
     })
   })
 
+  describe('gestes Excel : formule et recopie', () => {
+    const line = (allocation, code, seats, extra = {}) => ({
+      ...session({ allocation }, seats), code, key_cost: seats * 100, trainee_lodging: 0, trainer_lodging: 0, ...extra,
+    })
+    const load = async (props = {}) => {
+      planningApi.country.mockResolvedValue(payload([
+        line('a1', 'A1', 6, { trainee_lodging: 6 * 50, trainer_lodging: 900 }), line('a2', 'A2', 4), line('a3', 'A3', 3),
+      ]))
+      await show(props)
+    }
+    const seatsCol = () => Number(seatsCell().dataset.cell.split(':')[1])
+    const cell = (ri, ci) => host.querySelector(`[data-cell="${ri}:${ci}"]`)
+    const down = (el, init = {}) => fire(el, new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0, ...init }))
+    const up = () => act(async () => { window.dispatchEvent(new MouseEvent('mouseup')) })
+    const fx = () => host.querySelector('.sheet-formula-expr')?.textContent
+
+    it('la barre fx dit d’où vient le montant d’une cellule calculée', async () => {
+      await load()
+      const ci = seatsCol()
+      await down(cell(0, ci + 1))
+      await up()
+      expect(fx()).toBe(T.fx_key_cost.replace('{seats}', '6').replace('{price}', `${makeFormatter('fr')(100, 'money')} ${T.currency}`))
+      await down(cell(0, ci + 2))
+      expect(fx()).toContain('6 places')
+      await down(cell(1, ci + 2))
+      expect(fx()).toBe(T.fx_trainee_lodging_none)
+      await down(cell(0, ci + 3))
+      expect(fx()).toContain(T.fx_trainer_lodging.split(' ')[1])
+      await down(cell(0, ci))
+      expect(fx()).toBeUndefined()
+    })
+
+    it('la barre fx mène aux tarifs, pour qui peut les modifier', async () => {
+      const link = () => host.querySelector('.sheet-formula-link')
+      await load()
+      await down(cell(0, seatsCol() + 1))
+      expect(link()).toBeNull()
+      act(() => root.unmount())
+      host.remove()
+
+      const onEditRates = vi.fn()
+      await load({ onEditRates })
+      const ci = seatsCol()
+      await down(cell(0, ci))
+      expect(link()).toBeNull()
+      await down(cell(0, ci + 1))
+      expect(link().textContent).toBe(T.fx_edit_rates)
+      await fire(link(), new MouseEvent('click', { bubbles: true }))
+      expect(onEditRates).toHaveBeenCalledTimes(1)
+    })
+
+    it('le coût horaire se modifie dans la carte, Ctrl+Z revient au précédent', async () => {
+      const rateBox = () => host.querySelector('.ck-rate')
+      await load({ params: { hourly_rate: 1000 } })
+      expect(rateBox()).toBeNull() // sans le droit, pas de crayon
+      act(() => root.unmount())
+      host.remove()
+
+      const onSaveRate = vi.fn().mockResolvedValue(undefined)
+      await load({ params: { hourly_rate: 1000 }, onSaveParams: onSaveRate })
+      expect(rateBox().textContent).toContain(T.kpi_rate)
+      await fire(host.querySelector('.ck-rate-pencil'), new MouseEvent('click', { bubbles: true }))
+      const field = host.querySelector('.ck-rate input')
+      expect(field.value).toBe('1000')
+
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, 'abc')
+        field.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      await fire(host.querySelector('.ck-rate form, form.ck-rate'), new Event('submit', { bubbles: true, cancelable: true }))
+      expect(host.querySelector('.ck-rate-error').textContent).toBe(T.rate_invalid)
+      expect(onSaveRate).not.toHaveBeenCalled()
+
+      const calls = planningApi.country.mock.calls.length
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, '1 200')
+        field.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      await fire(host.querySelector('form.ck-rate'), new Event('submit', { bubbles: true, cancelable: true }))
+      await flush()
+      expect(onSaveRate).toHaveBeenLastCalledWith({ hourly_rate: 1200 })
+      expect(planningApi.country.mock.calls.length).toBe(calls + 1) // tableau rechargé
+      expect(host.querySelector('.ck-rate-undo').textContent).toContain('Avant')
+
+      await press(document.body, 'z') // sans Ctrl : rien
+      expect(onSaveRate).toHaveBeenCalledTimes(1)
+      await fire(document.body, new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(onSaveRate).toHaveBeenLastCalledWith({ hourly_rate: 1000 })
+      expect(host.querySelector('.ck-rate-undo')).toBeNull()
+    })
+
+    it("l'accommodation se modifie dans sa carte, 0 accepté, Ctrl+Z revient au dernier changé", async () => {
+      const onSaveParams = vi.fn().mockResolvedValue(undefined)
+      await load({ params: { hourly_rate: 1000, trainee_lodging_cost: 5000, trainer_lodging_cost: 80000 }, onSaveParams })
+      const boxes = () => [...host.querySelectorAll('.ck-rate')]
+      expect(boxes().map(b => b.textContent.split(' :')[0])).toEqual([T.kpi_trainee_lodging_rate, T.kpi_trainer_lodging_rate, T.kpi_rate])
+      const set = async (box, text) => {
+        await fire(box.querySelector('.ck-rate-pencil'), new MouseEvent('click', { bubbles: true }))
+        const field = host.querySelector('form.ck-rate input')
+        await act(async () => {
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, text)
+          field.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+        await fire(host.querySelector('form.ck-rate'), new Event('submit', { bubbles: true, cancelable: true }))
+        await flush()
+      }
+      await set(boxes()[0], '-1')
+      expect(host.querySelector('.ck-rate-error').textContent).toBe(T.amount_invalid)
+      await fire(host.querySelector('.ck-rate-close'), new MouseEvent('click', { bubbles: true }))
+      await set(boxes()[0], '0')
+      expect(onSaveParams).toHaveBeenLastCalledWith({ trainee_lodging_cost: 0 })
+      await set(boxes()[1], '90000')
+      expect(onSaveParams).toHaveBeenLastCalledWith({ trainer_lodging_cost: 90000 })
+      expect(boxes()[1].querySelector('.ck-rate-undo')).not.toBeNull()
+      expect(boxes()[0].querySelector('.ck-rate-undo')).toBeNull()
+
+      await fire(document.body, new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(onSaveParams).toHaveBeenLastCalledWith({ trainer_lodging_cost: 80000 })
+      await fire(document.body, new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(onSaveParams).toHaveBeenLastCalledWith({ trainee_lodging_cost: 5000 })
+      expect(onSaveParams).toHaveBeenCalledTimes(4)
+    })
+
+    it('la poignée recopie la valeur vers le bas, un seul rechargement', async () => {
+      await load()
+      const ci = seatsCol()
+      await down(cell(0, ci))
+      await up()
+      const handle = cell(0, ci).querySelector('.sheet-fill-handle')
+      expect(handle).not.toBeNull()
+      await down(handle)
+      await fire(cell(2, ci), new MouseEvent('mouseover', { bubbles: true }))
+      expect(cell(1, ci).classList.contains('is-filling')).toBe(true)
+      await up()
+      await flush()
+      expect(planningApi.editCell.mock.calls).toEqual([
+        ['k1', { target: 'allocation', id: 'a2', field: 'seats', expected: 4, value: 6 }],
+        ['k1', { target: 'allocation', id: 'a3', field: 'seats', expected: 3, value: 6 }],
+      ])
+      expect(planningApi.country).toHaveBeenCalledTimes(2)
+      expect(onEdited).toHaveBeenCalledTimes(1)
+    })
+
+    it('Ctrl+D recopie la première cellule sur la sélection ; un conflit s’affiche', async () => {
+      planningApi.editCell.mockRejectedValueOnce(conflict())
+      await load()
+      const ci = seatsCol()
+      await down(cell(0, ci))
+      await down(cell(2, ci), { shiftKey: true })
+      await up()
+      await fire(cell(2, ci), new KeyboardEvent('keydown', { key: 'd', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(planningApi.editCell).toHaveBeenCalledTimes(2)
+      expect(alertBox().textContent).toContain('Une collègue')
+    })
+
+    const paste = (el, text) => {
+      const event = new Event('paste', { bubbles: true, cancelable: true })
+      event.clipboardData = { getData: () => text }
+      return fire(el, event)
+    }
+    const seatsCall = (id, expected, value) => ['k1', { target: 'allocation', id, field: 'seats', expected, value }]
+
+    it('Ctrl+V colle une colonne d’Excel ; une valeur non valide est laissée de côté', async () => {
+      await load()
+      const ci = seatsCol()
+      await down(cell(0, ci))
+      await up()
+      await paste(cell(0, ci), '7\r\nx\r\n9\r\n')
+      await flush()
+      expect(planningApi.editCell.mock.calls).toEqual([seatsCall('a1', 6, 7), seatsCall('a3', 3, 9)])
+      expect(host.querySelector('.sheet-status').textContent).toContain('1 valeur(s) collée(s) non valide(s)')
+    })
+
+    it('Ctrl+V d’une seule valeur remplit toute la sélection', async () => {
+      await load()
+      const ci = seatsCol()
+      await down(cell(1, ci))
+      await down(cell(2, ci), { shiftKey: true })
+      await up()
+      await paste(cell(1, ci), '5')
+      await flush()
+      expect(planningApi.editCell.mock.calls).toEqual([seatsCall('a2', 4, 5), seatsCall('a3', 3, 5)])
+    })
+
+    it('Ctrl+Z renvoie l’ancienne valeur en attendant celle écrite', async () => {
+      await load()
+      await enter(seatsCell(), '8')
+      await press(host.querySelector('.sheet-scroll'), 'z')
+      expect(planningApi.editCell).toHaveBeenCalledTimes(1)
+      await fire(host.querySelector('.sheet-scroll'), new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(planningApi.editCell).toHaveBeenLastCalledWith(...seatsCall('a1', 8, 6))
+      await fire(host.querySelector('.sheet-scroll'), new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(planningApi.editCell).toHaveBeenCalledTimes(2)
+    })
+
+    it('Ctrl+Z n’annule pas une saisie refusée', async () => {
+      planningApi.editCell.mockRejectedValueOnce(conflict())
+      await load()
+      await enter(seatsCell(), '8')
+      await fire(host.querySelector('.sheet-scroll'), new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }))
+      await flush()
+      expect(planningApi.editCell).toHaveBeenCalledTimes(1)
+    })
+
+    it('double-clic sur la poignée : recopie jusqu’en bas', async () => {
+      await load()
+      const ci = seatsCol()
+      await down(cell(0, ci))
+      await up()
+      await fire(cell(0, ci).querySelector('.sheet-fill-handle'), new MouseEvent('dblclick', { bubbles: true }))
+      await flush()
+      expect(planningApi.editCell.mock.calls).toEqual([seatsCall('a2', 4, 6), seatsCall('a3', 3, 6)])
+      expect(input()).toBeNull()
+    })
+
+    it('Entrée sur une cellule fusionnée passe à la session suivante', async () => {
+      const grid_slots = [
+        { start_date: '2027-01-04', end_date: '2027-01-08', trainers: [] },
+        { start_date: '2027-03-01', end_date: '2027-03-05', trainers: [] },
+      ]
+      planningApi.country.mockResolvedValue(payload([
+        line('a1', 'A1', 6, { start_date: '2027-01-04', dates_source: 'grid', grid_slots }), line('a2', 'A2', 4, { start_date: '2027-06-01' }),
+      ]))
+      await show()
+      const ci = seatsCol()
+      await enter(cell(0, ci), '8')
+      expect(host.querySelector('td.is-active').dataset.cell).toBe(`2:${ci}`)
+    })
+
+    it('pas de poignée sur une colonne calculée', async () => {
+      await load()
+      const ci = seatsCol()
+      await down(cell(0, ci + 1))
+      await up()
+      expect(host.querySelector('.sheet-fill-handle')).toBeNull()
+    })
+  })
+
   it('fusionne le niveau dans une même marque, pas entre deux marques', async () => {
     const row = (brand, level, level_tier, code) => ({ ...session(), brand, level, level_tier, code })
     planningApi.country.mockResolvedValue(payload([

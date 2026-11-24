@@ -26,6 +26,8 @@
   "no_match": "No row matches.",
   "ready": "Ready",
   "edit_invalid": "Invalid value",
+  "fill_hint": "Drag up or down to copy the value. Double-click: down to the end. Ctrl+D: copy into the selection.",
+  "paste_refused": "{n} pasted value(s) not valid, left out",
   "rows": "{n} rows of {m}",
   "avg": "Average",
   "count": "Count",
